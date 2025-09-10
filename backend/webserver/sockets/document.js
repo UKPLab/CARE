@@ -70,7 +70,7 @@ class DocumentSocket extends Socket {
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
      * @param {boolean} data.importAnnotations - indicates whether to import annotations from the PDF (optional).
-     * @param {boolean} data.submissionId - The submission that the document will belong to.
+     * @param {number} data.submissionId - The submission that the document will belong to.
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
      * @param {number} [data.projectId] - The ID of the project the document belongs to (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).

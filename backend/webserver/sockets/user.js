@@ -92,7 +92,7 @@ class UserSocket extends Socket {
     /**
      * Retrieves a list of users from a Moodle course via an RPC call.
      * The returned user data is then augmented with an external ID and checked for local existence in the database.
-     * The external moodle API is callled here through Moodle RPC
+     * The external moodle API is called here through Moodle RPC
      * 
      * @socketEvent userMoodleUserGetAll
      * @param {Object} options The data object containing the course ID, Moodle URL and the API token.
