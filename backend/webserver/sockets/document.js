@@ -787,7 +787,7 @@ class DocumentSocket extends Socket {
 
                 const documentIds = [];
                 for (const file of tempFiles) {
-                    const {doc} = await this.addDocument(
+                    const { doc } = await this.addDocument(
                         {
                             file: file.content,
                             name: file.fileName,
@@ -807,8 +807,9 @@ class DocumentSocket extends Socket {
             } catch (err) {
                 this.logger.error(err.message);
                 downloadedErrors.push({
-                    submissionId: submission.submissionId,
-                    success: false,
+                    userId: submission.userId,
+                    firstName: submission.firstName,
+                    lastName: submission.lastName,
                     message: err.message,
                 });
             }

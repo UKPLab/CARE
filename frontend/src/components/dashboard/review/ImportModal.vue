@@ -148,9 +148,16 @@
               :key="index"
             >
               <li>
-                Submission with the external Id <strong>{{ error.extId }}</strong> cannot be imported: {{ error.message }}
+                User with the User ID <strong>{{ error.userId }}</strong> cannot be imported: {{ error.message }}
               </li>
             </ul>
+          </div>
+          <div class="link-container">
+            <BasicButton
+              class="btn btn-outline-primary"
+              title="Download Error CSV"
+              @click="downloadFileAsCSV"
+            />
           </div>
         </div>
       </div>
@@ -161,7 +168,9 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicButton from "@/basic/Button.vue";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -169,7 +178,7 @@ import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, BasicTable, StepperModal },
+  components: { MoodleOptions, BasicTable, StepperModal, BasicButton },
   subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, { table: "document" }],
   data() {
     return {
@@ -202,6 +211,7 @@ export default {
           ],
         },
         { name: "External ID", key: "submissionId" },
+        { name: "User ID", key: "userId" },
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
         { name: "File Count", key: "fileCount" },
@@ -283,6 +293,16 @@ export default {
         this.importedAssignments = [];
       }
     },
+    downloadFileAsCSV() {
+      const filename = `submissions_${Date.now()}`;
+      const users = this.importResults.errors.map((err) => ({
+        userId: err.userId,
+        firstName: err.firstName,
+        lastName: err.lastName,
+        message: err.message,
+      }));
+      downloadObjectsAs(users, filename, "csv");
+    },
     async loadValidationSchemas() {
       this.isLoadingValidationSchemas = true;
       try {
@@ -343,8 +363,10 @@ export default {
         "documentDownloadMoodleSubmissions",
         {
           submissions: this.selectedAssignments.map((s) => ({
-            submissionId: s.submissionId,
+            submissionId: s.submissionId, 
             userId: s.userId,
+            firstName: s.firstName,
+            lastName: s.lastName,
             files: s.files,
           })),
           options: this.moodleOptions,
@@ -372,7 +394,12 @@ export default {
     processImportResults({ downloadedSubmissions = [], downloadedErrors = [] } = {}) {
       this.importResults = {
         successCount: downloadedSubmissions.length,
-        errors: downloadedErrors.map((e) => ({ extId: e.submissionId, message: e.message })),
+        errors: downloadedErrors.map((e) => ({ 
+          userId: e.userId,
+          firstName: e.firstName,
+          lastName:  e.lastName,
+          message: e.message 
+        })),
       };
     },
     handleValidatorChange() {
@@ -404,6 +431,7 @@ export default {
 }
 
 .link-container {
+  text-align: center;
   margin-top: 15px;
 
   button:first-child {
