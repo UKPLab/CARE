@@ -3,24 +3,27 @@
     ref="uploadStepper"
     :steps="steps"
     :validation="stepValid"
-    @submit="uploadDocument"
+    @submit="uploadSubmission"
   >
     <template #title>
-      <h5 class="modal-title">Upload Assignment</h5>
+      <h5 class="modal-title">Upload Submission</h5>
     </template>
-
     <template #step-1>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedUser"
           :columns="selectionTable"
           :options="selectionTableOptions"
-          :data="users"/>
+          :data="users"
+        />
       </div>
     </template>
     <template #step-2>
+      <ValidatorSelector v-model="selectedValidatorId" />
+    </template>
+    <template #step-3>
       <BasicForm
-        v-model="data"
+        v-model="files"
         :fields="fileFields"
       />
     </template>
@@ -31,6 +34,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import ValidatorSelector from "./ValidatorSelector.vue";
 
 /**
  * Moodle assignment upload component
@@ -42,31 +46,36 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "ReviewUploadModal",
-  components: {BasicForm, BasicTable, StepperModal},
+  components: { BasicForm, BasicTable, StepperModal, ValidatorSelector },
   subscribeTable: ["user"],
   data() {
     return {
       selectedUser: [],
-      data: {},
-      steps: [
-        {title: "Select User"},
-        {title: "Upload File"},
-      ],
+      selectedValidatorId: 0,
+      files: null,
+      steps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
       fileFields: [
         {
-          key: "file",
+          key: "pdf",
           type: "file",
           accept: ".pdf",
           class: "form-control",
-          default: null
+          default: null,
+        },
+        {
+          key: "zip",
+          type: "file",
+          accept: ".zip",
+          class: "form-control",
+          default: null,
         },
       ],
       selectionTable: [
-        {name: "ID", key: "id", sortable: true},
-        {name: "extId", key: "extId", sortable: true},
-        {name: "First Name", key: "firstName", sortable: true},
-        {name: "Last Name", key: "lastName", sortable: true},
-        {name: "Username", key: "userName", sortable: true},
+        { name: "ID", key: "id", sortable: true },
+        { name: "extId", key: "extId", sortable: true },
+        { name: "First Name", key: "firstName", sortable: true },
+        { name: "Last Name", key: "lastName", sortable: true },
+        { name: "Username", key: "userName", sortable: true },
       ],
       selectionTableOptions: {
         striped: true,
@@ -87,53 +96,55 @@ export default {
       return this.$store.getters["table/user/getAll"];
     },
     stepValid() {
-      return [
-        this.selectedUser.length > 0,
-        this.data.file !== null,
-      ];
+      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0, this.files];
     },
   },
   methods: {
     open() {
-      this.data.file = null;
+      this.files = null;
       this.selectedUser = [];
+      this.selectedValidatorId = 0;
       this.$refs.uploadStepper.open();
     },
-    uploadDocument() {
-      const fileName = this.data.file.name;
-      const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-      if (fileType !== ".pdf") {
-        this.eventBus.emit("toast", {
-          title: "Invalid file type",
-          message: "Only PDF files are allowed.",
-          variant: "danger",
-        });
-        return;
-      }
+    uploadSubmission() {
+      // TODO: Safeguard the types
+      // const fileName = this.data.file.name;
+      // const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+      // if (fileType !== ".pdf") {
+      //   this.eventBus.emit("toast", {
+      //     title: "Invalid file type",
+      //     message: "Only PDF files are allowed.",
+      //     variant: "danger",
+      //   });
+      //   return;
+      // }
 
       this.$refs.uploadStepper.setWaiting(true);
-      this.$socket.emit("documentAdd", {
-        file: this.data.file,
-        name: fileName,
-        userId: this.selectedUser[0].id,
-        isUploaded: true,
-      }, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "Uploaded file",
-            message: "File successfully uploaded!",
-            variant: "success",
-          });
-          this.$refs.uploadStepper.close();
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to upload the file",
-            message: res.message,
-            variant: "danger",
-          });
-          this.$refs.uploadStepper.setWaiting(false);
+      this.$socket.emit(
+        "documentUploadSingleSubmission",
+        {
+          userId: this.selectedUser[0].id,
+          validationDocumentId: this.selectedValidatorId,
+          files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
+        },
+        (res) => {
+          if (res.success) {
+            this.eventBus.emit("toast", {
+              title: "Uploaded file",
+              message: "File successfully uploaded!",
+              variant: "success",
+            });
+            this.$refs.uploadStepper.close();
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to upload the file",
+              message: res.message,
+              variant: "danger",
+            });
+            this.$refs.uploadStepper.setWaiting(false);
+          }
         }
-      });
+      );
     },
   },
 };

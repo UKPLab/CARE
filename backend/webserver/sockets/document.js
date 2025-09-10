@@ -822,7 +822,54 @@ class DocumentSocket extends Socket {
             });
         }
 
-        return {downloadedSubmissions, downloadedErrors};
+        return { downloadedSubmissions, downloadedErrors };
+    }
+
+    /**
+     * Upload a single submission to the DB.
+     *
+     * @author Linyin Huang
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.userId - The ID of the user who owns the submission
+     * @param {number} data.extId - The ID that comes from an external platform
+     * @param {Array<Object>} data.files - The submissions files
+     * @param {number} data.validationDocumentId - The document ID to retrieve validation schema
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Array<T>>} - The result of the processed submission
+     * @throws {Error} - If the upload fails, if the extId is invalid, or if saving to server fails
+     */
+    async uploadSingleSubmission(data, options) {
+        const { files, userId, extId = null, validationDocumentId } = data;
+        const transaction = options.transaction;
+        try {
+            const result = await this.validator.validateSubmissionFiles(files, validationDocumentId);
+
+            if (!result.success) {
+                throw new Error(result.message || "Validation failed");
+            }
+
+            const submission = await this.models["submission"].add({ 
+                userId, 
+                extId, 
+                validationDocumentId, 
+                createdByUserId: this.userId 
+            }, { transaction });
+            for (const file of files) {
+                await this.addDocument(
+                    {
+                        file: file.content,
+                        name: file.fileName,
+                        userId: userId,
+                        isUploaded: true,
+                        submissionId: submission.id,
+                    },
+                    { transaction }
+                );
+            }
+        } catch (error) {
+            this.logger.error(error);
+        }
     }
 
     /**
@@ -1174,6 +1221,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("documentGetConfiguration", this.getConfigurationDocuments, {}, false);
+        this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
     }
 };
 
