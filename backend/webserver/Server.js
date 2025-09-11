@@ -19,6 +19,8 @@ const Socket = require(path.resolve(__dirname, "./Socket.js"));
 const Service = require(path.resolve(__dirname, "./Service.js"));
 const RPC = require(path.resolve(__dirname,"./RPC.js"));
 const statsScheduler = require('../db/stats');
+const nodemailer = require('nodemailer');
+
 /**
  * Defines Express Webserver of Content Server
  *
@@ -39,6 +41,7 @@ module.exports = class Server {
         this.socket = null;
         this.cache = {};
         this.cache['userName'] = {};
+        this.mailer = null;
 
         this.rpcs = {};
         this.sockets = {};
@@ -81,6 +84,13 @@ module.exports = class Server {
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
         this.httpServer = http.createServer(this.app);
+        Promise.resolve(this.#initMailServer()).then(() => {
+            if (this.mailer) {
+                this.logger.info("Mail server initialized");
+            } else {
+                this.logger.warn("Mail server not available!");
+            }
+        });
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
@@ -104,6 +114,57 @@ module.exports = class Server {
         };
         process.on('SIGINT', handleShutdown);
         process.on('SIGTERM', handleShutdown);
+    }
+
+    /**
+     * Initialize the mail server
+     * @returns {Promise<void>}
+     */
+    async #initMailServer() {
+
+        if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
+            if (await this.db.models['setting'].get("system.mailService.sendMail.enabled") === "true") {
+                this.mailer = nodemailer.createTransport({
+                    sendmail: true,
+                    newline: 'unix',
+                    path: await this.db.models['setting'].get("system.mailService.sendMail.path"),
+                });
+            } else if (await this.db.models['setting'].get("system.mailService.smtp.enabled") === "true") {
+                this.mailer = nodemailer.createTransport('SMTP', {
+                    host: await this.db.models['setting'].get("system.mailService.smtp.host"),
+                    port: await this.db.models['setting'].get("system.mailService.smtp.port"),
+                    secure: await this.db.models['setting'].get("system.mailService.smtp.secure") === "true",
+                    auth: {
+                        user: await this.db.models['setting'].get("system.mailService.smtp.auth.user"),
+                        pass: await this.db.models['setting'].get("system.mailService.smtp.auth.pass")
+                    }
+                });
+            }
+
+        }
+
+    }
+
+    /**
+     * Send a mail
+     * @param to email address
+     * @param subject of the mail
+     * @param text of the mail
+     * @returns {Promise<void>}
+     */
+    async sendMail(to, subject, text) {
+        this.mailer.sendMail({
+            from: await this.db.models['setting'].get("system.mailService.senderAddress"),
+            to: to,
+            subject: subject,
+            text: text
+        }, (err, info) => {
+            if (err) {
+                this.logger.error(err);
+            } else {
+                this.logger.info("Message send: " + info.messageId);
+            }
+        });
     }
 
     /**
