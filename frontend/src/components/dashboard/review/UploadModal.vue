@@ -57,6 +57,7 @@ export default {
       fileFields: [
         {
           key: "pdf",
+          label: "PDF File:",
           type: "file",
           accept: ".pdf",
           class: "form-control",
@@ -64,6 +65,7 @@ export default {
         },
         {
           key: "zip",
+          label: "ZIP File:",
           type: "file",
           accept: ".zip",
           class: "form-control",
@@ -107,17 +109,18 @@ export default {
       this.$refs.uploadStepper.open();
     },
     uploadSubmission() {
-      // TODO: Safeguard the types
-      // const fileName = this.data.file.name;
-      // const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-      // if (fileType !== ".pdf") {
-      //   this.eventBus.emit("toast", {
-      //     title: "Invalid file type",
-      //     message: "Only PDF files are allowed.",
-      //     variant: "danger",
-      //   });
-      //   return;
-      // }
+      const { pdf, zip } = this.files || {};
+      const isPdf = pdf && pdf.type === "application/pdf";
+      const isZip = zip && zip.type === "application/zip";
+
+      if (!isPdf || !isZip) {
+        this.eventBus.emit("toast", {
+          title: "Invalid file(s)",
+          message: "Please upload a valid PDF and ZIP file.",
+          variant: "danger",
+        });
+        return;
+      }
 
       this.$refs.uploadStepper.setWaiting(true);
       this.$socket.emit(
