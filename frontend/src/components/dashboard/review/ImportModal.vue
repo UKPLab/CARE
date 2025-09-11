@@ -18,12 +18,14 @@
     </template>
     <!-- Submissions Selection Step -->
     <template #step-2>
-      <BasicTable
-        v-model="selectedAssignments"
-        :data="assignments"
-        :columns="tableColumns"
-        :options="tableOptions"
-      />
+      <div class="table-scroll-container">
+        <BasicTable
+          v-model="selectedAssignments"
+          :data="assignments"
+          :columns="tableColumns"
+          :options="tableOptions"
+        />
+      </div>
     </template>
     <!-- Validator Selection Step -->
     <template #step-3>
@@ -232,6 +234,8 @@ export default {
         this.selectedAssignments.length > 0,
         // Validation step is required only if validation documents exist
         this.selectedValidatorId !== 0,
+        true,
+        false,
       ];
     },
     message() {
@@ -363,7 +367,7 @@ export default {
         "documentDownloadMoodleSubmissions",
         {
           submissions: this.selectedAssignments.map((s) => ({
-            submissionId: s.submissionId, 
+            submissionId: s.submissionId,
             userId: s.userId,
             firstName: s.firstName,
             lastName: s.lastName,
@@ -394,11 +398,11 @@ export default {
     processImportResults({ downloadedSubmissions = [], downloadedErrors = [] } = {}) {
       this.importResults = {
         successCount: downloadedSubmissions.length,
-        errors: downloadedErrors.map((e) => ({ 
+        errors: downloadedErrors.map((e) => ({
           userId: e.userId,
           firstName: e.firstName,
-          lastName:  e.lastName,
-          message: e.message 
+          lastName: e.lastName,
+          message: e.message,
         })),
       };
     },
@@ -420,6 +424,12 @@ export default {
 .confirm-container,
 .result-container {
   height: 100%;
+}
+
+.table-scroll-container {
+  max-height: 400px;
+  min-height: 80px;
+  overflow-y: auto;
 }
 
 .validator-selection-container {
