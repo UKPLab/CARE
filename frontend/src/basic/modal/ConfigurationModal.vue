@@ -32,13 +32,9 @@
             >
               <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
               <!-- Skill Selection -->
-              <div class="mb-3">
-                <label class="form-label">Select NLP Skill:</label>
-                <FormSelect
-                  v-model="selectedSkills[index].skillName"
-                  :options="skillMap"
-                />
-              </div>
+              <SkillSelector
+                v-model="selectedSkills[index].skillName"
+              />
               <!-- Input Mapping -->
               <div
                 v-if="selectedSkills[index].skillName"
@@ -150,6 +146,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import Quill from "quill";
 
 /**
@@ -164,7 +161,7 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, FormSelect },
+  components: { StepperModal, FormSelect, SkillSelector },
   props: {
     modelValue: {
       type: Object,
@@ -223,18 +220,6 @@ export default {
           return !!data.dataInput;
         }),
       ];
-    },
-    nlpSkills() {
-      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
-      return skills && typeof skills === "object" ? Object.values(skills) : [];
-    },
-    skillMap() {
-      return {
-        options: this.nlpSkills.map((skill) => ({
-          value: skill.name,
-          name: skill.name,
-        })),
-      };
     },
     availableDataSources() {
       return this.getSourcesUpToCurrentStep(this.studyStepId);
