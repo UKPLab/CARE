@@ -5,7 +5,7 @@ const settings = [
         key: "app.login.forgotPassword",
         type: "boolean", 
         value: "true",
-        description: "Whether to show the forgot password link on the login page"
+        description: "Whether to enable the forgot password functionality or not"
     },
     {
         key: "app.register.emailVerification",
