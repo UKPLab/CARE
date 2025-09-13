@@ -176,6 +176,46 @@
       />
     </template>
   </BasicModal>
+
+  <!-- Email Verification Modal -->
+  <BasicModal ref="emailVerificationModal" name="emailVerificationModal">
+    <template #title>
+      Email Verification Required
+    </template>
+    <template #body>
+      <div v-if="!emailVerification.showSuccess && !emailVerification.showError">
+        <p>Your email address has not been verified yet. Please check your email for a verification link.</p>
+        <p><strong>Email:</strong> {{ emailVerification.email }}</p>
+        <p>Didn't receive the email? Click below to send a new verification email.</p>
+      </div>
+      <div v-if="emailVerification.showSuccess" class="alert alert-success">
+        {{ emailVerification.successMessage }}
+      </div>
+      <div v-if="emailVerification.showError" class="alert alert-danger">
+        {{ emailVerification.errorMessage }}
+      </div>
+    </template>
+    <template #footer>
+      <BasicButton
+        v-if="!emailVerification.showSuccess"
+        text="Close"
+        data-bs-dismiss="modal"
+      />
+      <BasicButton
+        v-if="!emailVerification.showSuccess && !emailVerification.showError"
+        :disabled="emailVerification.isLoading"
+        :text="emailVerification.isLoading ? 'Sending...' : 'Resend Verification Email'"
+        @click="resendVerificationEmail"
+      >
+        <span v-if="emailVerification.isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+      </BasicButton>
+      <BasicButton
+        v-if="emailVerification.showSuccess"
+        text="OK"
+        data-bs-dismiss="modal"
+      />
+    </template>
+  </BasicModal>
 </template>
 
 <script>
@@ -268,7 +308,73 @@ export default {
   beforeMount() {
     this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
   },
+  mounted() {
+    // Check for query parameters and show appropriate toasts
+    // Use nextTick to ensure the component is fully mounted and eventBus is available
+    this.$nextTick(() => {
+      this.handleQueryParams();
+    });
+  },
   methods: {
+    handleQueryParams() {
+      console.log("handleQueryParams called, route query:", this.$route.query);
+      console.log("eventBus available:", !!this.eventBus);
+      
+      // Check for email verification success/failure
+      if (this.$route.query.verified === 'true') {
+        console.log("Email verified successfully.");
+        if (this.eventBus) {
+          this.eventBus.emit("toast", {
+            title: "Email Verified",
+            message: "Your email has been verified successfully. You can now log in.",
+            variant: "success",
+          });
+        }
+      }
+      else if (this.$route.query.error === "invalid-token") {
+        console.log("Email verification failed - invalid token.");
+        if (this.eventBus) {
+          this.eventBus.emit("toast", {
+            title: "Email Verification Failed",
+            message: "Email verification failed - the token is invalid or malformed.",
+            variant: "danger",
+          });
+        }
+      }
+      else if (this.$route.query.error === "expired-token") {
+        console.log("Email verification failed - expired token.");
+        if (this.eventBus) {
+          this.eventBus.emit("toast", {
+            title: "Email Verification Failed",
+            message: "Email verification failed - the token has expired. Please request a new verification email.",
+            variant: "danger",
+          });
+        }
+      }
+      else if (this.$route.query.error === "missing-token") {
+        console.log("Email verification failed - missing token.");
+        if (this.eventBus) {
+          this.eventBus.emit("toast", {
+            title: "Email Verification Failed",
+            message: "Email verification failed - no token provided.",
+            variant: "danger",
+          });
+        }
+      }
+      else if (this.$route.query.error === "server-error") {
+        console.log("Email verification failed - server error.");
+        if (this.eventBus) {
+          this.eventBus.emit("toast", {
+            title: "Email Verification Failed",
+            message: "Email verification failed due to a server error. Please try again later.",
+            variant: "danger",
+          });
+        }
+      }
+      if (this.$route.query.verified || this.$route.query.error) {
+        this.$router.replace({ name: this.$route.name });
+      }
+    },
     checkVal(key) {
       this.validity[key] = true;
     },
@@ -284,8 +390,10 @@ export default {
       try {
         await this.login({username: this.formData.username, password: this.formData.password})
         {
+
           await this.$router.go(0);
           this.showError = false;
+          
         }
       } catch (error) {
         this.showError = true;
@@ -320,7 +428,6 @@ export default {
         // Check if the error is due to unverified email
         if (response.data.emailNotVerified) {
           this.showEmailVerificationModal(response.data.email);
-          return;
         }
         throw response.data.message;
       }
@@ -367,6 +474,45 @@ export default {
         this.forgotPassword.isLoading = false;
       }
     },
+    showEmailVerificationModal(email) {
+      this.emailVerification.email = email;
+      this.emailVerification.showSuccess = false;
+      this.emailVerification.showError = false;
+      this.emailVerification.successMessage = "";
+      this.emailVerification.errorMessage = "";
+      this.$refs.emailVerificationModal.open();
+    },
+    async resendVerificationEmail() {
+      this.emailVerification.isLoading = true;
+      this.emailVerification.showSuccess = false;
+      this.emailVerification.showError = false;
+      
+      try {
+        const response = await axios.post(getServerURL() + '/auth/resend-verification',
+          { email: this.emailVerification.email },
+          {
+            validateStatus: function (status) {
+              return status === 200 || status === 400 || status === 500;
+            },
+            withCredentials: true
+          }
+        );
+        
+        if (response.status === 200) {
+          this.emailVerification.showSuccess = true;
+          this.emailVerification.successMessage = response.data.message || "Verification email has been sent successfully.";
+        } else {
+          this.emailVerification.showError = true;
+          this.emailVerification.errorMessage = response.data.message || "Failed to send verification email.";
+        }
+      } catch (error) {
+        this.emailVerification.showError = true;
+        this.emailVerification.errorMessage = "An unexpected error occurred. Please try again.";
+        console.error('Resend verification email error:', error);
+      } finally {
+        this.emailVerification.isLoading = false;
+      }
+    }
   }
 }
 </script>

@@ -19,7 +19,7 @@ module.exports = function (server) {
      * Login Procedure
      */
     server.app.post('/auth/login', function (req, res, next) {
-        passport.authenticate('local', function (err, user, info) {
+        passport.authenticate('local', async function (err, user, info) {
             if (err) {
                 server.logger.error("Login failed: " + err);
                 return res.status(500).send("Failed to login");
@@ -29,6 +29,17 @@ module.exports = function (server) {
                     JSON.stringify(info));
                 return res.status(401).send(info);
             }
+            
+            // Check if email verification is required and if user has verified their email
+            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            if (emailVerificationEnabled && !user.emailVerified) {
+                return res.status(401).json({
+                    message: "Please verify your email address before logging in.",
+                    emailNotVerified: true,
+                    email: user.email
+                });
+            }
+            
             req.logIn(user, async function (err) {
                 if (err) {
                     return next(err);
@@ -131,7 +142,11 @@ module.exports = function (server) {
         let transaction;
         try {
             transaction = await server.db.models['user'].sequelize.transaction();
-            await server.db.models['user'].add({
+            
+            // Check if email verification is enabled
+            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            
+            const userData = {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 userName: data.userName,
@@ -139,10 +154,30 @@ module.exports = function (server) {
                 email: data.email,
                 acceptTerms: data.acceptTerms,
                 acceptStats: data.acceptStats,
-                acceptedAt: data.acceptedAt
-            }, {transaction});
-            await transaction.commit();
-            res.status(201).send("User was successfully created");
+                acceptedAt: data.acceptedAt,
+            };
+            const newUser = await server.db.models['user'].add(userData, {transaction: transaction});
+            // Generate email verification token if verification is enabled
+            if (emailVerificationEnabled) {
+                const verificationToken = generateToken(24); // 24 hours to verify
+                const decoded = decodeToken(verificationToken);
+                userData.emailVerificationToken = decoded.tokenPart;
+                await server.db.models['user'].update(
+                    {emailVerificationToken: decoded.tokenPart}, 
+                    {where: {id: newUser.id}, transaction}
+                );
+                const verificationLink = `http://localhost:3001/verify-email?token=${verificationToken}`; // TODO: Adjust link 3as needed
+                await server.sendMail(
+                    data.email, 
+                    "Please verify your email address", 
+                    `Please click the following link to verify your email address: ${verificationLink}`
+                );
+                await transaction.commit();
+                res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true});     
+            } else {
+                await transaction.commit();
+                res.status(201).send("User was successfully created");
+            }
         } catch (err) {
             await transaction.rollback();
             server.logger.error("Cannot create user:", err);
@@ -172,7 +207,7 @@ module.exports = function (server) {
             
             // Send email with the full encoded token
 
-            await server.sendMail(user.email, "Password Reset Request", `localhost:3000/reset-password?token=${resetToken}`);
+            await server.sendMail(user.email, "Password Reset Request", `http://localhost:3001/reset-password?token=${resetToken}`); // TODO: Adjust link as needed
             return res.status(200).json({message: "A password reset link has been sent."});
         } catch (err) {
             server.logger.error("Failed to find user:", err);
@@ -249,6 +284,109 @@ module.exports = function (server) {
             });
         } catch (error) {
             server.logger.error("Failed to check reset token:", error);
+            return res.status(500).json({message: "Internal server error"});
+        }
+    });
+
+    /**
+     * Email Verification Route
+     */
+    server.app.get('/verify-email', async function (req, res) {
+        const {token} = req.query;
+        console.log("Received email verification request with token:", token);
+        if (!token) {
+            return res.redirect('http://localhost:3000/login?error=missing-token');
+        }
+        
+        try {
+            // Decode and validate token
+            const decoded = decodeToken(token);
+            
+            if (!decoded.isValid) {
+                console.log("Invalid email verification token format.");
+                return res.redirect('http://localhost:3000/login?error=invalid-token');
+            }
+            
+            if (decoded.expired) {
+                console.log("Email verification token has expired.");
+                return res.redirect('http://localhost:3000/login?error=expired-token');
+            }
+            
+            // Find user by verification token
+            const user = await server.db.models['user'].findOne({
+                where: {emailVerificationToken: decoded.tokenPart}
+            });
+            
+            if (!user) {
+                return res.redirect('http://localhost:3000/login?error=invalid-token');
+            }
+
+            
+            // Mark email as verified and clear token
+            await server.db.models['user'].update(
+                {emailVerified: true, emailVerificationToken: null},
+                {where: {id: user.id}}
+            );
+            console.log(`User ${user.email} has verified their email.`);
+            // Redirect to login page with success message
+            return res.redirect('http://localhost:3000/login?verified=true');
+            
+        } catch (error) {
+            server.logger.error("Failed to verify email:", error);
+            return res.redirect('http://localhost:3000/login?error=server-error');
+        }
+    });
+
+    /**
+     * Resend Email Verification Route
+     */
+    server.app.post('/auth/resend-verification', async function (req, res) {
+        const {email} = req.body;
+        
+        if (!email) {
+            return res.status(400).json({message: "Email address is required."});
+        }
+        
+        try {
+            // Check if email verification is enabled
+            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            if (!emailVerificationEnabled) {
+                return res.status(400).json({message: "Email verification is disabled."});
+            }
+            
+            // Find user by email
+            const user = await server.db.models['user'].findOne({where: {email: email}});
+            if (!user) {
+                return res.status(400).json({message: "User with this email does not exist."});
+            }
+            
+            // Check if already verified
+            if (user.emailVerified) {
+                return res.status(400).json({message: "Email address is already verified."});
+            }
+            
+            // Generate new verification token
+            const verificationToken = generateToken(24); // 24 hours
+            const decoded = decodeToken(verificationToken);
+            
+            // Update user with new token
+            await server.db.models['user'].update(
+                {emailVerificationToken: decoded.tokenPart},
+                {where: {id: user.id}}
+            );
+            
+            // Send verification email
+            const verificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
+            await server.sendMail(
+                email,
+                "Please verify your email address",
+                `Please click the following link to verify your email address: ${verificationLink}`
+            );
+            
+            return res.status(200).json({message: "Verification email has been sent."});
+            
+        } catch (error) {
+            server.logger.error("Failed to resend verification email:", error);
             return res.status(500).json({message: "Internal server error"});
         }
     });
