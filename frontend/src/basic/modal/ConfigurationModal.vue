@@ -32,17 +32,23 @@
             >
               <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
               <!-- Skill Selection -->
-              <SkillSelector
-                v-model="selectedSkills[index].skillName"
-              />
+              <div class="mb-3">
+                <label class="form-label">Select NLP Skill:</label>
+                <SkillSelector
+                  v-model="selectedSkills[index].skillName"
+                />
+              </div>
               <!-- Input Mapping -->
               <InputMap
                 v-if="selectedSkills[index].skillName"
-                v-model="inputMappings[index]"
+                v-model="selectedSkills[index].dataInput"
                 :skill-name="selectedSkills[index].skillName"
                 :study-based="true"
                 :study-step-id="studyStepId"
                 :workflow-steps="workflowSteps"
+                :current-stepper-step="currentStepperStep"
+                :step-config="stepConfig"
+                :selected-skills="selectedSkills"
               />
             </div>
           </div>
@@ -97,7 +103,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[0]"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
                 <div class="mb-3">
@@ -105,7 +111,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[1]"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
               </template>
@@ -115,7 +121,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
               </template>
@@ -195,7 +201,6 @@ export default {
       selectedSkills: [],
       shortPreview: "",
       isUpdateMode: false,
-      inputMappings: [],
     };
   },
   computed: {
@@ -211,6 +216,10 @@ export default {
           return !!data.dataInput;
         }),
       ];
+    },
+    nlpSkills() {
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
   },
   watch: {
@@ -268,10 +277,8 @@ export default {
             dataInput: {},
           };
         });
-
       } else {
         this.selectedSkills = [];
-        this.inputMappings = [];
       }
     },
     fetchDocument() {
@@ -353,7 +360,8 @@ export default {
     findPlaceholderDataSource(input) {
       if (!input) return null;
 
-      return null;
+      const availableDataSources = this.getSourcesUpToCurrentStep(this.studyStepId);
+      return availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
@@ -426,6 +434,28 @@ export default {
     close() {
       this.$refs.configurationStepper.close();
     },
+    updateDataInput(index, input, source) {
+      if (!source) return;
+
+      const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
+
+      if (!updatedSkills[index].dataInput) {
+        updatedSkills[index].dataInput = {};
+      }
+
+      updatedSkills[index].dataInput[input] = {
+        stepId: source.stepId,
+        dataSource: source.value,
+      };
+
+      this.selectedSkills = updatedSkills;
+    },
+    getFormattedDataInput(index, input) {
+      const dataInput = this.selectedSkills[index]?.dataInput?.[input];
+      if (!dataInput) return null;
+
+      return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
+    },
     submit() {
       if (!this.stepConfig?.services?.length) return;
       const { services } = this.stepConfig;
@@ -477,6 +507,68 @@ export default {
             };
           }
         });
+    },
+    /**
+     * Construct and get all the available data sources up to the stepId
+     * @param {number} stepId - The ID of the workflow step
+     * @returns {Array<Object>} An array of data source object, consisting of value and name
+     */
+    getSourcesUpToCurrentStep(stepId) {
+      const sources = [];
+      const stepCollector = this.workflowSteps.filter((step) => step.id <= stepId);
+
+      stepCollector.forEach((step, index) => {
+        const stepIndex = index + 1;
+        switch (step.stepType) {
+          // Editor
+          case 2:
+            sources.push(
+              { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
+              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
+            );
+            break;
+          // Modal
+          case 3:
+            if (step.id < this.studyStepId || this.currentStepperStep === 1) {
+              sources.push(...this.getSkillSources(stepIndex));
+            }
+            break;
+        }
+      });
+
+      return sources;
+    },
+    /**
+     * Get the output from the nlpSkill
+     * @param {number} stepIndex - The index of the step that indicates which step the user is at in the whole workflow.
+     * @returns {Array<Object>} An array of objects derived from nlpSkill
+     */
+    getSkillSources(stepIndex) {
+      const sources = [];
+
+      if (!this.selectedSkills.length) return sources;
+
+      const { services } = this.stepConfig;
+
+      services.forEach((service) => {
+        this.selectedSkills.forEach(({ skillName }) => {
+          if (!skillName) return;
+
+          const skill = this.nlpSkills.find((s) => s.name === skillName);
+          if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
+
+          const result = Object.keys(skill.config.output.data || {});
+          result.forEach((r) =>
+            sources.push({
+              value: `service_${service.name}_${r}`,
+              name: `${skillName}_${r} (Step ${stepIndex})`,
+              stepId: stepIndex,
+            })
+          );
+        });
+      });
+
+      return sources;
     },
   },
 };
