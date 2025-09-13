@@ -12,7 +12,7 @@ const settings = [{
     description: "The sender address for mails"
 }, {
     key: "system.mailService.sendMail.enabled",
-    value: "true",
+    value: "false",
     type: "boolean",
     description: "Use the sendMail function of an unix system",
 }, {
@@ -22,27 +22,27 @@ const settings = [{
     description: "The path to the sendmail binary (default: /usr/sbin/sendmail)"
 }, {
     key: "system.mailService.smtp.enabled",
-    value: "false",
+    value: "true",
     type: "boolean",
     description: "Use an SMTP server for sending mails (sendMail must be disabled!)"
 }, {
     key: "system.mailService.smtp.host",
-    value: "localhost",
+    value: "smtp.gmail.com",
     type: "string",
     description: "The hostname of the SMTP server"
 }, {
     key: "system.mailService.smtp.port",
-    value: "25",
+    value: "587",
     type: "integer",
     description: "The port of the SMTP server"
 }, {
     key: "system.mailService.smtp.secure",
-    value: "false",
+    value: "true",
     type: "boolean",
     description: "Use a secure connection to the SMTP server"
 }, {
     key: "system.mailService.smtp.auth.enabled",
-    value: "false",
+    value: "true",
     type: "boolean",
     description: "Use authentication for the SMTP server"
 }, {
