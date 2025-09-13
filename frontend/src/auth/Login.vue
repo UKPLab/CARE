@@ -317,12 +317,8 @@ export default {
   },
   methods: {
     handleQueryParams() {
-      console.log("handleQueryParams called, route query:", this.$route.query);
-      console.log("eventBus available:", !!this.eventBus);
-      
       // Check for email verification success/failure
       if (this.$route.query.verified === 'true') {
-        console.log("Email verified successfully.");
         if (this.eventBus) {
           this.eventBus.emit("toast", {
             title: "Email Verified",
@@ -332,7 +328,6 @@ export default {
         }
       }
       else if (this.$route.query.error === "invalid-token") {
-        console.log("Email verification failed - invalid token.");
         if (this.eventBus) {
           this.eventBus.emit("toast", {
             title: "Email Verification Failed",
@@ -342,7 +337,6 @@ export default {
         }
       }
       else if (this.$route.query.error === "expired-token") {
-        console.log("Email verification failed - expired token.");
         if (this.eventBus) {
           this.eventBus.emit("toast", {
             title: "Email Verification Failed",
@@ -352,7 +346,6 @@ export default {
         }
       }
       else if (this.$route.query.error === "missing-token") {
-        console.log("Email verification failed - missing token.");
         if (this.eventBus) {
           this.eventBus.emit("toast", {
             title: "Email Verification Failed",
@@ -362,7 +355,6 @@ export default {
         }
       }
       else if (this.$route.query.error === "server-error") {
-        console.log("Email verification failed - server error.");
         if (this.eventBus) {
           this.eventBus.emit("toast", {
             title: "Email Verification Failed",
@@ -476,17 +468,10 @@ export default {
     },
     showEmailVerificationModal(email) {
       this.emailVerification.email = email;
-      this.emailVerification.showSuccess = false;
-      this.emailVerification.showError = false;
-      this.emailVerification.successMessage = "";
-      this.emailVerification.errorMessage = "";
       this.$refs.emailVerificationModal.open();
     },
     async resendVerificationEmail() {
       this.emailVerification.isLoading = true;
-      this.emailVerification.showSuccess = false;
-      this.emailVerification.showError = false;
-      
       try {
         const response = await axios.post(getServerURL() + '/auth/resend-verification',
           { email: this.emailVerification.email },
@@ -508,7 +493,6 @@ export default {
       } catch (error) {
         this.emailVerification.showError = true;
         this.emailVerification.errorMessage = "An unexpected error occurred. Please try again.";
-        console.error('Resend verification email error:', error);
       } finally {
         this.emailVerification.isLoading = false;
       }

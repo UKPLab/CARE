@@ -166,14 +166,14 @@ module.exports = function (server) {
                     {emailVerificationToken: decoded.tokenPart}, 
                     {where: {id: newUser.id}, transaction}
                 );
-                const verificationLink = `http://localhost:3001/verify-email?token=${verificationToken}`; // TODO: Adjust link 3as needed
+                const verificationLink = `http://localhost:3001/verify-email?token=${verificationToken}`; // TODO: Adjust link as needed
                 await server.sendMail(
                     data.email, 
                     "Please verify your email address", 
                     `Please click the following link to verify your email address: ${verificationLink}`
                 );
                 await transaction.commit();
-                res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true});     
+                res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true}); // TODO: Adjust link as needed   
             } else {
                 await transaction.commit();
                 res.status(201).send("User was successfully created");
@@ -186,7 +186,6 @@ module.exports = function (server) {
     });
 
     server.app.post('/auth/request-password-reset', async function (req, res) {
-        console.log("Received password reset request:", req.body);
         const {email} = req.body;
         if (!email) {
             return res.status(400).json({message: "Please provide an email."});
@@ -293,7 +292,6 @@ module.exports = function (server) {
      */
     server.app.get('/verify-email', async function (req, res) {
         const {token} = req.query;
-        console.log("Received email verification request with token:", token);
         if (!token) {
             return res.redirect('http://localhost:3000/login?error=missing-token');
         }
@@ -303,13 +301,11 @@ module.exports = function (server) {
             const decoded = decodeToken(token);
             
             if (!decoded.isValid) {
-                console.log("Invalid email verification token format.");
-                return res.redirect('http://localhost:3000/login?error=invalid-token');
+                return res.redirect('http://localhost:3000/login?error=invalid-token');  // TODO: Adjust link as needed
             }
             
             if (decoded.expired) {
-                console.log("Email verification token has expired.");
-                return res.redirect('http://localhost:3000/login?error=expired-token');
+                return res.redirect('http://localhost:3000/login?error=expired-token'); //TODO: Adjust link as needed
             }
             
             // Find user by verification token
@@ -318,7 +314,7 @@ module.exports = function (server) {
             });
             
             if (!user) {
-                return res.redirect('http://localhost:3000/login?error=invalid-token');
+                return res.redirect('http://localhost:3000/login?error=invalid-token');  // TODO: Adjust link as needed
             }
 
             
@@ -327,13 +323,12 @@ module.exports = function (server) {
                 {emailVerified: true, emailVerificationToken: null},
                 {where: {id: user.id}}
             );
-            console.log(`User ${user.email} has verified their email.`);
             // Redirect to login page with success message
-            return res.redirect('http://localhost:3000/login?verified=true');
+            return res.redirect('http://localhost:3000/login?verified=true');  // TODO: Adjust link as needed
             
         } catch (error) {
             server.logger.error("Failed to verify email:", error);
-            return res.redirect('http://localhost:3000/login?error=server-error');
+            return res.redirect('http://localhost:3000/login?error=server-error');  // TODO: Adjust link as needed
         }
     });
 
