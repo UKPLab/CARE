@@ -124,21 +124,42 @@ module.exports = class Server {
 
         if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
             if (await this.db.models['setting'].get("system.mailService.sendMail.enabled") === "true") {
+                this.logger.info("Using sendmail transport");
                 this.mailer = nodemailer.createTransport({
                     sendmail: true,
                     newline: 'unix',
                     path: await this.db.models['setting'].get("system.mailService.sendMail.path"),
                 });
             } else if (await this.db.models['setting'].get("system.mailService.smtp.enabled") === "true") {
-                this.mailer = nodemailer.createTransport('SMTP', {
-                    host: await this.db.models['setting'].get("system.mailService.smtp.host"),
-                    port: await this.db.models['setting'].get("system.mailService.smtp.port"),
-                    secure: await this.db.models['setting'].get("system.mailService.smtp.secure") === "true",
-                    auth: {
-                        user: await this.db.models['setting'].get("system.mailService.smtp.auth.user"),
-                        pass: await this.db.models['setting'].get("system.mailService.smtp.auth.pass")
+                this.logger.info("Using SMTP transport");
+                const testAccount = await nodemailer.createTestAccount();
+                // Get SMTP configuration from database
+                const smtpHost = await this.db.models['setting'].get("system.mailService.smtp.host");
+                const smtpPort = await this.db.models['setting'].get("system.mailService.smtp.port");
+                const smtpSecure = await this.db.models['setting'].get("system.mailService.smtp.secure") === "true";
+                const authEnabled = await this.db.models['setting'].get("system.mailService.smtp.auth.enabled") === "true";
+                
+                let transportConfig = {
+                    host: testAccount.smtp.host, //smtpHost,
+                    port: testAccount.smtp.port, //parseInt(smtpPort),
+                    secure: testAccount.smtp.secure //smtpSecure
+                };
+                
+                if (authEnabled) {
+                    const authUser = testAccount.user //await this.db.models['setting'].get("system.mailService.smtp.auth.user");
+                    const authPass = testAccount.pass//await this.db.models['setting'].get("system.mailService.smtp.auth.pass");
+                    
+                    if (authUser && authPass) {
+                        transportConfig.auth = {
+                            user: authUser,
+                            pass: authPass
+                        };
+                    } else {
+                        this.logger.warn("SMTP authentication enabled but credentials not configured");
                     }
-                });
+                }
+                
+                this.mailer = nodemailer.createTransport(transportConfig);
             }
 
         }
@@ -153,6 +174,11 @@ module.exports = class Server {
      * @returns {Promise<void>}
      */
     async sendMail(to, subject, text) {
+        if (!this.mailer) {
+            this.logger.warn(`Email service not configured. Would send email to ${to} with subject: ${subject}`);
+            return;
+        }
+        
         this.mailer.sendMail({
             from: await this.db.models['setting'].get("system.mailService.senderAddress"),
             to: to,
@@ -163,6 +189,7 @@ module.exports = class Server {
                 this.logger.error(err);
             } else {
                 this.logger.info("Message send: " + info.messageId);
+                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); // for testing
             }
         });
     }

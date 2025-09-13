@@ -7,6 +7,7 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
+const { generateToken, decodeToken } = require('../../utils/auth');
 
 /**
  * Route for user management
@@ -148,4 +149,107 @@ module.exports = function (server) {
             res.status(400).json({message: "Failed to create user", error: err.message});
         }
     });
-};
+
+    server.app.post('/auth/request-password-reset', async function (req, res) {
+        console.log("Received password reset request:", req.body);
+        const {email} = req.body;
+        if (!email) {
+            return res.status(400).json({message: "Please provide an email."});
+        }
+        try {
+            const user = await server.db.models['user'].findOne({where: {email: email}});
+            if (!user) {
+                return res.status(401).json({message: "User with this email does not exist."});
+            }
+            
+            // Generate token with encoded expiry (1 hour)
+            const resetToken = generateToken(1);
+            
+            // Store only the token part in the database (no expiry needed)
+            const decoded = decodeToken(resetToken);
+            user.resetToken = decoded.tokenPart; // Store just the random part for lookup
+            await user.save();
+            
+            // Send email with the full encoded token
+
+            await server.sendMail(user.email, "Password Reset Request", `localhost:3000/reset-password?token=${resetToken}`);
+            return res.status(200).json({message: "A password reset link has been sent."});
+        } catch (err) {
+            server.logger.error("Failed to find user:", err);
+            return res.status(500).json({message: "Internal server error"});
+        }
+    });
+
+    server.app.post('/auth/reset-password', async function (req, res) {
+        const {token, newPassword} = req.body;
+        if(server.db.models['setting'].get("app.login.forgotPassword") !== "true") {
+            return res.status(400).json({message: "Password reset is disabled."});
+        }
+        if (!token || !newPassword) {
+            return res.status(400).json({message: "Token and new password are required."});
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({message: "Password does not meet requirements."});
+        }
+        try {
+            // Decode the token and check expiry
+            const decoded = decodeToken(token);
+            
+            if (!decoded.isValid) {
+                return res.status(400).json({message: "Invalid token format."});
+            }
+            
+            if (decoded.expired) {
+                return res.status(400).json({message: "Token has expired."});
+            }
+            
+            // Find user by the token part stored in database
+            const user = await server.db.models['user'].findOne({where: {resetToken: decoded.tokenPart}});
+            if (!user) {
+                return res.status(400).json({message: "Invalid token."});
+            }
+            
+            // Reset password using the user model method and clear token
+            await server.db.models['user'].resetUserPwd(user.id, newPassword);
+            await server.db.models['user'].update({resetToken: null}, {where: {id: user.id}});
+            
+            return res.status(200).json({message: "Password has been reset successfully."});
+        } catch (err) {
+            server.logger.error("Failed to reset password:", err);
+            return res.status(500).json({message: "Internal server error"});
+        }   
+    });
+
+    server.app.get('/auth/check-reset-token', async function (req, res) {
+        const {token} = req.query;
+        if (!token) {
+            return res.status(400).json({message: "Token is required."});
+        }
+        try {
+            // Decode and validate token format/expiry
+            const decoded = decodeToken(token);
+            if (!decoded.isValid) {
+                return res.status(400).json({message: "Invalid token format."});
+            }
+            if (decoded.expired) {
+                return res.status(400).json({message: "Token has expired."});
+            }
+            
+            // Check if token exists in database
+            const user = await server.db.models['user'].findOne({
+                where: {resetToken: decoded.tokenPart}
+            });
+            if (!user) {
+                return res.status(404).json({message: "Token not found."});
+            }
+            
+            return res.status(200).json({
+                message: "Token is valid.", 
+                expiryTime: decoded.expiryTime
+            });
+        } catch (error) {
+            server.logger.error("Failed to check reset token:", error);
+            return res.status(500).json({message: "Internal server error"});
+        }
+    });
+}

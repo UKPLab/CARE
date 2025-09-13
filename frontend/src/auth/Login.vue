@@ -91,6 +91,10 @@
                   class="btn btn-link"
                   @click="login_guest()"
               >Login as Guest</a>
+              <a
+                class="btn btn-link"
+                @click="$refs.forgotPasswordModal.open()"
+              >Forgot Password?</a>
             </div>
           </div>
         </div>
@@ -125,6 +129,53 @@
       </div>
     </div>
   </form>
+
+  <!-- Forgot Password Modal -->
+  <BasicModal ref="forgotPasswordModal" name="forgotPasswordModal">
+    <template #title>
+      Forgot password
+    </template>
+    <template #body>
+      <div class="form-group">
+        <label for="resetEmail" class="form-label">Email Address</label>
+        <input
+          id="resetEmail"
+          v-model="forgotPassword.email"
+          type="email"
+          class="form-control"
+          placeholder="Enter your email address"
+          required
+          :class="{ 'is-invalid': !forgotPasswordValidEmail }"
+        >
+        <div v-if="!forgotPasswordValidEmail" class="invalid-feedback">
+          Please provide a valid email address.
+        </div>
+        <small class="form-text text-muted">
+          We'll send password reset instructions to this email address.
+        </small>
+      </div>
+    </template>
+    <template #footer>
+      <BasicButton
+        v-if="!forgotPassword.success"
+        text="Cancel"
+        data-bs-dismiss="modal"
+      />
+      <BasicButton
+        v-if="!forgotPassword.success"
+        :disabled="!forgotPasswordValidEmail || forgotPassword.isLoading"
+        :text="forgotPassword.isLoading ? 'Sending...' : 'Send Reset Email'"
+        @click="sendResetEmail"
+      >
+        <span v-if="forgotPassword.isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+      </BasicButton>
+      <BasicButton
+        v-if="forgotPassword.success"
+        text="Close"
+        data-bs-dismiss="modal"
+      />
+    </template>
+  </BasicModal>
 </template>
 
 <script>
@@ -136,21 +187,40 @@
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
 import IconAsset from "@/basic/icons/IconAsset.vue";
+import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthLogin",
-  components: {IconAsset},
+  components: {IconAsset, BasicModal, BasicButton},
   data() {
     return {
       showError: false,
       errorMessage: "",
+      showSuccess: false,
+      successMessage: "",
       formData: {
         username: "",
         password: ""
       },
-      validity: null
+      validity: null,
+      forgotPassword: {
+        email: "",
+        success: false,
+        error: false,
+        message: "",
+        isLoading: false
+      },
+      emailVerification: {
+        email: "",
+        showSuccess: false,
+        showError: false,
+        successMessage: "",
+        errorMessage: "",
+        isLoading: false
+      }
     }
   },
   computed: {
@@ -178,6 +248,9 @@ export default {
     showProject() {
       return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
     },
+    showForgotPassword() {
+      return window.config['app.login.forgotPassword'] === 'true';
+    },
     validUsername() {
       return this.formData.username !== "";
     },
@@ -186,6 +259,10 @@ export default {
     },
     validForm() {
       return this.validUsername && this.validPassword;
+    },
+    forgotPasswordValidEmail() {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(this.forgotPassword.email);
     }
   },
   beforeMount() {
@@ -239,10 +316,57 @@ export default {
             },
             withCredentials: true
           });
-      if (response.status === 401) throw response.data.message
+      if (response.status === 401) {
+        // Check if the error is due to unverified email
+        if (response.data.emailNotVerified) {
+          this.showEmailVerificationModal(response.data.email);
+          return;
+        }
+        throw response.data.message;
+      }
       await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
     },
-
+    async sendResetEmail() {
+      this.forgotPassword.isLoading = true;
+      try {
+        const response = await axios.post(getServerURL() + '/auth/request-password-reset',
+          { email: this.forgotPassword.email },
+          {
+            validateStatus: function (status) {
+            return status === 200 || status === 400 || status === 500 || status === 401;
+          },
+          withCredentials: true
+        }
+      );
+      if (response.status === 200) {
+        this.forgotPassword.success = true;
+        this.forgotPassword.message = response.data.message
+        this.eventBus.emit("toast", {
+          title: "Forgot Password",
+          message: response.data.message || this.forgotPassword.message,
+          variant: "success",
+        });
+      } else if (response.status === 401) {
+          this.eventBus.emit("toast", {
+            title: "Forgot Password Error",
+            message: response.data.message ,
+            variant: "danger",
+          });
+          this.forgotPassword.error = true;
+          this.forgotPassword.message = response.data.message || "Failed to send password reset email.";
+      }
+    } catch (error) {
+        this.forgotPassword.success = false;
+        this.forgotPassword.message = "An unexpected error occurred. Please try again.";
+        this.eventBus.emit("toast", {
+          title: "Forgot Password Error",
+          message: this.forgotPassword.message,
+          variant: "danger",
+        });
+      } finally {
+        this.forgotPassword.isLoading = false;
+      }
+    },
   }
 }
 </script>

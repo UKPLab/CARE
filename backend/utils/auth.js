@@ -77,3 +77,55 @@ exports.relevantFields = function fields(user) {
 
     return Object.fromEntries(filtered);
 }
+
+/**
+ * Generate a reset token with encoded expiry time
+ * @param {number} expiryHours - Hours until token expires (default: 1)
+ * @returns {string} Token with encoded expiry
+ */
+exports.generateToken = function generateToken(expiryHours = 1) {
+    const expiryTime = Date.now() + (expiryHours * 60 * 60 * 1000);
+    const randomToken = crypto.randomBytes(24).toString("hex"); // 48 chars
+    
+    // Encode: timestamp + separator + random token, then base64 encode the whole thing
+    const tokenData = `${expiryTime}:${randomToken}`;
+    return Buffer.from(tokenData).toString('base64');
+}
+
+/**
+ * Decode and validate a reset token with encoded expiry
+ * @param {string} token - The encoded token
+ * @returns {object} { isValid: boolean, expired: boolean, tokenPart: string, expiryTime: number }
+ */
+exports.decodeToken = function decodeToken(token) {
+    try {
+        // Decode from base64
+        const decoded = Buffer.from(token, 'base64').toString('utf8');
+        const parts = decoded.split(':');
+        
+        if (parts.length !== 2) {
+            return { isValid: false, expired: false, tokenPart: null, expiryTime: null };
+        }
+        
+        const expiryTime = parseInt(parts[0], 10);
+        const tokenPart = parts[1];
+        const now = Date.now();
+        
+        // Check if timestamp is valid
+        if (isNaN(expiryTime)) {
+            return { isValid: false, expired: false, tokenPart: null, expiryTime: null };
+        }
+        
+        // Check if token has expired
+        const expired = now > expiryTime;
+        
+        return {
+            isValid: true,
+            expired: expired,
+            tokenPart: tokenPart,
+            expiryTime: expiryTime
+        };
+    } catch (error) {
+        return { isValid: false, expired: false, tokenPart: null, expiryTime: null };
+    }
+}

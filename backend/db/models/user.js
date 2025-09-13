@@ -520,6 +520,12 @@ module.exports = (sequelize, DataTypes) => {
             rolesUpdatedAt: DataTypes.DATE,
             extId: DataTypes.INTEGER,
             initialPassword: DataTypes.STRING,
+            emailVerified: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false
+            },
+            resetToken: DataTypes.STRING,
+            emailVerificationToken: DataTypes.STRING,
         },
         {
             sequelize,
