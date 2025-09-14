@@ -68,7 +68,7 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'user_setting'
     });
 
-    // UserSetting.removeAttribute('id');
+    UserSetting.removeAttribute('id');
 
     return UserSetting;
 };

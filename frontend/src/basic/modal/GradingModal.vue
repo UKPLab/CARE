@@ -31,6 +31,7 @@
 <script>
 import ApplySkillSetupStepper from "@/basic/modal/ApplySkillSetupStepper.vue";
 import ApplySkillProcessStepper from "@/basic/modal/ApplySkillProcessStepper.vue";
+import { fetchJsonOptions } from "@/assets/utils";
 
 export default {
   name: "GradingModal",
