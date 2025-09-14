@@ -2,7 +2,6 @@ const Service = require("../Service.js");
 const fs = require("fs");
 const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
-const backgroundTask = {};
 
 /**
  * BackgroundTaskService - manages background tasks and status
@@ -25,8 +24,10 @@ module.exports = class BackgroundTaskService extends Service {
             ]
         });
 
+        this.backgroundTask = {};
+
         this.emitData = () => {
-            this.sendAll("backgroundTaskUpdate", backgroundTask);
+            this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             return true;
         };
     }
@@ -40,7 +41,7 @@ module.exports = class BackgroundTaskService extends Service {
     async command(client, command, data) {
         // Send the current backgroundTask value to all clients
         if (command === "getBackgroundTask") {
-            this.send(client, "backgroundTaskUpdate", backgroundTask);
+            this.send(client, "backgroundTaskUpdate", this.backgroundTask);
         }
 
         // Start preprocessing of submissions by sending requests to NLPService, receiving results, and saving them to the database asynchronously
@@ -73,7 +74,7 @@ module.exports = class BackgroundTaskService extends Service {
                     const assessmentConfig = JSON.parse(configFileContent);
                     const requestIds = [];
                     const preprocessItems = [];
-                    backgroundTask.preprocess = {
+                    this.backgroundTask.preprocess = {
                         cancelled: false,
                         requests: {},
                         currentSubmissionsCount: 0,
@@ -131,29 +132,29 @@ module.exports = class BackgroundTaskService extends Service {
                         const requestId = this.server.uuidv4 ? this.server.uuidv4() : require('uuid').v4();
                         requestIds.push(requestId);
                         preprocessItems.push({ requestId, submissionId: subId, docIds, skill: data.skill, nlpInput });
-                        backgroundTask.preprocess.requests[requestId] = { submissionId: subId, docIds, skill: data.skill };
+                        this.backgroundTask.preprocess.requests[requestId] = { submissionId: subId, docIds, skill: data.skill };
                     }
-                    backgroundTask.preprocess.currentSubmissionsCount = preprocessItems.length;
+                    this.backgroundTask.preprocess.currentSubmissionsCount = preprocessItems.length;
                     this.emitData();
                     const waitForNlpResult = async (requestId, timeoutMs = 3000000, intervalMs = 200) => {
                         const start = Date.now();
                         return await new Promise((resolve) => {
                             const interval = setInterval(() => {
-                                if (backgroundTask.preprocess && backgroundTask.preprocess.cancelled) {
+                                if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
                                     clearInterval(interval);
                                     resolve(null);
                                     return;
                                 }
-                                const result = backgroundTask?.preprocess?.nlpResult;
+                                const result = this.backgroundTask?.preprocess?.nlpResult;
                                 if (result && result.id === requestId) {
                                     clearInterval(interval);
-                                    delete backgroundTask.preprocess.nlpResult;
+                                    delete this.backgroundTask.preprocess.nlpResult;
                                     resolve(result);
                                 } else if (Date.now() - start > timeoutMs) {
                                     clearInterval(interval);
                                     // TODO: What is to be done if there is a timeout? Should this case be omitted?
-                                    if (backgroundTask.preprocess && backgroundTask.preprocess.requests) {
-                                        delete backgroundTask.preprocess.requests[requestId];
+                                    if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests) {
+                                        delete this.backgroundTask.preprocess.requests[requestId];
                                     }
                                     this.emitData();
                                     resolve(null);
@@ -163,7 +164,7 @@ module.exports = class BackgroundTaskService extends Service {
                     };
                     for (const item of preprocessItems) {
                         if (this.server.services['NLPService']) {
-                            backgroundTask.preprocess.requests[item.requestId].startTime = Date.now();
+                            this.backgroundTask.preprocess.requests[item.requestId].startTime = Date.now();
                             this.emitData();
                             this.server.services['NLPService'].backgroundRequest(documentSocket, {
                                 id: item.requestId,
@@ -173,7 +174,7 @@ module.exports = class BackgroundTaskService extends Service {
                             });
                         }
                         const nlpResult = await waitForNlpResult(item.requestId);
-                        if (!backgroundTask.preprocess.cancelled && nlpResult) {
+                        if (!this.backgroundTask.preprocess.cancelled && nlpResult) {
                             try {
                                 await Promise.all(
                                     item.docIds.flatMap(docId =>
@@ -195,13 +196,13 @@ module.exports = class BackgroundTaskService extends Service {
                         } else {
                             this.server.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
                         }
-                        if (backgroundTask.preprocess && backgroundTask.preprocess.requests) {
-                            delete backgroundTask.preprocess.requests[item.requestId];
+                        if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests) {
+                            delete this.backgroundTask.preprocess.requests[item.requestId];
                             this.emitData();
                         }
                     }
-                    if (!Object.keys(backgroundTask.preprocess.requests).length) {
-                        delete backgroundTask.preprocess;
+                    if (!Object.keys(this.backgroundTask.preprocess.requests).length) {
+                        delete this.backgroundTask.preprocess;
                     }
                     this.emitData();
                     return {
@@ -223,10 +224,10 @@ module.exports = class BackgroundTaskService extends Service {
         // Cancel preprocessing by setting the cancelled flag to true
         if (command === "cancelPreprocessing") {
             const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
-            if (documentSocket && await documentSocket.isAdmin() && backgroundTask.preprocess) {
-                backgroundTask.preprocess.cancelled = true;
-                backgroundTask.preprocess.requests = {};
-                backgroundTask.preprocess.currentSubmissionsCount = 0;
+            if (documentSocket && await documentSocket.isAdmin() && this.backgroundTask.preprocess) {
+                this.backgroundTask.preprocess.cancelled = true;
+                this.backgroundTask.preprocess.requests = {};
+                this.backgroundTask.preprocess.currentSubmissionsCount = 0;
                 this.emitData();
                 return { 
                     success: true,
@@ -246,9 +247,9 @@ module.exports = class BackgroundTaskService extends Service {
      * @param {object} data - The data forwarded by the NLPService
      */
     async setResult(data) {
-        if (backgroundTask.preprocess && backgroundTask.preprocess.requests && !backgroundTask.preprocess.cancelled) {
+        if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests && !this.backgroundTask.preprocess.cancelled) {
             if (data) {
-                backgroundTask.preprocess.nlpResult = {...data} ;
+                this.backgroundTask.preprocess.nlpResult = {...data} ;
             } else {
                 this.logger.error("setResult command received without result data.");
             }
