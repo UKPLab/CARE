@@ -19,6 +19,12 @@
 </template>
 
 <script>
+/**
+ * Input Group Component for selecting base file types for submissions
+ * Dynamically generates selection options based on the selected base file parameter and associated submissions
+ * 
+ * @author Manu Sundar Raj Nandyal
+ */
 import FormSelect from "@/basic/form/Select.vue";
 
 export default {

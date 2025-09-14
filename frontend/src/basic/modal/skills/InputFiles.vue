@@ -36,6 +36,12 @@
 </template>
 
 <script>
+/**
+ * Input Files Component for selecting files based on input mappings
+ * Dynamically generates file selection options based on the provided input mappings
+ * 
+ * @author Manu Sundar Raj Nandyal
+ */
 import FormSelect from "@/basic/form/Select.vue";
 import BasicTable from "@/basic/Table.vue";
 

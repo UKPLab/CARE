@@ -12,6 +12,12 @@
 </template>
 
 <script>
+/**
+ * Skill Selector Component for selecting NLP skills
+ * Fetches available skills from the store and presents them for selection
+ * 
+ * @author Manu Sundar Raj Nandyal
+ */
 import FormSelect from "@/basic/form/Select.vue";
 
 export default {

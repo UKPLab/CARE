@@ -48,6 +48,12 @@
 </template>
 
 <script>
+/**
+ * Input Confirmation Component for reviewing selections
+ * Displays a summary of selected skill, input mappings, selected files, and base file selections
+ * 
+ * @author Manu Sundar Raj Nandyal
+ */
 export default {
   name: "InputConfirm",
   props: {

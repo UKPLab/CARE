@@ -76,6 +76,13 @@
 </template>
 
 <script>
+/**
+ * Apply Skills Modal Component for preprocessing tasks
+ * Allows users to select a skill, map inputs, select files, and confirm settings
+ * This will be used to send processing requests for multiple files to the backend
+ * 
+ * @author Manu Sundar Raj Nandyal
+ */
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";

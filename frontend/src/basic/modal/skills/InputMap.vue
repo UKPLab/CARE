@@ -18,6 +18,13 @@
 </template>
 
 <script>
+/**
+ * Input Map Component for mapping skill inputs to data sources
+ * Dynamically generates input fields based on the selected skill's configuration
+ * This supports both study-based and non-study-based workflows
+ * 
+ * @author Manu Sundar Raj Nandyal
+ */
 import FormSelect from "@/basic/form/Select.vue";
 
 export default {
