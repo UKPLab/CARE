@@ -24,7 +24,7 @@
       </template>
       
       <template #step-2>
-        <div class="mb-3">
+        <div v-if="baseFileParameterOptions.options.length > 0" class="mb-3">
           <label class="form-label">Select the base for basefile:</label>
           <FormSelect
             v-model="baseFileParameter"
@@ -34,6 +34,7 @@
         <InputFiles
           :input-mappings="inputMappings"
           v-model="selectedFiles"
+          @update:valid="inputFilesValid = $event"
         />
       </template>
       
@@ -42,6 +43,32 @@
           :base-file-parameter="baseFileParameter"
           :selected-files="selectedFiles"
           v-model="baseFileSelections"
+          @update:valid="inputGroupValid = $event"
+          @update:validationDocuments="validationDocumentNames = $event"
+        />
+      </template>
+      
+      <template #step-3 v-if="!requireValidation">
+        <InputConfirm
+          :selected-skill="selectedSkill"
+          :input-mappings="inputMappings"
+          :selected-files="selectedFiles"
+          :base-file-parameter="baseFileParameter"
+          :base-file-selections="baseFileSelections"
+          :validation-document-names="validationDocumentNames"
+          :show-base-file-selections="false"
+        />
+      </template>
+      
+      <template #step-4 v-if="requireValidation">
+        <InputConfirm
+          :selected-skill="selectedSkill"
+          :input-mappings="inputMappings"
+          :selected-files="selectedFiles"
+          :base-file-parameter="baseFileParameter"
+          :base-file-selections="baseFileSelections"
+          :validation-document-names="validationDocumentNames"
+          :show-base-file-selections="true"
         />
       </template>
     </StepperModal>
@@ -54,11 +81,12 @@ import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
 import InputFiles from "@/basic/modal/skills/InputFiles.vue";
 import InputGroup from "@/basic/modal/skills/InputGroup.vue";
+import InputConfirm from "@/basic/modal/skills/InputConfirm.vue";
 import FormSelect from "@/basic/form/Select.vue";
 
 export default {
   name: "ApplySkillsModal",
-  components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, FormSelect },
+  components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm, FormSelect },
   subscribeTable: ["document", "submission", "document_data", "user", "configuration"],
   emits: ["submit"],
   data() {
@@ -68,6 +96,9 @@ export default {
       selectedFiles: {},
       baseFileParameter: '',
       baseFileSelections: {},
+      inputFilesValid: false,
+      inputGroupValid: false,
+      validationDocumentNames: {},
     };
   },
   computed: {
@@ -88,6 +119,7 @@ export default {
       if (this.requireValidation) {
         baseSteps.push({ title: 'Select Base Files' });
       }
+      baseSteps.push({ title: 'Confirmation' });
       return baseSteps;
     },
     requireValidation() {
@@ -95,40 +127,35 @@ export default {
       return this.inputMappings[this.baseFileParameter].tableType === 'submissions';
     },
     stepValid() {
-      const steps = [
-        !!this.selectedSkill && this.hasValidInputMappings,
-        this.hasValidFileSelections && !!this.baseFileParameter,
-      ];
+      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings;
+      const needsBaseFileParameter = this.baseFileParameterOptions.options.length > 0;
+      const step2Valid = this.inputFilesValid && (!needsBaseFileParameter || !!this.baseFileParameter);
+      
+      const steps = [step1Valid, step2Valid];
       
       if (this.requireValidation) {
-        steps.push(this.hasValidBaseFileSelections);
+        steps.push(this.inputGroupValid);
       }
       
+      steps.push(true);
+ 
       return steps;
     },
     hasValidInputMappings() {
       if (!this.selectedSkill || !this.inputMappings) return false;
       const mappingValues = Object.values(this.inputMappings);
-      return mappingValues.length > 0 && mappingValues.every(mapping => !!mapping);
+      const isValid = mappingValues.length > 0 && mappingValues.every(mapping => !!mapping);
+      return isValid;
     },
-    hasValidFileSelections() {
-      const fileSelectionParams = this.getFileSelectionParameters();
-      if (fileSelectionParams.length === 0) return true;
-      
-      return fileSelectionParams.every(param => {
-        const files = this.selectedFiles[param];
-        return files && Array.isArray(files) && files.length > 0;
-      });
-    },
-    hasValidBaseFileSelections() {
-      if (!this.requireValidation) return true;
-      
-      const submissions = this.selectedFiles[this.baseFileParameter] || [];
-      const uniqueValidationDocumentIds = [...new Set(submissions.map(s => s.validationDocumentId))];
-      
-      return uniqueValidationDocumentIds.every(docId => {
-        return this.baseFileSelections[docId] && this.baseFileSelections[docId].value;
-      });
+  },
+  watch: {
+    baseFileParameterOptions: {
+      handler(newOptions) {
+        if (newOptions.options.length === 0) {
+          this.baseFileParameter = " ";
+        }
+      },
+      immediate: true,
     },
   },
   methods: {
@@ -141,25 +168,68 @@ export default {
       });
       return parameters;
     },
+    formatSkillParameterMappings() {
+      const mappings = {};
+      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
+        if (mapping && mapping.requiresTableSelection) {
+          const files = this.selectedFiles[paramName] || [];
+          mappings[paramName] = {
+            table: mapping.tableType,
+            fileIds: files.map(file => file.id),
+          };
+        }
+      });
+      return Object.keys(mappings).length > 0 ? mappings : null;
+    },
+    formatBaseFiles() {
+      if (!this.requireValidation) {
+        return null;
+      }
+      
+      const baseFiles = {};
+      Object.entries(this.baseFileSelections).forEach(([validationDocumentId, selection]) => {
+        if (selection) {
+          baseFiles[validationDocumentId] = selection;
+        }
+      });
+      
+      return Object.keys(baseFiles).length > 0 ? baseFiles : null;
+    },
     open() {
       this.selectedSkill = '';
       this.inputMappings = {};
       this.selectedFiles = {};
       this.baseFileParameter = '';
       this.baseFileSelections = {};
+      this.inputFilesValid = false;
+      this.inputGroupValid = false;
+      this.validationDocumentNames = {};
       this.$refs.applySkillsStepper.open();
     },
     close() {
       this.$refs.applySkillsStepper.close();
     },
     applySkills() {
-      console.log('Applying skills:', {
-        skill: this.selectedSkill,
-        inputMappings: this.inputMappings,
-        selectedFiles: this.selectedFiles,
-        baseFileParameter: this.baseFileParameter,
-        baseFileSelections: this.baseFileSelections
-      });
+      const skillParameterMappings = this.formatSkillParameterMappings();
+      const baseFiles = this.formatBaseFiles();
+      const baseFileParameter = this.baseFileParameterOptions.options.length > 0 ? this.baseFileParameter : null;
+      
+      const preprocessingData = {
+        skillName: this.selectedSkill,
+        skillParameterMappings,
+        baseFileParameter,
+        baseFiles,
+      };
+      
+      console.log('Preprocessing data to be sent:', preprocessingData);
+      
+      /**
+      this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "startPreprocessing",
+        data: preprocessingData
+      }); */
+      
       this.close();
     },
   },

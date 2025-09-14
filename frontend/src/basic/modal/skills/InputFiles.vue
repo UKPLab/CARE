@@ -53,7 +53,7 @@ export default {
       default: () => ({}),
     },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "update:valid"],
   data() {
     return {
       selectedParameter: '',
@@ -82,6 +82,14 @@ export default {
         }
       });
       return parameters;
+    },
+    isValid() {
+      if (this.fileSelectionParameters.length === 0) return true;
+      
+      return this.fileSelectionParameters.every(param => {
+        const files = this.modelValue[param.name];
+        return files && Array.isArray(files) && files.length > 0;
+      });
     },
     parameterOptions() {
       return {
@@ -216,6 +224,12 @@ export default {
         }
       },
       immediate: false,
+    },
+    isValid: {
+      handler(newVal) {
+        this.$emit('update:valid', newVal);
+      },
+      immediate: true,
     },
     modelValue: {
       handler(newValue) {

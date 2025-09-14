@@ -39,7 +39,7 @@ export default {
       default: () => ({}),
     },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "update:valid", "update:validationDocuments"],
   data() {
     return {
       baseFileSelections: {},
@@ -87,6 +87,14 @@ export default {
       
       return Object.values(grouped);
     },
+    isValid() {
+      const isValid = this.groupedSubmissions.every(group => {
+        const selection = this.baseFileSelections[group.validationDocumentId];
+        return selection;
+      });
+      
+      return isValid;
+    },
   },
   watch: {
     groupedSubmissions: {
@@ -103,6 +111,32 @@ export default {
       },
       immediate: true,
       deep: true,
+    },
+    isValid: {
+      handler(newVal) {
+        this.$emit('update:valid', newVal);
+      },
+      immediate: true,
+    },
+    baseFileSelections: {
+      handler(newVal) {
+        this.$nextTick(() => {
+          this.$emit('update:valid', this.isValid);
+        });
+      },
+      deep: true,
+      immediate: false,
+    },
+    validationDocuments: {
+      handler(newVal) {
+        const validationDocumentNames = {};
+        Object.keys(newVal).forEach(docId => {
+          validationDocumentNames[docId] = this.getValidationDocumentName(docId);
+        });
+        this.$emit('update:validationDocuments', validationDocumentNames);
+      },
+      deep: true,
+      immediate: true,
     },
   },
   methods: {
