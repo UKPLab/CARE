@@ -4,74 +4,76 @@ version: 0.0.1
 author: Haishuo Fang
 input:
   data:
-    type: object
-    required: true
-    properties:
-      submission:
-        type: object
-        description: The zip file and pdf file of the submssion, which includes .tex file for the exposé, and .pdf file for the exposé
-        properties:
-          zip:
-            type: string
-            description: The zip file of the submission
-          pdf:
-            type: string
-            description: The pdf file of the submission
-      assessment_config:
-        type: object
-        description: The json configure for grading criteria which be used for LLMentor
-        properties:
-          description:
-            type: string
-            description: Description of the configuration
-          version:
-            type: string
-            description: Version of the configuration
-          type:
-            type: string
-            description: Type of the configuration
-          rubrics:
-            type: array
-            description: The rubrics for grading the exposé
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: The name of the rubric
-                description:
-                  type: string
-                  description: The description of the rubric
-                criteria:
-                  type: array
-                  description: The criteria within the rubric
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                        description: The name of the criterion
-                      description:
-                        type: string
-                        description: The description of the criterion
-                      function:
-                        type: string
-                        description: The function type for grading
-                      maxPoints:
-                        type: integer
-                        description: The maximum points for the criterion
-                      scoring:
-                        type: array
-                        description: The scoring options for the criterion
-                        items:
-                          type: object
-                          properties:
-                            points:
-                              type: integer
-                              description: The points for this scoring option
-                            description:
-                              type: string
-                              description: The description of this scoring option
+    submission:
+      type: object
+      description: The zip file and pdf file of the submssion, which includes .tex file for the exposé, and .pdf file for the exposé
+      properties:
+        zip:
+          type: string
+          description: The zip file of the submission
+        pdf:
+          type: string
+          description: The pdf file of the submission
+    assessment_config:
+      type: object
+      description: The json configure for grading criteria which be used for LLMentor
+      properties:
+        description:
+          type: string
+          description: Description of the configuration
+        version:
+          type: string
+          description: Version of the configuration
+        type:
+          type: string
+          description: Type of the configuration
+        rubrics:
+          type: array
+          description: The rubrics for grading the exposé
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the rubric
+              description:
+                type: string
+                description: The description of the rubric
+              criteria:
+                type: array
+                description: The criteria within the rubric
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The name of the criterion
+                    description:
+                      type: string
+                      description: The description of the criterion
+                    function:
+                      type: string
+                      description: The function type for grading
+                    maxPoints:
+                      type: integer
+                      description: The maximum points for the criterion
+                    scoring:
+                      type: array
+                      description: The scoring options for the criterion
+                      items:
+                        type: object
+                        properties:
+                          points:
+                            type: integer
+                            description: The points for this scoring option
+                          description:
+                            type: string
+                            description: The description of this scoring option
+        proportion_of_hallucinated_results:
+          type: float
+          description: The proportion of the criteria to be hallucinated. The hallucinated criteria will be selected randomly.
+          required: false
+          default: 0.0
   example:
     {
       "submission": {
@@ -110,7 +112,8 @@ input:
             ]
           }
         ]     
-      }
+      },
+      "proportion_of_hallucinated_results": 0.0
     }
 output:
   data:
@@ -131,11 +134,26 @@ output:
         possible_concerns:
           type: string
           description: The possible concerns of the given judgement
+        thinking:
+          type: string
+          description: The thinking of the criterion
+        hallucinated:
+          type: boolean
+          description: Whether the result is hallucinated
+          required: false
 
   example:
-    [{
+  {
+    "assessment": [
+    {
       "name": Language quality,
       "score": 1,
       "justification": Example justification,
-      "possible_concerns": Example possible concerns
-    }]
+      "possible_concerns": Example possible concerns,
+      "thinking": Example thinking,
+      "hallucinated": false
+    }
+    ]
+  }
+
+}

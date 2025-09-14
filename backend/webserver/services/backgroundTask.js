@@ -76,7 +76,8 @@ module.exports = class BackgroundTaskService extends Service {
                     backgroundTask.preprocess = {
                         cancelled: false,
                         requests: {},
-                        currentSubmissionsCount: 0
+                        currentSubmissionsCount: 0,
+                        batchStartTime: Date.now()
                     };
                     this.emitData();
                     for (const subId of data.inputFiles) {
@@ -177,7 +178,7 @@ module.exports = class BackgroundTaskService extends Service {
                                 await Promise.all(
                                     item.docIds.flatMap(docId =>
                                         Object.keys(nlpResult).map(key =>
-                                            documentSocket.saveData({
+                                            this.server.db.models['document_data'].upsert({
                                                 userId: documentSocket.userId,
                                                 documentId: docId,
                                                 studySessionId: null,
