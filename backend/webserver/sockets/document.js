@@ -645,39 +645,36 @@ class DocumentSocket extends Socket {
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure all edits are added atomically.
      * @returns {Promise<void>} A promise that resolves (with no value) once all edits have been processed and saved.
      */
-    async editDocument(data, options) {
-        const {documentId, studySessionId, studyStepId, ops} = data;
-        let appliedEdits = [];
-        let orderCounter = 1;
+async editDocument(data, options) {
+    const {documentId, studySessionId, studyStepId, ops} = data;
+    
+    const bulkEdits = ops.map((op, idx) => ({
+        userId: this.userId,
+        draft: true,
+        documentId,
+        studySessionId: studySessionId || null,
+        studyStepId: studyStepId || null,
+        order: idx + 1,
+        ...op
+    }));
 
-        await ops.reduce(async (promise, op) => {
-            await promise;
-            const entryData = {
-                userId: this.userId,
-                draft: true,
-                documentId,
-                studySessionId: studySessionId || null,
-                studyStepId: studyStepId || null,
-                order: orderCounter++,
-                ...op
-            };
+    const savedEdits = await this.models['document_edit'].bulkCreate(
+        bulkEdits,
+        {transaction: options.transaction}
+    );
 
-            const savedEdit = await this.models['document_edit'].add(entryData, {transaction: options.transaction});
-
-            appliedEdits.push({
-                ...savedEdit,
-                applied: true,
-                sender: this.socket.id
-            });
-        }, Promise.resolve());
-
-        // Check if studySessionId is not null or zero
-        if (studySessionId !== null) {
-            this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-            return;
-        }
-        this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+    const appliedEdits = savedEdits.map(se => ({
+        ...se,
+        applied: true,
+        sender: this.socket.id
+    }));
+    if (studySessionId !== null) {
+        this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+        return;
     }
+
+    this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+}
 
     /**
      * Open the document and track it, if not already tracked
