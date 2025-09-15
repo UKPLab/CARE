@@ -187,6 +187,9 @@ module.exports = function (server) {
 
     server.app.post('/auth/request-password-reset', async function (req, res) {
         const {email} = req.body;
+        if(server.db.models['setting'].get("app.login.forgotPassword") !== "true") {
+            return res.status(400).json({message: "Password reset is disabled."});
+        }
         if (!email) {
             return res.status(400).json({message: "Please provide an email."});
         }
@@ -292,6 +295,10 @@ module.exports = function (server) {
      */
     server.app.get('/verify-email', async function (req, res) {
         const {token} = req.query;
+        
+        if(server.db.models['setting'].get("app.register.emailVerification") !== "true") {
+            return res.redirect('http://localhost:3000/login?error=verification-disabled'); // TODO: Adjust link as needed
+        }
         if (!token) {
             return res.redirect('http://localhost:3000/login?error=missing-token');
         }
@@ -337,7 +344,9 @@ module.exports = function (server) {
      */
     server.app.post('/auth/resend-verification', async function (req, res) {
         const {email} = req.body;
-        
+        if(server.db.models['setting'].get("app.register.emailVerification") !== "true") {
+            return res.status(400).json({message: "Email verification is disabled."});
+        }
         if (!email) {
             return res.status(400).json({message: "Email address is required."});
         }
