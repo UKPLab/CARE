@@ -257,13 +257,13 @@ module.exports = class BackgroundTaskService extends Service {
     }
 
     /**
-     * Wait for NLP result with timeout and cancellation support
+     * Wait for NLP result until a result is received or preprocessing is cancelled
+     * If a result is not received, it continues to wait indefinitely until cancelled
      * @param {string} requestId - The request ID to wait for
-     * @param {number} timeoutMs - Timeout in milliseconds (default: 3000000 = 50 minutes)
      * @param {number} intervalMs - Polling interval in milliseconds (default: 200ms)
      * @returns {Promise<object|null>} The NLP result or null if cancelled/timeout
      */
-    async waitForNlpResult(requestId, timeoutMs = 3000000, intervalMs = 200) {
+    async waitForNlpResult(requestId, intervalMs = 200) {
         const start = Date.now();
         return await new Promise((resolve) => {
             const interval = setInterval(() => {
@@ -277,14 +277,6 @@ module.exports = class BackgroundTaskService extends Service {
                     clearInterval(interval);
                     delete this.backgroundTask.preprocess.nlpResult;
                     resolve(result);
-                } else if (Date.now() - start > timeoutMs) {
-                    clearInterval(interval);
-                    // TODO: What is to be done if there is a timeout? Should this case be omitted?
-                    if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests) {
-                        delete this.backgroundTask.preprocess.requests[requestId];
-                    }
-                    this.sendAll("backgroundTaskUpdate", this.backgroundTask);
-                    resolve(null);
                 }
             }, intervalMs);
         });
@@ -297,6 +289,7 @@ module.exports = class BackgroundTaskService extends Service {
      * @param {object} nlpResult - The NLP result data to save
      */
     async saveNlpResults(documentSocket, item, nlpResult) {
+        // TODO: If there is an error within the received nlpResult, it would still save in the database. Is error handling required here?
         try {
             await Promise.all(
                 item.docIds.flatMap(docId =>
