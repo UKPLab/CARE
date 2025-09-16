@@ -131,7 +131,7 @@ export default {
     },
     requireValidation() {
       if (!this.baseFileParameter || !this.inputMappings[this.baseFileParameter]) return false;
-      return this.inputMappings[this.baseFileParameter].tableType === 'submissions';
+      return this.inputMappings[this.baseFileParameter].tableType === 'submission';
     },
     stepValid() {
       const step1Valid = !!this.selectedSkill && this.hasValidInputMappings;

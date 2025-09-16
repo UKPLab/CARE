@@ -128,8 +128,8 @@ export default {
     },
     getApplySkillsDataSources() {
       const sources = [
-        { value: "document", name: "Documents (related to selection in next step)", requiresTableSelection: true, tableType: "documents" },
-        { value: "submission", name: "Submissions (related to selection in next step)", requiresTableSelection: true, tableType: "submissions" }
+        { value: "document", name: "Documents (related to selection in next step)", requiresTableSelection: true, tableType: "document" },
+        { value: "submission", name: "Submissions (related to selection in next step)", requiresTableSelection: true, tableType: "submission" }
       ];
 
       this.configurationEntries.forEach(entry => {

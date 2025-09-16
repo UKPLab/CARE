@@ -122,17 +122,17 @@ export default {
     currentTableData() {
       if (!this.currentParameterData) return [];
       
-      if (this.currentTableType === 'documents') {
+      if (this.currentTableType === 'document') {
         return this.documentsData;
-      } else if (this.currentTableType === 'submissions') {
+      } else if (this.currentTableType === 'submission') {
         return this.submissionsData;
       }
       return [];
     },
     currentTableColumns() {
-      if (this.currentTableType === 'documents') {
+      if (this.currentTableType === 'document') {
         return this.documentColumns;
-      } else if (this.currentTableType === 'submissions') {
+      } else if (this.currentTableType === 'submission') {
         return this.submissionColumns;
       }
       return [];
@@ -272,7 +272,7 @@ export default {
   },
   methods: {
     getTableType() {
-      return this.currentTableType === 'documents' ? 'Documents' : 'Submissions';
+      return this.currentTableType === 'document' ? 'Documents' : 'Submissions';
     },
     onFileSelectionChange(files) {
       this.selectedFiles = Array.isArray(files) ? files : [];
