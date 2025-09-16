@@ -106,7 +106,7 @@ module.exports = class BackgroundTaskService extends Service {
                 const nlpResult = await this.waitForNlpResult(item.requestId);
                 
                 if (!this.backgroundTask.preprocess.cancelled && nlpResult) {
-                    await this.saveNlpResults(documentSocket, item, nlpResult);
+                    await this.saveNlpResult(documentSocket, item, nlpResult);
                 } else if (!nlpResult) {
                     this.server.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
                 }
@@ -404,46 +404,76 @@ module.exports = class BackgroundTaskService extends Service {
     }
 
     /**
-     * Save NLP results to the database
+     * Save NLP result to the database
      * @param {object} documentSocket - The document socket for the client
      * @param {object} item - The preprocessing item containing file information and skill
      * @param {object} nlpResult - The NLP result data to save
      */
-    async saveNlpResults(documentSocket, item, nlpResult) {
-        // TODO: If there is an error within the received nlpResult, it would still save in the database. Is error handling required here?
+    async saveNlpResult(documentSocket, item, nlpResult) {
         try {
-            // Determine which documents to save to based on the base table
-            let documentsToSave = [];
+            const { combination, baseFileParameter, baseFiles } = item;
             
-            if (item.baseTable === 'submission') {
-                // For submissions, get all documents related to the submission
-                const docs = await this.server.db.models['document'].findAll({
-                    where: { submissionId: item.fileId },
-                    raw: true
-                });
-                documentsToSave = docs.map(doc => doc.id);
-            } else if (item.baseTable === 'document') {
-                // For documents, save directly to the document
-                documentsToSave = [item.fileId];
-            } else {
-                // For other table types, we might need a different approach
-                this.server.logger.warn(`Unsupported base table type for saving results: ${item.baseTable}`);
+            const baseParamData = combination.find(param => param.paramName === baseFileParameter);
+            if (!baseParamData) {
+                this.server.logger.error(`Base file parameter '${baseFileParameter}' not found in combination`);
                 return;
             }
 
-            // Save results for each document
+            const { table, fileId } = baseParamData;
+            let baseFileToSave = null;
+
+            if (table === 'submission') {
+                const submission = await this.server.db.models['submission'].findByPk(fileId, { raw: true });
+                if (!submission) {
+                    this.server.logger.error(`Submission ${fileId} not found`);
+                    return;
+                }
+
+                if (!submission.validationDocumentId || !baseFiles || !baseFiles[submission.validationDocumentId]) {
+                    this.server.logger.warn(`Submission ${fileId} does not have a valid validation document id or base file mapping`);
+                    return;
+                }
+
+                const baseFileType = baseFiles[submission.validationDocumentId];
+
+                const docTypeKey = `DOC_TYPE_${baseFileType.toUpperCase()}`;
+                const docTypeValue = this.server.db.models['document'].docTypes[docTypeKey];
+                
+                if (docTypeValue) {
+                    const doc = await this.server.db.models['document'].findOne({
+                        where: { 
+                            submissionId: fileId,
+                            type: docTypeValue 
+                        },
+                        raw: true
+                    });
+                    baseFileToSave = doc ? doc.id : null;
+                } else {
+                    this.server.logger.warn(`Unknown document type: ${baseFileType}`);
+                    return;
+                }
+            } else if (table === 'document') {
+                baseFileToSave = fileId;
+            } else {
+                this.server.logger.warn(`Unsupported base table type for saving results: ${table}`);
+                return;
+            }
+
+            if (!baseFileToSave) {
+                this.server.logger.warn(`No valid document found to save results for request ${item.requestId}`);
+                return;
+            }
+
             await Promise.all(
-                documentsToSave.flatMap(docId =>
-                    Object.keys(nlpResult).map(key =>
-                        this.server.db.models['document_data'].upsert({
-                            userId: documentSocket.userId,
-                            documentId: docId,
-                            studySessionId: null,
-                            studyStepId: null,
-                            key: `${item.skillName}_nlpAssessment_${key}`,
-                            value: nlpResult[key]
-                        }, {})
-                    )
+                Object.keys(nlpResult).map(key =>
+                    this.server.db.models['document_data'].upsert({
+                        userId: documentSocket.userId,
+                        documentId: baseFileToSave,
+                        studySessionId: null,
+                        studyStepId: null,
+                        key: `${item.skillName}_nlpRequest_${key}`,
+                        value: nlpResult[key]
+                    }, {}) 
                 )
             );
         } catch (saveErr) {
