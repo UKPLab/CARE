@@ -139,7 +139,7 @@ module.exports = class BackgroundTaskService extends Service {
         this.backgroundTask.preprocess = {
             cancelled: false,
             requests: {},
-            preprocessItemsCount: 0,
+            currentSubmissionsCount: 0,
             batchStartTime: Date.now()
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
@@ -193,7 +193,7 @@ module.exports = class BackgroundTaskService extends Service {
             };
         }
         
-        this.backgroundTask.preprocess.preprocessItemsCount = this.preprocessItems.length;
+        this.backgroundTask.preprocess.currentSubmissionsCount = this.preprocessItems.length;
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
 
@@ -500,7 +500,7 @@ module.exports = class BackgroundTaskService extends Service {
 
         this.backgroundTask.preprocess.cancelled = true;
         this.backgroundTask.preprocess.requests = {};
-        this.backgroundTask.preprocess.preprocessItemsCount = 0;
+        this.backgroundTask.preprocess.currentSubmissionsCount = 0;
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
         
         return "Preprocessing cancelled successfully.";

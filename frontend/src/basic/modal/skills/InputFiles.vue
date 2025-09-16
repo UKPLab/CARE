@@ -155,8 +155,8 @@ export default {
           id: submission.id,
           name: submission.name || `Submission ${submission.id}`,
           userName: user ? user.userName : "N/A",
-          group: submission.group,
-          data_existing: dataExists,
+          group: (submission.group !== null && submission.group !== undefined && submission.group !== '') ? submission.group : '',
+          data_existing: dataExists ? 'Yes' : 'No',
           createdAt: submission.createdAt,
         };
       });
@@ -208,10 +208,50 @@ export default {
         { key: 'id', name: 'ID' },
         { key: 'name', name: 'Submission Name' },
         { key: 'userName', name: 'User Name' },
-        { key: 'group', name: 'Group' },
-        { key: 'data_existing', name: 'Data Existing' },
+        { key: 'group', name: 'GroupID', filter: this.groupFilterOptions },
+        { key: 'data_existing', name: 'Data Existing', filter: this.dataExistingFilterOptions },
         { key: 'createdAt', name: 'Created At' },
       ];
+    },
+    /**
+     * Unique GroupIDs from current submissions as checkbox filter options.
+     * @returns {Array<{key: string, name: string}>}
+     */
+    groupFilterOptions() {
+      const groups = new Set();
+      let hasEmptyGroups = false;
+      
+      (this.submissionsData || []).forEach((s) => {
+        if (s && s.group !== null && s.group !== undefined && s.group !== '') {
+          groups.add(String(s.group));
+        } else {
+          hasEmptyGroups = true;
+        }
+      });
+      
+      const options = Array.from(groups)
+        .sort((a, b) => {
+          const na = Number(a);
+          const nb = Number(b);
+          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        })
+        .map((g) => ({ key: g, name: g }));
+      
+      if (hasEmptyGroups) {
+        options.unshift({ key: '', name: 'No GroupID' });
+      }
+      
+      return options;
+    },
+    dataExistingFilterOptions() {
+      const options = new Set();
+      (this.submissionsData || []).forEach((s) => {
+        options.add(String(s.data_existing ? 'Yes' : 'No'));
+      });
+      return Array.from(options)
+        .sort()
+        .map((val) => ({ key: val, name: val }));
     },
   },
   watch: {

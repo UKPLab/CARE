@@ -40,8 +40,8 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
-  <ApplySkillsModal
-    ref="applySkillsModal"
+  <ApplySkillModal
+    ref="applySkillModal"
   />
 </template>
 
@@ -53,7 +53,7 @@ import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
 import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import ApplySkillsModal from "@/basic/modal/ApplySkillsModal.vue";
+import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
 
 /**
  * Submission list component
@@ -78,7 +78,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
-    ApplySkillsModal,
+    ApplySkillModal,
   },
   data() {
     return {
@@ -209,7 +209,7 @@ export default {
       this.$router.push(`/document/${row.hash}`);
     },
     preprocessGrades() {
-      this.$refs.applySkillsModal.open();
+      this.$refs.applySkillModal.open();
     },
   },
 };
