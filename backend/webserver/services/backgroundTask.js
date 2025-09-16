@@ -59,84 +59,74 @@ module.exports = class BackgroundTaskService extends Service {
     /**
      * Start preprocessing of submissions by orchestrating the preprocessing workflow
      * @param {object} client - The client initiating the preprocessing
-     * @param {object} data - Contains skill, inputFiles, and config parameters
-     * @param {string} data.skill - The skill to assess
-     * @param {Array} data.inputFiles - Array of submission IDs to process
-     * @param {string} data.config - Configuration document ID
+     * @param {object} preprocessingData - Contains skillName, skillParameterMappings, baseFileParameter, and baseFiles
+     * @param {string} preprocessingData.skillName - The skill to apply
+     * @param {object} preprocessingData.skillParameterMappings - Parameter mappings with table and fileIds
+     * @param {string} preprocessingData.baseFileParameter - The base file parameter name
+     * @param {object} preprocessingData.baseFiles - Base file selections for validation
      * @returns {object} Contains count of processed items
      * @throws {Error} When validation fails or user lacks permissions
      */
-    async startPreprocessing(client, data) {
+    async startPreprocessing(client, preprocessingData) {
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!documentSocket) {
             this.server.logger.error("No DocumentSocket found for client");
             throw new Error("No DocumentSocket found for client");
         }
-        if (!data || !data.skill || !data.inputFiles) {
-            throw new Error("Invalid request data: missing skill or inputFiles");
+        
+        if (!preprocessingData || !preprocessingData.skillName || !preprocessingData.skillParameterMappings) {
+            throw new Error("Invalid request data: missing skillName or skillParameterMappings");
         }
 
         if (!(await documentSocket.isAdmin())) {
             throw new Error("You do not have permission to preprocess submissions");
         }
 
-        // Load and validate configuration
-        const assessmentConfig = await this.loadAssessmentConfig(data.config);
-        
-        // Initialize preprocessing state
         this.initializePreprocessingState();
+
+        await this.prepareProcessingItems(preprocessingData);
         
-        // Prepare NLP input data for all submissions
-        await this.prepareNlpInput(data.inputFiles, data.skill, assessmentConfig);
-        
-        // Process each submission through NLP
         for (const item of this.preprocessItems) {
-            await this.sendNlpRequest(documentSocket, item);
-            const nlpResult = await this.waitForNlpResult(item.requestId);
-            
-            if (!this.backgroundTask.preprocess.cancelled && nlpResult) {
-                await this.saveNlpResults(documentSocket, item, nlpResult);
-            } else {
-                this.server.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
+
+            if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
+                break;
+            }
+
+            try {
+                const nlpInput = await this.prepareNlpInput(item);
+                
+                if (!nlpInput || Object.keys(nlpInput).length === 0) {
+                    this.server.logger.error(`No valid NLP input prepared for item ${item.requestId}`);
+                    continue;
+                }
+
+                item.nlpInput = nlpInput;                
+                await this.sendNlpRequest(documentSocket, item);
+                
+                const nlpResult = await this.waitForNlpResult(item.requestId);
+                
+                if (!this.backgroundTask.preprocess.cancelled && nlpResult) {
+                    await this.saveNlpResult(documentSocket, item, nlpResult);
+                } else if (!nlpResult) {
+                    this.server.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
+                }
+                
+            } catch (err) {
+                this.server.logger.error(`Error processing item ${item.requestId}: ${err.message}`, err);
             }
             
-            // Clean up completed request
             if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests) {
                 delete this.backgroundTask.preprocess.requests[item.requestId];
                 this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             }
         }
         
-        // Clean up preprocessing state if all requests completed
         if (!Object.keys(this.backgroundTask.preprocess.requests).length) {
             delete this.backgroundTask.preprocess;
         }
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
         
         return { count: this.preprocessItems.length };
-    }
-
-    /**
-     * Load and validate the assessment configuration document
-     * @param {string} configId - The configuration document ID
-     * @returns {object} The parsed assessment configuration
-     * @throws {Error} When config is invalid or not found
-     */
-    async loadAssessmentConfig(configId) {
-        const configDoc = await this.server.db.models['document'].getById(configId);
-        if (!configDoc || configDoc.type !== this.server.db.models['document'].docTypes["DOC_TYPE_CONFIG"]) {
-            this.server.logger.error(`Invalid config document: ${configId}`);
-            throw new Error("Invalid config document.");
-        }
-
-        const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`);
-        if (!fs.existsSync(configFilePath)) {
-            this.server.logger.error(`Config file not found: ${configFilePath}`);
-            throw new Error("Config file not found on server.");
-        }
-
-        const configFileContent = await fs.promises.readFile(configFilePath, 'utf8');
-        return JSON.parse(configFileContent);
     }
 
     /**
@@ -149,68 +139,201 @@ module.exports = class BackgroundTaskService extends Service {
         this.backgroundTask.preprocess = {
             cancelled: false,
             requests: {},
-            currentSubmissionsCount: 0,
+            preprocessItemsCount: 0,
             batchStartTime: Date.now()
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
 
     /**
-     * Prepare NLP input data for all submissions
-     * @param {Array} inputFiles - Array of submission IDs to process
-     * @param {string} skill - The skill to assess
-     * @param {object} assessmentConfig - The assessment configuration
+     * Prepare the list of items to be processed based on the new generalized data structure
+     * @param {object} preprocessingData - The preprocessing data from ApplySkillsModal
+     * @param {string} preprocessingData.skillName - The skill name to apply
+     * @param {object} preprocessingData.skillParameterMappings - Parameter mappings with table and fileIds
+     * @param {string} preprocessingData.baseFileParameter - The base file parameter name
+     * @param {object} preprocessingData.baseFiles - Base file selections for validation
      */
-    async prepareNlpInput(inputFiles, skill, assessmentConfig) {
-        for (const subId of inputFiles) {
-            let docs;
-            try {
-                docs = await this.server.db.models['document'].findAll({
-                    where: { submissionId: subId },
-                    raw: true
-                });
-            } catch (err) {
-                this.server.logger.error(`Error fetching documents for submission ${subId}: ${err.message}`, err);
-                continue;
-            }
+    async prepareProcessingItems(preprocessingData) {
+        const { skillName, skillParameterMappings, baseFileParameter, baseFiles } = preprocessingData;
+        
+        if (!skillParameterMappings) {
+            throw new Error("No skill parameter mappings provided");
+        }
 
-            const docIds = [];
-            const submissionFiles = {};
-            
-            await Promise.all(
-                docs.map(doc => this.processDocumentFile(doc, docIds, submissionFiles, subId))
-            );
+        this.preprocessItems = [];
+        this.requestIds = [];
 
-            const hasValidFiles = Object.keys(submissionFiles).length > 0;
-            if (!hasValidFiles) {
-                this.server.logger.error(`No valid files found for submission ${subId}`);
-                continue;
-            }
+        const parameterNames = Object.keys(skillParameterMappings);
+        const parameterValues = parameterNames.map(paramName => 
+            skillParameterMappings[paramName].fileIds.map(fileId => ({
+                paramName,
+                fileId,
+                table: skillParameterMappings[paramName].table
+            }))
+        );
 
-            const nlpInput = {
-                submission: submissionFiles,
-                assessment_config: assessmentConfig,
-            };
+        const combinations = this.getCartesianProduct(parameterValues);
+
+        for (const combination of combinations) {
             const requestId = this.server.uuidv4 ? this.server.uuidv4() : require('uuid').v4();
             this.requestIds.push(requestId);
-            this.preprocessItems.push({ requestId, submissionId: subId, docIds, skill, nlpInput });
-            this.backgroundTask.preprocess.requests[requestId] = { submissionId: subId, docIds, skill };
+            
+            const item = {
+                requestId,
+                skillName,
+                combination,
+                baseFileParameter,
+                baseFiles
+            };
+            
+            this.preprocessItems.push(item);
+            this.backgroundTask.preprocess.requests[requestId] = { 
+                combination: combination.map(c => `${c.paramName}:${c.fileId}`).join(','),
+                skillName 
+            };
         }
         
-        this.backgroundTask.preprocess.currentSubmissionsCount = this.preprocessItems.length;
+        this.backgroundTask.preprocess.preprocessItemsCount = this.preprocessItems.length;
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
 
     /**
-     * Process a single document file - read, encode, and add to submission files
-     * @param {object} doc - The document object from database
-     * @param {Array} docIds - Array to collect document IDs
-     * @param {object} submissionFiles - Object to collect encoded file data
-     * @param {string} subId - Submission ID for logging purposes
+     * Compute the Cartesian product of arrays
+     * @param {Array<Array>} arrays - An array of arrays to compute the product of
+     * @returns {Array<Array>} The Cartesian product as an array of arrays
      */
-    async processDocumentFile(doc, docIds, submissionFiles, subId) {
-        docIds.push(doc.id);
+    getCartesianProduct(arrays) {
+        return arrays.reduce((acc, curr) => {
+            const result = [];
+            acc.forEach(accItem => {
+                curr.forEach(currItem => {
+                    result.push([...accItem, currItem]);
+                });
+            });
+            return result;
+        }, [[]]);
+    }
+
+    /**
+     * Prepare NLP input for a single processing item
+     * @param {object} item - The processing item
+     * @returns {object} The prepared NLP input data
+     */
+    async prepareNlpInput(item) {
+        const { combination } = item;
+        const nlpInput = {};
+
+        for (const paramData of combination) {
+            const { paramName, fileId, table } = paramData;
+
+            switch (table) {
+                case "submission":
+                    nlpInput[paramName] = await this.loadSubmission(fileId);
+                    break;
+                case "document":
+                    nlpInput[paramName] = await this.loadDocument(fileId);
+                    break;
+                case "configuration":
+                    nlpInput[paramName] = await this.loadConfiguration(fileId);
+                    break;
+                default:
+                    this.server.logger.warn(`Unknown table type: ${table} for parameter: ${paramName}`);
+            }
+        }
+
+        return nlpInput;
+    }
+
+    /**
+     * Load all documents related to a submission and convert to base64
+     * @param {number} submissionId - The id of the submission
+     * @returns {object} An object with document types as keys and base64 file contents as values
+     */
+    async loadSubmission(submissionId) {
+        let docs;
+        try {
+            docs = await this.server.db.models['document'].findAll({
+                where: { submissionId: submissionId },
+                raw: true
+            });
+        } catch (err) {
+            this.server.logger.error(`Error fetching documents for submission ${submissionId}: ${err.message}`, err);
+            return {};
+        }
+
+        const submissionFiles = {};
         
+        await Promise.all(
+            docs.map(async (doc) => {
+                const processedDoc = await this.processDocument(doc);
+                if (processedDoc) {
+                    const docType = doc.type;
+                    const docTypeKey = Object.keys(this.server.db.models['document'].docTypes)
+                        .find(type => this.server.db.models['document'].docTypes[type] === docType);
+                    
+                    if (docTypeKey) {
+                        const fileTypeKey = docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
+                        submissionFiles[fileTypeKey] = processedDoc;
+                    }
+                }
+            })
+        );
+
+        const hasValidFiles = Object.keys(submissionFiles).length > 0;
+        if (!hasValidFiles) {
+            this.server.logger.error(`No valid files found for submission ${submissionId}`);
+            return {};
+        }
+
+        return submissionFiles;
+    }
+
+    /**
+     * Load and process a single document by its id
+     * @param {number} documentId - The id of the document
+     * @returns {string|null} The base64 encoded file content or null if not found/error
+     */
+    async loadDocument(documentId) {
+        try {
+            const doc = await this.server.db.models['document'].findByPk(documentId, { raw: true });
+            if (!doc) {
+                this.server.logger.warn(`Document ${documentId} not found`);
+                return null;
+            }
+                        
+            return await this.processDocument(doc);
+        } catch (err) {
+            this.server.logger.error(`Error processing document ${documentId}: ${err.message}`, err);
+            return null;
+        }
+    }
+
+    /**
+     * Load a configuration by its id and parse its content
+     * @param {number} configId - The id of the configuration
+     * @returns {object|null} The parsed configuration object or null if not found/error
+     */
+    async loadConfiguration(configId) {
+        try {
+            const config = await this.server.db.models['configuration'].findByPk(configId, { raw: true });
+            if (!config) {
+                this.server.logger.warn(`Configuration ${configId} not found`);
+                return null;
+            }
+
+            return JSON.parse(config?.content);
+        } catch (err) {
+            this.server.logger.error(`Error loading configuration ${configId}: ${err.message}`, err);
+            return null;
+        }
+    }
+
+    /**
+     * Process a document to read its file and convert to base64
+     * @param {object} doc - The document object from the database
+     * @returns {string|null} The base64 encoded file content or null if not found/error
+     */
+    async processDocument(doc) {
         const docType = doc.type;
         const docTypeKey = Object.keys(this.server.db.models['document'].docTypes)
             .find(type => this.server.db.models['document'].docTypes[type] === docType);
@@ -225,16 +348,14 @@ module.exports = class BackgroundTaskService extends Service {
         if (fs.existsSync(docFilePath)) {
             try {
                 const fileBuffer = await fs.promises.readFile(docFilePath);
-                if (fileExtension === '.zip') {
-                    submissionFiles.zip = fileBuffer.toString('base64');
-                } else if (fileExtension === '.pdf') {
-                    submissionFiles.pdf = fileBuffer.toString('base64');
-                }
+                return fileBuffer.toString('base64');
             } catch (readErr) {
-                this.server.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
+                this.server.logger.error(`Error reading file for document ${doc.id}: ${readErr.message}`, readErr);
+                return null;
             }
         } else {
-            this.server.logger.error(`File not found for document ${doc.id} of submission ${subId}: ${docFilePath}`);
+            this.server.logger.error(`File not found for document ${doc.id}: ${docFilePath}`);
+            return null;
         }
     }
 
@@ -249,7 +370,7 @@ module.exports = class BackgroundTaskService extends Service {
             this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             this.server.services['NLPService'].backgroundRequest(documentSocket, {
                 id: item.requestId,
-                name: item.skill,
+                name: item.skillName,
                 data: item.nlpInput,
                 clientId: 0
             });
@@ -259,12 +380,12 @@ module.exports = class BackgroundTaskService extends Service {
     /**
      * Wait for NLP result until a result is received or preprocessing is cancelled
      * If a result is not received, it continues to wait indefinitely until cancelled
-     * @param {string} requestId - The request ID to wait for
+     * @param {string} requestId - The request id to wait for
      * @param {number} intervalMs - Polling interval in milliseconds (default: 200ms)
      * @returns {Promise<object|null>} The NLP result or null if cancelled/timeout
      */
     async waitForNlpResult(requestId, intervalMs = 200) {
-        const start = Date.now();
+        const start = Date.now(); // TODO: This can be used to show the start time of the request
         return await new Promise((resolve) => {
             const interval = setInterval(() => {
                 if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
@@ -283,26 +404,78 @@ module.exports = class BackgroundTaskService extends Service {
     }
 
     /**
-     * Save NLP results to the database
+     * Save NLP result to the database
      * @param {object} documentSocket - The document socket for the client
-     * @param {object} item - The preprocessing item containing document IDs and skill
+     * @param {object} item - The preprocessing item containing file information and skill
      * @param {object} nlpResult - The NLP result data to save
      */
-    async saveNlpResults(documentSocket, item, nlpResult) {
-        // TODO: If there is an error within the received nlpResult, it would still save in the database. Is error handling required here?
+    async saveNlpResult(documentSocket, item, nlpResult) {
         try {
+            const { combination, baseFileParameter, baseFiles } = item;
+            
+            const baseParamData = combination.find(param => param.paramName === baseFileParameter);
+            if (!baseParamData) {
+                this.server.logger.error(`Base file parameter '${baseFileParameter}' not found in combination`);
+                return;
+            }
+
+            const { table, fileId } = baseParamData;
+            let baseFileToSave = null;
+
+            if (table === 'submission') {
+                const submission = await this.server.db.models['submission'].findByPk(fileId, { raw: true });
+                if (!submission) {
+                    this.server.logger.error(`Submission ${fileId} not found`);
+                    return;
+                }
+
+                if (!submission.validationDocumentId || !baseFiles || !baseFiles[submission.validationDocumentId]) {
+                    this.server.logger.warn(`Submission ${fileId} does not have a valid validation document id or base file mapping`);
+                    return;
+                }
+
+                const baseFileType = baseFiles[submission.validationDocumentId];
+
+                const docTypeKey = `DOC_TYPE_${baseFileType.toUpperCase()}`;
+                const docTypeValue = this.server.db.models['document'].docTypes[docTypeKey];
+                
+                if (docTypeKey in this.server.db.models['document'].docTypes) {
+                    const doc = await this.server.db.models['document'].findOne({
+                        where: { 
+                            submissionId: fileId,
+                            type: docTypeValue 
+                        },
+                        raw: true
+                    });
+                    baseFileToSave = doc ? doc.id : null;
+                } else {
+                    this.server.logger.warn(`Unknown document type: ${baseFileType} (looking for ${docTypeKey})`);
+                    return;
+                }
+            } else if (table === 'document') {
+                baseFileToSave = fileId;
+            } else {
+                this.server.logger.warn(`Unsupported base table type for saving results: ${table}`);
+                return;
+            }
+
+            if (!baseFileToSave) {
+                this.server.logger.warn(`No valid document found to save results for request ${item.requestId}`);
+                return;
+            }
+           
+            const resultData = nlpResult.data || {};
+            
             await Promise.all(
-                item.docIds.flatMap(docId =>
-                    Object.keys(nlpResult).map(key =>
-                        this.server.db.models['document_data'].upsert({
-                            userId: documentSocket.userId,
-                            documentId: docId,
-                            studySessionId: null,
-                            studyStepId: null,
-                            key: `${item.skill}_nlpAssessment_${key}`,
-                            value: nlpResult[key]
-                        }, {})
-                    )
+                Object.keys(resultData).map(key =>
+                    this.server.db.models['document_data'].upsert({
+                        userId: documentSocket.userId,
+                        documentId: baseFileToSave,
+                        studySessionId: null,
+                        studyStepId: null,
+                        key: `${item.skillName}_nlpRequest_${key}`,
+                        value: resultData[key]
+                    }, {}) 
                 )
             );
         } catch (saveErr) {
@@ -327,7 +500,7 @@ module.exports = class BackgroundTaskService extends Service {
 
         this.backgroundTask.preprocess.cancelled = true;
         this.backgroundTask.preprocess.requests = {};
-        this.backgroundTask.preprocess.currentSubmissionsCount = 0;
+        this.backgroundTask.preprocess.preprocessItemsCount = 0;
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
         
         return "Preprocessing cancelled successfully.";

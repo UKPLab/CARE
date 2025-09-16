@@ -69,11 +69,6 @@ input:
                           description:
                             type: string
                             description: The description of this scoring option
-        proportion_of_hallucinated_results:
-          type: float
-          description: The proportion of the criteria to be hallucinated. The hallucinated criteria will be selected randomly.
-          required: false
-          default: 0.0
   example:
     {
       "submission": {
@@ -117,43 +112,33 @@ input:
     }
 output:
   data:
-    type: array
-    required: true
-    items:
-      type: object
-      properties:
-        name:
-          type: string
-          description: The name of the criterion
-        score:
-          type: integer
-          description: The score of the criterion
-        justification:
-          type: string
-          description: The justification of the criterion
-        possible_concerns:
-          type: string
-          description: The possible concerns of the given judgement
-        thinking:
-          type: string
-          description: The thinking of the criterion
-        hallucinated:
-          type: boolean
-          description: Whether the result is hallucinated
-          required: false
+    assessment:
+      type: array
+      required: true
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: The name of the criterion
+          score:
+            type: integer
+            description: The score of the criterion
+          justification:
+            type: string
+            description: The justification of the criterion
+          possible_concerns:
+            type: string
+            description: The possible concerns of the given judgement
 
   example:
-  {
-    "assessment": [
-    {
-      "name": Language quality,
-      "score": 1,
-      "justification": Example justification,
-      "possible_concerns": Example possible concerns,
-      "thinking": Example thinking,
-      "hallucinated": false
-    }
-    ]
-  }
-
-}
+    {"assessment": [
+      {
+        "name": "Language quality",
+        "score": 1,
+        "justification": "Example justification",
+        "possible_concerns": "Example possible concerns",
+        "thinking": Example thinking,
+        "hallucinated": false
+      }
+    ]}

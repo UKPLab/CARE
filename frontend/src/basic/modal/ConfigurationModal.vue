@@ -34,30 +34,22 @@
               <!-- Skill Selection -->
               <div class="mb-3">
                 <label class="form-label">Select NLP Skill:</label>
-                <FormSelect
+                <SkillSelector
                   v-model="selectedSkills[index].skillName"
-                  :options="skillMap"
                 />
               </div>
               <!-- Input Mapping -->
-              <div
+              <InputMap
                 v-if="selectedSkills[index].skillName"
-                class="mb-3"
-              >
-                <h6 class="text-secondary">Input Mapping</h6>
-                <div
-                  v-for="input in getSkillInputs(selectedSkills[index].skillName)"
-                  :key="input"
-                  class="mb-2"
-                >
-                  <label class="form-label">{{ input }}:</label>
-                  <FormSelect
-                    v-model="inputMappings[index][input]"
-                    :options="{ options: availableDataSources }"
-                    :value-as-object="true"
-                  />
-                </div>
-              </div>
+                v-model="selectedSkills[index].dataInput"
+                :skill-name="selectedSkills[index].skillName"
+                :study-based="true"
+                :study-step-id="studyStepId"
+                :workflow-steps="workflowSteps"
+                :current-stepper-step="currentStepperStep"
+                :step-config="stepConfig"
+                :selected-skills="selectedSkills"
+              />
             </div>
           </div>
           <div
@@ -111,7 +103,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[0]"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
                 <div class="mb-3">
@@ -119,7 +111,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[1]"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
               </template>
@@ -129,7 +121,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
               </template>
@@ -150,6 +142,8 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
+import InputMap from "@/basic/modal/skills/InputMap.vue";
 import Quill from "quill";
 
 /**
@@ -164,7 +158,7 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, FormSelect },
+  components: { StepperModal, FormSelect, SkillSelector, InputMap },
   props: {
     modelValue: {
       type: Object,
@@ -207,7 +201,6 @@ export default {
       selectedSkills: [],
       shortPreview: "",
       isUpdateMode: false,
-      inputMappings: [],
     };
   },
   computed: {
@@ -228,17 +221,6 @@ export default {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
-    skillMap() {
-      return {
-        options: this.nlpSkills.map((skill) => ({
-          value: skill.name,
-          name: skill.name,
-        })),
-      };
-    },
-    availableDataSources() {
-      return this.getSourcesUpToCurrentStep(this.studyStepId);
-    },
   },
   watch: {
     modelValue: {
@@ -255,20 +237,6 @@ export default {
           this.fetchDocument();
         }
       },
-    },
-    inputMappings: {
-      handler(newMappings) {
-        if (!newMappings.length) return;
-
-        newMappings.forEach((mapping, index) => {
-          Object.entries(mapping).forEach(([input, source]) => {
-            if (source) {
-              this.updateDataInput(index, input, source);
-            }
-          });
-        });
-      },
-      deep: true,
     },
   },
   mounted() {
@@ -309,25 +277,9 @@ export default {
             dataInput: {},
           };
         });
-
-        // Initialize inputMappings after selectedSkills is populated
-        this.initializeInputMappings();
       } else {
         this.selectedSkills = [];
-        this.inputMappings = [];
       }
-    },
-    initializeInputMappings() {
-      this.inputMappings = this.selectedSkills.map((skill, idx) => {
-        const mapping = {};
-        if (skill.skillName) {
-          const inputs = this.getSkillInputs(skill.skillName);
-          inputs.forEach((input) => {
-            mapping[input] = this.getFormattedDataInput(idx, input);
-          });
-        }
-        return mapping;
-      });
     },
     fetchDocument() {
       if (!this.documentId || !this.studyStepId) return;
@@ -408,14 +360,8 @@ export default {
     findPlaceholderDataSource(input) {
       if (!input) return null;
 
-      return this.availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
-    },
-    getSkillInputs(skillName) {
-      // Find the skill in the skills list
-      const skill = this.nlpSkills.find((s) => s.name === skillName);
-      if (!skill) return {};
-      // Return the input keys (v1, v2, etc.)
-      return Object.keys(skill.config.input.data || {});
+      const availableDataSources = this.getSourcesUpToCurrentStep(this.studyStepId);
+      return availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
@@ -491,10 +437,8 @@ export default {
     updateDataInput(index, input, source) {
       if (!source) return;
 
-      // Deep clone to avoid reference issues
       const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
 
-      // Ensure dataInput exists
       if (!updatedSkills[index].dataInput) {
         updatedSkills[index].dataInput = {};
       }
@@ -504,14 +448,12 @@ export default {
         dataSource: source.value,
       };
 
-      // Replace the entire array
       this.selectedSkills = updatedSkills;
     },
     getFormattedDataInput(index, input) {
       const dataInput = this.selectedSkills[index]?.dataInput?.[input];
       if (!dataInput) return null;
 
-      // Return the source object that matches this data input
       return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {

@@ -21,8 +21,8 @@
       />
       <BasicButton
         class="btn-success btn-sm ms-1"
-        text="Preprocess Grading"
-        title="Preprocess Grading"
+        text="Apply Skills"
+        title="Apply Skills"
         @click="preprocessGrades" 
       />
     </template>
@@ -40,8 +40,8 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
-  <GradingModal
-    ref="gradingModal"
+  <ApplySkillsModal
+    ref="applySkillsModal"
   />
 </template>
 
@@ -53,7 +53,7 @@ import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
 import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import GradingModal from "@/basic/modal/GradingModal.vue";
+import ApplySkillsModal from "@/basic/modal/ApplySkillsModal.vue";
 
 /**
  * Submission list component
@@ -78,7 +78,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
-    GradingModal,
+    ApplySkillsModal,
   },
   data() {
     return {
@@ -209,7 +209,7 @@ export default {
       this.$router.push(`/document/${row.hash}`);
     },
     preprocessGrades() {
-      this.$refs.gradingModal.open();
+      this.$refs.applySkillsModal.open();
     },
   },
 };
