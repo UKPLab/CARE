@@ -230,12 +230,11 @@ export default {
       
       console.log('Preprocessing data to be sent:', preprocessingData);
       
-      /**
       this.$socket.emit("serviceCommand", {
         service: "BackgroundTaskService",
         command: "startPreprocessing",
         data: preprocessingData
-      }); */
+      });
       
       this.close();
     },
