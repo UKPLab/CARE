@@ -29,11 +29,11 @@ Dashboard
 ---------
 
 The :doc:`Dashboard <dashboard>` is the central landing view after login.  
-It loads navigation entries from the store (``nav_element``) and dynamically renders the active module into the main viewer pane.  
+It loads navigation entries from the store (``nav_element``; see :doc:`../vuex_store`) and dynamically renders the active module into the main viewer pane.  
 
 - The **sidebar** provides navigation based on Vuex-managed entries.  
 - The **viewer** dynamically loads the selected component (via ``defineAsyncComponent``).  
-- Default modules can be configured via ``dashboard.navigation.component.default`` in the settings.  
+- Default modules can be configured via ``dashboard.navigation.component.default`` in the :doc:`../../examples/settings`.  
 
 .. code-block:: html
 
@@ -59,7 +59,7 @@ Additional responsibilities:
 
 - Handles ``beforeRouteLeave`` guards to confirm unsaved changes.  
 - Responds to socket errors (e.g., missing document, permission issues).  
-- Integrates with the toast system to inform the user of failures.  
+- Integrates with the :ref:`toasts <toasts>` system to inform the user of failures.  
 
 .. code-block:: html
 
@@ -79,12 +79,12 @@ It combines annotation, editing, and step-based tasks into a coherent workflow:
 - Prompts the user to **start or resume** a study with a :ref:`StudyModal <study-modal>`.  
 - Displays the correct step type:  
 
-  - **Annotator** (stepType 1)  
-  - **Editor** (stepType 2)  
+  - :doc:`Annotator <annotator>` (stepType 1)  
+  - :doc:`Editor <editor>` (stepType 2)  
   - :doc:`StepModal <stepmodal>` (stepType 3)  
 - Manages **step navigation** (previous/next buttons in the topbar).  
 - Tracks **timing and deadlines**.  
-- Provides a **FinishModal** for submission and study closure.  
+- Provides a :ref:`FinishModal <finish-modal>` for submission and study closure.  
 
 **Key integrations:** Vuex (study, study_step, study_session tables), socket events, topbar controls.  
 

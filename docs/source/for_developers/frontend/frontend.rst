@@ -14,4 +14,4 @@ This includes adding new dashboard components, loading settings and extending th
    plugins
    vuex_store
    app
-   stats.rst
+   stats

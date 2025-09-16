@@ -31,7 +31,7 @@ This structure mirrors the actual code layout.
 Button
 ------
 The button component provides a consistent wrapper around the native ``<button>`` element with support for
-labels, optional icons, and integrated statistics events. Use it in modals, forms, or dashboards to keep actions
+labels, optional icons, and integrated statistics events (see :doc:`../stats` ). Use it in modals, forms, or dashboards to keep actions
 consistent across CARE.
 
 .. code-block:: html
@@ -138,7 +138,7 @@ You can use it by simply importing it and insert the headerElements, body and fo
 Collaboration
 -------------
 Collaboration is a component that fully manages the synchronization necessary to realize collaborative features in
-CARE. Simply import this component by a target type (e.g. a document) and id (e.g. the id of the document) to forward
+CARE. Simply import this component by a target type (e.g. a :doc:`../components/editor` document or an :doc:`../components/annotator` comment) and id (e.g. the id of the document) to forward
 a user's interaction to other clients (e.g. while editing an annotation).
 
 .. note::
@@ -201,7 +201,7 @@ Coordinator
 -----------
 
 The coordinator wraps a :ref:`Form <form-section>` inside a modal to **add/edit** backend entries.  
-It pulls field definitions from the Vuex store (``table/<name>/getFields``), applies optional read-only flags, and handles submit/save + success UI.
+It pulls field definitions from the Vuex store (``table/<name>/getFields``; see :doc:`../vuex_store`), applies optional read-only flags, and handles submit/save + success UI.
 
 .. code-block:: html
 
@@ -737,6 +737,8 @@ This module provides timing utilities for countdowns. Provides emit events and s
       - 60 * 1000
       - Number
       - False
+
+.. _toasts:
 
 Toast
 -----

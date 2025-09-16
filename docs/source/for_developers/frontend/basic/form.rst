@@ -283,7 +283,7 @@ The following types are available:
 
 .. _form-type-select:
 
-`Select`: There are two ways to define the options of a select field, either by passing an object or use data from a autotable in vuex store.
+`Select`: There are two ways to define the options of a select field, either by passing an object or use data from a autotable in (:doc:`../vuex_store`).
 
 Passing an object:
 
@@ -436,7 +436,7 @@ it’s important to understand that **in the context of the Choice component, th
 
 .. tip::
 
-    To better understand how the ``Choice`` component fits into a workflow, here’s a minimal example of how workflows are structured in the backend:
+    To better understand how the ``Choice`` component fits into a workflow, here’s a minimal example of how workflows are structured in the backend (see :doc:`../../../for_researchers/study/study_basics` for further examples of study workflows):
 
     .. code-block:: json
 

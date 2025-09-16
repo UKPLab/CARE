@@ -41,3 +41,4 @@ Example usage:
 Field visibility and defaults are driven by admin settings (``rpc.moodleAPI.*``).
 Assignment IDs can be fetched live from Moodle via a ``Refresh`` button, which triggers
 a backend request (``assignmentGetInfo``).
+For the end-to-end researcher workflow, see :doc:`../../for_researchers/moodle_usage`.

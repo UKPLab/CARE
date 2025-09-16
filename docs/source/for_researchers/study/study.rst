@@ -2,7 +2,7 @@ Studies
 =======
 
 This section provides guidance for setting up and managing **custom study environments** using CARE.  
-A *study* in CARE is a structured workflow that guides participants through tasks such as revising a document, annotating a PDF, or responding to AI feedback.  
+A *study* in CARE is a structured workflow that guides participants through tasks such as revising a document, annotating a PDF, or responding to AI feedback (see :doc:`../../for_developers/frontend/components/study` for the developer view)..  
 These studies are especially useful in research and teaching, where reproducible study sessions and detailed behavior tracking are required.
 
 You will find two types of documentation here:
