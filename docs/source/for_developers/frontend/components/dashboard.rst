@@ -111,4 +111,4 @@ available for visualization in the frontend, but provide only a conceptual overv
 Table
 -----
 The table is the best way to visualize many rows of data.
-We recommend to use the basic table component :doc:`Table <./table>` for this purpose.
+We recommend to use the basic table component :doc:`Table <basic/table>` for this purpose.
