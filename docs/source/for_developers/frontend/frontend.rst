@@ -6,7 +6,12 @@ This includes adding new dashboard components, loading settings and extending th
 
 
 .. toctree::
-   :maxdepth: 1
-   :glob:
+   :maxdepth: 2
 
-   *
+   basic/basic
+   components/components
+   auth
+   plugins
+   vuex_store
+   app
+   stats.rst

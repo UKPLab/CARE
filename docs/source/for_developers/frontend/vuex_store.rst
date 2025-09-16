@@ -40,7 +40,7 @@ key ``static autoTable = true;``. It is also possible to publish a complete tabl
 
 .. tip::
 
-    To edit data for auto tables, we recommend to use the basic :doc:`form component <./coordinator>`.
+    To edit data for auto tables, we recommend to use the basic :doc:`form component <basic/form>`.
 
 .. seealso::
    For subscription setup and how socket refreshes update the store, see
