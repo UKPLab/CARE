@@ -178,12 +178,20 @@ export default {
     formatSkillParameterMappings() {
       const mappings = {};
       Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
-        if (mapping && mapping.requiresTableSelection) {
-          const files = this.selectedFiles[paramName] || [];
-          mappings[paramName] = {
-            table: mapping.tableType,
-            fileIds: files.map(file => file.id),
-          };
+        if (mapping) {
+          if (mapping.requiresTableSelection) {
+            const files = this.selectedFiles[paramName] || [];
+            mappings[paramName] = {
+              table: mapping.tableType,
+              fileIds: files.map(file => file.id),
+            };
+          } else {
+            const tableType = mapping.tableType || "configuration";
+            mappings[paramName] = {
+              table: tableType,
+              fileIds: [mapping.configId],
+            };
+          }
         }
       });
       return Object.keys(mappings).length > 0 ? mappings : null;
@@ -227,8 +235,6 @@ export default {
         baseFileParameter,
         baseFiles,
       };
-      
-      console.log('Preprocessing data to be sent:', preprocessingData);
       
       this.$socket.emit("serviceCommand", {
         service: "BackgroundTaskService",

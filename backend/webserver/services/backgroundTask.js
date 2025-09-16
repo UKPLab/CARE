@@ -439,7 +439,7 @@ module.exports = class BackgroundTaskService extends Service {
                 const docTypeKey = `DOC_TYPE_${baseFileType.toUpperCase()}`;
                 const docTypeValue = this.server.db.models['document'].docTypes[docTypeKey];
                 
-                if (docTypeValue) {
+                if (docTypeKey in this.server.db.models['document'].docTypes) {
                     const doc = await this.server.db.models['document'].findOne({
                         where: { 
                             submissionId: fileId,
@@ -449,7 +449,7 @@ module.exports = class BackgroundTaskService extends Service {
                     });
                     baseFileToSave = doc ? doc.id : null;
                 } else {
-                    this.server.logger.warn(`Unknown document type: ${baseFileType}`);
+                    this.server.logger.warn(`Unknown document type: ${baseFileType} (looking for ${docTypeKey})`);
                     return;
                 }
             } else if (table === 'document') {
@@ -463,16 +463,18 @@ module.exports = class BackgroundTaskService extends Service {
                 this.server.logger.warn(`No valid document found to save results for request ${item.requestId}`);
                 return;
             }
-
+           
+            const resultData = nlpResult.data || {};
+            
             await Promise.all(
-                Object.keys(nlpResult).map(key =>
+                Object.keys(resultData).map(key =>
                     this.server.db.models['document_data'].upsert({
                         userId: documentSocket.userId,
                         documentId: baseFileToSave,
                         studySessionId: null,
                         studyStepId: null,
                         key: `${item.skillName}_nlpRequest_${key}`,
-                        value: nlpResult[key]
+                        value: resultData[key]
                     }, {}) 
                 )
             );
