@@ -35,16 +35,13 @@ module.exports = class Socket {
         // Note: This cache does not automatically update.
         // A reconnection or explicit refresh is required to update roles after any changes.
         this.userRoles = [];
-        // Local cache of the timestamp when the user's roles were last updated.
-        // This is used to determine if the cached roles need refreshing.
-        this.lastRolesUpdate = null;
         this.isUserAdmin = null;
         this.logger.defaultMeta = {userId: this.userId};
         this.autoTables = Object.values(this.models)
             .filter((model) => model.autoTable)
             .map((model) => model.tableName);
 
-        // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..]}
+        // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
     }
 
@@ -173,43 +170,19 @@ module.exports = class Socket {
         }
     }
 
-    /**
-     * Gets and caches user roles.
-     *
-     * Note: This method has side effects as it fills the `this.userRoles` cache
-     * to avoid frequent database queries.
-     * This can be problematic if user roles change during the login session,
-     * as the changes won't be automatically reflected in the cache.
-     *
-     * @returns {Promise<number[]>} An array of user role IDs.
-     */
-    async getUserRoles() {
-        try {
-            if (!this.userRoles.length || !this.lastRolesUpdate || this.user.rolesUpdatedAt > this.lastRolesUpdate) {
-                this.userRoles = await this.models["user_role_matching"].getUserRolesById(this.userId);
-                this.lastRolesUpdate = new Date();
-            }
-            return this.userRoles;
-        } catch (error) {
-            this.logger.error(error);
-            return [];
-        }
-    }
-
 
     /**
      * Checks and caches whether the user is an admin.
      *
-     * Note: This method has side effects as it caches the admin status in `this.isUserAdmin`
-     * and calls `this.getUserRoles()`, which has its own caching behavior.
+     * Note: This method has side effects as it caches the admin status in `this.isUserAdmin`.
      * This can be problematic if the user's admin status changes
      * during their session, as the cached value won't automatically update.
      *
      * @returns {Promise<boolean>} True if the user is an admin.
      */
-    async isAdmin(userId = this.userId) {
+    async isAdmin(userId = this.userId, rolesUpdatedAt = this.rolesUpdatedAt) {
         // admin has full rights, so return true directly
-        if (!this.userInfo[userId]) {
+        if (!this.userInfo[userId] || rolesUpdatedAt > this.userInfo[userId].lastRolesUpdate) {
             await this.updateUserInfo(userId);
         }
         return this.userInfo[userId].isAdmin;
@@ -221,6 +194,7 @@ module.exports = class Socket {
         userAccess.roles = roleIds;
         userAccess.isAdmin = await this.models["user_role_matching"].isAdminInUserRoles(roleIds);
         userAccess.rights = {};
+        userAccess.lastRolesUpdate = new Date();
         this.userInfo[userId] = userAccess;
     }
 
@@ -229,9 +203,9 @@ module.exports = class Socket {
      * @param {string} right The name of the right to check
      * @returns {Promise<boolean>} If the user has access with this right
      */
-    async hasAccess(right, userId = this.userId) {
+    async hasAccess(right, userId = this.userId, rolesUpdatedAt = this.rolesUpdatedAt) {
         // admin has full rights, so return true directly
-        if (!this.userInfo[userId]) {
+        if (!this.userInfo[userId] || rolesUpdatedAt > this.userInfo[userId].lastRolesUpdate) {
             await this.updateUserInfo(userId);
         }
         const userInfo = this.userInfo[userId];
@@ -344,14 +318,14 @@ module.exports = class Socket {
      * @param {string} tableName The table to check the rights for
      * @returns {Object} modified filters and attributes + whether access is allowed
      */
-    async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName) {
+    async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
         const accessMap = this.server.db.models[tableName]['accessMap'];
         const filteredAccessMap = await Promise.all(
         accessMap.map(async a => {
             let hasAccess = false;
             let limitation = undefined;
             if (a.right) {
-                hasAccess = await this.hasAccess(a.right, userId);
+                hasAccess = await this.hasAccess(a.right, userId, rolesUpdatedAt);
             } else if (a.table) {
                 const count = await this.models[a.table].findAll({
                     attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
@@ -373,7 +347,7 @@ module.exports = class Socket {
         );
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
-        if (await this.isAdmin(userId) || this.models[tableName].publicTable) { // is allowed to see everything
+        if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) { // is allowed to see everything
         // no adaption of the filter or attributes needed
         } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
             // is allowed to see only his data and possible if there is a public attribute
@@ -642,20 +616,21 @@ module.exports = class Socket {
             if (!(tableName in socket.appDataSubscriptions.tables)) {
                 continue;
             }
-
+            const userId = socket.user.id;
+            const rolesUpdatedAt = socket.user.rolesUpdatedAt;
             // if the changes come from same user, just send
-            if (socket.userId === this.userId) {
+            if (socket.user.id === this.userId) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
             // if socket is admin or table is public, also just send
-             if (await this.isAdmin(socket.userId) || this.models[tableName].publicTable) {
+             if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             } 
             let allFilter = {};
             let allAttributes = {};
-            const filtersAndAttributes = await this.getFiltersAndAttributes(socket.userId, allFilter, allAttributes, tableName)
+            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
             if (!filtersAndAttributes.accessAllowed) {
                 continue;
             }
