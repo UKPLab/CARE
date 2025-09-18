@@ -310,7 +310,7 @@ export default {
     async loadValidationSchemas() {
       this.isLoadingValidationSchemas = true;
       try {
-        this.$socket.emit("documentGetConfiguration", { type: "validation" }, (res) => {
+        this.$socket.emit("configurationGetByType", { type: 1 }, (res) => {
           if (res.success && res.data) {
             // Convert the response to our validationSchemas format
             this.validationSchemas = {};

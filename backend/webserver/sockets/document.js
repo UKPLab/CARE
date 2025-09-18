@@ -1148,58 +1148,6 @@ class DocumentSocket extends Socket {
         return updatedDocument;
     }
 
-    /**
-     * Get configuration documents filtered by type
-     * 
-     * @param {Object} data The data object containing the configuration type filter
-     * @param {string} data.type The type of configuration to retrieve (e.g., 'validation', 'assessment')
-     * @param {Object} options Additional configuration parameters
-     * @returns {Promise<Object>} A promise that resolves with the filtered configuration documents
-     */
-    async getConfigurationDocuments(data, options) {
-        const { type } = data;
-        
-        if (!type) {
-            throw new Error("Configuration type is required");
-        }
-        // Get all type 3 (configuration) documents
-        const configDocuments = await this.models["document"].getAllByKey("type", docTypes.DOC_TYPE_CONFIG);
-        const filteredConfigs = [];
-        for (const doc of configDocuments) {
-            try {
-                // Check if user has access to this document
-                if (!(await this.checkDocumentAccess(doc.id))) {
-                    continue; // Skip documents user doesn't have access to
-                }
-                
-                const filePath = `${UPLOAD_PATH}/${doc.hash}.json`;
-                if (!fs.existsSync(filePath)) {
-                    continue;
-                }
-                const fileContent = fs.readFileSync(filePath, 'utf8');
-                const config = JSON.parse(fileContent);
-                
-                // TODO: Check if we need all these properties
-                // Check if the document matches the requested type
-                if (config.type === type) {
-                    filteredConfigs.push({
-                        id: doc.id,
-                        name: doc.name,
-                        hash: doc.hash,
-                        userId: doc.userId,
-                        public: doc.public,
-                        createdAt: doc.createdAt,
-                        updatedAt: doc.updatedAt,
-                        config: config
-                    });
-                }
-            } catch (error) {
-                this.logger.error(`Error processing configuration document ${doc.id}:`, error);
-            }
-        }
-        return filteredConfigs ;
-    }
-
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
@@ -1220,7 +1168,6 @@ class DocumentSocket extends Socket {
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
-        this.createSocket("documentGetConfiguration", this.getConfigurationDocuments, {}, false);
         this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
     }
 };
