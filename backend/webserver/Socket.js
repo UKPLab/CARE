@@ -31,11 +31,6 @@ module.exports = class Socket {
         this.models = this.server.db.models;
         this.user = this.socket.request.session.passport.user;
         this.userId = this.user.id;
-        // Local cache of the user's current roles.
-        // Note: This cache does not automatically update.
-        // A reconnection or explicit refresh is required to update roles after any changes.
-        this.userRoles = [];
-        this.isUserAdmin = null;
         this.logger.defaultMeta = {userId: this.userId};
         this.autoTables = Object.values(this.models)
             .filter((model) => model.autoTable)
@@ -174,7 +169,7 @@ module.exports = class Socket {
     /**
      * Checks and caches whether the user is an admin.
      *
-     * Note: This method has side effects as it caches the admin status in `this.isUserAdmin`.
+     * Note: This method has side effects as it caches the admin status in `this.userInfo[userId].isUserAdmin`.
      * This can be problematic if the user's admin status changes
      * during their session, as the cached value won't automatically update.
      *
