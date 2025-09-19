@@ -29,79 +29,14 @@
     </template>
     <!-- Validator Selection Step -->
     <template #step-3>
-      <div class="validator-selection-container">
-        <h4 class="mb-3">Select JSON Validator</h4>
-        <p class="text-muted mb-4">Choose a validation schema to verify the content of submitted ZIP files:</p>
-        <div class="mb-3">
-          <label class="form-label">Validation Schema</label>
-          <div class="d-flex gap-2">
-            <select
-              v-model="selectedValidatorId"
-              class="form-select"
-              :disabled="isLoadingValidationSchemas"
-              @change="handleValidatorChange"
-            >
-              <option value="0">
-                {{ isLoadingValidationSchemas ? "Loading validation schemas..." : "Select a validation schema..." }}
-              </option>
-              <option
-                v-for="validator in validationSchemas"
-                :key="validator.id"
-                :value="validator.id"
-              >
-                {{ validator.name }}
-              </option>
-            </select>
-          </div>
-          <div
-            v-if="isLoadingValidationSchemas"
-            class="form-text text-muted"
-          >
-            <div
-              class="spinner-border spinner-border-sm me-2"
-              role="status"
-            >
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            Loading validation schemas...
-          </div>
-        </div>
-        <div class="alert alert-warning"><strong>Note:</strong> Submissions that don't match the selected schema will not be imported.</div>
-        <div class="card bg-light">
-          <div class="card-body">
-            <h5 class="card-title">Validation Requirements</h5>
-            <div
-              v-if="selectedValidatorData"
-              class="validation-preview"
-            >
-              <div class="mb-3">
-                <p class="text-muted mb-2">
-                  {{ selectedValidatorData.description }}
-                </p>
-              </div>
-              <div class="mb-3">
-                <h6 class="mb-2">Required Files:</h6>
-                <div class="d-flex flex-wrap gap-1">
-                  <span
-                    v-for="file in selectedValidatorData.files"
-                    :key="file"
-                    class="badge bg-white text-dark border"
-                  >
-                    {{ file }}
-                  </span>
-                </div>
-              </div>
-              <div class="text-muted small">ZIP files must contain all listed files and folders to pass validation.</div>
-            </div>
-            <p
-              v-else
-              class="text-muted"
-            >
-              Select a validation schema to see requirements
-            </p>
-          </div>
-        </div>
-      </div>
+      <ValidatorSelector
+        v-model="selectedValidatorId"
+        @selection-changed="
+          (validatorData) => {
+            selectedValidatorData = validatorData;
+          }
+        "
+      />
     </template>
     <!-- Confirm Step -->
     <template #step-4>
@@ -172,6 +107,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import ValidatorSelector from "./ValidatorSelector.vue";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
@@ -180,13 +116,14 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, BasicTable, StepperModal, BasicButton },
+  components: { MoodleOptions, BasicTable, StepperModal, BasicButton, ValidatorSelector },
   subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, { table: "document" }],
   data() {
     return {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Validate" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
       selectedValidatorId: 0,
+      selectedValidatorData: null,
       tableOptions: {
         striped: true,
         hover: true,
@@ -222,9 +159,6 @@ export default {
       selectedAssignments: [],
       importedAssignments: [],
       importResults: {},
-      validationSchemas: {}, // Cache for validation schemas
-      isLoadingValidationSchemas: false, // Loading state for validation schemas
-      selectedValidatorData: null,
     };
   },
   computed: {
@@ -285,14 +219,11 @@ export default {
     open() {
       this.reset();
       this.$refs.importStepper.open();
-      this.loadValidationSchemas();
     },
     reset() {
       this.selectedAssignments = [];
       this.selectedValidatorId = 0;
       this.importResults = {};
-      this.validationSchemas = {};
-      this.isLoadingValidationSchemas = false;
       if (this.importedAssignments.length > 0) {
         this.importedAssignments = [];
       }
@@ -306,29 +237,6 @@ export default {
         message: err.message,
       }));
       downloadObjectsAs(users, filename, "csv");
-    },
-    async loadValidationSchemas() {
-      this.isLoadingValidationSchemas = true;
-      try {
-        this.$socket.emit("configurationGetByType", { type: 1 }, (res) => {
-          if (res.success && res.data) {
-            // Convert the response to our validationSchemas format
-            this.validationSchemas = {};
-            res.data.forEach((doc) => {
-              this.validationSchemas[doc.id] = {
-                id: doc.id,
-                name: doc.config.name || doc.name,
-                description: doc.config.description,
-                files: doc.config.rules?.requiredFiles?.map((file) => file.name) || [],
-                schema: doc.config,
-              };
-            });
-          }
-          this.isLoadingValidationSchemas = false;
-        });
-      } catch (error) {
-        this.isLoadingValidationSchemas = false;
-      }
     },
     handleStepChange(step) {
       switch (step) {
@@ -405,9 +313,6 @@ export default {
           message: e.message,
         })),
       };
-    },
-    handleValidatorChange() {
-      this.selectedValidatorData = this.validationSchemas[this.selectedValidatorId];
     },
   },
 };

@@ -169,7 +169,7 @@ export default {
       default: true,
     },
   },
-  emits: ["update:modelValue", "schemas-loaded", "loading-error"],
+  emits: ["update:modelValue", "selection-changed", "schemas-loaded", "loading-error"],
   data() {
     return {
       isLoading: false,
@@ -219,9 +219,12 @@ export default {
       }
     },
     handleValidatorChange(event) {
-      const selectedId = event.target.value;
-      this.$emit("update:modelValue", Number(selectedId));
-      this.updateSelectedValidatorData(selectedId);
+      const validatorId = Number(event.target.value);
+      if (validatorId === this.modelValue) return;
+      this.updateSelectedValidatorData(validatorId);
+      
+      this.$emit("update:modelValue", validatorId);
+      this.$emit("selection-changed", this.selectedValidatorData);
     },
     updateSelectedValidatorData(validatorId) {
       this.selectedValidatorData = this.validationSchemas[validatorId] || null;
