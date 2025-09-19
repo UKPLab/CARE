@@ -523,6 +523,108 @@ module.exports = class Socket {
 
     }
 
+    /**
+     * Retrieves foreign keys of table and sends data of foreign tables to the user
+     * @param {String} table Table to find foreign keys for
+     * @param {Object} uniqueIds 
+     * @param {number} userId User to send the data to
+     * @return {void}
+     */
+    async sendForeignKeys(table, uniqueIds, userId) {
+        const foreignKeys = await this.server.db.sequelize
+                    .getQueryInterface()
+                    .getForeignKeyReferencesForTable(table);
+        foreignKeys
+            .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
+                .map(async (fk) => {
+                        uniqueIds.map((d) => d[fk.columnName])
+                        .filter(
+                            (value, index, array) => array.indexOf(value) === index
+                        );
+                    if (uniqueIds.length > 0) {
+                        await this.sendTableData(
+                            fk.referencedTableName,
+                            [{key: "id", values: uniqueIds}],
+                            [],
+                            userId,
+                            includeForeignData = true
+                        );
+                    }
+                });
+    }
+
+    /**
+     * Adds inclusions to the data and sends it to the user
+     * @param {Array} include array of inclusions
+     * @param {Object} data data to enrich with inclusions and send to user
+     * @param {number} userId Id of the user to send the inclusions to
+     * @param {boolean} includeForeignData True if foreign data should also be sent
+     * @param {boolean} includeFieldTables True if field tables should also be sent
+     * @returns {Object} enriched data object
+     */
+    async sendInclusions(include, data, userId, includeForeignData, includeFieldTables) {
+        for (const inclusions of include) {
+            if (inclusions.type === "count") {
+                const count = await this.models[inclusions.table].findAll({
+                    attributes: [inclusions.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                    where: {
+                        [inclusions.by]: {
+                            [Op.in]: data.map((d) => d.id)
+                        },
+                    },
+                    group: inclusions.by,
+                    raw: true
+                });
+                // inject to data
+                data = data.map((d) => {
+                    d[inclusions.as] = count.find((c) => c[inclusions.by] === d.id)?.count || 0;
+                    return d;
+                });
+            } else {
+                await this.sendTableData(inclusions.table, [{
+                    key: "id",
+                    values: [...new Set(data.map((d) => d[inclusions.by]))]
+                }], [], userId, includeForeignData, includeFieldTables);
+            }
+        }
+        return data;
+    }
+
+    /**
+     * Computes ids of entries in field table used in provided table and sends entries to user
+     * @param {string} table table with table fields
+     * @param {Object} data data to find field tables
+     * @param {number} userId Id of the user to send the inclusions to
+     * @param {boolean} includeForeignData True if foreign data should also be sent
+     * @return {void}
+     */
+    async sendFieldTables(table, data, userId, includeForeignData) {
+        const fields = this.models[table].fields.filter(
+            (f) => f.type === "choice" || f.type === "table"
+        );
+        for (const field of fields) {
+            if ("table" in field.options) {
+                // TODO we already have the object, so we don't need to query the database again in sendTableData
+                const ids = (await Promise.all(data.map(async (d) => {
+                        const tableData = await this.models[field.options.table].getAllByKey(
+                            field.options.id,
+                            d.id, {}, true);
+                        return tableData.map((td) => td.id);
+                    }
+                ))).flat(1);
+
+                if (ids.length > 0) {
+                    await this.sendTableData(
+                        field.options.table,
+                        [{key: "id", values: ids}],
+                        [],
+                        userId,
+                        includeForeignData,
+                    );
+                }
+            }
+        }
+    }
 
     /**
      * Send auto table data to the clients
@@ -558,82 +660,14 @@ module.exports = class Socket {
             }
 
             if (includeForeignData) {
-                const foreignKeys = await this.server.db.sequelize
-                    .getQueryInterface()
-                    .getForeignKeyReferencesForTable(table);
-
                 // send all foreign keys of table that are in autoTables
-                foreignKeys
-                    .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
-                    .map(async (fk) => {
-                        const uniqueIds = data
-                            .map((d) => d[fk.columnName])
-                            .filter(
-                                (value, index, array) => array.indexOf(value) === index
-                            );
-                        if (uniqueIds.length > 0) {
-                            await this.sendTableData(
-                                fk.referencedTableName,
-                                [{key: "id", values: uniqueIds}],
-                                [],
-                                userId,
-                                includeForeignData
-                            );
-                        }
-                    });
+                this.sendForeignKeys(table, data, userId);
             }
             if (includeFieldTables) {
-                const fields = this.models[table].fields.filter(
-                    (f) => f.type === "choice" || f.type === "table"
-                );
-                for (const field of fields) {
-                    if ("table" in field.options) {
-                        // TODO we already have the object, so we don't need to query the database again in sendTableData
-                        const ids = (await Promise.all(data.map(async (d) => {
-                                const tableData = await this.models[field.options.table].getAllByKey(
-                                    field.options.id,
-                                    d.id, {}, true);
-                                return tableData.map((td) => td.id);
-                            }
-                        ))).flat(1);
-
-                        if (ids.length > 0) {
-                            await this.sendTableData(
-                                field.options.table,
-                                [{key: "id", values: ids}],
-                                [],
-                                userId,
-                                includeForeignData
-                            );
-                        }
-                    }
-                }
+                this.sendFieldTables(table, data, userId, includeForeignData);
             }
             if (include.length > 0) {
-                for (const inclusions of include) {
-                    if (inclusions.type === "count") {
-                        const count = await this.models[inclusions.table].findAll({
-                            attributes: [inclusions.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
-                            where: {
-                                [inclusions.by]: {
-                                    [Op.in]: data.map((d) => d.id)
-                                },
-                            },
-                            group: inclusions.by,
-                            raw: true
-                        });
-                        // inject to data
-                        data = data.map((d) => {
-                            d[inclusions.as] = count.find((c) => c[inclusions.by] === d.id)?.count || 0;
-                            return d;
-                        });
-                    } else {
-                        await this.sendTableData(inclusions.table, [{
-                            key: "id",
-                            values: [...new Set(data.map((d) => d[inclusions.by]))]
-                        }], [], userId, includeForeignData, includeFieldTables);
-                    }
-                }
+                data = this.sendInclusions(include, data, userId, includeForeignData, includeFieldTables);
             }
 
             this.emit(table + "Refresh", data, true);
