@@ -330,7 +330,6 @@ module.exports = class Socket {
                         group: a.by,
                         raw: true
                     }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
-                console.log("After 2 ta in filter access map");
                     hasAccess = count.some(c => c.count > 0);
                     limitation = count.map(c => c[a.by]);
                 }
@@ -445,6 +444,7 @@ module.exports = class Socket {
      * @param {string} tableName Name of the table to check foreign table data for
      * @param {Object} data Data to find used foreign tables in
      * @param {Object} excludedAttributes Attributes to be excluded and not sent
+     * @return {Promise<void>}
      */
     async sendForeignTableData(tableName, data, excludedAttributes) {
         if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
@@ -463,6 +463,7 @@ module.exports = class Socket {
      * @param {string} tableName Name of the table to check parent data for
      * @param {Object} data Data to find used parent tables in
      * @param {Object} excludedAttributes Attributes to be excluded and not sent
+     * @return {Promise<void>}
      */
     async sendParentTableData(tableName, data, excludedAttributes) {
         if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
@@ -482,7 +483,7 @@ module.exports = class Socket {
      * @param {*} tableName 
      * @param {*} filter 
      * @param {*} injects 
-     * @returns 
+     * @return {Promise<void>}
      */
     async sendTable(tableName, filter = [], injects = []) {
         // check if it is an autoTable or not
