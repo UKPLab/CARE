@@ -52,8 +52,58 @@ class ConfigurationSocket extends Socket {
     return configs;
   }
 
+  /**
+   * Update configuration content
+   *
+   * @param {Object} data The data object containing the configuration update
+   * @param {number} data.configurationId The ID of the configuration to update
+   * @param {Object} data.content The new JSON content for the configuration
+   * @param {Object} options Additional configuration parameters
+   * @returns {Promise<Object>} The updated configuration
+   */
+  async updateConfiguration(data, options) {
+    const { configurationId, content } = data;
+
+    if (!configurationId) {
+      throw new Error("Configuration ID is required");
+    }
+
+    if (!content) {
+      throw new Error("Configuration content is required");
+    }
+
+    // Get the existing configuration
+    const existingConfig = await this.models["configuration"].getById(configurationId);
+
+    if (!existingConfig) {
+      throw new Error("Configuration not found");
+    }
+
+    // Check if user has access to update this configuration
+    const { accessAllowed } = await this.getFiltersAndAttributes(
+      this.userId,
+      { id: configurationId },
+      {},
+      "configuration"
+    );
+    
+    if (!accessAllowed) {
+      throw new Error("Access denied");
+    }
+
+    // Update only the content field
+    const updatedConfig = await this.models["configuration"].updateById(
+      configurationId,
+      { content, updatedAt: new Date() },
+      { transaction: options.transaction }
+    );
+
+    return updatedConfig;
+  }
+
   init() {
     this.createSocket("configurationGetByType", this.getConfigFiles, {}, false);
+    this.createSocket("configurationUpdate", this.updateConfiguration, {}, true);
   }
 }
 

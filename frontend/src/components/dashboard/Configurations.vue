@@ -274,15 +274,9 @@ export default {
       this.saving = true;
 
       const jsonContent = JSON.parse(editorContent);
-
-      this.$socket.emit(
-        "appDataUpdate",
-        {
-          table: "configuration",
-          data: {
-            id: this.selectedConfig.id,
-            content: jsonContent,
-          },
+      this.$socket.emit("configurationUpdate", {
+          configurationId: this.selectedConfig.id,
+          content: jsonContent,
         },
         (response) => {
           this.saving = false;
