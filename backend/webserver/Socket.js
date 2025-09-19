@@ -440,7 +440,43 @@ module.exports = class Socket {
         return data;
     }
 
-    
+    /**
+     * Send additional foreign table data to the user if this data is available
+     * @param {string} tableName Name of the table to check foreign table data for
+     * @param {Object} data Data to find used foreign tables in
+     * @param {Object} excludedAttributes Attributes to be excluded and not sent
+     */
+    async sendForeignTableData(tableName, data, excludedAttributes) {
+        if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
+            await Promise.all(this.models[tableName].autoTable.foreignTables.map(async (fTable) => {
+                const fdata = await this.models[fTable.table].getAll({
+                    where: {[fTable.by]: {[Op.in]: data.map(d => d.id)}, deleted: false},
+                    attributes: {exclude: excludedAttributes},
+                });
+                this.emit(fTable.table + "Refresh", fdata, true);
+            }))
+        }
+    }
+
+    /**
+     * Send additional parent data to the user if this data is available
+     * @param {string} tableName Name of the table to check parent data for
+     * @param {Object} data Data to find used parent tables in
+     * @param {Object} excludedAttributes Attributes to be excluded and not sent
+     */
+    async sendParentTableData(tableName, data, excludedAttributes) {
+        if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
+            await Promise.all(this.models[tableName].autoTable.parentTables.map(async (pTable) => {
+                    const pdata = await this.models[pTable.table].getAll({
+                        where: {['id']: {[Op.in]: data.map(d => d[pTable.by])}, deleted: false},
+                        attributes: {exclude: excludedAttributes},
+                    });
+                    this.emit(pTable.table + "Refresh", pdata, true);
+                })
+            )
+        }
+    }
+
     /**
      * Send table data to subscribed users
      * @param {*} tableName 
@@ -479,27 +515,9 @@ module.exports = class Socket {
         }
 
         // send additional data if needed
-        if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
-            await Promise.all(this.models[tableName].autoTable.foreignTables.map(async (fTable) => {
-                const fdata = await this.models[fTable.table].getAll({
-                    where: {[fTable.by]: {[Op.in]: data.map(d => d.id)}, deleted: false},
-                    attributes: {exclude: defaultExcludes},
-                });
-                this.emit(fTable.table + "Refresh", fdata, true);
-            }))
-
-        }
-        if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
-            await Promise.all(this.models[tableName].autoTable.parentTables.map(async (pTable) => {
-                    const pdata = await this.models[pTable.table].getAll({
-                        where: {['id']: {[Op.in]: data.map(d => d[pTable.by])}, deleted: false},
-                        attributes: {exclude: defaultExcludes},
-                    });
-                    this.emit(pTable.table + "Refresh", pdata, true);
-                })
-            )
-        }
-
+        this.sendForeignTableData(tableName, data, defaultExcludes);
+        this.sendParentTableData(tableName, data, defaultExcludes);
+        
         this.emit(tableName + "Refresh", data, true);
         return data;
 
