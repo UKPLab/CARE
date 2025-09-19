@@ -168,11 +168,11 @@ module.exports = class Socket {
 
     /**
      * Checks and caches whether the user is an admin.
-     *
      * Note: This method has side effects as it caches the admin status in `this.userInfo[userId].isUserAdmin`.
      * This can be problematic if the user's admin status changes
      * during their session, as the cached value won't automatically update.
-     *
+     * @param {number} userId The id of the user to check admin privileges for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
      * @returns {Promise<boolean>} True if the user is an admin.
      */
     async isAdmin(userId = this.userId, rolesUpdatedAt = this.rolesUpdatedAt) {
@@ -196,7 +196,9 @@ module.exports = class Socket {
     /**
      * Check if the user has this right
      * @param {string} right The name of the right to check
-     * @returns {Promise<boolean>} If the user has access with this right
+     * @param {number} userId The id of the user to check access for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
+     * @returns {Promise<boolean>} True if the user has the right
      */
     async hasAccess(right, userId = this.userId, rolesUpdatedAt = this.rolesUpdatedAt) {
         // admin has full rights, so return true directly
@@ -219,7 +221,7 @@ module.exports = class Socket {
     /**
      * Check if the user has access
      * @param {number} userId The userId to check
-     * @return {Promise<boolean>} If the user has access
+     * @return {Promise<boolean>} True if the user has access
      */
     async checkUserAccess(userId) {
         if (await this.isAdmin(userId)) {
@@ -241,7 +243,7 @@ module.exports = class Socket {
     /**
      * Check if the user has access to a document
      * @param {number} documentId The documentId to check
-     * @return {boolean}
+     * @return {boolean} True if the user has document access
      */
     checkDocumentAccess(documentId) {
         if ("DocumentSocket" in this.server.sockets) {
@@ -306,40 +308,80 @@ module.exports = class Socket {
     }
 
     /**
+     * Filters the access map to get rules relevant for the provided user.
+     * @param {Object} accessMap The access map to filter
+     * @param {number} userId User ID to check the rights for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
+     * @returns {Object} filtered access map
+     */
+    async filterAccessMap(accessMap, userId, rolesUpdatedAt) {
+        return await Promise.all(
+            accessMap.map(async a => {
+                let hasAccess = false;
+                let limitation = undefined;
+                if (a.right) {
+                    hasAccess = await this.hasAccess(a.right, userId, rolesUpdatedAt);
+                } else if (a.table) {
+                    const count = await this.models[a.table].findAll({
+                        attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                        where: {
+                            ["userId"]: userId
+                        },
+                        group: a.by,
+                        raw: true
+                    }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
+                console.log("After 2 ta in filter access map");
+                    hasAccess = count.some(c => c.count > 0);
+                    limitation = count.map(c => c[a.by]);
+                }
+                return {
+                    access: a,
+                    hasAccess: hasAccess,
+                    limitation: limitation
+                }
+                })
+            );
+    }
+
+    /**
+     * Creates database filters according to limitations in the accessMap.
+     * @param {Object} accessMap AccessMap with limitations
+     * @param {number} userId Id of user to check limitations for
+     * @returns {Object} array of limitation filters
+     */
+    handleLimitations(accessMap, userId) {
+        let filteredAccessMap = accessMap.flatMap(a => {
+            const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
+            return a.limitation
+                ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
+                : null;
+        }).filter(Boolean);
+        if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
+            filteredAccessMap = filteredAccessMap.concat([{userId: userId}]); // Ensure we always include the 'userId' condition
+        }
+        allFilter = {
+            [Op.and]: [
+                allFilter,
+                {
+                    [Op.or]: filteredAccessMap
+                }
+            ]
+        };
+        return [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+    }
+
+    /**
      * Modifies allFilter and allAttributes according to user rights in the table.
      * @param {number} userId User ID to check the rights for
      * @param {Object} allFilter Starting filters
      * @param {Object} allAttributes Starting attributes
      * @param {string} tableName The table to check the rights for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
      * @returns {Object} modified filters and attributes + whether access is allowed
      */
     async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
         const accessMap = this.server.db.models[tableName]['accessMap'];
-        const filteredAccessMap = await Promise.all(
-        accessMap.map(async a => {
-            let hasAccess = false;
-            let limitation = undefined;
-            if (a.right) {
-                hasAccess = await this.hasAccess(a.right, userId, rolesUpdatedAt);
-            } else if (a.table) {
-                const count = await this.models[a.table].findAll({
-                    attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
-                    where: {
-                        ["userId"]: userId
-                    },
-                    group: a.by,
-                    raw: true
-                }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
-                hasAccess = count.some(c => c.count > 0);
-                limitation = count.map(c => c[a.by]);
-            }
-            return {
-                access: a,
-                hasAccess: hasAccess,
-                limitation: limitation
-            }
-            })
-        );
+        const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
         if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) { // is allowed to see everything
@@ -357,37 +399,7 @@ module.exports = class Socket {
             if (accessRights.length > 0) {
             // check if all accessRights has limitations?
             if (relevantAccessMap.every(item => item.limitation)) {
-                if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
-                    allFilter = {
-                        [Op.and]: [
-                            allFilter,
-                            {
-                                [Op.or]: relevantAccessMap.flatMap(a => {
-                                    const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-                                    return a.limitation
-                                        ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                                        : null;
-                                }).filter(Boolean).concat([{userId: userId}]) // Ensure we always include the 'userId' condition
-                            }
-                        ]
-                    };
-                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
-                } else {
-                    allFilter = {
-                        [Op.and]: [
-                            allFilter,
-                            {
-                                [Op.or]: relevantAccessMap.flatMap(a => {
-                                    const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-                                    return a.limitation
-                                        ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                                        : null;
-                                }).filter(Boolean)
-                            }
-                        ]
-                    }
-                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
-                } 
+                allAttributes['include'] = this.handleLimitations(relevantAccessMap, userId);
             } else { // do without limitations
                 allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
             }
@@ -399,8 +411,44 @@ module.exports = class Socket {
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
     }
 
-    async sendTable(tableName, filter = [], injects = []) {
+    /**
+     * 
+     * @param {Object} injects 
+     * @param {Object} data 
+     * @returns 
+     */
+    async handleInjections(injects, data) {
+        for (const injection of injects) {
+            if (injection.type === "count") {
+                const count = await this.models[injection.table].findAll({
+                    attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                    where: {
+                        [injection.by]: {
+                            [Op.in]: data.map((d) => d.id)
+                        },
+                    },
+                    group: injection.by,
+                    raw: true
+                });
+                // inject in data
+                data = data.map((d) => {
+                    d[injection.as] = Number(count.find((c) => c[injection.by] === d.id)?.count) || 0;
+                    return d;
+                });
+            }
+        }
+        return data;
+    }
 
+    
+    /**
+     * Send table data to subscribed users
+     * @param {*} tableName 
+     * @param {*} filter 
+     * @param {*} injects 
+     * @returns 
+     */
+    async sendTable(tableName, filter = [], injects = []) {
         // check if it is an autoTable or not
         if (!this.models[tableName] || !this.models[tableName].autoTable) {
             this.logger.error("Table " + tableName + " is not an autoTable");
@@ -415,8 +463,7 @@ module.exports = class Socket {
         let allAttributes = {
             exclude: defaultExcludes,
         };
-
-        const filtersAndAttributes = await this.getFiltersAndAttributes(this.userId, allFilter, allAttributes, tableName)
+        const filtersAndAttributes = await this.getFiltersAndAttributes(this.userId, allFilter, allAttributes, tableName, this.rolesUpdatedAt)
         if (!filtersAndAttributes.accessAllowed) {
             return;
         }
@@ -426,28 +473,9 @@ module.exports = class Socket {
             where: allFilter,
             attributes: allAttributes,
         });
-
         // handle injects
         if (injects && injects.length > 0) {
-            for (const injection of injects) {
-                if (injection.type === "count") {
-                    const count = await this.models[injection.table].findAll({
-                        attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
-                        where: {
-                            [injection.by]: {
-                                [Op.in]: data.map((d) => d.id)
-                            },
-                        },
-                        group: injection.by,
-                        raw: true
-                    });
-                    // inject in data
-                    data = data.map((d) => {
-                        d[injection.as] = Number(count.find((c) => c[injection.by] === d.id)?.count) || 0;
-                        return d;
-                    });
-                }
-            }
+            data = this.handleInjections(injects, data);
         }
 
         // send additional data if needed
@@ -459,6 +487,7 @@ module.exports = class Socket {
                 });
                 this.emit(fTable.table + "Refresh", fdata, true);
             }))
+
         }
         if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
             await Promise.all(this.models[tableName].autoTable.parentTables.map(async (pTable) => {
@@ -496,9 +525,7 @@ module.exports = class Socket {
         includeFieldTables = false,
     ) {
         try {
-
             const accessRights = this.server.db.models[table]['accessMap'].filter(async a => await this.hasAccess(a.right));
-
             if (!this.autoTables.includes(table) && accessRights.length === 0) {
                 this.logger.error("No access rights for autotable: " + table);
                 return;
@@ -564,7 +591,6 @@ module.exports = class Socket {
                     }
                 }
             }
-
             if (include.length > 0) {
                 for (const inclusions of include) {
                     if (inclusions.type === "count") {
