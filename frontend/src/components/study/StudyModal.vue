@@ -146,6 +146,7 @@ import Editor from "@/basic/editor/Editor.vue";
  */
 export default {
   name: "StudyModal",
+  subscribeTable:["study_session"],
   components: {Loader, BasicTable, Modal, Editor },
   props: {
     studyId: {
@@ -240,7 +241,7 @@ export default {
             {key: "showResumeButton", value: true},
           ],
           title: "Resume session",
-          action: "resumeSession",
+          action: "resumeStudySession",
         },
         {
           icon: "box-arrow-in-right",
@@ -255,7 +256,10 @@ export default {
             {key: "showStartButton", value: true}
           ],
           title: "Start session",
-          action: "startSession",
+          action: "startStudySession",
+          stats: {
+            studySessionId: "id",
+          }
         },
         {
           icon: "x-octagon",
@@ -271,6 +275,9 @@ export default {
           ],
           title: "Finish session",
           action: "finishSession",
+          stats: {
+            studySessionId: "id",
+          }
         }
       ]
     },
@@ -359,11 +366,11 @@ export default {
       if (data.action === "finishSession") {
         this.$emit("finish", {studySessionId: data.params.id});
       }
-      if (data.action === "resumeSession") {
+      if (data.action === "resumeStudySession") {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
-      if (data.action === "startSession") {
+      if (data.action === "startStudySession") {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
