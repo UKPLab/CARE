@@ -534,9 +534,11 @@ module.exports = class Socket {
      * @param {String} table Table to find foreign keys for
      * @param {Object} data data to find IDs of relevant entries in
      * @param {number} userId User to send the data to
+     * @param {boolean} includeForeignData True if foreign data should also be sent
+     * @param {boolean} includeFieldTables True if field tables should also be sent
      * @return {void}
      */
-    async sendForeignKeys(table, data, userId) {
+    async sendForeignKeys(table, data, userId, includeForeignData = true, includeFieldTables = false) {
         const foreignKeys = await this.server.db.sequelize
                     .getQueryInterface()
                     .getForeignKeyReferencesForTable(table);
@@ -553,7 +555,8 @@ module.exports = class Socket {
                             [{key: "id", values: uniqueIds}],
                             [],
                             userId,
-                            includeForeignData = true
+                            includeForeignData,
+                            includeFieldTables
                         );
                     }
                 });
@@ -568,7 +571,7 @@ module.exports = class Socket {
      * @param {boolean} includeFieldTables True if field tables should also be sent
      * @returns {Object} enriched data object
      */
-    async sendInclusions(include, data, userId, includeForeignData, includeFieldTables) {
+    async sendInclusions(include, data, userId, includeForeignData = true, includeFieldTables = false) {
         for (const inclusions of include) {
             if (inclusions.type === "count") {
                 const count = await this.models[inclusions.table].findAll({
@@ -602,9 +605,10 @@ module.exports = class Socket {
      * @param {Object} data data to find field tables
      * @param {number} userId Id of the user to send the inclusions to
      * @param {boolean} includeForeignData True if foreign data should also be sent
+     * @param {boolean} includeFieldTables True if field tables should also be sent
      * @return {void}
      */
-    async sendFieldTables(table, data, userId, includeForeignData) {
+    async sendFieldTables(table, data, userId, includeForeignData = true, includeFieldTables = false) {
         const fields = this.models[table].fields.filter(
             (f) => f.type === "choice" || f.type === "table"
         );
@@ -626,6 +630,7 @@ module.exports = class Socket {
                         [],
                         userId,
                         includeForeignData,
+                        includeFieldTables
                     );
                 }
             }
@@ -646,12 +651,12 @@ module.exports = class Socket {
         table,
         filter = [],
         include = [],
-        userId = null,
+        userId = this.userId,
         includeForeignData = true,
         includeFieldTables = false,
     ) {
         try {
-            const accessRights = this.server.db.models[table]['accessMap'].filter(async a => await this.hasAccess(a.right));
+            const accessRights = this.server.db.models[table]['accessMap'].filter(async a => await this.hasAccess(a.right, userId));
             if (!this.autoTables.includes(table) && accessRights.length === 0) {
                 this.logger.error("No access rights for autotable: " + table);
                 return;
@@ -662,7 +667,7 @@ module.exports = class Socket {
                 const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
                 data = await this.models[table].getAutoTable(filter, userId, attributes);
             } else {
-                data = await this.models[table].getAutoTable(filter, this.userId);
+                data = await this.models[table].getAutoTable(filter, userId);
             }
 
             if (includeForeignData) {
