@@ -50,11 +50,11 @@ module.exports = class Socket {
 
     /**
      * Creates a new socket event
-     * @param eventName The name of the event
-     * @param func  The function to execute (need parameter data and options)
-     * @param options Additional options for the function
-     * @param transaction If the function should be executed in a transaction for db operations
-     * @returns
+     * @param {string} eventName The name of the event
+     * @param {Function} func  The function to execute (need parameter data and options)
+     * @param {Object} options Additional options for the function
+     * @param {boolean} transaction If the function should be executed in a transaction for db operations
+     * @returns {void}
      */
     createSocket(eventName, func, options = {}, transaction = false) {
         this.socket.on(eventName, async (data, callback) => {
@@ -183,6 +183,11 @@ module.exports = class Socket {
         return this.userInfo[userId].isAdmin;
     }
 
+    /**
+     * Adds access information about the user userId in this.userInfo.
+     * @param {number} userId The id of the user to update access for 
+     * @returns {void}
+     */
     async updateUserInfo(userId) {
         const userAccess = {};
         const roleIds = await this.models["user_role_matching"].getUserRolesById(userId);
@@ -411,10 +416,10 @@ module.exports = class Socket {
     }
 
     /**
-     * 
-     * @param {Object} injects 
-     * @param {Object} data 
-     * @returns 
+     * Handles injections of type count by executing COUNT queries and attaching the result to the data
+     * @param {Object} injects Instructions on what to inject
+     * @param {Object} data Data to query and extend
+     * @returns {Object} data with attached COUNT results
      */
     async handleInjections(injects, data) {
         for (const injection of injects) {
@@ -480,9 +485,9 @@ module.exports = class Socket {
 
     /**
      * Send table data to subscribed users
-     * @param {*} tableName 
-     * @param {*} filter 
-     * @param {*} injects 
+     * @param {string} tableName The name of table to send
+     * @param {Array<Object>} filter Optional filters
+     * @param {Array<Object>} injects Optional injects
      * @return {Promise<void>}
      */
     async sendTable(tableName, filter = [], injects = []) {
@@ -527,18 +532,18 @@ module.exports = class Socket {
     /**
      * Retrieves foreign keys of table and sends data of foreign tables to the user
      * @param {String} table Table to find foreign keys for
-     * @param {Object} uniqueIds 
+     * @param {Object} data data to find IDs of relevant entries in
      * @param {number} userId User to send the data to
      * @return {void}
      */
-    async sendForeignKeys(table, uniqueIds, userId) {
+    async sendForeignKeys(table, data, userId) {
         const foreignKeys = await this.server.db.sequelize
                     .getQueryInterface()
                     .getForeignKeyReferencesForTable(table);
         foreignKeys
             .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
                 .map(async (fk) => {
-                        uniqueIds.map((d) => d[fk.columnName])
+                    const uniqueIds = data.map((d) => d[fk.columnName])
                         .filter(
                             (value, index, array) => array.indexOf(value) === index
                         );
@@ -556,7 +561,7 @@ module.exports = class Socket {
 
     /**
      * Adds inclusions to the data and sends it to the user
-     * @param {Array} include array of inclusions
+     * @param {Array<Object>} include array of inclusions
      * @param {Object} data data to enrich with inclusions and send to user
      * @param {number} userId Id of the user to send the inclusions to
      * @param {boolean} includeForeignData True if foreign data should also be sent
@@ -629,12 +634,12 @@ module.exports = class Socket {
 
     /**
      * Send auto table data to the clients
-     * @param table
-     * @param filter list of filter
-     * @param include
-     * @param userId
-     * @param includeForeignData also includes data from foreign keys tables
-     * @param includeFieldTables also includes data from field tables
+     * @param {string} table table to send data from
+     * @param {Array<Object>} filter list of filter
+     * @param {Object} include additional data to include
+     * @param {number} userId user to send data to
+     * @param {boolean} includeForeignData also includes data from foreign keys tables
+     * @param {boolean} includeFieldTables also includes data from field tables
      * @return {Promise<void>}
      */
     async sendTableData(
