@@ -16,6 +16,28 @@ const { generateToken, decodeToken } = require('../../utils/auth');
 module.exports = function (server) {
 
     /**
+     * Helper function to get the base URL from settings
+     */
+    async function getBaseUrl() {
+        const baseUrl = await server.db.models['setting'].get("system.mailService.url");
+        return baseUrl || "localhost:3000"; // fallback to default if not set
+    }
+
+    /**
+     * Helper function to get password reset token expiry from settings
+     */
+    async function getPasswordResetTokenExpiry() {
+        return await server.db.models['setting'].get("system.auth.tokenExpiry.passwordReset") || 1; // fallback to 1 hour if not set
+    }
+
+    /**
+     * Helper function to get email verification token expiry from settings
+     */
+    async function getEmailVerificationTokenExpiry() {
+        return await server.db.models['setting'].get("system.auth.tokenExpiry.emailVerification") || 24; // fallback to 24 hours if not set
+    }
+
+    /**
      * Login Procedure
      */
     server.app.post('/auth/login', function (req, res, next) {
@@ -159,18 +181,27 @@ module.exports = function (server) {
             const newUser = await server.db.models['user'].add(userData, {transaction: transaction});
             // Generate email verification token if verification is enabled
             if (emailVerificationEnabled) {
-                const verificationToken = generateToken(24); // 24 hours to verify
-                const decoded = decodeToken(verificationToken);
-                userData.emailVerificationToken = decoded.tokenPart;
+                const tokenExpiry = await getEmailVerificationTokenExpiry();
+                const verificationToken = generateToken(tokenExpiry);
+                userData.emailVerificationToken = verificationToken;
                 await server.db.models['user'].update(
-                    {emailVerificationToken: decoded.tokenPart}, 
+                    {emailVerificationToken: verificationToken}, 
                     {where: {id: newUser.id}, transaction}
                 );
-                const verificationLink = `http://localhost:3001/verify-email?token=${verificationToken}`; // TODO: Adjust link as needed
+                const baseUrl = await getBaseUrl();
+                const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
                 await server.sendMail(
                     data.email, 
-                    "Please verify your email address", 
-                    `Please click the following link to verify your email address: ${verificationLink}`
+                    "Welcome to CARE - Please verify your email address", 
+                    `Welcome to CARE! You've successfully registered a new account.
+
+To complete your registration, please verify your email address by clicking the link below:
+${verificationLink}
+
+This link will expire in ${tokenExpiry} hours. If you didn't create a CARE account, you can safely ignore this email.
+
+Thanks,
+The CARE Team`
                 );
                 await transaction.commit();
                 res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true}); // TODO: Adjust link as needed   
@@ -201,17 +232,26 @@ module.exports = function (server) {
                 return res.status(401).json({message: "User with this email does not exist."});
             }
             
-            // Generate token with encoded expiry (1 hour)
-            const resetToken = generateToken(1);
+            // Generate token with encoded expiry from settings
+            const tokenExpiry = await getPasswordResetTokenExpiry();
+            const resetToken = generateToken(tokenExpiry);
             
-            // Store only the token part in the database (no expiry needed)
-            const decoded = decodeToken(resetToken);
-            user.resetToken = decoded.tokenPart; // Store just the random part for lookup
+            // Store the full token in the database
+            user.resetToken = resetToken;
             await user.save();
             
             // Send email with the full encoded token
+            const baseUrl = await getBaseUrl();
+            const resetLink = `http://${baseUrl}/reset-password?token=${resetToken}`;
+            await server.sendMail(user.email, "CARE Password Reset Request", `We received a request to reset the password for your CARE account.
 
-            await server.sendMail(user.email, "Password Reset Request", `http://localhost:3001/reset-password?token=${resetToken}`); // TODO: Adjust link as needed
+To set a new password, please click the link below:
+${resetLink}
+
+This link will expire in ${tokenExpiry} hours. If you didn't request a password reset, you can safely ignore this email and your account will remain secure.
+
+Thanks,
+The CARE Team`);
             return res.status(200).json({message: "A password reset link has been sent."});
         } catch (err) {
             server.logger.error("Failed to find user:", err);
@@ -242,8 +282,8 @@ module.exports = function (server) {
                 return res.status(400).json({message: "Token has expired."});
             }
             
-            // Find user by the token part stored in database
-            const user = await server.db.models['user'].findOne({where: {resetToken: decoded.tokenPart}});
+            // Find user by the full token stored in database
+            const user = await server.db.models['user'].findOne({where: {resetToken: token}});
             if (!user) {
                 return res.status(400).json({message: "Invalid token."});
             }
@@ -251,7 +291,7 @@ module.exports = function (server) {
             // Reset password using the user model method and clear token
             await server.db.models['user'].resetUserPwd(user.id, newPassword);
             await server.db.models['user'].update({resetToken: null}, {where: {id: user.id}});
-            
+            server.sendMail(user.email, "Password Successfully Reset", "Your password has been successfully reset.");
             return res.status(200).json({message: "Password has been reset successfully."});
         } catch (err) {
             server.logger.error("Failed to reset password:", err);
@@ -276,7 +316,7 @@ module.exports = function (server) {
             
             // Check if token exists in database
             const user = await server.db.models['user'].findOne({
-                where: {resetToken: decoded.tokenPart}
+                where: {resetToken: token}
             });
             if (!user) {
                 return res.status(404).json({message: "Token not found."});
@@ -297,12 +337,12 @@ module.exports = function (server) {
      */
     server.app.get('/verify-email', async function (req, res) {
         const {token} = req.query;
-        
+              
         if(await server.db.models['setting'].get("app.register.emailVerification") !== "true") {
-            return res.redirect('http://localhost:3000/login?error=verification-disabled'); // TODO: Adjust link as needed
+            return res.status(400).send({message:"Email verification is disabled."});
         }
         if (!token) {
-            return res.redirect('http://localhost:3000/login?error=missing-token');
+            return res.status(400).send({message:"Missing token."});
         }
         
         try {
@@ -310,20 +350,20 @@ module.exports = function (server) {
             const decoded = decodeToken(token);
             
             if (!decoded.isValid) {
-                return res.redirect('http://localhost:3000/login?error=invalid-token');  // TODO: Adjust link as needed
+                return res.status(400).send({message:"Invalid token format."});
             }
             
             if (decoded.expired) {
-                return res.redirect('http://localhost:3000/login?error=expired-token'); //TODO: Adjust link as needed
+                return res.status(400).send({message:"Token has expired."});
             }
             
             // Find user by verification token
             const user = await server.db.models['user'].findOne({
-                where: {emailVerificationToken: decoded.tokenPart}
+                where: {emailVerificationToken: token}
             });
             
             if (!user) {
-                return res.redirect('http://localhost:3000/login?error=invalid-token');  // TODO: Adjust link as needed
+                return res.status(400).send({message:"Invalid token."});
             }
 
             
@@ -333,11 +373,11 @@ module.exports = function (server) {
                 {where: {id: user.id}}
             );
             // Redirect to login page with success message
-            return res.redirect('http://localhost:3000/login?verified=true');  // TODO: Adjust link as needed
+            return res.status(200).send({message:"Email successfully verified. You can now log in."});
             
         } catch (error) {
             server.logger.error("Failed to verify email:", error);
-            return res.redirect('http://localhost:3000/login?error=server-error');  // TODO: Adjust link as needed
+            return res.status(500).send({message:"Internal server error"});
         }
     });
 
@@ -369,21 +409,30 @@ module.exports = function (server) {
             }
             
             // Generate new verification token
-            const verificationToken = generateToken(24); // 24 hours
-            const decoded = decodeToken(verificationToken);
+            const tokenExpiry = await getEmailVerificationTokenExpiry();
+            const verificationToken = generateToken(tokenExpiry);
             
             // Update user with new token
             await server.db.models['user'].update(
-                {emailVerificationToken: decoded.tokenPart},
+                {emailVerificationToken: verificationToken},
                 {where: {id: user.id}}
             );
             
             // Send verification email
-            const verificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
+            const baseUrl = await getBaseUrl();
+            const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
             await server.sendMail(
                 email,
-                "Please verify your email address",
-                `Please click the following link to verify your email address: ${verificationLink}`
+                "CARE - Please verify your email address",
+                `Welcome back to CARE!
+
+To complete your email verification, please click the link below:
+${verificationLink}
+
+This link will expire in ${tokenExpiry} hours. If you didn't request this verification email, you can safely ignore this email.
+
+Thanks,
+The CARE Team`
             );
             
             return res.status(200).json({message: "Verification email has been sent."});

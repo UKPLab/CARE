@@ -140,15 +140,15 @@ module.exports = class Server {
                 const authEnabled = await this.db.models['setting'].get("system.mailService.smtp.auth.enabled") === "true";
                 
                 let transportConfig = {
-                    host: testAccount.smtp.host, //smtpHost,
-                    port: testAccount.smtp.port, //parseInt(smtpPort),
-                    secure: testAccount.smtp.secure //smtpSecure
+                    host: smtpHost,
+                    port: smtpPort,
+                    secure: smtpSecure
                 };
                 
                 if (authEnabled) {
-                    const authUser = testAccount.user //await this.db.models['setting'].get("system.mailService.smtp.auth.user");
-                    const authPass = testAccount.pass//await this.db.models['setting'].get("system.mailService.smtp.auth.pass");
-                    
+                    const authUser = await this.db.models['setting'].get("system.mailService.smtp.auth.user");
+                    const authPass = await this.db.models['setting'].get("system.mailService.smtp.auth.pass");
+
                     if (authUser && authPass) {
                         transportConfig.auth = {
                             user: authUser,

@@ -77,7 +77,7 @@
  * This component provides a form to reset user password using a reset token
  * Now uses BasicForm for consistent form handling across the application
  *
- * @author: GitHub Copilot
+ * @author: Karim Ouf
  */
 import IconAsset from "@/basic/icons/IconAsset.vue";
 import BasicForm from "@/basic/Form.vue";

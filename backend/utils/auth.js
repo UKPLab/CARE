@@ -95,7 +95,7 @@ exports.generateToken = function generateToken(expiryHours = 1) {
 /**
  * Decode and validate a reset token with encoded expiry
  * @param {string} token - The encoded token
- * @returns {object} { isValid: boolean, expired: boolean, tokenPart: string, expiryTime: number }
+ * @returns {object} { isValid: boolean, expired: boolean, expiryTime: number }
  */
 exports.decodeToken = function decodeToken(token) {
     try {
@@ -108,7 +108,6 @@ exports.decodeToken = function decodeToken(token) {
         }
         
         const expiryTime = parseInt(parts[0], 10);
-        const tokenPart = parts[1];
         const now = Date.now();
         
         // Check if timestamp is valid
@@ -122,10 +121,9 @@ exports.decodeToken = function decodeToken(token) {
         return {
             isValid: true,
             expired: expired,
-            tokenPart: tokenPart,
             expiryTime: expiryTime
         };
     } catch (error) {
-        return { isValid: false, expired: false, tokenPart: null, expiryTime: null };
+        return { isValid: false, expired: false, expiryTime: null };
     }
 }
