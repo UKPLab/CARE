@@ -132,7 +132,7 @@ module.exports = class Server {
                 });
             } else if (await this.db.models['setting'].get("system.mailService.smtp.enabled") === "true") {
                 this.logger.info("Using SMTP transport");
-                const testAccount = await nodemailer.createTestAccount(); //for testing remove when using actual mail server
+                const testAccount = await nodemailer.createTestAccount(); //TODO: for testing remove when using actual mail server
                 // Get SMTP configuration from database
                 const smtpHost = await this.db.models['setting'].get("system.mailService.smtp.host");
                 const smtpPort = await this.db.models['setting'].get("system.mailService.smtp.port");
@@ -189,7 +189,7 @@ module.exports = class Server {
                 this.logger.error(err);
             } else {
                 this.logger.info("Message send: " + info.messageId);
-                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); // for testing remove when using actual mail server
+                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); //TODO: for testing remove when using actual mail server
             }
         });
     }
