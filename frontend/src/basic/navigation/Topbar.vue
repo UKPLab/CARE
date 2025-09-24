@@ -36,7 +36,7 @@
         <ul class="navbar-nav">
           <li class="nav-item me-3">
             <div
-              v-if="!isProjectButtonHidden"
+              v-if="!isProjectButtonHidden && isInDashboard"
               style="
                 position: relative;
                 display: flex;
@@ -157,6 +157,9 @@ export default {
     },
     isProjectButtonHidden() {
       return this.$store.getters["settings/getValue"]("topBar.projects.hideProjectButton") === "true"
+    },
+    isInDashboard() {
+      return this.$route.path.startsWith('/dashboard');
     },
     currentProject() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
