@@ -90,7 +90,7 @@
                           <div class="d-flex align-items-center">
                             <span class="criterion-icon me-2">
                               <LoadIcon
-                                :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
+                                :icon-name="expandedCriteria[getCriterionKey(groupIndex, criterionIndex)] ? 'chevron-up' : 'chevron-down'"
                                 :size="16"
                               />
                             </span>
@@ -121,7 +121,7 @@
 
                         <!-- Criterion Assessment -->
                         <div
-                          v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
+                          v-if="expandedCriteria[getCriterionKey(groupIndex, criterionIndex)]"
                           class="criterion-assessment mt-2 px-3 pb-2"
                         >
                           <div class="assessment-text">
@@ -689,12 +689,13 @@ export default {
     
     toggleCriterion(groupIndex, criterionIndex) {
       Object.keys(this.expandedCriteria).forEach((key) => {
-        if (key !== `${groupIndex}-${criterionIndex}`) {
+        if (key !== this.getCriterionKey(groupIndex, criterionIndex)) {
           this.expandedCriteria[key] = false;
         }
       });
 
-      this.expandedCriteria[`${groupIndex}-${criterionIndex}`] = !this.expandedCriteria[`${groupIndex}-${criterionIndex}`];
+      const key = this.getCriterionKey(groupIndex, criterionIndex);
+      this.expandedCriteria[key] = !this.expandedCriteria[key];
       
       this.$nextTick(() => {
         this.saveState();
@@ -794,6 +795,10 @@ export default {
     },
     
     // Utility methods
+    getCriterionKey(groupIndex, criterionIndex) {
+      return `${groupIndex}-${criterionIndex}`;
+    },
+    
     getGroupScore(group) {
       return group.score;
     },
@@ -885,7 +890,7 @@ export default {
 
       try {
         const keyManual = "assessment_result";
-        const keyAI = "grading_expose_nlpAssessment_assessment";
+        const keyAI = "grading_expose_nlpAssessment_data";
         const keyToUse = this.isAIAssessmentWorkflow ? keyAI : keyManual;
 
         // 1) Try to load already saved data for this step/session
@@ -921,23 +926,15 @@ export default {
     },
 
     async getPreprocessedAssessmentData() {
-      const getProjectScopedSubmissionDocIds = () => {
-        const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
-        const study = currentStudyStep ? this.$store.getters["table/study/get"](currentStudyStep.studyId) : null;
-        const projectId = study ? study.projectId : null;
-        const fallbackProjectId = projectId || parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
-        const docs = this.$store.getters["table/document/getAll"] || [];
-        return docs
-          .filter(doc => doc && doc.submissionId && (doc.type === 0 || doc.type === 4) && !doc.hideInFrontend && (doc.projectId === fallbackProjectId || !doc.projectId))
-          .map(doc => doc.id);
-      };
+      // Only fetch preprocessed data for the CURRENT document to avoid cross-document leakage
+      const currentDocumentId = this.documentId;
+      if (!currentDocumentId) return null;
 
-      const candidateDocIds = [this.documentId, ...getProjectScopedSubmissionDocIds()].filter((v, i, a) => v && a.indexOf(v) === i);
-      const key = "grading_expose_nlpAssessment_assessment";
+      const key = "grading_expose_nlpAssessment_data";
 
-      const tryFetch = (documentId) => new Promise(resolve => {
+      return await new Promise(resolve => {
         this.$socket.emit("documentDataGet", {
-          documentId,
+          documentId: currentDocumentId,
           studySessionId: null,
           studyStepId: null,
           key
@@ -953,14 +950,6 @@ export default {
           }
         });
       });
-
-      for (const docId of candidateDocIds) {
-        /* eslint-disable no-await-in-loop */
-        const result = await tryFetch(docId);
-        if (result && Object.keys(result).length > 0) return result;
-        /* eslint-enable no-await-in-loop */
-      }
-      return null;
     },
 
     mergeSavedDataWithConfiguration(savedData, options = { markAsSaved: true }) {
@@ -1025,7 +1014,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_assessment" : "assessment_result",
+            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_data" : "assessment_result",
           }, (resp) => {
             const v = (resp && resp.success && resp.data && resp.data.value) ? resp.data.value : resp?.value;
             resolve(v || null);
@@ -1061,7 +1050,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_assessment" : "assessment_result",
+            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_data" : "assessment_result",
             value
           }, (response) => {
             if (response && response.success) {
@@ -1074,6 +1063,8 @@ export default {
 
       } catch (error) {
         console.error("Error saving assessment data:", error);
+      } finally {
+        this.isSaving = false;
       }
     },
 

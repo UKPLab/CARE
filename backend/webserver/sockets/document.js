@@ -895,16 +895,27 @@ class DocumentSocket extends Socket {
             }
         }
         } else {
-            // Handle file-based documents (PDF, JSON, etc.)
-            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
-            const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
-
+            // Handle file-based documents (PDF, ZIP, JSON)
+            let fileExtension = '.pdf';
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+                fileExtension = '.json';
+            } else if (document.type === this.models['document'].docTypes.DOC_TYPE_ZIP) {
+                fileExtension = '.zip';
+            }
+            const filePath = ${UPLOAD_PATH}/${document.hash}${fileExtension};
+            
             if (!fs.existsSync(filePath)) {
-                throw new Error(`File ${document.hash}${fileExtension} not found`);
+                throw new Error(File ${document.hash}${fileExtension} not found);
             }
 
-            const file = fs.readFileSync(filePath);
-            return { document: document, file: file };
+            const file = fs.readFileSync(filePath); // Buffer
+            // For JSON files, return the content as a string; for others (PDF/ZIP), return as Buffer
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+                const fileContent = file.toString('utf8');
+                return { document: document, file: fileContent };
+            } else {
+                return { document: document, file: file };
+            }
         }
     }
 

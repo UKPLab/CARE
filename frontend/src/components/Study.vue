@@ -87,11 +87,25 @@
       @error="error"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
+    <StepModal
+      v-if="currentStep.stepType === 1 && studyTrajectory.includes(currentStep.id) && currentStepHasNlpRequests"
+      :study-step-id="currentStep.id"
+      loading-only
+      auto-close-on-complete
+      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
+    />
     <Editor
       v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
       :active="true"
+      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
+    />
+    <StepModal
+      v-if="currentStep.stepType === 2 && studyTrajectory.includes(currentStep.id) && currentStepHasNlpRequests"
+      :study-step-id="currentStep.id"
+      loading-only
+      auto-close-on-complete
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <StepModal
@@ -164,6 +178,10 @@ export default {
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
     },
+    currentStepHasNlpRequests() {
+      const services = this.currentStep && this.currentStep.configuration && this.currentStep.configuration.services;
+      return Array.isArray(services) && services.some(s => s && s.type === 'nlpRequest');
+    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters["table/study_session/get"](this.studySessionId);
@@ -188,7 +206,7 @@ export default {
     },
     nextStudyStep() {
       if (this.currentStudyStep) {
-        // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
+        // Find the next step by looking for a step where studyStepPrevious matches currentStudyStep.id
         return this.studySteps.find((step) => step.studyStepPrevious === this.currentStudyStep.id);
       }
     },

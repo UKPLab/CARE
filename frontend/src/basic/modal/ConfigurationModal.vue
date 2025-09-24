@@ -449,28 +449,37 @@ export default {
       return base;
     },
     getSubmissionOptions() {
+      // Prefer ZIP files (type 4) from the submission associated with the selected document (Step 1)
+      const selectedDoc = (this.$store.getters["table/document/get"]) ? this.$store.getters["table/document/get"](this.documentId) : null;
+      let submissionId = selectedDoc && selectedDoc.submissionId ? selectedDoc.submissionId : null;
+
+
+      if (submissionId) {
+        const docsBySubmission = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('submissionId', submissionId)) || [];
+        const zipDocs = docsBySubmission.filter((d) => d && d.type === 4 && !d.hideInFrontend);
+        return zipDocs.map((d) => ({ value: d.id, name: d.name, stepId: 0 }));
+      }
+
       const submissions = (this.$store.getters["table/submission/getAll"]) || [];
       const submissionIds = submissions.map((s) => s.id);
       const documents = (this.$store.getters["table/document/getAll"]) || [];
-
-      let docs = documents.filter((d) => d && (d.type === 0 || d.type === 4) && !d.hideInFrontend);
-      if (submissionIds.length > 0) {
-        docs = docs.filter((d) => submissionIds.includes(d.submissionId));
-      }
-      return docs.map((d) => ({ value: `submission_${d.id}`, name: d.name, stepId: 0 }));
+      const docs = documents
+        .filter((d) => d && ( d.type === 4) && !d.hideInFrontend)
+        .filter((d) => submissionIds.includes(d.submissionId));
+      return docs.map((d) => ({ value: d.id, name: d.name, stepId: 0 }));
     },
     getConfigOptions() {
       const configs = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('type', 3)) || [];
       return configs
         .filter((d) => d && !d.hideInFrontend)
-        .map((d) => ({ value: `config_${d.id}`, name: d.name, stepId: 0 }));
+        .map((d) => ({ value: d.id, name: d.name, stepId: 0 }));
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
       // Extract placeholders
-      const textRegex = /~text~/g;
-      const chartRegex = /~chart~/g;
-      const comparisonRegex = /~comparison~/g;
+      const textRegex = /text/g;
+      const chartRegex = /chart/g;
+      const comparisonRegex = /comparison/g;
 
       let match;
       const extracted = [];
@@ -520,10 +529,10 @@ export default {
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
     },
     generateShortPreview(text) {
-      this.shortPreview = text.replace(/~nlp~/g, (match, num) => {
+      this.shortPreview = text.replace(/nlp/g, (match, num) => {
         const colorIndex = this.placeholders.findIndex((p) => p.number == num);
         const color = this.placeholderColors[colorIndex] || "#000";
-        return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
+        return <span style="color: ${color}; font-weight: bold;">#${num}</span>;
       });
     },
     handleStepChange(step) {
