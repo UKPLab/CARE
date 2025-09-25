@@ -1,6 +1,16 @@
 const {inject} = require("../utils/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
+const env = process.env.NODE_ENV || "development";
+const config = require("../db/config/config.js")[env];
+const SequelizeSimpleCache = require("sequelize-simple-cache");
+
+let sequelize;
+if (config.use_env_variable) {
+    sequelize = new Sequelize(process.env[config.use_env_variable], config);
+} else {
+    sequelize = new Sequelize(config.database, config.username, config.password, config);
+}
 
 /**
  * Defines as new Socket class
@@ -38,6 +48,7 @@ module.exports = class Socket {
 
         // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
+        this.cache = {};
     }
 
     /**
@@ -327,14 +338,20 @@ module.exports = class Socket {
                 if (a.right) {
                     hasAccess = await this.hasAccess(a.right, userId, rolesUpdatedAt);
                 } else if (a.table) {
-                    const count = await this.models[a.table].findAll({
+                    if (!this.cache[a.table]) {
+                        const cacheSettings = {};
+                        cacheSettings[a.table] = {ttl: 30*60};
+                        const tableCache = new SequelizeSimpleCache(cacheSettings);
+                        this.cache[a.table] = tableCache.init(require("../db/models/" + a.table)(sequelize, Sequelize.DataTypes));
+                    }
+                    const count = await this.cache[a.table].findAll({
                         attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
                         where: {
                             ["userId"]: userId
                         },
                         group: a.by,
                         raw: true
-                    }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
+                    });
                     hasAccess = count.some(c => c.count > 0);
                     limitation = count.map(c => c[a.by]);
                 }
