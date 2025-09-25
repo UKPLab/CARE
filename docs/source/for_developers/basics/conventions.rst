@@ -117,8 +117,8 @@ Documentation
 Repository Workflows
 --------------------
 
-Issue and Milestone Management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Issue Management
+~~~~~~~~~~~~~~~~
 
 --------
 
@@ -129,10 +129,6 @@ Issue and Milestone Management
 - you are creating a new feature or part of a feature.
 
 One issue can comprise multiple smaller tasks, but it should specify a development process that has clear intended value to the project. Typically, an issue is processed by a single developer.
-
-To group issues that serve the development of one larger feature and are eventually intended to form a new release, we use milestones. Milestones are only created by the project maintainers. A milestone (upon success) always renders a new usable and mostly stable version of the software with added value compared to previous revisions.
-
-For feature issues, you should always reference the respective milestone.
 
 git Workflows
 -------------
@@ -153,7 +149,7 @@ You want to implement a new feature, realize a hot fix or make any other non-tri
 There are currently two main branches in the repository:
 
 - `main`: holds only verified, stable and deployable code. Only major pull requests are added to this by repo maintainers. This branch is protected.
-- `dev`: holds current, stable code under development. This branch may include experimental features etc. and is merged to `main` occasionally, when a milestone is finished. This branch is protected.
+- `dev`: holds current, stable code under development. This branch may include experimental features etc. and is merged to `main` occasionally. This branch is protected.
 
 General Guidelines
 ~~~~~~~~~~~~~~~~~~
@@ -251,40 +247,17 @@ You want to implement an entirely new feature, which is non-trivial to realize.
 
     git checkout -b feat-FNUM-FNAME dev
 
-3. On this branch you may create arbitrary child branches as you see fit, but please stick to the general naming conventions (outlined above).
+3. Work on this branch. You may create arbitrary child branches as you see fit, but please stick to the general naming conventions (outlined above).
 
-**New release**
-
-One or multiple features are finished on their branch, they are stable, tested and ready for release to `dev` and finally `main`. A release is associated with a milestone, so if necessary create this milestone first.
-
-1. Make sure the respective feature branches are cleaned and tested to work on their own (as far as this can be tested).
-
-2. Create a pull request for merging the respective feature branches to the `dev` branch. This may result in code on `dev` which is not stable and you might need to resolve merge conflicts first. If no code review is necessary, you might as well merge them directly into `dev` without a pull request:
+4. Push the branch and open a **Merge Request** into `dev`. Do **not** merge locally.
 
 ::
 
-    git checkout dev
-    git merge FEATUREBRANCH1
-    git merge FEATUREBRANCH2
+    git push -u origin feat-FNUM-FNAME
+    # then open a Merge Request targeting 'dev'
 
-3. Create a new release branch dedicated to clean up the merged version and resolve an issues. We use ``RNUM`` being the milestone number.
-
-::
-
-    git checkout -b release-RNUM dev
-
-4. Do the clean up and issue resolution. If necessary you may create sub-branches with the necessary changes here, but typically this should not be necessary. In the end the release branch is stable and could be deployed without an issue. If everything worked well without having to realize fundamental changes to features, you may delete the feature branches at this point.
-
-5. Now merge the release branch back into `dev` now making it stable again, if no other changes occurred in the meantime.
-
-::
-
-    git checkout dev
-    git merge release-RNUM
-
-6. Afterwards create a merge request for the release branch to the main branch. This will be reviewed by maintainers and integrated into the deployed system.
-
-7. Delete the release branch afterwards.
+5. After the MR is approved and merged, delete the branch via the platform option
+   (“Delete source branch on merge”). Avoid manual deletions unless needed.
 
 **Hot fixes**
 
@@ -299,18 +272,12 @@ The deployed version has a bug that needs to be fixed ad-hoc. There is an associ
 
 2. Realize the changes on this branch.
 
-3. Create a pull request from the hotfix branch to the main branch. It is reviewed by maintainers.
-
-4. Delete the hotfix branch afterwards.
-
-**Cleanup**
-
-If an issue is closed, the code has to cleaned up and merged into `dev`
+3. Push the branch and open a **Merge Request** into `main`. It is reviewed by maintainers.
 
 ::
 
-    git checkout dev
-    git merge feat-FNUM-FNAME
-    git push                                 # check if merge was successful 
-    git branch -d feat-FNUM-FNAME            # delete branch locally
-    git push origin --delete feat-FNUM-FNAME # delete branch remotely
+    git push -u origin hotfix-INUM
+    # then open a Merge Request targeting 'main'
+
+4. After the MR is merged, delete the branch via the platform option
+   (“Delete source branch on merge”).

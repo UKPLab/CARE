@@ -17,8 +17,6 @@ The PEER project started in 2020 with the aim of developing a platform for the s
 
 The project is located in the SIG Intertext, since scientific papers also have cross-document phenomena (e.g. revisions of the same document, annotations from different people linked to the same document).
 
-See also `Types of Peer Review <https://authorservices.wiley.com/Reviewers/journal-reviewers/what-is-peer-review/types-of-peer-review.html>`_.
-
 `Official Project Page <https://www.informatik.tu-darmstadt.de/ukp/research_ukp/ukp_research_projects/ukp_project_peer/index.en.jsp>`_.
 
 ATHENE
@@ -33,27 +31,14 @@ Paper and Publication
 
 The first deployment of CARE and its conceptual foundations were described in the following publication:
 
-**CARE: A Collaborative Annotation and Reading Environment for Human-Centered NLP**  
-Dennis Zyska, Leonhard Hennig, Iryna Gurevych (2023)  
-:arxiv:`2302.12611`
+**CARE: Collaborative AI-Assisted Reading Environment** 
+Dennis Zyska, Nils Dycke, Jan Buchmann, Ilia Kuznetsov, Iryna Gurevych
 
-https://arxiv.org/abs/2302.12611
+https://aclanthology.org/2023.acl-demo.28/
 
-Courses and Usage
-~~~~~~~~~~~~~~~~~
+.. note::
 
-CARE has been used in several educational settings and student projects, especially within the DASP framework.  
-It has been employed for collaborative annotation, writing assistance, and peer review workflows in teaching.
-
-Projects where CARE was used include:
-
-- DASP WS22_23  
-- DASP WS23_24 (3 projects with 12 students)  
-- BP WS23_24  
-- EiwA WS23_24  
-- Ruhr Uni Bochum  
-- UKP Thesis Workflow  
-- Data Management Project, Summer 2023 (4 students)
+   **CARE** has since been renamed to **Collaborative AI-Assisted Research Environment**, as we have now also integrated an editor.
 
 Going Public
 ------------

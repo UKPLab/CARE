@@ -482,7 +482,7 @@ Additional options:
 * accept — allowed MIME types (e.g. `application/pdf`, `.delta`)
 * class — custom input class
 
-File uploads are handled via the ``documentAdd`` method in the ``document.js`` Socket.This is a **special case** because uploaded files are not just saved as form values but:
+File uploads are handled via the ``documentAdd`` method in the ``document.js`` Socket. This is a **special case** because uploaded files are not just saved as form values but:
 
 1. **Validated** — only ``.pdf`` and ``.delta`` files are allowed.
 2. **Stored to disk** — files are written to the ``/files`` directory using a generated hash as filename.
