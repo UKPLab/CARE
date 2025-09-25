@@ -424,7 +424,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = ["deleted", "deletedAt", "updatedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
         let allAttributes = {
             exclude: defaultExcludes,
         };
