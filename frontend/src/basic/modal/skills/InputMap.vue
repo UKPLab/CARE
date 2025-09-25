@@ -30,7 +30,10 @@ import FormSelect from "@/basic/form/Select.vue";
 export default {
   name: "InputMap",
   components: { FormSelect },
-  subscribeTable: ["configuration"],
+  subscribeTable: [{
+    table: "configuration",
+    filter: [{key: "type", value: 0}]
+  }],
   props: {
     skillName: {
       type: String,
@@ -128,8 +131,8 @@ export default {
     },
     getApplySkillsDataSources() {
       const sources = [
-        { value: "document", name: "Documents (related to selection in next step)", requiresTableSelection: true, tableType: "document" },
-        { value: "submission", name: "Submissions (related to selection in next step)", requiresTableSelection: true, tableType: "submission" }
+        { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
+        { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
       ];
 
       this.configurationEntries.forEach(entry => {

@@ -34,10 +34,10 @@
         </div>
 
         <div class="mt-2 text-muted">
-          The total running time is <strong>{{ elapsedTime }}</strong>
+          Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
         </div>
         <div class="mt-2 text-muted">
-          Current request time: <strong>{{ currentRequestElapsedTime }}</strong>
+          Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
         </div>
         <div class="mt-2 text-muted">
           Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
@@ -118,9 +118,6 @@ export default {
       const processed = this.processedCount;
       return Math.round((processed / total) * 100);
     },
-    currentRequestStartTime() {
-      return this.preprocess?.batchStartTime || null;
-    },
     activeRequestStartTime() {
       const requests = this.preprocess?.requests || {};
       const startTimes = Object.values(requests)
@@ -131,10 +128,6 @@ export default {
     },
     currentRequestElapsedTime() {
       const start = this.activeRequestStartTime;
-      return this.formatElapsedSince(start);
-    },
-    elapsedTime() {
-      const start = this.currentRequestStartTime;
       return this.formatElapsedSince(start);
     },
     remainingSubmissions() {
@@ -168,6 +161,21 @@ export default {
         return "Almost done...";
       }
       return this.formatDurationSeconds(diff);
+    },
+    estimatedTimePerRequest() {
+      const total = this.preprocess?.currentSubmissionsCount || 0;
+      const remaining = Object.keys(this.preprocess?.requests || {}).length;
+      const processed = total - remaining;
+      const batchStart = this.preprocess?.batchStartTime || null;
+      if (!batchStart || processed <= 0) {
+        return null;
+      }
+      const elapsedMs = Math.max(0, this.now - batchStart);
+      const currentStart = this.activeRequestStartTime;
+      const timeOnCurrentMs = currentStart ? Math.max(0, this.now - currentStart) : 0;
+      const completedMs = Math.max(0, elapsedMs - timeOnCurrentMs);
+      const avgPerItemMs = processed > 0 ? (completedMs / processed) : 0;
+      return avgPerItemMs ? Math.round(avgPerItemMs / 1000) : null;
     },
   },
   watch: {
