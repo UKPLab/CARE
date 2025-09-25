@@ -192,7 +192,7 @@ class UserSocket extends Socket {
                     const currentUserId = await this.models["user"].getUserIdByEmail(user.email);
                     if (currentUserId) {
                         createdUser = await this.models["user"].updateById(currentUserId, {
-                            firstName: user.firstName, lastName: user.lastName, extId: user.extId,
+                            firstName: user.firstName, lastName: user.lastName, extId: user.extId, emailVerified: true,
                         }, {
                             transaction, context: {
                                 userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
