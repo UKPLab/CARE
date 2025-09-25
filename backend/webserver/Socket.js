@@ -324,6 +324,18 @@ module.exports = class Socket {
     }
 
     /**
+     * Adds table tableName to cache
+     * @param {string} tableName 
+     * @return {void}
+     */
+    addTableToCache(tableName) {
+        const cacheSettings = {};
+        cacheSettings[tableName] = {ttl: 30*60};
+        const tableCache = new SequelizeSimpleCache(cacheSettings);
+        this.cache[tableName] = tableCache.init(require("../db/models/" + tableName)(sequelize, Sequelize.DataTypes));
+    }
+
+    /**
      * Filters the access map to get rules relevant for the provided user.
      * @param {Object} accessMap The access map to filter
      * @param {number} userId User ID to check the rights for
@@ -339,10 +351,7 @@ module.exports = class Socket {
                     hasAccess = await this.hasAccess(a.right, userId, rolesUpdatedAt);
                 } else if (a.table) {
                     if (!this.cache[a.table]) {
-                        const cacheSettings = {};
-                        cacheSettings[a.table] = {ttl: 30*60};
-                        const tableCache = new SequelizeSimpleCache(cacheSettings);
-                        this.cache[a.table] = tableCache.init(require("../db/models/" + a.table)(sequelize, Sequelize.DataTypes));
+                        this.addTableToCache(a.table);
                     }
                     const count = await this.cache[a.table].findAll({
                         attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
@@ -441,7 +450,10 @@ module.exports = class Socket {
     async handleInjections(injects, data) {
         for (const injection of injects) {
             if (injection.type === "count") {
-                const count = await this.models[injection.table].findAll({
+                if (!this.cache[injection.table]) {
+                    this.addTableToCache(injection.table);
+                }
+                const count = await this.cache[injection.table].findAll({
                     attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
                     where: {
                         [injection.by]: {
@@ -591,7 +603,10 @@ module.exports = class Socket {
     async sendInclusions(include, data, userId, includeForeignData = true, includeFieldTables = false) {
         for (const inclusions of include) {
             if (inclusions.type === "count") {
-                const count = await this.models[inclusions.table].findAll({
+                if (!this.cache[inclusions.table]) {
+                    this.addTableToCache(inclusions.table);
+                }
+                const count = await this.cache[inclusions.table].findAll({
                     attributes: [inclusions.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
                     where: {
                         [inclusions.by]: {
