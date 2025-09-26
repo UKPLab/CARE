@@ -150,7 +150,6 @@ export default {
   },
   computed: {
     configurationsTable() {
-      // FIXME: No update time and try exclude jsContent
       return this.$store.getters["table/configuration/getAll"];
     },
   },
