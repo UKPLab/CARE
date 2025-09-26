@@ -240,14 +240,14 @@ export default {
     handleStepChange(step) {
       switch (step) {
         case 1:
-          this.handleStepZero();
+          this.getMoodleSubmissions();
           break;
         case 4:
-          this.handleStepThree();
+          this.downloadMoodleSubmissions();
           break;
       }
     },
-    handleStepZero() {
+    getMoodleSubmissions() {
       if (!this.$refs.moodleOptionsForm?.validate()) return;
       this.$refs.importStepper.setWaiting(true);
       this.$socket.emit("documentGetMoodleSubmissions", { options: this.moodleOptions }, (res) => {
@@ -264,7 +264,7 @@ export default {
         }
       });
     },
-    handleStepThree() {
+    downloadMoodleSubmissions() {
       this.$socket.emit(
         "documentDownloadMoodleSubmissions",
         {
