@@ -241,7 +241,7 @@ export default {
         command: "startPreprocessing",
         data: preprocessingData
       });
-      
+      this.$emit('skills-applied');
       this.close();
     },
   },

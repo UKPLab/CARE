@@ -1,64 +1,71 @@
 <template>
-  <StepperModal
-    ref="stepper"
-    :steps="processingSteps"
-    :validation="[true, true]"
-    :current-step="currentStep"
-    :show-footer="false"
-    :next-text="currentStep === 1 ? cancelNextText : 'Next'"
-    submit-text="Confirm"
-    :show-close="showClose"
-    @submit="$emit('cancel')"
-  >
-    <template #title>
-      <h5 class="modal-title text-primary">{{ title }}</h5>
-    </template>
+  <Loader 
+    v-if="this.forceProcessingActive && (!preprocess || !preprocess.requests || Object.keys(preprocess.requests).length === 0)"
+    :loading="true" 
+    class="pageLoader"
+  />
+  <span v-else>
+    <StepperModal
+      ref="stepper"
+      :steps="processingSteps"
+      :validation="[true, true]"
+      :current-step="currentStep"
+      :show-footer="false"
+      :next-text="currentStep === 1 ? cancelNextText : 'Next'"
+      submit-text="Confirm"
+      :show-close="showClose"
+      @submit="$emit('cancel')"
+    >
+      <template #title>
+        <h5 class="modal-title text-primary">{{ title }}</h5>
+      </template>
 
-    <template #step-1>
-      <div class="mb-3">
-        <div class="d-flex align-items-center mb-2">
-          <span class="me-2">Processed:</span>
-          <strong>{{ processedCount }} / {{ totalCount }}</strong>
-        </div>
-        <div class="progress mb-3" style="height: 20px;">
-          <div
-            class="progress-bar"
-            role="progressbar"
-            :style="{ width: progressPercent + '%' }"
-            :aria-valuenow="processedCount"
-            :aria-valuemin="0"
-            :aria-valuemax="totalCount"
-          >
-            {{ progressPercent }}%
+      <template #step-1>
+        <div class="mb-3">
+          <div class="d-flex align-items-center mb-2">
+            <span class="me-2">Processed:</span>
+            <strong>{{ processedCount }} / {{ totalCount }}</strong>
           </div>
-        </div>
+          <div class="progress mb-3" style="height: 20px;">
+            <div
+              class="progress-bar"
+              role="progressbar"
+              :style="{ width: progressPercent + '%' }"
+              :aria-valuenow="processedCount"
+              :aria-valuemin="0"
+              :aria-valuemax="totalCount"
+            >
+              {{ progressPercent }}%
+            </div>
+          </div>
 
-        <div class="mt-2 text-muted">
-          Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
-        </div>
-        <div class="mt-2 text-muted">
-          Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
-        </div>
-        <div class="mt-2 text-muted">
-          Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
-        </div>
+          <div class="mt-2 text-muted">
+            Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
+          </div>
+          <div class="mt-2 text-muted">
+            Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
+          </div>
+          <div class="mt-2 text-muted">
+            Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
+          </div>
 
-        <h6 class="mt-4">Submissions in Queue</h6>
-        <BasicTable
-          :columns="remainingColumns"
-          :data="remainingSubmissions"
-          :options="{ ...options, pagination: 5 }"
-        />
-      </div>
-    </template>
+          <h6 class="mt-4">Submissions in Queue</h6>
+          <BasicTable
+            :columns="remainingColumns"
+            :data="remainingSubmissions"
+            :options="{ ...options, pagination: 5 }"
+          />
+        </div>
+      </template>
 
-    <template #step-2>
-      <div class="mb-3">
-        <h5>Cancel Processing</h5>
-        <p>Are you sure you want to cancel the remaining requests?</p>
-      </div>
-    </template>
-  </StepperModal>
+      <template #step-2>
+        <div class="mb-3">
+          <h5>Cancel Processing</h5>
+          <p>Are you sure you want to cancel the remaining requests?</p>
+        </div>
+      </template>
+    </StepperModal>
+  </span>
 </template>
 
 <script>
@@ -69,22 +76,47 @@ export default {
   name: "ApplySkillProcessStepper",
   components: { StepperModal, BasicTable },
   props: {
-    title: { type: String, default: "Apply Skill" },
-    preprocess: { type: Object, default: () => ({}) },
-    inputFiles: { type: Array, default: () => [] },
-    options: {
-      type: Object,
-      default: () => ({ striped: true, hover: true, bordered: false, borderless: false, small: false, pagination: 10 })
+    title: { 
+      type: String,
+      default: "Apply Skill" 
     },
-    currentStep: { type: Number, default: 1 },
-    showClose: { type: Boolean, default: true },
-    cancelNextText: { type: String, default: "Cancel Preprocess" },
+    preprocess: { 
+      type: Object,
+      default: () => ({}) 
+    },
+    inputFiles: { 
+      type: Array, 
+      default: () => [] 
+    },
+    currentStep: { 
+      type: Number, 
+      default: 1 
+    },
+    showClose: { 
+      type: Boolean, 
+      default: true 
+    },
+    cancelNextText: { 
+      type: String, 
+      default: "Cancel Preprocess" },
+    forceProcessingActive: { 
+      type: Boolean, 
+      default: false 
+    }
   },
   emits: ["cancel"],
   data() {
     return {
       now: Date.now(),
       elapsedTimer: null,
+      options: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+      },
     };
   },
   computed: {
@@ -142,20 +174,12 @@ export default {
         { key: 'userName', name: 'User' },
       ];
     },
-    estimatedTimeRemainingFormatted() {
-      const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess?.requests || {}).length;
-      const processed = total - remaining;
-      const batchStart = this.preprocess?.batchStartTime || null;
-      if (!batchStart || processed <= 0) {
+    estimatedTimeRemaining() {
+      const stats = this.getProcessingStats();
+      if (!stats) {
         return "Calculating...";
       }
-      const elapsedMs = Math.max(0, this.now - batchStart);
-      const currentStart = this.activeRequestStartTime;
-      const timeOnCurrentMs = currentStart ? Math.max(0, this.now - currentStart) : 0;
-      const completedMs = Math.max(0, elapsedMs - timeOnCurrentMs);
-      const avgPerItemMs = processed > 0 ? (completedMs / processed) : 0;
-      let remainingMs = Math.max(0, Math.round(avgPerItemMs * remaining - timeOnCurrentMs));
+      let remainingMs = Math.max(0, Math.round(stats.avgPerItemMs * stats.remaining - stats.timeOnCurrentMs));
       const diff = Math.round(remainingMs / 1000);
       if (diff < 1) {
         return "Almost done...";
@@ -163,19 +187,11 @@ export default {
       return this.formatDurationSeconds(diff);
     },
     estimatedTimePerRequest() {
-      const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess?.requests || {}).length;
-      const processed = total - remaining;
-      const batchStart = this.preprocess?.batchStartTime || null;
-      if (!batchStart || processed <= 0) {
+      const stats = this.getProcessingStats();
+      if (!stats) {
         return null;
       }
-      const elapsedMs = Math.max(0, this.now - batchStart);
-      const currentStart = this.activeRequestStartTime;
-      const timeOnCurrentMs = currentStart ? Math.max(0, this.now - currentStart) : 0;
-      const completedMs = Math.max(0, elapsedMs - timeOnCurrentMs);
-      const avgPerItemMs = processed > 0 ? (completedMs / processed) : 0;
-      return avgPerItemMs ? Math.round(avgPerItemMs / 1000) : null;
+      return stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
     },
   },
   watch: {
@@ -234,6 +250,30 @@ export default {
         clearInterval(this.elapsedTimer);
         this.elapsedTimer = null;
       }
+    },
+    getProcessingStats() {
+      const total = this.preprocess?.currentSubmissionsCount || 0;
+      const remaining = Object.keys(this.preprocess?.requests || {}).length;
+      const processed = total - remaining;
+      const batchStart = this.preprocess?.batchStartTime || null;
+      if (!batchStart || processed <= 0) {
+        return null;
+      }
+      const elapsedMs = Math.max(0, this.now - batchStart);
+      const currentStart = this.activeRequestStartTime;
+      const timeOnCurrentMs = currentStart ? Math.max(0, this.now - currentStart) : 0;
+      const completedMs = Math.max(0, elapsedMs - timeOnCurrentMs);
+      const avgPerItemMs = processed > 0 ? (completedMs / processed) : 0;
+      return {
+        total,
+        remaining,
+        processed,
+        elapsedMs,
+        currentStart,
+        timeOnCurrentMs,
+        completedMs,
+        avgPerItemMs
+      };
     },
   },
 };

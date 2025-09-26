@@ -11,9 +11,9 @@
       title="Preprocess Grading"
       :preprocess="preprocess"
       :input-files="inputFiles"
-      :options="options"
       :current-step="currentStep"
       :show-close="true"
+      :force-processing-active="forceProcessingActive"
       cancel-next-text="Cancel Preprocess"
       @cancel="cancelProcessing"
     />
@@ -31,15 +31,8 @@ export default {
   emits: ["submit"],
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
       currentStep: 1,
+      forceProcessingActive: false,
     };
   },
   computed: {
@@ -70,6 +63,7 @@ export default {
         });
     },
     isProcessingActive() {
+      if (this.forceProcessingActive) return true;
       return (
         this.preprocess &&
         this.preprocess.requests &&
@@ -85,6 +79,10 @@ export default {
     this.fetchBackgroundTaskState();
   },
   methods: {
+    onSkillsApplied() {
+      this.forceProcessingActive = true;
+      this.fetchBackgroundTaskState();
+    },
     fetchBackgroundTaskState() {
       return new Promise((resolve) => {
         this.$socket.emit("serviceCommand", {
@@ -93,6 +91,9 @@ export default {
           data: {}
         }, () => {
           this.$nextTick(() => {
+            if (!(this.preprocess && this.preprocess.requests && Object.keys(this.preprocess.requests).length > 0)) {
+              this.forceProcessingActive = false;
+            }
             resolve();
           });
         });
