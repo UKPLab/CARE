@@ -272,7 +272,7 @@ The deployed version has a bug that needs to be fixed ad-hoc. There is an associ
 
 2. Realize the changes on this branch.
 
-3. Push the branch and open a **Merge Request** into `main`. It is reviewed by maintainers.
+3. Push the branch and open a **Merge Request** into `dev`. It is reviewed by maintainers.
 
 ::
 
