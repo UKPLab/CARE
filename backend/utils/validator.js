@@ -49,13 +49,13 @@ class Validator {
     /**
      * Validate submission files against validation schema
      * @param {Array} tempFiles - Array of temporary file objects
-     * @param {string} validationDocumentId - ID of validation schema document
+     * @param {string} configurationId - ID of configuration
      * @returns {Promise<Object>} Validation result
      */
-    async validateSubmissionFiles(tempFiles, validationDocumentId) {
+    async validateSubmissionFiles(tempFiles, configurationId) {
         try {
             // 1. Get validation schema
-            const validationSchema = await this.getValidationSchema(validationDocumentId);
+            const validationSchema = await this.getValidationSchema(configurationId);
 
             // 2. Validate against rules
             const validationResult = await this.validateAgainstRules(tempFiles, validationSchema.rules);
@@ -70,23 +70,17 @@ class Validator {
     }
 
     /**
-     * Get validation schema by documentId
-     * @param {number} documentId - Document ID referring to the validation schema
+     * Get validation schema by configurationId
+     * @param {number} configurationId - Configuration ID referring to the validation schema
      * @returns {Promise<Object>} Validation schema
      */
-    async getValidationSchema(documentId) {
-        const document = await this.models["document"].getById(documentId);
-        if (!document) {
-            throw new Error(`Validation schema document not found: ${documentId}`);
+    async getValidationSchema(configurationId) {
+        const configuration = await this.models["configuration"].getById(configurationId);
+        if (!configuration) {
+            throw new Error(`Validation schema not found: ${configurationId}`);
         }
-
-        const schemaPath = path.join(UPLOAD_PATH, `${document.hash}.json`);
-        try {
-            const schemaContent = await fs.promises.readFile(schemaPath, "utf8");
-            return JSON.parse(schemaContent);
-        } catch (err) {
-            throw new Error(`Error reading validation schema: ${err.message}`);
-        }
+        const { content } = configuration;
+        return content;
     }
 
     /**

@@ -748,7 +748,7 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.submissions - The submissions from Moodle
      * @param {Object} data.options - The configuration options (e.g., API key, URL) passed to the Moodle RPC service
      * @param {string} data.progressId - The unique ID used for reporting progress back to the frontend.
-     * @param {number} data.validationDocumentId - The document ID to retrieve validation schema
+     * @param {number} data.configurationId - The ID of the configuration
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The results of the processed submissions
@@ -768,7 +768,7 @@ class DocumentSocket extends Socket {
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
-                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationDocumentId);
+                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.configurationId);
 
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
@@ -780,7 +780,7 @@ class DocumentSocket extends Socket {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
-                        validationDocumentId: data.validationDocumentId,
+                        configurationId: data.configurationId,
                     },
                     { transaction }
                 );
@@ -833,17 +833,17 @@ class DocumentSocket extends Socket {
      * @param {number} data.userId - The ID of the user who owns the submission
      * @param {number} data.extId - The ID that comes from an external platform
      * @param {Array<Object>} data.files - The submissions files
-     * @param {number} data.validationDocumentId - The document ID to retrieve validation schema
+     * @param {number} data.configurationId - The ID of the configuration
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The result of the processed submission
      * @throws {Error} - If the upload fails, if the extId is invalid, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const { files, userId, extId = null, validationDocumentId } = data;
+        const { files, userId, extId = null, configurationId } = data;
         const transaction = options.transaction;
         try {
-            const result = await this.validator.validateSubmissionFiles(files, validationDocumentId);
+            const result = await this.validator.validateSubmissionFiles(files, configurationId);
 
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
@@ -852,7 +852,7 @@ class DocumentSocket extends Socket {
             const submission = await this.models["submission"].add({ 
                 userId, 
                 extId, 
-                validationDocumentId, 
+                configurationId, 
                 createdByUserId: this.userId 
             }, { transaction });
             for (const file of files) {

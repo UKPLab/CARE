@@ -127,7 +127,7 @@ export default {
         "documentUploadSingleSubmission",
         {
           userId: this.selectedUser[0].id,
-          validationDocumentId: this.selectedValidatorId,
+          configurationId: this.selectedValidatorId,
           files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
         },
         (res) => {
