@@ -2,9 +2,8 @@ Plugins
 =======
 
 The ``frontend/src/plugins`` folder provides **self-contained helpers** that extend CARE’s
-frontend with specialized functionality. Plugins are not basic UI components, but rather
-small building blocks that encapsulate logic and can be reused across modals, forms,
-and dashboards.
+frontend with specialized functionality. For general background on plugins in Vue, see the
+`official Vue documentation <https://vuejs.org/guide/reusability/plugins>`_.
 
 SubscribeTable Plugin
 ---------------------
@@ -15,30 +14,53 @@ more backend **autoTables**; the server then pushes ``<tableName>Refresh`` event
 Vuex merges. On unmount the plugin automatically unsubscribes.
 
 For the complete end-to-end flow (Sockets ↔ Vuex ↔ Components), see
-:doc:`Data Transfer <../backend/data_transfer>`.
+:doc:`Data Transfer <../backend/data_transfer>` and :doc:`Vuex Store <../frontend/vuex_store>`.
 
-Moodle Options Plugin
----------------------
+**Examples**
 
-The **MoodleOptions** plugin wraps a :doc:`Basic Form <../frontend/basic/form>` to collect
-Moodle connection parameters and, optionally, an assignment ID. It is used inside
-:doc:`StepperModal <../frontend/basic/modal>` workflows such as:
+Minimal subscription (e.g., in ``Documents.vue``):
 
-- Importing submissions from Moodle
-- Publishing review links
-- Bulk user creation with upload to Moodle
+.. code-block:: javascript
 
-Example usage:
+   export default {
+     subscribeTable: ["document", "study"],
+     computed: {
+       documents() {
+         return this.$store.getters["table/document/getAll"];
+       }
+     }
+   }
 
-.. code-block:: html
+Advanced subscription with filters and injects (e.g., in ``SingleAssignmentModal.vue``):
 
-   <MoodleOptions
-     ref="moodleOptionsForm"
-     v-model="moodleOptions"
-     with-assignment-id
-   />
+.. code-block:: javascript
 
-Field visibility and defaults are driven by admin settings (``rpc.moodleAPI.*``).
-Assignment IDs can be fetched live from Moodle via a ``Refresh`` button, which triggers
-a backend request (``assignmentGetInfo``).
-For the end-to-end researcher workflow, see :doc:`../../for_researchers/moodle_usage`.
+   export default {
+     subscribeTable: [
+       {
+         table: "document",
+         filter: [{ key: "readyForReview", value: true }],
+       },
+       {
+         table: "user",
+         inject: [{
+           table: "study_session",
+           by: "userId",
+           type: "count",
+           as: "studySessions"
+         }]
+       },
+       {
+         table: "study",
+         filter: [{ key: "template", value: true }]
+       }
+     ],
+     computed: {
+       documents() {
+         return this.$store.getters["table/document/getFiltered"](d => d.readyForReview);
+       },
+       reviewers() {
+         return this.$store.getters["table/user/getAll"];
+       }
+     }
+   }

@@ -4,166 +4,6 @@ Modal
 This section summarizes the modal components available in CARE, when to use them, and their key APIs.  
 All of them are built on top of :ref:`BasicModal <modal>` and support open/close via a template ref.
 
-`ConfigurationModal`
-
-- **What it is:** A specialized modal that guides the user through service and placeholder configuration.  
-- **Use it for:** NLP service setup, linking inputs/outputs, and mapping placeholders inside study workflows.  
-
-It is built on top of :ref:`StepperModal <steppermodal-usage>`, adding two predefined steps:
-
-1. **Services** – Select NLP skills for each service and configure their inputs.  
-2. **Placeholders** – Bind placeholders (``~text~``, ``~chart~``, ``~comparison~``) to actual data sources.
-
-**Usage Example**
-
-.. code-block:: html
-
-    <ConfigurationModal
-        v-model="configData"
-        :document-id="documentId"
-        :study-step-id="stepId"
-        :workflow-steps="steps"
-        ref="configModal"
-    />
-
-.. code-block:: javascript
-
-    import ConfigurationModal from '@/basic/modal/ConfigurationModal.vue';
-
-    export default {
-        components: { ConfigurationModal },
-        data() {
-            return {
-                documentId: 42,
-                stepId: 3,
-                steps: [...],
-                configData: {}
-            };
-        },
-        methods: {
-            openConfig() {
-                this.$refs.configModal.openModal();
-            }
-        }
-    };
-
-**API:**  
-
-- ``openModal(evt)`` – Opens the modal if a document is selected.  
-- ``close()`` – Closes the modal.  
-- Emits ``update:modelValue`` with the assembled configuration object.
-
-The modal also shows **short previews** of placeholders with colored highlights and validates that all inputs are properly bound before submission.
-
------
-
-`ConfigurationPlaceholder`
-
-- **What it is:** A helper component rendered inside ConfigurationModal for editing individual placeholders.  
-- **Use it for:** Providing per-placeholder input fields (e.g., select NLP skill, map outputs, enter labels).  
-
-**Props:**  
-
-- ``placeholder`` – The placeholder metadata (type, number).  
-- ``fields`` – List of input fields to render.  
-- ``index`` – Position of the placeholder.  
-- ``formData`` – Reactive object bound to the user’s selections.  
-- ``placeholderColor`` – Display color for consistent previews.  
-
-**Usage Example**
-
-.. code-block:: html
-
-    <ConfigurationPlaceholder
-        :placeholder="placeholder"
-        :fields="fieldDefs"
-        :index="i"
-        v-model="formData[i]"
-        :placeholder-color="colors[i]"
-    />
-
-This component integrates with Vuex-provided NLP skills and ensures placeholders are configured consistently across steps.
-
------
-
-`ConfirmModal`
-
-- **What it is:** A ready-to-use confirmation dialog.  
-- **Use it for:** Destructive actions (delete, reset) or explicit user confirmation.
-
-**Usage Example**
-
-.. code-block:: html
-
-    <ConfirmModal ref="confirmModal" />
-
-.. code-block:: javascript
-
-    this.$refs.confirmModal.open(
-        "Delete User",
-        "Are you sure you want to delete this user?",
-        "This action cannot be undone.",
-        (res) => console.log("Confirmed:", res)
-    );
-
-**API:** ``open(title, message, warning?, callback)``; emits ``@response`` with ``true/false``.  
-
------
-
-`ConsentUpdateModal`
-
-- **What it is:** A user consent update dialog.  
-- **Use it for:** Asking users to confirm data sharing and statistics collection.  
-
-**Usage Example**
-
-.. code-block:: html
-
-    <ConsentUpdateModal ref="consentModal" />
-
-.. code-block:: javascript
-
-    this.$refs.consentModal.open();
-
------
-
-`InformationModal`
-
-- **What it is:** A read-only, nicely formatted detail view for an object.  
-- **Use it for:** Inspecting row details from a table, showing metadata, etc.  
-
-**Usage Example**
-
-.. code-block:: html
-
-    <InformationModal ref="info" />
-
-.. code-block:: javascript
-
-    this.$refs.info.open({ username: "alice", role: "admin" });
-
-**API:** ``open(data)``, ``close()``.  
-**Rendering:** Formats keys (camelCase / snake_case → labels) and prints nested objects as labeled lists.
-
------
-
-`PasswordModal`
-
-- **What it is:** A small form-in-a-modal for updating a user’s password.  
-- **Use it for:** Admin or account flows where a single field must be validated and submitted.  
-
-**Usage Example**
-
-.. code-block:: html
-
-    <PasswordModal ref="pwdModal" />
-
-.. code-block:: javascript
-
-    this.$refs.pwdModal.open(userId);
-
------
-
 `StepperModal`
 
 Import this component if you need a modal that guides users through a sequence of steps, with validation and feedback.
@@ -392,73 +232,160 @@ These can serve as reference implementations when building your own `StepperModa
 
 -----
 
-`Multiple Modals`
+`ConfigurationModal`
 
-In certain workflows, you may need to display a modal *from within another modal*.  
-For example, opening a “Select User” dialog from inside a “Configure Project” dialog.
+- **What it is:** A specialized modal that guides the user through service and placeholder configuration.  
+- **Use it for:** NLP service setup, linking inputs/outputs, and mapping placeholders inside study workflows.  
 
-To avoid visual stacking issues and focus conflicts, CARE uses **modal swapping**:
+It is built on top of :ref:`StepperModal <steppermodal-usage>`, adding two predefined steps:
 
-- The **parent modal** is temporarily hidden when the **child modal** opens.
-- The **parent modal** is restored when the child closes.
+1. **Services** – Select NLP skills for each service and configure their inputs.  
+2. **Placeholders** – Bind placeholders (``~text~``, ``~chart~``, ``~comparison~``) to actual data sources.
 
-**Generic Example** 
-
-1. **Parent modal** opens normally.
-2. The user triggers an action that requires another modal.
-3. Before opening the **child modal**, hide the parent:
-
-    .. code-block:: javascript
-
-        openChildModal() {
-            this.childModal.open();
-            this.parentModal?.hide();
-        }
-
-4. When the child modal closes, re-show the parent:
-
-    .. code-block:: javascript
-
-        closeChildModal() {
-            this.parentModal?.show();
-        }
-
-**Passing the Parent Reference**
-
-Since ``$refs`` are only available after mount, pass the parent modal reference via a **method** or **prop**:
-
-.. code-block:: javascript
-
-    getParentModalRef() {
-        return this.$refs.parentModal;
-    }
-
-Bind it to the child:
+**Usage Example**
 
 .. code-block:: html
 
-    <ChildModal :main-modal="getParentModalRef()" />
-
-Inside the child modal:
+    <ConfigurationModal
+        v-model="configData"
+        :document-id="documentId"
+        :study-step-id="stepId"
+        :workflow-steps="steps"
+        ref="configModal"
+    />
 
 .. code-block:: javascript
 
-    props: {
-        mainModal: { type: Object, default: null }
-    },
+    import ConfigurationModal from '@/basic/modal/ConfigurationModal.vue';
 
-    methods: {
-        open() {
-            this.modalRef.open();
-            this.mainModal?.hide();  // hide parent
+    export default {
+        components: { ConfigurationModal },
+        data() {
+            return {
+                documentId: 42,
+                stepId: 3,
+                steps: [...],
+                configData: {}
+            };
         },
-        close() {
-            this.modalRef.close();
-            this.mainModal?.show();  // restore parent
+        methods: {
+            openConfig() {
+                this.$refs.configModal.openModal();
+            }
         }
-    }
+    };
 
-**Why not Use ``this.$refs.parentModal`` Directly?**
+**API:**  
 
-You can’t bind ``$refs`` directly in the template because they are **not available** during the initial render.  
-Using a method ensures the reference is only accessed **when it exists**.
+- ``openModal(evt)`` – Opens the modal if a document is selected.  
+- ``close()`` – Closes the modal.  
+- Emits ``update:modelValue`` with the assembled configuration object.
+
+The modal also shows **short previews** of placeholders with colored highlights and validates that all inputs are properly bound before submission.
+
+-----
+
+`ConfigurationPlaceholder`
+
+- **What it is:** A helper component rendered inside ConfigurationModal for editing individual placeholders.  
+- **Use it for:** Providing per-placeholder input fields (e.g., select NLP skill, map outputs, enter labels).  
+
+**Props:**  
+
+- ``placeholder`` – The placeholder metadata (type, number).  
+- ``fields`` – List of input fields to render.  
+- ``index`` – Position of the placeholder.  
+- ``formData`` – Reactive object bound to the user’s selections.  
+- ``placeholderColor`` – Display color for consistent previews.  
+
+**Usage Example**
+
+.. code-block:: html
+
+    <ConfigurationPlaceholder
+        :placeholder="placeholder"
+        :fields="fieldDefs"
+        :index="i"
+        v-model="formData[i]"
+        :placeholder-color="colors[i]"
+    />
+
+This component integrates with Vuex-provided NLP skills and ensures placeholders are configured consistently across steps.
+
+-----
+
+`ConfirmModal`
+
+- **What it is:** A ready-to-use confirmation dialog.  
+- **Use it for:** Destructive actions (delete, reset) or explicit user confirmation.
+
+**Usage Example**
+
+.. code-block:: html
+
+    <ConfirmModal ref="confirmModal" />
+
+.. code-block:: javascript
+
+    this.$refs.confirmModal.open(
+        "Delete User",
+        "Are you sure you want to delete this user?",
+        "This action cannot be undone.",
+        (res) => console.log("Confirmed:", res)
+    );
+
+**API:** ``open(title, message, warning?, callback)``; emits ``@response`` with ``true/false``.  
+
+-----
+
+`ConsentUpdateModal`
+
+- **What it is:** A user consent update dialog.  
+- **Use it for:** Asking users to confirm data sharing and statistics collection.  
+
+**Usage Example**
+
+.. code-block:: html
+
+    <ConsentUpdateModal ref="consentModal" />
+
+.. code-block:: javascript
+
+    this.$refs.consentModal.open();
+
+-----
+
+`InformationModal`
+
+- **What it is:** A read-only, nicely formatted detail view for an object.  
+- **Use it for:** Inspecting row details from a table, showing metadata, etc.  
+
+**Usage Example**
+
+.. code-block:: html
+
+    <InformationModal ref="info" />
+
+.. code-block:: javascript
+
+    this.$refs.info.open({ username: "alice", role: "admin" });
+
+**API:** ``open(data)``, ``close()``.  
+**Rendering:** Formats keys (camelCase / snake_case → labels) and prints nested objects as labeled lists.
+
+-----
+
+`PasswordModal`
+
+- **What it is:** A small form-in-a-modal for updating a user’s password.  
+- **Use it for:** Admin or account flows where a single field must be validated and submitted.  
+
+**Usage Example**
+
+.. code-block:: html
+
+    <PasswordModal ref="pwdModal" />
+
+.. code-block:: javascript
+
+    this.$refs.pwdModal.open(userId);

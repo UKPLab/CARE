@@ -6,6 +6,27 @@ the ``frontend/src/components`` folder contains **application-level components**
 These components orchestrate workflows like document annotation, study execution, and the main dashboard.  
 
 They integrate multiple base components and Vuex/socket logic to provide full functionality.
+These are the components that are opened by the Vue routes defined in ``frontend/src/router.js``, e.g.:
+
+.. code-block:: javascript
+
+    const routes = [
+        {
+            path: "/dashboard/:catchAll(.*)",
+            name: "dashboard",
+            props: true,
+            component: () => import("@/components/Dashboard.vue"),
+            meta: {requireAuth: true, toggleSidebar: true, default: true},
+        },
+        {
+            path: "/document/:documentHash",
+            component: () => import("@/components/Document.vue"),
+            props: true,
+            meta: {requireAuth: true}
+        },
+        // ...
+    ];
+
 
 Code Structure Overview
 -----------------------
@@ -54,12 +75,6 @@ based on the document type stored in Vuex.
 
 - **Annotator**: For document type 0 (DOC_TYPE_PDF).  
 - **Editor**: For document types 1 (DOC_TYPE_HTML) and 2 (DOC_TYPE_MODAL).  
-
-Additional responsibilities:  
-
-- Handles ``beforeRouteLeave`` guards to confirm unsaved changes.  
-- Responds to socket errors (e.g., missing document, permission issues).  
-- Integrates with the :ref:`toasts <toasts>` system to inform the user of failures.  
 
 .. code-block:: html
 

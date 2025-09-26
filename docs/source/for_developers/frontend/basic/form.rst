@@ -586,3 +586,30 @@ Additional options:
       }
 
 * readOnly — If `true`, the field cannot be modified but remains visible.
+
+-----
+
+**Moodle Options**
+
+The **MoodleOptions** wraps a :doc:`Basic Form <../frontend/basic/form>` to collect
+Moodle connection parameters and, optionally, an assignment ID. It is used inside
+:doc:`StepperModal <../frontend/basic/modal>` workflows such as:
+
+- Importing submissions from Moodle
+- Publishing review links
+- Bulk user creation with upload to Moodle
+
+Example usage:
+
+.. code-block:: html
+
+   <MoodleOptions
+     ref="moodleOptionsForm"
+     v-model="moodleOptions"
+     with-assignment-id
+   />
+
+Field visibility and defaults are driven by admin settings (``rpc.moodleAPI.*``).
+Assignment IDs can be fetched live from Moodle via a ``Refresh`` button, which triggers
+a backend request (``assignmentGetInfo``).
+For the end-to-end researcher workflow, see :doc:`../../for_researchers/moodle_usage`.

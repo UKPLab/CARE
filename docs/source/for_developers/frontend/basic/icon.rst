@@ -1,12 +1,13 @@
-Icons
------
+Icon
+----
 
 The icon components provide a unified way to include SVG icons across the frontend.  
 They handle loading, colors, and fallbacks, so you can use them consistently in buttons, forms, and dashboards.  
 
 There are three main classes:
 
-**IconAsset** – Displays static SVGs from the ``/icons`` folder, e.g. the CARE logo.  
+**IconAsset** – Displays static SVGs from the ``/icons`` folder (e.g. the CARE logo).  
+Only SVG files are supported here — other formats (PNG, JPG, …) are not allowed.  
 Use this when you want to render application-specific assets that are not part of Bootstrap Icons.  
 
 **IconBootstrap** – Loads icons from the bundled Bootstrap icon set.  
@@ -26,7 +27,7 @@ Example for rendering the CARE logo with **IconAsset**:
 
 .. code-block:: javascript
 
-    import IconAsset from "@/basic/icons/IconAsset.vue";
+    import IconAsset from "@/basic/icon/IconAsset.vue";
 
     export default {
       components: { IconAsset }

@@ -21,17 +21,18 @@ This structure mirrors the actual code layout.
    download
    editor
    form
-   icons
+   icon
    modal
    navigation
    table
+   service
 
 -----
 
 Button
 ------
 The button component provides a consistent wrapper around the native ``<button>`` element with support for
-labels, optional icons, and integrated statistics events (see :doc:`../stats` ). Use it in modals, forms, or dashboards to keep actions
+labels, optional icons (see `Bootstrap Icons <https://icons.getbootstrap.com>`_), and integrated statistics events (see :doc:`../stats` ). Use it in modals, forms, or dashboards to keep actions
 consistent across CARE.
 
 .. code-block:: html
@@ -75,7 +76,7 @@ consistent across CARE.
       - None
       - String
     * - icon
-      - Optional icon name (see :doc:`Icons <icons>`)
+      - Optional icon name (see :doc:`Icon <icon>`)
       - None
       - String
     * - props
@@ -420,7 +421,7 @@ proper spacing and usability.
     The list of icons can also be found in /node_modules/bootstrap-icons/icons.
 
     For details on the underlying components (**IconAsset**, **IconBootstrap**, **IconLoading**) and when to use them directly,
-    see the dedicated :doc:`Icons page <./icons>`.
+    see the dedicated :doc:`Icon page <./icon>`.
 
 Loading
 -------
@@ -555,47 +556,6 @@ Import this component if you need a modal prompted to the user. You can customiz
       - False
       - Boolean
       - False
-
-NLPService
-----------
-
-The NLPService component is a wrapper around the NLP service. It offers a simple way to easily use the NLP services.
-
-Example usage:
-
-.. code-block:: html
-
-    <NLPService
-        :data="data"
-        skill="<skillName>"
-        icon-name="file-text"
-        title="<Title>"
-        type="button"
-        @response="response"
-    />
-
-.. code-block:: javascript
-
-    import NLPService from "@/basic/NLPService.vue";
-
-    export default {
-        components: {
-            NLPService
-        },
-        data() {
-            return {
-                data: {
-                    "text": "Hello world",
-                    "params": {}
-                }
-            }
-        },
-        methods: {
-            response(response) {
-                console.log("NLP Service response", response);
-            }
-        }
-    }
 
 .. _table:
 

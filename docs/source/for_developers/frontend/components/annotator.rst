@@ -82,6 +82,7 @@ The **sidebar** organizes all annotation threads:
 - ``Comment.vue``: Displays replies with inline editing.  
 - ``TagSelector.vue``: Allows changing or assigning tags.  
 - ``VoteButtons.vue``: Provides upvote/downvote interaction on comments.  
+- ``Collaboration.vue``: Manages real-time synchronization of comments and annotations, ensuring that all user interactions on documents are shared across clients.
 
 Sidebar state (open/hidden, width, fixed mode) is saved in Vuex and restored on reload.  
 In study mode, additional checks enforce whether comments are visible or hidden, depending on study/session settings.  
@@ -139,7 +140,7 @@ The Annotator behaves differently depending on context:
 
 .. note::
 
-   When ``showAllComments`` is enabled in settings, users may see comments from other sessions, 
+   When ``showAllComments`` is enabled in :doc:`the settings <../examples/settings>`, users may see comments from other sessions, 
    but restrictions apply depending on whether the study is still active or closed.  
 
 

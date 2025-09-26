@@ -28,8 +28,20 @@ It consists of **steps**, where each step specifies:
 - The **step type** (editor, annotator, or modal step).  
 - Whether the participant may move **backward** to a previous step.  
 - Any required **document** (HTML text or PDF).  
-- Optional **services** (e.g., NLP feedback).  
-- Optional **step configuration** such as placeholders, modal appearance, or custom fields.
+- Optional **step configuration**, which may include:
+  
+  - **services** (e.g., NLP feedback)  
+  - placeholders  
+  - modal appearance  
+
+.. note::
+
+   Be careful with the term *document*:  
+
+   - In the **frontend**, the step definition tells CARE *which document should be opened* when that step runs.  
+   - In the **database**, the step definition controls *whether a document is selectable* or *must come from another step’s output*.  
+     For example, in the :ref:`Ruhr-Uni Bochum Project <ruhr-uni-bochum-project>`, the Step 3 editor is based on the results of the Step 1 editor rather than a newly chosen document.
+
 
 Step Types
 ~~~~~~~~~~
@@ -43,6 +55,7 @@ Step Types
   Used in workflows where participants highlight, annotate, or comment on PDFs.  
   Annotations and comments are stored per session and per step, ensuring reproducibility.  
   The annotator provides features such as the sidebar, color-coded highlights, NLP support, and annotation downloads.  
+  For technical details, see :doc:`Annotator <../../for_developers/frontend/components/annotator>`.
 
 - **Modal Documents (Quill Editor with Placeholders)**  
   A modal document is rendered in a popup and cannot be edited directly by the participant.  
@@ -52,61 +65,11 @@ Step Types
 Placeholders
 ------------
 
-**Placeholders are only available in Modal steps**. A Modal step renders a read-only document and dynamically fills
-placeholder blocks with data gathered from earlier steps and/or outputs produced by NLP skills.  
-**NLP is executed only when a placeholder explicitly uses it**. For example, a *comparison* placeholder can trigger the
-``nlpEditComparison`` skill; if no placeholder references an NLP output, no NLP requests are made in that step.
+Placeholders are only relevant for **Modal steps** (Step Type = 3).  
+They allow inserting dynamic content such as text, charts, or comparisons into read-only modal documents,  
+optionally powered by NLP skills.
 
-Overview
-~~~~~~~~
-
-- Insert placeholders (e.g., ``~text~``, ``~chart~``, ``~comparison~``) into a **Study Modal Document**.
-- During study setup, open the **step configuration** and:
-
-  - (Services) Declare which **NLP skills** can be used *by placeholders* in this step and map their **inputs** from previous steps.
-  - (Placeholders) For **each placeholder instance** map the **data sources** it should render (either direct content from earlier steps or the outputs from declared NLP services).
-
-Placeholder Types
-~~~~~~~~~~~~~~~~~
-
-- **Text:** Renders textual content pulled from a mapped data source (e.g., “First Version”, “Current Version”, or an NLP output).
-  Typical use: show a short generated summary or guidance text.
-
-- **Chart:** Renders a visualization from JSON-like data. The data can come from earlier steps or from an NLP skill’s structured output.
-
-- **Comparison:** Renders a side-by-side comparison of two mapped inputs (e.g., “First Version” vs. “Current Version”).  
-  This placeholder commonly **uses an NLP skill** (e.g., ``nlpEditComparison``) to compute diffs, highlights, or metrics.
-
-Configuration Flow
-~~~~~~~~~~~~~~~~~~
-
-1. **Prepare the Modal Document**  
-   In the editor, insert the placeholders where you want dynamic content to appear. CARE auto-numbers them in order.
-
-2. **Declare Services (NLP) for the Step** *(Modal steps only)*  
-   In the step’s configuration dialog:
-
-   - Select an **NLP skill** from the broker’s available skills.
-   - Define the **input mapping** for that skill by choosing data sources from earlier steps (e.g., *First Version*, *Current Version*, or outputs of prior skills).
-   - These services produce named outputs that placeholders can reference.
-
-3. **Configure Each Placeholder**  
-   In the “Placeholders” tab of the step configuration:
-
-   - For **Text** and **Chart** placeholders, choose **one data source** (either a step output or an NLP output).
-   - For a **Comparison** placeholder, choose **two data sources** (often feeding an NLP comparison skill).
-   - Preview a short snippet with colored markers to verify mapping and order.
-
-Runtime Behavior
-~~~~~~~~~~~~~~~~
-
-- When the participant reaches the Modal step, CARE scans all placeholders.  
-- If a placeholder references an **NLP output** that is not stored yet, the step:
-
-  1) triggers the relevant **NLP service request** with the configured inputs,  
-  2) **persists** the returned outputs for this session/step, and  
-  3) renders the placeholder with the produced data.
-- If NLP times out or is disabled, the modal follows your configured fallback (retry or continue to next step).
+For details on how to configure and use placeholders, see :doc:`Step Modal <../../for_developers/frontend/components/stepmodal>`.
 
 .. _current-available-workflows:
 
@@ -142,7 +105,7 @@ Each workflow is a template that specifies the order of steps a participant goes
 - **Step 3 — Editor:** The participant revises the text again, building on both their first version and the AI feedback.  
 - **Step 4 — Modal:** A second round of AI feedback is shown, again highlighting differences or suggestions.  
 
-For a detailed step-by-step example, see :doc:`study_with_nlp`.
+For a detailed step-by-step example, see :ref:`Ruhr-Uni Bochum Project <ruhr-uni-bochum-project>`.
 
 -----
 
