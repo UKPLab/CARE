@@ -117,7 +117,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, StepperModal, BasicButton, ValidatorSelector },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, { table: "document" }],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
   data() {
     return {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Validate" }, { title: "Confirm" }, { title: "Result" }],
@@ -166,7 +166,6 @@ export default {
       return [
         Object.values(this.moodleOptions).every((v) => v !== ""),
         this.selectedAssignments.length > 0,
-        // Validation step is required only if validation documents exist
         this.selectedValidatorId !== 0,
         true,
         false,

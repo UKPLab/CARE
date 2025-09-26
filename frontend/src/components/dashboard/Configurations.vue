@@ -116,6 +116,7 @@ export default {
         { name: "Name", key: "name", sortable: true },
         { name: "Created", key: "createdAt", sortable: true, type: "datetime" },
         { name: "Updated", key: "updatedAt", sortable: true, type: "datetime" },
+        { name: "Type", key: "typeName", sortable: true },
       ],
       buttons: [
         {
@@ -150,7 +151,11 @@ export default {
   },
   computed: {
     configurationsTable() {
-      return this.$store.getters["table/configuration/getAll"];
+      return this.$store.getters["table/configuration/getAll"].map(cfg => {
+        const newC = {...cfg};
+        newC.typeName = cfg.type === 0 ? "Assessment" : "Validation";
+        return newC;
+      });
     },
   },
   watch: {
