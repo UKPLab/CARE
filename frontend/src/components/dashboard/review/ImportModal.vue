@@ -6,7 +6,7 @@
     @step-change="handleStepChange"
   >
     <template #title>
-      <span>Import Moodle Assignments</span>
+      <span>Import Moodle Submissions</span>
     </template>
     <!-- Moodle Options Step -->
     <template #step-1>
@@ -20,8 +20,8 @@
     <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
-          v-model="selectedAssignments"
-          :data="assignments"
+          v-model="selectedSubmissions"
+          :data="submissions"
           :columns="tableColumns"
           :options="tableOptions"
         />
@@ -46,12 +46,12 @@
           <div class="card-body bg-light">
             <h5 class="card-title">Import Summary</h5>
             <ul class="list-unstyled mb-0">
-              <li>• Assignments to import: {{ selectedAssignments.length }}</li>
+              <li>• Submissions to import: {{ selectedSubmissions.length }}</li>
               <li>
                 • Validation schema:
                 {{ selectedValidatorData?.name || "None selected" }}
               </li>
-              <li>• Total submissions: {{ selectedAssignments.length }}</li>
+              <li>• Total submissions: {{ selectedSubmissions.length }}</li>
               <li v-if="selectedValidatorData">• Required files: {{ selectedValidatorData.files.join(", ") }}</li>
             </ul>
           </div>
@@ -66,7 +66,7 @@
         </div>
         <p>
           Are you sure you want to import
-          <strong>{{ selectedAssignments.length }}</strong> {{ message }}?
+          <strong>{{ selectedSubmissions.length }}</strong> {{ message }}?
         </p>
       </div>
     </template>
@@ -155,9 +155,9 @@ export default {
         { name: "Last Name", key: "lastName" },
         { name: "File Count", key: "fileCount" },
       ],
-      downloadedAssignments: [],
-      selectedAssignments: [],
-      importedAssignments: [],
+      downloadedSubmissions: [],
+      selectedSubmissions: [],
+      importedSubmissions: [],
       importResults: {},
     };
   },
@@ -165,7 +165,7 @@ export default {
     stepValid() {
       return [
         Object.values(this.moodleOptions).every((v) => v !== ""),
-        this.selectedAssignments.length > 0,
+        this.selectedSubmissions.length > 0,
         this.selectedValidatorId !== 0,
         true,
         false,
@@ -174,12 +174,12 @@ export default {
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
       if (currentStep === 2) {
-        return this.selectedAssignments.length > 1 ? "assignments" : "assignment";
+        return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
       }
       if (currentStep === 3) {
-        return this.importedAssignments.length > 1 ? "assignments" : "assignment";
+        return this.importedSubmissions.length > 1 ? "submissions" : "submission";
       }
-      return "assignments";
+      return "submissions";
     },
     users() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
@@ -187,12 +187,12 @@ export default {
     usersExtIds() {
       return this.users.map((u) => u.extId);
     },
-    userAssignments() {
-      return this.downloadedAssignments.filter((a) => a["files"].length > 0 && this.usersExtIds.includes(a["userid"]));
+    userSubmissions() {
+      return this.downloadedSubmissions.filter((a) => a["files"].length > 0 && this.usersExtIds.includes(a["userid"]));
     },
-    assignments() {
+    submissions() {
       // Group rows by submission (one table row per submission)
-      return this.userAssignments.map((submission) => {
+      return this.userSubmissions.map((submission) => {
         const user = this.users.find((u) => u.extId === submission.userid);
         const files = submission.files.map((f) => ({
           fileName: f.filename,
@@ -220,11 +220,11 @@ export default {
       this.$refs.importStepper.open();
     },
     reset() {
-      this.selectedAssignments = [];
+      this.selectedSubmissions = [];
       this.selectedValidatorId = 0;
       this.importResults = {};
-      if (this.importedAssignments.length > 0) {
-        this.importedAssignments = [];
+      if (this.importedSubmissions.length > 0) {
+        this.importedSubmissions = [];
       }
     },
     downloadFileAsCSV() {
@@ -242,11 +242,6 @@ export default {
         case 1:
           this.handleStepZero();
           break;
-        case 2:
-          // this.$refs.importStepper.setWaiting(false);
-          break;
-        case 3:
-          break;
         case 4:
           this.handleStepThree();
           break;
@@ -258,11 +253,11 @@ export default {
       this.$socket.emit("documentGetMoodleSubmissions", { options: this.moodleOptions }, (res) => {
         this.$refs.importStepper.setWaiting(false);
         if (res.success) {
-          this.downloadedAssignments = res["data"];
+          this.downloadedSubmissions = res["data"];
         } else {
           this.$refs.importStepper.reset();
           this.eventBus.emit("toast", {
-            title: "Failed to get student assignments from Moodle",
+            title: "Failed to get student submissions from Moodle",
             message: res.message,
             variant: "danger",
           });
@@ -273,7 +268,7 @@ export default {
       this.$socket.emit(
         "documentDownloadMoodleSubmissions",
         {
-          submissions: this.selectedAssignments.map((s) => ({
+          submissions: this.selectedSubmissions.map((s) => ({
             submissionId: s.submissionId,
             userId: s.userId,
             firstName: s.firstName,
@@ -289,7 +284,7 @@ export default {
           if (res.success) {
             console.log({ res });
             const { downloadedSubmissions = [], downloadedErrors = [] } = res["data"] || {};
-            this.importedAssignments = downloadedSubmissions;
+            this.importedSubmissions = downloadedSubmissions;
             // Process import results for display
             this.processImportResults({ downloadedSubmissions, downloadedErrors });
           } else {
