@@ -8,7 +8,7 @@
     "requiredFiles": [
       {
         "name": "PDF",
-        "description": "parsed PDF of the Exposé",
+        "description": "Main PDF of the Exposé",
         "pattern": ".*\\.pdf$",
         "required": true
       },
