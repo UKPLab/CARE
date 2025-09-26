@@ -473,12 +473,29 @@ No specific options.
 File
 ^^^^
 
-Accepts uploaded file input. The field stores the uploaded `File` object.
+The ``file`` field type allows uploading a file using a standard file input.  
+It is typically used for attaching documents such as PDFs or Delta files in forms.
+The field stores the uploaded `File` object, which is then passed to the backend via socket communication.
 
 Additional options:
 
-* accept — allowed MIME types (e.g. `image/*`, `application/pdf`)
+* accept — allowed MIME types (e.g. `application/pdf`, `.delta`)
 * class — custom input class
+
+File uploads are handled via the ``documentAdd`` method in the ``document.js`` Socket. This is a **special case** because uploaded files are not just saved as form values but:
+
+1. **Validated** — only ``.pdf`` and ``.delta`` files are allowed.
+2. **Stored to disk** — files are written to the ``/files`` directory using a generated hash as filename.
+3. **Stored in database** — an entry is created in the ``document`` table with metadata like ``name``, ``type``, ``userId``, etc.
+
+**For .delta files:**
+
+- A ``document_edit`` entry is also created using content from the Delta format. See :ref:`delta-overview-ref` for more information on how ``.delta`` files are stored and processed.
+
+**For .pdf files:**
+
+- Existing annotations are removed via a server RPC (``PDFRPC.deleteAllAnnotations``).
+- If ``importAnnotations`` is set to ``true``, new annotations are automatically extracted and saved.
 
 Choice
 ^^^^^^
