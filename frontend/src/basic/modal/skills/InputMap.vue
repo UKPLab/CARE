@@ -9,7 +9,7 @@
       <label class="form-label">{{ input }}:</label>
       <FormSelect
         v-model="inputMappings[input]"
-        :options="{ options: availableDataSources }"
+        :options="{ options: studyBased ? getSourcesUpToCurrentStep(studyStepId) : getApplySkillsDataSourcesForParameter(input) }"
         :value-as-object="true"
         @update:modelValue="updateMapping(input, $event)"
       />
@@ -68,10 +68,11 @@ export default {
       default: () => [],
     },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "update:valid"],
   data() {
     return {
       inputMappings: {},
+      tableBasedParameter: null,
     };
   },
   computed: {
@@ -82,12 +83,8 @@ export default {
     configurationEntries() {
       return this.$store.getters["table/configuration/getAll"] || [];
     },
-    availableDataSources() {
-      if (this.studyBased) {
-        return this.getSourcesUpToCurrentStep(this.studyStepId);
-      } else {
-        return this.getApplySkillsDataSources();
-      }
+    isValid() {
+      return this.tableBasedParameter !== null;
     },
   },
   watch: {
@@ -108,8 +105,51 @@ export default {
       immediate: true,
       deep: true,
     },
+    inputMappings: {
+      handler(newMappings) {
+        if (!this.studyBased) {
+          this.tableBasedParameter = this.findTableBasedParameter(newMappings);
+          this.$emit('update:valid', this.isValid);
+        }
+      },
+      deep: true,
+      immediate: true
+    },
   },
   methods: {
+    findTableBasedParameter(mappings) {
+      for (const paramName of Object.keys(mappings)) {
+        const mapping = mappings[paramName];
+        if (this.isTableBasedSource(mapping)) {
+          return paramName;
+        }
+      }
+      return null;
+    },
+    isTableBasedSource(source) {
+      if (!source) return false;
+      if (typeof source === 'string') {
+        return source === 'submission' || source === 'document';
+      }
+      if (typeof source === 'object') {
+        return source.tableType === 'submission' || source.tableType === 'document';
+      }
+      return false;
+    },
+    createConfigurationSources() {
+      return this.configurationEntries.map(entry => ({
+        value: `config_${entry.id}`,
+        name: entry.name,
+        requiresTableSelection: false,
+        configId: entry.id
+      }));
+    },
+    createTableBasedSources() {
+      return [
+        { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
+        { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+      ];
+    },
     getSkillInputs(skillName) {
       const skill = this.nlpSkills.find((s) => s.name === skillName);
       if (!skill) return [];
@@ -126,23 +166,26 @@ export default {
       this.inputMappings = mapping;
     },
     updateMapping(input, source) {
+      if (!this.studyBased) {
+        if (this.tableBasedParameter === input && !this.isTableBasedSource(source)) {
+          this.tableBasedParameter = null;
+        }
+        
+        if (this.isTableBasedSource(source)) {
+          this.tableBasedParameter = input;
+        }
+      }
+      
       this.inputMappings[input] = source;
       this.$emit('update:modelValue', { ...this.inputMappings });
     },
-    getApplySkillsDataSources() {
-      const sources = [
-        { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
-        { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
-      ];
-
-      this.configurationEntries.forEach(entry => {
-        sources.push({
-          value: `config_${entry.id}`,
-          name: entry.name,
-          requiresTableSelection: false,
-          configId: entry.id
-        });
-      });
+    getApplySkillsDataSourcesForParameter(parameterName) {
+      const sources = [...this.createConfigurationSources()];
+      const canSelectTableBased = !this.tableBasedParameter || this.tableBasedParameter === parameterName;
+      
+      if (canSelectTableBased) {
+        sources.push(...this.createTableBasedSources());
+      }
 
       return sources;
     },

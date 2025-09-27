@@ -20,6 +20,7 @@
           v-model="inputMappings"
           :skill-name="selectedSkill"
           :study-based="false"
+          @update:valid="inputMappingsValid = $event"
         />
       </template>
       
@@ -106,6 +107,7 @@ export default {
       inputFilesValid: false,
       inputGroupValid: false,
       validationDocumentNames: {},
+      inputMappingsValid: false,
     };
   },
   computed: {
@@ -134,7 +136,7 @@ export default {
       return this.inputMappings[this.baseFileParameter].tableType === 'submission';
     },
     stepValid() {
-      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings;
+      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings && this.inputMappingsValid;
       const needsBaseFileParameter = this.baseFileParameterOptions.options.length > 0;
       const step2Valid = this.inputFilesValid && (!needsBaseFileParameter || !!this.baseFileParameter);
       
