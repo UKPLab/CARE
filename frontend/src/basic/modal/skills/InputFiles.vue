@@ -1,20 +1,12 @@
 <template>
   <div class="input-files">
-    <div v-if="fileSelectionParameters.length > 0" class="selection-summary-custom mb-3">
+    <div v-if="tableBasedParameter" class="selection-summary-custom mb-3">
       {{ selectionSummary }}
     </div>
     
-    <div v-if="fileSelectionParameters.length > 0" class="mb-3">
-      <div class="mb-3">
-        <label class="form-label">Select files for the parameter:</label>
-        <FormSelect
-          v-model="selectedParameter"
-          :options="parameterOptions"
-          style="max-width: 300px;"
-        />
-      </div>
-      
-      <div v-if="selectedParameter && currentTableData.length > 0" class="mt-3">
+    <div v-if="tableBasedParameter" class="mb-3">
+      <div v-if="currentTableData.length > 0" class="mt-3">
+        <h6 class="text-secondary mb-3">Select {{ getTableType() }} for {{ tableBasedParameter.name }}</h6>
         <BasicTable
           :columns="currentTableColumns"
           :data="currentTableData"
@@ -24,7 +16,7 @@
         />
       </div>
       
-      <div v-else-if="selectedParameter && currentTableData.length === 0" class="alert alert-info">
+      <div v-else class="alert alert-info">
         No {{ getTableType() }} available for selection.
       </div>
     </div>
@@ -62,7 +54,6 @@ export default {
   emits: ["update:modelValue", "update:valid"],
   data() {
     return {
-      selectedParameter: '',
       selectedFiles: [],
       tableOptions: {
         striped: true,
@@ -76,63 +67,40 @@ export default {
     };
   },
   computed: {
-    fileSelectionParameters() {
-      const parameters = [];
-      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
+    tableBasedParameter() {
+      for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
         if (mapping && mapping.requiresTableSelection) {
-          parameters.push({
+          return {
             name: paramName,
             tableType: mapping.tableType,
             value: mapping.value,
-          });
+          };
         }
-      });
-      return parameters;
+      }
+      return null;
     },
     isValid() {
-      if (this.fileSelectionParameters.length === 0) return true;
+      if (!this.tableBasedParameter) return true;
       
-      return this.fileSelectionParameters.every(param => {
-        const files = this.modelValue[param.name];
-        return files && Array.isArray(files) && files.length > 0;
-      });
-    },
-    parameterOptions() {
-      return {
-        options: this.fileSelectionParameters.map(param => {
-          const hasFiles = this.modelValue[param.name] && 
-                           Array.isArray(this.modelValue[param.name]) && 
-                           this.modelValue[param.name].length > 0;
-          const fileCount = hasFiles ? this.modelValue[param.name].length : 0;
-          const displayName = hasFiles ? `${param.name} (${fileCount} files)` : param.name;
-          
-          return {
-            value: param.name,
-            name: displayName,
-          };
-        }),
-      };
-    },
-    currentParameterData() {
-      return this.fileSelectionParameters.find(p => p.name === this.selectedParameter);
-    },
-    currentTableType() {
-      return this.currentParameterData?.tableType || '';
+      const files = this.modelValue[this.tableBasedParameter.name];
+      return files && Array.isArray(files) && files.length > 0;
     },
     currentTableData() {
-      if (!this.currentParameterData) return [];
+      if (!this.tableBasedParameter) return [];
       
-      if (this.currentTableType === 'document') {
+      if (this.tableBasedParameter.tableType === 'document') {
         return this.documentsData;
-      } else if (this.currentTableType === 'submission') {
+      } else if (this.tableBasedParameter.tableType === 'submission') {
         return this.submissionsData;
       }
       return [];
     },
     currentTableColumns() {
-      if (this.currentTableType === 'document') {
+      if (!this.tableBasedParameter) return [];
+      
+      if (this.tableBasedParameter.tableType === 'document') {
         return this.documentColumns;
-      } else if (this.currentTableType === 'submission') {
+      } else if (this.tableBasedParameter.tableType === 'submission') {
         return this.submissionColumns;
       }
       return [];
@@ -167,33 +135,18 @@ export default {
       );
     },
     selectionSummary() {
-      if (this.fileSelectionParameters.length === 0) {
-        return '';
+      if (!this.tableBasedParameter) {
+        return 'No parameters require file selection';
       }
       
-      const selectedParams = [];
-      const missingParams = [];
+      const files = this.modelValue[this.tableBasedParameter.name];
+      const hasFiles = files && Array.isArray(files) && files.length > 0;
       
-      this.fileSelectionParameters.forEach(param => {
-        const files = this.modelValue[param.name];
-        if (files && Array.isArray(files) && files.length > 0) {
-          selectedParams.push(`${param.name} (${files.length})`);
-        } else {
-          missingParams.push(param.name);
-        }
-      });
-      
-      let summary = '';
-      if (selectedParams.length > 0) {
-        summary += `Files selected for: ${selectedParams.join(', ')}`;
+      if (hasFiles) {
+        return `Files selected for ${this.tableBasedParameter.name}: ${files.length}`;
+      } else {
+        return `File selection needed for parameter: ${this.tableBasedParameter.name}`;
       }
-      
-      if (missingParams.length > 0) {
-        if (summary) summary += ' • ';
-        summary += `File selection still needed for parameter(s): ${missingParams.join(', ')}`;
-      }
-      
-      return summary || 'No parameters require file selection';
     },
     documentColumns() {
       return [
@@ -255,22 +208,6 @@ export default {
     },
   },
   watch: {
-    selectedParameter: {
-      handler(newParam, oldParam) {
-        if (oldParam && this.selectedFiles.length > 0) {
-          const updatedValue = { ...this.modelValue };
-          updatedValue[oldParam] = this.selectedFiles;
-          this.$emit('update:modelValue', updatedValue);
-        }
-        
-        if (newParam) {
-          this.selectedFiles = this.modelValue[newParam] || [];
-        } else {
-          this.selectedFiles = [];
-        }
-      },
-      immediate: false,
-    },
     isValid: {
       handler(newVal) {
         this.$emit('update:valid', newVal);
@@ -279,51 +216,48 @@ export default {
     },
     modelValue: {
       handler(newValue) {
-        if (this.selectedParameter && newValue && newValue[this.selectedParameter]) {
-          this.selectedFiles = newValue[this.selectedParameter];
+        if (this.tableBasedParameter && newValue && newValue[this.tableBasedParameter.name]) {
+          this.selectedFiles = newValue[this.tableBasedParameter.name];
+        } else {
+          this.selectedFiles = [];
         }
       },
       deep: true,
       immediate: true,
     },
-    fileSelectionParameters: {
-      handler(newParams) {
-        if (newParams.length > 0 && !this.selectedParameter) {
-          this.selectedParameter = newParams[0].name;
+    tableBasedParameter: {
+      handler(newParam) {
+        if (newParam && this.modelValue && this.modelValue[newParam.name]) {
+          this.selectedFiles = this.modelValue[newParam.name];
+        } else {
+          this.selectedFiles = [];
         }
       },
       immediate: true,
-    },
-    selectedFiles: {
-      handler(newFiles) {
-        if (this.selectedParameter) {
-          const updatedValue = { ...this.modelValue };
-          updatedValue[this.selectedParameter] = newFiles;
-          this.$emit('update:modelValue', updatedValue);
-        }
-      },
-      deep: true,
     },
   },
   mounted() {
-    if (this.selectedParameter && this.modelValue[this.selectedParameter]) {
-      this.selectedFiles = this.modelValue[this.selectedParameter];
+    if (this.tableBasedParameter && this.modelValue[this.tableBasedParameter.name]) {
+      this.selectedFiles = this.modelValue[this.tableBasedParameter.name];
     }
   },
   methods: {
     getTableType() {
-      return this.currentTableType === 'document' ? 'Documents' : 'Submissions';
+      return this.tableBasedParameter?.tableType === 'document' ? 'Documents' : 'Submissions';
     },
     onFileSelectionChange(files) {
       this.selectedFiles = Array.isArray(files) ? files : [];
-      const updatedValue = { ...this.modelValue };
-      updatedValue[this.selectedParameter] = this.selectedFiles;
       
-      this.$emit('update:modelValue', updatedValue);
-      
-      this.$nextTick(() => {
+      if (this.tableBasedParameter) {
+        const updatedValue = { ...this.modelValue };
+        updatedValue[this.tableBasedParameter.name] = this.selectedFiles;
+        
         this.$emit('update:modelValue', updatedValue);
-      });
+        
+        this.$nextTick(() => {
+          this.$emit('update:modelValue', updatedValue);
+        });
+      }
     },
   },
 };
