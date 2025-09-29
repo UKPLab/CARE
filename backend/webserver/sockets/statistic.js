@@ -14,6 +14,14 @@ const Socket = require("../Socket.js");
  * @class StatisticSocket
  */
 class StatisticSocket extends Socket {
+    constructor(server, io, socket) {
+        super(server, io, socket);
+        // Simple in-memory batching; batch size configurable via setting 'statistic.batch.size' or env fallback
+        this.statsBuffer = [];
+        this.statsFlushing = false;
+        // Start with a safe default; load real value asynchronously
+        this.statsBatchSize = null;
+    }
 
     /**
      * Send statistics to the user
@@ -77,21 +85,54 @@ class StatisticSocket extends Socket {
      */
     async addStats(data, options) {
         try {
-            if (this.user.acceptStats) {
-                await this.models["statistic"].add({
-                    action: data.action,
-                    data: JSON.stringify(data.data),
-                    userId: this.userId,
-                    session: this.socket.id,
-                    timestamp: new Date(),
-                })
+            if (!this.user.acceptStats) return;
+            this.statsBuffer.push({
+                action: data.action,
+                data: JSON.stringify(data.data || {}),
+                userId: this.userId,
+                session: this.socket.id,
+                timestamp: new Date(),
+            });
+            if (this.statsBuffer.length >= this.statsBatchSize && !this.statsFlushing) {
+                await this._flushStats();
             }
         } catch (e) {
             this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
         }
     }
 
-    init() {
+    /**
+     * Flush the in-memory statistics buffer to the database in a single bulk insert.
+     *
+     * Concurrency / safety:
+     * - Guarded by the statsFlushing flag so only one flush runs at a time.
+     * - If buffer is empty or a flush is already running, returns immediately.
+     *
+     * Behavior:
+     * - Uses bulkCreate for efficiency (reduced round trips).
+     * - On success: clears the buffer.
+     * - On failure: logs error and still clears buffer to avoid perpetual retry / duplication.
+     *
+     * @private
+     * @returns {Promise<void>}
+     */
+    async _flushStats() {
+        if (this.statsFlushing || this.statsBuffer.length === 0) {
+            return;
+        }
+        this.statsFlushing = true;
+        try {
+            await this.models["statistic"].bulkCreate(this.statsBuffer);
+        } catch (e) {
+            this.logger.error("Failed to flush statistics batch: " + e.toString());
+        } finally {
+            this.statsFlushing = false;
+            this.statsBuffer = [];
+        }
+    }
+
+    async init() {
+        this.statsBatchSize = parseInt(await this.models['setting'].get("statistics.batch.size"), 10)
         this.createSocket("statsGet", this.getStats, {}, false);
         this.createSocket("stats", this.addStats, {}, false);
         this.createSocket("statsGetByUser", this.sendStatsByUser, {}, false);
