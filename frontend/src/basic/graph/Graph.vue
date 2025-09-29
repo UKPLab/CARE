@@ -74,11 +74,7 @@
   </FormElement>
   <teleport to="body">
     <NodeEditor
-      v-for="n in Object.keys(options['nodes'])"
-      :key="n"
-      :ref="'nodeEditor_' + n"
-      :table="getTableForNode(n)"
-      table-namespace="plugins"
+      ref="nodeEditor"
       @update:node="updateNode">
     </NodeEditor>
     <ConfirmModal ref="confirmDeletion"/>
@@ -91,10 +87,10 @@ import {VNetworkGraph} from "v-network-graph";
 import * as vNG from "v-network-graph";
 import BasicIcon from "@/basic/Icon.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import {defineAsyncComponent} from "vue";
+import NodeEditor from "./NodeEditor.vue";
 import dagre from "dagre";
 
-const nodeSize = 30;
+const nodeSize = 40;
 
 /**
  * Basic Graph Editor
@@ -108,8 +104,7 @@ export default {
   name: "FormGraph",
   components: {
     BasicIcon, FormElement, VNetworkGraph, ConfirmModal,
-    // need async component to avoid circular dependency
-    "NodeEditor": defineAsyncComponent(() => import('@/basic/form/graph/NodeEditor.vue'))
+    NodeEditor
   },
   inject: {
     mainModal: {
@@ -120,6 +115,11 @@ export default {
     }
   },
   props: {
+    workflowId: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     options: {
       type: Object,
       required: true,
@@ -142,6 +142,8 @@ export default {
     return {
       selectedNodes: [],
       currentData: {},
+      currentEditingNodeId: null,
+      currentNodeTable: null,
       configs: vNG.defineConfigs({
         node: {
           selectable: 1,
@@ -187,7 +189,7 @@ export default {
   watch: {
     currentData: {
       handler() {
-        console.log("emit", this.currentData);
+        console.log("Current data changed:", this.currentData);
         this.$emit("update:modelValue", this.currentData);
       },
       deep: true
@@ -227,6 +229,7 @@ export default {
       if (Object.keys(this.currentData['nodes']).length <= 1 || Object.keys(this.currentData['edges']).length === 0) {
         return
       }
+
 
       // convert graph
       // ref: https://github.com/dagrejs/dagre/wiki
@@ -273,42 +276,55 @@ export default {
       });
     },
     addNode(nodeType) {
-      // create random id
-      const id = Math.random().toString(36).substring(7);
-      this.currentData['nodes'][id] = {
-        type: nodeType,
-        saved: false,
-        name: this.options['nodes'][nodeType]['label'],
-        data: {}
-      };
-
-      // add edge to selected node
-      if (this.selectedNodes.length > 0) {
-        const edge_id = Math.random().toString(36).substring(7);
-        this.currentData['edges'][edge_id] = {
-          saved: false,
-          source: this.selectedNodes[0],
-          target: id,
-        };
-      }
-
-      // open modal for editing node
-      this.editNode(id);
-
+      console.log("add node", nodeType);
+      this.$refs.nodeEditor.open(0, { workflowId: this.workflowId, type: nodeType, workflowStepPrevious: this.selectedNodes[0] });
     },
     editNode(id) {
-      // hide currently open modal
       this.mainModal?.hide();
-
-      // open modal for editing node
-      const nodeType = this.currentData['nodes'][id]['type'];
-      this.$refs['nodeEditor_' + nodeType][0].open(id, this.currentData['nodes'][id]['data']);
+      this.currentEditingNodeId = id;
+      const node = this.currentData['nodes'][id];
+      this.currentNodeTable = this.getTableForNode(node.type);
+      this.$refs.nodeEditor.open(node.id, node.data);
     },
     updateNode(id, data) {
       this.mainModal?.show();
-      this.currentData['nodes'][id]['data'] = data;
+      
+      // Create a new nodes object to trigger reactivity
+      const updatedNodes = { ...this.currentData['nodes'] };
+      
+      if (updatedNodes[id]) {
+        // Update existing node with new data
+        updatedNodes[id] = {
+          ...updatedNodes[id],
+          data: data,
+          name: data.name || updatedNodes[id].name // Update name if provided
+        };
+        this.currentData = {
+          ...this.currentData,
+          nodes: updatedNodes
+        };
+      } else {
+        // Add new node
+        updatedNodes[id] = {
+          id: id,
+          type: data.type,
+          data: data,
+          name: data.name
+        };
+        const newEdgeId = `edge_${id}_${data.workflowStepPrevious}`;
+        const edges = { ...this.currentData['edges'] };
+        edges[newEdgeId] = {
+          source: data.workflowStepPrevious,
+          target: id,
+          saved: true,
+        };
+        this.currentData = {
+        ...this.currentData,
+        nodes: updatedNodes,
+        edges: edges
+      };
+      }   
       this.updateLayout('LR');
-
     },
     deleteSubNodes(nodeId) {
       Object.entries(this.currentData['edges']).forEach(([edgeId, edge]) => {

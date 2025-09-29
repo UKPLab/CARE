@@ -1,94 +1,53 @@
 <template>
-    <BasicModal
-      ref="nodeEditorModal"
-      name="nodeEditorModal"
-      lg
+    <BasicCoordinator
+      ref="coordinator"
+      table="workflow_step"
+      title="Workflow Step"
+      @success="success"
     >
-      <template #title>
-        <slot name="title">
-          <span v-if="id > 0">Edit</span>
-          <span v-else>New</span>
-          Node
-        </slot>
+      <template #success>
+        The workflow step has been successfully saved.
       </template>
-      <template #body>
-        <FormBuilder
-          ref="form"
-          :table="table"
-          :table-namespace="tableNamespace"
-          :read-only-fields="readOnlyFields"
-        />
-      </template>
-      <template #footer>
-        <button
-          class="btn btn-secondary"
-          @click="submit"
-        >Update Node
-        </button>
-      </template>
-    </BasicModal>
+    </BasicCoordinator>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
-import FormBuilder from "@/basic/form/Builder.vue";
-import {computed} from "vue";
+import BasicCoordinator from "@/basic/Coordinator.vue";
 
 /**
  * Basic Node Editor
  *
- * Opens a new coordinator modal to edit a node in the graph
+ * Opens a coordinator modal to edit a workflow step node in the graph
  *
  * @author: Dennis Zyska
  */
 export default {
-  name: "BasicNodeAdder",
-  components: {FormBuilder, BasicModal},
-  provide() {
-    return {
-      // overwrite mainModal to support sub modals
-      mainModal: computed(() => this.$refs.nodeEditorModal),
-    }
-  },
-  props: {
-    table: {
-      type: String,
-      required: true,
-    },
-    tableNamespace: {
-      type: String,
-      required: false,
-      default: "table",
-    },
-    readOnlyFields: {
-      type: Array,
-      required: false,
-      default: () => {
-        return [];
-      }
-    }
-  },
+  name: "BasicNodeEditor",
+  components: { BasicCoordinator },
+  subscribeTable: ["workflow_step"],
   emits: ["update:node"],
   data() {
     return {
-      currentData: {},
-      currentNodeId: null,
+      currentNodeId: 0,
+      isSuccess: false,
     };
   },
+
   methods: {
-    open(nodeId, data) {
-      this.currentNodeId = nodeId;
-      this.currentData = data;
-      this.$refs.nodeEditorModal.open();
+    open(nodeId, context = {}) {
+      this.currentNodeId = nodeId || 0;
+      this.isSuccess = false;
+      console.log("Opening node editor for node ID:", this.currentNodeId, "with context:", context);
+      this.$refs.coordinator.open(this.currentNodeId, context);
     },
-    submit() {
-      if (this.$refs.form.validate()) {
-        this.$emit("update:node", this.currentNodeId, this.$refs.form.getData());
-        this.close();
-      }
+    success(id) {
+      this.currentNodeId = id;
+      this.isSuccess = true;
+      console.log("Node edit successful for node ID:", id, "with data:", this.$refs.coordinator.data);
+      this.$emit('update:node', id, this.$refs.coordinator.data);
     },
     close() {
-      this.$refs.nodeEditorModal.close();
+      this.$refs.coordinator.close();
     },
   }
 }
