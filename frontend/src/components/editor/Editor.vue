@@ -8,16 +8,7 @@
         v-if="!sidebarDisabled && sidebarContent !== null"
         ref="sidebar"
         :content="sidebarContent"
-        class="sidebar-container">
-        <template #sidebar-dfg icon="clock-history" title="History">
-          <SidebarHistory"/>
-
-        </template>
-        <template #sidebar-deg>
-          <SidebarHistory"/>
-
-        </template>
-
+        class="sidebar-container"/>
     </div>
   </div>
   <Teleport to="#topBarNavItems">
