@@ -18,6 +18,12 @@ Models
 Models are defined in the ``models`` folder.
 They are defined using the `Sequelize ORM <http://docs.sequelizejs.com/>`_.
 
+.. warning::
+
+   The diagram below is **not up to date** with the current implementation.  
+   For the most recent definitions, please check the actual code in the
+   ``backend\db\models`` folder.
+
 The following entity relationship model (ERM) shows the relations between the different models:
 
 .. image:: ./ERM.drawio.svg
