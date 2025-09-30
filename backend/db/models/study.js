@@ -421,7 +421,7 @@ module.exports = (sequelize, DataTypes) => {
         indexes: [
             {
             unique: false,
-            fields: ["userId"]
+            fields: ["userId", "template"]
             }
         ]
     });
