@@ -1,16 +1,6 @@
 const {inject} = require("../utils/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
-const env = process.env.NODE_ENV || "development";
-const config = require("../db/config/config.js")[env];
-const SequelizeSimpleCache = require("sequelize-simple-cache");
-
-let sequelize;
-if (config.use_env_variable) {
-    sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-    sequelize = new Sequelize(config.database, config.username, config.password, config);
-}
 
 /**
  * Defines as new Socket class
@@ -48,7 +38,6 @@ module.exports = class Socket {
 
         // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
-        this.cache = {};
     }
 
     /**
@@ -324,18 +313,6 @@ module.exports = class Socket {
     }
 
     /**
-     * Adds table tableName to cache
-     * @param {string} tableName 
-     * @return {void}
-     */
-    addTableToCache(tableName) {
-        const cacheSettings = {};
-        cacheSettings[tableName] = {ttl: 30*60};
-        const tableCache = new SequelizeSimpleCache(cacheSettings);
-        this.cache[tableName] = tableCache.init(require("../db/models/" + tableName)(sequelize, Sequelize.DataTypes));
-    }
-
-    /**
      * Filters the access map to get rules relevant for the provided user.
      * @param {Object} accessMap The access map to filter
      * @param {number} userId User ID to check the rights for
@@ -350,17 +327,14 @@ module.exports = class Socket {
                 if (a.right) {
                     hasAccess = await this.hasAccess(a.right, userId, rolesUpdatedAt);
                 } else if (a.table) {
-                    if (!this.cache[a.table]) {
-                        this.addTableToCache(a.table);
-                    }
-                    const count = await this.cache[a.table].findAll({
+                    const count = await this.models[a.table].findAll({
                         attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
                         where: {
                             ["userId"]: userId
                         },
                         group: a.by,
                         raw: true
-                    });
+                    }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
                     hasAccess = count.some(c => c.count > 0);
                     limitation = count.map(c => c[a.by]);
                 }
@@ -450,10 +424,7 @@ module.exports = class Socket {
     async handleInjections(injects, data) {
         for (const injection of injects) {
             if (injection.type === "count") {
-                if (!this.cache[injection.table]) {
-                    this.addTableToCache(injection.table);
-                }
-                const count = await this.cache[injection.table].findAll({
+                const count = await this.models[injection.table].findAll({
                     attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
                     where: {
                         [injection.by]: {
@@ -603,10 +574,7 @@ module.exports = class Socket {
     async sendInclusions(include, data, userId, includeForeignData = true, includeFieldTables = false) {
         for (const inclusions of include) {
             if (inclusions.type === "count") {
-                if (!this.cache[inclusions.table]) {
-                    this.addTableToCache(inclusions.table);
-                }
-                const count = await this.cache[inclusions.table].findAll({
+                const count = await this.models[inclusions.table].findAll({
                     attributes: [inclusions.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
                     where: {
                         [inclusions.by]: {
