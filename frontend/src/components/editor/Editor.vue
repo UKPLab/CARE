@@ -4,29 +4,22 @@
       <div id="editorContainer" class="editor-container flex-grow-1">
         <Editor ref="editor" @update:data="$emit('update:data', $event)" />
       </div>
-      <Sidebar
+      <BasicSidebar
         v-if="!sidebarDisabled && sidebarContent !== null"
+        :sidebarConfigs="sidebarConfigs"
         ref="sidebar"
         :content="sidebarContent"
-        class="sidebar-container"/>
+        class="sidebar-container"
+        @sidebar-change="handleSidebarChange">
+        <template #history>
+          <SidebarHistory />
+        </template>
+        <template #configurator>
+          <SidebarConfigurator />
+        </template>
+      </BasicSidebar>
     </div>
   </div>
-  <Teleport to="#topBarNavItems">
-    <TopBarButton
-      v-if="showHistory"
-      title="Show History"
-      class="btn rounded-circle ms-2"
-      type="button"
-      @click="toggleHistory"
-    >
-      <LoadIcon
-        :color="'#777777'"
-        :size="18"
-        icon-name="clock-history"
-      />
-    </TopBarButton>
-  </Teleport>
-
   <Teleport to="#topbarCenterPlaceholder">
     <div
       v-show="readOnlyOverwrite"
@@ -57,8 +50,10 @@
  *
  * @author Dennis Zyska, Juliane Bechert, Linyin Huang
  */
-import Sidebar from "@/components/editor/sidebar/Sidebar.vue";
+import BasicSidebar from "@/basic/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
+import SidebarHistory from "@/components/editor/sidebar/History.vue";
+import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
@@ -67,7 +62,7 @@ export default {
   name: "EditorView",
   components: {
     LoadIcon, TopBarButton,
-    Sidebar,
+    BasicSidebar,
     Editor,
   },
   provide() {
@@ -124,6 +119,18 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    sidebarConfigs(){
+      return {
+        'history': {
+          icon: 'clock-history',
+          title: 'Edit History'
+        },
+        'configurator': {
+          icon: 'gear-fill',
+          title: 'Document Configurator'
+        }
+      };
+    },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history') {
         return true;
@@ -163,6 +170,16 @@ export default {
     }
   },
   methods: {
+    handleSidebarChange(view) {
+      console.log('Slot changed:', view );
+      // Update internal state to match sidebar selection
+      this.sidebarContent = view;
+      if(this.sidebarContent === 'history') {
+         this.toggleHistory();
+      }
+     
+    },
+    
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;
