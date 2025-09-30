@@ -1,92 +1,5 @@
-Coordinator
-===========
-
-The coordinator component is a wrapper around the form components. It offers a simple way to build a form to add/edit data in the backend.
-The basic idea is that the coordinator manages the data from the vuex store and data transfer with the backend.
-It uses the ``fields`` description of a :doc:`db tables <../backend/database>`  if provided to build and validate the form.
-
-.. code-block:: html
-
-    <BasicCoordinator
-      ref="coordinator"
-      table="study"
-      title="Study"
-      @success="success"
-      @submit="submit">
-        <template #title>
-            <!-- fill this slot to overwrite basic title -->
-        </template>
-        <template #success>
-            <!-- fill this slot to overwrite basic success message -->
-        </template>
-        <template #success-footer>
-            <!-- fill this slot to overwrite basic success footer -->
-        </template>
-        <template #buttons>
-            <!-- fill this slot to add buttons to the existing footer -->
-        </template>
-    </BasicCoordinator>
-
-.. code-block:: javascript
-
-    import BasicCoordinator from "@/basic/Coordinator.vue";
-
-    export default {
-        components: {
-            BasicCoordinator
-        },
-        methods: {
-            success(id) {
-                console.log("Item saved with id: " + id);
-            },
-            submit(data) {
-                console.log("Coordinator submitted the following data: ", data);
-            }
-        }
-    }
-
-.. list-table:: Coordinator properties
-    :header-rows: 1
-
-    * - Prop
-      - Description
-      - Default
-      - Type
-      - Required
-    * - table
-      - The table name of the data to be managed by the coordinator
-      - None
-      - String
-      - true
-    * - title
-      - The title of the coordinator
-      - None
-      - String
-      - true
-    * - defaultValue
-      - Default values to be overwritten in the form
-      - {}
-      - Object
-      - false
-    * - textAdd
-      - The text of the add button
-      - Add
-      - String
-      - false
-    * - textUpdate
-      - The text of the update button
-      - Update
-      - String
-      - false
-    * - textCancel
-      - The text of the cancel button
-      - Cancel
-      - String
-      - false
-
-
-Forms
------
+Form
+----
 
 To build forms, you can use the form component. It offers a simple way to build forms in a consistent way only by passing a dictionary.
 Mainly it is used by the coordinator component, but it can also be used standalone.
@@ -124,9 +37,7 @@ There are three kinds of properties:
 * Field specific properties - These properties are optional but are highly field specific
 
 
-Basic form properties
-~~~~~~~~~~~~~~~~~~~~~
-
+**Basic form properties**
 
 .. list-table:: Basic form properties
     :header-rows: 1
@@ -164,9 +75,9 @@ Basic form properties
       - false
       - Number
 
+-----
 
-Extended form properties
-~~~~~~~~~~~~~~~~~~~~~~~~
+**Extended form properties**
 
 The properties of the ``fields`` object could be extended by the field specific properties. See the :ref:`Types<Types>` section for more information.
 
@@ -225,7 +136,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - class
       - readOnly
       - suffix
-    * - :ref:`text<Text>`
+    * - :ref:`text <form-type-text>`
       - Y
       - Y
       - Y
@@ -233,7 +144,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
       - Y
-    * - :ref:`switch<Switch>`
+    * - :ref:`switch <form-type-switch>`
       - Y
       - Y
       - Y
@@ -241,7 +152,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
       - N
-    * - :ref:`slider<Slider>`
+    * - :ref:`slider <form-type-slider>`
       - Y
       - N
       - Y
@@ -249,7 +160,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - N 
       - N
-    * - :ref:`datetime<Datetime>`
+    * - :ref:`datetime <form-type-datetime>`
       - Y
       - N
       - Y
@@ -257,7 +168,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - N
       - N
-    * - :ref:`select<Select>`
+    * - :ref:`select <form-type-select>`
       - Y
       - N
       - Y
@@ -265,7 +176,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - Y 
       - N
-    * - :ref:`checkbox<Checkbox>`
+    * - :ref:`checkbox <form-type-checkbox>`
       - Y
       - N
       - Y
@@ -273,7 +184,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y 
       - N
-    * - :ref:`editor<Editor>`
+    * - :ref:`editor <form-type-editor>`
       - Y
       - N
       - Y
@@ -281,7 +192,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - N 
       - N
-    * - :ref:`textarea<Textarea>`
+    * - :ref:`textarea <form-type-textarea>`
       - Y
       - Y
       - Y
@@ -289,7 +200,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
       - N
-    * - :ref:`table<Table>`
+    * - :ref:`table <form-type-table>`
       - Y
       - N
       - Y
@@ -297,7 +208,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - N
       - N
-    * - :ref:`password<Password>`
+    * - :ref:`password <form-type-password>`
       - Y
       - N
       - N
@@ -305,7 +216,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
       - N
-    * - :ref:`file<File>`
+    * - :ref:`file <form-type-file>`
       - Y
       - Y
       - Y
@@ -313,7 +224,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
       - N
-    * - :ref:`choice<Choice>`
+    * - :ref:`choice <form-type-choice>`
       - Y
       - N
       - Y
@@ -321,7 +232,7 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - N 
       - N
-    * - :ref:`*<Default>`
+    * - :ref:`default (*) <form-type-default>`
       - Y
       - Y
       - Y
@@ -330,20 +241,23 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
 
-Specific form properties
-~~~~~~~~~~~~~~~~~~~~~~~~
+-----
+
+.. _Types:
+
+**Specific form properties**
 
 The following types are available:
 
-Switch
-^^^^^^
+.. _form-type-switch:
 
-No specific options.
+`Switch`: No specific options.
 
-Slider
-^^^^^^
+-----
 
-Additional options:
+.. _form-type-slider:
+
+`Slider`: Additional options:
 
 * min
 * max
@@ -359,15 +273,17 @@ Additional options:
           { from: 2, to: "High" }
       ]
 
-Datetime
-^^^^^^^^
+-----
 
-No specific options.
+.. _form-type-datetime:
 
-Select
-^^^^^^
+`Datetime`: No specific options.
 
-There are two ways to define the options of a select field, either by passing an object or use data from a autotable in vuex store.
+-----
+
+.. _form-type-select:
+
+`Select`: There are two ways to define the options of a select field, either by passing an object or use data from a autotable in (:doc:`../vuex_store`).
 
 Passing an object:
 
@@ -423,31 +339,33 @@ Using autotable:
       - the value of the parentData with the key that should be filtered for (used for choices)
     * valueAsObject — If `true`, the full object of the selected option will be emitted as `modelValue` instead of just the value field.
 
+-----
 
+.. _form-type-checkbox:
 
-Checkbox
-^^^^^^^^
+`Checkbox`: Each checkbox expects `options.options` to be an array of `{ label, value }` objects.
 
-Each checkbox expects `options.options` to be an array of `{ label, value }` objects.
+-----
 
-Editor
-^^^^^^
+.. _form-type-editor:
 
-See :doc:`Editor <./editor>` for more information.
+`Editor`: See :doc:`Editor <./editor>` for more information.
 
 .. note::
 
     You can also use ``html`` as type.
 
-Textarea
-^^^^^^^^
+-----
 
-No specific options.
+.. _form-type-textarea:
 
-Table
-^^^^^
+`Textarea`: No specific options.
 
-Tables are a bit more complex, example:
+-----
+
+.. _form-type-table:
+
+`Table`: Tables are a bit more complex, example:
 
 .. code-block:: javascript
 
@@ -465,15 +383,17 @@ Tables are a bit more complex, example:
 It shows the corresponding fields of the table ``tag`` and allows to add and remove rows.
 Only Select and Text fields are supported.
 
-Password
-^^^^^^^^
+-----
 
-No specific options.
+.. _form-type-password:
 
-File
-^^^^
+`Password`: No specific options.
 
-The ``file`` field type allows uploading a file using a standard file input.  
+-----
+
+.. _form-type-file:
+
+`File`: The ``file`` field type allows uploading a file using a standard file input.
 It is typically used for attaching documents such as PDFs or Delta files in forms.
 The field stores the uploaded `File` object, which is then passed to the backend via socket communication.
 
@@ -482,7 +402,7 @@ Additional options:
 * accept — allowed MIME types (e.g. `application/pdf`, `.delta`)
 * class — custom input class
 
-File uploads are handled via the ``documentAdd`` method in the ``document.js`` Socket. This is a **special case** because uploaded files are not just saved as form values but:
+File uploads are handled via the ``documentAdd`` method in the ``document.js`` Socket.This is a **special case** because uploaded files are not just saved as form values but:
 
 1. **Validated** — only ``.pdf`` and ``.delta`` files are allowed.
 2. **Stored to disk** — files are written to the ``/files`` directory using a generated hash as filename.
@@ -497,10 +417,11 @@ File uploads are handled via the ``documentAdd`` method in the ``document.js`` S
 - Existing annotations are removed via a server RPC (``PDFRPC.deleteAllAnnotations``).
 - If ``importAnnotations`` is set to ``true``, new annotations are automatically extracted and saved.
 
-Choice
-^^^^^^
+-----
 
-The ``Choice`` component displays a dynamic list of items (choices) where each row can be configured individually.
+.. _form-type-choice:
+
+`Choice`: The ``Choice`` component displays a dynamic list of items (choices) where each row can be configured individually.
 This component is useful when you want to collect structured data per entry—especially in workflows or assignments where each step or entity may have different options or linked configurations.
 
 It renders a table layout and allows you to bind form fields per row.
@@ -515,7 +436,7 @@ it’s important to understand that **in the context of the Choice component, th
 
 .. tip::
 
-    To better understand how the ``Choice`` component fits into a workflow, here’s a minimal example of how workflows are structured in the backend:
+    To better understand how the ``Choice`` component fits into a workflow, here’s a minimal example of how workflows are structured in the backend (see :doc:`../../../for_researchers/study/study_basics` for further examples of study workflows):
 
     .. code-block:: json
 
@@ -627,10 +548,11 @@ Example usage:
     While the backend table/field names come from the database model,
     **their effect inside the Choice component is purely about what gets rendered, how it can be interacted with, and what gets sent back when saving**.
 
-Default
-^^^^^^^
+-----
 
-Basic HTML `input <https://www.w3.org/TR/2010/WD-html5-20101019/the-input-element.html>`_ from type specified in ``type`` if no other type matches.
+.. _form-type-default:
+
+`Default`: Basic HTML `input <https://www.w3.org/TR/2010/WD-html5-20101019/the-input-element.html>`_ from type specified in ``type`` if no other type matches.
 For example it is used for ``text``.
 
 .. list-table:: Extended form properties
@@ -664,3 +586,30 @@ Additional options:
       }
 
 * readOnly — If `true`, the field cannot be modified but remains visible.
+
+-----
+
+**Moodle Options**
+
+The **MoodleOptions** wraps a :doc:`Basic Form <../frontend/basic/form>` to collect
+Moodle connection parameters and, optionally, an assignment ID. It is used inside
+:doc:`StepperModal <../frontend/basic/modal>` workflows such as:
+
+- Importing submissions from Moodle
+- Publishing review links
+- Bulk user creation with upload to Moodle
+
+Example usage:
+
+.. code-block:: html
+
+   <MoodleOptions
+     ref="moodleOptionsForm"
+     v-model="moodleOptions"
+     with-assignment-id
+   />
+
+Field visibility and defaults are driven by admin settings (``rpc.moodleAPI.*``).
+Assignment IDs can be fetched live from Moodle via a ``Refresh`` button, which triggers
+a backend request (``assignmentGetInfo``).
+For the end-to-end researcher workflow, see :doc:`../../for_researchers/moodle_usage`.
