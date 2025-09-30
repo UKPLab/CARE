@@ -13,7 +13,7 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/Card.vue";
+import Card from "@/components/dashboard/card/Card.vue";
 
 /** Show the logs stored in the DB
  *

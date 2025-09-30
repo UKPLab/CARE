@@ -15,8 +15,8 @@
  * @author: Dennis Zyska, Nils Dycke
  */
 import {defineAsyncComponent} from "vue";
-import IconLoading from "./icons/IconLoading.vue";
-import IconBootstrap from "./icons/IconBootstrap.vue";
+import IconLoading from "./icon/IconLoading.vue";
+import IconBootstrap from "./icon/IconBootstrap.vue";
 
 export default {
   name: "BasicIcon",
@@ -52,7 +52,7 @@ export default {
       }
       return defineAsyncComponent(
           {
-            loader: () => import("./icons/IconBootstrap.vue"),
+            loader: () => import("./icon/IconBootstrap.vue"),
             loadingComponent: IconLoading,
             errorComponent: IconBootstrap
           });

@@ -41,7 +41,7 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import Card from "@/basic/Card.vue";
+import Card from "@/components/dashboard/card/Card.vue";
 import ExportSingle from "@/basic/download/ExportSingle.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 

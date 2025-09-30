@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import BasicCoordinator from "@/basic/Coordinator.vue";
+import BasicCoordinator from "@/components/dashboard/Coordinator.vue";
 
 /**
  * TagSetModal - modal component for adding and editing tags sets

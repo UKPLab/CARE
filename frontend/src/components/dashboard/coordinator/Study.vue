@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import BasicCoordinator from "@/basic/Coordinator.vue";
+import BasicCoordinator from "@/components/dashboard/Coordinator.vue";
 
 /**
  * StudyCoordinator - coordinator to add or edit studies

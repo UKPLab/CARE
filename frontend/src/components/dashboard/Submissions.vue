@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import Card from "@/basic/Card.vue";
+import Card from "@/components/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./review/UploadModal.vue";

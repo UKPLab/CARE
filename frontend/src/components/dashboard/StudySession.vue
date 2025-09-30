@@ -72,7 +72,7 @@
 </template>
 
 <script>
-import Card from "@/basic/Card.vue";
+import Card from "@/components/dashboard/card/Card.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import StudySessionTable from "@/components/dashboard/study/StudySessionTable.vue";
 import Timer from "@/basic/Timer.vue";

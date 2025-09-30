@@ -95,7 +95,7 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
-import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 
 /**

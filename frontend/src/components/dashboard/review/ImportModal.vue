@@ -40,7 +40,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
-import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
