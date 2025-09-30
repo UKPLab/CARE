@@ -439,7 +439,7 @@ export default {
           return this.getSubmissionOptions();
         }
         if (inputName === 'grading_results') {
-          return [{ value: 'assessment_output', name: 'Assessment Output', stepId: 0 }];
+          return [{ value: 'assessment_output', name: 'Assessment Output (step 1)', stepId: 0 }];
         }
         if (isAssessmentConfigInput(inputName)) {
           return this.getConfigOptions();
@@ -457,7 +457,7 @@ export default {
       if (submissionId) {
         const docsBySubmission = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('submissionId', submissionId)) || [];
         const zipDocs = docsBySubmission.filter((d) => d && d.type === 4 && !d.hideInFrontend);
-        return zipDocs.map((d) => ({ value: d.id, name: d.name, stepId: 0 }));
+        return zipDocs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
       }
 
       const submissions = (this.$store.getters["table/submission/getAll"]) || [];
@@ -466,20 +466,20 @@ export default {
       const docs = documents
         .filter((d) => d && ( d.type === 4) && !d.hideInFrontend)
         .filter((d) => submissionIds.includes(d.submissionId));
-      return docs.map((d) => ({ value: d.id, name: d.name, stepId: 0 }));
+      return docs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
     },
     getConfigOptions() {
       const configs = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('type', 3)) || [];
       return configs
         .filter((d) => d && !d.hideInFrontend)
-        .map((d) => ({ value: d.id, name: d.name, stepId: 0 }));
+        .map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
       // Extract placeholders
-      const textRegex = /text/g;
-      const chartRegex = /chart/g;
-      const comparisonRegex = /comparison/g;
+      const textRegex = /~text~/g;
+      const chartRegex = /~chart~/g;
+      const comparisonRegex = /~comparison~/g;
 
       let match;
       const extracted = [];
@@ -529,10 +529,10 @@ export default {
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
     },
     generateShortPreview(text) {
-      this.shortPreview = text.replace(/nlp/g, (match, num) => {
+      this.shortPreview = text.replace(/~nlp~/g, (match, num) => {
         const colorIndex = this.placeholders.findIndex((p) => p.number == num);
         const color = this.placeholderColors[colorIndex] || "#000";
-        return <span style="color: ${color}; font-weight: bold;">#${num}</span>;
+        return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
       });
     },
     handleStepChange(step) {

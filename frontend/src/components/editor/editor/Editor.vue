@@ -63,6 +63,7 @@ const Delta = Quill.import('delta');
 export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
+  subscribeTable: ["document_data"],
   components: {
     LoadIcon, TopBarButton
   },
@@ -113,6 +114,7 @@ export default {
       documentLoaded: false,
       data: {},
       firstVersion: null,
+      feedbackLoaded: false,
     };
   },
   computed: {
@@ -235,6 +237,16 @@ export default {
         this.processEdits(appliedEdits);
     },
     
+    // Watch for changes in document_data table to load generated feedback
+    '$store.getters["table/document_data/refreshCount"]': {
+      handler() {
+        if (this.documentLoaded && !this.feedbackLoaded && this.editor) {
+          this.loadGeneratedFeedback();
+        }
+      },
+      immediate: false
+    },
+    
     readOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
@@ -309,6 +321,9 @@ export default {
             currentVersion: currentVersion,
           };
           this.$emit("update:data", studyData);
+
+          // Load generated feedback if available
+          this.loadGeneratedFeedback();
         } else {
           this.handleDocumentError(res.error);
         }
@@ -523,6 +538,40 @@ export default {
       const documentName = document ? document.name : "document";
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
+    },
+    loadGeneratedFeedback() {
+      // Load generated feedback from document_data if available
+      this.$socket.emit("documentDataGet", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+        key: 'generating_feedback_data'
+      }, (response) => {
+        const feedbackText = (response && response.success && response.data && response.data.value) 
+          ? response.data.value 
+          : (response && response.value);
+        
+        if (feedbackText && this.editor) {
+          const quill = this.editor.getEditor();
+          const currentContent = quill.getContents();
+          
+          // Only insert if editor is empty or has minimal content
+          if (currentContent.ops.length <= 1 && (!currentContent.ops[0].insert || currentContent.ops[0].insert === '\n')) {
+            quill.setText(feedbackText);
+            
+            // Update study data
+            this.firstVersion = quill.root.innerHTML;
+            const currentVersion = quill.root.innerHTML;
+            this.$emit("update:data", {
+              firstVersion: this.firstVersion,
+              currentVersion: currentVersion,
+            });
+            
+            // Mark feedback as loaded
+            this.feedbackLoaded = true;
+          }
+        }
+      });
     },
   }
 };

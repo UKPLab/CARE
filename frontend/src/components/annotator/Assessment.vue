@@ -90,7 +90,7 @@
                           <div class="d-flex align-items-center">
                             <span class="criterion-icon me-2">
                               <LoadIcon
-                                :icon-name="expandedCriteria[getCriterionKey(groupIndex, criterionIndex)] ? 'chevron-up' : 'chevron-down'"
+                                :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
                                 :size="16"
                               />
                             </span>
@@ -121,7 +121,7 @@
 
                         <!-- Criterion Assessment -->
                         <div
-                          v-if="expandedCriteria[getCriterionKey(groupIndex, criterionIndex)]"
+                          v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
                           class="criterion-assessment mt-2 px-3 pb-2"
                         >
                           <div class="assessment-text">
@@ -378,6 +378,9 @@ export default {
     show(newVal) {
       if (newVal && Object.keys(this.savedState).length > 0) {
         this.restoreState();
+      } else if (newVal && this.assessmentOutput) {
+        // When component becomes visible, refresh saved data to pick up any new preprocessed data
+        this.loadSavedAssessmentData();
       }
     },
     
@@ -406,6 +409,20 @@ export default {
       handler() {
         // Reload assessment when study step configuration changes
         this.loadAssessment();
+      },
+      immediate: true
+    },
+    
+    // Watch for changes in document_data table data
+    '$store.getters["table/document_data/refreshCount"]': {
+      handler() {
+        // Reload assessment when document data changes (e.g., after NLP processing)
+        if (this.assessmentOutput) {
+          this.loadSavedAssessmentData();
+        } else if (this.show) {
+          // If component is visible but no assessment output yet, try to load assessment
+          this.loadAssessment();
+        }
       },
       immediate: true
     }
@@ -550,6 +567,13 @@ export default {
       this.expandedCriteria = {};
       this.loadAssessment();
     },
+    
+    // Public method to refresh saved assessment data (useful after NLP processing)
+    refreshSavedData() {
+      if (this.assessmentOutput) {
+        this.loadSavedAssessmentData();
+      }
+    },
     async loadAssessment() {
       this.error = null;
 
@@ -689,13 +713,12 @@ export default {
     
     toggleCriterion(groupIndex, criterionIndex) {
       Object.keys(this.expandedCriteria).forEach((key) => {
-        if (key !== this.getCriterionKey(groupIndex, criterionIndex)) {
+        if (key !== `${groupIndex}-${criterionIndex}`) {
           this.expandedCriteria[key] = false;
         }
       });
 
-      const key = this.getCriterionKey(groupIndex, criterionIndex);
-      this.expandedCriteria[key] = !this.expandedCriteria[key];
+      this.expandedCriteria[`${groupIndex}-${criterionIndex}`] = !this.expandedCriteria[`${groupIndex}-${criterionIndex}`];
       
       this.$nextTick(() => {
         this.saveState();
@@ -795,10 +818,6 @@ export default {
     },
     
     // Utility methods
-    getCriterionKey(groupIndex, criterionIndex) {
-      return `${groupIndex}-${criterionIndex}`;
-    },
-    
     getGroupScore(group) {
       return group.score;
     },

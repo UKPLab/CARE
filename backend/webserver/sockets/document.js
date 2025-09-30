@@ -156,6 +156,7 @@ class DocumentSocket extends Socket {
             );
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
+            fs.writeFileSync(target, data.file);
         } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -164,6 +165,7 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
                 projectId: data.projectId,
+                submissionId: data.submissionId,
                 originalFilename: data.name,
             }, {transaction: options.transaction});
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -902,10 +904,10 @@ class DocumentSocket extends Socket {
             } else if (document.type === this.models['document'].docTypes.DOC_TYPE_ZIP) {
                 fileExtension = '.zip';
             }
-            const filePath = ${UPLOAD_PATH}/${document.hash}${fileExtension};
+            const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
             
             if (!fs.existsSync(filePath)) {
-                throw new Error(File ${document.hash}${fileExtension} not found);
+                throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
             const file = fs.readFileSync(filePath); // Buffer

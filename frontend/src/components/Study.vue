@@ -92,6 +92,7 @@
       :study-step-id="currentStep.id"
       loading-only
       auto-close-on-complete
+      @close="handleNlpModalClose"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <Editor
@@ -106,6 +107,7 @@
       :study-step-id="currentStep.id"
       loading-only
       auto-close-on-complete
+      @close="handleNlpModalClose"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <StepModal
@@ -206,7 +208,7 @@ export default {
     },
     nextStudyStep() {
       if (this.currentStudyStep) {
-        // Find the next step by looking for a step where studyStepPrevious matches currentStudyStep.id
+        // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
         return this.studySteps.find((step) => step.studyStepPrevious === this.currentStudyStep.id);
       }
     },
@@ -430,6 +432,16 @@ export default {
           this.updateStep(previousStep.id);
         }
       }
+    },
+    handleNlpModalClose() {
+      // Refresh assessment data after NLP processing completes
+      // Use a small delay to ensure database save has completed and store is updated
+      setTimeout(() => {
+        const annotator = this.$refs.annotator;
+        if (annotator && annotator.$refs.assessment) {
+          annotator.$refs.assessment.refreshSavedData();
+        }
+      }, 100);
     },
     async updateStep(step) {
       // Gate navigation for steps that require validation before proceeding (e.g., forced assessment)
