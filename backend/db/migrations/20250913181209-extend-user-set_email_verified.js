@@ -8,11 +8,6 @@ module.exports = {
      */
     await queryInterface.bulkUpdate('user', 
       { emailVerified: true },
-      {
-        userName: {
-          [Sequelize.Op.in]: ['guest', 'admin', 'Bot']
-        }
-      }
     );
   },
 
