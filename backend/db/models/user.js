@@ -550,6 +550,6 @@ module.exports = (sequelize, DataTypes) => {
         }
     );
 
-    this.cache = new SequelizeSimpleCache({limit: 3});
+    this.cache = new SequelizeSimpleCache({limit: 50});
     return this.cache.init(User);
 };
