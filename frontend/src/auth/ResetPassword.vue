@@ -148,9 +148,7 @@ export default {
     }
     
     // Validate token using axios call
-    // await this.validateResetToken();
-    this.tokenValidated = true;
-    this.validatingToken = false;
+    await this.validateResetToken();
   },
   methods: {
     async validateResetToken() {
