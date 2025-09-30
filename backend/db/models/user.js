@@ -3,6 +3,7 @@ const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 const {genSalt, genPwdHash, genPwd} = require("../../utils/auth.js");
 const {generateAnimalUsername} = require("../../utils/generator");
+const SequelizeSimpleCache = require("sequelize-simple-cache");
 
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
@@ -539,8 +540,15 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 },
             },
+            indexes: [
+                {
+                unique: true,
+                fields: ["id"]
+                }
+            ]
         }
     );
 
-    return User;
+    this.cache = new SequelizeSimpleCache({limit: 3});
+    return this.cache.init(User);
 };
