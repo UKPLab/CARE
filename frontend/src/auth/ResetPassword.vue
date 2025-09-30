@@ -44,27 +44,19 @@
               />
             </div>
 
-            <div class="col-md-6 offset-md-4 my-4">
               <BasicButton
                   v-if="!isSuccess && tokenValidated && !validatingToken"
-                  class="btn btn-primary"
+                  class="btn btn-primary w-full max-w-xs mt-4 "
                   text="Reset Password"
                   @click="checkForm"
               />
 
               <BasicButton
-                  v-if="isSuccess"
-                  class="btn btn-success"
+                  v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
+                  :class="isSuccess ? 'btn btn-success w-full max-w-xs' : 'btn btn-secondary w-full max-w-xs'"
                   @click="toLogin"
-                  text="Return to Login"
+                  :text="isSuccess ? 'Return to Login' : 'Back to Login'"
               />
-              <BasicButton
-                  v-if="showError && !tokenValidated && !validatingToken"
-                  class="btn btn-outline"
-                  @click="toLogin"
-                  text="Back to Login"
-              />
-            </div>
           </div>
         </div>
       </div>
