@@ -6,6 +6,7 @@ const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
+const {enqueueDocumentTask} = require("../../utils/queue.js");
 
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -320,7 +321,7 @@ class DocumentSocket extends Socket {
      */
     async sendByHash(data, options) {
         const documentHash = data.documentHash;
-        const document = await this.models['document'].getByHash(documentHash);
+        const document = await this.models['document'].getByHash(documentHash, {transaction: options.transaction});
         if (await this.checkDocumentAccess(document.id)) {
             this.emit("documentRefresh", document);
         } else {
@@ -614,34 +615,45 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once all edits have been processed and saved.
      */
 async editDocument(data, options) {
-    const {documentId, studySessionId, studyStepId, ops} = data;
-    
-    const bulkEdits = ops.map((op, idx) => ({
-        userId: this.userId,
-        draft: true,
-        documentId,
-        studySessionId: studySessionId || null,
-        studyStepId: studyStepId || null,
-        order: idx + 1,
-        ...op
-    }));
+        const {documentId, studySessionId, studyStepId, ops} = data;
+        
+        // Generate queue key for this document context
+        const key = `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
 
-    const savedEdits = await this.models['document_edit'].bulkCreate(
-        bulkEdits,
-        {transaction: options.transaction}
-    );
+        return enqueueDocumentTask(this.server.documentQueues, key, async () => {
+            const bulkEdits = ops.map((op, idx) => ({
+                userId: this.userId,
+                draft: true,
+                documentId,
+                studySessionId: studySessionId || null,
+                studyStepId: studyStepId || null,
+                order: idx + 1,
+                ...op
+            }));
+            // delay 5 seconds
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
-    const appliedEdits = savedEdits.map(se => ({
-        ...se,
-        applied: true,
-        sender: this.socket.id
-    }));
-    if (studySessionId !== null) {
-        this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-        return;
-    }
+            const savedEdits = await this.models['document_edit'].bulkCreate(
+                bulkEdits,
+                {
+                    transaction: options.transaction,
+                    lock: options.transaction.LOCK.UPDATE
+                }
+            );
 
-    this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+            const appliedEdits = savedEdits.map(se => ({
+                ...se,
+                applied: true,
+                sender: this.socket.id
+            }));
+            
+            if (studySessionId !== null) {
+                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                return;
+            }
+
+            this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+        });
 }
 
     /**
