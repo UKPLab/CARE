@@ -393,7 +393,7 @@ Only Select and Text fields are supported.
 
 .. _form-type-file:
 
-`File`: The ``file`` field type allows uploading a file using a standard file input.  
+`File`: The ``file`` field type allows uploading a file using a standard file input.
 It is typically used for attaching documents such as PDFs or Delta files in forms.
 The field stores the uploaded `File` object, which is then passed to the backend via socket communication.
 
