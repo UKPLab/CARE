@@ -38,12 +38,14 @@
       <BasicButton
         v-if="!forgotPassword.success"
         text="Cancel"
+        class="btn btn-secondary"
         data-bs-dismiss="modal"
         @click="resetForm"
       />
       <BasicButton
         v-if="!forgotPassword.success"
         :disabled="!forgotPasswordValidEmail || forgotPassword.isLoading"
+        class="btn btn-primary"
         :text="forgotPassword.isLoading ? 'Sending...' : 'Send Reset Email'"
         @click="sendResetEmail"
       >
@@ -52,6 +54,7 @@
       <BasicButton
         v-if="forgotPassword.success"
         text="Close"
+        class="btn btn-success"
         data-bs-dismiss="modal"
         @click="resetForm"
       />

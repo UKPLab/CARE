@@ -291,7 +291,12 @@ The CARE Team`);
             // Reset password using the user model method and clear token
             await server.db.models['user'].resetUserPwd(user.id, newPassword);
             await server.db.models['user'].update({resetToken: null}, {where: {id: user.id}});
-            server.sendMail(user.email, "Password Successfully Reset", "Your password has been successfully reset.");
+            await server.sendMail(user.email, "CARE Password Successfully Reset", `Your CARE account password has been successfully reset.
+
+If you initiated this password change, you can now log in with your new password. If you didn't request this password reset, please contact support immediately as your account may have been compromised.
+
+Thanks,
+The CARE Team`);
             return res.status(200).json({message: "Password has been reset successfully."});
         } catch (err) {
             server.logger.error("Failed to reset password:", err);

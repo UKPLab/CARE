@@ -45,24 +45,25 @@
             </div>
 
             <div class="col-md-6 offset-md-4 my-4">
-              <button
+              <BasicButton
                   v-if="!isSuccess && tokenValidated && !validatingToken"
-                  class="btn btn-primary btn-block"
-                  type="button"
-                  @click="checkForm"
-              >
-                Reset Password
-              </button>
-              <a
-                  v-if="isSuccess"
                   class="btn btn-primary"
+                  text="Reset Password"
+                  @click="checkForm"
+              />
+
+              <BasicButton
+                  v-if="isSuccess"
+                  class="btn btn-success"
                   @click="toLogin"
-              >Return to Login</a>
-              <a
+                  text="Return to Login"
+              />
+              <BasicButton
                   v-if="showError && !tokenValidated && !validatingToken"
-                  class="btn btn-outline-secondary"
+                  class="btn btn-outline"
                   @click="toLogin"
-              >Back to Login</a>
+                  text="Back to Login"
+              />
             </div>
           </div>
         </div>
@@ -81,12 +82,13 @@
  */
 import IconAsset from "@/basic/icons/IconAsset.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthResetPassword",
-  components: {IconAsset, BasicForm},
+  components: {IconAsset, BasicForm, BasicButton},
   data() {
     return {
       showError: false,
@@ -104,6 +106,7 @@ export default {
           type: "password",
           required: true,
           placeholder: "Enter new password (minimum 8 characters)",
+          invalidText: "Password must be at least 8 characters long.",
           pattern: ".{8,}",
           default: "",
           size: 12,
@@ -113,6 +116,7 @@ export default {
           type: "password",
           required: true,
           placeholder: "Confirm new password",
+          invalidText: "Passwords do not match.",
           pattern: ".{8,}",
           default: "",
           size: 12,
@@ -144,7 +148,9 @@ export default {
     }
     
     // Validate token using axios call
-    await this.validateResetToken();
+    // await this.validateResetToken();
+    this.tokenValidated = true;
+    this.validatingToken = false;
   },
   methods: {
     async validateResetToken() {

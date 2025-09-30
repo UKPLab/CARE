@@ -92,6 +92,7 @@
                   @click="login_guest()"
               >Login as Guest</a>
               <a
+                v-if="showForgotPassword"
                 class="btn btn-link"
                 @click="$refs.forgotPasswordModal.open()"
               >Forgot Password?</a>

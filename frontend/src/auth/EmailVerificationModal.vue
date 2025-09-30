@@ -20,12 +20,14 @@
     <template #footer>
       <BasicButton
         v-if="!emailVerification.showSuccess"
+        class="btn btn-secondary"
         text="Close"
         data-bs-dismiss="modal"
       />
       <BasicButton
         v-if="!emailVerification.showSuccess && !emailVerification.showError"
         :disabled="emailVerification.isLoading"
+        class="btn btn-primary"
         :text="emailVerification.isLoading ? 'Sending...' : 'Resend Verification Email'"
         @click="resendVerificationEmail"
       >
@@ -33,6 +35,7 @@
       </BasicButton>
       <BasicButton
         v-if="emailVerification.showSuccess"
+        class="btn btn-success"
         text="OK"
         data-bs-dismiss="modal"
       />
