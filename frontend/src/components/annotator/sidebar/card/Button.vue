@@ -33,7 +33,7 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
-import IconLoading from "@/basic/icons/IconLoading.vue";
+import IconLoading from "@/basic/icon/IconLoading.vue";
 
 /**
  * Generic button for the sidebar
