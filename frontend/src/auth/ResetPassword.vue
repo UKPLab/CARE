@@ -72,7 +72,7 @@
  *
  * @author: Karim Ouf
  */
-import IconAsset from "@/basic/icons/IconAsset.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
