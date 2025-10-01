@@ -645,7 +645,7 @@ class DocumentSocket extends Socket {
             }));
 
             if (studySessionId !== null) {
-                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
                 return;
             }
 
