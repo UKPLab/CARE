@@ -630,14 +630,11 @@ class DocumentSocket extends Socket {
                 order: idx + 1,
                 ...op
             }));
-            // delay 5 seconds
-            await new Promise(resolve => setTimeout(resolve, 5000));
 
             const savedEdits = await this.models['document_edit'].bulkCreate(
                 bulkEdits,
                 {
-                    transaction: options.transaction,
-                    lock: options.transaction.LOCK.UPDATE
+                    transaction: options.transaction
                 }
             );
 
