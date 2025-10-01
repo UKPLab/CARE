@@ -642,7 +642,7 @@ async editDocument(data, options) {
             );
 
             const appliedEdits = savedEdits.map(se => ({
-                ...se,
+                ...se.get({ plain: true }),
                 applied: true,
                 sender: this.socket.id
             }));
