@@ -19,7 +19,7 @@ module.exports = function (server) {
      * Helper function to get the base URL from settings
      */
     async function getBaseUrl() {
-        const baseUrl = await server.db.models['setting'].get("system.mailService.url");
+        const baseUrl = await server.db.models['setting'].get("system.baseUrl");
         return baseUrl || "localhost:3000"; // fallback to default if not set
     }
 
