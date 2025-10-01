@@ -3,7 +3,7 @@
 const settings = [
     {
         key: "app.login.forgotPassword",
-        type: "boolean", 
+        type: "boolean",
         value: "true",
         description: "Whether to enable the forgot password functionality or not"
     },
@@ -12,7 +12,25 @@ const settings = [
         type: "boolean",
         value: "true",
         description: "Whether to require email verification for new user accounts"
-    }
+    },
+    {
+        key: "system.baseUrl",
+        value: "localhost:3000",
+        type: "string",
+        description: "The URL of the redirection for links in emails (e.g. password reset)"
+    },
+    {
+        key: "system.auth.tokenExpiry.passwordReset",
+        value: "1",
+        type: "number",
+        description: "Password reset token expiration time in hours"
+    },
+    {
+        key: "system.auth.tokenExpiry.emailVerification",
+        value: "24",
+        type: "number",
+        description: "Email verification token expiration time in hours"
+    },
 ];
 
 /** @type {import('sequelize-cli').Migration} */

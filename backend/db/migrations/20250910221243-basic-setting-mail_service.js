@@ -12,7 +12,7 @@ const settings = [{
     description: "The sender address for mails"
 }, {
     key: "system.mailService.sendMail.enabled",
-    value: "false",
+    value: "true",
     type: "boolean",
     description: "Use the sendMail function of an unix system",
 }, {
