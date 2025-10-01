@@ -215,6 +215,7 @@ module.exports = class MetaModel extends Model {
             }
 
             const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
+            if (this.cache) this.cache.clear();
             return createdObject.get({plain: true});
 
         } catch (err) {
@@ -267,7 +268,7 @@ module.exports = class MetaModel extends Model {
             }, additionalOptions, individualHooks);
 
             const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
-
+            if (this.cache) this.cache.clear();
             return await this.getById(id, additionalOptions, true);
         } catch (err) {
             console.log("DB MetaModel Class " + this.constructor.name + " update error in creation: " + err.message);

@@ -430,6 +430,6 @@ module.exports = (sequelize, DataTypes) => {
         ]
     });
 
-    const cache = new SequelizeSimpleCache({study: {limit: 50, ttl: false}});
-    return cache.init(Study);
+    Study.cache = new SequelizeSimpleCache({study: {limit: 50, ttl: false}});
+    return Study.cache.init(Study);
 };

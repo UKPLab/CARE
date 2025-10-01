@@ -199,6 +199,6 @@ module.exports = (sequelize, DataTypes) => {
             }
         ]
     });
-    const cache = new SequelizeSimpleCache({study_session: {limit: 50, ttl: false}});
-    return cache.init(StudySession);
+    StudySession.cache = new SequelizeSimpleCache({study_session: {limit: 50, ttl: false}});
+    return StudySession.cache.init(StudySession);
 };

@@ -192,8 +192,8 @@ module.exports = (sequelize, DataTypes) => {
         ]
         }
     );
-    const cache = new SequelizeSimpleCache({document: {limit: 50, ttl: false}});
-    return cache.init(Document);
+    Document.cache = new SequelizeSimpleCache({document: {limit: 50, ttl: false}});
+    return Document.cache.init(Document);
 };
 
 module.exports.docTypes = docTypes;
