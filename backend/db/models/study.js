@@ -422,6 +422,10 @@ module.exports = (sequelize, DataTypes) => {
             {
             unique: false,
             fields: ["userId", "template"]
+            },
+            {
+            unique: true,
+            fields: ["id"]
             }
         ]
     });
