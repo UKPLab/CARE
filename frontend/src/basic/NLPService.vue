@@ -93,7 +93,13 @@ export default {
   },
   computed: {
     nlpRequestTimeout() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
+      const raw = this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout');
+      const parsed = parseInt(raw);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        const ms = parsed < 1000 ? parsed * 60000 : parsed;
+        return Math.max(ms, 600000);
+      }
+      return 600000;
     },
     nlpSkills() {
       return this.$store.getters["service/getSkills"]("NLPService");
@@ -138,20 +144,13 @@ export default {
                 name: this.skill,
                 data: this.data
               }
+            },
+            (ack) => {
+              console.log('[NLP Ack] serviceRequest acknowledged for', this.skill, 'requestId:', this.requestId, 'ack:', ack);
             }
       );
 
-      setTimeout(() => {
-        if (this.requestId) {
-          this.eventBus.emit('toast', {
-            title: "NLP Service Request",
-            message: "Timeout in request for skill " + this.skill + " - Request failed!",
-            variant: "danger"
-          });
-          this.requestId = null;
-        }
-      }, this.nlpRequestTimeout);
-
+      // No timeout: wait indefinitely for response, let user cancel manually if needed
     },
   },
 }

@@ -1040,27 +1040,37 @@ export default {
           });
         });
 
-        const normalize = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []))
-          .map(item => ({
-            criterion: item.criterion || item.name,
-            score: (item.score !== undefined ? item.score : (item.points !== undefined ? item.points : 0)) || 0,
-            justification: item.justification || "",
-          }))
-          .filter(i => i && i.criterion);
+        const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
+        const normalizeFull = (arrOrObj) => {
+          return toArray(arrOrObj)
+            .map(item => {
+              const base = (item && typeof item === 'object') ? { ...item } : {};
+              // Unify field names while preserving extra keys
+              if (base.name && !base.criterion) base.criterion = base.name;
+              if (base.points !== undefined && base.score === undefined) base.score = base.points;
+              if (base.assessment !== undefined && base.justification === undefined) base.justification = base.assessment;
+              if (base.score !== undefined) base.score = Number(base.score || 0);
+              return base;
+            })
+            .filter(i => i && i.criterion);
+        };
 
-        let existingArr = normalize(existing);
+        let existingArr = normalizeFull(existing);
 
         // If AI workflow and nothing saved yet for this step/session, merge preprocessed baseline
         if (this.isAIAssessmentWorkflow && existingArr.length === 0) {
           const preprocessed = await this.getPreprocessedAssessmentData();
-          const baseline = normalize(preprocessed);
+          const baseline = normalizeFull(preprocessed);
           if (baseline.length > 0) {
             existingArr = baseline;
           }
         }
-        const updatesArr = normalize(updates);
+        const updatesArr = normalizeFull(updates);
         const byCriterion = new Map(existingArr.map(i => [i.criterion, i]));
-        updatesArr.forEach(u => byCriterion.set(u.criterion, u));
+        updatesArr.forEach(u => {
+          const prev = byCriterion.get(u.criterion) || { criterion: u.criterion };
+          byCriterion.set(u.criterion, { ...prev, ...u });
+        });
         const value = { assessment: Array.from(byCriterion.values()) };
 
         // Save to document_data table (wrap in Promise so callers can await)

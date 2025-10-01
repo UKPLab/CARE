@@ -57,7 +57,7 @@
                   <template v-if="segment.type === 'plainText'">
                     <span v-html="segment.value"></span>
                   </template>                    <template v-else-if="segment.type === 'text'">
-                    <Text :config="segment.config" />
+                    <TextPlaceholder :config="segment.config" />
                   </template>
                   <template v-else-if="segment.type === 'chart'">
                     <Chart :config="segment.config" />
@@ -110,7 +110,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
-import Text from "./placeholders/Text.vue";
+import TextPlaceholder from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
 import Comparison from "./placeholders/Comparison.vue";
 import {downloadObjectsAs} from "@/assets/utils";
@@ -123,7 +123,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, Text, Chart, Comparison },
+  components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison },
   subscribeTable: [{ table: "document_data"}],
   inject: {
     studySessionId: {
@@ -217,11 +217,11 @@ export default {
       if (Number.isFinite(parsed) && parsed > 0) {
         // Interpret small values as minutes (e.g., 1 => 1 minute) to avoid accidental 1ms/1s timeouts
         const ms = parsed < 1000 ? parsed * 60000 : parsed;
-        // Enforce a minimum of 60 seconds to avoid too-early timeouts
-        return Math.max(ms, 60000);
+        // Enforce a minimum of 10 minutes to avoid premature timeout
+        return Math.max(ms, 600000);
       }
-      // Default to 5 minutes
-      return 300000;
+      // Default to 10 minutes
+      return 600000;
     },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
@@ -306,21 +306,6 @@ export default {
         
         if (this.readOnly && allAvailable) {
           this.waiting = false;
-        }
-
-        if (allAvailable && this.allNlpRequestsCompleted) {
-          Object.keys(this.requests).forEach(requestId => {
-            this.$store.commit('service/removeResults', {
-              service: 'NLPService',
-              requestId: requestId
-            });
-          });
-          this.requests = {};
-          this.waiting = false;
-          if (this.loadingOnly && this.autoCloseOnComplete) {
-            this.$emit('close', { autoClosed: true });
-            this.$refs.modal.close();
-          }
         }
       },
       deep: true,
@@ -511,31 +496,16 @@ export default {
       this.$refs.modal.close();
     },
     async waitForRequestsToComplete() {
-      const requestIds = Object.keys(this.requests || {});
-      const timeouts = requestIds.map(rid => this.getSkillTimeoutMs(this.requests[rid]?.skill));
-      const timeoutMs = (timeouts.length ? Math.max(...timeouts) : this.nlpRequestTimeout) || 300000;
-      const start = Date.now();
-      return await new Promise((resolve, reject) => {
+      return await new Promise((resolve) => {
         const check = () => {
           if (!this.requests || Object.keys(this.requests).length === 0) {
             resolve(true);
-            return;
-          }
-          if (Date.now() - start > timeoutMs) {
-            reject(new Error('NLP onNext requests timed out'));
             return;
           }
           setTimeout(check, 200);
         };
         check();
       });
-    },
-    getSkillTimeoutMs(skill) {
-      const base = this.nlpRequestTimeout;
-      if (skill === 'grading_expose' || skill === 'generating_feedback') {
-        return Math.max(base, 5 * 60000);
-      }
-      return base;
     },
     hasResultsInStudyData(uniqueId) {
       const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
@@ -591,15 +561,12 @@ export default {
             }
             return;
           }
+          console.log('[sendRequest] grading_expose payload:', payload);
         } else if (skill === 'generating_feedback') {
           payload = await this.buildGeneratingFeedbackPayload(input);
-          console.log('[sendRequest] Built payload for generating_feedback:', payload);
           
           const hasSubmission = payload?.submission && (payload.submission.zip || payload.submission.pdf);
-          const hasGradingResults = payload?.grading_results && (Array.isArray(payload.grading_results) || Array.isArray(payload.grading_results?.assessment));
-          
-          console.log('[sendRequest] Validation - hasSubmission:', hasSubmission, 'hasGradingResults:', hasGradingResults);
-          console.log('[sendRequest] payload.grading_results:', payload.grading_results);
+          const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
           
           if (!hasSubmission || !hasGradingResults) {
             // Missing required data: do not send
@@ -616,6 +583,7 @@ export default {
             }
             return;
           }
+          console.log('[sendRequest] generating_feedback payload:', payload);
         }
         
         await this.$socket.emit("serviceRequest", {
@@ -626,27 +594,10 @@ export default {
             data: payload,
           },
         }, (ack) => {
-          console.log('[StepModal] serviceRequest ack', { requestId, skill, ack });
+          console.log('[NLP Ack] serviceRequest acknowledged for', skill, 'requestId:', requestId, 'ack:', ack);
         });
         setTimeout(() => {
           if (this.requests[requestId]) {
-            // For heavy skills, do not flip the UI into error; keep waiting and just notify
-            if (skill === 'grading_expose') {
-              this.eventBus.emit('toast', {
-                title: "NLP Service Request",
-                message: "Still processing grading_expose...",
-                variant: "info"
-              });
-              return;
-            }
-            if (skill === 'generating_feedback') {
-              this.eventBus.emit('toast', {
-                title: "NLP Service Request",
-                message: "Still processing feedback generation...",
-                variant: "info"
-              });
-              return;
-            }
             this.eventBus.emit('toast', {
               title: "NLP Service Request",
               message: "Timeout in request for skill " + skill + " - Request failed!",
@@ -654,7 +605,7 @@ export default {
             });
             this.timeoutError = true;
           }
-        }, this.getSkillTimeoutMs(skill));
+        }, this.nlpRequestTimeout);
       }
     },
 
@@ -699,11 +650,11 @@ export default {
           if (stepBucket && value.dataSource in stepBucket) {
             resolved = stepBucket[value.dataSource];
           } else {
-            // Fallback for global selections (stepId 0) or when not found in studyData: pass the token/id through
+            // Fallback: pass configured token/id through (e.g., 'submission_29', 'config_123')
             resolved = value.dataSource;
           }
         } else {
-          // allow direct tokens like 'submission_29' or 'config_123' or numeric ids
+          // Pass through non-referenced inputs as-is (may include numbers or other primitives)
           resolved = value;
         }
         acc[entry] = resolved;
@@ -715,143 +666,97 @@ export default {
     },
     async buildGradingExposePayload(input) {
       const result = { submission: {}, assessment_config: {} };
-
-      // Build assessment_config by fetching the config document JSON if an id is provided
+      // Resolve config (accepts id, numeric string, object with id, or full object)
       const cfgRaw = input?.assessment_config ?? input?.feedback_grading_criteria ?? input?.config;
-      if (cfgRaw != null) {
-        if (typeof cfgRaw === 'number' || (typeof cfgRaw === 'string' && /^\d+$/.test(cfgRaw))) {
-          const cfgId = typeof cfgRaw === 'number' ? cfgRaw : parseInt(cfgRaw, 10);
-          const cfgJson = await this.fetchConfigJson(cfgId);
-          if (cfgJson) {
-            result.assessment_config = cfgJson;
-          } else {
-            console.warn(`[buildGradingExposePayload] ⚠️ Config file for document ${cfgId} is missing. Proceeding with empty config.`);
-          }
-        } else if (typeof cfgRaw === 'object' && cfgRaw && 'id' in cfgRaw && (typeof cfgRaw.id === 'number' || (typeof cfgRaw.id === 'string' && /^\d+$/.test(cfgRaw.id)))) {
-          const cfgId = typeof cfgRaw.id === 'number' ? cfgRaw.id : parseInt(cfgRaw.id, 10);
-          const cfgJson = await this.fetchConfigJson(cfgId);
-          if (cfgJson) {
-            result.assessment_config = cfgJson;
-          } else {
-            console.warn(`[buildGradingExposePayload] ⚠️ Config file for document ${cfgId} is missing. Proceeding with empty config.`);
-          }
-        } else if (typeof cfgRaw === 'object') {
-          result.assessment_config = cfgRaw;
-        }
-      }
+      const resolvedCfg = await this.resolveConfig(cfgRaw);
+      if (resolvedCfg) result.assessment_config = resolvedCfg;
 
-      // Build submission { pdf, zip } from a selected document id
-      const sub = input?.submission;
-      if (sub && typeof sub === 'object' && (sub.pdf || sub.zip)) {
-        result.submission = { pdf: sub.pdf || null, zip: sub.zip || null };
+      // Resolve submission into { pdf, zip }
+      result.submission = await this.resolveSubmission(input?.submission);
+      return result;
+    },
+    async buildGeneratingFeedbackPayload(input) {
+      const result = { submission: {}, grading_results: [], feedback_grading_criteria: {} };
+      // Resolve config (accepts id, numeric string, object with id, or full object)
+      const cfgRaw = input?.feedback_grading_criteria ?? input?.feedback_config ?? input?.config;
+      const resolvedCfg = await this.resolveConfig(cfgRaw);
+      if (resolvedCfg) result.feedback_grading_criteria = resolvedCfg;
+
+      // Resolve submission into { pdf, zip }
+      result.submission = await this.resolveSubmission(input?.submission);
+
+      // Build grading_results from the previous step's assessment data
+      const gradingResultsRaw = input?.grading_results;
+
+      const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
+
+      if (gradingResultsRaw && (Array.isArray(gradingResultsRaw) || Array.isArray(gradingResultsRaw?.assessment))) {
+        result.grading_results = toArray(gradingResultsRaw);
       } else {
-        let docId = null;
-        if (typeof sub === 'number' && Number.isFinite(sub)) {
-          docId = sub;
-        } else if (typeof sub === 'string' && /^\d+$/.test(sub)) {
-          docId = parseInt(sub, 10);
-        } else if (sub && typeof sub === 'object' && 'id' in sub && (typeof sub.id === 'number' || (typeof sub.id === 'string' && /^\d+$/.test(sub.id)))) {
-          docId = typeof sub.id === 'number' ? sub.id : parseInt(sub.id, 10);
-        }
-        if (docId) {
-          const { pdf, zip } = await this.collectSubmissionFilesByDocument(docId);
-          result.submission = {};
-          if (pdf) result.submission.pdf = pdf;
-          if (zip) result.submission.zip = zip;
+        // Fetch from document_data from the previous step
+        const gradingData = await this.fetchGradingResults();
+        if (gradingData) {
+          result.grading_results = toArray(gradingData);
         }
       }
       return result;
     },
-    async buildGeneratingFeedbackPayload(input) {
-      console.log('[buildGeneratingFeedbackPayload] Starting with input:', input);
-      const result = { submission: {}, grading_results: {}, feedback_grading_criteria: {} };
-
-      // Build feedback_grading_criteria by fetching the config document JSON if an id is provided
-      const cfgRaw = input?.feedback_grading_criteria ?? input?.feedback_config ?? input?.config;
-      console.log('[buildGeneratingFeedbackPayload] cfgRaw:', cfgRaw);
-      
-      if (cfgRaw != null) {
-        if (typeof cfgRaw === 'number' || (typeof cfgRaw === 'string' && /^\d+$/.test(cfgRaw))) {
-          const cfgId = typeof cfgRaw === 'number' ? cfgRaw : parseInt(cfgRaw, 10);
-          console.log('[buildGeneratingFeedbackPayload] Fetching config with ID:', cfgId);
+    async resolveConfig(cfgRaw) {
+      if (cfgRaw == null) return null;
+      if (typeof cfgRaw === 'number' || (typeof cfgRaw === 'string' && /^\d+$/.test(cfgRaw))) {
+        const cfgId = typeof cfgRaw === 'number' ? cfgRaw : parseInt(cfgRaw, 10);
+        const cfgJson = await this.fetchConfigJson(cfgId);
+        return cfgJson || null;
+      }
+      // Support token format like 'config_123'
+      if (typeof cfgRaw === 'string' && cfgRaw.startsWith('config_')) {
+        const cfgId = this.extractIdByPrefix(cfgRaw, 'config_');
+        if (cfgId) {
           const cfgJson = await this.fetchConfigJson(cfgId);
-          console.log('[buildGeneratingFeedbackPayload] Fetched config JSON:', cfgJson);
-          if (cfgJson) {
-            result.feedback_grading_criteria = cfgJson;
-          } else {
-            console.warn(`[buildGeneratingFeedbackPayload] ⚠️ Config file for document ${cfgId} is missing. Proceeding with empty config.`);
-          }
-        } else if (typeof cfgRaw === 'object' && cfgRaw && 'id' in cfgRaw && (typeof cfgRaw.id === 'number' || (typeof cfgRaw.id === 'string' && /^\d+$/.test(cfgRaw.id)))) {
+          return cfgJson || null;
+        }
+      }
+      // If an object with id is provided, resolve the JSON via that id; otherwise passthrough
+      if (typeof cfgRaw === 'object') {
+        if ('id' in cfgRaw && (typeof cfgRaw.id === 'number' || (typeof cfgRaw.id === 'string' && /^\d+$/.test(cfgRaw.id)))) {
           const cfgId = typeof cfgRaw.id === 'number' ? cfgRaw.id : parseInt(cfgRaw.id, 10);
-          console.log('[buildGeneratingFeedbackPayload] Fetching config with ID from object:', cfgId);
           const cfgJson = await this.fetchConfigJson(cfgId);
-          console.log('[buildGeneratingFeedbackPayload] Fetched config JSON:', cfgJson);
-          if (cfgJson) {
-            result.feedback_grading_criteria = cfgJson;
-          } else {
-            console.warn(`[buildGeneratingFeedbackPayload] ⚠️ Config file for document ${cfgId} is missing. Proceeding with empty config.`);
-          }
-        } else if (typeof cfgRaw === 'object') {
-          console.log('[buildGeneratingFeedbackPayload] Using direct config object');
-          result.feedback_grading_criteria = cfgRaw;
+          return cfgJson || null;
         }
+        return cfgRaw;
       }
-
-      // Build submission { pdf, zip } from a selected document id
-      const sub = input?.submission;
+      return null;
+    },
+    async resolveSubmission(sub) {
       if (sub && typeof sub === 'object' && (sub.pdf || sub.zip)) {
-        result.submission = { pdf: sub.pdf || null, zip: sub.zip || null };
-      } else {
-        let docId = null;
-        if (typeof sub === 'number' && Number.isFinite(sub)) {
-          docId = sub;
-        } else if (typeof sub === 'string' && /^\d+$/.test(sub)) {
-          docId = parseInt(sub, 10);
-        } else if (sub && typeof sub === 'object' && 'id' in sub && (typeof sub.id === 'number' || (typeof sub.id === 'string' && /^\d+$/.test(sub.id)))) {
-          docId = typeof sub.id === 'number' ? sub.id : parseInt(sub.id, 10);
-        }
-        if (docId) {
-          const { pdf, zip } = await this.collectSubmissionFilesByDocument(docId);
-          result.submission = {};
-          if (pdf) result.submission.pdf = pdf;
-          if (zip) result.submission.zip = zip;
-        }
+        return { pdf: sub.pdf || null, zip: sub.zip || null };
       }
-
-      // Build grading_results from the previous step's assessment data
-      const gradingResultsRaw = input?.grading_results;
-      console.log('[buildGeneratingFeedbackPayload] gradingResultsRaw from input:', gradingResultsRaw);
-      
-      if (gradingResultsRaw && typeof gradingResultsRaw === 'object' && (Array.isArray(gradingResultsRaw) || Array.isArray(gradingResultsRaw.assessment))) {
-        // Direct object with assessment array
-        console.log('[buildGeneratingFeedbackPayload] Using direct grading results from input');
-        result.grading_results = gradingResultsRaw;
-      } else {
-        // Fetch from document_data from the previous step
-        console.log('[buildGeneratingFeedbackPayload] Fetching grading results from previous step');
-        
-        const gradingData = await this.fetchGradingResults();
-        console.log('[buildGeneratingFeedbackPayload] Fetched grading data:', gradingData);
-        
-        if (gradingData) {
-          result.grading_results = gradingData;
-        }
+      let docId = null;
+      if (typeof sub === 'number' && Number.isFinite(sub)) {
+        docId = sub;
+      } else if (typeof sub === 'string' && /^\d+$/.test(sub)) {
+        docId = parseInt(sub, 10);
+      } else if (typeof sub === 'string' && sub.startsWith('submission_')) {
+        const maybeId = this.extractIdByPrefix(sub, 'submission_');
+        if (maybeId) docId = maybeId;
+      } else if (sub && typeof sub === 'object' && 'id' in sub && (typeof sub.id === 'number' || (typeof sub.id === 'string' && /^\d+$/.test(sub.id)))) {
+        docId = typeof sub.id === 'number' ? sub.id : parseInt(sub.id, 10);
       }
-
-      console.log('[buildGeneratingFeedbackPayload] Final result:', result);
-      return result;
+      if (docId) {
+        const { pdf, zip } = await this.collectSubmissionFilesByDocument(docId);
+        const out = {};
+        if (pdf) out.pdf = pdf;
+        if (zip) out.zip = zip;
+        return out;
+      }
+      return {};
     },
     async fetchGradingResults() {
       // Find the previous step (step 1 for assessment)
       const currentStepIndex = this.studySteps.findIndex(step => step.id === this.studyStepId);
       const previousStep = currentStepIndex > 0 ? this.studySteps[currentStepIndex - 1] : null;
       
-      console.log('[fetchGradingResults] Current step index:', currentStepIndex);
-      console.log('[fetchGradingResults] Current studyStepId:', this.studyStepId);
-      console.log('[fetchGradingResults] Previous step:', previousStep);
-      
       if (!previousStep) {
-        console.log('[fetchGradingResults] No previous step found!');
         return null;
       }
 
@@ -862,22 +767,15 @@ export default {
         studyStepId: previousStep.id,
         key: 'grading_expose_nlpAssessment_data'
       };
-      
-      console.log('[fetchGradingResults] Fetching with params:', params);
 
       // Fetch grading results from previous step with session ID
       return await new Promise(resolve => {
         this.$socket.emit("documentDataGet", params, (response) => {
-          console.log('[fetchGradingResults] Response received:', response);
-          
           if (response && response.success && response.data && response.data.value) {
-            console.log('[fetchGradingResults] Returning data from response.data.value');
             resolve(response.data.value);
           } else if (response && response.value) {
-            console.log('[fetchGradingResults] Returning data from response.value');
             resolve(response.value);
           } else {
-            console.log('[fetchGradingResults] No data found, returning null');
             resolve(null);
           }
         });
@@ -935,11 +833,8 @@ export default {
       return this.arrayBufferToBase64(buffer);
     },
     async fetchConfigJson(documentId) {
-      console.log('[fetchConfigJson] Fetching document ID:', documentId);
       return await new Promise((resolve) => {
         this.$socket.emit("documentGet", { documentId }, (response) => {
-          console.log('[fetchConfigJson] Response for doc', documentId, ':', response);
-          
           if (response && response.success && response.data && response.data.file) {
             try {
               let text;
@@ -952,19 +847,14 @@ export default {
                 const uint8 = Uint8Array.from(response.data.file.data);
                 text = new TextDecoder().decode(uint8);
               }
-              console.log('[fetchConfigJson] Decoded text length:', text?.length);
               const json = text ? JSON.parse(text) : null;
-              console.log('[fetchConfigJson] Parsed JSON:', json);
               resolve(json);
             } catch (e) {
-              console.error('[fetchConfigJson] Error parsing JSON for doc', documentId, ':', e);
+              
               resolve(null);
             }
           } else {
-            // File not found or error - return null and log warning
-            const errorMsg = response?.message || 'No file data in response';
-            console.warn(`[fetchConfigJson] Config file missing for document ${documentId}: ${errorMsg}`);
-            console.log('[fetchConfigJson] No file data in response for doc', documentId);
+            // File not found or error - return null
             resolve(null);
           }
         });
