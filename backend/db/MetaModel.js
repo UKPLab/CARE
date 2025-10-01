@@ -215,7 +215,6 @@ module.exports = class MetaModel extends Model {
             }
 
             const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
-            if (this.cache) this.cache.clear();
             return createdObject.get({plain: true});
 
         } catch (err) {
