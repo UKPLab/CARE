@@ -47,13 +47,30 @@ export default {
       data: {},
       fields: [
         {
+          key:"oldPassword",
+          type: "password",
+          label: "Current Password",
+          required: true,
+          placeholder: "",
+        },
+        {
           key: "password",
           type: "password",
+          label: "New Password",
           required: true,
           placeholder: "",
           pattern: ".{8,}",
           default: "",
         },
+        {
+          key: "confirmPassword",
+          type: "password",
+          label: "Confirm Password",
+          required: true,
+          placeholder: "",
+          pattern: ".{8,}",
+          default: "",
+        }
       ],
     };
   },
@@ -63,13 +80,13 @@ export default {
       this.$refs.modal.open();
     },
     submit() {
-      if(!this.$refs.form.validate()) return;
+      if(!this.$refs.form.validate() || !this.validatePassword()) return;
       const {
-        modelValue: { password },
+        modelValue: { password, oldPassword },
       } = this.$refs.form;
       const userId = this.userId;
       if (!password) return;
-      this.$socket.emit("userResetPwd", { userId, password }, (response) => {
+      this.$socket.emit("userResetPwd", { userId, password, oldPassword }, (response) => {
         if (response.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
@@ -89,6 +106,19 @@ export default {
     resetForm() {
       this.$refs.form.modelValue.password = '';
       this.eventBus.emit("resetFormField");
+    },
+    validatePassword() {
+      const { confirmPassword, password } = this.$refs.form.modelValue;
+      console.log(password, confirmPassword !== password)
+      if (password !== confirmPassword) {
+        this.eventBus.emit("toast", {
+          title: "Validation Error",
+          message: "Passwords do not match",
+          variant: "danger",
+        });
+        return false;
+      }
+      return true;
     }
   },
 };

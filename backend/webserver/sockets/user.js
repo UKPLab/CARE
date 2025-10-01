@@ -2,6 +2,7 @@ const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const {inject} = require("../../utils/generic");
 const _ = require("lodash");
+const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
 /**
  * Handle user through websocket
@@ -191,7 +192,7 @@ class UserSocket extends Socket {
                     const currentUserId = await this.models["user"].getUserIdByEmail(user.email);
                     if (currentUserId) {
                         createdUser = await this.models["user"].updateById(currentUserId, {
-                            firstName: user.firstName, lastName: user.lastName, extId: user.extId,
+                            firstName: user.firstName, lastName: user.lastName, extId: user.extId, emailVerified: true,
                         }, {
                             transaction, context: {
                                 userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
@@ -286,9 +287,18 @@ class UserSocket extends Socket {
      * @throws {Error} If the user is not an admin or the user tries to reset other's password
      */
     async resetUserPwd(data, options) {
-        const {userId, password} = data;
+        const {userId, password, oldPassword} = data;
+        
         if (!await this.isAdmin() && userId !== this.userId) {
             throw new Error("User rights and argument mismatch");
+        }
+        const user = await this.models["user"].findOne({where:{
+            id: userId
+        }});
+        const hashedOldPassword = await genPwdHash(oldPassword, user.salt);
+        const iscorrectPassword = user.passwordHash === hashedOldPassword;
+        if(!iscorrectPassword){
+            throw new Error("You entered an incorrect Password")
         }
         await this.models["user"].resetUserPwd(userId, password);
     }
