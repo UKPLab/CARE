@@ -526,6 +526,8 @@ module.exports = (sequelize, DataTypes) => {
             },
             resetToken: DataTypes.STRING,
             emailVerificationToken: DataTypes.STRING,
+            lastPasswordResetEmailSent: DataTypes.DATE,
+            lastVerificationEmailSent: DataTypes.DATE,
         },
         {
             sequelize,

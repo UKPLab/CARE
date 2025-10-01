@@ -7,7 +7,6 @@
     <template #body>
       <div v-if="!emailVerification.showSuccess && !emailVerification.showError">
         <p>Your email address has not been verified yet. Please check your email for a verification link.</p>
-        <p><strong>Email:</strong> {{ emailVerification.email }}</p>
         <p>Didn't receive the email? Click below to send a new verification email.</p>
       </div>
       <div v-if="emailVerification.showSuccess" class="alert alert-success">

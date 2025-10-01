@@ -38,6 +38,45 @@ module.exports = function (server) {
     }
 
     /**
+     * Helper function to get password reset email rate limit from settings
+     */
+    async function getPasswordResetRateLimit() {
+        return await server.db.models['setting'].get("app.login.passwordResetRateLimit") || 5; // fallback to 5 minutes if not set
+    }
+
+    /**
+     * Helper function to get email verification rate limit from settings
+     */
+    async function getEmailVerificationRateLimit() {
+        return await server.db.models['setting'].get("app.register.emailVerificationRateLimit") || 2; // fallback to 2 minutes if not set
+    }
+
+    /**
+     * Rate limiting helper function to prevent email spam
+     * @param {Object} user - The user object
+     * @param {string} emailType - Type of email ('passwordReset' or 'verification')
+     * @param {number} rateLimitMinutes - Rate limit in minutes
+     * @returns {Object} - {allowed: boolean, remainingTime?: number}
+     */
+    function checkEmailRateLimit(user, emailType, rateLimitMinutes) {
+        const now = new Date();
+        const lastSentField = emailType === 'passwordReset' ? 'lastPasswordResetEmailSent' : 'lastVerificationEmailSent';
+        
+        if (user[lastSentField]) {
+            const timeDiff = (now - new Date(user[lastSentField])) / (1000 * 60); // in minutes
+            if (timeDiff < rateLimitMinutes) {
+                const remainingTime = Math.ceil(rateLimitMinutes - timeDiff);
+                return {
+                    allowed: false,
+                    remainingTime: remainingTime
+                };
+            }
+        }
+        
+        return { allowed: true };
+    }
+
+    /**
      * Login Procedure
      */
     server.app.post('/auth/login', function (req, res, next) {
@@ -193,7 +232,7 @@ module.exports = function (server) {
                 await server.sendMail(
                     data.email, 
                     "Welcome to CARE - Please verify your email address", 
-                    `Welcome to CARE! You've successfully registered a new account.
+                    `Welcome to CARE, ${data.userName}! You've successfully registered a new account.
 
 To complete your registration, please verify your email address by clicking the link below:
 ${verificationLink}
@@ -232,18 +271,32 @@ The CARE Team`
                 return res.status(401).json({message: "User with this email does not exist."});
             }
             
+            // Rate limiting: Check if a password reset email was sent recently
+            const RATE_LIMIT_MINUTES = await getPasswordResetRateLimit();
+            const rateLimitCheck = checkEmailRateLimit(user, 'passwordReset', RATE_LIMIT_MINUTES);
+            if (!rateLimitCheck.allowed) {
+                return res.status(400).json({
+                    message: `Please wait ${rateLimitCheck.remainingTime} minute(s) before requesting another password reset email.`
+                });
+            }
+            
+            const now = new Date();
+            
             // Generate token with encoded expiry from settings
             const tokenExpiry = await getPasswordResetTokenExpiry();
             const resetToken = generateToken(tokenExpiry);
             
-            // Store the full token in the database
+            // Store the full token and timestamp in the database
             user.resetToken = resetToken;
+            user.lastPasswordResetEmailSent = now;
             await user.save();
             
             // Send email with the full encoded token
             const baseUrl = await getBaseUrl();
             const resetLink = `http://${baseUrl}/reset-password?token=${resetToken}`;
-            await server.sendMail(user.email, "CARE Password Reset Request", `We received a request to reset the password for your CARE account.
+            await server.sendMail(user.email, "CARE Password Reset Request", `Hello ${user.userName},
+
+We received a request to reset the password for your CARE account.
 
 To set a new password, please click the link below:
 ${resetLink}
@@ -291,7 +344,9 @@ The CARE Team`);
             // Reset password using the user model method and clear token
             await server.db.models['user'].resetUserPwd(user.id, newPassword);
             await server.db.models['user'].update({resetToken: null}, {where: {id: user.id}});
-            await server.sendMail(user.email, "CARE Password Successfully Reset", `Your CARE account password has been successfully reset.
+            await server.sendMail(user.email, "CARE Password Successfully Reset", `Hello ${user.userName},
+
+Your CARE account password has been successfully reset.
 
 If you initiated this password change, you can now log in with your new password. If you didn't request this password reset, please contact support immediately as your account may have been compromised.
 
@@ -413,13 +468,24 @@ The CARE Team`);
                 return res.status(400).json({message: "Email address is already verified."});
             }
             
+            // Rate limiting: Check if a verification email was sent recently
+            const RATE_LIMIT_MINUTES = await getEmailVerificationRateLimit();
+            const rateLimitCheck = checkEmailRateLimit(user, 'verification', RATE_LIMIT_MINUTES);
+            if (!rateLimitCheck.allowed) {
+                return res.status(400).json({
+                    message: `Please wait ${rateLimitCheck.remainingTime} minute(s) before requesting another verification email.`
+                });
+            }
+            
+            const now = new Date();
+            
             // Generate new verification token
             const tokenExpiry = await getEmailVerificationTokenExpiry();
             const verificationToken = generateToken(tokenExpiry);
             
-            // Update user with new token
+            // Update user with new token and timestamp
             await server.db.models['user'].update(
-                {emailVerificationToken: verificationToken},
+                {emailVerificationToken: verificationToken, lastVerificationEmailSent: now},
                 {where: {id: user.id}}
             );
             
@@ -429,7 +495,7 @@ The CARE Team`);
             await server.sendMail(
                 email,
                 "CARE - Please verify your email address",
-                `Welcome back to CARE!
+                `Welcome back to CARE, ${user.userName}!
 
 To complete your email verification, please click the link below:
 ${verificationLink}
