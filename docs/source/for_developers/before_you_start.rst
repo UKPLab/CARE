@@ -192,8 +192,6 @@ After that, the backend can be started with:
 
 To shorten things, both commands can also be executed with ``make dev-build`` at once.
 
-|
-
 Deployment Build
 ----------------
 If you want to deploy your current CARE code, please double-check the ``.env.main`` file to make sure it meets your
@@ -212,8 +210,6 @@ You can check the status and logs of the docker containers using the standard Do
 `Portainer <https://www.portainer.io/>`_. The container with the name ending in ``_server`` hosts the actual
 backend.
 
-|
-
 More Commands
 -------------
 
@@ -223,32 +219,54 @@ More Commands
 
     * - Command
       - Purpose
+    * - ``make help``
+      - Show all available make targets.
     * - ``make doc``
-      - Compile the documentation (AsyncAPI and Sphinx documentation).
-    * - ``make doc_asyncapi``
-      - Compile the AsyncAPI documentation.
+      - Build the Sphinx documentation (default doc target).
     * - ``make doc_sphinx``
-      - Compile the Sphinx documentation (this documentation).
+      - Build the Sphinx documentation inside the docs container.
+    * - ``make doc_clean``
+      - Clean the Sphinx documentation.
+    * - ``make dev``
+      - Run frontend (dev) and backend (dev) together. (Unix only)
+    * - ``make dev-backend``
+      - Run backend in development mode.
+    * - ``make dev-frontend``
+      - Run frontend in development mode.
+    * - ``make dev-build``
+      - Build frontend in dev mode and run backend in dev mode.
+    * - ``make dev-build-frontend``
+      - Build frontend in development mode only.
+    * - ``make build``
+      - Create a dockerized production build (frontend, backend, nlp, services).
+    * - ``make build-frontend``
+      - Build frontend in production mode.
+    * - ``make build-clean``
+      - Clean production build (containers, networks, volumes).
+    * - ``make docker``
+      - Start development docker containers (postgres, rpc services).
+    * - ``make rpc_moodle_build``
+      - Build and start the Moodle RPC container (dev setup).
     * - ``make db``
       - Initialize (migrate) the database.
     * - ``make init``
-      -   Initialize the database and install npm packages in all utils/modules subdirectories. This command calls both make tables and make modules
-    * - ``make test``
-      - Running the backend api tests.
-    * - ``make test-modules``
-      - Run unit tests for specific modules - In our case to run the tests defined in `utils/modules/editor-delta-conversion`.
-    * - ``make test-rpc``
-      - Running the backend rpc tests.
+      - Initialize the database and install npm packages in all utils/modules subdirectories.
     * - ``make backup_db CONTAINER=<name>``
-      - Creates a database dump from the given postgres container and stores it in the db_dumps folder.
-    * - ``make recover_db CONTAINER=<name> DUMP=<path>``
-      - Loads a given database dump from <path> into the postgres container <name>.
-    * - ``make clean``
-      - Cleans the environment by removing all docker containers and images, files and folders.
-    * - ``make kill``
-      - Kills all node processes. (only unix)
+      - Create a database dump from the given Postgres container into ``db_dumps/``.
+    * - ``make recover_db CONTAINER=<name> DUMP=<file>``
+      - Load a given database dump into the specified Postgres container.
+    * - ``make test``
+      - Run backend unit tests.
+    * - ``make test-rpc``
+      - Run backend RPC tests.
+    * - ``make test-modules``
+      - Run unit tests for the ``editor-delta-conversion`` module.
     * - ``make lint``
-      - Runs the linter for the frontend.
-     * - ``make modules``
-      - Install npm packages in all `utils/modules` subdirectories.
+      - Run frontend linter.
+    * - ``make modules``
+      - Install npm packages in all ``utils/modules`` subdirectories.
+    * - ``make clean``
+      - Remove ``node_modules``, ``dist``, docker containers/networks, and reset the DB state.
+    * - ``make kill``
+      - Kill all Node.js processes (Unix only).
 
