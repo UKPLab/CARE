@@ -31,6 +31,18 @@ const settings = [
         type: "number",
         description: "Email verification token expiration time in hours"
     },
+    {
+        key: "app.login.passwordResetRateLimit",
+        value: "5",
+        type: "number",
+        description: "Rate limit in minutes for password reset emails to prevent spam"
+    },
+    {
+        key: "app.register.emailVerificationRateLimit",
+        value: "2",
+        type: "number",
+        description: "Rate limit in minutes for email verification emails to prevent spam"
+    }
 ];
 
 /** @type {import('sequelize-cli').Migration} */

@@ -16,6 +16,15 @@ const columns = [
         name: 'resetToken',
         type: 'STRING',
         allowNull: true
+    },
+    {
+        name: 'lastPasswordResetEmailSent',
+        type: 'DATE',
+        allowNull: true,
+    }, {
+        name: 'lastVerificationEmailSent',
+        type: 'DATE',
+        allowNull: true,
     }
 ];
 
