@@ -471,7 +471,7 @@ export default {
     },
     processEdits(edits) {
       edits.forEach((edit) => {
-              if (!(edit.sender == this.$socket.id)) {
+              if (!(edit.sender === this.$socket.id)) {
               const delta = dbToDelta([edit]);
               this.editor.getEditor().updateContents(delta, "api");
               }
