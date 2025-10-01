@@ -1,7 +1,7 @@
 <template>
   <BasicModal
     ref="informationModal"
-    lg
+    size="lg"
     name="informationModal"
   >
     <template #title>

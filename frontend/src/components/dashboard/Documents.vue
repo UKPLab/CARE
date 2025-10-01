@@ -84,6 +84,7 @@ export default {
         pagination: 10,
       },
       columns: [
+        {name: "ID", key: "id"},
         {name: "Title", key: "name"},
         {name: "Created At", key: "createdAt"},
         {name: "Type", key: "typeName"},

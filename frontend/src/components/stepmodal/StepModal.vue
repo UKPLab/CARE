@@ -3,7 +3,7 @@
   <span v-else>
     <BasicModal
       ref="modal"
-      studyStep?.configuration?.modalSize || xl
+      :size="studyStep?.configuration?.settings?.modalSize"
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
@@ -170,7 +170,7 @@ export default {
   },
   computed: {
     studyStep() {
-      return this.$store.getters["table/study_step/get"](this.studyStepId);
+      return this.$store.getters["table/study_step/get"](this.studyStepId);;
     },
     studySteps() {
       return this.studyStep.studyId !== 0

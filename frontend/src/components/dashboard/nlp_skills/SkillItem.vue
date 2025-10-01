@@ -8,7 +8,7 @@
     </div>
     <div class="row justify-content-center">
       <div class="col">
-        <JsonEditor v-model:content="currentData" readonly/>
+        <JsonEditor v-model:content="currentData" readOnly/>
       </div>
     </div>
   </div>

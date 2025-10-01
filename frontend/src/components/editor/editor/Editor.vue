@@ -405,8 +405,8 @@ export default {
             data: {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               pastedText: pastedText,
-              acceptDataSharing: this.user.acceptDataSharing
             }
           })
         }
@@ -419,10 +419,11 @@ export default {
           this.$socket.emit("stats", {
             action: "textCopied",
             data: {
+              from: "editor",
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               copiedText: copiedText,
-              acceptDataSharing: this.user.acceptDataSharing
             }
           })
         }
@@ -491,7 +492,7 @@ export default {
     },
     processEdits(edits) {
       edits.forEach((edit) => {
-              if (!(edit.sender == this.$socket.id)) {
+              if (!(edit.sender === this.$socket.id)) {
               const delta = dbToDelta([edit]);
               this.editor.getEditor().updateContents(delta, "api");
               }
