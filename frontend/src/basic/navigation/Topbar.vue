@@ -36,7 +36,7 @@
         <ul class="navbar-nav">
           <li class="nav-item me-3">
             <div
-              v-if="!isProjectButtonHidden"
+              v-if="!isProjectButtonHidden && isInDashboard"
               style="
                 position: relative;
                 display: flex;
@@ -134,7 +134,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
-import IconAsset from "@/basic/icons/IconAsset.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
@@ -157,6 +157,9 @@ export default {
     },
     isProjectButtonHidden() {
       return this.$store.getters["settings/getValue"]("topBar.projects.hideProjectButton") === "true"
+    },
+    isInDashboard() {
+      return this.$route.path.startsWith('/dashboard');
     },
     currentProject() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");

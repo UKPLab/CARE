@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import BasicCoordinator from "@/basic/Coordinator.vue";
+import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 
 /* EditModal.vue - modal for editing a document
 

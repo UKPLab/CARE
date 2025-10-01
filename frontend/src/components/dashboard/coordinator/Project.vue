@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import BasicCoordinator from "@/basic/Coordinator.vue";
+import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 
 /**
  * ProjectModal - modal component for adding and editing projects

@@ -215,7 +215,7 @@
  *  @Author: Dennis Zyska, Carly Gettinger
  */
 import TermsModal from "./TermsModal.vue";
-import IconAsset from "@/basic/icons/IconAsset.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 

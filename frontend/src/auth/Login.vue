@@ -146,7 +146,7 @@
  *
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
-import IconAsset from "@/basic/icons/IconAsset.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
 import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
@@ -241,7 +241,7 @@ export default {
 
           await this.$router.go(0);
           this.showError = false;
-          
+
         }
       } catch (error) {
         this.showError = true;
