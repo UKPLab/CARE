@@ -1,7 +1,7 @@
 <template>
   <BasicModal
     ref="modal"
-    lg
+    size="lg"
   >
     <template #title>
       <span>Update Consent</span>

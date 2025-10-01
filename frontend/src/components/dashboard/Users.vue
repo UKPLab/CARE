@@ -221,7 +221,15 @@ export default {
   },
   methods: {
     fetchUsers() {
-      this.$socket.emit("userGetByRole", {role: this.role} );
+      this.$socket.emit("userGetByRole", {role: this.role} , (response) => {
+        if (!response.success) {
+          this.$eventBus.emit("toast", {
+            title: "Error fetching users",
+            message: response.message,
+            variant: "danger",
+          });
+        }
+      });    
     },
     formatUserData(user) {
       const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");

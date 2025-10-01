@@ -89,8 +89,11 @@ export default {
       const option = this.selectOptions.find((c) => c.value === (this.valueAsObject ? this.currentData?.value : this.currentData));
       return option ? option.class : "";
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     selectedProjectId() {
-      return parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
+      return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
     },
     selectOptions() {
       let baseOptions = [];
@@ -110,6 +113,8 @@ export default {
                 return sourceValue === this.formData[f.value];
               case "parentData":
                 return sourceValue === this.parentValue[f.value];
+              case "byUserId":
+                return sourceValue === this.userId;
               case "byProjectId":
                 return sourceValue === this.selectedProjectId;
               default:

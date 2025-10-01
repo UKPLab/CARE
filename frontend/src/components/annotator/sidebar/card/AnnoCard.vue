@@ -5,20 +5,27 @@
       :collapsed="collapsed"
   >
     <template #header>
-      <div class="row">
-        <div class="col">
-          <template v-if="!editedByMyself">
+      <div 
+        class="row" 
+        :class="{ 'header-hoverable': collapsed && !editedByMyself }"
+        :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
+        @click="handleHeaderClick"
+      >
+        <div class="col" style="display: flex; align-items: center;">
+          <div 
+            v-if="!editedByMyself"
+            :title="collapsed ? 'Marked as checked - Click to uncheck' : 'Click to mark as checked'"
+            style="display: inline-flex; margin-right: 8px;"
+            @click.stop="handleCheckIconClick"
+          >
             <LoadIcon
               icon-name="check-square"
               :size="16"
-              :color="collapsed ? '#28a745' : '#6c757d'"
-              cursor="pointer"
+              :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
               class="check-icon"
-              style="position: absolute; top: 18px; left: 12px;"
-              @click="collapsed = !collapsed"
             />
-          </template>
-          <span style="margin-left: 8;">{{ comment.creator_name }}</span>
+          </div>
+          {{ comment.creator_name }}
           <Collaboration
             ref="collab"
             :target-id="commentId"
@@ -128,7 +135,7 @@
                 class="col text-end"
             >
               <SidebarButton
-                  v-if="settingResponse && !readonly"
+                  v-if="settingResponse && !readOnly"
                   :loading="false"
                   :props="$props"
                   icon="reply-fill"
@@ -136,7 +143,7 @@
                   @click="$refs.main_comment.reply();showReplies = true"
               />
               <NLPService
-                  v-if="summarizationAvailable && comment.userId === userId && !readonly"
+                  v-if="summarizationAvailable && comment.userId === userId && !readOnly"
                   :data="summarizationRequestData"
                   :skill="summarizationSkillName"
                   icon-name="file-text"
@@ -146,7 +153,7 @@
               />
               <VoteButtons :comment="comment"/>
               <SidebarButton
-                  v-if="comment.userId === userId && !readonly"
+                  v-if="comment.userId === userId && !readOnly"
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
@@ -154,7 +161,7 @@
                   @click="edit"
               />
               <SidebarButton
-                v-if="comment.userId === userId && !readonly && annotationId"
+                v-if="comment.userId === userId && !readOnly && annotationId"
                 :loading="false"
                 :props="$props"
                 icon="tag"
@@ -162,7 +169,7 @@
                 @click="toggleEditTag"
             />
               <SidebarButton
-                  v-if="comment.userId === userId && !readonly"
+                  v-if="comment.userId === userId && !readOnly"
                   :loading="false"
                   :props="$props"
                   icon="trash3"
@@ -233,7 +240,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
@@ -299,6 +306,15 @@ export default {
     }
   },
   computed: {
+    studySession() {
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
+    },
+    study() {
+      if (!this.studySession) {
+        return null;
+      }
+      return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
     commentState() {
       return this.$store.getters['table/comment_state/getFiltered'](
         a => a.commentId === this.commentId && a.userId === this.userId
@@ -308,8 +324,14 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     tagSetTags() {
-      const defaultTag = this.$store.getters["settings/getValueAsInt"]("tags.tagSet.default");
-      return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag) || [];
+      if ( this.study && this.study.tagSetId) {
+        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
+      }
+      else{
+        const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
+        const currentlySelectedTagId = this.annotation ? this.annotation.tagId : null; //this is important because the current tag on the Id could be added by another user
+        return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
+      }
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
@@ -451,6 +473,14 @@ export default {
     },
     scrollTo(annotationId) {
       this.eventBus.emit('pdfScroll', annotationId);
+    },
+    handleHeaderClick() {
+      if (this.collapsed && !this.editedByMyself) {
+        this.collapsed = false;
+      }
+    },
+    handleCheckIconClick() {
+      this.collapsed = !this.collapsed;
     },
     save() {
       if (this.annotationId && this.annotation) {
@@ -687,5 +717,20 @@ export default {
 
 .check-icon:hover {
   color: #28a745 !important;
+}
+
+.header-hoverable {
+  transition: background-color 0.2s ease;
+}
+
+.header-hoverable:hover {
+  background-color: #e9ecef !important;
+  border-radius: 4px;
+}
+
+.card-header {
+  font-size: smaller;
+  color: #929292;
+  transition: background-color 0.2s ease;
 }
 </style>

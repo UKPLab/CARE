@@ -395,8 +395,8 @@ export default {
             data: {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               pastedText: pastedText,
-              acceptDataSharing: this.user.acceptDataSharing
             }
           })
         }
@@ -409,10 +409,11 @@ export default {
           this.$socket.emit("stats", {
             action: "textCopied",
             data: {
+              from: "editor",
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               copiedText: copiedText,
-              acceptDataSharing: this.user.acceptDataSharing
             }
           })
         }

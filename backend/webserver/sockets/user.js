@@ -315,18 +315,11 @@ class UserSocket extends Socket {
      * @throws {Error} If the user does not have right 
      */
     async getUsersByRole(data, options) {
-        try {
-            const users = await this.getUsers(data.role);
-            this.socket.emit("userByRole", {
-                success: true, users,
-            });
-        } catch (error) {
-            const errorMsg = "User rights and request parameter mismatch";
-            this.socket.emit("userByRole", {
-                success: false, message: errorMsg,
-            });
-            this.logger.error(errorMsg);
-        }
+        const users = await this.getUsers(data.role);
+        this.socket.emit("userByRole", {
+            success: true, users,
+        });
+        return users;
     }
 
     /***
@@ -339,17 +332,11 @@ class UserSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once the user rights or an error message have been emitted.
      */
     async getUserRights(data, options) {
-        try {
             const userRight = await this.models["user"].getUserRights(data.userId);
             this.socket.emit("userRight", {
                 success: true, userRight,
             });
-        }   catch (error) {
-            this.socket.emit("userRight", {
-                success: false, message: "Failed to get user right",
-            });
-            this.logger.error(error);
-        }
+            return userRight;
     }
 
     init() {
