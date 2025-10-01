@@ -119,6 +119,7 @@ export default {
         {name: "Accept Terms", key: "acceptTerms", sortable: true},
         {name: "Accept Stats", key: "acceptStats", sortable: true},
         {name: "Accept Data Sharing", key: "acceptDataSharing", sortable: true},
+        {name: "Verified", key: "emailVerified"},
         {name: "Last Login", key: "lastLoginAt", sortable: true},
       ],
       // Possible values for role here are all the roles in the DB.
@@ -146,6 +147,7 @@ export default {
           "Last Login": user.lastLoginAt,
           "Created": user.createdAt,
           "External ID": user.extId,
+          "Verified": user.emailVerified,
           "Roles": user.roles.map(role => this.systemRoles.find((r) => r.id === role)?.name).join(", "),
         };
       });

@@ -25,6 +25,8 @@ module.exports = function (server) {
             "app.register.requestData": await server.db.models['setting'].get("app.register.requestData"),
             "app.register.acceptDataSharing.default": await server.db.models['setting'].get("app.register.acceptDataSharing.default"),
             "app.login.guest": await server.db.models['setting'].get("app.login.guest"),
+            "app.login.forgotPassword": await server.db.models['setting'].get("app.login.forgotPassword"),
+            "app.register.emailVerification": await server.db.models['setting'].get("app.register.emailVerification"),
             "app.landing.showDocs": await server.db.models['setting'].get("app.landing.showDocs"),
             "app.landing.linkDocs": await server.db.models['setting'].get("app.landing.linkDocs"),
             "app.landing.showProject": await server.db.models['setting'].get("app.landing.showProject"),
