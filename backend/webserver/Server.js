@@ -47,6 +47,7 @@ module.exports = class Server {
         this.sockets = {};
         this.availSockets = {};
         this.services = {};
+        this.documentQueues = new Map();
 
         // No Caching
         this.app.disable('etag');
