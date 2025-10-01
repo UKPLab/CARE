@@ -345,7 +345,6 @@ export default {
       }
     },
     async sidebarScrollTo(commentId) {
-      console.log("Scrolling to comment:", commentId);
       const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 

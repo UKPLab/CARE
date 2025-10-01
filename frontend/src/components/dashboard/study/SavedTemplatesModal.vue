@@ -35,7 +35,15 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
-
+/**
+ * Modal to show saved study templates
+ * 
+ * This modal allows users to view, use, and delete saved study templates.
+ * Users can browse through their saved templates, delete unwanted ones,
+ * and use existing templates to create new studies with pre-configured settings.
+ * 
+ * @author: Karim Ouf
+ */
 export default {
   name: "SavedTemplatesModal",
   components: { BasicModal, BasicTable, BasicButton, StudyModal },

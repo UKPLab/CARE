@@ -412,8 +412,29 @@ export default {
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "copyStudyLink") {
-
         this.copyLink(data.params.id);
+      } else if (data.action === "restartStudy") {
+        this.$socket.emit("appDataUpdate", {
+          table: "study",
+          data: {
+            id: data.params.id,
+            closed: null 
+          }
+        }, (result) => {
+          if (result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study restarted",
+              message: "The study has been restarted",
+              variant: "success"
+            });
+          } else {
+            this.eventBus.emit('toast', {
+              title: "Study restart failed",
+              message: result.message,
+              variant: "danger"
+            });
+          }
+        });
       } else if (data.action === "inspectStudySessions") {
 
         this.$refs.studySessionModal.open(data.params.id);
