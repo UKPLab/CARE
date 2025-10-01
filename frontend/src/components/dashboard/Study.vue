@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import Card from "@/basic/Card.vue";
+import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
