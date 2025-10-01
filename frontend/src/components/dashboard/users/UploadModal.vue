@@ -59,7 +59,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Papa from "papaparse";
-import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 
 /**
  * Modal for uploading the login data of the newly created users to Moodle
