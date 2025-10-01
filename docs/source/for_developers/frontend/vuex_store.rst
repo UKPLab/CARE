@@ -14,7 +14,7 @@ Auto tables are tables that are automatically generated from the backend and off
 .. note::
 
     The vuex store is not persistent; i.e. reloading the webpage in the browser discards the store and forces
-    reloading of the data from the backend.
+    reloading of the data from the backend, see :doc:`../backend/data_transfer`.
 
 .. tip::
     Checkout the vuex store documentation here: `Vuex Guide <https://vuex.vuejs.org/guide/>`_.
@@ -40,13 +40,18 @@ key ``static autoTable = true;``. It is also possible to publish a complete tabl
 
 .. tip::
 
-    To edit data for auto tables, we recommend to use the basic :doc:`form component <./coordinator>`.
+    To edit data for auto tables, we recommend to use the basic :doc:`form component <basic/form>`.
+
+.. seealso::
+   For subscription setup and how socket refreshes update the store, see
+   :doc:`Data Transfer <../backend/data_transfer>`.
 
 Loading Data for Auto Tables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To load data for auto tables, we provide a plugin that automatically loads the data from the backend. To use the plugin,
 you have to add a simple option ``fetchData`` with a list of the tables to the component definition.
+For live updates without manual reloads, combine with the :doc:`SubscribeTable plugin <../plugins>` (``subscribeTable`` option).
 
 .. code-block:: javascript
 
@@ -69,9 +74,29 @@ The following getters are supported for auto tables:
 - ``getByKey``: Returns a object by a given key, if key column is defined in table.
 - ``length``: Returns the number of objects in the table.
 - ``countByKey``: Returns the number of objects in the table by a given key and value. You can also pass a ``hierarchical`` flag to count all objects with the given key and value or any of its children.
-- ``hasFields``: Returns true if the table has a fields definition defined in the backend (used for forms).
-- ``getFields``: Returns the fields definition defined in the backend (used for forms), if available (check before with hasFields).
+- ``hasFields``: Returns true if the table has a fields definition defined in the backend (used for :doc:`basic/form`).
+- ``getFields``: Returns the fields definition defined in the backend (used for :doc:`basic/form`), if available (check before with hasFields).
 - ``refreshCount``: Returns the count how often the data was refreshed from the backend.
 
+Live Updates via Subscriptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+For **real-time** updates (no manual reload), components can subscribe to auto tables.
+Use the frontend plugin option ``subscribeTable`` to establish a socket subscription. On mount,
+the plugin emits ``subscribeAppData``; on unmount, it sends ``unsubscribeAppData``. The backend
+then broadcasts ``<tableName>Refresh`` events that update the Vuex module.
+
+.. code-block:: javascript
+
+   export default {
+       name: "MyComponent",
+       subscribeTable: ["document", "study"],  // keep this table live-synced
+       // ...
+   }
+
+.. tip::
+   If your project still uses ``fetchData`` for initial loads, you can use **both**:
+   ``fetchData`` for the first snapshot and ``subscribeTable`` for ongoing updates.
+
+For the full backend–frontend pipeline (sockets, broadcasts, refresh logic), see :doc:`Data Transfer <../backend/data_transfer>`.
 

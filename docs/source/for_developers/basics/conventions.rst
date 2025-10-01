@@ -113,3 +113,171 @@ Documentation
 
 - Documentation compiles without errors and is readable (i.e., ``make doc``)
 - Documentation is clearly written and helps a `DAU <https://de.wikipedia.org/wiki/D%C3%BCmmster_anzunehmender_User>`_ to implement a feature
+
+Repository Workflows
+--------------------
+
+Issue Management
+~~~~~~~~~~~~~~~~
+
+--------
+
+**Issues** are the central means of tracking tasks in this process. You should open an issue when
+
+- you are fixing a bug in a stable branch (e.g. on development).
+- you are making hot fixes (on the deployment branch).
+- you are creating a new feature or part of a feature.
+
+One issue can comprise multiple smaller tasks, but it should specify a development process that has clear intended value to the project. Typically, an issue is processed by a single developer.
+
+git Workflows
+-------------
+
+--------
+
+Overview
+~~~~~~~~
+
+This part explains the workflow for adding a new feature to the code base involving proper management of git branches and naming conventions. Please read this manual before making any changes to the code. We essentially stick to `this <https://nvie.com/posts/a-successful-git-branching-model/>`_ branching model for git.
+
+
+Assumptions
+~~~~~~~~~~~
+
+You want to implement a new feature, realize a hot fix or make any other non-trivial change to the repository code. You created a summarizing issue of this feature/bug/release using one of the templates describing the details of what you plan to do and what the objective (testable) outcome is.
+
+There are currently two main branches in the repository:
+
+- `main`: holds only verified, stable and deployable code. Only major pull requests are added to this by repo maintainers. This branch is protected.
+- `dev`: holds current, stable code under development. This branch may include experimental features etc. and is merged to `main` occasionally. This branch is protected.
+
+General Guidelines
+~~~~~~~~~~~~~~~~~~
+
+**Branch naming**
+
+- Child branches start with the name of their parent branch (excluding `main` and `dev` as parents) as a prefix, e.g.
+
+::
+
+    git checkout -b feat-FNUM-FNAME-CHILD feat-FNUM-FNAME
+
+- Separate each part of the branch name by "-"
+
+- Child names are short and expressive. If you created an extra issue for them, you should start with its number, e.g.
+
+::
+
+    git checkout -b feat-FNUM-FNAME-CHILDNUM-CHILDNAME feat-FNUM-FNAME
+
+**Commit Messages**
+
+Format: ``<type> : <short summary>``
+
+Explanation of Each Part:
+
+- ``<type>``: Indicates the category of change (e.g., feat, fix, docs).
+- ``<short summary>``: A concise description of the change in the present tense.
+
+**Rules**:
+
+1. Concise and precise commit messages that describe what you have done.
+2. Use the **present tense** (e.g., "add", not "added").
+3. Use **lowercase** for ``<type>`` and the summary.
+4. Describe **WHAT** the commit does, **not WHY**.
+5. **Atomic commits** only: Each commit should represent a **single, small, self-contained change** instead of a list of unrelated changes.
+6. **Rule-of-thumb**: A commit should cover code of at most one day of work.
+
+General Example: ``fix: remove parameter "xyz"``
+
+**Examples of Types**:
+
+- ``feat``: A new feature
+- ``fix``: A bug fix
+- ``refactor``: A code change that neither fixes a bug nor adds a feature
+- ``docs``: Documentation changes only
+- ``test``: Adding tests or correcting existing tests
+- ``style``: Changes that do not affect the meaning of the code (formatting, whitespace, etc.)
+- ``ci``: Changes to CI configuration files and scripts
+- ``chore``: Other changes (build tasks, dependencies, maintenance)
+- ``other``: Use it in case nothing above fits your case (not recommended)
+
+**Suggestive Verbs per Type**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Type
+     - Suggestive Verbs
+   * - feat
+     - add, implement, introduce, create, enable, integrate
+   * - fix
+     - fix, resolve, patch, correct, repair, handle
+   * - refactor
+     - refactor, restructure, simplify, optimize, extract, consolidate
+   * - docs
+     - add, update, revise, clarify, document, remove
+   * - test
+     - add, update, fix, expand, cover, mock
+   * - style
+     - format, reformat, lint, clean, style, prettify
+   * - ci
+     - configure, update, fix, add, adjust, remove
+   * - chore
+     - update, bump, remove, clean, upgrade, configure
+
+Instructions
+~~~~~~~~~~~~
+
+--------
+
+**New feature**
+
+You want to implement an entirely new feature, which is non-trivial to realize.
+
+1. Any features are realized starting from the development branch. Switch to this branch for creating a child branch.
+
+::
+
+    git checkout dev
+
+2. To create a new feature branch on `dev`, you first need to define a proper name. The feature has an associated issue number ``FNUM`` and a one-word name ``FNAME``. Then you create a child branch as:
+
+::
+
+    git checkout -b feat-FNUM-FNAME dev
+
+3. Work on this branch. You may create arbitrary child branches as you see fit, but please stick to the general naming conventions (outlined above).
+
+4. Push the branch and open a **Merge Request** into `dev`. Do **not** merge locally.
+
+::
+
+    git push -u origin feat-FNUM-FNAME
+    # then open a Merge Request targeting 'dev'
+
+5. After the MR is approved and merged, delete the branch via the platform option
+   (“Delete source branch on merge”). Avoid manual deletions unless needed.
+
+**Hot fixes**
+
+The deployed version has a bug that needs to be fixed ad-hoc. There is an associated issue with an issue number.
+
+1. Create a hot-fix branch from the main branch with issue number ``INUM``.
+
+::
+
+    git checkout main
+    git checkout -b hotfix-INUM main
+
+2. Realize the changes on this branch.
+
+3. Push the branch and open a **Merge Request** into `dev`. It is reviewed by maintainers.
+
+::
+
+    git push -u origin hotfix-INUM
+    # then open a Merge Request targeting 'main'
+
+4. After the MR is merged, delete the branch via the platform option
+   (“Delete source branch on merge”).

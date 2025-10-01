@@ -196,9 +196,9 @@
 <script>
 import SideCard from "./Card.vue";
 import Comment from "./Comment.vue";
-import Collaboration from "@/basic/Collaboration.vue"
+import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
-import NLPService from "@/basic/NLPService.vue";
+import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
 
