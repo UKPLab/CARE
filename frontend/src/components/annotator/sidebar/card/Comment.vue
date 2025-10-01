@@ -156,9 +156,9 @@
 
 <script>
 import TagSelector from "./TagSelector.vue";
-import IconLoading from "@/basic/icons/IconLoading.vue";
+import IconLoading from "@/basic/icon/IconLoading.vue";
 import LoadIcon from "@/basic/Icon.vue"
-import Collaboration from "@/basic/Collaboration.vue"
+import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 
