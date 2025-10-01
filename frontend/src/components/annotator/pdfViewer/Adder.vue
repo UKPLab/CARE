@@ -69,7 +69,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
-      if (this.study.tagSetId) {
+      if (this.study?.tagSetId) {
         return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
       }
       else {
@@ -84,6 +84,7 @@ export default {
       if (!this.studySession) {
         return null;
       }
+      console.log("StudySession: ", this.studySession); 
       return this.$store.getters["table/study/get"](this.studySession.studyId);
     },
     anonymize() {
