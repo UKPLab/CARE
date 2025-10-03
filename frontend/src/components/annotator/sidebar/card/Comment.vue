@@ -84,7 +84,7 @@
           class="row"
         >
           <div
-            v-if="!readonly"
+            v-if="!readOnly"
             class="col text-end"
           >
             <SidebarButton
@@ -111,7 +111,7 @@
             class="col text-end"
           >
             <SidebarButton
-              v-if="settingResponse && !readonly"
+              v-if="settingResponse && !readOnly"
               :loading="false"
               :props="$props"
               icon="reply-fill"
@@ -120,7 +120,7 @@
             />
             <VoteButtons :comment="comment"/>
             <SidebarButton
-              v-if="comment.userId === userId && !readonly"
+              v-if="comment.userId === userId && !readOnly"
               :loading="false"
               :props="$props"
               icon="pencil-square"
@@ -128,7 +128,7 @@
               @click="editComment"
             />
             <SidebarButton
-              v-if="(comment.userId === userId || myBotRequest) && !readonly"
+              v-if="(comment.userId === userId || myBotRequest) && !readOnly"
               :loading="false"
               :props="$props"
               icon="trash3"
@@ -156,9 +156,9 @@
 
 <script>
 import TagSelector from "./TagSelector.vue";
-import IconLoading from "@/basic/icons/IconLoading.vue";
+import IconLoading from "@/basic/icon/IconLoading.vue";
 import LoadIcon from "@/basic/Icon.vue"
-import Collaboration from "@/basic/Collaboration.vue"
+import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 
@@ -187,7 +187,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,

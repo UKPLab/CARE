@@ -17,12 +17,14 @@
               ref="pdfViewer"
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
+              @copy="onCopy"
           />
 
         </div>
         <Sidebar
             v-if="!sidebarDisabled"
             ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
+            @copy="onCopy"
         />
       </div>
     </div>
@@ -406,8 +408,7 @@ export default {
     this.load();
 
     // scrolling
-    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
-    document.addEventListener('copy', this.onCopy);
+   this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     // Scroll the viewer container to the saved scroll position
     this.$nextTick(async () => {
       if (this.savedScroll) {
@@ -420,7 +421,6 @@ export default {
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
-    document.removeEventListener('copy', this.onCopy);
     window.removeEventListener('resize', this.handleResize);
     
      const currentPage = this.getCurrentPageNumber();
@@ -652,9 +652,11 @@ export default {
         "studyStepId",
         "userId"
       ];
-      const annotations = this.annotations.map(a => {
-        return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-      });
+      const annotations = this.annotations
+        .filter(a => a.studySessionId === this.studySessionId)
+        .map(a => {
+          return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
+        });
       // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {
@@ -675,22 +677,22 @@ export default {
 
     },
     onCopy() {
-      const selection = document.getSelection();
-      if (selection && selection.toString().trim() !== '') {
-        const copiedText = selection.toString();
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "textCopied",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              copiedText: copiedText,
-            }
-          });
-        }
+      const selection = window.getSelection();
+      const copiedText = selection ? selection.toString() : '';
+      
+      if (this.acceptStats && copiedText.trim() !== '') {
+        this.$socket.emit("stats", {
+          action: "textCopied",
+          data: {
+            from: "annotator",
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            copiedText: copiedText,
+          }
+        });
       }
-    },
+    }
   }
 }
 </script>

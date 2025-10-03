@@ -252,6 +252,7 @@ If you want to extend the Moodle API integration (e.g. by adding new endpoints o
 1. Edit or add functions in the RPC module, typically in ``main.py`` or ``Moodle.py``, both located in ``utils/rpcs/moodleAPI/``.
 2. Follow the existing function structure using RPC-compatible patterns
 3. If new API endpoints are added, ensure:
+
    - The corresponding Moodle functions are enabled in the external service
    - The service account has the required permissions
 4. Add or update the frontend call in the corresponding service layer (if applicable)

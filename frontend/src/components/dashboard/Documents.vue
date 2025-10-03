@@ -37,7 +37,7 @@
 
 <script>
 import PublishModal from "./documents/PublishModal.vue";
-import Card from "@/basic/Card.vue";
+import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -84,6 +84,7 @@ export default {
         pagination: 10,
       },
       columns: [
+        {name: "ID", key: "id"},
         {name: "Title", key: "name"},
         {name: "Created At", key: "createdAt"},
         {name: "Type", key: "typeName"},

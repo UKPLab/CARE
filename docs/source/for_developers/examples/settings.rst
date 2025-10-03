@@ -4,6 +4,8 @@ Settings
 CARE supports flexible, dynamic application behavior through a centralized system of configurable settings. These settings allow developers and administrators to customize the frontend and backend behavior without hardcoding values or redeploying the application. Settings are stored in the database, can be grouped by key namespaces, and support multiple data types.
 This section shows how to define a new setting, what types are supported, and how to use the setting in your Vue components.
 
+.. _add-setting-example-ref:
+
 Example: Adding a New Setting
 -----------------------------
 
