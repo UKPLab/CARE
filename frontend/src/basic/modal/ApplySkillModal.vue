@@ -13,7 +13,6 @@
       :input-files="inputFiles"
       :current-step="currentStep"
       :show-close="true"
-      :force-processing-active="forceProcessingActive"
       cancel-next-text="Cancel Preprocess"
       @cancel="cancelProcessing"
     />
@@ -32,7 +31,6 @@ export default {
   data() {
     return {
       currentStep: 1,
-      forceProcessingActive: false,
     };
   },
   computed: {
@@ -63,7 +61,6 @@ export default {
         });
     },
     isProcessingActive() {
-      if (this.forceProcessingActive) return true;
       return (
         this.preprocess &&
         this.preprocess.requests &&
@@ -79,10 +76,6 @@ export default {
     this.fetchBackgroundTaskState();
   },
   methods: {
-    onSkillsApplied() {
-      this.forceProcessingActive = true;
-      this.fetchBackgroundTaskState();
-    },
     fetchBackgroundTaskState() {
       return new Promise((resolve) => {
         this.$socket.emit("serviceCommand", {
@@ -91,9 +84,6 @@ export default {
           data: {}
         }, () => {
           this.$nextTick(() => {
-            if (!(this.preprocess && this.preprocess.requests && Object.keys(this.preprocess.requests).length > 0)) {
-              this.forceProcessingActive = false;
-            }
             resolve();
           });
         });

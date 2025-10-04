@@ -147,7 +147,7 @@ module.exports = class BackgroundTaskService extends Service {
 
     /**
      * Prepare the list of items to be processed based on the new generalized data structure
-     * @param {object} preprocessingData - The preprocessing data from ApplySkillsModal
+     * @param {object} preprocessingData - The preprocessing data from ApplySkillModal
      * @param {string} preprocessingData.skillName - The skill name to apply
      * @param {object} preprocessingData.skillParameterMappings - Parameter mappings with table and fileIds
      * @param {string} preprocessingData.baseFileParameter - The base file parameter name

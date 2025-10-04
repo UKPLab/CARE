@@ -20,11 +20,17 @@
           v-model="inputMappings"
           :skill-name="selectedSkill"
           :study-based="false"
-          @update:valid="inputMappingsValid = $event"
         />
       </template>
       
       <template #step-2>
+        <div v-if="baseFileParameterOptions.options.length > 0" class="mb-3">
+          <label class="form-label">Select the base for basefile:</label>
+          <FormSelect
+            v-model="baseFileParameter"
+            :options="baseFileParameterOptions"
+          />
+        </div>
         <InputFiles
           :input-mappings="inputMappings"
           v-model="selectedFiles"
@@ -34,7 +40,7 @@
       
       <template #step-3 v-if="requireValidation">
         <InputGroup
-          :base-file-parameter="autoBaseFileParameter"
+          :base-file-parameter="baseFileParameter"
           :selected-files="selectedFiles"
           v-model="baseFileSelections"
           @update:valid="inputGroupValid = $event"
@@ -47,7 +53,7 @@
           :selected-skill="selectedSkill"
           :input-mappings="inputMappings"
           :selected-files="selectedFiles"
-          :base-file-parameter="autoBaseFileParameter"
+          :base-file-parameter="baseFileParameter"
           :base-file-selections="baseFileSelections"
           :validation-document-names="validationDocumentNames"
           :show-base-file-selections="false"
@@ -59,7 +65,7 @@
           :selected-skill="selectedSkill"
           :input-mappings="inputMappings"
           :selected-files="selectedFiles"
-          :base-file-parameter="autoBaseFileParameter"
+          :base-file-parameter="baseFileParameter"
           :base-file-selections="baseFileSelections"
           :validation-document-names="validationDocumentNames"
           :show-base-file-selections="true"
@@ -86,7 +92,7 @@ import InputConfirm from "@/basic/modal/skills/InputConfirm.vue";
 import FormSelect from "@/basic/form/Select.vue";
 
 export default {
-  name: "ApplySkillsModal",
+  name: "ApplySkillSetup",
   components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm, FormSelect },
   subscribeTable: ["document", "submission", "document_data", "user", "configuration"],
   emits: ["submit"],
@@ -95,22 +101,25 @@ export default {
       selectedSkill: '',
       inputMappings: {},
       selectedFiles: {},
+      baseFileParameter: '',
       baseFileSelections: {},
       inputFilesValid: false,
       inputGroupValid: false,
       validationDocumentNames: {},
-      inputMappingsValid: false,
     };
   },
   computed: {
-    autoBaseFileParameter() {
-      for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
+    baseFileParameterOptions() {
+      const options = [];
+      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
         if (mapping && mapping.requiresTableSelection) {
-          if (mapping.tableType === 'submission') return paramName;
-          if (mapping.tableType === 'document') return paramName;
+          options.push({
+            value: paramName,
+            name: `${paramName} (Table : ${mapping.tableType})`,
+          });
         }
-      }
-      return null;
+      });
+      return { options };
     },
     stepperSteps() {
       const baseSteps = [{ title: 'Select Skill' }, { title: 'Select Files' }];
@@ -121,13 +130,13 @@ export default {
       return baseSteps;
     },
     requireValidation() {
-      const baseParam = this.autoBaseFileParameter;
-      if (!baseParam || !this.inputMappings[baseParam]) return false;
-      return this.inputMappings[baseParam].tableType === 'submission';
+      if (!this.baseFileParameter || !this.inputMappings[this.baseFileParameter]) return false;
+      return this.inputMappings[this.baseFileParameter].tableType === 'submission';
     },
     stepValid() {
-      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings && this.inputMappingsValid;
-      const step2Valid = this.inputFilesValid;
+      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings;
+      const needsBaseFileParameter = this.baseFileParameterOptions.options.length > 0;
+      const step2Valid = this.inputFilesValid && (!needsBaseFileParameter || !!this.baseFileParameter);
       
       const steps = [step1Valid, step2Valid];
       
@@ -144,6 +153,16 @@ export default {
       const mappingValues = Object.values(this.inputMappings);
       const isValid = mappingValues.length > 0 && mappingValues.every(mapping => !!mapping);
       return isValid;
+    },
+  },
+  watch: {
+    baseFileParameterOptions: {
+      handler(newOptions) {
+        if (newOptions.options.length === 0) {
+          this.baseFileParameter = " ";
+        }
+      },
+      immediate: true,
     },
   },
   methods: {
@@ -195,6 +214,7 @@ export default {
       this.selectedSkill = '';
       this.inputMappings = {};
       this.selectedFiles = {};
+      this.baseFileParameter = '';
       this.baseFileSelections = {};
       this.inputFilesValid = false;
       this.inputGroupValid = false;
@@ -207,7 +227,7 @@ export default {
     applySkills() {
       const skillParameterMappings = this.formatSkillParameterMappings();
       const baseFiles = this.formatBaseFiles();
-      const baseFileParameter = this.autoBaseFileParameter;
+      const baseFileParameter = this.baseFileParameterOptions.options.length > 0 ? this.baseFileParameter : null;
       
       const preprocessingData = {
         skillName: this.selectedSkill,
@@ -221,7 +241,7 @@ export default {
         command: "startPreprocessing",
         data: preprocessingData
       });
-      this.$emit('skills-applied');
+      
       this.close();
     },
   },

@@ -1,71 +1,64 @@
 <template>
-  <Loader 
-    v-if="this.forceProcessingActive && (!preprocess || !preprocess.requests || Object.keys(preprocess.requests).length === 0)"
-    :loading="true" 
-    class="pageLoader"
-  />
-  <span v-else>
-    <StepperModal
-      ref="stepper"
-      :steps="processingSteps"
-      :validation="[true, true]"
-      :current-step="currentStep"
-      :show-footer="false"
-      :next-text="currentStep === 1 ? cancelNextText : 'Next'"
-      submit-text="Confirm"
-      :show-close="showClose"
-      @submit="$emit('cancel')"
-    >
-      <template #title>
-        <h5 class="modal-title text-primary">{{ title }}</h5>
-      </template>
+  <StepperModal
+    ref="stepper"
+    :steps="processingSteps"
+    :validation="[true, true]"
+    :current-step="currentStep"
+    :show-footer="false"
+    :next-text="currentStep === 1 ? cancelNextText : 'Next'"
+    submit-text="Confirm"
+    :show-close="showClose"
+    @submit="$emit('cancel')"
+  >
+    <template #title>
+      <h5 class="modal-title text-primary">{{ title }}</h5>
+    </template>
 
-      <template #step-1>
-        <div class="mb-3">
-          <div class="d-flex align-items-center mb-2">
-            <span class="me-2">Processed:</span>
-            <strong>{{ processedCount }} / {{ totalCount }}</strong>
-          </div>
-          <div class="progress mb-3" style="height: 20px;">
-            <div
-              class="progress-bar"
-              role="progressbar"
-              :style="{ width: progressPercent + '%' }"
-              :aria-valuenow="processedCount"
-              :aria-valuemin="0"
-              :aria-valuemax="totalCount"
-            >
-              {{ progressPercent }}%
-            </div>
-          </div>
-
-          <div class="mt-2 text-muted">
-            Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
-          </div>
-          <div class="mt-2 text-muted">
-            Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
-          </div>
-          <div class="mt-2 text-muted">
-            Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
-          </div>
-
-          <h6 class="mt-4">Submissions in Queue</h6>
-          <BasicTable
-            :columns="remainingColumns"
-            :data="remainingSubmissions"
-            :options="{ ...options, pagination: 5 }"
-          />
+    <template #step-1>
+      <div class="mb-3">
+        <div class="d-flex align-items-center mb-2">
+          <span class="me-2">Processed:</span>
+          <strong>{{ processedCount }} / {{ totalCount }}</strong>
         </div>
-      </template>
-
-      <template #step-2>
-        <div class="mb-3">
-          <h5>Cancel Processing</h5>
-          <p>Are you sure you want to cancel the remaining requests?</p>
+        <div class="progress mb-3" style="height: 20px;">
+          <div
+            class="progress-bar"
+            role="progressbar"
+            :style="{ width: progressPercent + '%' }"
+            :aria-valuenow="processedCount"
+            :aria-valuemin="0"
+            :aria-valuemax="totalCount"
+          >
+            {{ progressPercent }}%
+          </div>
         </div>
-      </template>
-    </StepperModal>
-  </span>
+
+        <div class="mt-2 text-muted">
+          Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
+        </div>
+        <div class="mt-2 text-muted">
+          Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
+        </div>
+        <div class="mt-2 text-muted">
+          Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
+        </div>
+
+        <h6 class="mt-4">Submissions in Queue</h6>
+        <BasicTable
+          :columns="remainingColumns"
+          :data="remainingSubmissions"
+          :options="{ ...options, pagination: 5 }"
+        />
+      </div>
+    </template>
+
+    <template #step-2>
+      <div class="mb-3">
+        <h5>Cancel Processing</h5>
+        <p>Are you sure you want to cancel the remaining requests?</p>
+      </div>
+    </template>
+  </StepperModal>
 </template>
 
 <script>
@@ -78,10 +71,10 @@ export default {
   props: {
     title: { 
       type: String,
-      default: "Apply Skill" 
+      default: "Cancel Apply Skills" 
     },
     preprocess: { 
-      type: Object,
+      type: Object, 
       default: () => ({}) 
     },
     inputFiles: { 
@@ -93,16 +86,13 @@ export default {
       default: 1 
     },
     showClose: { 
-      type: Boolean, 
+      type: Boolean,
       default: true 
     },
     cancelNextText: { 
       type: String, 
-      default: "Cancel Preprocess" },
-    forceProcessingActive: { 
-      type: Boolean, 
-      default: false 
-    }
+      default: "Cancel Preprocess" 
+    },
   },
   emits: ["cancel"],
   data() {
@@ -281,5 +271,3 @@ export default {
 
 <style scoped>
 </style>
-
-
