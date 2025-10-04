@@ -2,14 +2,14 @@
   <div v-if="skillName" class="input-map mb-3">
     <h6 class="text-secondary">Input Mapping</h6>
     <div
-      v-for="input in getSkillInputs(skillName)"
+      v-for="input in skillInputs"
       :key="input"
       class="mb-2"
     >
       <label class="form-label">{{ input }}:</label>
       <FormSelect
         v-model="inputMappings[input]"
-        :options="{ options: availableDataSources }"
+        :options="{ options: studyBased ? availableDataSources : getDataSourcesForInput(input) }"
         :value-as-object="true"
         @update:modelValue="updateMapping(input, $event)"
       />
@@ -82,12 +82,34 @@ export default {
     configurationEntries() {
       return this.$store.getters["table/configuration/getAll"] || [];
     },
+    skillInputs() {
+      if (!this.skillName) return [];
+      const skill = this.nlpSkills.find((s) => s.name === this.skillName);
+      if (!skill) return [];
+      return Object.keys(skill.config.input.data || {});
+    },
     availableDataSources() {
       if (this.studyBased) {
         return this.getSourcesUpToCurrentStep(this.studyStepId);
       } else {
         return this.getApplySkillsDataSources();
       }
+    },
+    tableBasedParameter() {
+      for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
+        if (mapping && mapping.requiresTableSelection) {
+          return paramName;
+        }
+      }
+      return null;
+    },
+    configurationSources() {
+      return this.configurationEntries.map(entry => ({
+        value: `config_${entry.id}`,
+        name: entry.name,
+        requiresTableSelection: false,
+        configId: entry.id
+      }));
     },
   },
   watch: {
@@ -110,39 +132,48 @@ export default {
     },
   },
   methods: {
-    getSkillInputs(skillName) {
-      const skill = this.nlpSkills.find((s) => s.name === skillName);
-      if (!skill) return [];
-      return Object.keys(skill.config.input.data || {});
-    },
     initializeInputMappings() {
       const mapping = {};
-      if (this.skillName) {
-        const inputs = this.getSkillInputs(this.skillName);
-        inputs.forEach((input) => {
+      if (this.skillName && this.skillInputs.length > 0) {
+        this.skillInputs.forEach((input) => {
           mapping[input] = this.inputMappings[input] || null;
         });
       }
       this.inputMappings = mapping;
     },
     updateMapping(input, source) {
+      if (source && source.requiresTableSelection) {
+        Object.keys(this.inputMappings).forEach(paramName => {
+          if (paramName !== input && this.inputMappings[paramName] && this.inputMappings[paramName].requiresTableSelection) {
+            this.inputMappings[paramName] = null;
+          }
+        });
+      }
+      
       this.inputMappings[input] = source;
       this.$emit('update:modelValue', { ...this.inputMappings });
     },
     getApplySkillsDataSources() {
-      const sources = [
-        { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
-        { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
-      ];
+      const sources = [...this.configurationSources];
 
-      this.configurationEntries.forEach(entry => {
-        sources.push({
-          value: `config_${entry.id}`,
-          name: entry.name,
-          requiresTableSelection: false,
-          configId: entry.id
-        });
-      });
+      if (!this.tableBasedParameter) {
+        sources.unshift(
+          { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
+          { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+        );
+      }
+
+      return sources;
+    },
+    getDataSourcesForInput(inputName) {
+      const sources = [...this.configurationSources];
+
+      if (!this.tableBasedParameter || this.tableBasedParameter === inputName) {
+        sources.unshift(
+          { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
+          { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+        );
+      }
 
       return sources;
     },
@@ -189,19 +220,24 @@ export default {
       if (!this.selectedSkills?.length || !this.stepConfig?.services?.length) return sources;
 
       const { services } = this.stepConfig;
+      
+      const skillMap = new Map();
+      this.nlpSkills.forEach(skill => {
+        skillMap.set(skill.name, skill);
+      });
 
       services.forEach((service) => {
         this.selectedSkills.forEach(({ skillName }) => {
           if (!skillName) return;
 
-          const skill = this.nlpSkills.find((s) => s.name === skillName);
+          const skill = skillMap.get(skillName);
           if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
 
-          const result = Object.keys(skill.config.output.data || {});
-          result.forEach((r) =>
+          const outputKeys = Object.keys(skill.config.output.data);
+          outputKeys.forEach((outputKey) =>
             sources.push({
-              value: `service_${service.name}_${r}`,
-              name: `${skillName}_${r} (Step ${stepIndex})`,
+              value: `service_${service.name}_${outputKey}`,
+              name: `${skillName}_${outputKey} (Step ${stepIndex})`,
               stepId: stepIndex,
             })
           );
