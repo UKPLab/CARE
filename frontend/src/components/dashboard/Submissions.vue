@@ -20,11 +20,15 @@
         @click="$refs.importModal.open()"
       />
       <BasicButton
-        class="btn-success btn-sm ms-1"
-        text="Apply Skills"
-        title="Apply Skills"
+        :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
+        :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+        :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
         @click="preprocessGrades" 
-      />
+      >
+        <span v-if="isProcessingActive" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+          <span class="visually-hidden">Processing active</span>
+        </span>
+      </BasicButton>
     </template>
     <template #body>
       <BasicTable
@@ -131,8 +135,17 @@ export default {
   },
   computed: {
     submissions() {
-      // at the moment no readyForReview flag – return all
       return this.$store.getters["table/submission/getAll"];
+    },
+    isProcessingActive() {
+      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      const preprocess = bgTask.preprocess || {};
+      return (
+        preprocess &&
+        preprocess.requests &&
+        typeof preprocess.requests === 'object' &&
+        Object.keys(preprocess.requests).length > 0
+      );
     },
     submissionTable() {
       /* Build one row per submission: pick the main PDF document (if any) to
@@ -211,6 +224,13 @@ export default {
     preprocessGrades() {
       this.$refs.applySkillModal.open();
     },
+  },
+  mounted() {
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "getBackgroundTask",
+      data: {}
+    });
   },
 };
 </script>

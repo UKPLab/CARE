@@ -32,6 +32,8 @@ export default {
   data() {
     return {
       currentStep: 1,
+      isAutoOpened: false,
+      isWaitingForData: false,
     };
   },
   computed: {
@@ -70,6 +72,17 @@ export default {
       );
     },
   },
+  watch: {
+    isProcessingActive: {
+      handler(newVal, oldVal) {
+        if (newVal && !oldVal && this.isWaitingForData) {
+          this.isWaitingForData = false;
+          this.autoOpenProcessStepper();
+        }
+      },
+      immediate: true
+    }
+  },
   created() {
     this.fetchBackgroundTaskState();
   },
@@ -96,6 +109,11 @@ export default {
       if (!this.isProcessingActive) {
         this.$refs.applySkillSetupStepper.open();
       } else {
+        this.eventBus.emit("toast", {
+          title: "LLMentor Grading In Progress",
+          message: "Preprocessing is currently running. Showing progress...",
+          variant: "info",
+        });
         this.$refs.processStepper.open();
       }
     },
@@ -137,13 +155,53 @@ export default {
     async startPreprocessing(preprocessingData) {
       this.$refs.applySkillSetupStepper.close();
       
+      this.isWaitingForData = true;
+      
       this.$socket.emit("serviceCommand", {
         service: "BackgroundTaskService",
         command: "startPreprocessing",
         data: preprocessingData
       });
       
+      this.eventBus.emit("toast", {
+        title: "LLMentor Grading Started",
+        message: "Preprocessing has been initiated. The progress modal will open automatically.",
+        variant: "info",
+        autohide: true,
+        delay: 5000
+      });
+      
+      setTimeout(() => {
+        this.checkAndOpenProcessStepper();
+      }, 1000);
+    },
+    
+    async checkAndOpenProcessStepper() {
+      await this.fetchBackgroundTaskState();
+      if (this.isProcessingActive) {
+        this.autoOpenProcessStepper();
+      } else if (this.isWaitingForData) {
+        setTimeout(() => {
+          this.checkAndOpenProcessStepper();
+        }, 2000);
+      }
+    },
+    
+    autoOpenProcessStepper() {
+      this.isAutoOpened = true;
       this.$refs.processStepper.open();
+      
+      this.eventBus.emit("toast", {
+        title: "LLMentor Grading In Progress",
+        message: "Preprocessing is now running. Progress shown in the modal.",
+        variant: "success",
+      });
+    },
+    
+    openProcessStepperIfActive() {
+      if (this.isProcessingActive && !this.isAutoOpened) {
+        this.autoOpenProcessStepper();
+      }
     },
   },
 };
