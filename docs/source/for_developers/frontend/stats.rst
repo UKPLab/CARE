@@ -31,6 +31,7 @@ generate trace data from all logged interactions.
 
     Statistics are only logged if the user has agreed to the data collection during registration!
     If the user has not agreed, we do not log any statistics. This is ensured by the backend!
+    Admins can configure consent defaults in :doc:`../examples/settings`.
     But we also want to reduce the network traffic and the load on the backend, so make sure you check the `acceptStats` flag!
 
 You can inject the `acceptStats` variable into any component by using:

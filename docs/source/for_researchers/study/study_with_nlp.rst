@@ -1,3 +1,5 @@
+.. _ruhr-uni-bochum-project:
+
 Revision Workflow Study Example
 -------------------------------
 

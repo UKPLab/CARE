@@ -15,9 +15,9 @@ The CARE system architecture follows a classical client-server approach split in
     * backend (app/logic)
     * external data services (data).
 
-The frontend is realized as a monolithic Vue3.js application running in the browser of the clients, communicating with the backend via websockets and updating data.
+The frontend is realized as a monolithic Vue3.js application running in the browser of the clients, communicating with the backend via :doc:`websockets <../for_developers/backend/socket>` and updating data.
 The backend itself runs as an express server that listens to the clients and forwards data and service requests.
-The last tier consists the database as the key component for persistent data and external services such as the NLP-Service enabling AI-assistance.
+The last tier consists the :doc:`database <../for_developers/backend/database>` as the key component for persistent data and external services such as the NLP-Service enabling AI-assistance.
 
 The code is structured accordingly:
 
@@ -47,16 +47,18 @@ The frontend essentially consists of three major views:
     1. the landing page (login and register view)
     2. the dashboard (connecting all other views)
     3. the annotator (view for annotating documents)
+    4. the editor (view for editing documents)
+    5. the studies including study dashboard and study sessions (view for managing and using user studies)
 
-All management functionality is realized within the dashboard.
-If you intend to extend CARE, you usually add new components here.
-The annotator includes the functionality to work with the document (e.g. sidebar showing comments).
-If you want to add new document features, you would usually extend the annotator.
+All management functionality is realized within the :doc:`dashboard <../for_developers/frontend/components/dashboard>`.
+If you intend to extend CARE, you usually add new :doc:`components <../for_developers/frontend/components/components>` here.
+The :doc:`annotator <../for_developers/frontend/components/annotator>` includes the functionality to work with the document (e.g. sidebar showing comments).
+If you want to add new document features, you would usually extend the :doc:`annotator <../for_developers/frontend/components/annotator>`.
 
 Structurally, the frontend architecture is made up of the following base components:
     * Vuex Store (data management),
     * Vue Router (view navigation),
-    * Socket.IO (communication through websockets),
+    * Socket.IO (communication through :doc:`websockets <../for_developers/backend/socket>`),
     * and the actual visual components (presentation)
 
 The Backend
@@ -64,9 +66,9 @@ The Backend
 The backend consists of
 
     1. the actual webserver (connecting all parts)
-    2. the database connection (for DB interaction and management)
+    2. the :doc:`database <../for_developers/backend/database>` connection (for DB interaction and management)
     3. the REST interface (client authentication)
-    4. the websocket interface (client communication)
+    4. the :doc:`websocket <../for_developers/backend/socket>` interface (client communication)
     5. the external services (e.g. broker)
 
 The webserver hosts the actual backend logic and provides the different communication interfaces.
@@ -85,24 +87,24 @@ Architecture Overview
 Paradigms
 ---------
 Both frontend and backend follow an event-based design principle.
-All communication takes place via websockets, to avoids busy waiting of typical polling behaviour,
-reduces overhead and makes development for CARE lean and easy.
-The message format follows a standardized naming schema.
+All communication takes place via :doc:`websocket <../for_developers/backend/socket>`, to avoids busy waiting of typical polling behaviour,
+reduces overhead and makes development for CARE lean and easy. (Click here to see :doc:`data transfer <../for_developers/backend/data_transfer>` in more detail.)
+The message format follows a standardized :doc:`naming schema <../for_developers/basics/conventions>`.
 
 **Frontend**
-The frontend is mostly realized using a set of base components which ensure a consistent design and easy and quick extensibility.
-All components are realized in Boostrap 5 to ensure a responsive design with wide browser support.
+The frontend is mostly realized using a set of :doc:`base <../for_developers/frontend/basic/basic>` components which ensure a consistent design and easy and quick extensibility.
+All components are realized in `Bootstrap <https://getbootstrap.com/>`_ 5 to ensure a responsive design with wide browser support.
 
 **Backend**
-The backend defines a set of standard classes that make the extension of sockets, services and the database very quick.
-Rights and access management is kept lean; enforcing access rules lies in the responsibility of the backend.
+The backend defines a set of standard classes that make the extension of :doc:`websockets <../for_developers/backend/socket>`, :doc:`services <../for_developers/backend/service>` and the :doc:`database <../for_developers/backend/database>` very quick.
+:doc:`Rights and access management <../for_developers/backend/right_management>` is kept lean; enforcing access rules lies in the responsibility of the backend.
 
 **Documentation**
 The comprehensive documentation should enable usage and extension of the tool.
 The documentation has to be kept up-to-date at all times;
 all components, classes and methods are documented;
-the socket API documentation is continuously updated.
+the :doc:`socket API <../for_developers/backend/socket>` documentation is continuously updated.
 
 **Testing**
-Automatic testing is focused on the backend using the provided test framework.
+Automatic testing is focused on the backend using the provided :doc:`test <../for_developers/backend/testing>` framework.
 The frontend undergoes rigorous manual testing before providing features on the main branch of the tool.

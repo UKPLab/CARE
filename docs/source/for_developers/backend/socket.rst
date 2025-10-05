@@ -29,6 +29,9 @@ and receive via the `socket` attribute are always specific to this *one* client 
 state transfer between different connections or broadcasting possible. However, some of this functionality is made
 available through the `server` object -- we address these options in the `Extending a Socket`_ section below.
 
+.. seealso::
+   For the generic create/update entry point used by the frontend, see
+   :ref:`AppDataUpdate Socket <appdataupdate-socket>`.
 
 Creating a Socket
 -----------------
@@ -266,6 +269,10 @@ The ``createSocket`` method allows you to define a socket event with built-in su
 
 See a full example of the usage of createSocket in :ref:`document-create-example`.
 
+.. seealso::
+   How DB writes propagate to the UI (transactions, commit broadcasts, Vuex refresh):
+   :doc:`Data Transfer <data_transfer>` — especially :ref:`Data Flow <data-flow>`.
+
 .. _socket-db-transaction:
 
 Transaction Usage
@@ -433,6 +440,10 @@ In these cases, you can register a manual `afterCommit` hook on the transaction 
 
     In normal use cases (e.g., with ``autoTable = true``), **you do not need to use `afterCommit()` or manually emit refresh events**.  
     CARE tracks database changes automatically and handles frontend updates for you.
+
+.. seealso::
+   When using ``autoTable`` models, commit-time change tracking and ``<table>Refresh`` emits are automatic.
+   Details in :ref:`Store Updates & <table>Refresh> Events <table-refresh-events>`.
 
 .. _document-create-example:
 

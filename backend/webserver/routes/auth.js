@@ -7,6 +7,7 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
+const { generateToken, decodeToken } = require('../../utils/auth');
 
 /**
  * Route for user management
@@ -15,10 +16,71 @@ const passport = require('passport');
 module.exports = function (server) {
 
     /**
+     * Helper function to get the base URL from settings
+     */
+    async function getBaseUrl() {
+        const baseUrl = await server.db.models['setting'].get("system.baseUrl");
+        return baseUrl || "localhost:3000"; // fallback to default if not set
+    }
+
+    /**
+     * Helper function to get password reset token expiry from settings
+     */
+    async function getPasswordResetTokenExpiry() {
+        return await server.db.models['setting'].get("system.auth.tokenExpiry.passwordReset") || 1; // fallback to 1 hour if not set
+    }
+
+    /**
+     * Helper function to get email verification token expiry from settings
+     */
+    async function getEmailVerificationTokenExpiry() {
+        return await server.db.models['setting'].get("system.auth.tokenExpiry.emailVerification") || 24; // fallback to 24 hours if not set
+    }
+
+    /**
+     * Helper function to get password reset email rate limit from settings
+     */
+    async function getPasswordResetRateLimit() {
+        return await server.db.models['setting'].get("app.login.passwordResetRateLimit") || 5; // fallback to 5 minutes if not set
+    }
+
+    /**
+     * Helper function to get email verification rate limit from settings
+     */
+    async function getEmailVerificationRateLimit() {
+        return await server.db.models['setting'].get("app.register.emailVerificationRateLimit") || 2; // fallback to 2 minutes if not set
+    }
+
+    /**
+     * Rate limiting helper function to prevent email spam
+     * @param {Object} user - The user object
+     * @param {string} emailType - Type of email ('passwordReset' or 'verification')
+     * @param {number} rateLimitMinutes - Rate limit in minutes
+     * @returns {Object} - {allowed: boolean, remainingTime?: number}
+     */
+    function checkEmailRateLimit(user, emailType, rateLimitMinutes) {
+        const now = new Date();
+        const lastSentField = emailType === 'passwordReset' ? 'lastPasswordResetEmailSent' : 'lastVerificationEmailSent';
+        
+        if (user[lastSentField]) {
+            const timeDiff = (now - new Date(user[lastSentField])) / (1000 * 60); // in minutes
+            if (timeDiff < rateLimitMinutes) {
+                const remainingTime = Math.ceil(rateLimitMinutes - timeDiff);
+                return {
+                    allowed: false,
+                    remainingTime: remainingTime
+                };
+            }
+        }
+        
+        return { allowed: true };
+    }
+
+    /**
      * Login Procedure
      */
     server.app.post('/auth/login', function (req, res, next) {
-        passport.authenticate('local', function (err, user, info) {
+        passport.authenticate('local', async function (err, user, info) {
             if (err) {
                 server.logger.error("Login failed: " + err);
                 return res.status(500).send("Failed to login");
@@ -28,6 +90,17 @@ module.exports = function (server) {
                     JSON.stringify(info));
                 return res.status(401).send(info);
             }
+            
+            // Check if email verification is required and if user has verified their email
+            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            if (emailVerificationEnabled && !user.emailVerified) {
+                return res.status(401).json({
+                    message: "Please verify your email address before logging in.",
+                    emailNotVerified: true,
+                    email: user.email
+                });
+            }
+            
             req.logIn(user, async function (err) {
                 if (err) {
                     return next(err);
@@ -130,7 +203,11 @@ module.exports = function (server) {
         let transaction;
         try {
             transaction = await server.db.models['user'].sequelize.transaction();
-            await server.db.models['user'].add({
+            
+            // Check if email verification is enabled
+            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            
+            const userData = {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 userName: data.userName,
@@ -138,14 +215,302 @@ module.exports = function (server) {
                 email: data.email,
                 acceptTerms: data.acceptTerms,
                 acceptStats: data.acceptStats,
-                acceptedAt: data.acceptedAt
-            }, {transaction});
-            await transaction.commit();
-            res.status(201).send("User was successfully created");
+                acceptedAt: data.acceptedAt,
+            };
+            const newUser = await server.db.models['user'].add(userData, {transaction: transaction});
+            // Generate email verification token if verification is enabled
+            if (emailVerificationEnabled) {
+                const tokenExpiry = await getEmailVerificationTokenExpiry();
+                const verificationToken = generateToken(tokenExpiry);
+                userData.emailVerificationToken = verificationToken;
+                await server.db.models['user'].update(
+                    {emailVerificationToken: verificationToken}, 
+                    {where: {id: newUser.id}, transaction}
+                );
+                const baseUrl = await getBaseUrl();
+                const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
+                await server.sendMail(
+                    data.email, 
+                    "Welcome to CARE - Please verify your email address", 
+                    `Welcome to CARE, ${data.userName}! You've successfully registered a new account.
+
+To complete your registration, please verify your email address by clicking the link below:
+${verificationLink}
+
+This link will expire in ${tokenExpiry} hours. If you didn't create a CARE account, you can safely ignore this email.
+
+Thanks,
+The CARE Team`
+                );
+                await transaction.commit();
+                res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true}); // TODO: Adjust link as needed   
+            } else {
+                await transaction.commit();
+                res.status(201).send("User was successfully created");
+            }
         } catch (err) {
             await transaction.rollback();
             server.logger.error("Cannot create user:", err);
             res.status(400).json({message: "Failed to create user", error: err.message});
         }
     });
-};
+
+    server.app.post('/auth/request-password-reset', async function (req, res) {
+        const {email} = req.body;
+
+        if ( await server.db.models['setting'].get("app.login.forgotPassword") !== "true") {
+            return res.status(400).json({message: "Password reset is disabled."});
+        }
+        if (!email) {
+            return res.status(400).json({message: "Please provide an email."});
+        }
+        try {
+            
+            const user = await server.db.models['user'].findOne({where: {email: email}});
+            if (!user) {
+                return res.status(401).json({message: "User with this email does not exist."});
+            }
+            
+            // Rate limiting: Check if a password reset email was sent recently
+            const RATE_LIMIT_MINUTES = await getPasswordResetRateLimit();
+            const rateLimitCheck = checkEmailRateLimit(user, 'passwordReset', RATE_LIMIT_MINUTES);
+            if (!rateLimitCheck.allowed) {
+                return res.status(400).json({
+                    message: `Please wait ${rateLimitCheck.remainingTime} minute(s) before requesting another password reset email.`
+                });
+            }
+            
+            const now = new Date();
+            
+            // Generate token with encoded expiry from settings
+            const tokenExpiry = await getPasswordResetTokenExpiry();
+            const resetToken = generateToken(tokenExpiry);
+            
+            // Store the full token and timestamp in the database
+            user.resetToken = resetToken;
+            user.lastPasswordResetEmailSent = now;
+            await user.save();
+            
+            // Send email with the full encoded token
+            const baseUrl = await getBaseUrl();
+            const resetLink = `http://${baseUrl}/reset-password?token=${resetToken}`;
+            await server.sendMail(user.email, "CARE Password Reset Request", `Hello ${user.userName},
+
+We received a request to reset the password for your CARE account.
+
+To set a new password, please click the link below:
+${resetLink}
+
+This link will expire in ${tokenExpiry} hours. If you didn't request a password reset, you can safely ignore this email and your account will remain secure.
+
+Thanks,
+The CARE Team`);
+            return res.status(200).json({message: "A password reset link has been sent."});
+        } catch (err) {
+            server.logger.error("Failed to find user:", err);
+            return res.status(500).json({message: "Internal server error"});
+        }
+    });
+
+    server.app.post('/auth/reset-password', async function (req, res) {
+        const {token, newPassword} = req.body;
+        if(await server.db.models['setting'].get("app.login.forgotPassword") !== "true") {
+            return res.status(400).json({message: "Password reset is disabled."});
+        }
+        if (!token || !newPassword) {
+            return res.status(400).json({message: "Token and new password are required."});
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({message: "Password does not meet requirements."});
+        }
+        try {
+            // Decode the token and check expiry
+            const decoded = decodeToken(token);
+            
+            if (!decoded.isValid) {
+                return res.status(400).json({message: "Invalid token format."});
+            }
+            
+            if (decoded.expired) {
+                return res.status(400).json({message: "Token has expired."});
+            }
+            
+            // Find user by the full token stored in database
+            const user = await server.db.models['user'].findOne({where: {resetToken: token}});
+            if (!user) {
+                return res.status(400).json({message: "Invalid token."});
+            }
+            
+            // Reset password using the user model method and clear token
+            await server.db.models['user'].resetUserPwd(user.id, newPassword);
+            await server.db.models['user'].update({resetToken: null}, {where: {id: user.id}});
+            await server.sendMail(user.email, "CARE Password Successfully Reset", `Hello ${user.userName},
+
+Your CARE account password has been successfully reset.
+
+If you initiated this password change, you can now log in with your new password. If you didn't request this password reset, please contact support immediately as your account may have been compromised.
+
+Thanks,
+The CARE Team`);
+            return res.status(200).json({message: "Password has been reset successfully."});
+        } catch (err) {
+            server.logger.error("Failed to reset password:", err);
+            return res.status(500).json({message: "Internal server error"});
+        }   
+    });
+
+    server.app.get('/auth/check-reset-token', async function (req, res) {
+        const {token} = req.query;
+        if (!token) {
+            return res.status(400).json({message: "Token is required."});
+        }
+        try {
+            // Decode and validate token format/expiry
+            const decoded = decodeToken(token);
+            if (!decoded.isValid) {
+                return res.status(400).json({message: "Invalid token format."});
+            }
+            if (decoded.expired) {
+                return res.status(400).json({message: "Token has expired."});
+            }
+            
+            // Check if token exists in database
+            const user = await server.db.models['user'].findOne({
+                where: {resetToken: token}
+            });
+            if (!user) {
+                return res.status(404).json({message: "Token not found."});
+            }
+            
+            return res.status(200).json({
+                message: "Token is valid.", 
+                expiryTime: decoded.expiryTime
+            });
+        } catch (error) {
+            server.logger.error("Failed to check reset token:", error);
+            return res.status(500).json({message: "Internal server error"});
+        }
+    });
+
+    /**
+     * Email Verification Route
+     */
+    server.app.get('/verify-email', async function (req, res) {
+        const {token} = req.query;
+              
+        if(await server.db.models['setting'].get("app.register.emailVerification") !== "true") {
+            return res.status(400).send({message:"Email verification is disabled."});
+        }
+        if (!token) {
+            return res.status(400).send({message:"Missing token."});
+        }
+        
+        try {
+            // Decode and validate token
+            const decoded = decodeToken(token);
+            
+            if (!decoded.isValid) {
+                return res.status(400).send({message:"Invalid token format."});
+            }
+            
+            if (decoded.expired) {
+                return res.status(400).send({message:"Token has expired."});
+            }
+            
+            // Find user by verification token
+            const user = await server.db.models['user'].findOne({
+                where: {emailVerificationToken: token}
+            });
+            
+            if (!user) {
+                return res.status(400).send({message:"Invalid token."});
+            }
+
+            
+            // Mark email as verified and clear token
+            await server.db.models['user'].update(
+                {emailVerified: true, emailVerificationToken: null},
+                {where: {id: user.id}}
+            );
+            // Redirect to login page with success message
+            return res.status(200).send({message:"Email successfully verified. You can now log in."});
+            
+        } catch (error) {
+            server.logger.error("Failed to verify email:", error);
+            return res.status(500).send({message:"Internal server error"});
+        }
+    });
+
+    /**
+     * Resend Email Verification Route
+     */
+    server.app.post('/auth/resend-verification', async function (req, res) {
+        const {email} = req.body;
+        if (!email) {
+            return res.status(400).json({message: "Email address is required."});
+        }
+        
+        try {
+            // Check if email verification is enabled
+            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            if (!emailVerificationEnabled) {
+                return res.status(400).json({message: "Email verification is disabled."});
+            }
+            
+            // Find user by email
+            const user = await server.db.models['user'].findOne({where: {email: email}});
+            if (!user) {
+                return res.status(400).json({message: "User with this email does not exist."});
+            }
+            
+            // Check if already verified
+            if (user.emailVerified) {
+                return res.status(400).json({message: "Email address is already verified."});
+            }
+            
+            // Rate limiting: Check if a verification email was sent recently
+            const RATE_LIMIT_MINUTES = await getEmailVerificationRateLimit();
+            const rateLimitCheck = checkEmailRateLimit(user, 'verification', RATE_LIMIT_MINUTES);
+            if (!rateLimitCheck.allowed) {
+                return res.status(400).json({
+                    message: `Please wait ${rateLimitCheck.remainingTime} minute(s) before requesting another verification email.`
+                });
+            }
+            
+            const now = new Date();
+            
+            // Generate new verification token
+            const tokenExpiry = await getEmailVerificationTokenExpiry();
+            const verificationToken = generateToken(tokenExpiry);
+            
+            // Update user with new token and timestamp
+            await server.db.models['user'].update(
+                {emailVerificationToken: verificationToken, lastVerificationEmailSent: now},
+                {where: {id: user.id}}
+            );
+            
+            // Send verification email
+            const baseUrl = await getBaseUrl();
+            const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
+            await server.sendMail(
+                email,
+                "CARE - Please verify your email address",
+                `Welcome back to CARE, ${user.userName}!
+
+To complete your email verification, please click the link below:
+${verificationLink}
+
+This link will expire in ${tokenExpiry} hours. If you didn't request this verification email, you can safely ignore this email.
+
+Thanks,
+The CARE Team`
+            );
+            
+            return res.status(200).json({message: "Verification email has been sent."});
+            
+        } catch (error) {
+            server.logger.error("Failed to resend verification email:", error);
+            return res.status(500).json({message: "Internal server error"});
+        }
+    });
+}

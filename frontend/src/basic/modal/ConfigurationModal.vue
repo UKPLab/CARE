@@ -12,7 +12,7 @@
     <StepperModal
       ref="configurationStepper"
       name="configurationStepper"
-      :steps="[{ title: 'Services' }, { title: 'Placeholders' }]"
+      :steps="[{ title: 'Services' }, { title: 'Placeholders' }, { title: 'General' }]"
       :validation="stepValid"
       submit-text="Save Configuration"
       @step-change="handleStepChange"
@@ -135,6 +135,65 @@
           <p>No placeholders found in the document.</p>
         </div>
       </template>
+      <!-- Step 3: General Settings -->
+      <template #step-3>
+        <div v-if="generalSettings.length">
+          <div class="general-settings">
+            <h6 class="text-secondary mb-3">General Configuration Settings</h6>
+            <div
+              v-for="(setting, index) in generalSettings"
+              :key="index"
+              class="setting-item mb-4 p-3 border rounded"
+            >
+              <label class="form-label fw-bold">{{ setting.label }}</label>
+              <div v-if="setting.type === 'select'" class="mb-2">
+                <FormSelect
+                  v-model="generalFormData[setting.name]"
+                  :options="{ options: setting.options }"
+                />
+              </div>
+              <div v-else-if="setting.type === 'text'" class="mb-2">
+                <input
+                  v-model="generalFormData[setting.name]"
+                  type="text"
+                  class="form-control"
+                  :placeholder="setting.label"
+                />
+              </div>
+              <div v-else-if="setting.type === 'number'" class="mb-2">
+                <input
+                  v-model="generalFormData[setting.name]"
+                  type="number"
+                  class="form-control"
+                  :placeholder="setting.label"
+                />
+              </div>
+              <div v-else-if="setting.type === 'checkbox'" class="mb-2">
+                <div class="form-check">
+                  <input
+                    v-model="generalFormData[setting.name]"
+                    type="checkbox"
+                    class="form-check-input"
+                    :id="'setting-' + setting.name"
+                  />
+                  <label class="form-check-label" :for="'setting-' + setting.name">
+                    {{ setting.label }}
+                  </label>
+                </div>
+              </div>
+              <small v-if="setting.help" class="form-text text-muted">
+                {{ setting.help }}
+              </small>
+            </div>
+          </div>
+        </div>
+        <div
+          v-else
+          class="alert alert-info"
+        >
+          <p>No general settings found for this step.</p>
+        </div>
+      </template>
     </StepperModal>
   </div>
 </template>
@@ -158,7 +217,12 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, FormSelect, SkillSelector, InputMap },
+  components: {
+    FormSelect,
+    StepperModal, 
+    SkillSelector, 
+    InputMap 
+  },
   props: {
     modelValue: {
       type: Object,
@@ -201,25 +265,38 @@ export default {
       selectedSkills: [],
       shortPreview: "",
       isUpdateMode: false,
+      inputMappings: [],
+      generalFormData: {},
     };
   },
   computed: {
     stepValid() {
       return [
-        // Step 1: Check if all services have skill name and data input
-        this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
-        // Step 2: Check if all placeholders have non-empty string input
-        this.placeholderFormData.every((data) => {
+        // Step 1: Check if all services have skill name and data input (or no services required)
+        !this.stepConfig?.services?.length || this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
+        // Step 2: Check if all placeholders have non-empty string input (or no placeholders)
+        !this.placeholders.length || this.placeholderFormData.every((data) => {
           if (data.type === this.placeholderType.comparison) {
             return data.dataInput[0] && data.dataInput[1];
           }
           return !!data.dataInput;
+        }),
+        // Step 3: Check if all required general settings are filled (or no settings)
+        !this.generalSettings.length || this.generalSettings.every((setting) => {
+          if (setting.required) {
+            const value = this.generalFormData[setting.name];
+            return value !== null && value !== undefined && value !== '';
+          }
+          return true;
         }),
       ];
     },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
+    },
+    generalSettings() {
+      return this.getSettingsForStep(this.studyStepId);
     },
   },
   watch: {
@@ -260,7 +337,6 @@ export default {
     },
     initializeModal() {
       this.stepConfig = this.modelValue || {};
-
       // Initialize services
       if (this.stepConfig?.services?.length) {
         this.selectedSkills = this.stepConfig.services.map((service) => {
@@ -280,6 +356,32 @@ export default {
       } else {
         this.selectedSkills = [];
       }
+
+      // Initialize general settings
+      this.initializeGeneralSettings();
+    },
+    initializeGeneralSettings() {
+      const formData = {};
+      
+      if (this.generalSettings.length) {
+        this.generalSettings.forEach((setting) => {
+          // Check if we have existing data (update mode)
+          if (this.isUpdateMode && this.stepConfig.settings && this.stepConfig.settings[setting.name] !== undefined) {
+            formData[setting.name] = this.stepConfig.settings[setting.name];
+          } else {
+            // Use default value or appropriate initial value based on type
+            if (setting.type === 'checkbox') {
+              formData[setting.name] = setting.default || false;
+            } else if (setting.type === 'select') {
+              formData[setting.name] = setting.default || (setting.options && setting.options[0] ? setting.options[0].value : '');
+            } else {
+              formData[setting.name] = setting.default || '';
+            }
+          }
+        });
+      }
+      
+      this.generalFormData = formData;
     },
     fetchDocument() {
       if (!this.documentId || !this.studyStepId) return;
@@ -362,6 +464,10 @@ export default {
 
       const availableDataSources = this.getSourcesUpToCurrentStep(this.studyStepId);
       return availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
+    },
+    getSettingsForStep(stepId) {
+      const stepConfig = this.workflowSteps.find((step) => step.id === stepId);
+      return stepConfig ? stepConfig.configuration.settings || [] : [];
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
@@ -471,6 +577,7 @@ export default {
           chart: this.formatPlaceholder(this.placeholderType.chart),
           comparison: this.formatPlaceholder(this.placeholderType.comparison),
         },
+        settings: this.generalFormData,
       };
       this.$emit("update:modelValue", configData);
       this.$refs.configurationStepper.close();

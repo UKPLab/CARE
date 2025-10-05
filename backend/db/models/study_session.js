@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const SequelizeSimpleCache = require("sequelize-simple-cache");
 
 module.exports = (sequelize, DataTypes) => {
     class StudySession extends MetaModel {
@@ -190,7 +191,14 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             }
-        }
+        },
+        indexes: [
+            {
+            unique: false,
+            fields: ["userId", "studyId"]
+            }
+        ]
     });
-    return StudySession;
+    StudySession.cache = new SequelizeSimpleCache({study_session: {limit: 50, ttl: false}});
+    return StudySession.cache.init(StudySession);
 };

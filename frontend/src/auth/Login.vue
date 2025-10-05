@@ -91,6 +91,11 @@
                   class="btn btn-link"
                   @click="login_guest()"
               >Login as Guest</a>
+              <a
+                v-if="showForgotPassword"
+                class="btn btn-link"
+                @click="$refs.forgotPasswordModal.open()"
+              >Forgot Password?</a>
             </div>
           </div>
         </div>
@@ -125,6 +130,12 @@
       </div>
     </div>
   </form>
+
+  <!-- Forgot Password Modal Component -->
+  <ForgotPasswordModal ref="forgotPasswordModal" />
+
+  <!-- Email Verification Modal Component -->
+  <EmailVerificationModal ref="emailVerificationModal" />
 </template>
 
 <script>
@@ -135,17 +146,21 @@
  *
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
-import IconAsset from "@/basic/icons/IconAsset.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
+import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
+import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthLogin",
-  components: {IconAsset},
+  components: {IconAsset, ForgotPasswordModal, EmailVerificationModal},
   data() {
     return {
       showError: false,
       errorMessage: "",
+      showSuccess: false,
+      successMessage: "",
       formData: {
         username: "",
         password: ""
@@ -178,6 +193,9 @@ export default {
     showProject() {
       return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
     },
+    showForgotPassword() {
+      return window.config['app.login.forgotPassword'] === 'true';
+    },
     validUsername() {
       return this.formData.username !== "";
     },
@@ -191,7 +209,20 @@ export default {
   beforeMount() {
     this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
   },
+  mounted() {
+    // Check for query parameters and show appropriate toasts
+    // Use nextTick to ensure the component is fully mounted and eventBus is available
+    this.$nextTick(() => {
+      this.handleQueryParams();
+    });
+  },
   methods: {
+    handleQueryParams() {
+      if (this.$route.query.token) {
+        this.verifyEmail(this.$route.query.token);
+      }
+      this.$router.replace({ name: this.$route.name });
+    },
     checkVal(key) {
       this.validity[key] = true;
     },
@@ -207,8 +238,10 @@ export default {
       try {
         await this.login({username: this.formData.username, password: this.formData.password})
         {
+
           await this.$router.go(0);
           this.showError = false;
+
         }
       } catch (error) {
         this.showError = true;
@@ -239,8 +272,48 @@ export default {
             },
             withCredentials: true
           });
-      if (response.status === 401) throw response.data.message
+      if (response.status === 401) {
+        // Check if the error is due to unverified email
+        if (response.data.emailNotVerified) {
+          this.showEmailVerificationModal(response.data.email);
+        }
+        throw response.data.message;
+      }
       await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
+    },
+
+    showEmailVerificationModal(email) {
+      this.$refs.emailVerificationModal.open(email);
+    },
+    async verifyEmail(token) {
+      try {
+        const response = await axios.get(getServerURL() + '/verify-email?token=' + token,
+          {
+            validateStatus: function (status) {
+              return status === 200 || status === 400 || status === 500;
+            },
+          }
+        );
+        if (response.status === 200) {
+          this.eventBus.emit("toast", {
+            title: "Email Verified",
+            message: response.data.message || "Your email has been successfully verified. You can now log in.",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Email Verification Error",
+            message: response.data.message || "Failed to verify email.",
+            variant: "danger",
+          });
+        }
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: "Email Verification Error",
+          message: "Failed to verify email. Please try again later.",
+          variant: "danger",
+        });
+      }
     },
 
   }

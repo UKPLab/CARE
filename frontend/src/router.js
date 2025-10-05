@@ -40,6 +40,12 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
+        path: "/reset-password/:token?",
+        name: "reset-password",
+        component: () => import("@/auth/ResetPassword.vue"),
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
+    },
+    {
         path: "/document/:documentHash",
         component: () => import('@/components/Document.vue'),
         props: true,
