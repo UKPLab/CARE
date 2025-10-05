@@ -40,7 +40,7 @@
           Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
         </div>
         <div class="mt-2 text-muted">
-          Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
+          Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
         </div>
 
         <h6 class="mt-4">Submissions in Queue</h6>
@@ -179,9 +179,10 @@ export default {
     estimatedTimePerRequest() {
       const stats = this.getProcessingStats();
       if (!stats) {
-        return null;
+        return "Calculating...";
       }
-      return stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
+      const timeInSeconds = stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
+      return timeInSeconds ? this.formatDurationSeconds(timeInSeconds) : "Calculating...";
     },
   },
   watch: {

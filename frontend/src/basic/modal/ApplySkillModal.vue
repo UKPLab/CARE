@@ -3,6 +3,7 @@
     <ApplySkillSetupStepper
       v-if="!isProcessingActive"
       ref="applySkillSetupStepper"
+      @start-preprocessing="startPreprocessing"
     />
 
     <ApplySkillProcessStepper
@@ -99,6 +100,10 @@ export default {
       }
     },
     close() {
+      this.stopPolling();
+      this.isAutoOpened = false;
+      this.isWaitingForData = false;
+      
       if (!this.isProcessingActive) {
         this.$refs.applySkillSetupStepper.close();
       } else {
@@ -128,6 +133,17 @@ export default {
           });
         }
       });
+    },
+    async startPreprocessing(preprocessingData) {
+      this.$refs.applySkillSetupStepper.close();
+      
+      this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "startPreprocessing",
+        data: preprocessingData
+      });
+      
+      this.$refs.processStepper.open();
     },
   },
 };

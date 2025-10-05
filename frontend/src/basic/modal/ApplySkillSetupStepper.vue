@@ -87,7 +87,7 @@ export default {
   name: "ApplySkillSetup",
   components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm },
   subscribeTable: ["document", "submission", "document_data", "user", "configuration"],
-  emits: ["submit"],
+  emits: ["submit", "start-preprocessing"],
   data() {
     return {
       selectedSkill: '',
@@ -291,13 +291,7 @@ export default {
         baseFiles,
       };
       
-      this.$socket.emit("serviceCommand", {
-        service: "BackgroundTaskService",
-        command: "startPreprocessing",
-        data: preprocessingData
-      });
-      
-      this.close();
+      this.$emit('start-preprocessing', preprocessingData);
     },
   },
 };
