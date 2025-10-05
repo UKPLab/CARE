@@ -25,48 +25,17 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Upsert document data entry - create new or update existing based on composite key
-         * @param {Object} data The data to upsert
-         * @param {number} data.userId User ID
-         * @param {number} data.documentId Document ID (can be null)
-         * @param {number} data.studySessionId Study session ID (can be null)
-         * @param {number} data.studyStepId Study step ID (can be null)
-         * @param {string} data.key The key for the data being stored
-         * @param {any} data.value The value to be stored
-         * @param {Object} [options={}] Sequelize options including transaction
-         * @returns {Promise<object>} The upserted document data instance
+         * Upsert a record based on composite unique key
+         * @param {Object} values - The values to insert or update  
+         * @param {Object} options - Additional options for the upsert operation
+         * @returns {Promise} - The upserted record
          */
-        static async upsert(data, options = {}) {
-            try {
-                const query = `
-                    INSERT INTO document_data ("userId", "documentId", "studySessionId", "studyStepId", "key", "value", "createdAt", "updatedAt")
-                    VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-                    ON CONFLICT (COALESCE("documentId", -1), COALESCE("studySessionId", -1), COALESCE("studyStepId", -1), "key")
-                    DO UPDATE SET 
-                        "userId" = EXCLUDED."userId",
-                        "value" = EXCLUDED."value",
-                        "updatedAt" = NOW()
-                    RETURNING *
-                `;
-                
-                const result = await DocumentData.sequelize.query(query, {
-                    bind: [
-                        data.userId,
-                        data.documentId,
-                        data.studySessionId,
-                        data.studyStepId,
-                        data.key,
-                        JSON.stringify(data.value)
-                    ],
-                    type: DocumentData.sequelize.QueryTypes.SELECT,
-                    transaction: options.transaction
-                });
-                
-                return result[0];
-            } catch (e) {
-                console.log('DocumentData upsert error:', e);
-                throw e;
-            }
+        static async upsert(values, options = {}) {
+            return await super.upsert(values, {
+                ...options,
+                conflictFields: ['documentId', 'studySessionId', 'studyStepId', 'key'],
+                returning: true
+            });
         }
     }
 
@@ -84,11 +53,17 @@ module.exports = (sequelize, DataTypes) => {
             deletedAt: DataTypes.DATE,
         },
         {
-            sequelize: sequelize, modelName: "document_data", tableName: "document_data"
+            sequelize: sequelize, 
+            modelName: "document_data", 
+            tableName: "document_data",
+            indexes: [
+                { 
+                    unique: true,
+                    fields: ['documentId', 'studySessionId', 'studyStepId', 'key'],
+                }
+            ],
         }
     );
 
-    DocumentData.removeAttribute('id');
-    
     return DocumentData;
 };
