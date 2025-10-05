@@ -468,7 +468,7 @@ module.exports = class BackgroundTaskService extends Service {
             
             await Promise.all(
                 Object.keys(resultData).map(key =>
-                    this.server.db.models['document_data'].upsert({
+                    this.server.db.models['document_data'].upsertData({
                         userId: documentSocket.userId,
                         documentId: baseFileToSave,
                         studySessionId: null,

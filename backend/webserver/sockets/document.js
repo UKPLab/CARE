@@ -1030,7 +1030,7 @@ class DocumentSocket extends Socket {
      */
     async saveData(data, options) {
 
-        let documentData = await this.models['document_data'].upsert({
+        let documentData = await this.models['document_data'].upsertData({
             userId: this.userId,
             documentId: data.documentId,
             studySessionId: data.studySessionId,
