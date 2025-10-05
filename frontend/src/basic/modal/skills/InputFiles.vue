@@ -1,30 +1,22 @@
 <template>
   <div class="input-files">
-    <div v-if="fileSelectionParameters.length > 0" class="selection-summary-custom mb-3">
+    <div v-if="tableParam" class="selection-summary-custom mb-3">
       {{ selectionSummary }}
     </div>
     
-    <div v-if="fileSelectionParameters.length > 0" class="mb-3">
-      <div class="mb-3">
-        <label class="form-label">Select files for the parameter:</label>
-        <FormSelect
-          v-model="selectedParameter"
-          :options="parameterOptions"
-          style="max-width: 300px;"
-        />
-      </div>
-      
-      <div v-if="selectedParameter && currentTableData.length > 0" class="mt-3">
+    <div v-if="tableParam" class="mb-3">
+      <div v-if="currentTableData.length > 0" class="mt-3">
         <BasicTable
           :columns="currentTableColumns"
           :data="currentTableData"
           :options="tableOptions"
-          :modelValue="selectedFiles || []"
+          :modelValue="selectedFiles"
           @update:modelValue="onFileSelectionChange"
+          :key="tableParam ? tableParam.name : 'no-param'"
         />
       </div>
       
-      <div v-else-if="selectedParameter && currentTableData.length === 0" class="alert alert-info">
+      <div v-else class="alert alert-info">
         No {{ getTableType() }} available for selection.
       </div>
     </div>
@@ -42,12 +34,11 @@
  * 
  * @author Manu Sundar Raj Nandyal
  */
-import FormSelect from "@/basic/form/Select.vue";
 import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "InputFiles",
-  components: { FormSelect, BasicTable },
+  components: { BasicTable },
   subscribeTable: ["document", "submission", "document_data", "user"],
   props: {
     inputMappings: {
@@ -62,7 +53,6 @@ export default {
   emits: ["update:modelValue", "update:valid"],
   data() {
     return {
-      selectedParameter: '',
       selectedFiles: [],
       tableOptions: {
         striped: true,
@@ -78,7 +68,7 @@ export default {
   computed: {
     fileSelectionParameters() {
       const parameters = [];
-      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
+      for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
         if (mapping && mapping.requiresTableSelection) {
           parameters.push({
             name: paramName,
@@ -86,41 +76,26 @@ export default {
             value: mapping.value,
           });
         }
-      });
+      }
       return parameters;
     },
-    isValid() {
-      if (this.fileSelectionParameters.length === 0) return true;
-      
-      return this.fileSelectionParameters.every(param => {
-        const files = this.modelValue[param.name];
-        return files && Array.isArray(files) && files.length > 0;
-      });
+    tableParam() {
+      return this.fileSelectionParameters.length > 0 ? this.fileSelectionParameters[0] : null;
     },
-    parameterOptions() {
-      return {
-        options: this.fileSelectionParameters.map(param => {
-          const hasFiles = this.modelValue[param.name] && 
-                           Array.isArray(this.modelValue[param.name]) && 
-                           this.modelValue[param.name].length > 0;
-          const fileCount = hasFiles ? this.modelValue[param.name].length : 0;
-          const displayName = hasFiles ? `${param.name} (${fileCount} files)` : param.name;
-          
-          return {
-            value: param.name,
-            name: displayName,
-          };
-        }),
-      };
+    isValid() {
+      if (!this.tableParam) return false;
+      
+      const files = this.modelValue[this.tableParam.name];
+      return files && Array.isArray(files) && files.length > 0;
     },
     currentParameterData() {
-      return this.fileSelectionParameters.find(p => p.name === this.selectedParameter);
+      return this.tableParam;
     },
     currentTableType() {
-      return this.currentParameterData?.tableType || '';
+      return this.tableParam?.tableType || '';
     },
     currentTableData() {
-      if (!this.currentParameterData) return [];
+      if (!this.tableParam) return [];
       
       if (this.currentTableType === 'document') {
         return this.documentsData;
@@ -167,33 +142,18 @@ export default {
       );
     },
     selectionSummary() {
-      if (this.fileSelectionParameters.length === 0) {
+      if (!this.tableParam) {
         return '';
       }
       
-      const selectedParams = [];
-      const missingParams = [];
+      const param = this.tableParam;
+      const files = this.modelValue[param.name];
       
-      this.fileSelectionParameters.forEach(param => {
-        const files = this.modelValue[param.name];
-        if (files && Array.isArray(files) && files.length > 0) {
-          selectedParams.push(`${param.name} (${files.length})`);
-        } else {
-          missingParams.push(param.name);
-        }
-      });
-      
-      let summary = '';
-      if (selectedParams.length > 0) {
-        summary += `Files selected for: ${selectedParams.join(', ')}`;
+      if (files && Array.isArray(files) && files.length > 0) {
+        return `Files selected for ${param.name}: ${files.length} file(s)`;
+      } else {
+        return `Please select files for parameter: ${param.name}`;
       }
-      
-      if (missingParams.length > 0) {
-        if (summary) summary += ' • ';
-        summary += `File selection still needed for parameter(s): ${missingParams.join(', ')}`;
-      }
-      
-      return summary || 'No parameters require file selection';
     },
     documentColumns() {
       return [
@@ -255,22 +215,6 @@ export default {
     },
   },
   watch: {
-    selectedParameter: {
-      handler(newParam, oldParam) {
-        if (oldParam && this.selectedFiles.length > 0) {
-          const updatedValue = { ...this.modelValue };
-          updatedValue[oldParam] = this.selectedFiles;
-          this.$emit('update:modelValue', updatedValue);
-        }
-        
-        if (newParam) {
-          this.selectedFiles = this.modelValue[newParam] || [];
-        } else {
-          this.selectedFiles = [];
-        }
-      },
-      immediate: false,
-    },
     isValid: {
       handler(newVal) {
         this.$emit('update:valid', newVal);
@@ -279,26 +223,36 @@ export default {
     },
     modelValue: {
       handler(newValue) {
-        if (this.selectedParameter && newValue && newValue[this.selectedParameter]) {
-          this.selectedFiles = newValue[this.selectedParameter];
+        // Reset selections when modelValue is empty or parameter changed
+        if (!newValue || Object.keys(newValue).length === 0) {
+          this.selectedFiles = [];
+        } else if (this.tableParam && newValue[this.tableParam.name]) {
+          this.selectedFiles = newValue[this.tableParam.name];
+        } else {
+          this.selectedFiles = [];
         }
       },
       deep: true,
       immediate: true,
     },
-    fileSelectionParameters: {
-      handler(newParams) {
-        if (newParams.length > 0 && !this.selectedParameter) {
-          this.selectedParameter = newParams[0].name;
+    tableParam: {
+      handler(newParam, oldParam) {
+        if (oldParam && newParam && oldParam.name !== newParam.name) {
+          this.selectedFiles = [];
+          this.$emit('update:modelValue', {});
+        } else if (newParam && this.modelValue[newParam.name]) {
+          this.selectedFiles = this.modelValue[newParam.name];
+        } else {
+          this.selectedFiles = [];
         }
       },
       immediate: true,
     },
     selectedFiles: {
       handler(newFiles) {
-        if (this.selectedParameter) {
+        if (this.tableParam) {
           const updatedValue = { ...this.modelValue };
-          updatedValue[this.selectedParameter] = newFiles;
+          updatedValue[this.tableParam.name] = newFiles;
           this.$emit('update:modelValue', updatedValue);
         }
       },
@@ -306,9 +260,12 @@ export default {
     },
   },
   mounted() {
-    if (this.selectedParameter && this.modelValue[this.selectedParameter]) {
-      this.selectedFiles = this.modelValue[this.selectedParameter];
+    if (this.tableParam && this.modelValue && this.modelValue[this.tableParam.name]) {
+      this.selectedFiles = this.modelValue[this.tableParam.name];
+    } else {
+      this.selectedFiles = [];
     }
+    this.$emit('update:valid', this.isValid);
   },
   methods: {
     getTableType() {
@@ -316,14 +273,14 @@ export default {
     },
     onFileSelectionChange(files) {
       this.selectedFiles = Array.isArray(files) ? files : [];
-      const updatedValue = { ...this.modelValue };
-      updatedValue[this.selectedParameter] = this.selectedFiles;
       
-      this.$emit('update:modelValue', updatedValue);
-      
-      this.$nextTick(() => {
+      if (this.tableParam) {
+        const updatedValue = { ...this.modelValue };
+        updatedValue[this.tableParam.name] = this.selectedFiles;
         this.$emit('update:modelValue', updatedValue);
-      });
+      } else {
+        this.$emit('update:modelValue', {});
+      }
     },
   },
 };

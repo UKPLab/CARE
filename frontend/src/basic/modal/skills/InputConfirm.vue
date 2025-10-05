@@ -31,10 +31,6 @@
       </ul>
     </div>
     
-    <div v-if="baseFileParameter" class="confirmation-section mb-3">
-      <h6 class="text-primary mb-2">Base File Parameter:</h6>
-      <p class="mb-1">{{ baseFileParameter }}</p>
-    </div>
     
     <div v-if="showBaseFileSelections && hasBaseFileSelections" class="confirmation-section mb-3">
       <h6 class="text-primary mb-2">Base File Selections:</h6>

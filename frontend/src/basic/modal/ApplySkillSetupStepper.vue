@@ -82,11 +82,10 @@ import InputMap from "@/basic/modal/skills/InputMap.vue";
 import InputFiles from "@/basic/modal/skills/InputFiles.vue";
 import InputGroup from "@/basic/modal/skills/InputGroup.vue";
 import InputConfirm from "@/basic/modal/skills/InputConfirm.vue";
-import FormSelect from "@/basic/form/Select.vue";
 
 export default {
   name: "ApplySkillSetup",
-  components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm, FormSelect },
+  components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm },
   subscribeTable: ["document", "submission", "document_data", "user", "configuration"],
   emits: ["submit"],
   data() {
@@ -98,6 +97,9 @@ export default {
       inputFilesValid: false,
       inputGroupValid: false,
       validationDocumentNames: {},
+      hasInteractedWithFiles: false,
+      previousSelectedSkill: '',
+      previousInputMappings: {},
     };
   },
   computed: {
@@ -112,18 +114,6 @@ export default {
           return null;
         }
     },
-    baseFileParameterOptions() {
-      const options = [];
-      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
-        if (mapping && mapping.requiresTableSelection) {
-          options.push({
-            value: paramName,
-            name: `${paramName} (Table : ${mapping.tableType})`,
-          });
-        }
-      });
-      return { options };
-    },
     stepperSteps() {
       const baseSteps = [{ title: 'Select Skill' }, { title: 'Select Files' }];
       if (this.requireValidation) {
@@ -136,10 +126,23 @@ export default {
       if (!this.autoBaseFileParameter || !this.inputMappings[this.autoBaseFileParameter]) return false;
       return this.inputMappings[this.autoBaseFileParameter].tableType === 'submission';
     },
+    hasTableBasedParameter() {
+      return Object.values(this.inputMappings).some(mapping => 
+        mapping && mapping.requiresTableSelection
+      );
+    },
     stepValid() {
-      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings;
-      const hasTableBasedParam = this.autoBaseFileParameter !== null;
-      const step2Valid = hasTableBasedParam && this.inputFilesValid;
+      const step1Valid = !!this.selectedSkill && this.hasValidInputMappings && this.hasTableBasedParameter;
+      
+      const hasFilesSelected = this.hasTableBasedParameter && 
+        this.selectedFiles && 
+        Object.keys(this.selectedFiles).length > 0 &&
+        Object.values(this.selectedFiles).some(files => 
+          Array.isArray(files) && files.length > 0
+        );
+
+      const filesValidState = this.inputFilesValid === true;
+      const step2Valid = this.hasTableBasedParameter && filesValidState && hasFilesSelected && this.hasInteractedWithFiles;
       
       const steps = [step1Valid, step2Valid];
       
@@ -158,19 +161,78 @@ export default {
       return isValid;
     },
   },
-  methods: {
-    getFileSelectionParameters() {
-      const parameters = [];
-      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
-        if (mapping && mapping.requiresTableSelection) {
-          parameters.push(paramName);
+  watch: {
+    selectedSkill: {
+      handler(newSkill, oldSkill) {
+        if (oldSkill && newSkill !== oldSkill) {
+          this.resetFileSelections();
         }
-      });
-      return parameters;
+        this.previousSelectedSkill = newSkill;
+      },
+    },
+    inputMappings: {
+      handler(newMappings, oldMappings) {
+        if (oldMappings && Object.keys(oldMappings).length > 0) {
+          const mappingsChanged = this.hasMappingsChanged(newMappings, oldMappings);
+          if (mappingsChanged) {
+            this.resetFileSelections();
+          }
+        }
+        this.previousInputMappings = JSON.parse(JSON.stringify(newMappings));
+      },
+      deep: true,
+    },
+    selectedFiles: {
+      handler(newFiles) {
+        if (newFiles && Object.keys(newFiles).length > 0) {
+          const hasAnyFiles = Object.values(newFiles).some(files => 
+            Array.isArray(files) && files.length > 0
+          );
+          if (hasAnyFiles) {
+            this.hasInteractedWithFiles = true;
+          }
+        }
+      },
+      deep: true,
+    },
+  },
+  methods: {
+    hasMappingsChanged(newMappings, oldMappings) {
+      const newKeys = Object.keys(newMappings);
+      const oldKeys = Object.keys(oldMappings);
+      
+      if (newKeys.length !== oldKeys.length) {
+        return true;
+      }
+      
+      for (const key of newKeys) {
+        const newMapping = newMappings[key];
+        const oldMapping = oldMappings[key];
+        
+        if (!oldMapping || !newMapping) {
+          return true;
+        }
+        
+        if (newMapping.value !== oldMapping.value || 
+            newMapping.tableType !== oldMapping.tableType ||
+            newMapping.requiresTableSelection !== oldMapping.requiresTableSelection) {
+          return true;
+        }
+      }
+      
+      return false;
+    },    
+    resetFileSelections() {
+      this.selectedFiles = {};
+      this.baseFileSelections = {};
+      this.inputFilesValid = false;
+      this.inputGroupValid = false;
+      this.validationDocumentNames = {};
+      this.hasInteractedWithFiles = false;
     },
     formatSkillParameterMappings() {
       const mappings = {};
-      Object.entries(this.inputMappings).forEach(([paramName, mapping]) => {
+      for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
         if (mapping) {
           if (mapping.requiresTableSelection) {
             const files = this.selectedFiles[paramName] || [];
@@ -186,7 +248,7 @@ export default {
             };
           }
         }
-      });
+      }
       return Object.keys(mappings).length > 0 ? mappings : null;
     },
     formatBaseFiles() {
@@ -195,11 +257,11 @@ export default {
       }
       
       const baseFiles = {};
-      Object.entries(this.baseFileSelections).forEach(([validationDocumentId, selection]) => {
+      for (const [validationDocumentId, selection] of Object.entries(this.baseFileSelections)) {
         if (selection) {
           baseFiles[validationDocumentId] = selection;
         }
-      });
+      }
       
       return Object.keys(baseFiles).length > 0 ? baseFiles : null;
     },
@@ -211,6 +273,7 @@ export default {
       this.inputFilesValid = false;
       this.inputGroupValid = false;
       this.validationDocumentNames = {};
+      this.hasInteractedWithFiles = false;
       this.$refs.applySkillsStepper.open();
     },
     close() {
