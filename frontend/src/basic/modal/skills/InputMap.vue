@@ -32,7 +32,10 @@ export default {
   components: { FormSelect },
   subscribeTable: [{
     table: "configuration",
-    filter: [{key: "type", value: 0}]
+    filter: [
+      {key: "type", value: 0},
+      {key: "hideInFrontend", value: false}
+    ]
   }],
   props: {
     skillName: {
@@ -104,12 +107,14 @@ export default {
       return null;
     },
     configurationSources() {
-      return this.configurationEntries.map(entry => ({
-        value: `config_${entry.id}`,
-        name: entry.name,
-        requiresTableSelection: false,
-        configId: entry.id
-      }));
+      return this.configurationEntries
+        .filter(entry => entry.type === 0 && entry.hideInFrontend === false)
+        .map(entry => ({
+          value: `config_${entry.id}`,
+          name: `<Configuration> ${entry.name}`,
+          requiresTableSelection: false,
+          configId: entry.id
+        }));
     },
   },
   watch: {
