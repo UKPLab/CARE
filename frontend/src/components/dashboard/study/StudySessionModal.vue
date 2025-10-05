@@ -6,7 +6,7 @@
   <BasicModal
     ref="studySessionModal"
     :props="{ studyId: studyId }"
-    lg
+    size="lg"
     name="studySessionModal"
     remove-close
   >

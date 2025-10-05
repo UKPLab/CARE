@@ -158,7 +158,7 @@ import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
-import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API

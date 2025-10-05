@@ -55,6 +55,31 @@ The application should be available at http://localhost:9090
 
     The credentials for the admin user can be also found in the .env file!
 
+Install the mailserver
+----------------------
+
+In the basic configuration, the mailserver uses the localhost host machine as the mail relay.
+
+We test the mail server with a `postfix <https://www.postfix.org/>`_ installation on the host machine.
+Therefore, it is important to allow relaying from the docker network.
+To allow relaying from the docker network, you need to add the following lines to the ``/etc/postfix/main.cf`` file:
+
+.. code-block:: config
+
+    inet_interfaces = all # or specify the interface
+    mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 172.19.0.0/16
+
+Please adapt the IP range to your docker network (check with ``docker network inspect bridge``).
+Then restart postfix with ``sudo systemctl restart postfix``.
+Configure postfix according to your institution's guidelines.
+
+.. note::
+
+    If you want to change the settings (e.g., using an external SMTP server or disable it), you can change the settings in the frontend dashboard under "Settings".
+    If you disable the mail server, make sure you also disable email notifications/verification.
+
+
+
 Updating the Instance and Backing Up the Database
 -------------------------------------------------
 

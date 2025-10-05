@@ -28,7 +28,7 @@
             class="btn"
             @click="(e) => {e.stopPropagation(); toEditMode(true)}"
             title="Edit"
-            v-show="!editMode && !readonly"
+            v-show="!editMode && !readOnly"
         >
           <LoadIcon
               class="me-1"
@@ -40,7 +40,7 @@
             class="btn"
             @click="(e) => {e.stopPropagation(); toEditMode(false)}"
             title="Edit"
-            v-show="editMode && !readonly"
+            v-show="editMode && !readOnly"
         >
           <LoadIcon
               class="me-1"
@@ -85,7 +85,7 @@ export default {
       type: Object,
       required: true
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false
@@ -183,7 +183,7 @@ export default {
     },
     toEditMode(activate) {
       if(activate){
-        this.editMode = !this.readonly;
+        this.editMode = !this.readOnly;
       } else {
         this.editMode = false;
       }

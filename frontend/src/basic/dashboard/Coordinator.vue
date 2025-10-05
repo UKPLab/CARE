@@ -2,7 +2,7 @@
   <BasicModal
     ref="coordinatorModal"
     :props="{ id: id }"
-    lg
+    size="lg"
     name="coordinatorModal"
     @hide="reset"
   >
