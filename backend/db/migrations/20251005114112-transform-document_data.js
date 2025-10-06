@@ -23,10 +23,8 @@ module.exports = {
 
     },
     async down(queryInterface, Sequelize) {
-        // UNIQUE-Constraint entfernen
         await queryInterface.removeConstraint('document_data', 'document_data_conflict_key_uk').catch(() => {
         });
-        // Spalte entfernen
         await queryInterface.sequelize.query(`
             ALTER TABLE "document_data" DROP COLUMN IF EXISTS "conflict_key"
         `);
