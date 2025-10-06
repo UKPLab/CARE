@@ -144,13 +144,13 @@ ifeq ($(OS),Windows_NT)
 	@if exist "backend\node_modules" rmdir /S /Q "backend\node_modules"
 	@if exist "utils\modules\editor-delta-conversion\node_modules" rmdir /S /Q "utils\modules\editor-delta-conversion\node_modules"
 	@if exist "dist" rmdir /S /Q "dist"
-	@for %%F in (files\*) do if "%%~nxF" neq "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" if "%%~nxF" neq "1c784430-6ef0-4958-9451-c1960866135e.json" if "%%~nxF" neq "d8ef6767-39bc-44ea-9a7a-1356d9200871.json" del "%%F"
+	@for %%F in (files*) do if "%%~nxF" neq "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" del "%%F"
 else
 	rm -rf frontend/node_modules
 	rm -rf backend/node_modules
 	rm -rf care/utils/modules/editor-delta-conversion/node_modules
 	rm -rf dist
-	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" ! -name "1c784430-6ef0-4958-9451-c1960866135e.json" ! -name "d8ef6767-39bc-44ea-9a7a-1356d9200871.json" -exec rm {} \;
+	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
 endif
 	@docker compose rm -f -s -v
 	@docker network rm care_default || echo "IGNORING ERROR"
