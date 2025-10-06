@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async upsertData(data, options = {}) {
             return await this.upsert(data, {
-                conflictFields: ["documentId", "studySessionId", "studyStepId", "key"],
+                conflictFields: ['conflict_key'],
                 returning: true,
                 ...options
             });
@@ -57,12 +57,6 @@ module.exports = (sequelize, DataTypes) => {
             sequelize: sequelize, 
             modelName: "document_data", 
             tableName: "document_data",
-            indexes: [
-                { 
-                    unique: true,
-                    fields: ['documentId', 'studySessionId', 'studyStepId', 'key'],
-                }
-            ],
         }
     );
 

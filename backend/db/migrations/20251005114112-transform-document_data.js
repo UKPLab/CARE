@@ -1,19 +1,34 @@
 'use strict';
 
 module.exports = {
-  async up(queryInterface, Sequelize) {
+    async up(queryInterface, Sequelize) {
 
-    await queryInterface.addIndex('document_data', {
-      fields: ['documentId', 'studySessionId', 'studyStepId', 'key'],
-      unique: true,
-      name: 'document_data_composite_unique_key',
-      where: {
-        deleted: false
-      }
-    });
-  },
+        await queryInterface.sequelize.query(`
+            ALTER TABLE "document_data"
+                ADD COLUMN "conflict_key" text
+                    GENERATED ALWAYS AS (
+                        coalesce("userId"::text, '0') || '|' ||
+                        coalesce("documentId"::text, '0') || '|' ||
+                        coalesce("studySessionId"::text, '0') || '|' ||
+                        coalesce("studyStepId"::text, '0') || '|' ||
+                        coalesce("key", '')
+                        ) STORED
+        `);
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('document_data', 'document_data_composite_unique_key');
-  }
+        await queryInterface.addConstraint('document_data', {
+            fields: ['conflict_key'],
+            type: 'unique',
+            name: 'document_data_conflict_key_uk'
+        });
+
+    },
+    async down(queryInterface, Sequelize) {
+        // UNIQUE-Constraint entfernen
+        await queryInterface.removeConstraint('document_data', 'document_data_conflict_key_uk').catch(() => {
+        });
+        // Spalte entfernen
+        await queryInterface.sequelize.query(`
+            ALTER TABLE "document_data" DROP COLUMN IF EXISTS "conflict_key"
+        `);
+    }
 };

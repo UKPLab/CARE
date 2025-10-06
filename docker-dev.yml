@@ -3,6 +3,8 @@ services:
   postgres:
     ports:
       - ${POSTGRES_PORT}:5432
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
   rpc_test:
     ports:
       - ${RPC_TEST_PORT}:8080
