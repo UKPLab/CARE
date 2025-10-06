@@ -3,6 +3,12 @@
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
+        text="Assign Group"
+        title="Assign Group"
+        @click="$refs.assignModal.open()"
+      />
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
         text="Publish Reviews"
         title="Publish Reviews"
         @click="$refs.publishModal.open()"
@@ -40,7 +46,10 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
-  <GradingModal ref="gradingModal" />
+  <AssignModal ref="assignModal" />
+  <GradingModal
+    ref="gradingModal"
+  />
 </template>
 
 <script>
@@ -50,6 +59,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./submission/UploadModal.vue";
 import ImportModal from "./submission/ImportModal.vue";
 import PublishModal from "./submission/PublishModal.vue";
+import AssignModal from "./submission/AssignModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -74,6 +84,7 @@ export default {
     ImportModal,
     ConfirmModal,
     PublishModal,
+    AssignModal,
     Card,
     BasicTable,
     BasicButton,
