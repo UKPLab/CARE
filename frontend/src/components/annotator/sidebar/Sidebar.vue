@@ -16,7 +16,7 @@
         <div id="spacer"></div>
 
         <!-- Edits Section: Only visible when there are edits and no annotations -->
-        <div class="edits-section" v-if="showEdits">
+        <div v-if="showEdits" class="edits-section">
           <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
             <h4 class="group-header">{{ dateCategory }}</h4>
 
@@ -45,7 +45,7 @@
         </div>
 
         <!-- Annotations Section: Always visible unless edits exist -->
-        <ul id="anno-list" class="list-group" v-if="showAnnotations">
+        <ul v-if="showAnnotations" id="anno-list" class="list-group">
           <li v-if="documentComments.length === 0">
             <p class="text-center">No elements</p>
           </li>
@@ -146,6 +146,7 @@ export default {
       default: () => []
     },
   },
+  emits: ["add-edit"],
   data() {
     return {
       width: 400,
@@ -370,7 +371,7 @@ export default {
     },
     async leave() {
       if (this.documentComments.filter(c => c.draft).length > 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           this.$refs.leavePageConf.open(
             "Unsaved Annotations",
             "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
