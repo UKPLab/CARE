@@ -146,7 +146,7 @@ export default {
       default: () => []
     },
   },
-  emits: ["add-edit"],
+  emits: ['add-edit'],
   data() {
     return {
       width: 400,
