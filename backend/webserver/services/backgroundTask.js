@@ -473,7 +473,7 @@ module.exports = class BackgroundTaskService extends Service {
                         documentId: baseFileToSave,
                         studySessionId: null,
                         studyStepId: null,
-                        key: `${item.skillName}_nlpRequest_${key}`,
+                        key: `nlpRequest_${item.skillName}_${key}`,
                         value: resultData[key]
                     }, {}) 
                 )
