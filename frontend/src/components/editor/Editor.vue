@@ -6,9 +6,9 @@
       </div>
       <BasicSidebar
         v-if="!sidebarDisabled"
-        :sidebarConfigs="sidebarConfigs"
         ref="sidebar"
-        :sideBarWidth="350"
+        :sidebar-configs="sidebarConfigs"
+        :side-bar-width="350"
         class="sidebar-container"
         @sidebar-change="handleSidebarChange"
         @sidebar-action="handleSidebarAction">
@@ -55,14 +55,15 @@ import BasicSidebar from "@/basic/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
 import SidebarHistory from "@/components/editor/sidebar/History.vue";
 import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 
 export default {
   name: "EditorView",
   components: {
-    LoadIcon, TopBarButton,
+    SidebarConfigurator,
+    SidebarHistory,
+    LoadIcon,
     BasicSidebar,
     Editor,
   },

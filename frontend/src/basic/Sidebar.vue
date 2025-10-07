@@ -22,15 +22,14 @@
                 class="nav-link d-flex align-items-center"
                 :class="{ 
                   'active': resolvedActiveSlot === slotName,
-                  'disabled': isSingleConfig
                 }"
                 :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                 :title="config.title || ''"
                 :aria-label="config.title || 'Sidebar section'"
                 :tabindex="isSingleConfig ? '-1' : '0'"
                 :aria-disabled="isSingleConfig ? 'true' : 'false'"
-                @click="changeView(slotName)"
                 :disabled="isSingleConfig"
+                @click="changeView(slotName)"
               >
                 <LoadIcon
                   v-if="config.icon"
@@ -151,17 +150,17 @@ export default {
     },
     sidebarWidth: {
       type: Number,
-      required: true,
+      required: false,
       default: 400
     },
     maxSidebarWidth: {
       type: Number,
-      required: true,
+      required: false,
       default: 400
     },
     minSidebarWidth: {
       type: Number,
-      required: true,
+      required: false,
       default: 0
     }
   },

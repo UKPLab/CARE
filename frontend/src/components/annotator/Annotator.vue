@@ -23,11 +23,11 @@
         </div>
         <BasicSidebar
             v-if="!sidebarDisabled"
-            :sidebarConfigs="sidebarConfigs"
+            :sidebar-configs="sidebarConfigs"
             :show="isSidebarVisible"
-            :sidebarWidth="sidebarWidth"
-            :maxSidebarWidth="maxSidebarWidth"
-            :minSidebarWidth="minSidebarWidth"
+            :sidebar-width="sidebarWidth"
+            :max-sidebar-width="maxSidebarWidth"
+            :min-sidebar-width="minSidebarWidth"
             @copy="onCopy"
             @sidebar-action="handleButtonAction"
             @resize="handleResize"
@@ -45,8 +45,8 @@
             v-show="studySessionId && studySessionId !== 0 ? active : true"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
-            @click="toggleSidebar"
             :class="{ 'sidebar-highlight': sidebarIconHighlight }"
+            @click="toggleSidebar"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"

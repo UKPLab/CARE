@@ -123,7 +123,7 @@ export default {
     },
     edits: {
       type: Array,
-      required: true,
+      required: false,
       default: () => []
     },
   },
