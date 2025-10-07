@@ -23,23 +23,6 @@
       </div>
     </div>
   </span>
-
-  <Teleport to="#topBarNavItems">
-    <TopBarButton
-      v-if="showHTMLDownloadButton"
-      v-show="studySessionId && studySessionId !== 0 ? active : true"
-      title="Download document"
-      class="btn rounded-circle"
-      type="button"
-      @click="downloadDocumentAsHTML"
-    >
-      <LoadIcon
-        :color="'#777777'"
-        :size="18"
-        icon-name="download"
-      />
-    </TopBarButton>
-  </Teleport>
 </template>
 <script>
 /**
@@ -203,9 +186,6 @@ export default {
         },
         theme: "snow"
       };
-    },
-    showHTMLDownloadButton() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
     studySteps() {
       if (this.studyStepId !== null) {

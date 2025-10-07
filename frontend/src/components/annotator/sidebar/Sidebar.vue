@@ -1,98 +1,77 @@
 <template>
-  <div
-    id="sidebarContainer"
-    class="col border mh-100 col-sm-auto g-0"
-    :class="sidebarContainerClassList"
-    :style="sidebarContainerStyle"
-    @copy="onCopy"
-  >
-    <div id="hoverHotZone"></div>
-    <div
-      id="sidebar"
-      :class="sidebarClassList"
-      class="collapse collapse-horizontal border-end d-flex flex-column"
-    >
-      <div id="hotZone" class="hot-zone"></div>
-      <div id="sidepane" ref="sidepane">
-        <div id="spacer"></div>
+  <!-- Edits Section: Only visible when there are edits and no annotations -->
+  <div class="edits-section" v-if="showEdits">
+    <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
+      <h4 class="group-header">{{ dateCategory }}</h4>
 
-        <!-- Edits Section: Only visible when there are edits and no annotations -->
-        <div class="edits-section" v-if="showEdits">
-          <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
-            <h4 class="group-header">{{ dateCategory }}</h4>
+      <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
+        <h5 class="date-header">{{ exactDate }}</h5>
 
-            <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
-              <h5 class="date-header">{{ exactDate }}</h5>
-
-              <ul class="list-group">
-                <li v-for="edit in group" :key="edit.id" class="list-group-item">
-                  <SideCard>
-                    <template #header>
-                      {{ edit.timeLabel }} - Created by User {{ edit.userId }}
-                    </template>
-                    <template #body>
-                      <p>{{ edit.text }}</p>
-                    </template>
-                    <template #footer>
-                      <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
-                        Show
-                      </button>
-                    </template>
-                  </SideCard>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- Annotations Section: Always visible unless edits exist -->
-        <ul id="anno-list" class="list-group" v-if="showAnnotations">
-          <li v-if="documentComments.length === 0">
-            <p class="text-center">No elements</p>
-          </li>
-          <li
-            v-for="comment in documentComments"
-            :id="'comment-' + comment.id"
-            :key="'documentComment-' + comment.id"
-            class="list-group-i"
-            @mouseleave="unhover(comment.annotationId)"
-            @mouseover="hover(comment.annotationId)"
-          >
-            <AnnoCard
-              :id="comment.id"
-              :ref="'annocard' + comment.id"
-              :comment-id="comment.id"
-              @focus="sidebarScrollTo"
-            />
-          </li>
-
-          <li v-if="!readOnly" id="addPageNote">
-            <button
-              class="btn btn-light"
-              type="button"
-              @click="createDocumentComment"
-            >
-              <svg
-                class="bi bi-plus-lg"
-                fill="currentColor"
-                height="16"
-                viewBox="0 0 16 16"
-                width="16"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
-                  fill-rule="evenodd"
-                />
-              </svg>
-              Document Note
-            </button>
+        <ul class="list-group">
+          <li v-for="edit in group" :key="edit.id" class="list-group-item">
+            <SideCard>
+              <template #header>
+                {{ edit.timeLabel }} - Created by User {{ edit.userId }}
+              </template>
+              <template #body>
+                <p>{{ edit.text }}</p>
+              </template>
+              <template #footer>
+                <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
+                  Show
+                </button>
+              </template>
+            </SideCard>
           </li>
         </ul>
       </div>
     </div>
-    <ConfirmModal ref="leavePageConf"/>
   </div>
+  <!-- Annotations Section: Always visible unless edits exist -->
+  <ul id="anno-list" class="list-group" v-if="showAnnotations">
+    <li v-if="documentComments.length === 0">
+      <p class="text-center">No elements</p>
+    </li>
+    <li
+      v-for="comment in documentComments"
+      :id="'comment-' + comment.id"
+      :key="'documentComment-' + comment.id"
+      class="list-group-i"
+      @mouseleave="unhover(comment.annotationId)"
+      @mouseover="hover(comment.annotationId)"
+    >
+      <AnnoCard
+        :id="comment.id"
+        :ref="'annocard' + comment.id"
+        :comment-id="comment.id"
+        @focus="sidebarScrollTo"
+      />
+    </li>
+
+    <li v-if="!readOnly" id="addPageNote">
+      <button
+        class="btn btn-light"
+        type="button"
+        @click="createDocumentComment"
+      >
+        <svg
+          class="bi bi-plus-lg"
+          fill="currentColor"
+          height="16"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+            fill-rule="evenodd"
+          />
+        </svg>
+        Document Note
+      </button>
+    </li>
+  </ul>
+<ConfirmModal ref="leavePageConf"/>
 </template>
 
 <script>
@@ -144,7 +123,7 @@ export default {
     },
     edits: {
       type: Array,
-      required: true,
+      required: false,
       default: () => []
     },
   },
@@ -273,18 +252,8 @@ export default {
         this.registerSidebarBlurEvent();
       }
     },
-    show(newVal) {
-      if (newVal) {
-        this.width = this.originalWidth;
-        this.isFixed = false;
-        this.isHovering = false;
-      }
-    }
   },
   mounted() {
-    this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
-    this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
-    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
     this.originalWidth = this.width;
     this.eventBus.on('sidebarScroll', (annotationId) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
@@ -307,8 +276,6 @@ export default {
         });
       }
     })
-    this.initDragController()
-    this.initHoverController()
   },
   methods: {
     handleEditClick(edit) {
@@ -384,138 +351,12 @@ export default {
       } else {
         return true;
       }
-    },
-    /**
-     * Initializes the drag controller for the sidebar
-     *
-     * When the mouse is pressed on the hot zone, the sidebar can be resized
-     *
-     * @author Zheyu Zhang
-     */
-    initDragController() {
-      const dom = document.querySelector('#hotZone');
-      const that = this;
-
-      let startX, startWidth;
-      const handleStart = (e) => {
-        that.isDragging = true;
-
-        e.preventDefault();
-        document.body.style.userSelect = 'none';
-
-        startWidth = this.width;
-        startX = e.clientX;
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
-      }
-
-      const handleMove = (e) => {
-        e.preventDefault();
-        let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
-        newWidth = Math.max(newWidth, this.minWidth);
-        newWidth = Math.min(newWidth, maxWidthInPixels);
-        this.width = newWidth;
-      }
-
-      const handleEnd = () => {
-        that.isDragging = false;
-
-        document.removeEventListener('mousemove', handleMove);
-        document.removeEventListener('mouseup', handleEnd);
-        document.body.style.userSelect = '';
-
-        this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
-        this.originalWidth = this.width;
-      }
-
-      dom.addEventListener('mousedown', handleStart);
-    },
-    /**
-     * Initializes the hover controller for the sidebar
-     *
-     * When the mouse enters the hover zone, the sidebar will be fixed
-     *
-     * @author Zheyu Zhang
-     */
-    initHoverController() {
-      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
-      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
-      let hoverTimer;
-
-      hoverHotZoneDom.addEventListener('mouseenter', () => {
-        hoverTimer = setTimeout(() => {
-          this.isFixed = true;
-          this.width = this.minWidth;
-          this.isHovering = true;
-          this.sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
-        }, 500);
-      });
-
-      const handleMouseleave = () => {
-        clearTimeout(hoverTimer);
-        this.width = this.originalWidth;
-        this.isFixed = false;
-        this.isHovering = false;
-        this.sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
-      };
-
-      hoverHotZoneDom.addEventListener('mouseleave', () => {
-        clearTimeout(hoverTimer);
-      });
-    },
-    /**
-     * Registers the sidebar blur event
-     *
-     * @author Zheyu Zhang
-     */
-    registerSidebarBlurEvent() {
-      const handleSidebarClick = (e) => {
-        e.stopPropagation();
-      };
-
-      const handleBodyClick = () => {
-        this.isFixed = false;
-        this.isHovering = false;
-        document.body.removeEventListener("click", handleBodyClick);
-      };
-
-      this.sidebarContainerDom.addEventListener("click", handleSidebarClick);
-      document.body.addEventListener("click", handleBodyClick);
-    },
-    onCopy(event) {
-      this.$emit('copy', event);
     }
   }
 }
 </script>
 
 <style scoped>
-#sidebar {
-  height: 100%;
-  width: 100%;
-  position: relative;
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-  position: absolute;
-}
-
-#sidebar.is-active {
-  transform: translateX(0);
-}
-
-#spacer {
-  width: 400px;
-  background-color: transparent;
-}
-
-#sidepane {
-  padding-top: 5px;
-  background-color: #e6e6e6;
-  width: 100%;
-  height: 100%;
-  overflow-y: scroll;
-}
 
 #anno-list .list-group-i {
   border: none;
@@ -539,64 +380,6 @@ export default {
   color: #575757;
 }
 
-#sidepane::-webkit-scrollbar {
-  display: none;
-}
-
-.hot-zone {
-  width: 3px;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  cursor: col-resize;
-}
-
-#sidebarContainer {
-  position: relative;
-  padding: 0;
-  transition: width 0.3s ease;
-  overflow-y: scroll;
-}
-
-#sidebarContainer.is-hidden {
-  position: fixed;
-  height: 100%;
-  right: 0;
-  width: 10px;
-}
-
-#sidebarContainer.is-hidden #hoverHotZone {
-  display: block;
-}
-
-#sidebarContainer.is-dragging {
-  transition: unset;
-}
-
-#sidebarContainer.is-fixed {
-  position: fixed;
-  right: 0;
-}
-
-#sidebarContainer.is-fixed .hot-zone {
-  display: none;
-}
-
-#sidebarContainer::-webkit-scrollbar {
-  display: none;
-}
-
-
-#hoverHotZone {
-  position: fixed;
-  height: 100%;
-  width: 6px;
-  top: 0;
-  right: 0px;
-  z-index: 999;
-  display: none;
-}
 
 .edits-section {
   padding: 10px;
