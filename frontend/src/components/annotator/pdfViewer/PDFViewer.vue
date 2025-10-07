@@ -226,7 +226,7 @@ export default {
 
 #pdfContainer {
   min-width: 800px;
-  max-width: 1000px;
+  /* TODO: Would you prefer max-width here? */
 }
 
 .pdf-toolbar {
