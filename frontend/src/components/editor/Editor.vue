@@ -5,12 +5,13 @@
         <Editor ref="editor" @update:data="$emit('update:data', $event)" />
       </div>
       <BasicSidebar
-        v-if="!sidebarDisabled && sidebarContent !== null"
+        v-if="!sidebarDisabled"
         :sidebarConfigs="sidebarConfigs"
         ref="sidebar"
-        :content="sidebarContent"
+        :sideBarWidth="350"
         class="sidebar-container"
-        @sidebar-change="handleSidebarChange">
+        @sidebar-change="handleSidebarChange"
+        @sidebar-action="handleSidebarAction">
         <template #history>
           <SidebarHistory />
         </template>
@@ -121,15 +122,32 @@ export default {
     },
     sidebarConfigs(){
       return {
-        'history': {
-          icon: 'clock-history',
-          title: 'Edit History'
-        },
-        'configurator': {
-          icon: 'gear-fill',
-          title: 'Document Configurator'
+        // General buttons that appear on all sidebar views
+        generalButtons: [
+          {
+            id: 'download-html',
+            icon: 'download',
+            title: 'Download document',
+            action: 'downloadHTML',
+            isGeneral: true,
+            disabled: !this.showHTMLDownloadButton
+          }
+        ],
+        // Tab configurations
+        tabs: {
+          'configurator': {
+            icon: 'gear-fill',
+            title: 'Configurator'
+          },
+          'history': {
+            icon: 'clock-history',
+            title: 'History'
+          }
         }
       };
+    },
+    showHTMLDownloadButton() {
+      return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history') {
@@ -148,36 +166,28 @@ export default {
       return this.$store.getters["table/document/get"](this.documentId);
     },
   },
-  watch: {
-    "document.type": {
-      immediate: true,
-      handler(newType) {
-        if (newType === 2) {
-          this.sidebarContent = "configurator";
-        }
-      }
-    },
-    hasHistory: {
-      handler(newVal) {
-        if (newVal) {
-          this.sidebarContent = "history";
-        } else if (this.document?.type === 2) {
-          this.sidebarContent = "configurator";
-        } else {
-          this.sidebarContent = null;
-        }
-      }
-    }
-  },
   methods: {
     handleSidebarChange(view) {
-      console.log('Slot changed:', view );
       // Update internal state to match sidebar selection
       this.sidebarContent = view;
-      if(this.sidebarContent === 'history') {
+      if(view === 'history') {
          this.toggleHistory();
       }
-     
+    },
+    handleSidebarAction(data) {
+      switch(data.action) {
+        case 'downloadHTML':
+          this.downloadHTML();
+          break;
+        default:
+          console.warn('Unknown sidebar button action:', data.action);
+      }
+    },
+    downloadHTML() {
+      if (this.$refs.editor && this.$refs.editor.downloadDocumentAsHTML) {
+        // TODO: would prefer to move the function here
+        this.$refs.editor.downloadDocumentAsHTML();
+      }
     },
     
     toggleHistory() {
@@ -233,12 +243,6 @@ export default {
 }
 
 .sidebar-container {
-  width: 350px;
-  max-width: 350px;
-  min-width: 350px;
-  background-color: #f8f9fa;
-  border-left: 1px solid #ddd;
-  overflow-y: auto;
   margin-top: 60px;
 }
 </style>

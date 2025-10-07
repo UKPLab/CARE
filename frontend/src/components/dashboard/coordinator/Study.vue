@@ -34,7 +34,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
  */
 export default {
   name: "CoordinatorStudy",
-  subscribeTable: ['document'],
+  subscribeTable: ['document', 'tag_set'],
   components: {BasicCoordinator},
   data() {
     return {
