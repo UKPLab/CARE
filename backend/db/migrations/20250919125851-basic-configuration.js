@@ -3,16 +3,15 @@
 const fs = require("fs");
 const path = require("path");
 
-const projectRoot = path.resolve(__dirname, "../../..");
-function readJsonFromDisk(relativePath) {
-  const absolutePath = path.resolve(projectRoot, relativePath);
+function readJsonFromDisk(filename) {
+  const absolutePath = path.resolve(__dirname, filename);
   const content = fs.readFileSync(absolutePath, "utf8");
   return JSON.parse(content);
 }
 
-const ASSESSMENT_JSON_PATH = "files/d8ef6767-39bc-44ea-9a7a-1356d9200871.json";
-const VALIDATION_JSON_PATH = "files/1c784430-6ef0-4958-9451-c1960866135e.json";
-const FEEDBACK_JSON_PATH = "files/3bf9ff94-6eb3-4c0e-aa16-3ea48f7736ad.json";
+const ASSESSMENT_JSON_PATH = "20250919125851-basic-configuration-expose_assessment.json";
+const VALIDATION_JSON_PATH = "20250919125851-basic-configuration-expose_validation.json";
+const FEEDBACK_JSON_PATH = "20250919125851-basic-configuration-expose_feedback.json";
 
 const assessmentContent = readJsonFromDisk(ASSESSMENT_JSON_PATH);
 const feedbackContent = readJsonFromDisk(FEEDBACK_JSON_PATH);
