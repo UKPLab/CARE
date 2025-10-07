@@ -38,7 +38,7 @@ module.exports = {
           description: assessmentContent.description,
           userId: userId,
           hideInFrontend: false,
-          type: 0,
+          type: 0, // The type of configuration (0='assessment', 1='validation')
           content: toJsonb(assessmentContent),
           deleted: false,
           createdAt: now,
