@@ -91,12 +91,16 @@ export default {
           key: "copySubmissions",
           label: "Copy Submissions",
           type: "checkbox",
-          class: "form-check-input",
-          default: false,
+          required: true,
+          options: [
+            {
+              label: "Copy Submissions",
+              value: true,
+            },
+          ],
         },
       ],
       submissionColumns: [
-        { name: "Title", key: "name", sortable: true },
         { name: "First Name", key: "firstName", sortable: true },
         { name: "Last Name", key: "lastName", sortable: true },
         { name: "Created At", key: "createdAt", sortable: true },
