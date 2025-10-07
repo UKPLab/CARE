@@ -276,7 +276,7 @@ export default {
             files: s.files,
           })),
           options: this.moodleOptions,
-          configurationId: this.selectedValidatorId,
+          validationConfigurationId: this.selectedValidatorId,
           progressId: this.$refs.importStepper.startProgress(),
         },
         (res) => {
