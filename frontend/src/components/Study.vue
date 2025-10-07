@@ -88,11 +88,13 @@
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <StepModal
-      v-if="currentStep.stepType === 1 && studyTrajectory.includes(currentStep.id) && currentStepHasNlpRequests"
+      v-if="studyTrajectory.includes(currentStep.id) && ((currentStep.stepType === 3) || (currentStepHasNlpRequests && (currentStep.stepType === 1 || currentStep.stepType === 2)))"
+      :key="`stepmodal-${currentStep.id}-${currentStep.stepType}`"
       :study-step-id="currentStep.id"
-      loading-only
-      auto-close-on-complete
-      @close="handleNlpModalClose"
+      :is-last-step="currentStep.stepType === 3 && currentStep.id === lastStep.id"
+      :loading-only="currentStep.stepType !== 3 && currentStepHasNlpRequests"
+      :auto-close-on-complete="currentStep.stepType !== 3 && currentStepHasNlpRequests"
+      @close="currentStep.stepType === 3 ? handleModalClose($event) : handleNlpModalClose($event)"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <Editor
@@ -100,21 +102,6 @@
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
       :active="true"
-      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    />
-    <StepModal
-      v-if="currentStep.stepType === 2 && studyTrajectory.includes(currentStep.id) && currentStepHasNlpRequests"
-      :study-step-id="currentStep.id"
-      loading-only
-      auto-close-on-complete
-      @close="handleNlpModalClose"
-      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    />
-    <StepModal
-      v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
-      :study-step-id="currentStep.id"
-      :is-last-step="currentStep.id === lastStep.id"
-      @close="handleModalClose"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
   </div>

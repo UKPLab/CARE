@@ -22,8 +22,11 @@
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
-          <div class="spinner-border m-5" v-if="!timeoutError">
+          <div v-if="!timeoutError" class="spinner-border m-5">
             <span class="visually-hidden">Loading...</span>          
+          </div>
+          <div v-if="!timeoutError" class="align-self-center text-center">
+            <small class="text-muted">{{ rotatingStatusText }}</small>
           </div>
           <div v-else>
             <div class="d-flex flex-column align-items-center">
@@ -174,6 +177,17 @@ export default {
       requests: {},
       timeoutError: false,
       deferredSent: false,
+      rotatingStatusIndex: 0,
+      rotatingStatusText: "",
+      rotatingTimer: null,
+      rotatingLongTimer: null,
+      rotatingStartTs: 0,
+      rotatingMessages: [
+        "Checking preprocessed data",
+        "Sending the NLP request",
+        "Gathering the data",
+        "Parsing the data, waiting for responses",
+      ],
     };
   },
   computed: {
@@ -212,16 +226,9 @@ export default {
       return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
-      const raw = this.$store.getters["settings/getValue"]('modal.nlp.request.timeout');
-      const parsed = parseInt(raw);
-      if (Number.isFinite(parsed) && parsed > 0) {
-        // Interpret small values as minutes (e.g., 1 => 1 minute) to avoid accidental 1ms/1s timeouts
-        const ms = parsed < 1000 ? parsed * 60000 : parsed;
-        // Enforce a minimum of 10 minutes to avoid premature timeout
-        return Math.max(ms, 600000);
-      }
-      // Default to 10 minutes
-      return 600000;
+      const v = parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
+      const min = 300000; // 5 minutes
+      return Math.max(Number.isFinite(v) && v > 0 ? v : min, min);
     },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
@@ -343,14 +350,21 @@ export default {
                 value: normalized,
               });
             } else if (skill === 'generating_feedback') {
-              // Save feedback result at step/session scope for editor
-              const feedbackText = typeof result === 'string' ? result : (result.feedback || result.text || '');
+              // Save feedback result at step/session scope for editor and emit event to update editor
+              const sanitizedFeedback = this.sanitizeFeedback(result);
               this.$socket.emit("documentDataSave", {
                 documentId: this.studyStep?.documentId,
                 studySessionId: this.studySessionId,
                 studyStepId: this.studyStepId,
                 key: 'generating_feedback_data',
-                value: feedbackText,
+                value: sanitizedFeedback,
+              });
+              // In addition, inform the editor to apply the generated feedback immediately
+              this.eventBus.emit('editorApplyGeneratedFeedback', {
+                documentId: this.studyStep?.documentId,
+                studySessionId: this.studySessionId,
+                studyStepId: this.studyStepId,
+                feedbackText: sanitizedFeedback,
               });
             } else {
               // Default: save per-key at step/session scope
@@ -397,6 +411,18 @@ export default {
       },
       immediate: true
     },
+    waiting(val) {
+      if (val && !this.timeoutError) {
+        this.startRotatingStatus();
+      } else {
+        this.stopRotatingStatus();
+      }
+    },
+    timeoutError(val) {
+      if (val) {
+        this.stopRotatingStatus();
+      }
+    }
   },
   created() {
     if (this.configuration) {
@@ -428,6 +454,24 @@ export default {
     if (this.readOnly) {
       this.waiting = false;
     } else if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
+      // If generating_feedback was already created earlier for this session/step, reuse and close immediately
+      const hasGeneratingFeedback = this.configuration.services.some(s => s?.type === 'nlpRequest' && s.skill === 'generating_feedback');
+      if (hasGeneratingFeedback) {
+        const existing = await this.fetchGeneratedFeedback();
+        if (existing) {
+          const sanitized = this.sanitizeFeedback(existing);
+          this.eventBus.emit('editorApplyGeneratedFeedback', {
+            documentId: this.studyStep?.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            feedbackText: sanitized,
+          });
+          this.waiting = false;
+          this.$emit('close', { autoClosed: true, existing: true });
+          this.$refs.modal.close();
+          return;
+        }
+      }
       let sentCount = 0;
 
       for (const service of this.configuration.services) {
@@ -458,6 +502,9 @@ export default {
       return;
     }
     this.$refs.modal.open();
+  },
+  beforeUnmount() {
+    this.stopRotatingStatus();
   },
   methods: {
     open(data) {
@@ -521,7 +568,8 @@ export default {
       return false;
     },
     async sendRequest(skill, input, uniqueId, requestId) {
-      // 1) Try to reuse preprocessed results saved with null session/step (only for grading_expose)
+      // 1) Try to reuse existing results and avoid resending
+      // grading_expose: use preprocessed data saved with null session/step
       if (skill === 'grading_expose') {
         const preprocessed = await this.getPreprocessedResult();
         if (preprocessed) {
@@ -534,6 +582,29 @@ export default {
               this.$emit('close', { autoClosed: true, preprocessed: true });
               this.$refs.modal.close();
             }
+          }
+          return;
+        }
+      } else if (skill === 'generating_feedback') {
+        // generating_feedback: if we already have feedback saved for this session/step, don't resend
+        const existing = await this.fetchGeneratedFeedback();
+        if (existing) {
+          const sanitized = this.sanitizeFeedback(existing);
+          // Emit to editor so content is shown without resending NLP
+          this.eventBus.emit('editorApplyGeneratedFeedback', {
+            documentId: this.studyStep?.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            feedbackText: sanitized,
+          });
+          if (this.requests && this.requests[requestId]) {
+            delete this.requests[requestId];
+          }
+          if (!this.requests || Object.keys(this.requests).length === 0) {
+            this.waiting = false;
+            // Always auto-close when existing feedback is reused to avoid empty modal
+            this.$emit('close', { autoClosed: true, existing: true });
+            this.$refs.modal.close();
           }
           return;
         }
@@ -561,7 +632,6 @@ export default {
             }
             return;
           }
-          console.log('[sendRequest] grading_expose payload:', payload);
         } else if (skill === 'generating_feedback') {
           payload = await this.buildGeneratingFeedbackPayload(input);
           
@@ -583,7 +653,6 @@ export default {
             }
             return;
           }
-          console.log('[sendRequest] generating_feedback payload:', payload);
         }
         
         await this.$socket.emit("serviceRequest", {
@@ -593,8 +662,6 @@ export default {
             name: skill,
             data: payload,
           },
-        }, (ack) => {
-          console.log('[NLP Ack] serviceRequest acknowledged for', skill, 'requestId:', requestId, 'ack:', ack);
         });
         setTimeout(() => {
           if (this.requests[requestId]) {
@@ -624,15 +691,23 @@ export default {
           studyStepId: null,
           key
         }, (response) => {
-          if (response && response.success && response.data && response.data.value) {
-            const val = response.data.value;
-            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
-          } else if (response && response.value) {
-            const val = response.value;
-            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
-          } else {
-            resolve(null);
-          }
+          resolve(this.normalizeDocumentDataGet(response, { unwrapData: true }));
+        });
+      });
+    },
+
+    async fetchGeneratedFeedback() {
+      const currentDocumentId = this.studyStep?.documentId;
+      if (!currentDocumentId) return null;
+
+      return await new Promise(resolve => {
+        this.$socket.emit("documentDataGet", {
+          documentId: currentDocumentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          key: 'generating_feedback_data'
+        }, (response) => {
+          resolve(this.normalizeDocumentDataGet(response));
         });
       });
     },
@@ -805,6 +880,25 @@ export default {
 
       return { pdf, zip };
     },
+    sanitizeFeedback(input) {
+      const raw = typeof input === 'string'
+        ? input
+        : (input?.textual_feedback || input?.feedback || input?.text || (typeof input?.data === 'string' ? input.data : ''));
+      return (raw || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    },
+    normalizeDocumentDataGet(response, { unwrapData = false } = {}) {
+      if (!response) return null;
+      let val = null;
+      if (response && response.success && response.data && response.data.value) {
+        val = response.data.value;
+      } else if (response && 'value' in response) {
+        val = response.value;
+      }
+      if (unwrapData && val && typeof val === 'object' && 'data' in val) {
+        return val.data;
+      }
+      return val ?? null;
+    },
     async fetchBinaryAsBase64(documentId) {
       const buffer = await new Promise((resolve) => {
         this.$socket.emit("documentGet", { documentId }, (response) => {
@@ -894,6 +988,39 @@ export default {
         downloadObjectsAs(this.studyData, filename, 'json');
       }
     },
+    startRotatingStatus() {
+      this.stopRotatingStatus();
+      this.rotatingStartTs = Date.now();
+      this.rotatingStatusIndex = 0;
+      this.rotatingStatusText = this.rotatingMessages[this.rotatingStatusIndex] || "";
+      // advance message every 30s, do not loop; hold last message until long timeout
+      this.rotatingTimer = setInterval(() => {
+        if (!this.waiting || this.timeoutError) {
+          this.stopRotatingStatus(false);
+          return;
+        }
+        if (this.rotatingStatusIndex < this.rotatingMessages.length - 1) {
+          this.rotatingStatusIndex += 1;
+          this.rotatingStatusText = this.rotatingMessages[this.rotatingStatusIndex] || "";
+        }
+      }, 30000);
+      // after 2 minutes, show longer than expected and stop timers
+      this.rotatingLongTimer = setTimeout(() => {
+        this.rotatingStatusText = "NLP is taking longer than expected...";
+        this.stopRotatingStatus(false);
+      }, 120000);
+    },
+    stopRotatingStatus(clearText = true) {
+      if (this.rotatingTimer) {
+        clearInterval(this.rotatingTimer);
+        this.rotatingTimer = null;
+      }
+      if (this.rotatingLongTimer) {
+        clearTimeout(this.rotatingLongTimer);
+        this.rotatingLongTimer = null;
+      }
+      if (clearText) this.rotatingStatusText = "";
+    }
   }
 };
 </script>

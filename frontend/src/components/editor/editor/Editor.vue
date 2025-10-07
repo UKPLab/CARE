@@ -115,6 +115,7 @@ export default {
       data: {},
       firstVersion: null,
       feedbackLoaded: false,
+      pendingFeedbackText: '',
     };
   },
   computed: {
@@ -237,16 +238,6 @@ export default {
         this.processEdits(appliedEdits);
     },
     
-    // Watch for changes in document_data table to load generated feedback
-    '$store.getters["table/document_data/refreshCount"]': {
-      handler() {
-        if (this.documentLoaded && !this.feedbackLoaded && this.editor) {
-          this.loadGeneratedFeedback();
-        }
-      },
-      immediate: false
-    },
-    
     readOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
@@ -296,6 +287,21 @@ export default {
       };
       this.eventBus.on("editorInsertText", this.insertTextHandler);
 
+      // Handle generated feedback application from StepModal
+      this.applyGeneratedFeedbackHandler = (data) => {
+        if (data.documentId === this.documentId && this.editor && !this.feedbackLoaded) {
+          const feedbackText = data.feedbackText || '';
+          if (!feedbackText) return;
+
+          if (!this.documentLoaded) {
+            this.pendingFeedbackText = feedbackText;
+            return;
+          }
+          this.applyFeedbackText(feedbackText);
+        }
+      };
+      this.eventBus.on('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
+
       setTimeout(() => {
         this.emitContentForPlaceholders();
       }, 500);
@@ -321,9 +327,31 @@ export default {
             currentVersion: currentVersion,
           };
           this.$emit("update:data", studyData);
+          // Generated feedback will be applied via event from StepModal
+          // If feedback arrived early, apply it now after content initialization
+          if (!this.feedbackLoaded && this.pendingFeedbackText) {
+            this.applyFeedbackText(this.pendingFeedbackText);
+          }
 
-          // Load generated feedback if available
-          this.loadGeneratedFeedback();
+          // Also fetch any previously saved generated feedback in case the event was missed
+          this.$socket.emit("documentDataGet", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            key: 'generating_feedback_data'
+          }, (response) => {
+            const rawVal = (response && response.success && response.data && response.data.value)
+              ? response.data.value
+              : (response && response.value) ? response.value : null;
+            if (!this.feedbackLoaded && rawVal) {
+              const feedbackText = typeof rawVal === 'string'
+                ? rawVal
+                : (rawVal.textual_feedback || rawVal.feedback || rawVal.text || (typeof rawVal.data === 'string' ? rawVal.data : ''));
+              if (feedbackText) {
+                this.applyFeedbackText(feedbackText);
+              }
+            }
+          });
         } else {
           this.handleDocumentError(res.error);
         }
@@ -353,6 +381,7 @@ export default {
   unmounted() {
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);
+    this.eventBus.off('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
 
     this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
       if (!res.success) {
@@ -366,6 +395,26 @@ export default {
     this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
   },
   methods: {
+    applyFeedbackText(feedbackText) {
+      const editorInstance = this.editor && this.editor.getEditor ? this.editor.getEditor() : null;
+      if (!editorInstance || !feedbackText) return;
+
+      const currentContent = editorInstance.getContents();
+      if (currentContent.ops.length <= 1 && (!currentContent.ops[0].insert || currentContent.ops[0].insert === '\n')) {
+        editorInstance.setText(feedbackText);
+      } else {
+        const insertText = feedbackText.endsWith('\n') ? feedbackText : feedbackText + '\n\n';
+        editorInstance.updateContents(new Delta().retain(0).insert(insertText), 'api');
+      }
+      this.firstVersion = editorInstance.root.innerHTML;
+      const currentVersion = editorInstance.root.innerHTML;
+      this.$emit("update:data", {
+        firstVersion: this.firstVersion,
+        currentVersion: currentVersion,
+      });
+      this.feedbackLoaded = true;
+      this.pendingFeedbackText = '';
+    },
     clearEditor() {
       if (this.editor) {
         const quill = this.editor.getEditor();
@@ -538,40 +587,6 @@ export default {
       const documentName = document ? document.name : "document";
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
-    },
-    loadGeneratedFeedback() {
-      // Load generated feedback from document_data if available
-      this.$socket.emit("documentDataGet", {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId,
-        key: 'generating_feedback_data'
-      }, (response) => {
-        const feedbackText = (response && response.success && response.data && response.data.value) 
-          ? response.data.value 
-          : (response && response.value);
-        
-        if (feedbackText && this.editor) {
-          const quill = this.editor.getEditor();
-          const currentContent = quill.getContents();
-          
-          // Only insert if editor is empty or has minimal content
-          if (currentContent.ops.length <= 1 && (!currentContent.ops[0].insert || currentContent.ops[0].insert === '\n')) {
-            quill.setText(feedbackText);
-            
-            // Update study data
-            this.firstVersion = quill.root.innerHTML;
-            const currentVersion = quill.root.innerHTML;
-            this.$emit("update:data", {
-              firstVersion: this.firstVersion,
-              currentVersion: currentVersion,
-            });
-            
-            // Mark feedback as loaded
-            this.feedbackLoaded = true;
-          }
-        }
-      });
     },
   }
 };

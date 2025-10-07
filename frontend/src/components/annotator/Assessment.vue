@@ -58,7 +58,7 @@
                         v-if="group.description" 
                         class="info-icon me-2"
                         style="cursor: help;"
-                        @click.stop
+                        @click.stop="toggleInfoPanelPin(group, null)"
                         @mouseenter="openInfoPanel(group, null)"
                         @mouseleave="closeInfoPanel"
                       >
@@ -103,7 +103,7 @@
                               v-if="criterion.description || criterion.scoring" 
                               class="info-icon me-2"
                               style="cursor: help;"
-                              @click.stop
+                              @click.stop="toggleInfoPanelPin(null, criterion)"
                               @mouseenter="openInfoPanel(null, criterion)"
                               @mouseleave="closeInfoPanel"
                             >
@@ -220,8 +220,11 @@
     <!-- Floating Info Panel -->
     <div 
       v-if="showInfoPanel && selectedCriterion"
+      ref="infoPanel"
       class="floating-info-panel"
       :style="infoPanelStyle"
+      @mouseenter="infoPanelHover = true"
+      @mouseleave="infoPanelHover = false; closeInfoPanel()"
     >
       <div class="info-panel-header">
         <h6 class="mb-2">{{ selectedCriterion.name }}</h6>
@@ -252,6 +255,15 @@
     </div>
   </div>
 </template>
+
+/**
+ * Assessment Output Component
+ *
+ * This component displays the assessment results, including criteria groups, scoring, and additional information panels.
+ * It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
+ *
+ * @author: Akash Gundapuneni
+ */
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
@@ -295,6 +307,9 @@ export default {
       showInfoPanel: false,
       selectedCriterion: null,
       infoPanelStyle: {},
+      infoPanelPinned: false,
+      infoPanelHover: false,
+      infoPanelCloseTimer: null,
       // Event handler references for cleanup
       dragHandlers: {
         start: null,
@@ -430,6 +445,8 @@ export default {
   
   mounted() {
     this.initSidebar();
+    // Close info panel on outside clicks
+    document.addEventListener("mousedown", this.onGlobalMousedown);
     
     // Load assessment data when component mounts
     if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
@@ -465,6 +482,11 @@ export default {
     if (sidebarContainerDom && this.hoverHandlers.containerLeave) {
       sidebarContainerDom.removeEventListener("mouseleave", this.hoverHandlers.containerLeave);
       this.hoverHandlers.containerLeave = null;
+    }
+    document.removeEventListener("mousedown", this.onGlobalMousedown);
+    if (this.infoPanelCloseTimer) {
+      clearTimeout(this.infoPanelCloseTimer);
+      this.infoPanelCloseTimer = null;
     }
   },
   
@@ -676,21 +698,64 @@ export default {
     openInfoPanel(group, criterion) {
       this.selectedCriterion = criterion || group;
       this.showInfoPanel = true;
+      if (this.infoPanelCloseTimer) {
+        clearTimeout(this.infoPanelCloseTimer);
+        this.infoPanelCloseTimer = null;
+      }
       
       const sidebarRect = this.$refs.sidepane?.getBoundingClientRect();
       if (sidebarRect) {
+        const top = sidebarRect.top;
+        const computedMaxHeight = Math.max(200, window.innerHeight - top - 20);
         this.infoPanelStyle = {
           position: 'fixed',
           left: (sidebarRect.left - 350) + 'px',
-          top: sidebarRect.top + 'px',
+          top: top + 'px',
           width: '350px',
-          maxHeight: '100vh',
+          maxHeight: computedMaxHeight + 'px',
           zIndex: 9999
         };
       }
     },
     
     closeInfoPanel() {
+      if (this.infoPanelPinned) return;
+      if (this.infoPanelCloseTimer) {
+        clearTimeout(this.infoPanelCloseTimer);
+        this.infoPanelCloseTimer = null;
+      }
+      this.infoPanelCloseTimer = setTimeout(() => {
+        if (!this.infoPanelPinned && !this.infoPanelHover) {
+          this.showInfoPanel = false;
+          this.selectedCriterion = null;
+        }
+      }, 150);
+    },
+
+    toggleInfoPanelPin(group, criterion) {
+      const target = criterion || group;
+      // If clicking same target, toggle pin state
+      if (this.infoPanelPinned && this.selectedCriterion === target) {
+        this.infoPanelPinned = false;
+        this.closeInfoPanel();
+        return;
+      }
+      // Pin new target
+      this.openInfoPanel(group, criterion);
+      this.infoPanelPinned = true;
+    },
+
+    onGlobalMousedown(event) {
+      if (!this.showInfoPanel) return;
+      const panel = this.$refs.infoPanel;
+      if (panel && panel.contains(event.target)) return;
+      // Clicked outside -> force close regardless of pin
+      this.infoPanelPinned = false;
+      this.infoPanelHover = false;
+      if (this.infoPanelCloseTimer) {
+        clearTimeout(this.infoPanelCloseTimer);
+        this.infoPanelCloseTimer = null;
+      }
       this.showInfoPanel = false;
       this.selectedCriterion = null;
     },
