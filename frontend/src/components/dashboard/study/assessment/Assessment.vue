@@ -274,15 +274,35 @@ export default {
   subscribeTable: ["document", "study_step", "document_data", "workflow", "workflow_step" ],
   
   inject: {
-    documentId: { type: Number, required: true },
-    studySessionId: { type: Number, required: false, default: null },
-    studyStepId: { type: Number, required: false, default: null },
+    documentId: { 
+      type: Number, 
+      required: true 
+    },
+    studySessionId: { 
+      type: Number, 
+      required: false, 
+      default: null 
+    },
+    studyStepId: { 
+      type: Number, 
+      required: false, 
+      default: null 
+    },
+    studyData: { 
+      type: Array, 
+      required: false, 
+      default: () => [] 
+    },
+    acceptStats: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
   },
   
   props: {
     show: { type: Boolean, required: false, default: true },
     savedState: { type: Object, required: false, default: () => ({}) },
-    readonly: { type: Boolean, required: false, default: false },
   },
   
   emits: ['state-changed'],
