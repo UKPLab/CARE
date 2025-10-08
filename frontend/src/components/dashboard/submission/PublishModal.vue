@@ -7,7 +7,7 @@
     @submit="publishReviewLinks"
   >
     <template #title>
-      <h5 class="modal-title">Publish Reviews</h5>
+      <h5 class="modal-title">{{ modalTitle }}</h5>
     </template>
     <template #step-1>
       <div class="table-scroll-container">
@@ -49,7 +49,7 @@
           <option value="sessions">based on Sessions (links for own sessions)</option>
         </select>
       </div>
-      <div class="mb-3">
+      <div class="mb-3" v-if="!isSubmissionMode">
         <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
         <select v-model="publishMethod" class="form-select" id="publishMethod">
           <option value="moodle">Moodle</option>
@@ -82,7 +82,20 @@
       </div>
     </template>
     <template #step-4>
-      <div v-if="publishMethod==='moodle'" class="table-scroll-container">
+      <div v-if="isSubmissionMode" class="table-scroll-container">
+        <div class="mb-3">
+          <label for="submissionPublishMethod" class="form-label"><b>Publishing Options:</b></label>
+          <select v-model="publishMethod" class="form-select" id="submissionPublishMethod">
+            <option value="csv">Download CSV</option>
+            <option value="moodle" disabled>Publish Moodle (disabled)</option>
+            <option value="email" disabled>Send via Email (disabled)</option>
+          </select>
+        </div>
+        <div class="small">
+          <p>Choose "Download CSV" to export the generated feedback text for each recipient.</p>
+        </div>
+      </div>
+      <div v-else-if="publishMethod==='moodle'" class="table-scroll-container">
         <MoodleOptions
           ref="moodleOptionsForm"
           v-model="moodleOptions"
@@ -104,6 +117,14 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
  */
 export default {
   name: "ReviewPublishModal",
+  props: {
+    // mode: 'reviews' (document-based) or 'submission' (submission-based)
+    mode: {
+      type: String,
+      default: "reviews",
+      validator: (v) => ["reviews", "submission"].includes(v),
+    },
+  },
   subscribeTable: [
     {
       table: "document",
@@ -113,6 +134,9 @@ export default {
           value: true,
         },
       ],
+    },
+    {
+      table: "submission",
     },
     {
       table: "study_session",
@@ -140,14 +164,20 @@ export default {
       selectedSessions: [],
       moodleOptions: {},
       text_format: "Reviews:\n~SESSION_LINKS~",
-      publishMethod: "moodle",
+      publishMethod: this.mode === "submission" ? "csv" : "moodle",
       linkCollection: "studies",
     };
   },
   computed: {
+    isSubmissionMode() {
+      return this.mode === "submission";
+    },
+    modalTitle() {
+      return this.isSubmissionMode ? "Publish Submissions" : "Publish Reviews";
+    },
     steps() {
       return [
-        {title: "Document Selection"},
+        {title: this.isSubmissionMode ? "Submission Selection" : "Document Selection"},
         {title: "Session Selection"},
         {title: "Confirmation"},
         {title: "Publishing Options"},
@@ -157,7 +187,8 @@ export default {
       return [
         this.selectedDocuments.length > 0,
         this.selectedSessions.length > 0,
-        Object.values(this.moodleOptions).every(v => v !== ""),
+        // Only require Moodle options if moodle is selected
+        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
     usersWithExtId() {
@@ -172,6 +203,9 @@ export default {
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
     },
+    submissions() {
+      return this.$store.getters["table/submission/getAll"];
+    },
     studySteps() {
       return this.$store.getters["table/study_step/getAll"];
     },
@@ -179,39 +213,85 @@ export default {
       return this.$store.getters["table/study_session/getAll"];
     },
     documentsTable() {
-      return this.documents.map((document) => {
-        // find all study steps that are associated with this document
-        const studySteps = this.studySteps.filter((step) => step.documentId === document.id);
-        // get unique study ids from the study steps
-        const studyIds = [...new Set(studySteps.map((step) => step.studyId))].filter((id) => this.studies.find((s) => s.id === id));
+      if (!this.isSubmissionMode) {
+        return this.documents.map((document) => {
+          // find all study steps that are associated with this document
+          const studySteps = this.studySteps.filter((step) => step.documentId === document.id);
+          // get unique study ids from the study steps
+          const studyIds = [...new Set(studySteps.map((step) => step.studyId))].filter((id) => this.studies.find((s) => s.id === id));
 
-        if (studyIds.length === 0) {
+          if (studyIds.length === 0) {
+            return null;
+          }
+
+          // get sessions for each study
+          const studySessionIds = this.studySessions.filter((session) => studyIds.includes(session.studyId)).map((session) => session.id);
+          if (studySessionIds.length === 0) {
+            return null;
+          }
+
+          const user = this.usersWithExtId.find((u) => u.id === document.userId);
+          if (!user) {
+            return null;
+          }
+
+          return {
+            ...document,
+            studyIds,
+            documentName: document.name.length <= 40 ? document.name : document.name.substring(0, 40) + "...",
+            sessionIds: studySessionIds,
+            studies: studyIds.length,
+            sessions: studySessionIds.length,
+            extId: user.extId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          }
+
+        }).filter((s) => s !== null);
+      }
+
+      // submission mode: aggregate sessions across documents belonging to the submission
+      return this.submissions.map((submission) => {
+        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submission.id);
+
+        // per document, collect closed studyIds
+        const docSummaries = docs.map((doc) => {
+          const steps = this.studySteps.filter((step) => step.documentId === doc.id);
+          const closedStudyIds = [...new Set(steps.map((s) => s.studyId))].filter((id) => this.studies.find((st) => st.id === id));
+          return {
+            id: doc.id,
+            name: doc.name,
+            documentName: doc.name.length <= 40 ? doc.name : doc.name.substring(0, 40) + "...",
+            studyIds: closedStudyIds,
+          };
+        });
+
+        const uniqueStudyIds = [...new Set(docSummaries.flatMap((d) => d.studyIds))];
+        if (uniqueStudyIds.length === 0) {
           return null;
         }
-
-        // get sessions for each study
-        const studySessionIds = this.studySessions.filter((session) => studyIds.includes(session.studyId)).map((session) => session.id);
+        const studySessionIds = this.studySessions.filter((session) => uniqueStudyIds.includes(session.studyId)).map((session) => session.id);
         if (studySessionIds.length === 0) {
           return null;
         }
 
-        const user = this.usersWithExtId.find((u) => u.id === document.userId);
+        const user = this.usersWithExtId.find((u) => u.id === submission.userId);
         if (!user) {
           return null;
         }
 
         return {
-          ...document,
-          studyIds,
-          documentName: document.name.length <= 40 ? document.name : document.name.substring(0, 40) + "...",
+          id: submission.id,
+          submissionId: submission.extId,
+          documents: docSummaries,
+          studyIds: uniqueStudyIds,
           sessionIds: studySessionIds,
-          studies: studyIds.length,
+          studies: uniqueStudyIds.length,
           sessions: studySessionIds.length,
           extId: user.extId,
           firstName: user.firstName,
           lastName: user.lastName,
-        }
-
+        };
       }).filter((s) => s !== null);
     },
     sessionsTable() {
@@ -219,6 +299,21 @@ export default {
         const session = this.studySessions.find((s) => sId === s.id);
         const study = this.studies.find((s) => s.id === session.studyId);
         const user = this.users.find((u) => u.id === session.userId);
+
+        // resolve document per session in submission mode
+        let docRef = null;
+        if (this.isSubmissionMode && d.documents) {
+          const found = d.documents.find((doc) => doc.studyIds.includes(session.studyId)) || null;
+          docRef = found ? {
+            ...found,
+            // carry owner info from submission-level row
+            extId: d.extId,
+            firstName: d.firstName,
+            lastName: d.lastName,
+          } : null;
+        } else {
+          docRef = d;
+        }
 
         return {
           studyName: study.name,
@@ -228,8 +323,8 @@ export default {
           studyId: session.studyId,
           sessionId: session.id,
           link: window.location.origin + "/review/" + session.hash,
-          documentName: d.documentName,
-          document: d,
+          documentName: docRef ? (docRef.documentName || docRef.name || "-") : "-",
+          document: docRef,
           extId: (user) ? user.extId: "",
           start: session.start,
           end: session.end,
@@ -238,6 +333,19 @@ export default {
       }));
     },
     formattedStudies() {
+      if (this.isSubmissionMode) {
+        // group by actual document from sessions
+        const docMap = {};
+        this.selectedSessions.forEach((s) => {
+          if (s.document && s.document.id) {
+            docMap[s.document.id] = s.document;
+          }
+        });
+        return Object.values(docMap).map((doc) => ({
+          document: doc,
+          sessions: this.selectedSessions.filter((s) => s.document && s.document.id === doc.id),
+        }));
+      }
       return this.selectedDocuments.filter((d) => {
         return this.selectedSessions.find((s) => s.document.id === d.id);
       }).map((d) => {
@@ -259,11 +367,20 @@ export default {
       }, {});
     },
     documentTableColumns() {
+      if (!this.isSubmissionMode) {
+        return [
+          {name: "extId", key: "extId"},
+          {name: "First Name", key: "firstName"},
+          {name: "Last Name", key: "lastName"},
+          {name: "Document Title", key: "documentName"},
+          {name: "Studies", key: "studies"},
+          {name: "Sessions", key: "sessions"},
+        ];
+      }
       return [
-        {name: "extId", key: "extId"},
+        {name: "Submission ID", key: "submissionId"},
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
-        {name: "Document Title", key: "documentName"},
         {name: "Studies", key: "studies"},
         {name: "Sessions", key: "sessions"},
       ];
@@ -280,6 +397,8 @@ export default {
   methods: {
     open() {
       this.reset();
+      // set default publish method per mode
+      this.publishMethod = this.isSubmissionMode ? "csv" : "moodle";
       this.$refs.reviewStepper.open();
     },
     reset() {
@@ -287,10 +406,10 @@ export default {
       this.selectedSessions = [];
     },
     publishReviewLinks() {
-
       const feedback = (this.linkCollection === 'studies') ? this.formattedStudies.map((doc) => {
         let text = this.text_format;
-        text = text.replace("~USERNAME~", doc.document.creator_name);
+        const username = doc.document.creator_name || [doc.document.firstName, doc.document.lastName].filter(Boolean).join(" ");
+        text = text.replace("~USERNAME~", username);
         return {
           extId: doc.document.extId,
           text: text.replace("~SESSION_LINKS~", doc.sessions.map((s) => s.link).join("\n")),
@@ -301,6 +420,16 @@ export default {
           text: this.text_format.replace("~SESSION_LINKS~", this.formattedSessions[userId].map((s) => s.link).join("\n")),
         };
       });
+      if (this.isSubmissionMode && this.publishMethod === 'csv') {
+        this.downloadCSV(feedback);
+        this.$refs.reviewStepper.close();
+        this.eventBus.emit("toast", {
+          title: "CSV ready",
+          message: "Feedback exported as CSV.",
+          variant: "success",
+        });
+        return;
+      }
 
       this.$refs.reviewStepper.setWaiting(true);
       this.$socket.emit(
@@ -328,6 +457,29 @@ export default {
         }
       );
     },
+    downloadCSV(rows) {
+      const escapeCsv = (value) => {
+        if (value == null) return "";
+        const str = String(value).replace(/"/g, '""');
+        if (str.search(/[",\n]/g) >= 0) {
+          return '"' + str + '"';
+        }
+        return str;
+      };
+      const header = ["extId", "text"];
+      const csv = [header.join(",")]
+        .concat(rows.map((r) => [escapeCsv(r.extId), escapeCsv(r.text)].join(",")))
+        .join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `feedback_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   },
 };
 </script>

@@ -9,6 +9,12 @@
       />
       <BasicButton
         class="btn-secondary btn-sm me-1"
+        text="Publish Submissions"
+        title="Publish Submissions"
+        @click="$refs.publishSubmissionModal.open()"
+      />
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
         text="Manual Import"
         title="Manual Import"
         @click="$refs.uploadModal.open()"
@@ -40,6 +46,7 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
+  <PublishModal ref="publishSubmissionModal" mode="submission" />
   <GradingModal ref="gradingModal" />
 </template>
 
