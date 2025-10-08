@@ -160,6 +160,7 @@ class DocumentSocket extends Socket {
             );
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
+            fs.writeFileSync(target, data.file);
         } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -168,6 +169,7 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
                 projectId: data.projectId,
+                submissionId: data.submissionId,
                 originalFilename: data.name,
             }, {transaction: options.transaction});
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -907,16 +909,27 @@ class DocumentSocket extends Socket {
             }
         }
         } else {
-            // Handle file-based documents (PDF, JSON, etc.)
-            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
+            // Handle file-based documents (PDF, ZIP, JSON)
+            let fileExtension = '.pdf';
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+                fileExtension = '.json';
+            } else if (document.type === this.models['document'].docTypes.DOC_TYPE_ZIP) {
+                fileExtension = '.zip';
+            }
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
-
+            
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
-            const file = fs.readFileSync(filePath);
-            return { document: document, file: file };
+            const file = fs.readFileSync(filePath); // Buffer
+            // For JSON files, return the content as a string; for others (PDF/ZIP), return as Buffer
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+                const fileContent = file.toString('utf8');
+                return { document: document, file: fileContent };
+            } else {
+                return { document: document, file: file };
+            }
         }
     }
 
@@ -1029,6 +1042,21 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with the newly created `document_data` record object from the database.
      */
     async saveData(data, options) {
+        // Perform an upsert instead of unconditional insert to prevent duplicate rows for the same tuple.
+        // Upsert by unique tuple (documentId, studySessionId, studyStepId, key)
+        
+        const whereClause = {
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            key: data.key
+        };
+
+        const existing = await this.models['document_data'].findOne({ where: whereClause, transaction: options.transaction });
+        if (existing) {
+            const updated = await this.models['document_data'].updateById(existing.id, { value: data.value, deleted: false }, { transaction: options.transaction });
+            return updated;
+        }
 
         let documentData = await this.models['document_data'].add({
             userId: this.userId,
@@ -1038,6 +1066,34 @@ class DocumentSocket extends Socket {
             key: data.key,
             value: data.value
         }, {transaction: options.transaction});
+
+        return documentData;
+    }
+
+    /**
+     * Retrieve document data for a particular document/study_session/study_step from the document_data table.
+     *
+     * @param {Object} data The data payload containing the retrieval parameters.
+     * @param {number} data.documentId The ID of the associated document.
+     * @param {number} data.studySessionId The ID of the associated study session.
+     * @param {number} data.studyStepId The ID of the associated study step.
+     * @param {string} data.key The key for the data being retrieved (e.g., 'assessment_results').
+     * @param {Object} options Additional configuration for the operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
+     */
+    async getDocumentData(data, options) {
+        const documentData = await this.models['document_data'].findOne({
+            where: {
+                documentId: data.documentId,
+                studySessionId: data.studySessionId,
+                studyStepId: data.studyStepId,
+                key: data.key,
+                deleted: false
+            },
+            order: [['updatedAt', 'DESC']],
+            transaction: options?.transaction
+        });
 
         return documentData;
     }
@@ -1106,6 +1162,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
+        this.createSocket("documentDataGet", this.getDocumentData, {}, false);
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);

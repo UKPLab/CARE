@@ -79,6 +79,7 @@
     class="study-container"
   >
     <Annotator
+      ref="annotator"
       v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
@@ -86,18 +87,21 @@
       @error="error"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
+    <StepModal
+      v-if="studyTrajectory.includes(currentStep.id) && ((currentStep.stepType === 3) || (currentStepHasNlpRequests && (currentStep.stepType === 1 || currentStep.stepType === 2)))"
+      :key="`stepmodal-${currentStep.id}-${currentStep.stepType}`"
+      :study-step-id="currentStep.id"
+      :is-last-step="currentStep.stepType === 3 && currentStep.id === lastStep.id"
+      :loading-only="currentStep.stepType !== 3 && currentStepHasNlpRequests"
+      :auto-close-on-complete="currentStep.stepType !== 3 && currentStepHasNlpRequests"
+      @close="currentStep.stepType === 3 ? handleModalClose($event) : handleNlpModalClose($event)"
+      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
+    />
     <Editor
       v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
       :active="true"
-      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    />
-    <StepModal
-      v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
-      :study-step-id="currentStep.id"
-      :is-last-step="currentStep.id === lastStep.id"
-      @close="handleModalClose"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
   </div>
@@ -162,6 +166,10 @@ export default {
   computed: {
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
+    },
+    currentStepHasNlpRequests() {
+      const services = this.currentStep && this.currentStep.configuration && this.currentStep.configuration.services;
+      return Array.isArray(services) && services.some(s => s && s.type === 'nlpRequest');
     },
     studySession() {
       if (this.studySessionId !== 0) {
@@ -412,7 +420,32 @@ export default {
         }
       }
     },
-    updateStep(step) {
+    handleNlpModalClose() {
+      // Refresh assessment data after NLP processing completes
+      // Use a small delay to ensure database save has completed and store is updated
+      setTimeout(() => {
+        const annotator = this.$refs.annotator;
+        if (annotator && annotator.$refs.assessment) {
+          annotator.$refs.assessment.refreshSavedData();
+        }
+      }, 100);
+    },
+    async updateStep(step) {
+      // Gate navigation for steps that require validation before proceeding (e.g., forced assessment)
+      if (!this.readOnlyComputed && this.currentStep && this.currentStep.stepType === 1) {
+        const annotator = this.$refs.annotator;
+        if (annotator && typeof annotator.canProceed === 'function') {
+          const ok = await annotator.canProceed();
+          if (!ok) {
+            this.eventBus.emit("toast", {
+              title: "Incomplete Assessment",
+              message: "Please save all assessment criteria before proceeding.",
+              variant: "warning",
+            });
+            return;
+          }
+        }
+      }
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {

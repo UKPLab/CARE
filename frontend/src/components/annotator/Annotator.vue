@@ -42,6 +42,18 @@
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <TopBarButton
+            v-if="assessmentEnabled"
+            :title="assessmentViewActive ? 'Switch to Annotator' : 'Switch to Assessment'"
+            class="btn rounded-circle ms-2"
+            @click="assessmentViewActive = !assessmentViewActive"
+        >
+          <LoadIcon
+              :color="assessmentViewActive ? '#097969' : '#777777'"
+              :size="18"
+              icon-name="clipboard-check"
+          />
+        </TopBarButton>
+        <TopBarButton
             v-show="studySessionId && studySessionId !== 0 ? active : true"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
@@ -54,6 +66,18 @@
           />
         </TopBarButton>
       </li>
+      <ExpandMenu v-show="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
+    </Teleport>
+
+    <!-- If download before study closing disabled and we are in a study session, no download allowed -->
+    <Teleport to="#topBarExtendMenuItems">
+      <li><a
+          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
+          class="dropdown-item"
+          href="#"
+          @click="downloadAnnotations"
+      >Download
+        Annotations</a></li>
     </Teleport>
 
     <Teleport to="#topbarCustomPlaceholder">
@@ -101,6 +125,7 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
+import Assessment from "./Assessment.vue";
 import Loader from "@/basic/Loading.vue";
 import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
@@ -122,6 +147,7 @@ export default {
     PDFViewer,
     ExpandMenu,
     AnnotationSidebar,
+    Assessment,
     Loader,
     TopBarButton,
     BasicSidebar
@@ -137,6 +163,11 @@ export default {
       type: Number,
       required: false,
       default: null
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false
     },
     acceptStats: {
       type: Boolean,
@@ -186,6 +217,7 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
+      assessmentViewActive: false,
       sidebarIconHighlight: false,
       sidebarWidth: 400,
       maxSidebarWidth: 400,
@@ -310,6 +342,20 @@ export default {
         return comments;
       }
     },
+    currentStudyStep() {
+      return this.studyStepId ? this.$store.getters["table/study_step/get"](this.studyStepId) : null;
+    },
+    currentWorkflowStep() {
+      const step = this.currentStudyStep;
+      if (!step || !step.workflowStepId) return null;
+      return this.$store.getters["table/workflow_step/get"](step.workflowStepId);
+    },
+    assessmentEnabled() {
+      const step = this.currentStudyStep;
+      if (!step) return false;
+      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
+      return !!(cfg && cfg.configFile);
+    },
     sidebarButtons() {
       const buttons = [];
       
@@ -408,6 +454,22 @@ export default {
       }
     });
 
+    // When a manual annotation is added, automatically switch to the annotator sidebar
+    this.eventBus.on('annotator:switchToSidebar', () => {
+      if (this.assessmentEnabled && this.assessmentViewActive) {
+        this.assessmentViewActive = false;
+        this.isSidebarVisible = true;
+      }
+    });
+
+    // When a manual annotation is added, automatically switch to the annotator sidebar
+    this.eventBus.on('annotator:switchToSidebar', () => {
+      if (this.assessmentEnabled && this.assessmentViewActive) {
+        this.assessmentViewActive = false;
+        this.isSidebarVisible = true;
+      }
+    });
+
 
     // init component
     this.load();
@@ -453,6 +515,16 @@ export default {
     }
   },
   methods: {
+    async canProceed() {
+      // If assessment sidebar is available and active/enabled, delegate gating
+      if (this.assessmentEnabled && this.$refs.assessment && typeof this.$refs.assessment.canProceed === 'function') {
+        return await this.$refs.assessment.canProceed();
+      }
+      return true;
+    },
+    safeParseJSON(value) {
+      try { return JSON.parse(value); } catch { return null; }
+    },
     handleButtonAction(data) {
       switch(data.action) {
         case 'toggleStudyComments':
@@ -662,7 +734,13 @@ export default {
       }
     },
     async leave() {
-      return await this.$refs.sidebar.leave();
+      if (this.assessmentEnabled && this.assessmentViewActive && this.$refs.assessment && this.$refs.assessment.leave) {
+        return await this.$refs.assessment.leave();
+      }
+      if (this.$refs.sidebar && this.$refs.sidebar.leave) {
+        return await this.$refs.sidebar.leave();
+      }
+      return true;
     },
     downloadAnnotations() {
 

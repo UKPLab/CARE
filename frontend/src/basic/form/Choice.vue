@@ -62,7 +62,7 @@
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
+import { defineAsyncComponent } from "vue";
 
 
 /**
@@ -72,7 +72,7 @@ import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
  */
 export default {
   name: "FormChoice",
-  components: { FormElement, FormDefault, FormSelect, ConfigurationModal },
+  components: { FormElement, FormDefault, FormSelect, ConfigurationModal: defineAsyncComponent(() => import("@/basic/modal/ConfigurationModal.vue")) },
   inject: {
     formData: {
       default: () => null,
