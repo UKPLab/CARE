@@ -19,7 +19,7 @@
               class="nav-item"
             >
               <TopBarButton
-                class="nav-link d-flex align-items-center"
+                class="nav-link align-items-center"
                 :class="{ 
                   'active': resolvedActiveSlot === slotName,
                 }"
@@ -37,7 +37,6 @@
                   :size="20"
                   :color="isSingleConfig ? '#495057' : (resolvedActiveSlot === slotName ? '#0d6efd' : '#495057')"
                   :cursor="isSingleConfig ? 'default' : 'pointer'"
-                  class="sidebar-icon"
                 />
               </TopBarButton>
             </li>
@@ -166,11 +165,11 @@ export default {
   },
   data() {
     return {
-      internalActiveSlot: this.activeSideBar || null,
+      internalActiveSlot: null,
       width: 400,
       minWidth: 200, 
       maxWidth: 800, 
-      numberOfVisibleButtons: 4,
+      numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
       isFixed: false,
       isDragging: false,
       sidebarContainerDom: undefined,
@@ -183,6 +182,7 @@ export default {
     this.minWidth = this.minSidebarWidth;
     this.maxWidth = this.maxSidebarWidth;
     this.originalWidth = this.width;
+    this.internalActiveSlot = this.activeSideBar || null;
     
     this.initDragController();
     this.initHoverController();
@@ -237,6 +237,7 @@ export default {
       return this.combinedButtons.slice(this.numberOfVisibleButtons-1);
     },
     resolvedActiveSlot() {
+      console.log(this.internalActiveSlot);
       return this.internalActiveSlot || this.availableSlots[0] || null;
     },
     isSingleConfig() {
@@ -558,11 +559,6 @@ export default {
 #addPageNote .btn {
   border: none;
   color: #575757;
-}
-
-/* ===== ICON STYLES ===== */
-.sidebar-icon {
-  flex-shrink: 0;
 }
 
 .nav-text {

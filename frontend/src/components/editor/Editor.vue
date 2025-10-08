@@ -5,10 +5,11 @@
         <Editor ref="editor" @update:data="$emit('update:data', $event)" />
       </div>
       <BasicSidebar
-        v-if="!sidebarDisabled"
+        v-if="!sidebarDisabled && defaultActiveSidebar"
         ref="sidebar"
         :sidebar-configs="sidebarConfigs"
         :side-bar-width="350"
+        :activeSideBar="defaultActiveSidebar"
         class="sidebar-container"
         @sidebar-change="handleSidebarChange"
         @sidebar-action="handleSidebarAction">
@@ -117,11 +118,43 @@ export default {
       sidebarContent: null,
     };
   },
+  mounted() {
+    // Set initial sidebar content based on available tabs
+    this.sidebarContent = this.defaultActiveSidebar;
+  },
   computed: {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    defaultActiveSidebar() {
+      // Determine the default active sidebar based on available tabs
+      if (this.document && this.document.type === 2) {
+        return 'configurator';
+      } else if (this.showHistory) {
+        return 'history';
+      }
+      // Return null if no tabs are available
+      return null;
+    },
     sidebarConfigs(){
+      const tabs = {};
+      
+      // Only add configurator tab if document type is 2
+      if (this.document && this.document.type === 2) {
+        tabs['configurator'] = {
+          icon: 'gear-fill',
+          title: 'Configurator'
+        };
+      }
+      
+      // Only add history tab if user has permission to see it
+      if (this.showHistory) {
+        tabs['history'] = {
+          icon: 'clock-history',
+          title: 'History'
+        };
+      }
+      
       return {
         // General buttons that appear on all sidebar views
         generalButtons: [
@@ -135,16 +168,7 @@ export default {
           }
         ],
         // Tab configurations
-        tabs: {
-          'configurator': {
-            icon: 'gear-fill',
-            title: 'Configurator'
-          },
-          'history': {
-            icon: 'clock-history',
-            title: 'History'
-          }
-        }
+        tabs: tabs
       };
     },
     showHTMLDownloadButton() {
