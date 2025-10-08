@@ -10,7 +10,7 @@ const docTypes = Object.freeze({
     DOC_TYPE_PDF: 0,
     DOC_TYPE_HTML: 1,
     DOC_TYPE_MODAL: 2,
-    DOC_TYPE_CONFIG: 3,
+    // DOC_TYPE_CONFIG: 3, Unused due to table change
     DOC_TYPE_ZIP: 4,
 });
 
@@ -67,7 +67,7 @@ module.exports = (sequelize, DataTypes) => {
             if (newDocument.type === this.docTypes.DOC_TYPE_HTML || newDocument.type === this.docTypes.DOC_TYPE_MODAL) {
                 fs.writeFileSync(path.join(UPLOAD_PATH, `${newDocument.hash}.delta`), JSON.stringify({}));
             }
-            // TODO: what if transaction failes? --> need to delete the file again
+            // TODO: what if transaction fails? --> need to delete the file again
 
             return newDocument;
         }
