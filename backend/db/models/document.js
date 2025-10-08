@@ -9,7 +9,7 @@ const docTypes = Object.freeze({
     DOC_TYPE_PDF: 0,
     DOC_TYPE_HTML: 1,
     DOC_TYPE_MODAL: 2,
-    DOC_TYPE_CONFIG: 3,
+    // DOC_TYPE_CONFIG: 3, Unused due to table change
     DOC_TYPE_ZIP: 4,
 });
 
