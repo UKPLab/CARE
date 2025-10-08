@@ -110,7 +110,7 @@ export default {
         this.$refs.applySkillSetupStepper.open();
       } else {
         this.eventBus.emit("toast", {
-          title: "LLMentor Grading In Progress",
+          title: "Preprocessing In Progress",
           message: "Preprocessing is currently running. Showing progress...",
           variant: "info",
         });
@@ -139,13 +139,13 @@ export default {
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "LLMentor Grading Cancelled",
-            message: "Grading process has been cancelled.",
+            title: "Preprocessing Cancelled",
+            message: "Preprocessing has been cancelled.",
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "LLMentor Grading Cancellation Failed",
+            title: "Preprocessing Cancellation Failed",
             message: res.message,
             variant: "danger",
           });
@@ -164,8 +164,8 @@ export default {
       });
       
       this.eventBus.emit("toast", {
-        title: "LLMentor Grading Started",
-        message: "Preprocessing has been initiated. The progress modal will open automatically.",
+        title: "Preprocessing Started",
+        message: "Preprocessing has been initiated.",
         variant: "info",
         autohide: true,
         delay: 5000
@@ -192,7 +192,7 @@ export default {
       this.$refs.processStepper.open();
       
       this.eventBus.emit("toast", {
-        title: "LLMentor Grading In Progress",
+        title: "Preprocesing In Progress",
         message: "Preprocessing is now running. Progress shown in the modal.",
         variant: "success",
       });
