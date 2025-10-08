@@ -23,7 +23,7 @@
         class="btn-success btn-sm ms-1"
         text="Preprocess Grading"
         title="Preprocess Grading"
-        @click="preprocessGrades" 
+        @click="preprocessGrades"
       />
     </template>
     <template #body>
@@ -40,19 +40,19 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
-  <GradingModal
-    ref="gradingModal"
-  />
+  <GradingModal ref="gradingModal" />
 </template>
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import UploadModal from "./review/UploadModal.vue";
-import ImportModal from "./review/ImportModal.vue";
-import PublishModal from "./review/PublishModal.vue";
+import UploadModal from "./submission/UploadModal.vue";
+import ImportModal from "./submission/ImportModal.vue";
+import PublishModal from "./submission/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import JSZip from "jszip";
+import FileSaver from "file-saver";
 
 /**
  * Submission list component
@@ -89,26 +89,41 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        {name: "Title", key: "name"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Type", key: "type"},
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Submission ID", key: "extId" },
+        { name: "Validation ID", key: "validationConfigurationId" },
+        { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
         {
-          icon: "box-arrow-in-right",
+          icon: "download",
           options: {
             iconOnly: true,
             specifiers: {
               "btn-outline-secondary": true,
             },
           },
-          title: "Access document...",
-          action: "accessDoc",
+          title: "Download submission files",
+          action: "downloadSubmission",
+          stats: {
+            submissionId: "id",
+          },
+        },
+        {
+          icon: "check-square",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          title: "Validate Submission",
+          action: "validateSubmission",
           stats: {
             documentId: "id",
-          }
+          },
         },
         {
           icon: "trash",
@@ -122,9 +137,9 @@ export default {
           action: "deleteDoc",
           stats: {
             documentId: "id",
-          }
+          },
         },
-      ]
+      ],
     };
   },
   computed: {
@@ -133,26 +148,15 @@ export default {
       return this.$store.getters["table/submission/getAll"];
     },
     submissionTable() {
-      /* Build one row per submission: pick the main PDF document (if any) to
-       * drive "title", "type" and link/hash.  If none found we still list the
-       * submission but leave document-specific columns blank.
-       */
       return this.submissions.map((s) => {
-        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === s.id);
-
-        // heuristic: choose first PDF as main document
-        const mainDoc = docs.find((d) => d.type === 0) || docs[0] || {};
-
         const user = this.$store.getters["table/user/get"](s.userId);
-
         return {
           id: s.id,
-          name: mainDoc.name || "—",              // Title column
+          extId: s.extId,
           firstName: user ? user.firstName : "Unknown",
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
-          type: mainDoc.type === 0 ? "PDF" : mainDoc.type === 1 ? "HTML" : mainDoc.type === 4 ? "ZIP" : "—",
-          hash: mainDoc.hash || null,              // for accessDoc()
+          validationConfigurationId: s.validationConfigurationId ?? "-",
         };
       });
     },
@@ -160,8 +164,8 @@ export default {
   methods: {
     action(data) {
       switch (data.action) {
-        case "accessDoc":
-          this.accessDoc(data.params);
+        case "downloadSubmission":
+          this.downloadSubmission(data.params.id);
           break;
         case "deleteDoc":
           this.deleteDoc(data.params);
@@ -172,9 +176,7 @@ export default {
       const studies = this.$store.getters["table/study/getFiltered"]((e) => e.documentId === row.id);
       let warning;
       if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${
-          studies.length !== 1 ? "studies" : "study"
-        }
+        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"}
          running on this document. Deleting it will delete the ${studies.length !== 1 ? "studies" : "study"}!`;
       } else {
         warning = "";
@@ -203,11 +205,103 @@ export default {
         }
       });
     },
-    accessDoc(row) {
-      this.$router.push(`/document/${row.hash}`);
-    },
     preprocessGrades() {
       this.$refs.gradingModal.open();
+    },
+    async downloadSubmission(submissionId) {
+      try {
+        // Get all documents for this submission
+        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submissionId);
+
+        if (!docs || docs.length === 0) {
+          this.eventBus.emit("toast", {
+            title: "No documents found",
+            message: "This submission has no associated documents to download",
+            variant: "warning",
+          });
+          return;
+        }
+
+        // Create a ZIP file to package all documents
+        const zip = new JSZip();
+
+        // Get submission info for folder naming
+        const submission = this.$store.getters["table/submission/get"](submissionId);
+        const user = this.$store.getters["table/user/get"](submission.userId);
+        const folderName = `submission_${submission.extId}_${user?.firstName}_${user?.lastName}`;
+
+        // Download each document and add to ZIP
+        for (const doc of docs) {
+          try {
+            // Request document content from server
+            const response = await new Promise((resolve, reject) => {
+              this.$socket.emit("documentGet", { documentId: doc.id }, (res) => {
+                if (res.success) {
+                  resolve(res.data);
+                } else {
+                  reject(new Error(res.message || "Failed to get document"));
+                }
+              });
+            });
+
+            // Determine file extension based on document type
+            let fileExtension;
+            let fileName;
+
+            switch (doc.type) {
+              case 3: // JSON/Config
+                fileExtension = ".json";
+                break;
+              case 4: // ZIP
+                fileExtension = ".zip";
+                break;
+              default:
+                fileExtension = ".pdf";
+            }
+
+            fileName = `${doc.name}${fileExtension}`;
+
+            // Add file to ZIP
+            if (response.file) {
+              if (typeof response.file === "string") {
+                // If it's a string (like JSON), add as text
+                zip.file(`${folderName}/${fileName}`, response.file, { binary: false });
+              } else {
+                // For binary data
+                zip.file(`${folderName}/${fileName}`, response.file, { binary: true });
+              }
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Document download issue",
+                message: `Could not download ${doc.name}`,
+                variant: "warning",
+              });
+            }
+          } catch (error) {
+            this.eventBus.emit("toast", {
+              title: "Download error",
+              message: `Failed to download ${doc.name}: ${error.message}`,
+              variant: "danger",
+            });
+          }
+        }
+
+        zip.generateAsync({ type: "blob" }).then((content) => {
+          FileSaver.saveAs(content, `${folderName}.zip`);
+        });
+
+        this.eventBus.emit("toast", {
+          title: "Download complete",
+          message: `Downloaded submission ${submission.extId} with ${docs.length} documents`,
+          variant: "success",
+        });
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: "Download failed",
+          message: error.message,
+          variant: "danger",
+        });
+      }
     },
   },
 };

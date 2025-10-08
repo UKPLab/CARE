@@ -97,6 +97,7 @@ module.exports = class MoodleRPC extends RPC {
     }
 
     /**
+     * TODO: Check if we still need 'submissionURLs'.
      * Retrieves submission information from a specified moodle assignment. This includes a list of users and their corresponding submission files (name and url).
      *
      * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.

@@ -206,7 +206,6 @@ class Moodle:
                 - 'status' (str): Submission status (e.g., 'submitted', 'draft').
                 - 'files' (list): List of all files with detailed metadata.
                 - 'fileCategorization' (dict): Summary of file types without associations.
-                - 'submissionURLs' (list): Legacy field for backward compatibility.
         """
         
         # Get users from the course
@@ -274,7 +273,6 @@ class Moodle:
                             # Legacy format for backward compatibility
                             submission_urls.append({"filename": file_name, "fileurl": file_url})
             
-            submission_info['submissionURLs'] = submission_urls         
             submission_infos.append(submission_info)
 
         # Log the final processed data   

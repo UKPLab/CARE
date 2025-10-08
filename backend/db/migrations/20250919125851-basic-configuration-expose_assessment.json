@@ -1,6 +1,7 @@
-{
-    "description": "the configuration for grading criteria which be used for LLMentor",
+{ 
     "version": "0.0.1",
+    "name": "Exposé assessment configuration", 
+    "description": "the configuration of grading criteria for LLMentor",
     "type": "assessment",
     "rubrics": [
       {
