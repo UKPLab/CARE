@@ -1,10 +1,15 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
+const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const {inject} = require("../../utils/generic");
 const path = require("path");
+const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
+const {enqueueDocumentTask} = require("../../utils/queue.js");
+
+const yauzl = require("yauzl");
 
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
@@ -216,7 +221,7 @@ class DocumentSocket extends Socket {
                                 const newAnnotation = {
                                     documentId: doc.id,
                                     selectors: selectors,
-                                    tagId: 1 , //always use the same tag for all annotations
+                                    tagId: 1, //always use the same tag for all annotations
                                     studySessionId: doc.studySessionId,
                                     studyStepId: doc.studyStepId,
                                     text: extracted.text || null,
@@ -313,7 +318,7 @@ class DocumentSocket extends Socket {
      * @param {Object} [options] Additional configuration parameters (currently unused).
      * @returns {Promise<void>} A promise that resolves (with no value) once the document list has been successfully fetched and emitted.
      */
-    async refreshAllDocuments(data ,options) {
+    async refreshAllDocuments(data, options) {
         data.userId = data.userId || null;
         if (await this.isAdmin()) {
             if (data.userId) {
@@ -437,45 +442,45 @@ class DocumentSocket extends Socket {
      *  Any of the underlying database operations (`getById`, `findAll`, `update`) fail.
      */
     async saveDocument(documentId) {
-            const doc = await this.models['document'].getById(documentId);
-            if (!doc) {
-                this.logger.error(`Document with ID ${documentId} not found.`);
-                return;
-            }
+        const doc = await this.models['document'].getById(documentId);
+        if (!doc) {
+            this.logger.error(`Document with ID ${documentId} not found.`);
+            return;
+        }
 
-            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
+        if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
 
-                const edits = await this.models['document_edit'].findAll({
-                    where: {documentId: documentId, studySessionId: null, draft: true},
-                    raw: true
-                });
+            const edits = await this.models['document_edit'].findAll({
+                where: {documentId: documentId, studySessionId: null, draft: true},
+                raw: true
+            });
 
-                const newDelta = new Delta(dbToDelta(edits));
-                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
+            const newDelta = new Delta(dbToDelta(edits));
+            const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
 
-                let oldDelta = new Delta();
-                try {
-                    const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
-                    oldDelta = new Delta(JSON.parse(oldDeltaContent));
-                } catch (err) {
-                    if (err.code !== 'ENOENT') {
-                        throw err;
-                    }
+            let oldDelta = new Delta();
+            try {
+                const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
+                oldDelta = new Delta(JSON.parse(oldDeltaContent));
+            } catch (err) {
+                if (err.code !== 'ENOENT') {
+                    throw err;
                 }
-
-                const mergedDelta = oldDelta.compose(newDelta);
-
-                await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
-
-                await this.models['document_edit'].update(
-                    {draft: false},
-                    {where: {id: edits.map(edit => edit.id)}}
-                );
-
-                this.logger.info("Deltas file updated successfully.");
-            } else {
-                throw new Error("Non-HTML/MODAL documents are not supported for this operation");
             }
+
+            const mergedDelta = oldDelta.compose(newDelta);
+
+            await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
+
+            await this.models['document_edit'].update(
+                {draft: false},
+                {where: {id: edits.map(edit => edit.id)}}
+            );
+
+            this.logger.info("Deltas file updated successfully.");
+        } else {
+            throw new Error("Non-HTML/MODAL documents are not supported for this operation");
+        }
     }
 
 
@@ -636,36 +641,44 @@ class DocumentSocket extends Socket {
      */
     async editDocument(data, options) {
         const {documentId, studySessionId, studyStepId, ops} = data;
-        let appliedEdits = [];
-        let orderCounter = 1;
 
-        await ops.reduce(async (promise, op) => {
-            await promise;
-            const entryData = {
+        // Generate queue key for this document context
+        const key = `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+
+        return enqueueDocumentTask(this.server.documentQueues, key, async () => {
+            const bulkEdits = ops.map((op, idx) => ({
                 userId: this.userId,
                 draft: true,
                 documentId,
                 studySessionId: studySessionId || null,
                 studyStepId: studyStepId || null,
-                order: orderCounter++,
+                order: idx + 1,
                 ...op
-            };
+            }));
 
-            const savedEdit = await this.models['document_edit'].add(entryData, {transaction: options.transaction});
+            const savedEdits = await this.models['document_edit'].bulkCreate(
+                bulkEdits,
+                {
+                    transaction: options.transaction
+                }
+            );
 
-            appliedEdits.push({
-                ...savedEdit,
+            const appliedEdits = savedEdits.map(se => ({
+                ...se.get({plain: true}),
                 applied: true,
                 sender: this.socket.id
-            });
-        }, Promise.resolve());
+            }));
 
-        // Check if studySessionId is not null or zero
-        if (studySessionId !== null) {
-            this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-            return;
-        }
-        this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+            if (studySessionId !== null) {
+                this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                return;
+            }
+
+            options.transaction.afterCommit(() => {
+                this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+            });
+
+        });
     }
 
     /**
@@ -938,7 +951,7 @@ class DocumentSocket extends Socket {
                             .filter(edit =>
                                 (edit.studySessionId === data['studySessionId'] &&
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
-                                ),
+                        ),
                     };
                 }
             }
@@ -970,14 +983,14 @@ class DocumentSocket extends Socket {
      * @param {object} options Additional configuration parameters.
      * @returns {Promise<void>} A promise that resolves (with no value) once the document has been processed.
      */
-    async closeDocument(data, options) {    
+    async closeDocument(data, options) {
         if (data.studySessionId === null) {
             await this.saveDocument(data.documentId);
         }
         const index = this.socket.openComponents.editor.indexOf(data.documentId);
         if (index > -1) {
             this.socket.openComponents.editor[index] = undefined; // Remove the document ID
-        }      
+        }
     }
 
     /**
@@ -1029,7 +1042,6 @@ class DocumentSocket extends Socket {
         });
     }
 
-    
 
     /**
      * Subscribe the client's socket to a document-specific communication channel.

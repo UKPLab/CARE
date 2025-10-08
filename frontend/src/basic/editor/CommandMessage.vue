@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="row" v-if="showPayload">
-      <JsonEditor :content="data.data" readonly/>
+      <JsonEditor :content="data.data" readOnly/>
     </div>
   </div>
 </template>

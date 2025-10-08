@@ -64,7 +64,7 @@
             </div>
             <div class="row justify-content-center">
               <div class="col">
-                <JsonEditor :content="currentData.input.example" readonly/>
+                <JsonEditor :content="currentData.input.example" readOnly/>
               </div>
             </div>
           </div>
@@ -78,7 +78,7 @@
             </div>
             <div class="row justify-content-center">
               <div class="col">
-                <JsonEditor :content="currentData.output.example" readonly />
+                <JsonEditor :content="currentData.output.example" readOnly />
               </div>
             </div>
           </div>

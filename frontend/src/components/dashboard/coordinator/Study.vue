@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import BasicCoordinator from "@/basic/Coordinator.vue";
+import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 
 /**
  * StudyCoordinator - coordinator to add or edit studies
@@ -34,7 +34,7 @@ import BasicCoordinator from "@/basic/Coordinator.vue";
  */
 export default {
   name: "CoordinatorStudy",
-  subscribeTable: ['document'],
+  subscribeTable: ['document', 'tag_set'],
   components: {BasicCoordinator},
   data() {
     return {

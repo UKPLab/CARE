@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'CARE'
-copyright = '2023, Dennis Zyska, Nils Dycke'
-author = 'Dennis Zyska, Nils Dycke'
+copyright = '2022-2025 Team CARE (Technical University Darmstadt)'
+author = 'Team CARE (Technical University Darmstadt)'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

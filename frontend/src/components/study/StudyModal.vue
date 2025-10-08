@@ -146,6 +146,7 @@ import Editor from "@/basic/editor/Editor.vue";
  */
 export default {
   name: "StudyModal",
+  subscribeTable:["study_session"],
   components: {Loader, BasicTable, Modal, Editor },
   props: {
     studyId: {

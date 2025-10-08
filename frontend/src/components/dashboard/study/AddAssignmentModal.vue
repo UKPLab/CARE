@@ -2,7 +2,7 @@
   <BasicModal
     ref="assignmentModal"
     name="add-assignment-modal"
-    xl
+    size="xl"
     @hide="resetModal"
   >
     <template #title>

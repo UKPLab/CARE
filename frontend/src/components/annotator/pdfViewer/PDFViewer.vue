@@ -6,6 +6,7 @@
     v-if="pdf"
     id="pdfContainer"
     class="has-transparent-text-layer"
+    @copy="onCopy"
   >
   <div class="pdf-toolbar">
       <button class="toolbar-btn" @click="zoomOut" title="Zoom Out">
@@ -29,7 +30,7 @@
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readonly"/>
+    <Adder v-if="!readOnly"/>
   </div>
 </template>
 
@@ -75,7 +76,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
@@ -89,6 +90,7 @@ export default {
       pdf: computed(() => this.pdf),
     }
   },
+  emits: ['copy'],
   data() {
     return {
       pdf: null,
@@ -199,13 +201,16 @@ export default {
           action: "pdfPageVisibilityChange",
           data: {
             documentId: this.documentId,
-            readonly: this.readonly,
+            readOnly: this.readOnly,
             visibility: page,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
           }
         })
       }
+    },
+    onCopy(event) {
+      this.$emit('copy', event);
     },
   },
 
@@ -221,7 +226,7 @@ export default {
 
 #pdfContainer {
   min-width: 800px;
-  max-width: 1000px;
+  /* TODO: Would you prefer max-width here? */
 }
 
 .pdf-toolbar {

@@ -105,6 +105,24 @@ For testing NLP models and human-in-the-loop scenarios, please consider the exis
 care (highlight summarization and comment sentiment classification) and the extensive guide on
 :doc:`modifying the frontend <../for_developers/frontend/frontend>` to add other models with different UI elements.
 
+User Consent
+~~~~~~~~~~~~
+
+Before you can collect any data with CARE, participants must give their consent.  
+During registration, three separate checkboxes are shown:
+
+1. **Terms of Service**: required to create an account.  
+2. **Anonymous statistics**: allows collection of usage metrics (e.g. counts of actions).  
+3. **Research data**: allows storage of annotations and behavioural logs for research.  
+
+The first item is mandatory, the other two are optional.  
+Users can update or withdraw their consent at any time in the profile menu under **Update Consent**.  
+
+.. note::
+
+   Without consent for research data, CARE will not log annotations or behavioural traces.  
+   The backend enforces this, and admins can configure the default settings in :doc:`../for_developers/examples/settings`.
+   
 NLP Model Debugging
 ===================
 As an administrator you can monitor the available NLP models from within the frontend under the "NLP Skills" component

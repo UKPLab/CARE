@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const fs = require('fs')
+const SequelizeSimpleCache = require("sequelize-simple-cache");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 
@@ -192,9 +193,16 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 },
             },
+        indexes: [
+            {
+            unique: false,
+            fields: ["readyForReview", "userId"]
+            }
+        ]
         }
     );
-    return Document;
+    Document.cache = new SequelizeSimpleCache({document: {limit: 50, ttl: false}});
+    return Document.cache.init(Document);
 };
 
 module.exports.docTypes = docTypes;

@@ -2,7 +2,7 @@
   <BasicModal
     ref="stepperModal"
     name="stepperModal"
-    lg
+    size="lg"
     @hide="$emit('hide')"
   >
     <template #title>

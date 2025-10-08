@@ -11,7 +11,7 @@
       tabindex="-1"
     >
       <div
-        :class="xl && 'modal-xl' || lg && 'modal-lg'"
+        :class="sizeClass"
         class="modal-dialog"
         role="document"
       >
@@ -24,7 +24,7 @@
               v-if="!removeClose"
               aria-label="Close"
               class="btn-close"
-              data-bs-dismiss="modal"
+              @click="close"
               type="button"
             />
           </div>
@@ -70,8 +70,7 @@
 /**
  * Basic Modal to include in other components
  *
- * @props xl: Boolean Use xl size
- * @props lg: Boolean Use lg size
+ * @props size: String Modal size (sm, md, lg, xl)
  * @props autoOpen: Boolean Open modal on mount
  * @props disableKeyboard: Boolean Disable keyboard events
  * @props removeClose: Boolean Remove close button
@@ -94,18 +93,17 @@ export default {
   inject: {
     acceptStats: {
       default: () => false
+    },
+    parentModal: {
+      default: () => null
     }
   },
   props: {
-    xl: {
-      type: Boolean,
+    size: {
+      type: String,
       required: false,
-      default: false,
-    },
-    lg: {
-      type: Boolean,
-      required: false,
-      default: false,
+      default: 'md',
+      validator: (value) => ['sm', 'md', 'lg', 'xl'].includes(value)
     },
     autoOpen: {
       type: Boolean,
@@ -133,6 +131,11 @@ export default {
     }
   },
   emits: ['show', 'hide'],
+  provide() {
+    return {
+      parentModal: this
+    };
+  },
   data() {
     return {
       modal: null,
@@ -140,9 +143,16 @@ export default {
       progress: false,
       progressData: null,
       progressId: null,
+  _suspendedByChild: false,
     }
   },
   computed: {
+    sizeClass() {
+      if (this.size === 'md') {
+        return ''; // Default size, no additional class needed
+      }
+      return `modal-${this.size}`;
+    },
     progressPercent() {
       if (this.progressData) {
         return Math.round(this.progressData.current / this.progressData.total * 100);
@@ -152,7 +162,6 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
-
     this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('show.bs.modal', this.showEvent);
 
@@ -214,17 +223,43 @@ export default {
     openModal() {
       this.waiting = false;
       this.progress = false;
+      this.suspendParentModal();
       this.modal.show();
     },
     close() {
       this.modal.hide();
+      this.resumeParentModal();
     },
     hide() {
       this.modal.hide();
+      this.resumeParentModal();
     },
-    toggle() {
-      this.modal.toggle();
+    showParentModal(){
+      if (this.parentModal) {
+        this.parentModal.show();
+      }
     },
+    hideParentModal(){
+      if (this.parentModal) {
+        this.parentModal.hide();
+      }
+    },
+    suspendParentModal(){
+      if (!this.parentModal || this.parentModal._suspendedByChild) return;
+      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+      if (el) {
+        el.classList.add('nested-suspended');
+      }
+      this.parentModal._suspendedByChild = true;
+    },
+    resumeParentModal(){
+      if (!this.parentModal || !this.parentModal._suspendedByChild) return;
+      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+      if (el) {
+        el.classList.remove('nested-suspended');
+      }
+      this.parentModal._suspendedByChild = false;
+    }
   }
 }
 </script>
@@ -232,5 +267,9 @@ export default {
 <style scoped>
 .shake {
   animation: shake-animation 0.5s ease-in-out;
+}
+.nested-suspended {
+  visibility: hidden; /* keep DOM & state, just not visible or interactive */
+  pointer-events: none;
 }
 </style>

@@ -93,6 +93,14 @@ export default {
       this.$refs.modal.open();
       this.$socket.emit("userGetRight", {
         userId: userId
+      }, (response) => {
+        if (!response.success) {
+          this.$eventBus.emit("toast", {
+            title: "Error fetching user rights",
+            message: response.message,
+            variant: "danger",
+          });
+        }
       });
     },
   },
