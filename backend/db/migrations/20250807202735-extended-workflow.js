@@ -12,17 +12,18 @@ const workflows = [
         configuration: {
           fields: [
             {
-              key: "configurationId",
-              label: "Configuration File (Type 3):",
+              key: "ConfigurationId",
+              label: "Configuration File:",
               type: "select",
               required: true,
               options: {
                 table: "configuration",
                 name: "name",
                 value: "id",
-                filter: {
-                  hideInFrontend: false
-                }
+                filter: [
+                  { key: "type", value: 0 },
+                  { key: "deleted", value: false }
+                ]
               },
               help: "Select the configuration file for this workflow step."
             },
@@ -56,17 +57,18 @@ const workflows = [
         configuration: {
           fields: [
             {
-              key: "configurationId",
-              label: "Configuration File (Type 3):",
+              key: "ConfigurationId",
+              label: "Configuration File:",
               type: "select",
               required: true,
               options: {
                 table: "configuration",
                 name: "name",
                 value: "id",
-                filter: {
-                  hideInFrontend: false
-                }
+                filter: [
+                  { key: "type", value: 0 },
+                  { key: "deleted", value: false }
+                ]
               },
               help: "Select the configuration file for this workflow step."
             },
