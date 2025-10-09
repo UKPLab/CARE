@@ -23,7 +23,6 @@
         </div>
         <BasicSidebar
             v-if="!sidebarDisabled && !assessmentViewActive"
-            :sidebar-configs="sidebarConfigs"
             :show="isSidebarVisible"
             :sidebar-width="sidebarWidth"
             :max-sidebar-width="maxSidebarWidth"
@@ -32,10 +31,13 @@
             @sidebar-action="handleButtonAction"
             @resize="handleResize"
         >
-          <template #annotations>
+           <template #annotations>
+          <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons" >
+            <template #content>
             <AnnotationSidebar ref="sidebar" />
-          </template>
-          <slot name="additionalSidebars"/>
+            </template>
+          </SidebarTemplate>
+        </template>
         </BasicSidebar>
       </div>
     </div>
@@ -138,11 +140,14 @@ import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
+import SidebarHistory from "@/components/editor/sidebar/History.vue";
+import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
   components: {
+    SidebarTemplate, SidebarHistory,
     LoadIcon,
     PDFViewer,
     ExpandMenu,
@@ -331,7 +336,7 @@ export default {
       }
     },
     comments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](c => 
+      const comments = this.$store.getters["table/comment/getFiltered"](c =>
           c.documentId === this.documentId && c.parentCommentId === null
         );
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
@@ -358,7 +363,7 @@ export default {
     },
     sidebarButtons() {
       const buttons = [];
-      
+
       // Study Comments Toggle Button
       if (this.studySessionId === null && this.numStudyComments > 0) {
         buttons.push({
@@ -368,7 +373,7 @@ export default {
           action: 'toggleStudyComments'
         });
       }
-      
+
       // NLP Toggle Button
       if (this.studySessionId && this.studySessionId !== 0 ? this.active && this.nlpEnabled : this.nlpEnabled) {
         buttons.push({
@@ -379,11 +384,11 @@ export default {
           action: 'toggleNlp'
         });
       }
-      
+
       // Download Button
       if (this.studySessionId && this.studySessionId !== 0 ? this.active : true) {
-        const canDownload = this.annotations.length + this.comments.length > 0 && 
-                           !this.downloading && 
+        const canDownload = this.annotations.length + this.comments.length > 0 &&
+                           !this.downloading &&
                            (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
         buttons.push({
           id: 'download-annotations',
@@ -393,19 +398,8 @@ export default {
           action: 'downloadAnnotations'
         });
       }
-      
+
       return buttons;
-    },
-    sidebarConfigs() {
-      return {
-        tabs: {
-          'annotations': {
-            title: 'Annotations',
-            icon: 'pencil-square',
-            buttons: this.sidebarButtons
-          }
-        }
-      };
     },
   },
   watch: {
@@ -489,7 +483,7 @@ export default {
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     window.removeEventListener('resize', this.handleResize);
-    
+
      const currentPage = this.getCurrentPageNumber();
      const payload = JSON.stringify({ page: currentPage, value: this.$refs.viewer.scrollTop });
      if (!this.savedScroll) {
@@ -542,7 +536,7 @@ export default {
     },
     toggleStudyComments() {
       this.setSetting({
-        key: 'annotator.showAllComments', 
+        key: 'annotator.showAllComments',
         value: !this.showAll
       });
     },
@@ -594,7 +588,7 @@ export default {
       else if (data.width > 900) {
         this.isSidebarVisible = true;
       }
-      
+
       // Log resize event with debouncing
       this.logResize(data.width, this.isSidebarVisible);
     },
@@ -783,7 +777,7 @@ export default {
     onCopy() {
       const selection = window.getSelection();
       const copiedText = selection ? selection.toString() : '';
-      
+
       if (this.acceptStats && copiedText.trim() !== '') {
         this.$socket.emit("stats", {
           action: "textCopied",
