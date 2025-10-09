@@ -20,11 +20,15 @@
         @click="$refs.importModal.open()"
       />
       <BasicButton
-        class="btn-success btn-sm ms-1"
-        text="Preprocess Grading"
-        title="Preprocess Grading"
-        @click="preprocessGrades"
-      />
+        :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
+        :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+        :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+        @click="preprocessGrades" 
+      >
+        <span v-if="isProcessingActive" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+          <span class="visually-hidden">Processing active</span>
+        </span>
+      </BasicButton>
     </template>
     <template #body>
       <BasicTable
@@ -40,7 +44,9 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
-  <GradingModal ref="gradingModal" />
+  <ApplySkillModal
+    ref="applySkillModal"
+  />
 </template>
 
 <script>
@@ -53,6 +59,7 @@ import PublishModal from "./submission/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
+import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
 
 /**
  * Submission list component
@@ -77,6 +84,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
+    ApplySkillModal,
   },
   data() {
     return {
@@ -144,8 +152,17 @@ export default {
   },
   computed: {
     submissions() {
-      // at the moment no readyForReview flag – return all
       return this.$store.getters["table/submission/getAll"];
+    },
+    isProcessingActive() {
+      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      const preprocess = bgTask.preprocess || {};
+      return (
+        preprocess &&
+        preprocess.requests &&
+        typeof preprocess.requests === 'object' &&
+        Object.keys(preprocess.requests).length > 0
+      );
     },
     submissionTable() {
       return this.submissions.map((s) => {
@@ -160,6 +177,13 @@ export default {
         };
       });
     },
+  },  
+  mounted() {
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "getBackgroundTask",
+      data: {}
+    });
   },
   methods: {
     action(data) {
@@ -206,7 +230,7 @@ export default {
       });
     },
     preprocessGrades() {
-      this.$refs.gradingModal.open();
+      this.$refs.applySkillModal.open();
     },
     async downloadSubmission(submissionId) {
       try {
