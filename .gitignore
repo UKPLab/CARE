@@ -3,10 +3,8 @@
 files/*.pdf
 files/*.delta
 files/*.json
+files/*.zip
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
-!files/1c784430-6ef0-4958-9451-c1960866135e.json
-!files/d8ef6767-39bc-44ea-9a7a-1356d9200871.json
-!files/3bf9ff94-6eb3-4c0e-aa16-3ea48f7736ad.json
 
 # database dumps
 db_dumps/

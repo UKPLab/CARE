@@ -26,11 +26,15 @@
         @click="$refs.importModal.open()"
       />
       <BasicButton
-        class="btn-success btn-sm ms-1"
-        text="Preprocess Grading"
-        title="Preprocess Grading"
-        @click="preprocessGrades"
-      />
+        :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
+        :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+        :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+        @click="preprocessGrades" 
+      >
+        <span v-if="isProcessingActive" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+          <span class="visually-hidden">Processing active</span>
+        </span>
+      </BasicButton>
     </template>
     <template #body>
       <BasicTable
@@ -47,13 +51,13 @@
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
   <AssignModal ref="assignModal" />
-  <GradingModal
-    ref="gradingModal"
+  <ApplySkillModal
+    ref="applySkillModal"
   />
 </template>
 
 <script>
-import Card from "@/basic/Card.vue";
+import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./submission/UploadModal.vue";
@@ -63,6 +67,7 @@ import AssignModal from "./submission/AssignModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
+import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
 
 /**
  * Submission list component
@@ -88,6 +93,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
+    ApplySkillModal,
   },
   data() {
     return {
@@ -104,7 +110,7 @@ export default {
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
         { name: "Submission ID", key: "extId" },
-        { name: "Validation ID", key: "configurationId" },
+        { name: "Validation ID", key: "validationConfigurationId" },
         { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
@@ -155,8 +161,17 @@ export default {
   },
   computed: {
     submissions() {
-      // at the moment no readyForReview flag – return all
       return this.$store.getters["table/submission/getAll"];
+    },
+    isProcessingActive() {
+      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      const preprocess = bgTask.preprocess || {};
+      return (
+        preprocess &&
+        preprocess.requests &&
+        typeof preprocess.requests === 'object' &&
+        Object.keys(preprocess.requests).length > 0
+      );
     },
     submissionTable() {
       return this.submissions.map((s) => {
@@ -167,10 +182,17 @@ export default {
           firstName: user ? user.firstName : "Unknown",
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
-          configurationId: s.configurationId ?? "-",
+          validationConfigurationId: s.validationConfigurationId ?? "-",
         };
       });
     },
+  },  
+  mounted() {
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "getBackgroundTask",
+      data: {}
+    });
   },
   methods: {
     action(data) {
@@ -217,7 +239,7 @@ export default {
       });
     },
     preprocessGrades() {
-      this.$refs.gradingModal.open();
+      this.$refs.applySkillModal.open();
     },
     async downloadSubmission(submissionId) {
       try {

@@ -17,12 +17,12 @@
       <div class="d-flex gap-2">
         <select
           :value="modelValue"
-          :disabled="isLoading"
+          :disabled="validationSchemas.length === 0"
           class="form-select"
           @change="handleValidatorChange"
         >
           <option value="0">
-            {{ isLoading ? loadingText : placeholderText }}
+            {{ placeholderText }}
           </option>
           <option
             v-for="validator in validationSchemas"
@@ -33,20 +33,7 @@
           </option>
         </select>
       </div>
-      <div
-        v-if="isLoading"
-        class="form-text text-muted"
-      >
-        <div
-          class="spinner-border spinner-border-sm me-2"
-          role="status"
-        >
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        {{ loadingText }}
-      </div>
     </div>
-
     <div
       v-if="showWarning"
       class="alert alert-warning"
@@ -100,6 +87,7 @@
  */
 export default {
   name: "ValidatorSelector",
+  subscribeTable: ["configuration"],
   props: {
     modelValue: {
       type: [String, Number],
@@ -121,10 +109,6 @@ export default {
     placeholderText: {
       type: String,
       default: "Select a validation schema...",
-    },
-    loadingText: {
-      type: String,
-      default: "Loading validation schemas...",
     },
     warningText: {
       type: String,
@@ -163,19 +147,27 @@ export default {
       type: Boolean,
       default: true,
     },
-    // Auto-load schemas on mount
-    autoLoad: {
-      type: Boolean,
-      default: true,
-    },
   },
-  emits: ["update:modelValue", "selection-changed", "schemas-loaded", "loading-error"],
+  emits: ["update:modelValue", "selection-changed"],
   data() {
     return {
-      isLoading: false,
-      validationSchemas: {},
       selectedValidatorData: null,
     };
+  },
+  computed: {
+    validationSchemas() {
+      return this.$store.getters["table/configuration/getAll"]
+        .filter((cfg) => cfg.type === 1)
+        .map((validation) => {
+          return {
+            id: validation.id,
+            name: validation.content.name || validation.name,
+            description: validation.content.description,
+            files: validation.content.rules?.requiredFiles?.map((file) => file.name) || [],
+            content: validation.content,
+          };
+        });
+    },
   },
   watch: {
     modelValue: {
@@ -185,54 +177,19 @@ export default {
       immediate: true,
     },
   },
-  mounted() {
-    if (this.autoLoad) {
-      this.loadValidationSchemas();
-    }
-  },
   methods: {
-    async loadValidationSchemas() {
-      this.isLoading = true;
-      try {
-        this.$socket.emit("configurationGetByType", { type: 1 }, (res) => {
-          if (res.success && res.data) {
-            // Convert the response to our validationSchemas format
-            this.validationSchemas = {};
-            res.data.forEach((doc) => {
-              this.validationSchemas[doc.id] = {
-                id: doc.id,
-                name: doc.config.name || doc.name,
-                description: doc.config.description,
-                files: doc.config.rules?.requiredFiles?.map((file) => file.name) || [],
-                schema: doc.config,
-              };
-            });
-            this.$emit("schemas-loaded", this.validationSchemas);
-          } else {
-            this.$emit("loading-error", res.message || "Failed to load validation schemas");
-          }
-          this.isLoading = false;
-        });
-      } catch (error) {
-        this.isLoading = false;
-        this.$emit("loading-error", error.message);
-      }
-    },
     handleValidatorChange(event) {
       const validatorId = Number(event.target.value);
       if (validatorId === this.modelValue) return;
       this.updateSelectedValidatorData(validatorId);
-      
+
       this.$emit("update:modelValue", validatorId);
       this.$emit("selection-changed", this.selectedValidatorData);
     },
     updateSelectedValidatorData(validatorId) {
-      this.selectedValidatorData = this.validationSchemas[validatorId] || null;
+      this.selectedValidatorData = this.validationSchemas.find((schema) => schema.id === validatorId);
     },
     // Public methods
-    refreshSchemas() {
-      this.loadValidationSchemas();
-    },
     getSelectedValidator() {
       return this.selectedValidatorData;
     },

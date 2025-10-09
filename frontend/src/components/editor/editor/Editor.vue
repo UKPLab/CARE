@@ -23,23 +23,6 @@
       </div>
     </div>
   </span>
-
-  <Teleport to="#topBarNavItems">
-    <TopBarButton
-      v-if="showHTMLDownloadButton"
-      v-show="studySessionId && studySessionId !== 0 ? active : true"
-      title="Download document"
-      class="btn rounded-circle"
-      type="button"
-      @click="downloadDocumentAsHTML"
-    >
-      <LoadIcon
-        :color="'#777777'"
-        :size="18"
-        icon-name="download"
-      />
-    </TopBarButton>
-  </Teleport>
 </template>
 <script>
 /**
@@ -203,9 +186,6 @@ export default {
         },
         theme: "snow"
       };
-    },
-    showHTMLDownloadButton() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
     studySteps() {
       if (this.studyStepId !== null) {
@@ -405,8 +385,8 @@ export default {
             data: {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               pastedText: pastedText,
-              acceptDataSharing: this.user.acceptDataSharing
             }
           })
         }
@@ -419,10 +399,11 @@ export default {
           this.$socket.emit("stats", {
             action: "textCopied",
             data: {
+              from: "editor",
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               copiedText: copiedText,
-              acceptDataSharing: this.user.acceptDataSharing
             }
           })
         }
@@ -491,7 +472,7 @@ export default {
     },
     processEdits(edits) {
       edits.forEach((edit) => {
-              if (!(edit.sender == this.$socket.id)) {
+              if (!(edit.sender === this.$socket.id)) {
               const delta = dbToDelta([edit]);
               this.editor.getEditor().updateContents(delta, "api");
               }

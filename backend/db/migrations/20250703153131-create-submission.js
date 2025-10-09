@@ -71,12 +71,12 @@ module.exports = {
         type: Sequelize.JSONB,
         allowNull: true,
       },
-      validationDocumentId: {
+      validationConfigurationId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
         references: {
-          model: 'document',
+          model: 'configuration',
           key: 'id',
         },
         onDelete: 'SET NULL',

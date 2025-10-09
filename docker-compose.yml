@@ -12,7 +12,9 @@ services:
       - ./backend:/backend
     command: make html
   postgres:
-    image: postgres:11.5-alpine
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 1s
@@ -27,10 +29,13 @@ services:
       - ./docs/api:/content-server/docs/api
       - ./files:/content-server/files
       - ./logs:/content-server/backend/logs
+      - ./msmtprc:/etc/msmtprc:ro
     depends_on:
       - postgres
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
   rpc_test:
     build:

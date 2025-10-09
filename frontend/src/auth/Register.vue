@@ -215,7 +215,7 @@
  *  @Author: Dennis Zyska, Carly Gettinger
  */
 import TermsModal from "./TermsModal.vue";
-import IconAsset from "@/basic/icons/IconAsset.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
@@ -299,12 +299,20 @@ export default {
             return status >= 200 && status < 300;
           }
         });
+        if( window.config["app.register.emailVerification"] === "true" ) {
+          this.eventBus.emit('toast', {
+            message: "A validation link was sent to your email",
+            title: "Validate your email",
+            variant: 'warning'
+          });
+        } else{
+          this.eventBus.emit('toast', {
+            message: "Registration successful! You can now log in.",
+            title: "Success",
+            variant: 'success'
+          });
+        }
 
-        this.eventBus.emit('toast', {
-          message: "The user registration was successful",
-          title: "User Registration Complete",
-          variant: 'success'
-        });
 
         this.toLogin();
       } catch (err) {

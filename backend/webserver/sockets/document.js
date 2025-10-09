@@ -1,10 +1,15 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
+const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const {inject} = require("../../utils/generic");
 const path = require("path");
+const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
+const {enqueueDocumentTask} = require("../../utils/queue.js");
+
+const yauzl = require("yauzl");
 
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
@@ -144,20 +149,6 @@ class DocumentSocket extends Socket {
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
             fs.writeFileSync(target, data.file);
-        } else if (fileType === ".json") {
-            // Handle JSON configuration files
-            doc = await this.models["document"].add(
-                {
-                    type: docTypes.DOC_TYPE_CONFIG,
-                    name: data.name.replace(/.json$/, ""),
-                    userId: data.userId ?? this.userId,
-                    uploadedByUserId: this.userId,
-                    readyForReview: data.isUploaded ?? false,
-                },
-                { transaction: options.transaction }
-            );
-
-            target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
         } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -230,7 +221,7 @@ class DocumentSocket extends Socket {
                                 const newAnnotation = {
                                     documentId: doc.id,
                                     selectors: selectors,
-                                    tagId: 1 , //always use the same tag for all annotations
+                                    tagId: 1, //always use the same tag for all annotations
                                     studySessionId: doc.studySessionId,
                                     studyStepId: doc.studyStepId,
                                     text: extracted.text || null,
@@ -327,7 +318,7 @@ class DocumentSocket extends Socket {
      * @param {Object} [options] Additional configuration parameters (currently unused).
      * @returns {Promise<void>} A promise that resolves (with no value) once the document list has been successfully fetched and emitted.
      */
-    async refreshAllDocuments(data ,options) {
+    async refreshAllDocuments(data, options) {
         data.userId = data.userId || null;
         if (await this.isAdmin()) {
             if (data.userId) {
@@ -451,45 +442,45 @@ class DocumentSocket extends Socket {
      *  Any of the underlying database operations (`getById`, `findAll`, `update`) fail.
      */
     async saveDocument(documentId) {
-            const doc = await this.models['document'].getById(documentId);
-            if (!doc) {
-                this.logger.error(`Document with ID ${documentId} not found.`);
-                return;
-            }
+        const doc = await this.models['document'].getById(documentId);
+        if (!doc) {
+            this.logger.error(`Document with ID ${documentId} not found.`);
+            return;
+        }
 
-            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
+        if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
 
-                const edits = await this.models['document_edit'].findAll({
-                    where: {documentId: documentId, studySessionId: null, draft: true},
-                    raw: true
-                });
+            const edits = await this.models['document_edit'].findAll({
+                where: {documentId: documentId, studySessionId: null, draft: true},
+                raw: true
+            });
 
-                const newDelta = new Delta(dbToDelta(edits));
-                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
+            const newDelta = new Delta(dbToDelta(edits));
+            const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
 
-                let oldDelta = new Delta();
-                try {
-                    const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
-                    oldDelta = new Delta(JSON.parse(oldDeltaContent));
-                } catch (err) {
-                    if (err.code !== 'ENOENT') {
-                        throw err;
-                    }
+            let oldDelta = new Delta();
+            try {
+                const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
+                oldDelta = new Delta(JSON.parse(oldDeltaContent));
+            } catch (err) {
+                if (err.code !== 'ENOENT') {
+                    throw err;
                 }
-
-                const mergedDelta = oldDelta.compose(newDelta);
-
-                await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
-
-                await this.models['document_edit'].update(
-                    {draft: false},
-                    {where: {id: edits.map(edit => edit.id)}}
-                );
-
-                this.logger.info("Deltas file updated successfully.");
-            } else {
-                throw new Error("Non-HTML/MODAL documents are not supported for this operation");
             }
+
+            const mergedDelta = oldDelta.compose(newDelta);
+
+            await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
+
+            await this.models['document_edit'].update(
+                {draft: false},
+                {where: {id: edits.map(edit => edit.id)}}
+            );
+
+            this.logger.info("Deltas file updated successfully.");
+        } else {
+            throw new Error("Non-HTML/MODAL documents are not supported for this operation");
+        }
     }
 
 
@@ -650,36 +641,44 @@ class DocumentSocket extends Socket {
      */
     async editDocument(data, options) {
         const {documentId, studySessionId, studyStepId, ops} = data;
-        let appliedEdits = [];
-        let orderCounter = 1;
 
-        await ops.reduce(async (promise, op) => {
-            await promise;
-            const entryData = {
+        // Generate queue key for this document context
+        const key = `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+
+        return enqueueDocumentTask(this.server.documentQueues, key, async () => {
+            const bulkEdits = ops.map((op, idx) => ({
                 userId: this.userId,
                 draft: true,
                 documentId,
                 studySessionId: studySessionId || null,
                 studyStepId: studyStepId || null,
-                order: orderCounter++,
+                order: idx + 1,
                 ...op
-            };
+            }));
 
-            const savedEdit = await this.models['document_edit'].add(entryData, {transaction: options.transaction});
+            const savedEdits = await this.models['document_edit'].bulkCreate(
+                bulkEdits,
+                {
+                    transaction: options.transaction
+                }
+            );
 
-            appliedEdits.push({
-                ...savedEdit,
+            const appliedEdits = savedEdits.map(se => ({
+                ...se.get({plain: true}),
                 applied: true,
                 sender: this.socket.id
-            });
-        }, Promise.resolve());
+            }));
 
-        // Check if studySessionId is not null or zero
-        if (studySessionId !== null) {
-            this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-            return;
-        }
-        this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+            if (studySessionId !== null) {
+                this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                return;
+            }
+
+            options.transaction.afterCommit(() => {
+                this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+            });
+
+        });
     }
 
     /**
@@ -748,7 +747,7 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.submissions - The submissions from Moodle
      * @param {Object} data.options - The configuration options (e.g., API key, URL) passed to the Moodle RPC service
      * @param {string} data.progressId - The unique ID used for reporting progress back to the frontend.
-     * @param {number} data.configurationId - The ID of the configuration
+     * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The results of the processed submissions
@@ -768,7 +767,7 @@ class DocumentSocket extends Socket {
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
-                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.configurationId);
+                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId);
 
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
@@ -780,7 +779,7 @@ class DocumentSocket extends Socket {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
-                        configurationId: data.configurationId,
+                        validationConfigurationId: data.validationConfigurationId,
                     },
                     { transaction }
                 );
@@ -833,17 +832,17 @@ class DocumentSocket extends Socket {
      * @param {number} data.userId - The ID of the user who owns the submission
      * @param {number} data.extId - The ID that comes from an external platform
      * @param {Array<Object>} data.files - The submissions files
-     * @param {number} data.configurationId - The ID of the configuration
+     * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The result of the processed submission
      * @throws {Error} - If the upload fails, if the extId is invalid, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const { files, userId, extId = null, configurationId } = data;
+        const { files, userId, extId = null, validationConfigurationId } = data;
         const transaction = options.transaction;
         try {
-            const result = await this.validator.validateSubmissionFiles(files, configurationId);
+            const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
 
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
@@ -852,7 +851,7 @@ class DocumentSocket extends Socket {
             const submission = await this.models["submission"].add({ 
                 userId, 
                 extId, 
-                configurationId, 
+                validationConfigurationId, 
                 createdByUserId: this.userId 
             }, { transaction });
             for (const file of files) {
@@ -869,6 +868,7 @@ class DocumentSocket extends Socket {
             }
         } catch (error) {
             this.logger.error(error);
+            throw new Error(error);
         }
     }
 
@@ -951,13 +951,12 @@ class DocumentSocket extends Socket {
                             .filter(edit =>
                                 (edit.studySessionId === data['studySessionId'] &&
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
-                                ),
+                        ),
                     };
                 }
             }
         } else {
             const extensionMap = {
-                [docTypes.DOC_TYPE_CONFIG]: ".json",
                 [docTypes.DOC_TYPE_ZIP]: ".zip",
             }
             
@@ -969,11 +968,6 @@ class DocumentSocket extends Socket {
             }
 
             let file = fs.readFileSync(filePath); // Buffer
-            // For JSON files, return the content as a string; for others, return as Buffer
-            if (document.type === docTypes.DOC_TYPE_CONFIG) {
-                file = file.toString("utf8");
-            }
-            
             return { document, file };
         }
     }
@@ -989,14 +983,14 @@ class DocumentSocket extends Socket {
      * @param {object} options Additional configuration parameters.
      * @returns {Promise<void>} A promise that resolves (with no value) once the document has been processed.
      */
-    async closeDocument(data, options) {    
+    async closeDocument(data, options) {
         if (data.studySessionId === null) {
             await this.saveDocument(data.documentId);
         }
         const index = this.socket.openComponents.editor.indexOf(data.documentId);
         if (index > -1) {
             this.socket.openComponents.editor[index] = undefined; // Remove the document ID
-        }      
+        }
     }
 
     /**
@@ -1048,7 +1042,6 @@ class DocumentSocket extends Socket {
         });
     }
 
-    
 
     /**
      * Subscribe the client's socket to a document-specific communication channel.
@@ -1085,18 +1078,18 @@ class DocumentSocket extends Socket {
      * @param {any} data.value The value to be stored, which can be any serializable type.
      * @param {Object} options Additional configuration for the operation.
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
-     * @returns {Promise<Object>} A promise that resolves with the newly created `document_data` record object from the database.
+     * @returns {Promise<Object>} A promise that resolves with the upserted `document_data` record object from the database.
      */
     async saveData(data, options) {
 
-        let documentData = await this.models['document_data'].add({
+        let documentData = await this.models['document_data'].upsertData({
             userId: this.userId,
             documentId: data.documentId,
             studySessionId: data.studySessionId,
             studyStepId: data.studyStepId,
             key: data.key,
             value: data.value
-        }, {transaction: options.transaction});
+        }, options);
 
         return documentData;
     }

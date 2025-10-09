@@ -12,7 +12,7 @@
     <StepperModal
       ref="configurationStepper"
       name="configurationStepper"
-      :steps="[{ title: 'Services' }, { title: 'Placeholders' }]"
+      :steps="[{ title: 'Services' }, { title: 'Placeholders' }, { title: 'General' }]"
       :validation="stepValid"
       submit-text="Save Configuration"
       @step-change="handleStepChange"
@@ -34,30 +34,22 @@
               <!-- Skill Selection -->
               <div class="mb-3">
                 <label class="form-label">Select NLP Skill:</label>
-                <FormSelect
+                <SkillSelector
                   v-model="selectedSkills[index].skillName"
-                  :options="skillMap"
                 />
               </div>
               <!-- Input Mapping -->
-              <div
+              <InputMap
                 v-if="selectedSkills[index].skillName"
-                class="mb-3"
-              >
-                <h6 class="text-secondary">Input Mapping</h6>
-                <div
-                  v-for="input in getSkillInputs(selectedSkills[index].skillName)"
-                  :key="input"
-                  class="mb-2"
-                >
-                  <label class="form-label">{{ input }}:</label>
-                  <FormSelect
-                    v-model="inputMappings[index][input]"
-                    :options="{ options: availableDataSources }"
-                    :value-as-object="true"
-                  />
-                </div>
-              </div>
+                v-model="selectedSkills[index].dataInput"
+                :skill-name="selectedSkills[index].skillName"
+                :study-based="true"
+                :study-step-id="studyStepId"
+                :workflow-steps="workflowSteps"
+                :current-stepper-step="currentStepperStep"
+                :step-config="stepConfig"
+                :selected-skills="selectedSkills"
+              />
             </div>
           </div>
           <div
@@ -111,7 +103,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[0]"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
                 <div class="mb-3">
@@ -119,7 +111,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[1]"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
               </template>
@@ -129,7 +121,7 @@
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput"
                     :value-as-object="true"
-                    :options="{ options: availableDataSources }"
+                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
                   />
                 </div>
               </template>
@@ -143,6 +135,65 @@
           <p>No placeholders found in the document.</p>
         </div>
       </template>
+      <!-- Step 3: General Settings -->
+      <template #step-3>
+        <div v-if="generalSettings.length">
+          <div class="general-settings">
+            <h6 class="text-secondary mb-3">General Configuration Settings</h6>
+            <div
+              v-for="(setting, index) in generalSettings"
+              :key="index"
+              class="setting-item mb-4 p-3 border rounded"
+            >
+              <label class="form-label fw-bold">{{ setting.label }}</label>
+              <div v-if="setting.type === 'select'" class="mb-2">
+                <FormSelect
+                  v-model="generalFormData[setting.name]"
+                  :options="{ options: setting.options }"
+                />
+              </div>
+              <div v-else-if="setting.type === 'text'" class="mb-2">
+                <input
+                  v-model="generalFormData[setting.name]"
+                  type="text"
+                  class="form-control"
+                  :placeholder="setting.label"
+                />
+              </div>
+              <div v-else-if="setting.type === 'number'" class="mb-2">
+                <input
+                  v-model="generalFormData[setting.name]"
+                  type="number"
+                  class="form-control"
+                  :placeholder="setting.label"
+                />
+              </div>
+              <div v-else-if="setting.type === 'checkbox'" class="mb-2">
+                <div class="form-check">
+                  <input
+                    v-model="generalFormData[setting.name]"
+                    type="checkbox"
+                    class="form-check-input"
+                    :id="'setting-' + setting.name"
+                  />
+                  <label class="form-check-label" :for="'setting-' + setting.name">
+                    {{ setting.label }}
+                  </label>
+                </div>
+              </div>
+              <small v-if="setting.help" class="form-text text-muted">
+                {{ setting.help }}
+              </small>
+            </div>
+          </div>
+        </div>
+        <div
+          v-else
+          class="alert alert-info"
+        >
+          <p>No general settings found for this step.</p>
+        </div>
+      </template>
     </StepperModal>
   </div>
 </template>
@@ -150,6 +201,8 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
+import InputMap from "@/basic/modal/skills/InputMap.vue";
 import Quill from "quill";
 
 /**
@@ -164,7 +217,12 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, FormSelect },
+  components: {
+    FormSelect,
+    StepperModal, 
+    SkillSelector, 
+    InputMap 
+  },
   props: {
     modelValue: {
       type: Object,
@@ -208,19 +266,28 @@ export default {
       shortPreview: "",
       isUpdateMode: false,
       inputMappings: [],
+      generalFormData: {},
     };
   },
   computed: {
     stepValid() {
       return [
-        // Step 1: Check if all services have skill name and data input
-        this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
-        // Step 2: Check if all placeholders have non-empty string input
-        this.placeholderFormData.every((data) => {
+        // Step 1: Check if all services have skill name and data input (or no services required)
+        !this.stepConfig?.services?.length || this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
+        // Step 2: Check if all placeholders have non-empty string input (or no placeholders)
+        !this.placeholders.length || this.placeholderFormData.every((data) => {
           if (data.type === this.placeholderType.comparison) {
             return data.dataInput[0] && data.dataInput[1];
           }
           return !!data.dataInput;
+        }),
+        // Step 3: Check if all required general settings are filled (or no settings)
+        !this.generalSettings.length || this.generalSettings.every((setting) => {
+          if (setting.required) {
+            const value = this.generalFormData[setting.name];
+            return value !== null && value !== undefined && value !== '';
+          }
+          return true;
         }),
       ];
     },
@@ -228,16 +295,8 @@ export default {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
-    skillMap() {
-      return {
-        options: this.nlpSkills.map((skill) => ({
-          value: skill.name,
-          name: skill.name,
-        })),
-      };
-    },
-    availableDataSources() {
-      return this.getSourcesUpToCurrentStep(this.studyStepId);
+    generalSettings() {
+      return this.getSettingsForStep(this.studyStepId);
     },
   },
   watch: {
@@ -255,20 +314,6 @@ export default {
           this.fetchDocument();
         }
       },
-    },
-    inputMappings: {
-      handler(newMappings) {
-        if (!newMappings.length) return;
-
-        newMappings.forEach((mapping, index) => {
-          Object.entries(mapping).forEach(([input, source]) => {
-            if (source) {
-              this.updateDataInput(index, input, source);
-            }
-          });
-        });
-      },
-      deep: true,
     },
   },
   mounted() {
@@ -292,7 +337,6 @@ export default {
     },
     initializeModal() {
       this.stepConfig = this.modelValue || {};
-
       // Initialize services
       if (this.stepConfig?.services?.length) {
         this.selectedSkills = this.stepConfig.services.map((service) => {
@@ -309,25 +353,35 @@ export default {
             dataInput: {},
           };
         });
-
-        // Initialize inputMappings after selectedSkills is populated
-        this.initializeInputMappings();
       } else {
         this.selectedSkills = [];
-        this.inputMappings = [];
       }
+
+      // Initialize general settings
+      this.initializeGeneralSettings();
     },
-    initializeInputMappings() {
-      this.inputMappings = this.selectedSkills.map((skill, idx) => {
-        const mapping = {};
-        if (skill.skillName) {
-          const inputs = this.getSkillInputs(skill.skillName);
-          inputs.forEach((input) => {
-            mapping[input] = this.getFormattedDataInput(idx, input);
-          });
-        }
-        return mapping;
-      });
+    initializeGeneralSettings() {
+      const formData = {};
+      
+      if (this.generalSettings.length) {
+        this.generalSettings.forEach((setting) => {
+          // Check if we have existing data (update mode)
+          if (this.isUpdateMode && this.stepConfig.settings && this.stepConfig.settings[setting.name] !== undefined) {
+            formData[setting.name] = this.stepConfig.settings[setting.name];
+          } else {
+            // Use default value or appropriate initial value based on type
+            if (setting.type === 'checkbox') {
+              formData[setting.name] = setting.default || false;
+            } else if (setting.type === 'select') {
+              formData[setting.name] = setting.default || (setting.options && setting.options[0] ? setting.options[0].value : '');
+            } else {
+              formData[setting.name] = setting.default || '';
+            }
+          }
+        });
+      }
+      
+      this.generalFormData = formData;
     },
     fetchDocument() {
       if (!this.documentId || !this.studyStepId) return;
@@ -408,14 +462,12 @@ export default {
     findPlaceholderDataSource(input) {
       if (!input) return null;
 
-      return this.availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
+      const availableDataSources = this.getSourcesUpToCurrentStep(this.studyStepId);
+      return availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
     },
-    getSkillInputs(skillName) {
-      // Find the skill in the skills list
-      const skill = this.nlpSkills.find((s) => s.name === skillName);
-      if (!skill) return {};
-      // Return the input keys (v1, v2, etc.)
-      return Object.keys(skill.config.input.data || {});
+    getSettingsForStep(stepId) {
+      const stepConfig = this.workflowSteps.find((step) => step.id === stepId);
+      return stepConfig ? stepConfig.configuration.settings || [] : [];
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
@@ -491,10 +543,8 @@ export default {
     updateDataInput(index, input, source) {
       if (!source) return;
 
-      // Deep clone to avoid reference issues
       const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
 
-      // Ensure dataInput exists
       if (!updatedSkills[index].dataInput) {
         updatedSkills[index].dataInput = {};
       }
@@ -504,14 +554,12 @@ export default {
         dataSource: source.value,
       };
 
-      // Replace the entire array
       this.selectedSkills = updatedSkills;
     },
     getFormattedDataInput(index, input) {
       const dataInput = this.selectedSkills[index]?.dataInput?.[input];
       if (!dataInput) return null;
 
-      // Return the source object that matches this data input
       return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {
@@ -529,6 +577,7 @@ export default {
           chart: this.formatPlaceholder(this.placeholderType.chart),
           comparison: this.formatPlaceholder(this.placeholderType.comparison),
         },
+        settings: this.generalFormData,
       };
       this.$emit("update:modelValue", configData);
       this.$refs.configurationStepper.close();

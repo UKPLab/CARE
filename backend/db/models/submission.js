@@ -141,7 +141,7 @@ module.exports = (sequelize, DataTypes) => {
             extId: DataTypes.INTEGER,
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,
-            configurationId: DataTypes.INTEGER,
+            validationConfigurationId: DataTypes.INTEGER,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,

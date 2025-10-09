@@ -106,7 +106,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import ValidatorSelector from "./ValidatorSelector.vue";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
@@ -276,7 +276,7 @@ export default {
             files: s.files,
           })),
           options: this.moodleOptions,
-          configurationId: this.selectedValidatorId,
+          validationConfigurationId: this.selectedValidatorId,
           progressId: this.$refs.importStepper.startProgress(),
         },
         (res) => {

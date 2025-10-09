@@ -49,13 +49,13 @@ class Validator {
     /**
      * Validate submission files against validation schema
      * @param {Array} tempFiles - Array of temporary file objects
-     * @param {string} configurationId - ID of configuration
+     * @param {string} validationConfigurationId - Configuration ID referring to the validation schema
      * @returns {Promise<Object>} Validation result
      */
-    async validateSubmissionFiles(tempFiles, configurationId) {
+    async validateSubmissionFiles(tempFiles, validationConfigurationId) {
         try {
             // 1. Get validation schema
-            const validationSchema = await this.getValidationSchema(configurationId);
+            const validationSchema = await this.getValidationSchema(validationConfigurationId);
 
             // 2. Validate against rules
             const validationResult = await this.validateAgainstRules(tempFiles, validationSchema.rules);
@@ -70,14 +70,14 @@ class Validator {
     }
 
     /**
-     * Get validation schema by configurationId
-     * @param {number} configurationId - Configuration ID referring to the validation schema
+     * Get validation schema by validationConfigurationId
+     * @param {number} validationConfigurationId - Configuration ID referring to the validation schema
      * @returns {Promise<Object>} Validation schema
      */
-    async getValidationSchema(configurationId) {
-        const configuration = await this.models["configuration"].getById(configurationId);
+    async getValidationSchema(validationConfigurationId) {
+        const configuration = await this.models["configuration"].getById(validationConfigurationId);
         if (!configuration) {
-            throw new Error(`Validation schema not found: ${configurationId}`);
+            throw new Error(`Validation schema not found: ${validationConfigurationId}`);
         }
         const { content } = configuration;
         return content;

@@ -18,6 +18,9 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Socket = require(path.resolve(__dirname, "./Socket.js"));
 const Service = require(path.resolve(__dirname, "./Service.js"));
 const RPC = require(path.resolve(__dirname,"./RPC.js"));
+const statsScheduler = require('../db/stats');
+const nodemailer = require('nodemailer');
+
 /**
  * Defines Express Webserver of Content Server
  *
@@ -38,11 +41,13 @@ module.exports = class Server {
         this.socket = null;
         this.cache = {};
         this.cache['userName'] = {};
+        this.mailer = null;
 
         this.rpcs = {};
         this.sockets = {};
         this.availSockets = {};
         this.services = {};
+        this.documentQueues = new Map();
 
         // No Caching
         this.app.disable('etag');
@@ -80,10 +85,114 @@ module.exports = class Server {
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
         this.httpServer = http.createServer(this.app);
+        Promise.resolve(this.#initMailServer()).then(() => {
+            if (this.mailer) {
+                this.logger.info("Mail server initialized");
+            } else {
+                this.logger.warn("Mail server not available!");
+            }
+        });
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
         this.#discoverComponents("./services", Service, this.addService.bind(this));
+
+        // Graceful shutdown: flush all stats buffers on kill signals
+        const handleShutdown = async (signal) => {
+            try {
+                this.logger.info(`Received ${signal}. Flushing statistics and shutting down...`);
+                await this.flushAllStats();
+            } catch (e) {
+                this.logger.warn("Error during stats flush on shutdown: " + e);
+            } finally {
+                try {
+                    this.stop();
+                } catch (e2) {
+                    this.logger.warn("Error during server stop on shutdown: " + e2);
+                }
+                process.exit(0);
+            }
+        };
+        process.on('SIGINT', handleShutdown);
+        process.on('SIGTERM', handleShutdown);
+    }
+
+    /**
+     * Initialize the mail server
+     * @returns {Promise<void>}
+     */
+    async #initMailServer() {
+
+        if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
+            if (await this.db.models['setting'].get("system.mailService.sendMail.enabled") === "true") {
+                this.logger.info("Using sendmail transport");
+                this.mailer = nodemailer.createTransport({
+                    sendmail: true,
+                    newline: 'unix',
+                    path: await this.db.models['setting'].get("system.mailService.sendMail.path"),
+                });
+            } else if (await this.db.models['setting'].get("system.mailService.smtp.enabled") === "true") {
+                this.logger.info("Using SMTP transport");
+                const testAccount = await nodemailer.createTestAccount(); //TODO: for testing remove when using actual mail server
+                // Get SMTP configuration from database
+                const smtpHost = await this.db.models['setting'].get("system.mailService.smtp.host");
+                const smtpPort = await this.db.models['setting'].get("system.mailService.smtp.port");
+                const smtpSecure = await this.db.models['setting'].get("system.mailService.smtp.secure") === "true";
+                const authEnabled = await this.db.models['setting'].get("system.mailService.smtp.auth.enabled") === "true";
+                
+                let transportConfig = {
+                    host: smtpHost,
+                    port: smtpPort,
+                    secure: smtpSecure
+                };
+                
+                if (authEnabled) {
+                    const authUser = await this.db.models['setting'].get("system.mailService.smtp.auth.user");
+                    const authPass = await this.db.models['setting'].get("system.mailService.smtp.auth.pass");
+
+                    if (authUser && authPass) {
+                        transportConfig.auth = {
+                            user: authUser,
+                            pass: authPass
+                        };
+                    } else {
+                        this.logger.warn("SMTP authentication enabled but credentials not configured");
+                    }
+                }
+                
+                this.mailer = nodemailer.createTransport(transportConfig);
+            }
+
+        }
+
+    }
+
+    /**
+     * Send a mail
+     * @param to email address
+     * @param subject of the mail
+     * @param text of the mail
+     * @returns {Promise<void>}
+     */
+    async sendMail(to, subject, text) {
+        if (!this.mailer) {
+            this.logger.warn(`Email service not configured. Would send email to ${to} with subject: ${subject}`);
+            return;
+        }
+        
+        this.mailer.sendMail({
+            from: await this.db.models['setting'].get("system.mailService.senderAddress"),
+            to: to,
+            subject: subject,
+            text: text
+        }, (err, info) => {
+            if (err) {
+                this.logger.error(err);
+            } else {
+                this.logger.info("Message send: " + info.messageId);
+                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); //TODO: for testing remove when using actual mail server
+            }
+        });
     }
 
     /**
@@ -266,11 +375,19 @@ module.exports = class Server {
                             await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
                         }
                     }
+                    // Flush pending statistics before cleanup
+                    try {
+                        const statSock = this.availSockets[socket.id]['StatisticSocket'];
+                        await statSock._flushStats();
+                    } catch (e) {
+                        this.logger.warn("Failed to flush stats on disconnect: " + e);
+                    }
+
                     // delete table subscriptions on disconnect (in case unmounted is not called)
                     Object.entries(socket.appDataSubscriptions).forEach(([key, value]) => {
                         this.io.appDataSubscriptions[value.table].delete(key);
                     });
-
+                    
                     delete this.availSockets[socket.id];
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);
@@ -345,6 +462,13 @@ module.exports = class Server {
         this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
+        // Start DB stats scheduler
+        try {
+            statsScheduler.start(this.db.sequelize, this.logger);
+            this._statsScheduler = statsScheduler;
+        } catch (e) {
+            this.logger.warn('Failed to start DB stats scheduler: ' + e.message);
+        }
         return this.http;
     }
 
@@ -358,6 +482,30 @@ module.exports = class Server {
         this.io.close();
         if (this.http) {
             this.http.close();
+        }
+        if (this._statsScheduler) {
+            this._statsScheduler.stop(this.logger);
+            }
+        }
+
+    /**
+     * Flush statistics buffers for all connected sockets.
+     * Ensures no pending stats are lost during shutdown.
+     * @returns {Promise<void>}
+     */
+    async flushAllStats() {
+        try {
+            const sockets = this.availSockets || {};
+            for (const [sid, sockMap] of Object.entries(sockets)) {
+                try {
+                    const statSock = sockMap && sockMap['StatisticSocket'];
+                    await statSock._flushStats();
+                } catch (e) {
+                    this.logger.warn(`Failed to flush stats for socket ${sid}: ${e}`);
+                }
+            }
+        } catch (e) {
+            this.logger.error("flushAllStats encountered an error: " + e);
         }
     }
 

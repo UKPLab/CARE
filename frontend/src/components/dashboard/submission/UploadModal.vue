@@ -19,7 +19,10 @@
       </div>
     </template>
     <template #step-2>
-      <ValidatorSelector v-model="selectedValidatorId" />
+      <ValidatorSelector
+        v-model="selectedValidatorId"
+        @selection-changed="handleValidatorChange"
+      />
     </template>
     <template #step-3>
       <BasicForm
@@ -52,26 +55,9 @@ export default {
     return {
       selectedUser: [],
       selectedValidatorId: 0,
+      selectedValidatorData: null,
       files: null,
       steps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
-      fileFields: [
-        {
-          key: "pdf",
-          label: "PDF File:",
-          type: "file",
-          accept: ".pdf",
-          class: "form-control",
-          default: null,
-        },
-        {
-          key: "zip",
-          label: "ZIP File:",
-          type: "file",
-          accept: ".zip",
-          class: "form-control",
-          default: null,
-        },
-      ],
       selectionTable: [
         { name: "ID", key: "id", sortable: true },
         { name: "extId", key: "extId", sortable: true },
@@ -98,7 +84,24 @@ export default {
       return this.$store.getters["table/user/getAll"];
     },
     stepValid() {
-      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0, this.files];
+      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0, this.checkRequiredFiles()];
+    },
+    fileFields() {
+      if (!this.selectedValidatorData?.files || !Array.isArray(this.selectedValidatorData.files)) {
+        return [];
+      }
+
+      return this.selectedValidatorData.files.map((fileFormat) => {
+        const format = fileFormat.toLowerCase();
+        return {
+          key: format,
+          label: `${format.toUpperCase()} File:`,
+          type: "file",
+          accept: `.${format}`,
+          class: "form-control",
+          default: null,
+        };
+      });
     },
   },
   methods: {
@@ -108,15 +111,26 @@ export default {
       this.selectedValidatorId = 0;
       this.$refs.uploadStepper.open();
     },
-    uploadSubmission() {
-      const { pdf, zip } = this.files || {};
-      const isPdf = pdf && pdf.type === "application/pdf";
-      const isZip = zip && zip.type === "application/zip";
+    handleValidatorChange(validatorData) {
+      this.selectedValidatorData = validatorData;
+      this.files = null;
+    },
+    checkRequiredFiles() {
+      if (!this.files || !this.selectedValidatorData?.files) {
+        return false;
+      }
 
-      if (!isPdf || !isZip) {
+      // Check if all required file types are provided
+      return this.selectedValidatorData.files.every((fileFormat) => {
+        const format = fileFormat.toLowerCase();
+        return this.files[format] && this.files[format] instanceof File;
+      });
+    },
+    uploadSubmission() {
+      if (!this.files) {
         this.eventBus.emit("toast", {
           title: "Invalid file(s)",
-          message: "Please upload a valid PDF and ZIP file.",
+          message: "Please upload all required files.",
           variant: "danger",
         });
         return;
@@ -127,7 +141,7 @@ export default {
         "documentUploadSingleSubmission",
         {
           userId: this.selectedUser[0].id,
-          configurationId: this.selectedValidatorId,
+          validationConfigurationId: this.selectedValidatorId,
           files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
         },
         (res) => {
