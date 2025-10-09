@@ -1,38 +1,38 @@
 <template>
   <StudyModal
-    v-if="studySessionId === 0 || (studySession && studySession.start === null)"
-    ref="studyModal"
-    :study-id="studyId"
-    :study-closed="studyClosed"
-    :study-session-id="studySessionId"
-    @finish="finalFinish"
-    @start="start"
+      v-if="studySessionId === 0 || (studySession && studySession.start === null)"
+      ref="studyModal"
+      :study-id="studyId"
+      :study-closed="studyClosed"
+      :study-session-id="studySessionId"
+      @finish="finalFinish"
+      @start="start"
   />
   <FinishModal
-    ref="studyFinishModal"
-    :study-session-id="studySessionId"
-    :show-time-up="timeUp"
-    @finish="finalFinish({ studySessionId: studySessionId })"
+      ref="studyFinishModal"
+      :study-session-id="studySessionId"
+      :show-time-up="timeUp"
+      @finish="finalFinish({ studySessionId: studySessionId })"
   />
 
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
       <TopBarButton
-        v-if="
+          v-if="
           currentStudyStep &&
           currentStudyStep.allowBackward &&
           currentStudyStep &&
           currentStudyStep.studyStepPrevious !== null
         "
-        class="btn btn-outline-primary me-3"
-        title="Previous"
-        @click="updateStep(currentStudyStep.studyStepPrevious)"
+          class="btn btn-outline-primary me-3"
+          title="Previous"
+          @click="updateStep(currentStudyStep.studyStepPrevious)"
       >
         Previous
       </TopBarButton>
 
       <TopBarButton
-        v-if="
+          v-if="
           !readOnlyComputed &&
           studySession &&
           lastStep &&
@@ -40,69 +40,80 @@
           currentStudyStep.stepType !== 3 &&
           studySession.studyStepId === lastStep.id
         "
-        class="btn btn-outline-secondary mx-3"
-        :title="studySession.end ? 'Finish Study Again' : 'Finish Study'"
-        @click="finish"
+          class="btn btn-outline-secondary mx-3"
+          :title="studySession.end ? 'Finish Study Again' : 'Finish Study'"
+          @click="finish"
       >
         {{ studySession.end ? "Finish Study Again" : "Finish Study" }}
       </TopBarButton>
 
       <TopBarButton
-        v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
-        class="btn btn-outline-primary ms-3"
-        title="Next"
-        @click="updateStep(nextStudyStep.id)"
+          v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
+          class="btn btn-outline-primary ms-3"
+          title="Next"
+          @click="updateStep(nextStudyStep.id)"
       >
         Next
       </TopBarButton>
 
       <TopBarButton
-        v-if="timeLeft > 0"
-        class="btn mb-1"
+          v-if="timeLeft > 0"
+          class="btn mb-1"
       >
         <LoadIcon
-          :size="21"
-          class="me-1 mb-1 middle"
-          icon-name="stopwatch"
+            :size="21"
+            class="me-1 mb-1 middle"
+            icon-name="stopwatch"
         />
         <span
-          :class="{ 'text-danger': timeLeft < 5 * 60 }"
-          class="middle"
-          ><b>Time Left:</b> {{ timeLeftHuman }}</span
+            :class="{ 'text-danger': timeLeft < 5 * 60 }"
+            class="middle"
+        ><b>Time Left:</b> {{ timeLeftHuman }}</span
         >
       </TopBarButton>
     </div>
   </Teleport>
 
   <div
-    v-if="studySessionId !== 0"
-    class="study-container"
+      v-if="studySessionId !== 0"
+      class="study-container"
   >
     <Annotator
-      ref="annotator"
-      v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
-      :document-id="currentStep.documentId"
-      :study-step-id="currentStep.id"
-      :active="true"
-      @error="error"
-      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    />
+        ref="annotator"
+        v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
+        :document-id="currentStep.documentId"
+        :study-step-id="currentStep.id"
+        :active="true"
+        @error="error"
+        @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
+    >
+      <template #additionalSidebars>
+        <Assessment
+            v-if="true"
+            ref="assessment"
+            :show="isSidebarVisible"
+            @state-changed="onAssessmentStateChanged"
+        />
+      </template>
+      <!-- Assessment Component -->
+
+    </Annotator>
     <StepModal
-      v-if="studyTrajectory.includes(currentStep.id) && ((currentStep.stepType === 3) || (currentStepHasNlpRequests && (currentStep.stepType === 1 || currentStep.stepType === 2)))"
-      :key="`stepmodal-${currentStep.id}-${currentStep.stepType}`"
-      :study-step-id="currentStep.id"
-      :is-last-step="currentStep.stepType === 3 && currentStep.id === lastStep.id"
-      :loading-only="currentStep.stepType !== 3 && currentStepHasNlpRequests"
-      :auto-close-on-complete="currentStep.stepType !== 3 && currentStepHasNlpRequests"
-      @close="currentStep.stepType === 3 ? handleModalClose($event) : handleNlpModalClose($event)"
-      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
+        v-if="studyTrajectory.includes(currentStep.id) && ((currentStep.stepType === 3) || (currentStepHasNlpRequests && (currentStep.stepType === 1 || currentStep.stepType === 2)))"
+        :key="`stepmodal-${currentStep.id}-${currentStep.stepType}`"
+        :study-step-id="currentStep.id"
+        :is-last-step="currentStep.stepType === 3 && currentStep.id === lastStep.id"
+        :loading-only="currentStep.stepType !== 3 && currentStepHasNlpRequests"
+        :auto-close-on-complete="currentStep.stepType !== 3 && currentStepHasNlpRequests"
+        @close="currentStep.stepType === 3 ? handleModalClose($event) : handleNlpModalClose($event)"
+        @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <Editor
-      v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
-      :document-id="currentStep.documentId"
-      :study-step-id="currentStep.id"
-      :active="true"
-      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
+        v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
+        :document-id="currentStep.documentId"
+        :study-step-id="currentStep.id"
+        :active="true"
+        @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
   </div>
 </template>
@@ -122,13 +133,13 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import { computed } from "vue";
+import {computed, nextTick} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import { nextTick } from "vue";
+import Assessment from "@/components/dashboard/study/assessment/Assessment.vue";
 
 export default {
   name: "StudyRoute",
-  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal },
+  components: {Assessment, LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal},
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -214,8 +225,8 @@ export default {
       while (studyStep) {
         studyTrajectory.push(studyStep.id);
         studyStep = studyStep.studyStepPrevious
-          ? this.$store.getters["table/study_step/get"](studyStep.studyStepPrevious)
-          : null;
+            ? this.$store.getters["table/study_step/get"](studyStep.studyStepPrevious)
+            : null;
       }
       return studyTrajectory;
     },
@@ -335,30 +346,35 @@ export default {
     getStudyData() {
       if (this.studyHash) {
         this.$socket.emit(
-          "appDataByHash",
-          {
-            table: "study",
-            hash: this.studyHash,
-          },
-          (response) => {
-            if (!response.success) {
-              this.eventBus.emit("toast", {
-                title: "Access Error!",
-                message: response.message,
-                variant: "danger",
-              });
-              this.$router.push("/");
-            } else {
-              if (
-                this.studySessionId === 0 ||
-                (this.studySession && this.studySession.start === null && this.studySession.userId === this.userId)
-              ) {
-                this.$refs.studyModal.open();
+            "appDataByHash",
+            {
+              table: "study",
+              hash: this.studyHash,
+            },
+            (response) => {
+              if (!response.success) {
+                this.eventBus.emit("toast", {
+                  title: "Access Error!",
+                  message: response.message,
+                  variant: "danger",
+                });
+                this.$router.push("/");
+              } else {
+                if (
+                    this.studySessionId === 0 ||
+                    (this.studySession && this.studySession.start === null && this.studySession.userId === this.userId)
+                ) {
+                  this.$refs.studyModal.open();
+                }
               }
             }
-          }
         );
       }
+    },
+     onAssessmentStateChanged(state) {
+      // Handle assessment state changes
+      // This method can be used to react to changes in the assessment component
+      console.log('Assessment state changed:', state);
     },
     start(data) {
       this.studySessionId = data.studySessionId;
@@ -376,29 +392,29 @@ export default {
     },
     finalFinish(data) {
       this.$socket.emit(
-        "appDataUpdate",
-        {
-          table: "study_session",
-          data: {
-            id: data.studySessionId,
-            end: Date.now(),
+          "appDataUpdate",
+          {
+            table: "study_session",
+            data: {
+              id: data.studySessionId,
+              end: Date.now(),
+            },
           },
-        },
-        (result) => {
-          if (result.success) {
-            this.eventBus.emit("toast", {
-              title: "Study Session finished",
-              message: "Study session has been finished",
-              variant: "success",
-            });
-          } else {
-            this.eventBus.emit("toast", {
-              title: "Study Session not finished",
-              message: result.message,
-              variant: "danger",
-            });
+          (result) => {
+            if (result.success) {
+              this.eventBus.emit("toast", {
+                title: "Study Session finished",
+                message: "Study session has been finished",
+                variant: "success",
+              });
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Study Session not finished",
+                message: result.message,
+                variant: "danger",
+              });
+            }
           }
-        }
       );
       this.$refs.studyFinishModal.close();
     },
@@ -450,23 +466,23 @@ export default {
         this.localStudyStepId = step;
       } else {
         this.$socket.emit(
-          "appDataUpdate",
-          {
-            table: "study_session",
-            data: {
-              id: this.studySessionId,
-              studyStepId: step,
+            "appDataUpdate",
+            {
+              table: "study_session",
+              data: {
+                id: this.studySessionId,
+                studyStepId: step,
+              },
             },
-          },
-          (result) => {
-            if (!result.success) {
-              this.eventBus.emit("toast", {
-                title: "Study Step update failed",
-                message: result.message,
-                variant: "danger",
-              });
+            (result) => {
+              if (!result.success) {
+                this.eventBus.emit("toast", {
+                  title: "Study Step update failed",
+                  message: result.message,
+                  variant: "danger",
+                });
+              }
             }
-          }
         );
       }
     },

@@ -35,19 +35,10 @@
           <template #annotations>
             <AnnotationSidebar ref="sidebar" />
           </template>
-          <slot name=""
+          <slot name="additionalSidebars"/>
         </BasicSidebar>
-        
-        <!-- Assessment Component -->
-        <Assessment
-            v-if="assessmentViewActive"
-            ref="assessment"
-            :show="isSidebarVisible"
-            @state-changed="onAssessmentStateChanged"
-        />
       </div>
     </div>
-
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <TopBarButton
@@ -548,11 +539,6 @@ export default {
         default:
           console.warn('Unknown sidebar button action:', data.action);
       }
-    },
-    onAssessmentStateChanged(state) {
-      // Handle assessment state changes
-      // This method can be used to react to changes in the assessment component
-      console.log('Assessment state changed:', state);
     },
     toggleStudyComments() {
       this.setSetting({
