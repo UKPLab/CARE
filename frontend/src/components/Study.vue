@@ -79,8 +79,8 @@
       class="study-container"
   >
     <Annotator
-        ref="annotator"
         v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
+        ref="annotator"
         :document-id="currentStep.documentId"
         :study-step-id="currentStep.id"
         :active="true"
@@ -88,10 +88,10 @@
         @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     >
       <template #additionalSidebars>
-        <SidebarTemplate icon="list-check" title="Assessment">
+        <SidebarTemplate v-if="true" icon="list-check" title="Assessment">
           <template #content>
             <Assessment
-                v-if="true"
+
                 ref="assessment"
                 :show="false"
                 @state-changed="onAssessmentStateChanged"/>
