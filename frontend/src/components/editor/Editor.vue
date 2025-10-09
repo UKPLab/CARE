@@ -2,40 +2,49 @@
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
-        <Editor ref="editor" @update:data="$emit('update:data', $event)" />
+        <Editor ref="editor" @update:data="$emit('update:data', $event)"/>
       </div>
       <BasicSidebar
-        v-if="!sidebarDisabled && defaultActiveSidebar"
-        ref="sidebar"
-        :sidebar-configs="sidebarConfigs"
-        :side-bar-width="350"
-        :activeSideBar="defaultActiveSidebar"
-        class="sidebar-container"
-        @sidebar-change="handleSidebarChange"
-        @sidebar-action="handleSidebarAction">
-        <template #history>
-          <SidebarHistory />
+          v-if="!sidebarDisabled && defaultActiveSidebar"
+          ref="sidebar"
+          :buttons="sidebarButtons"
+          :side-bar-width="350"
+          :active-side-bar="defaultActiveSidebar"
+          class="sidebar-container"
+          @sidebar-change="handleSidebarChange"
+          @sidebar-action="handleSidebarAction">
+        <template v-if="showHistory" #history>
+          <SidebarTemplate icon="clock-history" title="History">
+            <template #content>
+              <SidebarHistory/>
+            </template>
+          </SidebarTemplate>
         </template>
-        <template #configurator>
-          <SidebarConfigurator />
+        <template v-if="document && document.type === 2" #configurator>
+          <SidebarTemplate icon="gear-fill" title="Configurator">
+            <template #content>
+              <SidebarConfigurator/>
+            </template>
+          </SidebarTemplate>
         </template>
+        <slot name="additionalSidebars"/>
       </BasicSidebar>
     </div>
   </div>
   <Teleport to="#topbarCenterPlaceholder">
     <div
-      v-show="readOnlyOverwrite"
-      title="Read-only"
+        v-show="readOnlyOverwrite"
+        title="Read-only"
     >
       <span
-        :style="{ color: '#800000', fontWeight: 'bold' }"
+          :style="{ color: '#800000', fontWeight: 'bold' }"
       >
         Read-only
       </span>
       <LoadIcon
-        :size="22"
-        :color="'#800000'"
-        icon-name="lock-fill"
+          :size="22"
+          :color="'#800000'"
+          icon-name="lock-fill"
       />
     </div>
 
@@ -58,10 +67,12 @@ import SidebarHistory from "@/components/editor/sidebar/History.vue";
 import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
+import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "EditorView",
   components: {
+    SidebarTemplate,
     SidebarConfigurator,
     SidebarHistory,
     LoadIcon,
@@ -136,40 +147,17 @@ export default {
       // Return null if no tabs are available
       return null;
     },
-    sidebarConfigs(){
-      const tabs = {};
-      
-      // Only add configurator tab if document type is 2
-      if (this.document && this.document.type === 2) {
-        tabs['configurator'] = {
-          icon: 'gear-fill',
-          title: 'Configurator'
-        };
-      }
-      
-      // Only add history tab if user has permission to see it
-      if (this.showHistory) {
-        tabs['history'] = {
-          icon: 'clock-history',
-          title: 'History'
-        };
-      }
-      
-      return {
-        // General buttons that appear on all sidebar views
-        generalButtons: [
-          {
-            id: 'download-html',
-            icon: 'download',
-            title: 'Download document',
-            action: 'downloadHTML',
-            isGeneral: true,
-            disabled: !this.showHTMLDownloadButton
-          }
-        ],
-        // Tab configurations
-        tabs: tabs
-      };
+    sidebarButtons() {
+      return [
+        {
+          id: 'download-html',
+          icon: 'download',
+          title: 'Download document',
+          action: 'downloadHTML',
+          isGeneral: true,
+          disabled: !this.showHTMLDownloadButton
+        }
+      ];
     },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
@@ -195,12 +183,12 @@ export default {
     handleSidebarChange(view) {
       // Update internal state to match sidebar selection
       this.sidebarContent = view;
-      if(view === 'history') {
-         this.toggleHistory();
+      if (view === 'history') {
+        this.toggleHistory();
       }
     },
     handleSidebarAction(data) {
-      switch(data.action) {
+      switch (data.action) {
         case 'downloadHTML':
           this.downloadHTML();
           break;
@@ -214,29 +202,29 @@ export default {
         this.$refs.editor.downloadDocumentAsHTML();
       }
     },
-    
+
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;
       } else {
         this.hasHistory = true;
         this.$socket.emit(
-          "documentGet",
-          {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            history: true,
-          },
-          (res) => {
-            if (!res.success) {
-              this.eventBus.emit("toast", {
-                title: "Failed retrieving edit history",
-                message: res.message,
-                variant: "danger",
-              });
+            "documentGet",
+            {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              history: true,
+            },
+            (res) => {
+              if (!res.success) {
+                this.eventBus.emit("toast", {
+                  title: "Failed retrieving edit history",
+                  message: res.message,
+                  variant: "danger",
+                });
+              }
             }
-          }
         );
       }
     },
