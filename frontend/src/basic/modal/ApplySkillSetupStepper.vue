@@ -37,7 +37,7 @@
           :selected-files="selectedFiles"
           v-model="baseFileSelections"
           @update:valid="inputGroupValid = $event"
-          @update:validationDocuments="validationDocumentNames = $event"
+          @update:validationConfigurations="validationConfigurationNames = $event"
         />
       </template>
       
@@ -48,7 +48,7 @@
           :selected-files="selectedFiles"
           :base-file-parameter="autoBaseFileParameter"
           :base-file-selections="baseFileSelections"
-          :validation-document-names="validationDocumentNames"
+          :validation-configuration-names="validationConfigurationNames"
           :show-base-file-selections="false"
         />
       </template>
@@ -60,7 +60,7 @@
           :selected-files="selectedFiles"
           :base-file-parameter="autoBaseFileParameter"
           :base-file-selections="baseFileSelections"
-          :validation-document-names="validationDocumentNames"
+          :validation-configuration-names="validationConfigurationNames"
           :show-base-file-selections="true"
         />
       </template>
@@ -96,7 +96,7 @@ export default {
       baseFileSelections: {},
       inputFilesValid: false,
       inputGroupValid: false,
-      validationDocumentNames: {},
+      validationConfigurationNames: {},
       hasInteractedWithFiles: false,
       previousSelectedSkill: '',
       previousInputMappings: {},
@@ -227,7 +227,7 @@ export default {
       this.baseFileSelections = {};
       this.inputFilesValid = false;
       this.inputGroupValid = false;
-      this.validationDocumentNames = {};
+      this.validationConfigurationNames = {};
       this.hasInteractedWithFiles = false;
     },
     formatSkillParameterMappings() {
@@ -257,9 +257,9 @@ export default {
       }
       
       const baseFiles = {};
-      for (const [validationDocumentId, selection] of Object.entries(this.baseFileSelections)) {
+      for (const [validationConfigurationId, selection] of Object.entries(this.baseFileSelections)) {
         if (selection) {
-          baseFiles[validationDocumentId] = selection;
+          baseFiles[validationConfigurationId] = selection;
         }
       }
       
@@ -272,7 +272,7 @@ export default {
       this.baseFileSelections = {};
       this.inputFilesValid = false;
       this.inputGroupValid = false;
-      this.validationDocumentNames = {};
+      this.validationConfigurationNames = {};
       this.hasInteractedWithFiles = false;
       this.$refs.applySkillsStepper.open();
     },

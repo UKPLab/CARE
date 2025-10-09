@@ -35,7 +35,7 @@
     <div v-if="showBaseFileSelections && hasBaseFileSelections" class="confirmation-section mb-3">
       <h6 class="text-primary mb-2">Base File Selections:</h6>
       <ul class="list-unstyled mb-1">
-        <li v-for="selection in formattedBaseFileSelections" :key="selection.docId">
+        <li v-for="selection in formattedBaseFileSelections" :key="selection.configId">
           <strong>{{ selection.displayName }}:</strong> {{ selection.value }}
         </li>
       </ul>
@@ -73,7 +73,7 @@ export default {
       type: Object,
       default: () => ({}),
     },
-    validationDocumentNames: {
+    validationConfigurationNames: {
       type: Object,
       default: () => ({}),
     },
@@ -91,9 +91,9 @@ export default {
       return Object.keys(this.baseFileSelections).length > 0;
     },
     formattedBaseFileSelections() {
-      return Object.entries(this.baseFileSelections).map(([docId, selection]) => ({
-        docId,
-        displayName: this.validationDocumentNames[docId],
+      return Object.entries(this.baseFileSelections).map(([configId, selection]) => ({
+        configId,
+        displayName: this.validationConfigurationNames[configId],
         value: selection || 'Unknown'
       }));
     },

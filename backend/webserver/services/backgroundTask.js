@@ -321,7 +321,10 @@ module.exports = class BackgroundTaskService extends Service {
                 return null;
             }
 
-            return JSON.parse(config?.content);
+            if (typeof config.content === 'string') {
+                return JSON.parse(config.content);
+            }
+            return config.content;
         } catch (err) {
             this.server.logger.error(`Error loading configuration ${configId}: ${err.message}`, err);
             return null;
@@ -429,12 +432,12 @@ module.exports = class BackgroundTaskService extends Service {
                     return;
                 }
 
-                if (!submission.validationDocumentId || !baseFiles || !baseFiles[submission.validationDocumentId]) {
-                    this.server.logger.warn(`Submission ${fileId} does not have a valid validation document id or base file mapping`);
+                if (!submission.validationConfigurationId || !baseFiles || !baseFiles[submission.validationConfigurationId]) {
+                    this.server.logger.warn(`Submission ${fileId} does not have a valid validation configuration id or base file mapping`);
                     return;
                 }
 
-                const baseFileType = baseFiles[submission.validationDocumentId];
+                const baseFileType = baseFiles[submission.validationConfigurationId];
 
                 const docTypeKey = `DOC_TYPE_${baseFileType.toUpperCase()}`;
                 const docTypeValue = this.server.db.models['document'].docTypes[docTypeKey];

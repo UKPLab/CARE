@@ -2,16 +2,16 @@
   <div v-if="groupedSubmissions.length" class="input-group-container">
     <div
       v-for="group in groupedSubmissions"
-      :key="group.validationDocumentId"
+      :key="group.validationConfigurationId"
       class="validation-group mb-4 p-3 border rounded"
     >
       <h6 class="fw-bold mb-3">{{ group.name }}</h6>
       <div class="mb-3">
         <label class="form-label">Select base file type:</label>
         <FormSelect
-          v-model="baseFileSelections[group.validationDocumentId]"
+          v-model="baseFileSelections[group.validationConfigurationId]"
           :options="group.fileTypeOptions"
-          @update:modelValue="updateBaseFileSelection(group.validationDocumentId, $event)"
+          @update:modelValue="updateBaseFileSelection(group.validationConfigurationId, $event)"
         />
       </div>
     </div>
@@ -30,7 +30,7 @@ import FormSelect from "@/basic/form/Select.vue";
 export default {
   name: "InputGroup",
   components: { FormSelect },
-  subscribeTable: ["submission"],
+  subscribeTable: ["submission", { table: "configuration", filter: { type: 1 } }],
   props: {
     baseFileParameter: {
       type: String,
@@ -45,14 +45,16 @@ export default {
       default: () => ({}),
     },
   },
-  emits: ["update:modelValue", "update:valid", "update:validationDocuments"],
+  emits: ["update:modelValue", "update:valid", "update:validationConfigurations"],
   data() {
     return {
       baseFileSelections: {},
-      validationDocuments: {},
     };
   },
   computed: {
+    configurations() {
+      return this.$store.getters["table/configuration/getAll"] || [];
+    },
     submissions() {
       return this.$store.getters["table/submission/getAll"] || [];
     },
@@ -72,19 +74,19 @@ export default {
         const submission = this.submissions.find(s => s.id === submissionId);
 
         if (submission) {
-          if (submission.validationDocumentId) {
-            const validationDocumentId = submission.validationDocumentId;
-            if (!grouped[validationDocumentId]) {
-              grouped[validationDocumentId] = {
-                validationDocumentId,
+          if (submission.validationConfigurationId) {
+            const validationConfigurationId = submission.validationConfigurationId;
+            if (!grouped[validationConfigurationId]) {
+              grouped[validationConfigurationId] = {
+                validationConfigurationId,
                 submissionEntries: [],
-                name: this.getValidationDocumentName(validationDocumentId),
-                fileTypeOptions: this.getFileTypeOptions(validationDocumentId),
+                name: this.getValidationConfigurationName(validationConfigurationId),
+                fileTypeOptions: this.getFileTypeOptions(validationConfigurationId),
               };
             }
-            grouped[validationDocumentId].submissionEntries.push(submission);
+            grouped[validationConfigurationId].submissionEntries.push(submission);
           } else {
-            console.warn('Submission found but no validationDocumentId:', submission);
+            console.warn('Submission found but no validationConfigurationId:', submission);
           }
         } else {
           console.warn('No submission found for ID:', submissionId);
@@ -95,7 +97,7 @@ export default {
     },
     isValid() {
       const isValid = this.groupedSubmissions.every(group => {
-        const selection = this.baseFileSelections[group.validationDocumentId];
+        const selection = this.baseFileSelections[group.validationConfigurationId];
         return selection;
       });
       
@@ -103,12 +105,6 @@ export default {
     },
   },
   watch: {
-    groupedSubmissions: {
-      handler() {
-        this.loadValidationDocuments();
-      },
-      immediate: true,
-    },
     modelValue: {
       handler(newValue) {
         if (newValue && typeof newValue === 'object') {
@@ -133,75 +129,42 @@ export default {
       deep: true,
       immediate: false,
     },
-    validationDocuments: {
+    groupedSubmissions: {
       handler(newVal) {
-        const validationDocumentNames = {};
-        Object.keys(newVal).forEach(docId => {
-          validationDocumentNames[docId] = this.getValidationDocumentName(docId);
+        const validationConfigurationNames = {};
+        newVal.forEach(group => {
+          validationConfigurationNames[group.validationConfigurationId] = group.name;
         });
-        this.$emit('update:validationDocuments', validationDocumentNames);
+        this.$emit('update:validationConfigurations', validationConfigurationNames);
       },
       deep: true,
       immediate: true,
     },
   },
   methods: {
-    async loadValidationDocuments() {
-      const validationDocumentIds = this.groupedSubmissions
-        .map(g => g.validationDocumentId)
-        .filter(id => id != null);
-      
-      for (const docId of validationDocumentIds) {
-        if (!this.validationDocuments[docId]) {
-          try {
-            const doc = await this.fetchValidationDocument(docId);
-            this.validationDocuments[docId] = doc;
-          } catch (error) {
-            console.error(`Failed to fetch validation document ${docId}:`, error);
-            this.validationDocuments[docId] = null;
-          }
-        }
-      }
+    getValidationConfigurationName(validationConfigurationId) {
+      const config = this.configurations.find(c => c.id === validationConfigurationId);
+      return config?.name || `Validation Configuration ${validationConfigurationId}`;
     },
-    async fetchValidationDocument(validationDocumentId) {
-      if (!validationDocumentId) {
-        throw new Error('Validation document ID is required');
-      }
-      
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("documentGet", {
-          documentId: validationDocumentId,
-        }, (res) => {
-          if (res && res.data && res.data.file) {
-            try {
-              let fileContent;
-              if (res.data.file instanceof ArrayBuffer) {
-                fileContent = new TextDecoder().decode(new Uint8Array(res.data.file));
-              } else {
-                fileContent = res.data.file.toString();
-              }
-              const parsedContent = JSON.parse(fileContent);
-              resolve(parsedContent);
-            } catch (error) {
-              reject(new Error(`Failed to parse validation document: ${error.message}`));
-            }
-          } else {
-            reject(new Error(`Failed to fetch validation document: ${res.message}`));
-          }
-        });
-      });
-    },
-    getValidationDocumentName(validationDocumentId) {
-      const doc = this.validationDocuments[validationDocumentId];
-      return doc?.name || `Validation Document ${validationDocumentId}`;
-    },
-    getFileTypeOptions(validationDocumentId) {
-      const doc = this.validationDocuments[validationDocumentId];
-      if (!doc?.rules?.requiredFiles) {
+    getFileTypeOptions(validationConfigurationId) {
+      const config = this.configurations.find(c => c.id === validationConfigurationId);
+      if (!config?.content) {
         return { options: [] };
       }
       
-      const options = doc.rules.requiredFiles
+      let parsedContent;
+      try {
+        parsedContent = typeof config.content === 'string' ? JSON.parse(config.content) : config.content;
+      } catch (error) {
+        console.error('Failed to parse configuration content:', error);
+        return { options: [] };
+      }
+      
+      if (!parsedContent?.rules?.requiredFiles) {
+        return { options: [] };
+      }
+      
+      const options = parsedContent.rules.requiredFiles
         .filter(file => file.required === true)
         .map(file => ({
           value: file.name,
@@ -210,8 +173,8 @@ export default {
       
       return { options };
     },
-    updateBaseFileSelection(validationDocumentId, selection) {
-      this.baseFileSelections[validationDocumentId] = selection;
+    updateBaseFileSelection(validationConfigurationId, selection) {
+      this.baseFileSelections[validationConfigurationId] = selection;
       this.$emit('update:modelValue', { ...this.baseFileSelections });
     },
   },
