@@ -14,10 +14,18 @@
           @sidebar-change="handleSidebarChange"
           @sidebar-action="handleSidebarAction">
         <template v-if="showHistory" #history>
-          <SidebarHistory icon="clock-history" title="History"/>
+          <SidebarTemplate icon="clock-history" title="History">
+            <template #content>
+              <SidebarHistory/>
+            </template>
+          </SidebarTemplate>
         </template>
         <template v-if="document && document.type === 2" #configurator>
-          <SidebarConfigurator icon="gear-fill" title="Configurator"/>
+          <SidebarTemplate icon="gear-fill" title="Configurator">
+            <template #content>
+              <SidebarConfigurator/>
+            </template>
+          </SidebarTemplate>
         </template>
         <slot name="additionalSidebars"/>
       </BasicSidebar>
@@ -59,10 +67,12 @@ import SidebarHistory from "@/components/editor/sidebar/History.vue";
 import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
+import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "EditorView",
   components: {
+    SidebarTemplate,
     SidebarConfigurator,
     SidebarHistory,
     LoadIcon,
@@ -139,15 +149,15 @@ export default {
     },
     sidebarButtons() {
       return [
-          {
-            id: 'download-html',
-            icon: 'download',
-            title: 'Download document',
-            action: 'downloadHTML',
-            isGeneral: true,
-            disabled: !this.showHTMLDownloadButton
-          }
-        ];
+        {
+          id: 'download-html',
+          icon: 'download',
+          title: 'Download document',
+          action: 'downloadHTML',
+          isGeneral: true,
+          disabled: !this.showHTMLDownloadButton
+        }
+      ];
     },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
