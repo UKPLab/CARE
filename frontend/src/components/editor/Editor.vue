@@ -4,29 +4,23 @@
       <div id="editorContainer" class="editor-container flex-grow-1">
         <Editor ref="editor" @update:data="$emit('update:data', $event)" />
       </div>
-      <Sidebar
-        v-if="!sidebarDisabled && sidebarContent !== null"
+      <BasicSidebar
+        v-if="!sidebarDisabled"
         ref="sidebar"
-        :content="sidebarContent"
-        class="sidebar-container"/>
+        :sidebar-configs="sidebarConfigs"
+        :side-bar-width="350"
+        class="sidebar-container"
+        @sidebar-change="handleSidebarChange"
+        @sidebar-action="handleSidebarAction">
+        <template #history>
+          <SidebarHistory />
+        </template>
+        <template #configurator>
+          <SidebarConfigurator />
+        </template>
+      </BasicSidebar>
     </div>
   </div>
-  <Teleport to="#topBarNavItems">
-    <TopBarButton
-      v-if="showHistory"
-      title="Show History"
-      class="btn rounded-circle ms-2"
-      type="button"
-      @click="toggleHistory"
-    >
-      <LoadIcon
-        :color="'#777777'"
-        :size="18"
-        icon-name="clock-history"
-      />
-    </TopBarButton>
-  </Teleport>
-
   <Teleport to="#topbarCenterPlaceholder">
     <div
       v-show="readOnlyOverwrite"
@@ -57,17 +51,20 @@
  *
  * @author Dennis Zyska, Juliane Bechert, Linyin Huang
  */
-import Sidebar from "@/components/editor/sidebar/Sidebar.vue";
+import BasicSidebar from "@/basic/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import SidebarHistory from "@/components/editor/sidebar/History.vue";
+import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 
 export default {
   name: "EditorView",
   components: {
-    LoadIcon, TopBarButton,
-    Sidebar,
+    SidebarConfigurator,
+    SidebarHistory,
+    LoadIcon,
+    BasicSidebar,
     Editor,
   },
   provide() {
@@ -124,6 +121,35 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    sidebarConfigs(){
+      return {
+        // General buttons that appear on all sidebar views
+        generalButtons: [
+          {
+            id: 'download-html',
+            icon: 'download',
+            title: 'Download document',
+            action: 'downloadHTML',
+            isGeneral: true,
+            disabled: !this.showHTMLDownloadButton
+          }
+        ],
+        // Tab configurations
+        tabs: {
+          'configurator': {
+            icon: 'gear-fill',
+            title: 'Configurator'
+          },
+          'history': {
+            icon: 'clock-history',
+            title: 'History'
+          }
+        }
+      };
+    },
+    showHTMLDownloadButton() {
+      return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
+    },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history') {
         return true;
@@ -141,28 +167,30 @@ export default {
       return this.$store.getters["table/document/get"](this.documentId);
     },
   },
-  watch: {
-    "document.type": {
-      immediate: true,
-      handler(newType) {
-        if (newType === 2) {
-          this.sidebarContent = "configurator";
-        }
+  methods: {
+    handleSidebarChange(view) {
+      // Update internal state to match sidebar selection
+      this.sidebarContent = view;
+      if(view === 'history') {
+         this.toggleHistory();
       }
     },
-    hasHistory: {
-      handler(newVal) {
-        if (newVal) {
-          this.sidebarContent = "history";
-        } else if (this.document?.type === 2) {
-          this.sidebarContent = "configurator";
-        } else {
-          this.sidebarContent = null;
-        }
+    handleSidebarAction(data) {
+      switch(data.action) {
+        case 'downloadHTML':
+          this.downloadHTML();
+          break;
+        default:
+          console.warn('Unknown sidebar button action:', data.action);
       }
-    }
-  },
-  methods: {
+    },
+    downloadHTML() {
+      if (this.$refs.editor && this.$refs.editor.downloadDocumentAsHTML) {
+        // TODO: would prefer to move the function here
+        this.$refs.editor.downloadDocumentAsHTML();
+      }
+    },
+    
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;
@@ -216,12 +244,6 @@ export default {
 }
 
 .sidebar-container {
-  width: 350px;
-  max-width: 350px;
-  min-width: 350px;
-  background-color: #f8f9fa;
-  border-left: 1px solid #ddd;
-  overflow-y: auto;
   margin-top: 60px;
 }
 </style>

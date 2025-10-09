@@ -3,6 +3,7 @@ const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
+const {inject} = require("../../utils/generic");
 const path = require("path");
 const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
@@ -74,6 +75,7 @@ class DocumentSocket extends Socket {
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
      * @param {boolean} data.importAnnotations - indicates whether to import annotations from the PDF (optional).
+     * @param {number} data.submissionId - The submission that the document will belong to.
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
      * @param {number} [data.projectId] - The ID of the project the document belongs to (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
@@ -140,26 +142,13 @@ class DocumentSocket extends Socket {
                     userId: data.userId ?? this.userId,
                     uploadedByUserId: this.userId,
                     readyForReview: data.isUploaded ?? false,
+                    submissionId: data.submissionId
                 },
                 { transaction: options.transaction }
             );
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
             fs.writeFileSync(target, data.file);
-        } else if (fileType === ".json") {
-            // Handle JSON configuration files
-            doc = await this.models["document"].add(
-                {
-                    type: docTypes.DOC_TYPE_CONFIG,
-                    name: data.name.replace(/.json$/, ""),
-                    userId: data.userId ?? this.userId,
-                    uploadedByUserId: this.userId,
-                    readyForReview: data.isUploaded ?? false,
-                },
-                { transaction: options.transaction }
-            );
-
-            target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
         } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -168,6 +157,7 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
                 projectId: data.projectId,
+                submissionId: data.submissionId,
                 originalFilename: data.name,
             }, {transaction: options.transaction});
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -721,20 +711,33 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object[]>} A promise that resolves with an array of submission objects returned from the Moodle service.
      */
     async documentGetMoodleSubmissions(data, options) {
-        return await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(
-            {
-                options: {
-                    courseID: Number(data.options.courseID),
-                    assignmentID: Number(data.options.assignmentID),
-                    apiKey: data.options.apiKey,
-                    apiUrl: data.options.apiUrl,
-                }
-            }
-        );
+        const submissions = await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment({
+            options: {
+                courseID: Number(data.options.courseID),
+                assignmentID: Number(data.options.assignmentID),
+                apiKey: data.options.apiKey,
+                apiUrl: data.options.apiUrl,
+            },
+        });
+
+        return await this.checkSubmissionsExist(submissions);
     }
 
     /**
-     * TODO: Rewrite the parameters' description
+     * Check a list of submissions if they have already existed in the database by extId
+     * 
+     * @param data The data object containing the submissions to check at least extId key is required
+     * @param options The options object
+     * @returns {Promise<Array<Object>>} An array of objects containing the status of the submissions
+     */
+    async checkSubmissionsExist(data, options) {
+        const extIds = data.map((s) => s.submissionId);
+        const existingExtIds = await this.models["submission"].filterExistingExtIds(extIds);
+        const duplicateExtIds = existingExtIds.map((item) => item.extId);
+        return await inject(data, (extId) => duplicateExtIds.includes(extId), "exists", "submissionId");
+    }
+
+    /**
      * Downloads multiple submission files from Moodle URLs, creating a local document record for each one.
      * Each file is processed in its own database transaction to ensure atomicity. Progress is reported
      * to the client via a socket event after each file is processed.
@@ -744,14 +747,15 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.submissions - The submissions from Moodle
      * @param {Object} data.options - The configuration options (e.g., API key, URL) passed to the Moodle RPC service
      * @param {string} data.progressId - The unique ID used for reporting progress back to the frontend.
-     * @param {number} data.validationDocumentId - The document ID to retrieve validation schema
+     * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The results of the processed submissions
      * @throws {Error} - If the download fails, if the assignment ID is invalid, or if saving to server fails
      */
     async downloadMoodleSubmissions(data, options) {
-        const results = [];
+        const downloadedSubmissions = [];
+        const downloadedErrors = [];
         const submissions = data.submissions || [];
 
         for (const submission of submissions) {
@@ -763,7 +767,7 @@ class DocumentSocket extends Socket {
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
-                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationDocumentId);
+                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId);
 
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
@@ -775,13 +779,14 @@ class DocumentSocket extends Socket {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
+                        validationConfigurationId: data.validationConfigurationId,
                     },
                     { transaction }
                 );
 
                 const documentIds = [];
                 for (const file of tempFiles) {
-                    const document = await this.addDocument(
+                    const { doc } = await this.addDocument(
                         {
                             file: file.content,
                             name: file.fileName,
@@ -791,21 +796,19 @@ class DocumentSocket extends Socket {
                         },
                         { transaction }
                     );
-                    documentIds.push(document.id);
+                    documentIds.push(doc.id);
                 }
 
-                results.push({
+                downloadedSubmissions.push({
                     submissionId: submissionEntry.id,
                     documentIds,
-                    success: true,
-                    message: "Submission processed successfully",
                 });
             } catch (err) {
                 this.logger.error(err.message);
-
-                results.push({
-                    submissionId: submission.submissionId,
-                    success: false,
+                downloadedErrors.push({
+                    userId: submission.userId,
+                    firstName: submission.firstName,
+                    lastName: submission.lastName,
                     message: err.message,
                 });
             }
@@ -818,7 +821,55 @@ class DocumentSocket extends Socket {
             });
         }
 
-        return results;
+        return { downloadedSubmissions, downloadedErrors };
+    }
+
+    /**
+     * Upload a single submission to the DB.
+     *
+     * @author Linyin Huang
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.userId - The ID of the user who owns the submission
+     * @param {number} data.extId - The ID that comes from an external platform
+     * @param {Array<Object>} data.files - The submissions files
+     * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Array<T>>} - The result of the processed submission
+     * @throws {Error} - If the upload fails, if the extId is invalid, or if saving to server fails
+     */
+    async uploadSingleSubmission(data, options) {
+        const { files, userId, extId = null, validationConfigurationId } = data;
+        const transaction = options.transaction;
+        try {
+            const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
+
+            if (!result.success) {
+                throw new Error(result.message || "Validation failed");
+            }
+
+            const submission = await this.models["submission"].add({ 
+                userId, 
+                extId, 
+                validationConfigurationId, 
+                createdByUserId: this.userId 
+            }, { transaction });
+            for (const file of files) {
+                await this.addDocument(
+                    {
+                        file: file.content,
+                        name: file.fileName,
+                        userId: userId,
+                        isUploaded: true,
+                        submissionId: submission.id,
+                    },
+                    { transaction }
+                );
+            }
+        } catch (error) {
+            this.logger.error(error);
+            throw new Error(error);
+        }
     }
 
     /**
@@ -867,9 +918,7 @@ class DocumentSocket extends Socket {
 
                 this.emit("document_editRefresh", edits);
             } else {
-
                 if (data['studySessionId'] == null && data['studyStepId'] == null) {
-
                     // Get the edits for the base document
                     const edits = await this.models['document_edit'].findAll({
                         where: {
@@ -904,19 +953,22 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                         ),
                     };
+                }
             }
-        }
         } else {
-            // Handle file-based documents (PDF, JSON, etc.)
-            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
+            const extensionMap = {
+                [docTypes.DOC_TYPE_ZIP]: ".zip",
+            }
+            
+            const fileExtension = extensionMap[document.type] || ".pdf";
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
-
+            
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
-            const file = fs.readFileSync(filePath);
-            return { document: document, file: file };
+            let file = fs.readFileSync(filePath); // Buffer
+            return { document, file };
         }
     }
 
@@ -1042,53 +1094,6 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
-
-    /**
-     * Update the content of a JSON configuration file
-     *
-     * @param {Object} data - The data object containing the document ID and new content
-     * @param {number} data.documentId - The ID of the document to update
-     * @param {Object} data.content - The new JSON content to save
-     * @param {Object} options - The options object containing the transaction
-     * @returns {Promise<void>}
-     */
-    async updateDocumentContent(data, options) {
-        const { documentId, content } = data;
-
-        // Get the document to verify it exists and check access
-        const doc = await this.models['document'].getById(documentId);
-        if (!doc) {
-            throw new Error("Document not found");
-        }
-
-        // Check if user has access to update this document
-        if (!(await this.checkDocumentAccess(doc.id))) {
-            throw new Error("You do not have access to update this document");
-        }
-
-        // Verify it's a configuration file
-        if (doc.type !== this.models['document'].docTypes.DOC_TYPE_CONFIG) {
-            throw new Error("Only configuration files can be updated with this method");
-        }
-
-        // Validate JSON content
-        let jsonContent;
-        try {
-            jsonContent = JSON.stringify(content, null, 2);
-        } catch (error) {
-            throw new Error("Invalid JSON content");
-        }
-
-        const filePath = `${UPLOAD_PATH}/${doc.hash}.json`;
-        await fs.promises.writeFile(filePath, jsonContent, 'utf8');
-
-        const updatedDocument = await this.models['document'].updateById(doc.id, {
-            updatedAt: new Date()
-        }, { transaction: options.transaction });
-
-        return updatedDocument;
-    }
-
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
@@ -1101,7 +1106,6 @@ class DocumentSocket extends Socket {
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
-        this.createSocket("documentUpdateContent", this.updateDocumentContent, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
@@ -1109,6 +1113,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
+        this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
     }
 };
 

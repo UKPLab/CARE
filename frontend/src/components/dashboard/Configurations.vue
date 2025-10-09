@@ -87,7 +87,7 @@ import { Editor } from "@/components/editor/editorStore.js";
  */
 export default {
   name: "ConfigurationsManagement",
-  subscribeTable: ["document"],
+  subscribeTable: ["configuration"],
   components: {
     Card,
     BasicTable,
@@ -116,6 +116,7 @@ export default {
         { name: "Name", key: "name", sortable: true },
         { name: "Created", key: "createdAt", sortable: true, type: "datetime" },
         { name: "Updated", key: "updatedAt", sortable: true, type: "datetime" },
+        { name: "Type", key: "typeName", sortable: true },
       ],
       buttons: [
         {
@@ -150,29 +151,23 @@ export default {
   },
   computed: {
     configurationsTable() {
-      // Only show documents with type 3 (configuration files)
-      return this.$store.getters["table/document/getAll"]
-        .filter(doc => doc.type === 3)
-        .map(doc => ({
-          id: doc.id,
-          name: doc.name,
-          type: "Configuration",
-          description: doc.description || "",
-          createdAt: doc.createdAt,
-          updatedAt: doc.updatedAt,
-        }));
+      return this.$store.getters["table/configuration/getAll"].map(cfg => {
+        const newC = {...cfg};
+        newC.typeName = cfg.type === 0 ? "Assessment" : "Validation";
+        return newC;
+      });
     },
   },
   watch: {
     // Clean up Quill editor when modal is closed
-    '$refs.editModal': {
+    "$refs.editModal": {
       handler(newVal) {
         if (!newVal || !newVal.isOpen) {
           this.cleanupQuillEditor();
         }
       },
-      deep: true
-    }
+      deep: true,
+    },
   },
   methods: {
     action(data) {
@@ -191,95 +186,44 @@ export default {
 
     viewConfiguration(config) {
       this.selectedConfig = config;
-      
-      this.$socket.emit("documentGet", {
-        documentId: config.id
-      }, (response) => {
-        if (response && response.success) {
-          try {
-            if (response.data && response.data.file) {
-              let fileContent;
-              if (response.data.file instanceof ArrayBuffer) {
-                const uint8Array = new Uint8Array(response.data.file);
-                fileContent = new TextDecoder().decode(uint8Array);
-              } else {
-                fileContent = response.data.file.toString();
-              }
-              
-              // Parse and format the JSON content
-              const jsonContent = JSON.parse(fileContent);
-              this.configContent = JSON.stringify(jsonContent, null, 2);
-              this.$refs.viewModal.openModal();
-            } else {
-              throw new Error("No file data received from server");
-            }
-          } catch (error) {
-            console.error("Error parsing configuration JSON:", error);
-            this.eventBus.emit('toast', {
-              title: "Configuration Error",
-              message: "Failed to parse configuration content: " + error.message,
-              variant: "danger"
-            });
-          }
-        } else {
-          const errorMessage = response && response.message ? response.message : "Failed to load configuration";
-          this.eventBus.emit('toast', {
-            title: "Configuration Error",
-            message: errorMessage,
-            variant: "danger"
-          });
+
+      try {
+        if (!config || !config.content) {
+          throw new Error("No configuration content available");
         }
-      });
+        const jsonContent = config.content;
+        this.configContent = JSON.stringify(jsonContent, null, 2);
+        this.$refs.viewModal.openModal();
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: "Configuration Error",
+          message: "Failed to load configuration content: " + error.message,
+          variant: "danger",
+        });
+      }
     },
 
     editConfiguration(config) {
       this.selectedConfig = config;
-      
-      this.$socket.emit("documentGet", {
-        documentId: config.id
-      }, (response) => {
-        if (response && response.success) {
-          try {
-            if (response.data && response.data.file) {
-              let fileContent;
-              if (response.data.file instanceof ArrayBuffer) {
-                const uint8Array = new Uint8Array(response.data.file);
-                fileContent = new TextDecoder().decode(uint8Array);
-              } else {
-                fileContent = response.data.file.toString();
-              }
-              
-              // Parse and format the JSON content
-              const jsonContent = JSON.parse(fileContent);
-              const formattedJson = JSON.stringify(jsonContent, null, 2);
-              this.editableConfigContent = formattedJson;
-              
-              this.$refs.editModal.openModal();
-              
-              // Initialize Quill editor after modal is opened
-              this.$nextTick(() => {
-                this.initializeQuillEditor();
-              });
-            } else {
-              throw new Error("No file data received from server");
-            }
-          } catch (error) {
-            console.error("Error loading configuration:", error);
-            this.eventBus.emit('toast', {
-              title: "Configuration Error",
-              message: "Failed to load configuration content: " + error.message,
-              variant: "danger"
-            });
-          }
-        } else {
-          const errorMessage = response && response.message ? response.message : "Failed to load configuration";
-          this.eventBus.emit('toast', {
-            title: "Configuration Error",
-            message: errorMessage,
-            variant: "danger"
-          });
+
+      try {
+        if (!config || !config.content) {
+          throw new Error("No configuration content available");
         }
-      });
+        this.editableConfigContent = JSON.stringify(config.content, null, 2);
+        this.$refs.editModal.openModal();
+
+        // Initialize Quill editor after modal is opened
+        this.$nextTick(() => {
+          this.initializeQuillEditor();
+        });
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: "Configuration Error",
+          message: "Failed to load configuration content: " + error.message,
+          variant: "danger",
+        });
+      }
     },
 
     initializeQuillEditor() {
@@ -299,10 +243,10 @@ export default {
 
     saveConfiguration() {
       if (!this.quillEditor) {
-        this.eventBus.emit('toast', {
+        this.eventBus.emit("toast", {
           title: "Configuration Error",
           message: "Editor not initialized",
-          variant: "danger"
+          variant: "danger",
         });
         return;
       }
@@ -311,10 +255,10 @@ export default {
       const editorContent = this.quillEditor.getEditor().getText().trim();
 
       if (!editorContent) {
-        this.eventBus.emit('toast', {
+        this.eventBus.emit("toast", {
           title: "Configuration Error",
           message: "No configuration content to save",
-          variant: "danger"
+          variant: "danger",
         });
         return;
       }
@@ -323,10 +267,10 @@ export default {
       try {
         JSON.parse(editorContent);
       } catch (error) {
-        this.eventBus.emit('toast', {
+        this.eventBus.emit("toast", {
           title: "Invalid JSON",
           message: "Please check your JSON syntax: " + error.message,
-          variant: "danger"
+          variant: "danger",
         });
         return;
       }
@@ -334,31 +278,32 @@ export default {
       this.saving = true;
 
       const jsonContent = JSON.parse(editorContent);
+      this.$socket.emit("configurationUpdate", {
+          configurationId: this.selectedConfig.id,
+          content: jsonContent,
+        },
+        (response) => {
+          this.saving = false;
 
-      this.$socket.emit("documentUpdateContent", {
-        documentId: this.selectedConfig.id,
-        content: jsonContent
-      }, (response) => {
-        this.saving = false;
-        
-        if (response && response.success) {
-          this.eventBus.emit('toast', {
-            title: "Configuration Updated",
-            message: "Configuration file has been successfully updated",
-            variant: "success"
-          });
-          setTimeout(() => {
-            this.$refs.editModal.close();
-          }, 100);
-        } else {
-          const errorMessage = response && response.message ? response.message : "Failed to update configuration";
-          this.eventBus.emit('toast', {
-            title: "Configuration Update Error",
-            message: errorMessage,
-            variant: "danger"
-          });
+          if (response && response.success) {
+            this.eventBus.emit("toast", {
+              title: "Configuration Updated",
+              message: "Configuration file has been successfully updated",
+              variant: "success",
+            });
+            setTimeout(() => {
+              this.$refs.editModal.close();
+            }, 100);
+          } else {
+            const errorMessage = response && response.message ? response.message : "Failed to update configuration";
+            this.eventBus.emit("toast", {
+              title: "Configuration Update Error",
+              message: errorMessage,
+              variant: "danger",
+            });
+          }
         }
-      });
+      );
     },
 
     deleteConfiguration(config) {
@@ -367,25 +312,28 @@ export default {
         `Are you sure you want to delete "${config.name}"?`,
         null,
         (confirmed) => {
-          if (confirmed) {
-            this.$socket.emit("appDataUpdate", {
-              table: "document",
+        if (confirmed) {
+          this.$socket.emit(
+            "appDataUpdate",
+            {
+              table: "configuration",
               data: {
                 id: config.id,
-                deleted: true
-              }
-            }, (result) => {
+                deleted: true,
+              },
+            },
+            (result) => {
               if (!result.success) {
-                this.eventBus.emit('toast', {
+                this.eventBus.emit("toast", {
                   title: "Configuration delete failed",
                   message: result.message,
-                  variant: "danger"
+                  variant: "danger",
                 });
               }
-            });
-          }
+            }
+          );
         }
-      );
+      });
     },
 
     cleanupQuillEditor() {

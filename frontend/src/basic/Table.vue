@@ -536,7 +536,7 @@ export default {
         });
       }
 
-      // Apply sorting
+      // Apply sorting (pre-group)
       if (this.sortColumn) {
         if (this.sortDirection === "ASC") {
           data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
@@ -589,6 +589,36 @@ export default {
           }
           return true;
         });
+      }
+
+      // Group rows if requested
+      if (this.options && this.options.groupBy) {
+        const groupBy = this.options.groupBy;
+        const groupKey = typeof groupBy === "string" ? groupBy : groupBy.key;
+        const groups = {};
+        for (const row of data) {
+          const key = row[groupKey];
+          if (!(key in groups)) groups[key] = [];
+          groups[key].push(row);
+        }
+        let aggregated = Object.values(groups).map((rows) => {
+          if (typeof groupBy === "object" && typeof groupBy.aggregate === "function") {
+            return groupBy.aggregate(rows);
+          }
+          // Default: use first row of the group
+          return rows[0];
+        });
+
+        // Re-apply sorting on aggregated rows to respect current sort
+        if (this.sortColumn) {
+          if (this.sortDirection === "ASC") {
+            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
+          } else {
+            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
+          }
+        }
+
+        return aggregated;
       }
 
       return data;
