@@ -208,11 +208,34 @@ export default {
     availableSlots() {
       return Object.keys(this.$slots).filter(slot => slot !== 'default');
     },
+    sidebarConfigs() {
+      const configs = { tabs: {}, buttons: [] };
+      this.availableSlots.forEach(slotName => {
+        const slot = this.$slots[slotName];
+        if (slot) {
+            const vnodes = slot();
+            const firstVNode = vnodes[0];
+            if (firstVNode) {
+              const props = firstVNode.props || {};
+              configs.tabs[slotName] = {
+                title: props.title,
+                icon: props.icon,
+                buttons: props.buttons || []
+              };
+            }
+        }
+      });
+      // Add general buttons from props
+      if (this.buttons && this.buttons.length > 0) {
+        configs.buttons = this.buttons.filter(btn => btn.isGeneral);
+      }
+      return configs;
+    },
     combinedButtons() {
       let buttons = [];
       // Add general buttons (not tied to a specific slot)
-      if (this.sidebarConfigs && this.sidebarConfigs.generalButtons) {
-        buttons = buttons.concat(this.sidebarConfigs.generalButtons);
+      if (this.sidebarConfigs && this.sidebarConfigs.buttons) {
+        buttons = buttons.concat(this.sidebarConfigs.buttons);
       }
       // Add buttons for the active slot
       if (this.activeSlotConfig && this.activeSlotConfig.buttons) {

@@ -22,7 +22,7 @@
 
         </div>
         <BasicSidebar
-            v-if="!sidebarDisabled && !assessmentViewActive"
+            v-if="!sidebarDisabled"
             :sidebar-configs="sidebarConfigs"
             :show="isSidebarVisible"
             :sidebar-width="sidebarWidth"
@@ -41,18 +41,6 @@
     </div>
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <TopBarButton
-            v-if="assessmentEnabled"
-            :title="assessmentViewActive ? 'Switch to Annotator' : 'Switch to Assessment'"
-            class="btn rounded-circle ms-2"
-            @click="assessmentViewActive = !assessmentViewActive"
-        >
-          <LoadIcon
-              :color="assessmentViewActive ? '#097969' : '#777777'"
-              :size="18"
-              icon-name="clipboard-check"
-          />
-        </TopBarButton>
         <TopBarButton
             v-show="studySessionId && studySessionId !== 0 ? active : true"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
