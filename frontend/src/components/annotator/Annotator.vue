@@ -22,7 +22,7 @@
 
         </div>
         <BasicSidebar
-            v-if="!sidebarDisabled"
+            v-if="!sidebarDisabled && !assessmentViewActive"
             :sidebar-configs="sidebarConfigs"
             :show="isSidebarVisible"
             :sidebar-width="sidebarWidth"
@@ -35,7 +35,16 @@
           <template #annotations>
             <AnnotationSidebar ref="sidebar" />
           </template>
+          <slot name=""
         </BasicSidebar>
+        
+        <!-- Assessment Component -->
+        <Assessment
+            v-if="assessmentViewActive"
+            ref="assessment"
+            :show="isSidebarVisible"
+            @state-changed="onAssessmentStateChanged"
+        />
       </div>
     </div>
 
@@ -125,7 +134,7 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
-import Assessment from "./Assessment.vue";
+import Assessment from "../dashboard/study/assessment/Assessment.vue";
 import Loader from "@/basic/Loading.vue";
 import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
@@ -217,7 +226,7 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
-      assessmentViewActive: false,
+      assessmentViewActive: true,
       sidebarIconHighlight: false,
       sidebarWidth: 400,
       maxSidebarWidth: 400,
@@ -539,6 +548,11 @@ export default {
         default:
           console.warn('Unknown sidebar button action:', data.action);
       }
+    },
+    onAssessmentStateChanged(state) {
+      // Handle assessment state changes
+      // This method can be used to react to changes in the assessment component
+      console.log('Assessment state changed:', state);
     },
     toggleStudyComments() {
       this.setSetting({

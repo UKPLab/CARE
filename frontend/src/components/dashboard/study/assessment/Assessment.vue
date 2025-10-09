@@ -1,259 +1,213 @@
 <template>
-  <div
-    id="assessmentContainer"
-    class="col border mh-100 col-sm-auto g-0"
-    :class="sidebarContainerClassList"
-    :style="sidebarContainerStyle"
-  >
-    <div id="assessmentHoverHotZone"></div>
-    <div
-      id="sidebar"
-      :class="sidebarClassList"
-      class="collapse collapse-horizontal border-end d-flex flex-column"
-    >
-      <div id="assessmentHotZone" class="hot-zone"></div>
-      <div id="sidepane" ref="sidepane">
-        <div id="spacer"></div>
+  <div class="assessment-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="mb-0">Assessment Results</h4>
+        <span v-if="readonly" class="badge bg-secondary">Read Only</span>
+      </div>
+    </div>
 
-        <div class="assessment-section">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="d-flex align-items-center gap-2">
-              <h4 class="mb-0">Assessment Results</h4>
-              <span v-if="readonly" class="badge bg-secondary">Read Only</span>
-            </div>
-          </div>
+    <div class="assessment-content-container">
+      <div v-if="error" class="alert alert-danger">
+        <h6>Error</h6>
+        <p class="mb-0">{{ error }}</p>
+      </div>
 
-          <div class="assessment-content-container">
-            <div v-if="error" class="alert alert-danger">
-              <h6>Error</h6>
-              <p class="mb-0">{{ error }}</p>
-            </div>
-
-            <div v-else-if="assessmentOutput" class="assessment-results">
-              <div
-                v-if="assessmentOutput.criteriaGroups"
-                class="criteria-groups-section"
-              >
-                <div
-                  v-for="(group, groupIndex) in assessmentOutput.criteriaGroups"
-                  :key="groupIndex"
-                  class="criteria-group-card card mb-2"
+      <div v-else-if="assessmentOutput" class="assessment-results">
+        <div
+          v-if="assessmentOutput.criteriaGroups"
+          class="criteria-groups-section"
+        >
+          <div
+            v-for="(group, groupIndex) in assessmentOutput.criteriaGroups"
+            :key="groupIndex"
+            class="criteria-group-card card mb-2"
+          >
+            <!-- Group Header -->
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+              style="cursor: pointer"
+              @click="toggleGroup(groupIndex)"
+            >
+              <div class="d-flex align-items-center flex-grow-1">
+                <LoadIcon
+                  :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
+                  :size="16"
+                  class="me-2"
+                />
+                <span class="fw-bold">{{ group.name }}</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <span 
+                  v-if="group.description" 
+                  class="info-icon me-2"
+                  style="cursor: help;"
+                  @click.stop="toggleInfoPanelPin(group, null)"
+                  @mouseenter="openInfoPanel(group, null)"
+                  @mouseleave="closeInfoPanel"
                 >
-                  <!-- Group Header -->
-                  <div
-                    class="card-header d-flex justify-content-between align-items-center"
+                  <LoadIcon icon-name="info-circle" :size="14" />
+                </span>
+                <span
+                  class="badge"
+                  :class="(readonly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
+                >
+                  {{ group.score }} P
+                </span>
+              </div>
+            </div>
+
+            <!-- Group Content -->
+            <div v-if="expandedGroups[groupIndex]" class="card-body">
+              <div class="criteria-list">
+                <div
+                  v-for="(criterion, criterionIndex) in group.criteria"
+                  :key="criterionIndex"
+                  class="criterion-item"
+                >
+                  <!-- Criterion Header -->
+                  <div 
+                    class="d-flex justify-content-between align-items-center py-2"
                     style="cursor: pointer"
-                    @click="toggleGroup(groupIndex)"
+                    @click="toggleCriterion(groupIndex, criterionIndex)"
                   >
-                    <div class="d-flex align-items-center flex-grow-1">
-                      <LoadIcon
-                        :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
-                        :size="16"
-                        class="me-2"
-                      />
-                      <span class="fw-bold">{{ group.name }}</span>
+                    <div class="d-flex align-items-center">
+                      <span class="criterion-icon me-2">
+                        <LoadIcon
+                          :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
+                          :size="16"
+                        />
+                      </span>
+                      <span class="criterion-name">
+                        {{ criterion.name }}
+                      </span>
                     </div>
                     <div class="d-flex align-items-center">
                       <span 
-                        v-if="group.description" 
+                        v-if="criterion.description || criterion.scoring" 
                         class="info-icon me-2"
                         style="cursor: help;"
-                        @click.stop="toggleInfoPanelPin(group, null)"
-                        @mouseenter="openInfoPanel(group, null)"
+                        @click.stop="toggleInfoPanelPin(null, criterion)"
+                        @mouseenter="openInfoPanel(null, criterion)"
                         @mouseleave="closeInfoPanel"
                       >
                         <LoadIcon icon-name="info-circle" :size="14" />
                       </span>
                       <span
                         class="badge"
-                        :class="(readonly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
+                        :class="(readonly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
+                        :title="`isSaved: ${criterion.isSaved}`"
                       >
-                        {{ getGroupScore(group) }} P
+                        {{ criterion.currentScore || 0 }} P
                       </span>
                     </div>
                   </div>
 
-                  <!-- Group Content -->
-                  <div v-if="expandedGroups[groupIndex]" class="card-body">
-                    <div class="criteria-list">
-                      <div
-                        v-for="(criterion, criterionIndex) in group.criteria"
-                        :key="criterionIndex"
-                        class="criterion-item"
-                      >
-                        <!-- Criterion Header -->
-                        <div 
-                          class="d-flex justify-content-between align-items-center py-2"
-                          style="cursor: pointer"
-                          @click="toggleCriterion(groupIndex, criterionIndex)"
-                        >
-                          <div class="d-flex align-items-center">
-                            <span class="criterion-icon me-2">
-                              <LoadIcon
-                                :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
-                                :size="16"
-                              />
-                            </span>
-                            <span class="criterion-name">
-                              {{ criterion.name }}
-                            </span>
-                          </div>
-                          <div class="d-flex align-items-center">
-                            <span 
-                              v-if="criterion.description || criterion.scoring" 
-                              class="info-icon me-2"
-                              style="cursor: help;"
-                              @click.stop="toggleInfoPanelPin(null, criterion)"
-                              @mouseenter="openInfoPanel(null, criterion)"
-                              @mouseleave="closeInfoPanel"
-                            >
-                              <LoadIcon icon-name="info-circle" :size="14" />
-                            </span>
-                            <span
-                              class="badge"
-                              :class="(readonly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
-                              :title="`isSaved: ${criterion.isSaved}`"
-                            >
-                              {{ criterion.currentScore || 0 }} P
-                            </span>
-                          </div>
+                  <!-- Criterion Assessment -->
+                  <div
+                    v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
+                    class="criterion-assessment mt-2 px-3 pb-2"
+                  >
+                    <div class="assessment-text">
+                      <strong>Justification:</strong>
+                      <div v-if="!criterion.isEditing" class="assessment-content">
+                        <p class="mb-0 mt-1">{{ criterion.assessment || 'No justification provided' }}</p>
+                      </div>
+                      <div v-else class="assessment-edit-form">
+                        <div class="mb-3">
+                          <textarea
+                            v-model="criterion.editedAssessment"
+                            class="form-control assessment-textarea"
+                            placeholder="Edit the justification..."
+                            :rows="getTextareaRows(criterion.editedAssessment)"
+                            :disabled="readonly"
+                            @input="adjustTextareaRows"
+                          ></textarea>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Assessment Actions -->
+                    <div class="assessment-actions mt-3">
+                      <div v-if="!criterion.isEditing" class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <button
+                            v-if="!readonly"
+                            class="btn btn-outline-primary btn-sm"
+                            title="Edit"
+                            @click="startEdit(groupIndex, criterionIndex)"
+                          >
+                            <LoadIcon icon-name="pen" :size="14" />
+                          </button>
                         </div>
 
-                        <!-- Criterion Assessment -->
-                        <div
-                          v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
-                          class="criterion-assessment mt-2 px-3 pb-2"
-                        >
-                          <div class="assessment-text">
-                            <strong>Justification:</strong>
-                            <div v-if="!criterion.isEditing" class="assessment-content">
-                              <p class="mb-0 mt-1">{{ criterion.assessment || 'No justification provided' }}</p>
-                            </div>
-                            <div v-else class="assessment-edit-form">
-                              <div class="mb-3">
-                                <textarea
-                                  v-model="criterion.editedAssessment"
-                                  class="form-control assessment-textarea"
-                                  placeholder="Edit the justification..."
-                                  :rows="getTextareaRows(criterion.editedAssessment)"
-                                  :disabled="readonly"
-                                  @input="adjustTextareaRows"
-                                ></textarea>
-                              </div>
-                            </div>
-                          </div>
+                        <div v-if="!readonly" class="d-flex align-items-center gap-2">
+                          <select
+                            v-model="criterion.currentScore"
+                            class="form-select form-select-sm score-dropdown"
+                            title="Change score"
+                            @change="onScoreChange(groupIndex, criterionIndex)"
+                          >
+                            <option
+                              v-for="point in getAvailablePoints(criterion)"
+                              :key="point"
+                              :value="point"
+                            >
+                              {{ point }} P
+                            </option>
+                          </select>
 
-                          <!-- Assessment Actions -->
-                          <div class="assessment-actions mt-3">
-                            <div v-if="!criterion.isEditing" class="d-flex justify-content-between align-items-center">
-                              <div>
-                                <button
-                                  v-if="!readonly"
-                                  class="btn btn-outline-primary btn-sm"
-                                  title="Edit"
-                                  @click="startEdit(groupIndex, criterionIndex)"
-                                >
-                                  <LoadIcon icon-name="pen" :size="14" />
-                                </button>
-                              </div>
-
-                              <div v-if="!readonly" class="d-flex align-items-center gap-2">
-                                <select
-                                  v-model="criterion.currentScore"
-                                  class="form-select form-select-sm score-dropdown"
-                                  title="Change score"
-                                  @change="onScoreChange(groupIndex, criterionIndex)"
-                                >
-                                  <option
-                                    v-for="point in getAvailablePoints(criterion)"
-                                    :key="point"
-                                    :value="point"
-                                  >
-                                    {{ point }} P
-                                  </option>
-                                </select>
-
-                                <button
-                                  :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
-                                  :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
-                                  @click="saveAssessment(groupIndex, criterionIndex)"
-                                >
-                                  <LoadIcon icon-name="floppy" :size="14" />
-                                </button>
-                              </div>
-                            </div>
-                            <div v-else class="d-flex gap-2">
-                              <button
-                                v-if="!readonly"
-                                class="btn btn-primary btn-sm"
-                                title="Save"
-                                @click="saveEdit(groupIndex, criterionIndex)"
-                              >
-                                <LoadIcon icon-name="floppy" :size="14" />
-                              </button>
-                              <button
-                                v-if="!readonly"
-                                class="btn btn-secondary btn-sm"
-                                title="Cancel"
-                                @click="cancelEdit(groupIndex, criterionIndex)"
-                              >
-                                <LoadIcon icon-name="x-lg" :size="14" />
-                              </button>
-                            </div>
-                          </div>
+                          <button
+                            :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
+                            :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
+                            @click="saveAssessment(groupIndex, criterionIndex)"
+                          >
+                            <LoadIcon icon-name="floppy" :size="14" />
+                          </button>
                         </div>
+                      </div>
+                      <div v-else class="d-flex gap-2">
+                        <button
+                          v-if="!readonly"
+                          class="btn btn-primary btn-sm"
+                          title="Save"
+                          @click="saveEdit(groupIndex, criterionIndex)"
+                        >
+                          <LoadIcon icon-name="floppy" :size="14" />
+                        </button>
+                        <button
+                          v-if="!readonly"
+                          class="btn btn-secondary btn-sm"
+                          title="Cancel"
+                          @click="cancelEdit(groupIndex, criterionIndex)"
+                        >
+                          <LoadIcon icon-name="x-lg" :size="14" />
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div v-else class="text-center py-4">
-              <h6>No Assessment Results</h6>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Floating Info Panel -->
-    <div 
-      v-if="showInfoPanel && selectedCriterion"
-      ref="infoPanel"
-      class="floating-info-panel"
-      :style="infoPanelStyle"
-      @mouseenter="infoPanelHover = true"
-      @mouseleave="infoPanelHover = false; closeInfoPanel()"
-    >
-      <div class="info-panel-header">
-        <h6 class="mb-2">{{ selectedCriterion.name }}</h6>
-      </div>
-      
-      <div class="info-panel-content">
-        <div v-if="selectedCriterion.description" class="mb-3">
-          <strong>Description:</strong>
-          <p class="mb-0 mt-1">{{ selectedCriterion.description }}</p>
-        </div>
-        
-        <div v-if="selectedCriterion.scoring && selectedCriterion.scoring.length > 0">
-          <strong>Scoring Criteria:</strong>
-          <div class="scoring-list mt-2">
-            <div 
-              v-for="(option, index) in selectedCriterion.scoring" 
-              :key="index"
-              class="scoring-item p-2 border rounded mb-2 border-secondary"
-            >
-              <div class="d-flex justify-content-between align-items-start">
-                <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} P</span>
-                <span class="flex-grow-1">{{ option.description }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div v-else class="text-center py-4">
+        <h6>No Assessment Results</h6>
       </div>
     </div>
   </div>
+    <!-- Floating Info Panel -->
+    <FloatingInfoPanel
+      :show="showInfoPanel"
+      :selected-item="selectedCriterion"
+      :reference-element="selectedElement"
+      :pinnable="true"
+      :position="'left'"
+      @close-requested="onInfoPanelCloseRequested"
+      @pin-changed="onInfoPanelPinChanged"
+    />
 </template>
 
 /**
@@ -267,11 +221,15 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
+import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 
 export default {
   name: "AssessmentOutput",
-  components: { LoadIcon },
-  subscribeTable: ["document", "study_step", "document_data", "workflow", "workflow_step" ],
+  components: { 
+    LoadIcon,
+    FloatingInfoPanel
+  },
+  subscribeTable: ["document", "study_step", "configuration", "workflow_step" ],
   
   inject: {
     documentId: { 
@@ -297,9 +255,18 @@ export default {
       type: Boolean,
       required: false,
       default: false
-    }
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false
+      },
+    currentStudyStep: {
+        type: Object,
+        required: true,
+        default: null
+      }
   },
-  
   props: {
     show: { type: Boolean, required: false, default: true },
     savedState: { type: Object, required: false, default: () => ({}) },
@@ -309,106 +276,45 @@ export default {
   
   data() {
     return {
-      // Sidebar properties
-      width: 400,
-      minWidth: 400,
-      maxWidth: 50,
-      isFixed: false,
-      isDragging: false,
-      originalWidth: undefined,
-      
       // Assessment data
       error: null,
-      assessmentOutput: null,
       expandedGroups: {},
       expandedCriteria: {},
       
       // Info panel
       showInfoPanel: false,
       selectedCriterion: null,
-      infoPanelStyle: {},
-      infoPanelPinned: false,
-      infoPanelHover: false,
-      infoPanelCloseTimer: null,
-      // Event handler references for cleanup
-      dragHandlers: {
-        start: null,
-        move: null,
-        end: null,
-      },
-      hoverHandlers: {
-        enter: null,
-        leave: null,
-        containerLeave: null,
-      },
     };
   },
   
   computed: {
-    sidebarContainerStyle() {
-      return { width: this.show || this.isFixed ? `${this.width}px` : 0 };
-    },
-    
-    sidebarContainerClassList() {
-      return [
-        this.show ? "is-active" : "is-hidden",
-        this.isDragging ? "is-dragging" : "",
-        this.isFixed ? "is-fixed" : "",
-      ];
-    },
-    
-    sidebarClassList() {
-      return [this.show || this.isFixed ? "is-active" : "collapsing"];
-    },
-
-    // Get current study step data from store
-    currentStudyStep() {
-      return this.$store.getters["table/study_step/get"](this.studyStepId);
-    },
     currentWorkflowStep() {
-      const step = this.currentStudyStep;
-      if (!step || !step.workflowStepId) return null;
-      return this.$store.getters["table/workflow_step/get"](step.workflowStepId);
-    },
-    currentWorkflow() {
-      const wfStep = this.currentWorkflowStep;
-      if (!wfStep || !wfStep.workflowId) return null;
-      return this.$store.getters["table/workflow/get"](wfStep.workflowId);
+      return this.$store.getters["table/workflow_step/get"](this.currentStudyStep.workflowStepId);
     },
     isManualAssessmentWorkflow() {
-      const step = this.currentStudyStep;
-      if (!step) return false;
-      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
-      if (!cfg) return false;
-      const hasConfigFile = !!cfg.configFile;
-      const hasNoServices = !cfg.services || (Array.isArray(cfg.services) && cfg.services.length === 0);
+      const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
+      const hasNoServices = !this.currentStudyStep.configuration.services;
       return hasConfigFile && hasNoServices;
     },
+    configuration(){
+      return this.$store.getters['table/configuration/get'](this.currentWorkflowStep?.configurationId);
+    },
     isAIAssessmentWorkflow() {
-      const step = this.currentStudyStep;
-      if (!step) return false;
-      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
-      if (!cfg) return false;
-      const hasConfigFile = !!cfg.configFile;
-      const hasServices = Array.isArray(cfg.services) && cfg.services.length > 0;
+      const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
+      const hasServices = !!this.currentStudyStep.configuration.services;
       return hasConfigFile && hasServices;
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
-      if (!this.isManualAssessmentWorkflow) return false;
-      const rawCfg = this.currentStudyStep?.configuration || {};
-      const cfg = typeof rawCfg === 'string' ? this.safeParseJSON(rawCfg) : rawCfg;
-      const val = cfg?.forcedAssessment;
-      if (typeof val === 'boolean') return val;
-      if (typeof val === 'number') return val === 1;
-      if (typeof val === 'string') {
-        const s = val.trim().toLowerCase();
-        return s === 'true' || s === '1' || s === 'yes' || s === 'on';
+      if (!this.isManualAssessmentWorkflow) {
+        return false;
       }
-      return false;
+      return this.currentStudyStep?.configuration.forcedAssessment;
     },
+    assessmentOutput() {
+      return this.transformRubricsToCriteriaGroups(this.configuration);
+    },  
   },
-  
   watch: {
     show(newVal) {
       if (newVal && Object.keys(this.savedState).length > 0) {
@@ -427,47 +333,9 @@ export default {
       },
       deep: true
     },
-
-    // Watch for changes in document table data
-    '$store.getters["table/document/refreshCount"]': {
-      handler() {
-        // Reload assessment when document table refreshes
-        if (!this.assessmentOutput) {
-          this.loadAssessment();
-        }
-      },
-      immediate: true
-    },
-    
-    // Watch for changes in study_step table data
-    '$store.getters["table/study_step/refreshCount"]': {
-      handler() {
-        // Reload assessment when study step configuration changes
-        this.loadAssessment();
-      },
-      immediate: true
-    },
-    
-    // Watch for changes in document_data table data
-    '$store.getters["table/document_data/refreshCount"]': {
-      handler() {
-        // Reload assessment when document data changes (e.g., after NLP processing)
-        if (this.assessmentOutput) {
-          this.loadSavedAssessmentData();
-        } else if (this.show) {
-          // If component is visible but no assessment output yet, try to load assessment
-          this.loadAssessment();
-        }
-      },
-      immediate: true
-    }
   },
   
   mounted() {
-    this.initSidebar();
-    // Close info panel on outside clicks
-    document.addEventListener("mousedown", this.onGlobalMousedown);
-    
     // Load assessment data when component mounts
     if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
       this.loadAssessment();
@@ -476,204 +344,8 @@ export default {
     }
   },
   
-  beforeUnmount() {
-    if (this.isDragging) {
-      this.isDragging = false;
-      document.body.style.userSelect = "";
-    }
-    // Cleanup event listeners
-    const dragDom = document.querySelector("#assessmentHotZone");
-    if (dragDom && this.dragHandlers.start) {
-      dragDom.removeEventListener("mousedown", this.dragHandlers.start);
-      this.dragHandlers.start = null;
-    }
-    const hoverHotZoneDom = document.querySelector("#assessmentHoverHotZone");
-    const sidebarContainerDom = document.querySelector("#assessmentContainer");
-    if (hoverHotZoneDom) {
-      if (this.hoverHandlers.enter) {
-        hoverHotZoneDom.removeEventListener("mouseenter", this.hoverHandlers.enter);
-        this.hoverHandlers.enter = null;
-      }
-      if (this.hoverHandlers.leave) {
-        hoverHotZoneDom.removeEventListener("mouseleave", this.hoverHandlers.leave);
-        this.hoverHandlers.leave = null;
-      }
-    }
-    if (sidebarContainerDom && this.hoverHandlers.containerLeave) {
-      sidebarContainerDom.removeEventListener("mouseleave", this.hoverHandlers.containerLeave);
-      this.hoverHandlers.containerLeave = null;
-    }
-    document.removeEventListener("mousedown", this.onGlobalMousedown);
-    if (this.infoPanelCloseTimer) {
-      clearTimeout(this.infoPanelCloseTimer);
-      this.infoPanelCloseTimer = null;
-    }
-  },
-  
   methods: {
-    safeParseJSON(value) {
-      try { return JSON.parse(value); } catch { return null; }
-    },
-    // Sidebar management
-    initSidebar() {
-      this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth") || 400;
-      this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth") || 50;
-      this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
-      this.originalWidth = this.width;
-      this.initDragController();
-      this.initHoverController();
-    },
-    
-    initDragController() {
-      const dom = document.querySelector("#assessmentHotZone");
-      if (!dom) return;
 
-      let startX, startWidth;
-      
-      const handleMove = (e) => {
-        e.preventDefault();
-        let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = (window.innerWidth * this.maxWidth) / 100;
-        newWidth = Math.max(newWidth, this.minWidth);
-        newWidth = Math.min(newWidth, maxWidthInPixels);
-        this.width = newWidth;
-      };
-
-      const handleEnd = () => {
-        this.isDragging = false;
-        document.removeEventListener("mousemove", handleMove);
-        document.removeEventListener("mouseup", handleEnd);
-        document.body.style.userSelect = "";
-        this.$socket.emit("appSettingSet", {
-          key: "sidebar.width",
-          value: this.width,
-        });
-        this.originalWidth = this.width;
-      };
-
-      const handleStart = (e) => {
-        this.isDragging = true;
-        e.preventDefault();
-        document.body.style.userSelect = "none";
-        startWidth = this.width;
-        startX = e.clientX;
-        document.addEventListener("mousemove", handleMove);
-        document.addEventListener("mouseup", handleEnd);
-      };
-
-      this.dragHandlers.start = handleStart;
-      this.dragHandlers.move = handleMove;
-      this.dragHandlers.end = handleEnd;
-      dom.addEventListener("mousedown", this.dragHandlers.start);
-    },
-    
-    initHoverController() {
-      const hoverHotZoneDom = document.querySelector("#assessmentHoverHotZone");
-      const sidebarContainerDom = document.querySelector("#assessmentContainer");
-      if (!hoverHotZoneDom || !sidebarContainerDom) return;
-
-      let hoverTimer;
-
-      const handleMouseenter = () => {
-        hoverTimer = setTimeout(() => {
-          this.isFixed = true;
-          this.width = this.minWidth;
-          sidebarContainerDom.addEventListener("mouseleave", handleMouseleave);
-          this.hoverHandlers.containerLeave = handleMouseleave;
-        }, 500);
-      };
-
-      const handleMouseleave = () => {
-        clearTimeout(hoverTimer);
-        this.width = this.originalWidth;
-        this.isFixed = false;
-        sidebarContainerDom.removeEventListener("mouseleave", handleMouseleave);
-      };
-
-      const handleHotzoneLeave = () => {
-        clearTimeout(hoverTimer);
-      };
-
-      this.hoverHandlers.enter = handleMouseenter;
-      this.hoverHandlers.leave = handleHotzoneLeave;
-      hoverHotZoneDom.addEventListener("mouseenter", this.hoverHandlers.enter);
-      hoverHotZoneDom.addEventListener("mouseleave", this.hoverHandlers.leave);
-    },
-    
-    // Assessment data loading
-    refreshAssessment() {
-      // Public method used by parent to (re)load assessment
-      this.error = null;
-      this.assessmentOutput = null;
-      this.expandedGroups = {};
-      this.expandedCriteria = {};
-      this.loadAssessment();
-    },
-    
-    // Public method to refresh saved assessment data (useful after NLP processing)
-    refreshSavedData() {
-      if (this.assessmentOutput) {
-        this.loadSavedAssessmentData();
-      }
-    },
-    async loadAssessment() {
-      this.error = null;
-
-      try {
-        // Get the study step configuration using computed property
-        const studyStep = this.currentStudyStep;
-        const configFileId = studyStep?.configuration?.configFile;
-
-        if (configFileId) {
-          // Use the configuration file from the study step configuration
-          this.loadConfigFile(configFileId);
-        } else {
-          // No configuration file specified; disable assessment UI gracefully
-          this.error = "No assessment configuration file set for this step.";
-        }
-      } catch (err) {
-        this.error = "Failed to load assessment: " + err.message;
-      } finally {
-        this.initializeCurrentScore();
-      }
-    },
-
-    // Helper method to load configuration file
-    loadConfigFile(documentId) {
-      this.$socket.emit("documentGet", {
-        documentId: documentId
-      }, (response) => {
-        if (response && response.success) {
-          try {
-            if (response.data && response.data.file) {
-              let fileContent;
-              if (response.data.file instanceof ArrayBuffer) {
-                const uint8Array = new Uint8Array(response.data.file);
-                fileContent = new TextDecoder().decode(uint8Array);
-              } else {
-                fileContent = response.data.file.toString();
-              }
-              
-              // Parse the JSON configuration
-              const configData = JSON.parse(fileContent);
-              // Transform rubrics structure to criteriaGroups structure
-              this.assessmentOutput = this.transformRubricsToCriteriaGroups(configData);
-              
-              // After loading the configuration, try to load saved assessment data
-              this.loadSavedAssessmentData();
-            } else {
-              throw new Error("No file data received from server");
-            }
-          } catch (error) {
-            console.error("Error parsing assessment configuration:", error);
-            this.error = "Failed to parse assessment configuration: " + error.message;
-          }
-        } else {
-          const errorMessage = response && response.message ? response.message : "Failed to load assessment configuration";
-          this.error = errorMessage;
-        }
-      });
-    },
     
     transformRubricsToCriteriaGroups(configData) {
       if (!configData.rubrics) {
@@ -712,72 +384,6 @@ export default {
         version: configData.version,
         type: configData.type
       };
-    },
-
-    // Info panel
-    openInfoPanel(group, criterion) {
-      this.selectedCriterion = criterion || group;
-      this.showInfoPanel = true;
-      if (this.infoPanelCloseTimer) {
-        clearTimeout(this.infoPanelCloseTimer);
-        this.infoPanelCloseTimer = null;
-      }
-      
-      const sidebarRect = this.$refs.sidepane?.getBoundingClientRect();
-      if (sidebarRect) {
-        const top = sidebarRect.top;
-        const computedMaxHeight = Math.max(200, window.innerHeight - top - 20);
-        this.infoPanelStyle = {
-          position: 'fixed',
-          left: (sidebarRect.left - 350) + 'px',
-          top: top + 'px',
-          width: '350px',
-          maxHeight: computedMaxHeight + 'px',
-          zIndex: 9999
-        };
-      }
-    },
-    
-    closeInfoPanel() {
-      if (this.infoPanelPinned) return;
-      if (this.infoPanelCloseTimer) {
-        clearTimeout(this.infoPanelCloseTimer);
-        this.infoPanelCloseTimer = null;
-      }
-      this.infoPanelCloseTimer = setTimeout(() => {
-        if (!this.infoPanelPinned && !this.infoPanelHover) {
-          this.showInfoPanel = false;
-          this.selectedCriterion = null;
-        }
-      }, 150);
-    },
-
-    toggleInfoPanelPin(group, criterion) {
-      const target = criterion || group;
-      // If clicking same target, toggle pin state
-      if (this.infoPanelPinned && this.selectedCriterion === target) {
-        this.infoPanelPinned = false;
-        this.closeInfoPanel();
-        return;
-      }
-      // Pin new target
-      this.openInfoPanel(group, criterion);
-      this.infoPanelPinned = true;
-    },
-
-    onGlobalMousedown(event) {
-      if (!this.showInfoPanel) return;
-      const panel = this.$refs.infoPanel;
-      if (panel && panel.contains(event.target)) return;
-      // Clicked outside -> force close regardless of pin
-      this.infoPanelPinned = false;
-      this.infoPanelHover = false;
-      if (this.infoPanelCloseTimer) {
-        clearTimeout(this.infoPanelCloseTimer);
-        this.infoPanelCloseTimer = null;
-      }
-      this.showInfoPanel = false;
-      this.selectedCriterion = null;
     },
 
     // UI interactions
@@ -900,11 +506,6 @@ export default {
       }, 0);
       const newGroups = groups.map((g, i) => i === groupIndex ? { ...g, score: total } : g);
       this.assessmentOutput = { ...this.assessmentOutput, criteriaGroups: newGroups };
-    },
-    
-    // Utility methods
-    getGroupScore(group) {
-      return group.score;
     },
     
     isGroupSaved(groupIndex) {
@@ -1204,6 +805,49 @@ export default {
     // Compatibility for Annotator.leave() - do not save here to avoid duplicate saves
     async leave() {
       return this.saveState();
+    },
+
+    // Info panel methods
+    openInfoPanel(group, criterion, event) {
+      const target = criterion || group;
+      if (!target) return;
+      
+      this.selectedCriterion = target;
+      this.selectedElement = event?.currentTarget || event?.target;
+      this.showInfoPanel = true;
+    },
+
+    closeInfoPanel() {
+      this.showInfoPanel = false;
+      this.selectedCriterion = null;
+      this.selectedElement = null;
+    },
+
+    toggleInfoPanelPin(group, criterion, event) {
+      const target = criterion || group;
+      
+      // If the panel is already showing the same target, let the FloatingInfoPanel handle the pin toggle
+      if (this.showInfoPanel && this.selectedCriterion === target) {
+        // The FloatingInfoPanel will handle the pin state internally
+        return;
+      }
+      
+      // Otherwise, open the panel with the new target
+      this.openInfoPanel(group, criterion, event);
+    },
+
+    onInfoPanelPinChanged(isPinned) {
+      // Handle pin state changes - could be used for analytics or state management
+      if (isPinned) {
+        console.log('Info panel pinned for:', this.selectedCriterion?.name);
+      } else {
+        console.log('Info panel unpinned');
+      }
+    },
+
+    onInfoPanelCloseRequested() {
+      // Handle close request from FloatingInfoPanel
+      this.closeInfoPanel();
     }
   },
 };
@@ -1442,134 +1086,5 @@ export default {
 
 .info-icon:hover {
   color: #007bff;
-}
-
-/* Floating Info Panel */
-.floating-info-panel {
-  background-color: white;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.info-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 1px solid #dee2e6;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-}
-
-.info-panel-header h6 {
-  margin: 0;
-  color: #495057;
-  font-weight: 600;
-}
-
-.info-panel-content {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.scoring-list {
-  overflow-y: auto;
-}
-
-.scoring-item {
-  transition: all 0.2s ease;
-}
-
-/* Sidebar Container */
-#assessmentContainer {
-  position: relative;
-  padding: 0;
-  transition: width 0.3s ease;
-  overflow-y: scroll;
-}
-
-#assessmentContainer.is-hidden {
-  position: fixed;
-  height: 100%;
-  right: 0;
-  width: 10px;
-}
-
-#assessmentContainer.is-hidden #assessmentHoverHotZone {
-  display: block;
-}
-
-#assessmentContainer.is-dragging {
-  transition: unset;
-}
-
-#assessmentContainer.is-fixed {
-  position: fixed;
-  right: 0;
-}
-
-#assessmentContainer.is-fixed .hot-zone {
-  display: none;
-}
-
-#assessmentContainer::-webkit-scrollbar {
-  display: none;
-}
-
-@media screen and (max-width: 900px) {
-  #assessmentContainer {
-    display: none;
-  }
-}
-
-/* Hot Zones */
-.hot-zone {
-  width: 3px;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  cursor: col-resize;
-}
-
-#assessmentHoverHotZone {
-  position: fixed;
-  height: 100%;
-  width: 6px;
-  top: 0;
-  right: 0px;
-  z-index: 999;
-  display: none;
-}
-
-/* Sidebar */
-#sidebar {
-  height: 100%;
-  width: 100%;
-  position: relative;
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-  position: absolute;
-}
-
-#sidebar.is-active {
-  transform: translateX(0);
-}
-
-#spacer {
-  width: 400px;
-  background-color: transparent;
-}
-
-#sidepane {
-  padding-top: 5px;
-  background-color: #e6e6e6;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
 }
 </style>
