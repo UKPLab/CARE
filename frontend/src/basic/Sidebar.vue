@@ -138,9 +138,9 @@ export default {
       required: false,
       default: null,
     },
-    sidebarConfigs: {
-      type: Object,
-      default: () => ({})
+    buttons: {
+      type: Array,
+      default: () => ([])
     },
     show: {
       type: Boolean,
