@@ -9,7 +9,7 @@
       <label class="form-label">{{ input }}:</label>
       <FormSelect
         v-model="inputMappings[input]"
-        :options="{ options: studyBased ? availableDataSources : getDataSourcesForInput(input) }"
+        :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
         :value-as-object="true"
         @update:modelValue="updateMapping(input, $event)"
       />
@@ -91,13 +91,6 @@ export default {
       if (!skill) return [];
       return Object.keys(skill.config.input.data || {});
     },
-    availableDataSources() {
-      if (this.studyBased) {
-        return this.getSourcesUpToCurrentStep(this.studyStepId);
-      } else {
-        return this.getApplySkillsDataSources();
-      }
-    },
     tableBasedParameter() {
       for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
         if (mapping && mapping.requiresTableSelection) {
@@ -116,12 +109,51 @@ export default {
           configId: entry.id
         }));
     },
+    applySkillsDataSources() {
+      const sources = [...this.configurationSources];
+
+      if (!this.tableBasedParameter) {
+        sources.unshift(
+          { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
+          { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+        );
+      }
+
+      return sources;
+    },
+    dataSourcesByInput() {
+      const dict = {};
+      this.skillInputs.forEach(input => {
+        const sources = [...this.configurationSources];
+
+        if (!this.tableBasedParameter || this.tableBasedParameter === input) {
+          sources.unshift(
+            { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
+            { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+          );
+        }
+
+        dict[input] = sources;
+      });
+      return dict;
+    },
+    availableDataSources() {
+      if (this.studyBased) {
+        return this.getSourcesUpToCurrentStep(this.studyStepId);
+      } else {
+        return this.applySkillsDataSources;
+      }
+    },
   },
   watch: {
     skillName: {
-      handler(newSkillName) {
-        if (newSkillName) {
-          this.initializeInputMappings();
+      handler() {
+        if (this.skillName && this.skillInputs.length > 0) {
+          const mapping = {};
+          this.skillInputs.forEach((input) => {
+            mapping[input] = this.inputMappings[input] || null;
+          });
+          this.inputMappings = mapping;
         }
       },
       immediate: true,
@@ -137,15 +169,6 @@ export default {
     },
   },
   methods: {
-    initializeInputMappings() {
-      const mapping = {};
-      if (this.skillName && this.skillInputs.length > 0) {
-        this.skillInputs.forEach((input) => {
-          mapping[input] = this.inputMappings[input] || null;
-        });
-      }
-      this.inputMappings = mapping;
-    },
     updateMapping(input, source) {
       if (source && source.requiresTableSelection) {
         Object.keys(this.inputMappings).forEach(paramName => {
@@ -155,32 +178,11 @@ export default {
         });
       }
       
-      this.inputMappings[input] = source;
+      this.inputMappings = {
+        ...this.inputMappings,
+        [input]: source
+      };
       this.$emit('update:modelValue', { ...this.inputMappings });
-    },
-    getApplySkillsDataSources() {
-      const sources = [...this.configurationSources];
-
-      if (!this.tableBasedParameter) {
-        sources.unshift(
-          { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
-          { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
-        );
-      }
-
-      return sources;
-    },
-    getDataSourcesForInput(inputName) {
-      const sources = [...this.configurationSources];
-
-      if (!this.tableBasedParameter || this.tableBasedParameter === inputName) {
-        sources.unshift(
-          { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
-          { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
-        );
-      }
-
-      return sources;
     },
     /**
      * Construct and get all the available data sources up to the stepId
