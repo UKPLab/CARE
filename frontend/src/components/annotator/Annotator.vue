@@ -33,7 +33,11 @@
             @resize="handleResize"
         >
           <template #annotations>
-            <AnnotationSidebar ref="sidebar" />
+            <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
+              <template #content>
+                <AnnotationSidebar ref="sidebar"/>
+              </template>
+            </SidebarTemplate>
           </template>
           <slot name="additionalSidebars"/>
         </BasicSidebar>
@@ -126,11 +130,14 @@ import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
+import SidebarHistory from "@/components/editor/sidebar/History.vue";
+import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
   components: {
+    SidebarTemplate, SidebarHistory,
     LoadIcon,
     PDFViewer,
     ExpandMenu,
@@ -223,17 +230,17 @@ export default {
         }
       }, 500),
       logHideSidebar: debounce(function () {
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "hideSidebar",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-          }
-        });
-      }
-    }, 500),
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "hideSidebar",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+            }
+          });
+        }
+      }, 500),
       logResize: debounce(function (windowWidth, sidebarVisible) {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
@@ -257,11 +264,11 @@ export default {
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
       const data = this.$store.getters['table/user_environment/getAll'].filter(
-        e => e.userId === this.userId &&
-          e.documentId === this.documentId &&
-          e.studySessionId === this.studySessionId &&
-          e.studyStepId === this.studyStepId &&
-          e.key === "scroll"
+          e => e.userId === this.userId &&
+              e.documentId === this.documentId &&
+              e.studySessionId === this.studySessionId &&
+              e.studyStepId === this.studyStepId &&
+              e.key === "scroll"
       );
       return data[0] || null;
     },
@@ -293,38 +300,38 @@ export default {
     },
     openSessionIds() {
       return this.$store.getters["table/study_session/getAll"].filter(
-        session => {
-          const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.closed === null;
-        }
+          session => {
+            const study = this.$store.getters["table/study/get"](session.studyId);
+            return study && study.closed === null;
+          }
       ).map(session => session.id);
     },
     annotations() {
       const annotations = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
-            const a_noanchor = a.anchors === null || a.anchors.length === 0;
-            const b_noanchor = b.anchors === null || b.anchors.length === 0;
+        const a_noanchor = a.anchors === null || a.anchors.length === 0;
+        const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-            if (a_noanchor || b_noanchor) {
-              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-            }
+        if (a_noanchor || b_noanchor) {
+          return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+        }
 
-            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-          });
+        return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+      });
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return annotations.filter(annotation =>
-          !this.openSessionIds.includes(annotation.studySessionId)
+            !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
         return annotations;
       }
     },
     comments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](c => 
+      const comments = this.$store.getters["table/comment/getFiltered"](c =>
           c.documentId === this.documentId && c.parentCommentId === null
-        );
+      );
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return comments.filter(comment =>
-          !this.openSessionIds.includes(comment.studySessionId)
+            !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
         return comments;
@@ -346,7 +353,7 @@ export default {
     },
     sidebarButtons() {
       const buttons = [];
-      
+
       // Study Comments Toggle Button
       if (this.studySessionId === null && this.numStudyComments > 0) {
         buttons.push({
@@ -356,7 +363,7 @@ export default {
           action: 'toggleStudyComments'
         });
       }
-      
+
       // NLP Toggle Button
       if (this.studySessionId && this.studySessionId !== 0 ? this.active && this.nlpEnabled : this.nlpEnabled) {
         buttons.push({
@@ -367,12 +374,12 @@ export default {
           action: 'toggleNlp'
         });
       }
-      
+
       // Download Button
       if (this.studySessionId && this.studySessionId !== 0 ? this.active : true) {
-        const canDownload = this.annotations.length + this.comments.length > 0 && 
-                           !this.downloading && 
-                           (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
+        const canDownload = this.annotations.length + this.comments.length > 0 &&
+            !this.downloading &&
+            (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
         buttons.push({
           id: 'download-annotations',
           icon: 'download',
@@ -381,19 +388,8 @@ export default {
           action: 'downloadAnnotations'
         });
       }
-      
+
       return buttons;
-    },
-    sidebarConfigs() {
-      return {
-        tabs: {
-          'annotations': {
-            title: 'Annotations',
-            icon: 'pencil-square',
-            buttons: this.sidebarButtons
-          }
-        }
-      };
     },
   },
   watch: {
@@ -463,7 +459,7 @@ export default {
     this.load();
 
     // scrolling
-   this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
+    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     // Scroll the viewer container to the saved scroll position
     this.$nextTick(async () => {
       if (this.savedScroll) {
@@ -477,10 +473,10 @@ export default {
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     window.removeEventListener('resize', this.handleResize);
-    
-     const currentPage = this.getCurrentPageNumber();
-     const payload = JSON.stringify({ page: currentPage, value: this.$refs.viewer.scrollTop });
-     if (!this.savedScroll) {
+
+    const currentPage = this.getCurrentPageNumber();
+    const payload = JSON.stringify({page: currentPage, value: this.$refs.viewer.scrollTop});
+    if (!this.savedScroll) {
       this.$socket.emit("appDataUpdate", {
         table: "user_environment",
         data: {
@@ -511,10 +507,14 @@ export default {
       return true;
     },
     safeParseJSON(value) {
-      try { return JSON.parse(value); } catch { return null; }
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
     },
     handleButtonAction(data) {
-      switch(data.action) {
+      switch (data.action) {
         case 'toggleStudyComments':
           this.toggleStudyComments();
           break;
@@ -530,7 +530,7 @@ export default {
     },
     toggleStudyComments() {
       this.setSetting({
-        key: 'annotator.showAllComments', 
+        key: 'annotator.showAllComments',
         value: !this.showAll
       });
     },
@@ -539,7 +539,7 @@ export default {
       const container = this.$refs.viewer;
       await this.delay(delayMs);
       if (!this.isPdfPageLoaded(parseInt(data.page))) {
-        scrollToPage(container, data.page, { align: 'start', offset: 0 });
+        scrollToPage(container, data.page, {align: 'start', offset: 0});
         await this.delay(300);
       }
       await scrollElement(container, parseFloat(data.value));
@@ -563,12 +563,12 @@ export default {
       });
       return bestIndex + 1; // pages are 1-based
     },
-     isPdfPageLoaded(pageNumber) {
-        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
-        const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
-        const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
-        const loaded = (visible && hasDimensions);
-        return loaded;
+    isPdfPageLoaded(pageNumber) {
+      const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+      const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
+      const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
+      const loaded = (visible && hasDimensions);
+      return loaded;
     },
     handleResize(data) {
       if (data.width <= 900) {
@@ -578,11 +578,10 @@ export default {
           this.sidebarIconHighlight = false;
         }, 1000);
         this.logHideSidebar();
-      }
-      else if (data.width > 900) {
+      } else if (data.width > 900) {
         this.isSidebarVisible = true;
       }
-      
+
       // Log resize event with debouncing
       this.logResize(data.width, this.isSidebarVisible);
     },
@@ -648,7 +647,10 @@ export default {
           await scrollElement(scrollContainer, offset);
         }
       } else {
-        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, { align: 'start', maxDuration: 10 });
+        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, {
+          align: 'start',
+          maxDuration: 10
+        });
         await this._waitForAnnotationToBeAnchored(annotation, 2000);
         if (annotation.anchors === null) {
           console.error('[scrollTo] No anchors found after paging', annotation);
@@ -745,10 +747,10 @@ export default {
         "userId"
       ];
       const annotations = this.annotations
-        .filter(a => a.studySessionId === this.studySessionId)
-        .map(a => {
-          return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-        });
+          .filter(a => a.studySessionId === this.studySessionId)
+          .map(a => {
+            return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
+          });
       // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {
@@ -771,7 +773,7 @@ export default {
     onCopy() {
       const selection = window.getSelection();
       const copiedText = selection ? selection.toString() : '';
-      
+
       if (this.acceptStats && copiedText.trim() !== '') {
         this.$socket.emit("stats", {
           action: "textCopied",
