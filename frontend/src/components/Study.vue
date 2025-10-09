@@ -88,15 +88,16 @@
         @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     >
       <template #additionalSidebars>
-        <Assessment
-            v-if="true"
-            ref="assessment"
-            :show="isSidebarVisible"
-            @state-changed="onAssessmentStateChanged"
-        />
+        <SidebarTemplate icon="list-check" title="Assessment">
+          <template #content>
+            <Assessment
+                v-if="true"
+                ref="assessment"
+                :show="false"
+                @state-changed="onAssessmentStateChanged"/>
+          </template>
+        </SidebarTemplate>
       </template>
-      <!-- Assessment Component -->
-
     </Annotator>
     <StepModal
         v-if="studyTrajectory.includes(currentStep.id) && ((currentStep.stepType === 3) || (currentStepHasNlpRequests && (currentStep.stepType === 1 || currentStep.stepType === 2)))"
@@ -114,7 +115,20 @@
         :study-step-id="currentStep.id"
         :active="true"
         @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    />
+    >
+      <template #additionalSidebars>
+        <SidebarTemplate icon="list-check" title="Assessment">
+          <template #content>
+            <Assessment
+                v-if="false"
+                ref="assessment"
+                :show="false"
+                @state-changed="onAssessmentStateChanged"/>
+
+          </template>
+        </SidebarTemplate>
+      </template>
+    </Editor>
   </div>
 </template>
 
@@ -136,10 +150,14 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed, nextTick} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/dashboard/study/assessment/Assessment.vue";
+import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "StudyRoute",
-  components: {Assessment, LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal},
+  components: {
+    SidebarTemplate,
+    Assessment, LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal
+  },
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -371,7 +389,7 @@ export default {
         );
       }
     },
-     onAssessmentStateChanged(state) {
+    onAssessmentStateChanged(state) {
       // Handle assessment state changes
       // This method can be used to react to changes in the assessment component
       console.log('Assessment state changed:', state);
