@@ -146,6 +146,12 @@ export default {
     },
     {
       table: "user",
+    },
+    {
+      table: "user_role",
+    },
+    {
+      table: "user_role_matching",
     }
   ],
   components: {MoodleOptions, BasicTable, StepperModal},
@@ -212,6 +218,12 @@ export default {
     studySessions() {
       return this.$store.getters["table/study_session/getAll"];
     },
+    userRoles() {
+      return this.$store.getters["table/user_role/getAll"];
+    },
+    userRoleMatchings() {
+      return this.$store.getters["table/user_role_matching/getAll"];
+    },
     documentsTable() {
       if (!this.isSubmissionMode) {
         return this.documents.map((document) => {
@@ -262,6 +274,7 @@ export default {
             id: doc.id,
             name: doc.name,
             documentName: doc.name.length <= 40 ? doc.name : doc.name.substring(0, 40) + "...",
+            submissionId: doc.submissionId,
             studyIds: closedStudyIds,
           };
         });
@@ -378,6 +391,7 @@ export default {
         ];
       }
       return [
+        {name: "extId", key: "extId"},
         {name: "Submission ID", key: "submissionId"},
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
@@ -395,6 +409,13 @@ export default {
     },
   },
   methods: {
+    getUserRoles(userId) {
+      const roleMatchings = this.userRoleMatchings.filter(urm => urm.userId === userId && !urm.deleted);
+      return roleMatchings.map(urm => {
+        const role = this.userRoles.find(ur => ur.id === urm.userRoleId);
+        return role ? role.name : 'Unknown';
+      }).join(', ');
+    },
     open() {
       this.reset();
       // set default publish method per mode
@@ -421,7 +442,7 @@ export default {
         };
       });
       if (this.isSubmissionMode && this.publishMethod === 'csv') {
-        this.downloadCSV(feedback);
+        this.downloadCSV();
         this.$refs.reviewStepper.close();
         this.eventBus.emit("toast", {
           title: "CSV ready",
@@ -457,7 +478,7 @@ export default {
         }
       );
     },
-    downloadCSV(rows) {
+    downloadCSV() {
       const escapeCsv = (value) => {
         if (value == null) return "";
         const str = String(value).replace(/"/g, '""');
@@ -466,9 +487,85 @@ export default {
         }
         return str;
       };
-      const header = ["extId", "text"];
+      
+      // Create detailed CSV with all requested information
+      const header = [
+        "User ExtId", 
+        "User First Name", 
+        "User Last Name", 
+        "User Name", 
+        "Submission ID", 
+        "Submission ExtId",
+        "User Roles", 
+        "Reviewer First Name", 
+        "Reviewer Last Name", 
+        "Reviewer User Name", 
+        "Reviewer Roles", 
+        "Links", 
+        "Text"
+      ];
+      
+      const csvRows = [];
+      
+      if (this.linkCollection === 'studies') {
+        this.formattedStudies.forEach((doc) => {
+          const user = this.users.find(u => u.id === doc.document.userId || u.extId === doc.document.extId);
+          const userRoles = user ? this.getUserRoles(user.id) : '';
+          const submission = this.submissions.find(s => s.id === doc.document.submissionId);
+          
+          doc.sessions.forEach((session) => {
+            const reviewer = this.users.find(u => u.id === session.userId);
+            const reviewerRoles = reviewer ? this.getUserRoles(reviewer.id) : '';
+            
+            csvRows.push([
+              escapeCsv(doc.document.extId || ''),
+              escapeCsv(doc.document.firstName || ''),
+              escapeCsv(doc.document.lastName || ''),
+              escapeCsv(user ? user.userName : ''),
+              escapeCsv(doc.document.submissionId || ''),
+              escapeCsv(submission ? submission.extId : ''),
+              escapeCsv(userRoles),
+              escapeCsv(session.firstName || ''),
+              escapeCsv(session.lastName || ''),
+              escapeCsv(reviewer ? reviewer.userName : ''),
+              escapeCsv(reviewerRoles),
+              escapeCsv(session.link || ''),
+              escapeCsv(this.text_format.replace("~SESSION_LINKS~", session.link).replace("~USERNAME~", doc.document.firstName + " " + doc.document.lastName))
+            ]);
+          });
+        });
+      } else {
+        Object.keys(this.formattedSessions).forEach((userId) => {
+          const sessions = this.formattedSessions[userId];
+          const reviewer = this.users.find(u => u.id === parseInt(userId));
+          const reviewerRoles = reviewer ? this.getUserRoles(reviewer.id) : '';
+          
+          sessions.forEach((session) => {
+            const user = this.users.find(u => u.id === session.document.userId || u.extId === session.document.extId);
+            const userRoles = user ? this.getUserRoles(user.id) : '';
+            const submission = this.submissions.find(s => s.id === session.document.submissionId);
+            
+            csvRows.push([
+              escapeCsv(session.document.extId || ''),
+              escapeCsv(session.document.firstName || ''),
+              escapeCsv(session.document.lastName || ''),
+              escapeCsv(user ? user.userName : ''),
+              escapeCsv(session.document.submissionId || ''),
+              escapeCsv(submission ? submission.extId : ''),
+              escapeCsv(userRoles),
+              escapeCsv(session.firstName || ''),
+              escapeCsv(session.lastName || ''),
+              escapeCsv(reviewer ? reviewer.userName : ''),
+              escapeCsv(reviewerRoles),
+              escapeCsv(session.link || ''),
+              //escapeCsv(this.text_format.replace("~SESSION_LINKS~", session.link))
+            ]);
+          });
+        });
+      }
+      
       const csv = [header.join(",")]
-        .concat(rows.map((r) => [escapeCsv(r.extId), escapeCsv(r.text)].join(",")))
+        .concat(csvRows.map((row) => row.join(",")))
         .join("\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
