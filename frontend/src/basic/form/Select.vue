@@ -118,6 +118,10 @@ export default {
               case "byProjectId":
                 return sourceValue === this.selectedProjectId;
               default:
+                // Handle boolean comparisons more flexibly
+                if (typeof f.value === 'boolean' || typeof sourceValue === 'boolean') {
+                  return Boolean(sourceValue) === Boolean(f.value);
+                }
                 return sourceValue === f.value;
             }
           })
