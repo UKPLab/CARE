@@ -1,16 +1,11 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
-const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const {inject} = require("../../utils/generic");
 const path = require("path");
-const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
 const {enqueueDocumentTask} = require("../../utils/queue.js");
-
-const yauzl = require("yauzl");
-
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
 
