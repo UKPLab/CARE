@@ -107,11 +107,12 @@ input:
             ]
           }
         ]     
-      }
+      },
+      "proportion_of_hallucinated_results": 0.0
     }
 output:
   data:
-    assessment :
+    assessment:
       type: array
       required: true
       items:
@@ -131,9 +132,13 @@ output:
             description: The possible concerns of the given judgement
 
   example:
-    { assessment : [{
-      "name": Language quality,
-      "score": 1,
-      "justification": Example justification,
-      "possible_concerns": Example possible concerns
-    }]}
+    {"assessment": [
+      {
+        "name": "Language quality",
+        "score": 1,
+        "justification": "Example justification",
+        "possible_concerns": "Example possible concerns",
+        "thinking": Example thinking,
+        "hallucinated": false
+      }
+    ]}

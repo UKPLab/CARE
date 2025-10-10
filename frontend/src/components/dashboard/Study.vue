@@ -8,8 +8,14 @@
     <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
     <SingleAssignmentModal ref="singleAssignmentModal"/>
     <InformationModal ref="informationModal"/>
+    <SavedTemplatesModal ref="savedTemplatesModal"/>
     <Card title="Studies">
       <template #headerElements>
+        <BasicButton
+          class="btn-secondary btn-sm me-1"
+          title="Saved Templates"
+          @click="openSavedTemplates"
+        />
         <BasicButton
           v-if="canCloseStudies"
           class="btn-secondary btn-sm me-1"
@@ -49,7 +55,7 @@
 </template>
 
 <script>
-import Card from "@/basic/Card.vue";
+import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
@@ -59,6 +65,7 @@ import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
+import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -77,7 +84,8 @@ export default {
     ConfirmModal,
     BulkAssignmentsModal,
     SingleAssignmentModal,
-    InformationModal
+    InformationModal,
+    SavedTemplatesModal
   },
   inject: {
     acceptStats: {
@@ -173,6 +181,23 @@ export default {
           }
         },
         {
+          icon:"arrow-repeat",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Restart study",
+          filter: [
+            {key: "showRestartButton", value: true},
+          ],
+          action: "restartStudy",
+          stats: {
+            studyId: "id"
+          },
+        },
+        {
           icon: "link-45deg",
           options: {
             iconOnly: true,
@@ -229,7 +254,7 @@ export default {
             {key: "showTemplateButton", value: true},
           ],
           title: "Save as Template",
-          action: "saveStudyAsTemplate",
+          action: "saveAsTemplate",
           stats: {
             studyId: "id"
           }
@@ -256,6 +281,7 @@ export default {
     },
     columns() {
       let cols = [
+        {name: "ID", key: "id"},
         {name: "Name", key: "name"},
         {
           name: "Status",
@@ -352,6 +378,7 @@ export default {
 
           study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showDeleteButton = this.isAdmin || study.userId === this.userId;
+          study.showRestartButton = (this.isAdmin || study.userId === this.userId) && !!study.closed;
           study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showTemplateButton = this.isAdmin || study.userId === this.userId;
           return study;
@@ -384,10 +411,31 @@ export default {
                 this.deleteStudy(data.params);
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
-      } else if (data.action === "linkStudy") {
-
+      } else if (data.action === "copyStudyLink") {
         this.copyLink(data.params.id);
-      } else if (data.action === "inspectSessions") {
+      } else if (data.action === "restartStudy") {
+        this.$socket.emit("appDataUpdate", {
+          table: "study",
+          data: {
+            id: data.params.id,
+            closed: null 
+          }
+        }, (result) => {
+          if (result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study restarted",
+              message: "The study has been restarted",
+              variant: "success"
+            });
+          } else {
+            this.eventBus.emit('toast', {
+              title: "Study restart failed",
+              message: result.message,
+              variant: "danger"
+            });
+          }
+        });
+      } else if (data.action === "inspectStudySessions") {
 
         this.$refs.studySessionModal.open(data.params.id);
       } else if (data.action === "closeStudy") {
@@ -413,7 +461,7 @@ export default {
             });
           }
         });
-      } else if (data.action === "saveAsTemplate") {
+      } else if (data.action === "saveStudyAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
         const {deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams} = data.params;
@@ -447,6 +495,9 @@ export default {
         });
       }
     },
+    openSavedTemplates() {
+      this.$refs.savedTemplatesModal.open();
+    },
     add() {
       this.$refs.studyCoordinator.open(0);
     },
@@ -461,6 +512,9 @@ export default {
     },
     closeStudies() {
       this.$refs.bulkConfirmModal.open();
+    },
+    saveAsTemplate() {
+      this.$refs.saveAsTemplateModal.open();
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](
@@ -511,7 +565,6 @@ export default {
     },
     saveAsTemplate(study) {
       const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
-
       this.$refs.confirmModal.open(
         "Save Study as Template",
         "Are you sure you want to save this study as a template?",

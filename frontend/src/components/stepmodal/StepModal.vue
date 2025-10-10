@@ -2,8 +2,7 @@
   <span>
     <BasicModal
       ref="modal"
-      :xl="(studyStep?.configuration?.modalSize || 'xl') === 'xl'"
-      :lg="(studyStep?.configuration?.modalSize || '') === 'lg'"
+      :size="studyStep?.configuration?.settings?.modalSize"
       :name="studyStep?.configuration?.name || 'Modal'"
       :disable-keyboard="true"
       :remove-close="true"
@@ -192,7 +191,7 @@ export default {
   },
   computed: {
     studyStep() {
-      return this.$store.getters["table/study_step/get"](this.studyStepId);
+      return this.$store.getters["table/study_step/get"](this.studyStepId);;
     },
     studySteps() {
       return this.studyStep.studyId !== 0

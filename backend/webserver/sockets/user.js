@@ -2,6 +2,7 @@ const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const {inject} = require("../../utils/generic");
 const _ = require("lodash");
+const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
 /**
  * Handle user through websocket
@@ -92,7 +93,7 @@ class UserSocket extends Socket {
     /**
      * Retrieves a list of users from a Moodle course via an RPC call.
      * The returned user data is then augmented with an external ID and checked for local existence in the database.
-     * The external moodle API is callled here through Moodle RPC
+     * The external moodle API is called here through Moodle RPC
      * 
      * @socketEvent userMoodleUserGetAll
      * @param {Object} options The data object containing the course ID, Moodle URL and the API token.
@@ -191,7 +192,7 @@ class UserSocket extends Socket {
                     const currentUserId = await this.models["user"].getUserIdByEmail(user.email);
                     if (currentUserId) {
                         createdUser = await this.models["user"].updateById(currentUserId, {
-                            firstName: user.firstName, lastName: user.lastName, extId: user.extId,
+                            firstName: user.firstName, lastName: user.lastName, extId: user.extId, emailVerified: true,
                         }, {
                             transaction, context: {
                                 userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
@@ -286,9 +287,18 @@ class UserSocket extends Socket {
      * @throws {Error} If the user is not an admin or the user tries to reset other's password
      */
     async resetUserPwd(data, options) {
-        const {userId, password} = data;
+        const {userId, password, oldPassword} = data;
+        
         if (!await this.isAdmin() && userId !== this.userId) {
             throw new Error("User rights and argument mismatch");
+        }
+        const user = await this.models["user"].findOne({where:{
+            id: userId
+        }});
+        const hashedOldPassword = await genPwdHash(oldPassword, user.salt);
+        const iscorrectPassword = user.passwordHash === hashedOldPassword;
+        if(!iscorrectPassword){
+            throw new Error("You entered an incorrect Password")
         }
         await this.models["user"].resetUserPwd(userId, password);
     }
@@ -305,18 +315,11 @@ class UserSocket extends Socket {
      * @throws {Error} If the user does not have right 
      */
     async getUsersByRole(data, options) {
-        try {
-            const users = await this.getUsers(data.role);
-            this.socket.emit("userByRole", {
-                success: true, users,
-            });
-        } catch (error) {
-            const errorMsg = "User rights and request parameter mismatch";
-            this.socket.emit("userByRole", {
-                success: false, message: errorMsg,
-            });
-            this.logger.error(errorMsg);
-        }
+        const users = await this.getUsers(data.role);
+        this.socket.emit("userByRole", {
+            success: true, users,
+        });
+        return users;
     }
 
     /***
@@ -329,17 +332,11 @@ class UserSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once the user rights or an error message have been emitted.
      */
     async getUserRights(data, options) {
-        try {
             const userRight = await this.models["user"].getUserRights(data.userId);
             this.socket.emit("userRight", {
                 success: true, userRight,
             });
-        }   catch (error) {
-            this.socket.emit("userRight", {
-                success: false, message: "Failed to get user right",
-            });
-            this.logger.error(error);
-        }
+            return userRight;
     }
 
     init() {

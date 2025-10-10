@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "jszip": "^3.10.1",
-    "vue-print-nb": "^1.7.5"
-  }
-}

@@ -76,12 +76,14 @@ Naming Schema for Rights
 2. Prefix: “frontend” / “backend”
 
 -  For backend:
+
    - “socket”
    - Name of the socket
    - Functionality of the socket
    - Right level on that socket (e.g., all / any / me)
 
 -  For frontend:
+
    - As defined in settings table, use the route name
    - component
    - specific right
@@ -102,7 +104,64 @@ Role Definitions and Rights
 
 Below is a list of the roles currently available in CARE, along with additional information about the rights associated with each role:
 
-1. Admin: Full access to all features and settings on the platform.
-2. Teacher: Responsible for coordination.
-3. Mentor: Have the right to grade.
-4. Student: Have the right to leave inline commentary.
+- **Admin**: Has full access to all features and settings. Admins can create and assign studies, manage users and roles, and edit platform settings. They automatically have access to everything that other roles can do.  
+
+- **Teacher**: Coordination role. Teachers can view studies, inspect sessions, see user information (like names and emails), and query lists of students or mentors through the backend. They usually prepare and manage study workflows but do not have full system control.  
+
+- **Mentor**: Support role. Mentors can open and read studies, inspect sessions in read-only mode, and view user information related to those studies. They cannot manage users or assign studies.  
+
+- **Student**: Study participant. Students join study sessions. They normally only see their assigned documents. More rights can be added if the study setup requires it.  
+
+- **User**: Standard CARE account. Users can log in, view documents and tags, open projects, join study sessions, and view studies. They form the base role for participants outside of special workflows.  
+
+- **Guest**: Very limited access. Guests can view demo documents and dashboards but cannot upload content or join studies. They are meant for trying the system without registration.  
+
+Current Rights
+--------------
+
+This table shows which rights are assigned to which roles.  
+Admins can do everything, so they are not listed separately in each row.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 40 30
+
+   * - Capability
+     - Right
+     - Roles (besides admin)
+
+   * - View Documents dashboard
+     - ``frontend.dashboard.documents.view``
+     - guest, user
+
+   * - View Tags dashboard
+     - ``frontend.dashboard.tags.view``
+     - guest, user
+
+   * - View Projects dashboard
+     - ``frontend.dashboard.projects.view``
+     - guest, user
+
+   * - View Study Sessions dashboard
+     - ``frontend.dashboard.study_sessions.view``
+     - guest, user
+
+   * - View Studies
+     - ``frontend.dashboard.studies.view``
+     - guest, user, mentor, teacher
+
+   * - View Studies (read-only)
+     - ``frontend.dashboard.studies.view.readOnly``
+     - user, mentor, teacher
+
+   * - See user private info in Studies
+     - ``frontend.dashboard.studies.view.userPrivateInfo``
+     - mentor, teacher
+
+   * - List users (students)
+     - ``backend.socket.user.getUsers.student``
+     - teacher
+
+   * - List users (mentors)
+     - ``backend.socket.user.getUsers.mentor``
+     - teacher

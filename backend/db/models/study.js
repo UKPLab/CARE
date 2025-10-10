@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const SequelizeSimpleCache = require("sequelize-simple-cache");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -44,6 +45,18 @@ module.exports = (sequelize, DataTypes) => {
             icon: "list",
             required: true,
             help: "Choose a workflow template for the study steps."
+        }, {
+            key: "tagSetId",
+            label: "Tag set for the study:",
+            type: "select",
+            options: {
+                table: "tag_set",
+                value: "id",
+                name: "name"
+            },
+            icon: "list",
+            required: true,
+            help: "Select a tag set to use in the study."
         }, {
             key: "stepDocuments",
             label: "Assign Documents to Workflow Steps:",
@@ -328,7 +341,7 @@ module.exports = (sequelize, DataTypes) => {
             Study.hasMany(models["study_step"], {
                 foreignKey: "studyId", as: "steps"
             });
-
+            
             Study.belongsTo(models["project"], {
                 foreignKey: "projectId",
                 as: "project"
@@ -344,6 +357,7 @@ module.exports = (sequelize, DataTypes) => {
         createdByUserId: DataTypes.INTEGER,
         workflowId: DataTypes.INTEGER,
         collab: DataTypes.BOOLEAN,
+        tagSetId: DataTypes.INTEGER,
         resumable: DataTypes.BOOLEAN,
         description: DataTypes.TEXT,
         timeLimit: DataTypes.INTEGER,
@@ -416,8 +430,19 @@ module.exports = (sequelize, DataTypes) => {
                 //     await Study.createStudySteps(study, options);
                 // }
             }
-        }
+        },
+        indexes: [
+            {
+            unique: false,
+            fields: ["userId", "template"]
+            },
+            {
+            unique: true,
+            fields: ["id"]
+            }
+        ]
     });
 
-    return Study;
+    Study.cache = new SequelizeSimpleCache({study: {limit: 50, ttl: false}});
+    return Study.cache.init(Study);
 };

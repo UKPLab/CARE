@@ -9,6 +9,11 @@ RUN npm install --global npm
 # Install make
 RUN apk add make
 
+# Install msmtp (for sending emails)
+RUN apk add --no-cache msmtp
+# Link msmtp as sendmail
+RUN ln -sf /usr/bin/msmtp /usr/sbin/sendmail
+
 # copy code
 WORKDIR /
 ADD . /content-server/

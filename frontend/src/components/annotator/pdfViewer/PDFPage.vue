@@ -189,12 +189,13 @@ export default {
     },
   },
   mounted() {
-    this.setA4();
-    this.anchor = new Anchoring(this.pdf, this.pageNumber);
-    this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
-    this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
-
-    this.init();
+    this.$nextTick(() => {
+      this.setA4();
+      this.anchor = new Anchoring(this.pdf, this.pageNumber);
+      this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
+      this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
+      this.init();
+    });
   },
   beforeUnmount() {
     if (this.resizeOb) {

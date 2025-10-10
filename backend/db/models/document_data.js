@@ -23,6 +23,21 @@ module.exports = (sequelize, DataTypes) => {
                 as: "studyStep",
             });
         }
+
+        /**
+         * Upsert document data based on composite unique key
+         * @param {Object} data - The data to insert or update
+         * @param {Object} options - Additional options for the upsert operation
+         * @returns {Promise<[DocumentData, boolean | null]>} - The upserted record and created flag
+         */
+        static async upsertData(data, options = {}) {
+            return await this.upsert(data, {
+                conflictFields: ['conflict_key'],
+                returning: true,
+                ...options
+            });
+        }
+
     }
 
     DocumentData.init(
@@ -39,25 +54,11 @@ module.exports = (sequelize, DataTypes) => {
             deletedAt: DataTypes.DATE,
         },
         {
-            sequelize: sequelize, modelName: "document_data", tableName: "document_data", hooks: {
-                beforeCreate: async (documentData, options) => {
-                    const exists = await DocumentData.findOne({
-                        where: {
-                            studySessionId: documentData.studySessionId,
-                            studyStepId: documentData.studyStepId,
-                            key: documentData.key
-                        },
-                        transaction: options.transaction
-                    });
-                    if (exists) {
-                        await exists.update(
-                            {value: documentData.value},
-                            { transaction: options.transaction });
-                        return false;
-                    }
-                }
-            }
+            sequelize: sequelize, 
+            modelName: "document_data", 
+            tableName: "document_data",
         }
     );
+
     return DocumentData;
 };
