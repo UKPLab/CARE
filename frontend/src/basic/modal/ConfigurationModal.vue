@@ -12,7 +12,7 @@
     <StepperModal
       ref="configurationStepper"
       name="configurationStepper"
-      :steps="[{ title: 'Services' }, { title: 'Placeholders' }, { title: 'General' }]"
+      :steps="modalSteps"
       :validation="stepValid"
       submit-text="Save Configuration"
       @step-change="handleStepChange"
@@ -21,178 +21,35 @@
       <template #title>
         <h5 class="modal-title text-primary">Configuration</h5>
       </template>
-      <!-- Step 1: NLP Services -->
-      <template #step-1>
-        <div class="service-config">
-          <div v-if="stepConfig && stepConfig.services && stepConfig.services.length">
-            <div
-              v-for="(service, index) in stepConfig.services"
-              :key="index"
-              class="service-item mb-4 p-3 border rounded"
-            >
-              <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
-              <!-- Skill Selection -->
-              <div class="mb-3">
-                <label class="form-label">Select NLP Skill:</label>
-                <SkillSelector
-                  v-model="selectedSkills[index].skillName"
-                />
-              </div>
-              <!-- Input Mapping -->
-              <InputMap
-                v-if="selectedSkills[index].skillName"
-                v-model="selectedSkills[index].dataInput"
-                :skill-name="selectedSkills[index].skillName"
-                :study-based="true"
-                :study-step-id="studyStepId"
-                :workflow-steps="workflowSteps"
-                :current-stepper-step="currentStepperStep"
-                :step-config="stepConfig"
-                :selected-skills="selectedSkills"
-              />
-            </div>
-          </div>
-          <div
-            v-else
-            class="alert alert-info"
-          >
-            No service configurations found for this step.
-          </div>
-        </div>
-      </template>
-      <!-- Step 2: Placeholders -->
-      <template #step-2>
-        <div v-if="placeholders.length">
-          <!-- Short Preview with Placeholder Labels -->
-          <div class="short-preview p-3 mb-3 border rounded">
-            <h6 class="text-secondary mb-2">Quick Preview:</h6>
-            <!-- FIXME: Do not use v-html -->
-            <p v-html="shortPreview"></p>
-            <div class="legend mt-2">
-              <span
-                v-for="(placeholder, index) in placeholders"
-                :key="index"
-                :style="{ color: placeholderColors[index] }"
-                class="legend-item"
-              >
-                {{ placeholder.type }} #{{ placeholder.number }}
-              </span>
-            </div>
-          </div>
-          <!-- Placeholder Configuration -->
-          <div class="placeholder-list">
-            <div
-              v-for="(placeholder, index) in placeholders"
-              :key="index"
-              class="placeholder-item mb-3 p-3 border rounded"
-            >
-              <h6 class="mb-2">
-                <span
-                  :style="{
-                    color: placeholderColors[index],
-                    fontWeight: 'bold',
-                  }"
-                >
-                  {{ placeholder.type }} Placeholder #{{ placeholder.number }}
-                </span>
-              </h6>
-              <!-- Data Source -->
-              <template v-if="placeholder.type === 'comparison'">
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput[0]"
-                    :value-as-object="true"
-                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
-                  />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput[1]"
-                    :value-as-object="true"
-                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
-                  />
-                </div>
-              </template>
-              <template v-else>
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput"
-                    :value-as-object="true"
-                    :options="{ options: getSourcesUpToCurrentStep(studyStepId) }"
-                  />
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-        <div
-          v-else
-          class="alert alert-info"
-        >
-          <p>No placeholders found in the document.</p>
-        </div>
-      </template>
-      <!-- Step 3: General Settings -->
-      <template #step-3>
-        <div v-if="generalSettings.length">
-          <div class="general-settings">
-            <h6 class="text-secondary mb-3">General Configuration Settings</h6>
-            <div
-              v-for="(setting, index) in generalSettings"
-              :key="index"
-              class="setting-item mb-4 p-3 border rounded"
-            >
-              <label class="form-label fw-bold">{{ setting.label }}</label>
-              <div v-if="setting.type === 'select'" class="mb-2">
-                <FormSelect
-                  v-model="generalFormData[setting.name]"
-                  :options="{ options: setting.options }"
-                />
-              </div>
-              <div v-else-if="setting.type === 'text'" class="mb-2">
-                <input
-                  v-model="generalFormData[setting.name]"
-                  type="text"
-                  class="form-control"
-                  :placeholder="setting.label"
-                />
-              </div>
-              <div v-else-if="setting.type === 'number'" class="mb-2">
-                <input
-                  v-model="generalFormData[setting.name]"
-                  type="number"
-                  class="form-control"
-                  :placeholder="setting.label"
-                />
-              </div>
-              <div v-else-if="setting.type === 'checkbox'" class="mb-2">
-                <div class="form-check">
-                  <input
-                    v-model="generalFormData[setting.name]"
-                    type="checkbox"
-                    class="form-check-input"
-                    :id="'setting-' + setting.name"
-                  />
-                  <label class="form-check-label" :for="'setting-' + setting.name">
-                    {{ setting.label }}
-                  </label>
-                </div>
-              </div>
-              <small v-if="setting.help" class="form-text text-muted">
-                {{ setting.help }}
-              </small>
-            </div>
-          </div>
-        </div>
-        <div
-          v-else
-          class="alert alert-info"
-        >
-          <p>No general settings found for this step.</p>
-        </div>
+      <template #step="{ step }">
+        <StepTemplates
+          v-if="step.type === 'general'"
+          v-model="formData"
+          type="general"
+          :fields="normalizedFields"
+        />
+        <StepTemplates
+          v-else-if="step.type === 'services'"
+          v-model:selected-skills="selectedSkills"
+          v-model:input-mappings="inputMappings"
+          type="services"
+          :step-config="stepConfig"
+          :skill-map="skillMap"
+          :available-data-sources="availableDataSources"
+          :get-skill-inputs="getSkillInputs"
+          :provide-options-for-input="provideOptionsForInput"
+        />
+        <StepTemplates
+          v-else-if="step.type === 'placeholders'"
+          v-model:placeholder-form-data="placeholderFormData"
+          type="placeholders"
+          :placeholders="placeholders"
+          :placeholder-colors="placeholderColors"
+          :placeholder-type="placeholderType"
+          :available-data-sources="availableDataSources"
+          :short-preview="shortPreview"
+        />
+        <div v-else class="alert alert-info">Step not supported.</div>
       </template>
     </StepperModal>
   </div>
@@ -200,9 +57,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import FormSelect from "@/basic/form/Select.vue";
-import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
-import InputMap from "@/basic/modal/skills/InputMap.vue";
+import StepTemplates from "@/basic/modal/StepTemplates.vue";
 import Quill from "quill";
 
 /**
@@ -217,12 +72,8 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: {
-    FormSelect,
-    StepperModal, 
-    SkillSelector, 
-    InputMap 
-  },
+  components: { StepperModal, StepTemplates },
+  subscribeTable: ["document", "submission", "configuration"],
   props: {
     modelValue: {
       type: Object,
@@ -266,6 +117,7 @@ export default {
       shortPreview: "",
       isUpdateMode: false,
       inputMappings: [],
+      formData: {},
       generalFormData: {},
     };
   },
@@ -333,32 +185,54 @@ export default {
       return idx === -1 ? null : idx;
     },
     stepValid() {
-      return [
-        // Step 1: Check if all services have skill name and data input (or no services required)
-        !this.stepConfig?.services?.length || this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
-        // Step 2: Check if all placeholders have non-empty string input (or no placeholders)
-        !this.placeholders.length || this.placeholderFormData.every((data) => {
-          if (data.type === this.placeholderType.comparison) {
-            return data.dataInput[0] && data.dataInput[1];
+      const servicesValid = this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0);
+      const placeholdersValid = this.placeholderFormData.every((data) => {
+        if (data.type === this.placeholderType.comparison) {
+          return data.dataInput && data.dataInput[0] && data.dataInput[1];
+        }
+        return !!data.dataInput;
+      });
+      // Validate required fields in General step
+      const generalValid = (this.normalizedFields || []).every((field) => {
+        if (!field || field.required !== true) return true;
+        const value = this.formData ? this.formData[field.key] : undefined;
+        if (value === undefined || value === null) return false;
+        if (typeof value === 'string') return value.trim().length > 0;
+        if (typeof value === 'number') return value > 0 || value === 0; // allow 0 for valid switches encoded as 0/1
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'object') {
+          // Handle quill delta or option object
+          if (value && value.ops && Array.isArray(value.ops)) {
+            return value.ops.some(op => typeof op.insert === 'string' && op.insert.trim() !== '');
           }
-          return !!data.dataInput;
-        }),
-        // Step 3: Check if all required general settings are filled (or no settings)
-        !this.generalSettings.length || this.generalSettings.every((setting) => {
-          if (setting.required) {
-            const value = this.generalFormData[setting.name];
-            return value !== null && value !== undefined && value !== '';
-          }
-          return true;
-        }),
-      ];
+          return Object.keys(value).length > 0;
+        }
+        return !!value;
+      });
+      return this.modalSteps.map((s) => {
+        if (s.type === 'general') return generalValid;
+        if (s.type === 'services') return servicesValid;
+        if (s.type === 'placeholders') return placeholdersValid;
+        return true;
+      });
     },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
+    skillMap() {
+      return {
+        options: this.nlpSkills.map((skill) => ({
+          value: skill.name,
+          name: skill.name,
+        })),
+      };
+    },
+    availableDataSources() {
+      return this.getSourcesUpToCurrentStep(this.studyStepId);
+    },
     generalSettings() {
-      return this.getSettingsForStep(this.studyStepId);
+      return this.getSettingsForStep();
     },
   },
   watch: {
@@ -376,6 +250,20 @@ export default {
           this.fetchDocument();
         }
       },
+    },
+    inputMappings: {
+      handler(newMappings) {
+        if (!newMappings.length) return;
+
+        newMappings.forEach((mapping, index) => {
+          Object.entries(mapping).forEach(([input, source]) => {
+            if (source) {
+              this.updateDataInput(index, input, source);
+            }
+          });
+        });
+      },
+      deep: true,
     },
   },
   mounted() {
@@ -405,7 +293,12 @@ export default {
       this.$refs.configurationStepper.open();
     },
     initializeModal() {
-      this.stepConfig = this.modelValue || {};
+      const initial = this.modelValue || {};
+      this.stepConfig = typeof initial === 'string' ? (this.safeParseJSON(initial) || {}) : initial;
+      if (this.hasConfigFields) {
+        this.formData = this.stepConfig || {};
+      }
+
       // Initialize services
       if (this.stepConfig?.services?.length) {
         this.selectedSkills = this.stepConfig.services.map((service) => {
@@ -422,12 +315,28 @@ export default {
             dataInput: {},
           };
         });
+
+        // Initialize inputMappings after selectedSkills is populated
+        this.initializeInputMappings();
       } else {
         this.selectedSkills = [];
+        this.inputMappings = [];
       }
 
       // Initialize general settings
       this.initializeGeneralSettings();
+    },
+    initializeInputMappings() {
+      this.inputMappings = this.selectedSkills.map((skill, idx) => {
+        const mapping = {};
+        if (skill.skillName) {
+          const inputs = this.getSkillInputs(skill.skillName);
+          inputs.forEach((input) => {
+              mapping[input] = this.getFormattedDataInput(idx, input);
+          });
+        }
+        return mapping;
+      });
     },
     initializeGeneralSettings() {
       const formData = {};
@@ -532,12 +441,68 @@ export default {
     findPlaceholderDataSource(input) {
       if (!input) return null;
 
-      const availableDataSources = this.getSourcesUpToCurrentStep(this.studyStepId);
-      return availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
+      return this.availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
     },
-    getSettingsForStep(stepId) {
-      const stepConfig = this.workflowSteps.find((step) => step.id === stepId);
-      return stepConfig ? stepConfig.configuration.settings || [] : [];
+    getSkillInputs(skillName) {
+      // Find the skill in the skills list
+      const skill = this.nlpSkills.find((s) => s.name === skillName);
+      if (!skill) return {};
+      // Return the input keys (v1, v2, etc.)
+      return Object.keys(skill.config.input.data || {});
+    },
+    provideOptionsForInput(skillName, inputName, baseSources) {
+      const base = Array.isArray(baseSources) ? baseSources : [];
+      const isSubmissionInput = (name) => name === 'submission';
+      const isAssessmentConfigInput = (name) => name === 'assessment_config' || name === 'feedback_grading_criteria';
+
+      if (skillName === 'grading_expose') {
+        if (isSubmissionInput(inputName)) {
+          return this.getSubmissionOptions();
+        }
+        if (isAssessmentConfigInput(inputName)) {
+          return this.getConfigOptions();
+        }
+      }
+
+      if (skillName === 'generating_feedback') {
+        if (isSubmissionInput(inputName)) {
+          return this.getSubmissionOptions();
+        }
+        if (inputName === 'grading_results') {
+          return [{ value: 'assessment_output', name: 'Assessment Output (step 1)', stepId: 0 }];
+        }
+        if (isAssessmentConfigInput(inputName)) {
+          return this.getConfigOptions();
+        }
+      }
+
+      return base;
+    },
+    getSubmissionOptions() {
+      // Get all ZIP files (type 4) that are not hidden and have valid submissions
+      const submissions = (this.$store.getters["table/submission/getAll"]) || [];
+      const submissionIds = submissions.map((s) => s.id);
+      const documents = (this.$store.getters["table/document/getAll"]) || [];
+      
+      const docs = documents
+        .filter((d) => d && d.type === 4 && !d.hideInFrontend && submissionIds.includes(d.submissionId));
+      
+      return docs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
+    },
+    getConfigOptions() {
+      const configs = (this.$store.getters["table/configuration/getAll"]) || [];
+      return configs
+        .filter((c) => c && c.type === 0 && c.deleted !== true)
+        .map((c) => ({ value: `${c.id}`, name: c.name || (c.content && c.content.name) || `Configuration ${c.id}`, stepId: 0 }));
+    },
+    getSettingsForStep() {
+      const fields = Array.isArray(this.normalizedFields) ? this.normalizedFields : [];
+      return fields.map((field) => ({
+        name: field.key || field.name || "",
+        type: field.type || "text",
+        default: field.default,
+        options: field.options || [],
+      }));
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
@@ -616,8 +581,10 @@ export default {
     updateDataInput(index, input, source) {
       if (!source) return;
 
+      // Deep clone to avoid reference issues
       const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
 
+      // Ensure dataInput exists
       if (!updatedSkills[index].dataInput) {
         updatedSkills[index].dataInput = {};
       }
@@ -627,30 +594,31 @@ export default {
         dataSource: source.value,
       };
 
+      // Replace the entire array
       this.selectedSkills = updatedSkills;
     },
     getFormattedDataInput(index, input) {
       const dataInput = this.selectedSkills[index]?.dataInput?.[input];
       if (!dataInput) return null;
 
+      // Return the source object that matches this data input
       return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {
-      if (!this.stepConfig?.services?.length) return;
-      const { services } = this.stepConfig;
-      const configData = {
-        services: services.map((service, index) => ({
-          name: service.name,
-          type: service.type,
-          skill: this.selectedSkills[index].skillName,
-          inputs: this.selectedSkills[index].dataInput,
-        })),
-        placeholders: {
-          text: this.formatPlaceholder(this.placeholderType.text),
-          chart: this.formatPlaceholder(this.placeholderType.chart),
-          comparison: this.formatPlaceholder(this.placeholderType.comparison),
-        },
-        settings: this.generalFormData,
+      const configData = { ...(this.formData || {}) };
+      if (this.stepConfig?.services?.length) {
+        const { services } = this.stepConfig;
+        configData.services = services.map((service, index) => ({
+            name: service.name,
+            type: service.type,
+          skill: this.selectedSkills[index]?.skillName,
+          inputs: this.selectedSkills[index]?.dataInput,
+          }));
+        }
+      configData.placeholders = {
+        text: this.formatPlaceholder(this.placeholderType.text),
+        chart: this.formatPlaceholder(this.placeholderType.chart),
+        comparison: this.formatPlaceholder(this.placeholderType.comparison),
       };
           this.$emit("update:modelValue", configData);
       this.$refs.configurationStepper.close();

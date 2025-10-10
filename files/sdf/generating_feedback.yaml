@@ -61,12 +61,12 @@ input:
         "pdf": pdf_file
       },
       "grading_results": [{
-      "criterion": Language quality,
-      "score": 1,
-      "justification": Example justification,
-      "possible_concerns": Example possible concerns,
-      "thinking": "The reasoning process for the grading"
-      }],
+        "criterion": Language quality,
+        "score": 1,
+        "justification": Example justification,
+        "possible_concerns": Example possible concerns,
+        "thinking": "The reasoning process for the grading"
+        }],
       "feedback_grading_criteria": {
         "description": "the configuration for grading criteria which be used for LLMentor",
         "version": "0.0.1",
@@ -107,7 +107,11 @@ output:
     textual_feedback:
       type: string
       description: The textual feedback for the exposé
+    thinking_content:
+      type: string
+      description: The reasoning process for the feedback
   example:
     {
       "textual_feedback": This is a test feedback
+      "thinking_content": This is a thinking content from a reasoning LLM
     }

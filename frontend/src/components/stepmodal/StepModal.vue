@@ -925,29 +925,14 @@ export default {
       if (!buffer) return null;
       return this.arrayBufferToBase64(buffer);
     },
-    async fetchConfigJson(documentId) {
+    async fetchConfigJson(configurationId) {
       return await new Promise((resolve) => {
-        this.$socket.emit("documentGet", { documentId }, (response) => {
-          if (response && response.success && response.data && response.data.file) {
-            try {
-              let text;
-              if (response.data.file instanceof ArrayBuffer) {
-                const uint8 = new Uint8Array(response.data.file);
-                text = new TextDecoder().decode(uint8);
-              } else if (typeof response.data.file === 'string') {
-                text = response.data.file;
-              } else if (response.data.file && response.data.file.data && Array.isArray(response.data.file.data)) {
-                const uint8 = Uint8Array.from(response.data.file.data);
-                text = new TextDecoder().decode(uint8);
-              }
-              const json = text ? JSON.parse(text) : null;
-              resolve(json);
-            } catch (e) {
-              
-              resolve(null);
-            }
+        this.$socket.emit("configurationGet", { configurationId }, (response) => {
+          if (response && response.success && response.data) {
+            const cfg = response.data;
+            // prefer normalized shape if backend returns row; fall back to content
+            resolve(cfg.content || cfg);
           } else {
-            // File not found or error - return null
             resolve(null);
           }
         });
