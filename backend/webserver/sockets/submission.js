@@ -20,7 +20,7 @@ class SubmissionSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with operation results
      * @throws {Error} If the operation fails
      */
-    static async assignGroupToSubmissions(data, options = {}) {
+    async assignGroupToSubmissions(data, options = {}) {
         const { group, isCopied, submissionIds, additionalSettings } = data;
         const transaction = options.transaction;
 
