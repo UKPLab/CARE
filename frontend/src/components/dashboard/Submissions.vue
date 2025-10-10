@@ -110,7 +110,8 @@ export default {
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
         { name: "Submission ID", key: "extId" },
-        { name: "Validation ID", key: "validationConfigurationId" },
+        { name: "Group", key: "group", sortable: true },
+        { name: "Validation ID", key: "validationConfigurationId", sortable: true },
         { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
@@ -183,6 +184,7 @@ export default {
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
           validationConfigurationId: s.validationConfigurationId ?? "-",
+          group: s.group ?? "-",
         };
       });
     },

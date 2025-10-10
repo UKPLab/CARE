@@ -31,8 +31,8 @@
       <div class="summary-container">
         <h6>Assignment Summary</h6>
         <div class="summary-item"><strong>Number of Submissions:</strong> {{ selectedSubmissions.length }}</div>
-        <div class="summary-item"><strong>Group Number:</strong> {{ data.groupNumber }}</div>
-        <div class="summary-item"><strong>Additional Settings:</strong> {{ data.settings }}</div>
+        <div class="summary-item"><strong>Group Number:</strong> {{ data.group }}</div>
+        <div class="summary-item"><strong>Additional Settings:</strong> {{ data.settings ?? "N/A" }}</div>
         <div class="summary-item"><strong>Copy Submissions:</strong> {{ data.copySubmissions ? "Yes" : "No" }}</div>
         <div class="alert alert-info mt-3">
           <i class="bi bi-info-circle"></i>
@@ -64,17 +64,18 @@ export default {
     return {
       selectedSubmissions: [],
       data: {
-        groupNumber: null,
+        group: null,
         settings: "",
         copySubmissions: false,
       },
       steps: [{ title: "Select Submissions" }, { title: "Group Settings" }, { title: "Review & Confirm" }],
       formFields: [
         {
-          key: "groupNumber",
+          key: "group",
           label: "Group Number",
           type: "number",
           placeholder: "Enter group number",
+          min: 0,
           class: "form-control",
           required: true,
           default: null,
@@ -103,6 +104,7 @@ export default {
       submissionColumns: [
         { name: "First Name", key: "firstName", sortable: true },
         { name: "Last Name", key: "lastName", sortable: true },
+        { name: "Group", key: "group", sortable: true },
         { name: "Created At", key: "createdAt", sortable: true },
       ],
       submissionTableOptions: {
@@ -125,14 +127,12 @@ export default {
     },
     submissionTable() {
       return this.submissions.map((s) => {
-        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === s.id);
-        const mainDoc = docs.find((d) => d.type === 0) || docs[0] || {};
         const user = this.$store.getters["table/user/get"](s.userId);
-
         return {
           id: s.id,
           firstName: user.firstName,
           lastName: user.lastName,
+          group: s.group ?? "-",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
         };
       });
@@ -140,7 +140,7 @@ export default {
     stepValid() {
       return [
         this.selectedSubmissions.length > 0,
-        this.data.groupNumber !== null && this.data.groupNumber !== "",
+        this.data.group !== null && this.data.group !== "",
         true, // Step 3 is always valid (just review)
       ];
     },
@@ -149,7 +149,7 @@ export default {
     open() {
       this.selectedSubmissions = [];
       this.data = {
-        groupNumber: null,
+        group: null,
         settings: "",
         copySubmissions: false,
       };
@@ -160,32 +160,30 @@ export default {
 
       const submissionIds = this.selectedSubmissions.map((s) => s.id);
 
-      this.$socket.emit(
-        "socketNameTBD",
-        {
-          submissionIds: submissionIds,
-          groupNumber: this.data.groupNumber,
-          settings: this.data.settings,
-          copySubmissions: this.data.copySubmissions,
-        },
-        (res) => {
-          if (res.success) {
-            this.eventBus.emit("toast", {
-              title: "Group Assigned",
-              message: `Successfully assigned ${submissionIds.length} submission(s) to group ${this.data.groupNumber}`,
-              variant: "success",
-            });
-            this.$refs.assignStepper.close();
-          } else {
-            this.eventBus.emit("toast", {
-              title: "Failed to assign group",
-              message: res.message,
-              variant: "danger",
-            });
-            this.$refs.assignStepper.setWaiting(false);
-          }
+      const requestParams = {
+        submissionIds: submissionIds,
+        group: this.data.group,
+        additionalSettings: this.data.settings,
+        isCopied: this.data.copySubmissions,
+      };
+
+      this.$socket.emit("submissionAssignGroup", requestParams, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "Group Assigned",
+            message: `Successfully assigned ${submissionIds.length} submission(s) to group ${this.data.group}`,
+            variant: "success",
+          });
+          this.$refs.assignStepper.close();
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to assign group",
+            message: res.message,
+            variant: "danger",
+          });
+          this.$refs.assignStepper.setWaiting(false);
         }
-      );
+      });
     },
   },
 };
