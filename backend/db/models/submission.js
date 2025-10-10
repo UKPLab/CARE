@@ -145,7 +145,6 @@ module.exports = (sequelize, DataTypes) => {
         static async copyDocument(originalDoc, newSubmissionId, transaction) {
             const copiedDoc = await sequelize.models.document.add({
                 name: `${originalDoc.name}_copy`,
-                // hash
                 userId: originalDoc.userId,
                 readyForReview: originalDoc.readyForReview || false,
                 public: originalDoc.public || false,
@@ -158,7 +157,37 @@ module.exports = (sequelize, DataTypes) => {
                 originalFilename: originalDoc.originalFilename || null
             }, { transaction });
 
+            await Submission.copyDocumentFiles(originalDoc, copiedDoc, transaction);
+
             return copiedDoc;
+        }
+
+        /**
+         * Copy document files
+         * 
+         * @param {Object} originalDoc - The original document
+         * @param {Object} copiedDoc - The copied document
+         * @param {Object} transaction - The database transaction
+         */
+        static async copyDocumentFiles(originalDoc, copiedDoc, transaction) {
+            const docTypes = sequelize.models.document.docTypes;
+            if ([docTypes.DOC_TYPE_PDF, docTypes.DOC_TYPE_ZIP].includes(originalDoc.type)) {
+                const docType = originalDoc.type;
+                const docTypeKey = Object.keys(docTypes)
+                    .find(type => docTypes[type] === docType);
+
+                let fileExtension = '';
+                if (docTypeKey) {
+                    fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
+                }
+                
+                const originalFilePath = path.join(UPLOAD_PATH, `${originalDoc.hash}${fileExtension}`);
+                const copiedFilePath = path.join(UPLOAD_PATH, `${copiedDoc.hash}${fileExtension}`);
+                
+                if (fs.existsSync(originalFilePath)) {
+                    await fs.promises.copyFile(originalFilePath, copiedFilePath);
+                }
+            }
         }
     }
 
