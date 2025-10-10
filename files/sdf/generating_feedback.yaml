@@ -112,6 +112,6 @@ output:
       description: The reasoning process for the feedback
   example:
     {
-      "textual_feedback": This is a test feedback
+      "textual_feedback": This is a test feedback,
       "thinking_content": This is a thinking content from a reasoning LLM
     }

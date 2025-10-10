@@ -149,21 +149,6 @@ class DocumentSocket extends Socket {
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
             fs.writeFileSync(target, data.file);
-        } else if (fileType === ".json") {
-            // Handle JSON configuration files
-            doc = await this.models["document"].add(
-                {
-                    type: docTypes.DOC_TYPE_CONFIG,
-                    name: data.name.replace(/.json$/, ""),
-                    userId: data.userId ?? this.userId,
-                    uploadedByUserId: this.userId,
-                    readyForReview: data.isUploaded ?? false,
-                },
-                { transaction: options.transaction }
-            );
-
-            target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
-            fs.writeFileSync(target, data.file);
         } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -971,27 +956,19 @@ class DocumentSocket extends Socket {
                 }
             }
         } else {
-            // Handle file-based documents (PDF, ZIP, JSON)
-            let fileExtension = '.pdf';
-            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
-                fileExtension = '.json';
-            } else if (document.type === this.models['document'].docTypes.DOC_TYPE_ZIP) {
-                fileExtension = '.zip';
+            const extensionMap = {
+                [docTypes.DOC_TYPE_ZIP]: ".zip",
             }
+            
+            const fileExtension = extensionMap[document.type] || ".pdf";
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
             
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
-            const file = fs.readFileSync(filePath); // Buffer
-            // For JSON files, return the content as a string; for others (PDF/ZIP), return as Buffer
-            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
-                const fileContent = file.toString('utf8');
-                return { document: document, file: fileContent };
-            } else {
-                return { document: document, file: file };
-            }
+            let file = fs.readFileSync(filePath); // Buffer
+            return { document, file };
         }
     }
 
@@ -1042,6 +1019,35 @@ class DocumentSocket extends Socket {
         return null;
     }
 
+
+    
+    /**
+     * Retrieve document data for a particular document/study_session/study_step from the document_data table.
+     *
+     * @param {Object} data The data payload containing the retrieval parameters.
+     * @param {number} data.documentId The ID of the associated document.
+     * @param {number} data.studySessionId The ID of the associated study session.
+     * @param {number} data.studyStepId The ID of the associated study step.
+     * @param {string} data.key The key for the data being retrieved (e.g., 'assessment_results').
+     * @param {Object} options Additional configuration for the operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
+     */
+    async getDocumentData(data, options) {
+        const documentData = await this.models['document_data'].findOne({
+            where: {
+                documentId: data.documentId,
+                studySessionId: data.studySessionId,
+                studyStepId: data.studyStepId,
+                key: data.key,
+                deleted: false
+            },
+            order: [['updatedAt', 'DESC']],
+            transaction: options?.transaction
+        });
+
+        return documentData;
+    }
 
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
@@ -1101,110 +1107,20 @@ class DocumentSocket extends Socket {
      * @param {any} data.value The value to be stored, which can be any serializable type.
      * @param {Object} options Additional configuration for the operation.
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
-     * @returns {Promise<Object>} A promise that resolves with the newly created `document_data` record object from the database.
+     * @returns {Promise<Object>} A promise that resolves with the upserted `document_data` record object from the database.
      */
     async saveData(data, options) {
-        // Perform an upsert instead of unconditional insert to prevent duplicate rows for the same tuple.
-        // Upsert by unique tuple (documentId, studySessionId, studyStepId, key)
-        
-        const whereClause = {
-            documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            key: data.key
-        };
 
-        const existing = await this.models['document_data'].findOne({ where: whereClause, transaction: options.transaction });
-        if (existing) {
-            const updated = await this.models['document_data'].updateById(existing.id, { value: data.value, deleted: false }, { transaction: options.transaction });
-            return updated;
-        }
-
-        let documentData = await this.models['document_data'].add({
+        let documentData = await this.models['document_data'].upsertData({
             userId: this.userId,
             documentId: data.documentId,
             studySessionId: data.studySessionId,
             studyStepId: data.studyStepId,
             key: data.key,
             value: data.value
-        }, {transaction: options.transaction});
+        }, options);
 
         return documentData;
-    }
-
-    /**
-     * Retrieve document data for a particular document/study_session/study_step from the document_data table.
-     *
-     * @param {Object} data The data payload containing the retrieval parameters.
-     * @param {number} data.documentId The ID of the associated document.
-     * @param {number} data.studySessionId The ID of the associated study session.
-     * @param {number} data.studyStepId The ID of the associated study step.
-     * @param {string} data.key The key for the data being retrieved (e.g., 'assessment_results').
-     * @param {Object} options Additional configuration for the operation.
-     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
-     * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
-     */
-    async getDocumentData(data, options) {
-        const documentData = await this.models['document_data'].findOne({
-            where: {
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                key: data.key,
-                deleted: false
-            },
-            order: [['updatedAt', 'DESC']],
-            transaction: options?.transaction
-        });
-
-        return documentData;
-    }
-
-
-    /**
-     * Update the content of a JSON configuration file
-     *
-     * @param {Object} data - The data object containing the document ID and new content
-     * @param {number} data.documentId - The ID of the document to update
-     * @param {Object} data.content - The new JSON content to save
-     * @param {Object} options - The options object containing the transaction
-     * @returns {Promise<void>}
-     */
-    async updateDocumentContent(data, options) {
-        const { documentId, content } = data;
-
-        // Get the document to verify it exists and check access
-        const doc = await this.models['document'].getById(documentId);
-        if (!doc) {
-            throw new Error("Document not found");
-        }
-
-        // Check if user has access to update this document
-        if (!(await this.checkDocumentAccess(doc.id))) {
-            throw new Error("You do not have access to update this document");
-        }
-
-        // Verify it's a configuration file
-        if (doc.type !== this.models['document'].docTypes.DOC_TYPE_CONFIG) {
-            throw new Error("Only configuration files can be updated with this method");
-        }
-
-        // Validate JSON content
-        let jsonContent;
-        try {
-            jsonContent = JSON.stringify(content, null, 2);
-        } catch (error) {
-            throw new Error("Invalid JSON content");
-        }
-
-        const filePath = `${UPLOAD_PATH}/${doc.hash}.json`;
-        await fs.promises.writeFile(filePath, jsonContent, 'utf8');
-
-        const updatedDocument = await this.models['document'].updateById(doc.id, {
-            updatedAt: new Date()
-        }, { transaction: options.transaction });
-
-        return updatedDocument;
     }
 
     init() {
