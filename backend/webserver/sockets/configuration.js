@@ -10,34 +10,6 @@ const Socket = require("../Socket");
  */
 class ConfigurationSocket extends Socket {
   /**
-   * Get configuration by id
-   * @param {Object} data
-   * @param {number} data.configurationId
-   * @returns {Promise<Object>} configuration row
-   */
-  async getConfiguration(data, options) {
-    const { configurationId } = data;
-    if (!configurationId) {
-      throw new Error("Configuration ID is required");
-    }
-
-    const config = await this.models["configuration"].getById(configurationId);
-    if (!config) {
-      throw new Error("Configuration not found");
-    }
-
-    const { accessAllowed } = await this.getFiltersAndAttributes(
-      this.userId,
-      { id: configurationId },
-      {},
-      "configuration"
-    );
-    if (!accessAllowed) {
-      throw new Error("Access denied");
-    }
-    return config;
-  }
-  /**
    * Update configuration content
    *
    * @param {Object} data The data object containing the configuration update
@@ -115,7 +87,6 @@ class ConfigurationSocket extends Socket {
   init() {
     this.createSocket("configurationUpdate", this.updateConfiguration, {}, true);
     this.createSocket("configurationAdd", this.createConfiguration, {}, true);
-    this.createSocket("configurationGet", this.getConfiguration, {}, false);
   }
 }
 
