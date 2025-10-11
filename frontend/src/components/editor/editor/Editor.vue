@@ -318,17 +318,17 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: 'generating_feedback_data'
+            key: 'textualFeedback_generating_feedback_textual_feedback'
           }, (response) => {
             const rawVal = (response && response.success && response.data && response.data.value)
               ? response.data.value
               : (response && response.value) ? response.value : null;
             if (!this.feedbackLoaded && rawVal) {
-              const feedbackText = typeof rawVal === 'string'
+              const rawText = typeof rawVal === 'string'
                 ? rawVal
                 : (rawVal.textual_feedback || rawVal.feedback || rawVal.text || (typeof rawVal.data === 'string' ? rawVal.data : ''));
-              if (feedbackText) {
-                this.applyFeedbackText(feedbackText);
+              if (rawText) {
+                this.applyFeedbackText(rawText);
               }
             }
           });
@@ -525,7 +525,7 @@ export default {
 
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           this.$refs.leavePageConf.open(
             "Unsaved Changes",
             "Are you sure you want to leave? There are unsaved changes, which will be lost.",
