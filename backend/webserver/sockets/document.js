@@ -1020,8 +1020,6 @@ class DocumentSocket extends Socket {
     }
 
 
-    
-
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
      *
