@@ -232,7 +232,7 @@ export default {
       return this.getSourcesUpToCurrentStep(this.studyStepId);
     },
     generalSettings() {
-      return this.getSettingsForStep(this.studyStepId);
+      return this.getSettingsForStep();
     },
   },
   watch: {

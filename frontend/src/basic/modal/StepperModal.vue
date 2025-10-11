@@ -46,9 +46,15 @@
           @click="currentStep--"
         />
         <BasicButton
+          v-if="currentStep === 0 && showClose"
+          title="Close"
+          class="btn btn-secondary"
+          @click="close"
+        />
+        <BasicButton
           v-if="currentStep < steps.length - 1"
-          title="Next"
-          class="btn btn-primary"
+          :title="nextText"
+          :class="['btn', currentStep === 0 && nextText && nextText.toLowerCase().includes('cancel') ? 'btn-danger' : 'btn-primary']"
           :disabled="disabled(currentStep)"
           @click="currentStep++"
         />
@@ -92,9 +98,17 @@ export default {
       type: String,
       default: "Submit"
     },
+    nextText: {
+      type: String,
+      default: "Next"
+    },
     validation: {
       type: Array,
       default: () => []
+    },
+    showClose: {
+      type: Boolean,
+      default: false
     },
   },
   emits: ["stepChange", "submit", 'hide'],

@@ -40,7 +40,6 @@ module.exports = (sequelize, DataTypes) => {
                                 [sequelize.models.document.docTypes.DOC_TYPE_MODAL]: stepTypes.STEP_TYPE_MODAL,
                             }
                         },
-                        {type: "byUserId", key: "userId"},
                         {type:"byProjectId", key: "projectId"}
                     ],
                     additionalOptions: [

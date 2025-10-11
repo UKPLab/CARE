@@ -126,7 +126,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 export default {
   name: "StepModal",
   components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison },
-  subscribeTable: [{ table: "document_data"}],
+  subscribeTable: ["study_step", "document_data", "configuration"],
   inject: {
     studySessionId: {
       type: Number,
@@ -200,6 +200,9 @@ export default {
     },
     configuration() {
       return this.studyStep?.configuration || null;
+    },
+    fetchConfigJson(){
+      return this.$store.getters["table/configuration/get"](this.studyStep?.configuration?.ConfigurationId);
     },    
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -296,18 +299,19 @@ export default {
     },
     studyData: {
       handler() {
-        const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-        const stepDataArr = this.studyData[realStepId] || [];
-        const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
         const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
 
         const allAvailable = uniqueIds.every(uniqueId => {
           const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
           if (!requestId || !this.nlpResults[requestId]) return false;
-          const resultKeys = Object.keys(this.nlpResults[requestId]);
-          return resultKeys.every(key =>
-            stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
-          );
+          const { skill } = this.requests[requestId] || {};
+          if (this.isNotStudyBased(skill)) {
+            return true;
+          }
+          const raw = this.nlpResults[requestId];
+          const suffix = this.computeSuffixFromResult(skill, raw);
+          const key = this.expectedCompositeKey(uniqueId, skill, suffix);
+          return this.stepDataHasKey(key);
         });
         
         if (this.readOnly && allAvailable) {
@@ -336,48 +340,11 @@ export default {
           const result = this.nlpResults[requestId];
           const { uniqueId, skill } = this.requests[requestId];
           if (result) {
-            if (skill === 'grading_expose') {
-              // Save consolidated grading result at document scope, with required shape
-              const normalized = Array.isArray(result)
-                ? { assessment: result }
-                : (Array.isArray(result?.assessment) ? { assessment: result.assessment } : { assessment: [result] });
-              this.$socket.emit("documentDataSave", {
-                documentId: this.studyStep?.documentId,
-                studySessionId: null,
-                studyStepId: null,
-                key: 'grading_expose_nlpAssessment_data',
-                value: normalized,
-              });
-            } else if (skill === 'generating_feedback') {
-              // Save feedback result at step/session scope for editor and emit event to update editor
-              const sanitizedFeedback = this.sanitizeFeedback(result);
-              this.$socket.emit("documentDataSave", {
-                documentId: this.studyStep?.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                key: 'generating_feedback_data',
-                value: sanitizedFeedback,
-              });
-              // In addition, inform the editor to apply the generated feedback immediately
-              this.eventBus.emit('editorApplyGeneratedFeedback', {
-                documentId: this.studyStep?.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                feedbackText: sanitizedFeedback,
-              });
-            } else {
-              // Default: save per-key at step/session scope
-            Object.keys(result).forEach(key => {
-              const keyName = uniqueId + "_" + key;
-              const value = result[key];
-              this.$socket.emit("documentDataSave", {
-                documentId: this.studyStep?.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                key: keyName,
-                value: value,
-              });
-              });
+          const suffix = this.computeSuffixFromResult(skill, result);
+          this.saveResult(skill, uniqueId, result, suffix);
+
+            if (skill === 'generating_feedback') {
+              this.emitGeneratedFeedback(result);
             }
 
             //clear request immediately after handling results to stop loading
@@ -458,13 +425,7 @@ export default {
       if (hasGeneratingFeedback) {
         const existing = await this.fetchGeneratedFeedback();
         if (existing) {
-          const sanitized = this.sanitizeFeedback(existing);
-          this.eventBus.emit('editorApplyGeneratedFeedback', {
-            documentId: this.studyStep?.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            feedbackText: sanitized,
-          });
+          this.emitGeneratedFeedback(existing);
           this.waiting = false;
           this.$emit('close', { autoClosed: true, existing: true });
           this.$refs.modal.close();
@@ -506,10 +467,78 @@ export default {
     this.stopRotatingStatus();
   },
   methods: {
+    // Opens the modal with provided data; input: data (any); output: void
     open(data) {
       this.data = data;
       this.$refs.modal.open();
     },
+    // Utils: common helpers to avoid duplication
+    // Derives the service name from a uniqueId; input: uniqueId (string|number); output: string
+    computeServiceName(uniqueId) {
+      if (typeof uniqueId === 'string' && uniqueId.startsWith('service_')) {
+        return uniqueId.slice('service_'.length);
+      }
+      return uniqueId;
+    },
+    // Builds a composite key for storing results; inputs: serviceName (string), skill (string), suffix (string); output: string
+    generatingKey(serviceName, skill, suffix = 'data') {
+      return `${serviceName}_${skill}_${suffix}`;
+    },
+    // Checks if a skill's data is not study-based (saved independent of session/step); input: skill (string); output: boolean
+    isNotStudyBased(skill) {
+      return skill === 'grading_expose';
+    },
+    // Computes a suffix name based on the result shape; inputs: skill (string), result (any); output: string
+    computeSuffixFromResult(skill, result) {
+      if (result && typeof result === 'object' && !Array.isArray(result)) {
+        const keys = Object.keys(result);
+        return keys.length > 0 ? keys[0] : 'data';
+      }
+      if (typeof result === 'string') {
+        return 'value';
+      }
+      return 'data';
+    },
+    // Saves NLP result to backend storage; inputs: skill (string), uniqueId (string), result (any), suffixOverride (string|null); output: key (string)
+    saveResult(skill, uniqueId, result, suffixOverride = null) {
+      const serviceName = this.computeServiceName(uniqueId);
+      const suffix = suffixOverride || this.computeSuffixFromResult(skill, result);
+      const key = this.generatingKey(serviceName, skill, suffix);
+      const notStudyBased = this.isNotStudyBased(skill);
+      this.$socket.emit("documentDataSave", {
+        documentId: this.studyStep?.documentId,
+        studySessionId: notStudyBased ? null : this.studySessionId,
+        studyStepId: notStudyBased ? null : this.studyStepId,
+        key,
+        value: result,
+      });
+      return key;
+    },
+    // Emits generated feedback to the editor; input: result (string|object); output: void
+    emitGeneratedFeedback(result) {
+      const feedbackText = (typeof result === 'object' && result !== null)
+        ? (result.textual_feedback || '')
+        : ((typeof result === 'string') ? result : '');
+      this.eventBus.emit('editorApplyGeneratedFeedback', {
+        documentId: this.studyStep?.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+        feedbackText,
+      });
+    },
+    // Returns the expected composite key for a result; inputs: uniqueId (string), skill (string), suffix (string); output: string
+    expectedCompositeKey(uniqueId, skill, suffix = 'data') {
+      const serviceName = this.computeServiceName(uniqueId);
+      return this.generatingKey(serviceName, skill, suffix);
+    },
+    // Checks if the current step data contains a key; input: key (string); output: boolean
+    stepDataHasKey(key) {
+      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+      const stepDataArr = this.studyData[realStepId] || [];
+      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
+      return stepDataList.some(entry => entry && entry.key === key);
+    },
+    // Closes the modal and optionally triggers deferred NLP; input: event (object); output: void
     async closeModal(event) {
       // If user clicks Next and there are deferred NLP services, run them before closing
       const hasDeferred = Array.isArray(this.configuration?.services)
@@ -541,6 +570,7 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
+    // Waits until all pending requests are finished; input: none; output: Promise<boolean>
     async waitForRequestsToComplete() {
       return await new Promise((resolve) => {
         const check = () => {
@@ -553,19 +583,18 @@ export default {
         check();
       });
     },
+    // Checks if a request's results already exist in study data; input: uniqueId (string); output: boolean
     hasResultsInStudyData(uniqueId) {
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepDataArr = this.studyData[realStepId] || [];
-      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
       const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-      const expectedKeys = foundRequestId && this.nlpResults[foundRequestId] ? Object.keys(this.nlpResults[foundRequestId]) : [];
-      if (expectedKeys.length > 0) {
-        return expectedKeys.every(key =>
-          stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
-        );
-      }
-      return false;
+      if (!foundRequestId) return false;
+      const { skill } = this.requests[foundRequestId] || {};
+      if (this.isNotStudyBased(skill)) return false;
+      const raw = this.nlpResults[foundRequestId];
+      const suffix = this.computeSuffixFromResult(skill, raw);
+      const key = this.expectedCompositeKey(uniqueId, skill, suffix);
+      return this.stepDataHasKey(key);
     },
+    // Sends an NLP request or reuses existing results; inputs: skill (string), input (object), uniqueId (string), requestId (string); output: void
     async sendRequest(skill, input, uniqueId, requestId) {
       // 1) Try to reuse existing results and avoid resending
       // grading_expose: use preprocessed data saved with null session/step
@@ -588,14 +617,7 @@ export default {
         // generating_feedback: if we already have feedback saved for this session/step, don't resend
         const existing = await this.fetchGeneratedFeedback();
         if (existing) {
-          const sanitized = this.sanitizeFeedback(existing);
-          // Emit to editor so content is shown without resending NLP
-          this.eventBus.emit('editorApplyGeneratedFeedback', {
-            documentId: this.studyStep?.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            feedbackText: sanitized,
-          });
+          this.emitGeneratedFeedback(existing);
           if (this.requests && this.requests[requestId]) {
             delete this.requests[requestId];
           }
@@ -676,12 +698,13 @@ export default {
     },
 
 
+    // Gets preprocessed grading results for the current document; input: none; output: object|null
     async getPreprocessedResult() {
       // Only fetch preprocessed data for the CURRENT document to avoid cross-document leakage
       const currentDocumentId = this.studyStep?.documentId;
       if (!currentDocumentId) return null;
 
-      const key = "grading_expose_nlpAssessment_data";
+      const key = 'nlpAssessment_grading_expose_assessment';
 
       return await new Promise(resolve => {
         this.$socket.emit("documentDataGet", {
@@ -690,21 +713,24 @@ export default {
           studyStepId: null,
           key
         }, (response) => {
-          resolve(this.normalizeDocumentDataGet(response, { unwrapData: true }));
+          resolve(this.normalizeDocumentDataGet(response, { unwrapData: false }));
         });
       });
     },
 
+    // Fetches previously generated feedback for this step/session; input: none; output: string|object|null
     async fetchGeneratedFeedback() {
       const currentDocumentId = this.studyStep?.documentId;
       if (!currentDocumentId) return null;
+
+      const key = 'textualFeedback_generating_feedback_textual_feedback';
 
       return await new Promise(resolve => {
         this.$socket.emit("documentDataGet", {
           documentId: currentDocumentId,
           studySessionId: this.studySessionId,
           studyStepId: this.studyStepId,
-          key: 'generating_feedback_data'
+          key
         }, (response) => {
           resolve(this.normalizeDocumentDataGet(response));
         });
@@ -713,6 +739,7 @@ export default {
 
     // intentionally no saving of preprocessed data here
     // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
+    // Queues an NLP request with resolved inputs; inputs: skill (string), inputs (object), uniqueId (string); output: void
     async request(skill, inputs, uniqueId) {
       const requestId = uuid();
       this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
@@ -738,17 +765,16 @@ export default {
       this.requests[requestId].input = input;
       await this.sendRequest(skill, input, uniqueId, requestId);
     },
+    // Builds payload for grading_expose; input: input (object); output: object
     async buildGradingExposePayload(input) {
       const result = { submission: {}, assessment_config: {} };
-      // Resolve config (accepts id, numeric string, object with id, or full object)
-      const cfgRaw = input?.assessment_config ?? input?.feedback_grading_criteria ?? input?.config;
-      const resolvedCfg = await this.resolveConfig(cfgRaw);
-      if (resolvedCfg) result.assessment_config = resolvedCfg;
+      result.assessment_config = this.fetchConfigJson;
 
       // Resolve submission into { pdf, zip }
       result.submission = await this.resolveSubmission(input?.submission);
       return result;
     },
+    // Builds payload for generating_feedback; input: input (object); output: object
     async buildGeneratingFeedbackPayload(input) {
       const result = { submission: {}, grading_results: [], feedback_grading_criteria: {} };
       // Resolve config (accepts id, numeric string, object with id, or full object)
@@ -775,32 +801,8 @@ export default {
       }
       return result;
     },
-    async resolveConfig(cfgRaw) {
-      if (cfgRaw == null) return null;
-      if (typeof cfgRaw === 'number' || (typeof cfgRaw === 'string' && /^\d+$/.test(cfgRaw))) {
-        const cfgId = typeof cfgRaw === 'number' ? cfgRaw : parseInt(cfgRaw, 10);
-        const cfgJson = await this.fetchConfigJson(cfgId);
-        return cfgJson || null;
-      }
-      // Support token format like 'config_123'
-      if (typeof cfgRaw === 'string' && cfgRaw.startsWith('config_')) {
-        const cfgId = this.extractIdByPrefix(cfgRaw, 'config_');
-        if (cfgId) {
-          const cfgJson = await this.fetchConfigJson(cfgId);
-          return cfgJson || null;
-        }
-      }
-      // If an object with id is provided, resolve the JSON via that id; otherwise passthrough
-      if (typeof cfgRaw === 'object') {
-        if ('id' in cfgRaw && (typeof cfgRaw.id === 'number' || (typeof cfgRaw.id === 'string' && /^\d+$/.test(cfgRaw.id)))) {
-          const cfgId = typeof cfgRaw.id === 'number' ? cfgRaw.id : parseInt(cfgRaw.id, 10);
-          const cfgJson = await this.fetchConfigJson(cfgId);
-          return cfgJson || null;
-        }
-        return cfgRaw;
-      }
-      return null;
-    },
+    // Resolves assessment configuration to JSON; input: cfgRaw (number|string|object); output: object|null
+    // Resolves a submission reference into base64 files; input: sub (number|string|object); output: { pdf?: string, zip?: string }
     async resolveSubmission(sub) {
       if (sub && typeof sub === 'object' && (sub.pdf || sub.zip)) {
         return { pdf: sub.pdf || null, zip: sub.zip || null };
@@ -825,6 +827,7 @@ export default {
       }
       return {};
     },
+    // Fetches grading results from the previous step; input: none; output: object|array|null
     async fetchGradingResults() {
       // Find the previous step (step 1 for assessment)
       const currentStepIndex = this.studySteps.findIndex(step => step.id === this.studyStepId);
@@ -839,11 +842,12 @@ export default {
         documentId: previousStep.documentId,
         studySessionId: this.studySessionId,
         studyStepId: previousStep.id,
-        key: 'grading_expose_nlpAssessment_data'
+        key: 'nlpAssessment_grading_expose_assessment'
       };
 
       // Fetch grading results from previous step with session ID
       return await new Promise(resolve => {
+        if (!params.key) { resolve(null); return; }
         this.$socket.emit("documentDataGet", params, (response) => {
           if (response && response.success && response.data && response.data.value) {
             resolve(response.data.value);
@@ -855,6 +859,7 @@ export default {
         });
       });
     },
+    // Extracts a numeric id from a prefixed token; inputs: value (string), prefix (string); output: number|null
     extractIdByPrefix(value, prefix) {
       if (typeof value !== 'string') return null;
       if (!value.startsWith(prefix)) return null;
@@ -862,6 +867,7 @@ export default {
       const id = parseInt(idStr, 10);
       return Number.isFinite(id) ? id : null;
     },
+    // Collects PDF and ZIP files for a submission by documentId; input: documentId (number); output: { pdf: string|null, zip: string|null }
     async collectSubmissionFilesByDocument(documentId) {
       // Find the selected document and its submissionId
       const doc = this.$store.getters["table/document/get"] && this.$store.getters["table/document/get"](documentId);
@@ -879,12 +885,7 @@ export default {
 
       return { pdf, zip };
     },
-    sanitizeFeedback(input) {
-      const raw = typeof input === 'string'
-        ? input
-        : (input?.textual_feedback || input?.feedback || input?.text || (typeof input?.data === 'string' ? input.data : ''));
-      return (raw || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-    },
+    // Normalizes the response from documentDataGet; inputs: response (object), options { unwrapData?: boolean }; output: any|null
     normalizeDocumentDataGet(response, { unwrapData = false } = {}) {
       if (!response) return null;
       let val = null;
@@ -898,6 +899,7 @@ export default {
       }
       return val ?? null;
     },
+    // Fetches a document's binary and returns base64; input: documentId (number); output: string|null
     async fetchBinaryAsBase64(documentId) {
       const buffer = await new Promise((resolve) => {
         this.$socket.emit("documentGet", { documentId }, (response) => {
@@ -925,34 +927,7 @@ export default {
       if (!buffer) return null;
       return this.arrayBufferToBase64(buffer);
     },
-    async fetchConfigJson(documentId) {
-      return await new Promise((resolve) => {
-        this.$socket.emit("documentGet", { documentId }, (response) => {
-          if (response && response.success && response.data && response.data.file) {
-            try {
-              let text;
-              if (response.data.file instanceof ArrayBuffer) {
-                const uint8 = new Uint8Array(response.data.file);
-                text = new TextDecoder().decode(uint8);
-              } else if (typeof response.data.file === 'string') {
-                text = response.data.file;
-              } else if (response.data.file && response.data.file.data && Array.isArray(response.data.file.data)) {
-                const uint8 = Uint8Array.from(response.data.file.data);
-                text = new TextDecoder().decode(uint8);
-              }
-              const json = text ? JSON.parse(text) : null;
-              resolve(json);
-            } catch (e) {
-              
-              resolve(null);
-            }
-          } else {
-            // File not found or error - return null
-            resolve(null);
-          }
-        });
-      });
-    },
+    // Converts an ArrayBuffer to a base64 string; input: buffer (ArrayBuffer); output: string
     arrayBufferToBase64(buffer) {
       let binary = '';
       const bytes = new Uint8Array(buffer);
@@ -963,6 +938,7 @@ export default {
       return btoa(binary);
     },
     
+    // Retries any timed-out NLP requests; input: none; output: Promise<void>
     async retryNlpRequests() {
       this.timeoutError = false;
       
@@ -981,12 +957,14 @@ export default {
         }
       }
     },    
+    // Exports all study data to a JSON file for admins; input: none; output: void
     async exportStudyData() {
       if (this.isAdmin){
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
         downloadObjectsAs(this.studyData, filename, 'json');
       }
     },
+    // Starts rotating user-facing status messages and timers; input: none; output: void
     startRotatingStatus() {
       this.stopRotatingStatus();
       this.rotatingStartTs = Date.now();
@@ -1009,6 +987,7 @@ export default {
         this.stopRotatingStatus(false);
       }, 120000);
     },
+    // Stops rotating status messages and clears timers; input: clearText (boolean); output: void
     stopRotatingStatus(clearText = true) {
       if (this.rotatingTimer) {
         clearInterval(this.rotatingTimer);
