@@ -88,7 +88,7 @@
         @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     >
       <template #additionalSidebars>
-        <SidebarTemplate v-if="true" icon="list-check" title="Assessment">
+        <SidebarTemplate v-if="isAssessment" icon="list-check" title="Assessment">
           <template #content>
             <Assessment
 
@@ -117,7 +117,7 @@
         @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     >
       <template #additionalSidebars>
-        <SidebarTemplate icon="list-check" title="Assessment">
+        <SidebarTemplate v-if="isAssessment" icon="list-check" title="Assessment">
           <template #content>
             <Assessment
                 v-if="false"
@@ -199,6 +199,9 @@ export default {
     currentStepHasNlpRequests() {
       const services = this.currentStep && this.currentStep.configuration && this.currentStep.configuration.services;
       return Array.isArray(services) && services.some(s => s && s.type === 'nlpRequest');
+    },
+    isAssessment() {
+      return !!this.currentStep.configuration.configurationId
     },
     studySession() {
       if (this.studySessionId !== 0) {

@@ -73,7 +73,7 @@ import Quill from "quill";
 export default {
   name: "ConfigurationModal",
   components: { StepperModal, StepTemplates },
-  subscribeTable: ["document", "submission"],
+  subscribeTable: ["document", "submission", "configuration"],
   props: {
     modelValue: {
       type: Object,
@@ -118,6 +118,7 @@ export default {
       isUpdateMode: false,
       inputMappings: [],
       formData: {},
+      generalFormData: {},
     };
   },
   computed: {
@@ -478,30 +479,30 @@ export default {
       return base;
     },
     getSubmissionOptions() {
-      // Prefer ZIP files (type 4) from the submission associated with the selected document (Step 1)
-      const selectedDoc = (this.$store.getters["table/document/get"]) ? this.$store.getters["table/document/get"](this.documentId) : null;
-      let submissionId = selectedDoc && selectedDoc.submissionId ? selectedDoc.submissionId : null;
-
-
-      if (submissionId) {
-        const docsBySubmission = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('submissionId', submissionId)) || [];
-        const zipDocs = docsBySubmission.filter((d) => d && d.type === 4 && !d.hideInFrontend);
-        return zipDocs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
-      }
-
+      // Get all ZIP files (type 4) that are not hidden and have valid submissions
       const submissions = (this.$store.getters["table/submission/getAll"]) || [];
       const submissionIds = submissions.map((s) => s.id);
       const documents = (this.$store.getters["table/document/getAll"]) || [];
+      
       const docs = documents
-        .filter((d) => d && ( d.type === 4) && !d.hideInFrontend)
-        .filter((d) => submissionIds.includes(d.submissionId));
+        .filter((d) => d && d.type === 4 && !d.hideInFrontend && submissionIds.includes(d.submissionId));
+      
       return docs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
     },
     getConfigOptions() {
-      const configs = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('type', 3)) || [];
+      const configs = (this.$store.getters["table/configuration/getAll"]) || [];
       return configs
-        .filter((d) => d && !d.hideInFrontend)
-        .map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
+        .filter((c) => c && c.type === 0 && c.deleted !== true)
+        .map((c) => ({ value: `${c.id}`, name: c.name || (c.content && c.content.name) || `Configuration ${c.id}`, stepId: 0 }));
+    },
+    getSettingsForStep() {
+      const fields = Array.isArray(this.normalizedFields) ? this.normalizedFields : [];
+      return fields.map((field) => ({
+        name: field.key || field.name || "",
+        type: field.type || "text",
+        default: field.default,
+        options: field.options || [],
+      }));
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
