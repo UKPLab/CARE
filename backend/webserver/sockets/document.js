@@ -1021,33 +1021,6 @@ class DocumentSocket extends Socket {
 
 
     
-    /**
-     * Retrieve document data for a particular document/study_session/study_step from the document_data table.
-     *
-     * @param {Object} data The data payload containing the retrieval parameters.
-     * @param {number} data.documentId The ID of the associated document.
-     * @param {number} data.studySessionId The ID of the associated study session.
-     * @param {number} data.studyStepId The ID of the associated study step.
-     * @param {string} data.key The key for the data being retrieved (e.g., 'assessment_results').
-     * @param {Object} options Additional configuration for the operation.
-     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
-     * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
-     */
-    async getDocumentData(data, options) {
-        const documentData = await this.models['document_data'].findOne({
-            where: {
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                key: data.key,
-                deleted: false
-            },
-            order: [['updatedAt', 'DESC']],
-            transaction: options?.transaction
-        });
-
-        return documentData;
-    }
 
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
@@ -1139,7 +1112,6 @@ class DocumentSocket extends Socket {
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
-        this.createSocket("documentDataGet", this.getDocumentData, {}, false);
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
