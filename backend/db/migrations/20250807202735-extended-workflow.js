@@ -12,7 +12,7 @@ const workflows = [
         configuration: {
           fields: [
             {
-              key: "ConfigurationId",
+              key: "configurationId",
               label: "Configuration File:",
               type: "select",
               required: true,
@@ -57,7 +57,7 @@ const workflows = [
         configuration: {
           fields: [
             {
-              key: "ConfigurationId",
+              key: "configurationId",
               label: "Configuration File:",
               type: "select",
               required: true,
