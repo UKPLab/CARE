@@ -94,7 +94,7 @@ const workflows = [
       { 
         stepType: 2, 
         allowBackward: true, 
-        workflowStepDocument: null,
+        workflowStepDocument: 1,
         configuration: {
           services: [
             {
