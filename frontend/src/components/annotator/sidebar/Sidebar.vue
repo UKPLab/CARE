@@ -29,9 +29,6 @@
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
   <ul v-if="showAnnotations" id="anno-list" class="list-group">
-    <li v-if="documentComments.length === 0">
-      <p class="text-center">No elements</p>
-    </li>
     <li
       v-for="comment in documentComments"
       :id="'comment-' + comment.id"

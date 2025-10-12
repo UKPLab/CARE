@@ -39,7 +39,10 @@
               </template>
             </SidebarTemplate>
           </template>
-          <slot name="additionalSidebars"/>
+          <!-- Pass through all additional slots directly to BasicSidebar -->
+          <template v-for="(slot, slotName) in $slots" :key="slotName" #[slotName]>
+            <slot v-if="slotName !== 'default'" :name="slotName"/>
+          </template>
         </BasicSidebar>
       </div>
     </div>
@@ -58,20 +61,7 @@
           />
         </TopBarButton>
       </li>
-      <ExpandMenu v-show="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
     </Teleport>
-
-    <!-- If download before study closing disabled and we are in a study session, no download allowed -->
-    <Teleport to="#topBarExtendMenuItems">
-      <li><a
-          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
-          class="dropdown-item"
-          href="#"
-          @click="downloadAnnotations"
-      >Download
-        Annotations</a></li>
-    </Teleport>
-
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
         <TopBarButton
@@ -135,7 +125,7 @@ import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
+  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
     SidebarTemplate, SidebarHistory,
     LoadIcon,

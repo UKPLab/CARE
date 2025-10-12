@@ -27,7 +27,10 @@
             </template>
           </SidebarTemplate>
         </template>
-        <slot name="additionalSidebars"/>
+        <!-- Pass through all additional slots directly to BasicSidebar -->
+        <template v-for="(slot, slotName) in $slots" :key="slotName" #[slotName]>
+          <slot v-if="slotName !== 'default'" :name="slotName"/>
+        </template>
       </BasicSidebar>
     </div>
   </div>

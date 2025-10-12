@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <h4 class="mb-0">Assessment Results</h4>
-        <span v-if="readonly" class="badge bg-secondary">Read Only</span>
+        <span v-if="readOnly" class="badge bg-secondary">Read Only</span>
       </div>
     </div>
 
@@ -42,15 +42,15 @@
                   v-if="group.description" 
                   class="info-icon me-2"
                   style="cursor: help;"
-                  @click.stop="toggleInfoPanelPin(group, null)"
-                  @mouseenter="openInfoPanel(group, null)"
+                  @click.stop="toggleInfoPanelPin(group, null, $event)"
+                  @mouseenter="openInfoPanel(group, null, $event)"
                   @mouseleave="closeInfoPanel"
                 >
                   <LoadIcon icon-name="info-circle" :size="14" />
                 </span>
                 <span
                   class="badge"
-                  :class="(readonly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
+                  :class="(readOnly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
                 >
                   {{ group.score }} P
                 </span>
@@ -87,15 +87,15 @@
                         v-if="criterion.description || criterion.scoring" 
                         class="info-icon me-2"
                         style="cursor: help;"
-                        @click.stop="toggleInfoPanelPin(null, criterion)"
-                        @mouseenter="openInfoPanel(null, criterion)"
+                        @click.stop="toggleInfoPanelPin(null, criterion, $event)"
+                        @mouseenter="openInfoPanel(null, criterion, $event)"
                         @mouseleave="closeInfoPanel"
                       >
                         <LoadIcon icon-name="info-circle" :size="14" />
                       </span>
                       <span
                         class="badge"
-                        :class="(readonly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
+                        :class="(readOnly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
                         :title="`isSaved: ${criterion.isSaved}`"
                       >
                         {{ criterion.currentScore || 0 }} P
@@ -120,7 +120,7 @@
                             class="form-control assessment-textarea"
                             placeholder="Edit the justification..."
                             :rows="getTextareaRows(criterion.editedAssessment)"
-                            :disabled="readonly"
+                            :disabled="readOnly"
                             @input="adjustTextareaRows"
                           ></textarea>
                         </div>
@@ -132,7 +132,7 @@
                       <div v-if="!criterion.isEditing" class="d-flex justify-content-between align-items-center">
                         <div>
                           <button
-                            v-if="!readonly"
+                            v-if="!readOnly"
                             class="btn btn-outline-primary btn-sm"
                             title="Edit"
                             @click="startEdit(groupIndex, criterionIndex)"
@@ -141,7 +141,7 @@
                           </button>
                         </div>
 
-                        <div v-if="!readonly" class="d-flex align-items-center gap-2">
+                        <div v-if="!readOnly" class="d-flex align-items-center gap-2">
                           <select
                             v-model="criterion.currentScore"
                             class="form-select form-select-sm score-dropdown"
@@ -168,7 +168,7 @@
                       </div>
                       <div v-else class="d-flex gap-2">
                         <button
-                          v-if="!readonly"
+                          v-if="!readOnly"
                           class="btn btn-primary btn-sm"
                           title="Save"
                           @click="saveEdit(groupIndex, criterionIndex)"
@@ -176,7 +176,7 @@
                           <LoadIcon icon-name="floppy" :size="14" />
                         </button>
                         <button
-                          v-if="!readonly"
+                          v-if="!readOnly"
                           class="btn btn-secondary btn-sm"
                           title="Cancel"
                           @click="cancelEdit(groupIndex, criterionIndex)"
@@ -278,26 +278,25 @@ export default {
     return {
       // Assessment data
       error: null,
+      assessmentOutput: null,
       expandedGroups: {},
       expandedCriteria: {},
       
       // Info panel
       showInfoPanel: false,
       selectedCriterion: null,
+      selectedElement: null,
     };
   },
   
   computed: {
-    currentWorkflowStep() {
-      return this.$store.getters["table/workflow_step/get"](this.currentStudyStep.workflowStepId);
-    },
     isManualAssessmentWorkflow() {
       const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
       const hasNoServices = !this.currentStudyStep.configuration.services;
       return hasConfigFile && hasNoServices;
     },
     configuration(){
-      return this.$store.getters['table/configuration/get'](this.currentWorkflowStep?.configurationId);
+      return this.$store.getters['table/configuration/get'](this.currentStudyStep?.configuration.ConfigurationId);
     },
     isAIAssessmentWorkflow() {
       const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
@@ -311,11 +310,16 @@ export default {
       }
       return this.currentStudyStep?.configuration.forcedAssessment;
     },
-    assessmentOutput() {
-      return this.transformRubricsToCriteriaGroups(this.configuration);
-    },  
   },
   watch: {
+    configuration: {
+      handler(newConfig) {
+        if (newConfig && newConfig.content) {
+          this.initializeAssessmentOutput();
+        }
+      },
+      immediate: true
+    },
     show(newVal) {
       if (newVal && Object.keys(this.savedState).length > 0) {
         this.restoreState();
@@ -336,18 +340,21 @@ export default {
   },
   
   mounted() {
-    // Load assessment data when component mounts
-    if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
-      this.loadAssessment();
-    } else if (Object.keys(this.savedState).length > 0) {
+    this.initializeAssessmentOutput();
+    if (Object.keys(this.savedState).length > 0) {
       this.restoreState();
     }
   },
   
   methods: {
-
+    initializeAssessmentOutput() {
+      if (this.configuration && this.configuration.content) {
+        this.assessmentOutput = this.transformRubricsToCriteriaGroups(this.configuration.content);
+      }
+    },
     
     transformRubricsToCriteriaGroups(configData) {
+      console.log("Transforming rubrics from configuration:", configData);  
       if (!configData.rubrics) {
         this.error = "Invalid assessment configuration: No rubrics found";
         return null;
@@ -686,7 +693,7 @@ export default {
 
     // Save assessment data to document_data table
     async saveAssessmentData(groupIndex = null, criterionIndex = null) {
-      if (this.readonly) return;
+      if (this.readOnly) return;
       if (!this.isManualAssessmentWorkflow && !this.isAIAssessmentWorkflow) {
         return;
       }
@@ -798,7 +805,7 @@ export default {
       // Ensure current state reflects saved flags
       // Saving is already user-driven; just validate completeness
       // In read-only, don't block
-      if (this.readonly) return true;
+      if (this.readOnly) return true;
       return this.areAllCriteriaSaved();
     },
 
@@ -810,10 +817,12 @@ export default {
     // Info panel methods
     openInfoPanel(group, criterion, event) {
       const target = criterion || group;
+      console.log("Opening info panel for:", target);
       if (!target) return;
       
       this.selectedCriterion = target;
       this.selectedElement = event?.currentTarget || event?.target;
+      console.log("Reference element:", this.selectedElement);  
       this.showInfoPanel = true;
     },
 

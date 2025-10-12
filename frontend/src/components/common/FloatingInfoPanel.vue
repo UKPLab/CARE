@@ -72,6 +72,7 @@ export default {
     },
     referenceElement: {
       type: [Object, String],
+      required: true,
       default: null
     },
     pinnable: {
@@ -165,8 +166,6 @@ export default {
       if (!this.referenceElement) return;
       
       let refRect;
-      
-      // Handle different types of reference elements
       if (typeof this.referenceElement === 'string') {
         const element = document.querySelector(this.referenceElement);
         if (!element) return;
