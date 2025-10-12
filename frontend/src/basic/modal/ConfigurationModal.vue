@@ -26,7 +26,9 @@
           v-if="step.type === 'general'"
           v-model="formData"
           type="general"
-          :fields="normalizedFields"
+          :fields="(workflowSteps.find(s => s.id === studyStepId)?.configuration?.fields) || []"
+          :general-settings="generalSettings"
+          v-model:general-form-data="generalFormData"
         />
         <StepTemplates
           v-else-if="step.type === 'services'"
@@ -122,56 +124,25 @@ export default {
     };
   },
   computed: {
-    fieldsDefinition() {
-      // Prefer fields from workflowSteps by studyStepId; fallback to stepConfig.fields
-      const current = this.workflowSteps && this.workflowSteps.find((s) => s.id === this.studyStepId);
-      if (current && current.configuration) {
-        const cfg = typeof current.configuration === 'string' ? this.safeParseJSON(current.configuration) : current.configuration;
-        if (cfg && Array.isArray(cfg.fields)) return cfg.fields;
-      }
-      const localCfg = typeof this.stepConfig === 'string' ? this.safeParseJSON(this.stepConfig) : this.stepConfig;
-      return Array.isArray(localCfg?.fields) ? localCfg.fields : [];
-    },
-    normalizedFields() {
-      const withNormalizedFilters = (this.fieldsDefinition || []).map((field) => {
-        if (!field) return field;
-        if (field.type === 'select' && field.options && field.options.filter && !Array.isArray(field.options.filter)) {
-          return {
-            ...field,
-            options: {
-              ...field.options,
-              filter: Object.entries(field.options.filter).map(([key, value]) => ({ key, value }))
-            }
-          };
-        }
-        return field;
-      });
-      return withNormalizedFilters;
-    },
     hasConfigFields() {
-      return this.normalizedFields && this.normalizedFields.length > 0;
+      const fields = this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.fields || [];
+      return fields.length > 0;
+    },
+    hasSettings() {
+      return Array.isArray(this.generalSettings) && this.generalSettings.length > 0;
     },
     hasConfigServices() {
       return !!(this.stepConfig && Array.isArray(this.stepConfig.services) && this.stepConfig.services.length);
     },
-    placeholdersEnabled() {
-      const current = this.workflowSteps && this.workflowSteps.find((s) => s.id === this.studyStepId);
-      let cfg = null;
-      if (current && current.configuration) {
-        cfg = typeof current.configuration === 'string' ? this.safeParseJSON(current.configuration) : current.configuration;
-      }
-      if (!cfg && this.stepConfig) {
-        cfg = typeof this.stepConfig === 'string' ? this.safeParseJSON(this.stepConfig) : this.stepConfig;
-      }
-      if (cfg && (cfg.disablePlaceholders === true || cfg.placeholders === false)) return false;
-      return true;
-    },
     hasPlaceholdersStep() {
-      return this.hasConfigServices && this.placeholdersEnabled;
+      const cfgRaw = this.workflowSteps && this.workflowSteps.find((s) => s.id === this.studyStepId)?.configuration;
+      const cfg = typeof cfgRaw === 'string' ? this.safeParseJSON(cfgRaw) : cfgRaw;
+      const enabled = !(cfg && (cfg.disablePlaceholders === true || cfg.placeholders === false));
+      return this.hasConfigServices && enabled;
     },
     modalSteps() {
       const steps = [];
-      if (this.hasConfigFields) steps.push({ title: "General Settings", type: "general" });
+      if (this.hasConfigFields || this.hasSettings) steps.push({ title: "General Settings", type: "general" });
       if (this.hasConfigServices) {
         steps.push({ title: "Services", type: "services" });
         if (this.hasPlaceholdersStep) {
@@ -192,23 +163,21 @@ export default {
         }
         return !!data.dataInput;
       });
-      // Validate required fields in General step
-      const generalValid = (this.normalizedFields || []).every((field) => {
-        if (!field || field.required !== true) return true;
-        const value = this.formData ? this.formData[field.key] : undefined;
-        if (value === undefined || value === null) return false;
-        if (typeof value === 'string') return value.trim().length > 0;
-        if (typeof value === 'number') return value > 0 || value === 0; // allow 0 for valid switches encoded as 0/1
-        if (Array.isArray(value)) return value.length > 0;
-        if (typeof value === 'object') {
-          // Handle quill delta or option object
-          if (value && value.ops && Array.isArray(value.ops)) {
-            return value.ops.some(op => typeof op.insert === 'string' && op.insert.trim() !== '');
-          }
-          return Object.keys(value).length > 0;
-        }
-        return !!value;
-      });
+      const generalValid = (
+        (!this.hasConfigFields || ((((this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.fields) || [])).every((field) => {
+          if (!field || field.required !== true) return true;
+          const value = this.formData ? this.formData[field.key] : undefined;
+          return value !== undefined && value !== null;
+        })))
+      ) && (
+        (!this.hasSettings || ((this.generalSettings || []).every((setting) => {
+          if (!setting || setting.required !== true) return true;
+          const value = this.generalFormData ? this.generalFormData[setting.name] : undefined;
+          if (value === undefined || value === null) return false;
+          if (setting.type === 'text') return typeof value === 'string' && value.trim().length > 0;
+          return true;
+        })))
+      );
       return this.modalSteps.map((s) => {
         if (s.type === 'general') return generalValid;
         if (s.type === 'services') return servicesValid;
@@ -503,13 +472,8 @@ export default {
         .map((c) => ({ value: `${c.id}`, name: c.name || (c.content && c.content.name) || `Configuration ${c.id}`, stepId: 0 }));
     },
     getSettingsForStep() {
-      const fields = Array.isArray(this.normalizedFields) ? this.normalizedFields : [];
-      return fields.map((field) => ({
-        name: field.key || field.name || "",
-        type: field.type || "text",
-        default: field.default,
-        options: field.options || [],
-      }));
+      const cfg = this.workflowSteps.find((s) => s && s.id === this.studyStepId)?.configuration;
+      return Array.isArray(cfg?.settings) ? cfg.settings : [];
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.

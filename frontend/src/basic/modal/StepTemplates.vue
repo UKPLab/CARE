@@ -1,11 +1,53 @@
 <template>
   <div>
     <template v-if="type === 'general'">
-      <div class="config-fields">
+      <div v-if="fields && fields.length" class="config-fields">
         <BasicForm
           v-model="formDataProxy"
           :fields="fields"
         />
+      </div>
+      <div v-if="generalSettings && generalSettings.length" class="general-settings mt-3">
+        <div
+          v-for="(setting, index) in generalSettings"
+          :key="index"
+          class="setting-item mb-3"
+        >
+          <label class="form-label">{{ setting.label || setting.name }}</label>
+          <FormSelect
+            v-if="setting.type === 'select'"
+            v-model="generalFormDataProxy[setting.name]"
+            :options="{ options: setting.options }"
+          />
+          <input
+            v-else-if="setting.type === 'text'"
+            v-model="generalFormDataProxy[setting.name]"
+            type="text"
+            class="form-control"
+            :placeholder="setting.label || setting.name"
+          />
+          <input
+            v-else-if="setting.type === 'number'"
+            v-model="generalFormDataProxy[setting.name]"
+            type="number"
+            class="form-control"
+            :placeholder="setting.label || setting.name"
+          />
+          <div v-else-if="setting.type === 'checkbox'" class="form-check">
+            <input
+              v-model="generalFormDataProxy[setting.name]"
+              type="checkbox"
+              class="form-check-input"
+              :id="'setting-' + setting.name"
+            />
+            <label class="form-check-label" :for="'setting-' + setting.name">
+              {{ setting.label || setting.name }}
+            </label>
+          </div>
+          <small v-if="setting.help" class="form-text text-muted">
+            {{ setting.help }}
+          </small>
+        </div>
       </div>
     </template>
     <template v-else-if="type === 'services'">
@@ -132,6 +174,8 @@ export default {
     // General
     modelValue: { type: Object, default: null },
     fields: { type: Array, default: () => [] },
+    generalSettings: { type: Array, default: () => [] },
+    generalFormData: { type: Object, default: () => ({}) },
     // Services
     stepConfig: { type: [Object, String], default: null },
     selectedSkills: { type: Array, default: () => [] },
@@ -149,6 +193,7 @@ export default {
   },
   emits: [
     "update:modelValue",
+    "update:generalFormData",
     "update:selectedSkills",
     "update:inputMappings",
     "update:placeholderFormData",
@@ -171,6 +216,14 @@ export default {
       },
       set(v) {
         this.$emit("update:modelValue", v);
+      },
+    },
+    generalFormDataProxy: {
+      get() {
+        return this.generalFormData;
+      },
+      set(v) {
+        this.$emit("update:generalFormData", v);
       },
     },
     selectedSkillsProxy: {
