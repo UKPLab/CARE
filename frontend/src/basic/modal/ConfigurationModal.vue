@@ -479,15 +479,22 @@ export default {
       return base;
     },
     getSubmissionOptions() {
-      // Get all ZIP files (type 4) that are not hidden and have valid submissions
-      const submissions = (this.$store.getters["table/submission/getAll"]) || [];
-      const submissionIds = submissions.map((s) => s.id);
+      // Prefer the submission belonging to the currently selected document (if any)
       const documents = (this.$store.getters["table/document/getAll"]) || [];
-      
-      const docs = documents
-        .filter((d) => d && d.type === 4 && !d.hideInFrontend && submissionIds.includes(d.submissionId));
-      
-      return docs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
+      const submissions = (this.$store.getters["table/submission/getAll"]) || [];
+
+      const submissionIds = submissions.map((s) => s.id);
+
+      let filteredDocs = documents.filter((d) => d && d.type === 4 && !d.hideInFrontend && submissionIds.includes(d.submissionId));
+
+      if (this.documentId) {
+        const selectedDoc = documents.find((d) => d && Number(d.id) === Number(this.documentId));
+        if (selectedDoc && selectedDoc.submissionId) {
+          filteredDocs = filteredDocs.filter((d) => d.submissionId === selectedDoc.submissionId);
+        }
+      }
+
+      return filteredDocs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
     },
     getConfigOptions() {
       const configs = (this.$store.getters["table/configuration/getAll"]) || [];
