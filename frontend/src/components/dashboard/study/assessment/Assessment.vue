@@ -296,7 +296,7 @@ export default {
       return hasConfigFile && hasNoServices;
     },
     configuration(){
-      return this.$store.getters['table/configuration/get'](this.currentStudyStep?.configuration.ConfigurationId);
+      return this.$store.getters['table/configuration/get'](this.currentStudyStep?.configuration.configurationId);
     },
     isAIAssessmentWorkflow() {
       const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
