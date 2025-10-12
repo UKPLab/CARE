@@ -216,7 +216,10 @@ export default {
             const vnodes = slot();
             const firstVNode = vnodes[0];
             if (firstVNode) {
-              const props = firstVNode.props || {};
+              let props = firstVNode.props || {};
+              if(slotName === "additionalSidebars" || !props.title) {
+                props = vnodes[0].children[0].props || {};
+              }
               configs.tabs[slotName] = {
                 title: props.title,
                 icon: props.icon,
@@ -461,7 +464,8 @@ export default {
   overflow-y: hidden;
 }
 .sidebar-content {
- overflow-y: scroll;
+  height: 100%;
+  overflow-y: scroll;
 }
 
 #sidepane {
