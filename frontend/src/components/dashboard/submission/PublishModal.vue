@@ -49,13 +49,6 @@
           <option value="sessions">based on Sessions (links for own sessions)</option>
         </select>
       </div>
-      <div class="mb-3" v-if="!isSubmissionMode">
-        <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
-        <select v-model="publishMethod" class="form-select" id="publishMethod">
-          <option value="moodle">Moodle</option>
-          <option value="email" disabled>Email</option>
-        </select>
-      </div>
       <div class="mb-3 table-scroll-container">
         <p><b>Links:</b></p>
         <ul v-if="linkCollection === 'studies'">
@@ -82,20 +75,16 @@
       </div>
     </template>
     <template #step-4>
-      <div v-if="isSubmissionMode" class="table-scroll-container">
-        <div class="mb-3">
-          <label for="submissionPublishMethod" class="form-label"><b>Publishing Options:</b></label>
-          <select v-model="publishMethod" class="form-select" id="submissionPublishMethod">
-            <option value="csv">Download CSV</option>
-            <option value="moodle" disabled>Publish Moodle (disabled)</option>
-            <option value="email" disabled>Send via Email (disabled)</option>
-          </select>
-        </div>
-        <div class="small">
-          <p>Choose "Download CSV" to export the generated feedback text for each recipient.</p>
-        </div>
+      <div class="mb-3">
+        <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
+        <select v-model="publishMethod" class="form-select" id="publishMethod">
+          <option v-for="opt in publishMethodOptions" :key="opt.value" :value="opt.value" :disabled="opt.disabled">{{ opt.label }}</option>
+        </select>
       </div>
-      <div v-else-if="publishMethod==='moodle'" class="table-scroll-container">
+      <div class="small" v-if="isSubmissionMode">
+        <p>Choose "Download CSV" to export the generated feedback text for each recipient.</p>
+      </div>
+      <div v-if="publishMethod==='moodle'" class="table-scroll-container">
         <MoodleOptions
           ref="moodleOptionsForm"
           v-model="moodleOptions"
@@ -110,6 +99,7 @@
 import BasicTable from "@/basic/Table.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
  * Modal for publish the review links to Moodle
@@ -170,7 +160,7 @@ export default {
       selectedSessions: [],
       moodleOptions: {},
       text_format: "Reviews:\n~SESSION_LINKS~",
-      publishMethod: this.mode === "submission" ? "csv" : "moodle",
+      publishMethod: "csv",
       linkCollection: "studies",
     };
   },
@@ -407,6 +397,13 @@ export default {
         {name: "Document Title", key: "documentName"},
       ];
     },
+    publishMethodOptions() {
+      return [
+        { value: "csv", label: "Download CSV", disabled: false },
+        { value: "moodle", label: "Moodle", disabled: this.isSubmissionMode },
+        { value: "email", label: "Email", disabled: true },
+      ];
+    },
   },
   methods: {
     getUserRoles(userId) {
@@ -419,7 +416,7 @@ export default {
     open() {
       this.reset();
       // set default publish method per mode
-      this.publishMethod = this.isSubmissionMode ? "csv" : "moodle";
+      this.publishMethod = "csv";
       this.$refs.reviewStepper.open();
     },
     reset() {
@@ -441,12 +438,12 @@ export default {
           text: this.text_format.replace("~SESSION_LINKS~", this.formattedSessions[userId].map((s) => s.link).join("\n")),
         };
       });
-      if (this.isSubmissionMode && this.publishMethod === 'csv') {
+      if (this.publishMethod === 'csv') {
         this.downloadCSV();
         this.$refs.reviewStepper.close();
         this.eventBus.emit("toast", {
-          title: "CSV ready",
-          message: "Feedback exported as CSV.",
+          title: "Publish study session links",
+          message: "CSV successfully generated and exported",
           variant: "success",
         });
         return;
@@ -479,59 +476,37 @@ export default {
       );
     },
     downloadCSV() {
-      const escapeCsv = (value) => {
-        if (value == null) return "";
-        const str = String(value).replace(/"/g, '""');
-        if (str.search(/[",\n]/g) >= 0) {
-          return '"' + str + '"';
-        }
-        return str;
-      };
-      
-      // Create detailed CSV with all requested information
-      const header = [
-        "User ExtId", 
-        "User First Name", 
-        "User Last Name", 
-        "User Name", 
-        "Submission ID", 
-        "Submission ExtId",
-        "User Roles", 
-        "Reviewer First Name", 
-        "Reviewer Last Name", 
-        "Reviewer User Name", 
-        "Reviewer Roles", 
-        "Links", 
-        "Text"
-      ];
-      
-      const csvRows = [];
-      
+      const buildRow = (docObj, user, userRoles, submission, session, reviewer, reviewerRoles) => ({
+        "User ExtId": docObj.extId || '',
+        "User First Name": docObj.firstName || '',
+        "User Last Name": docObj.lastName || '',
+        "User Name": user ? user.userName : '',
+        "Submission ID": docObj.submissionId || '',
+        "Submission ExtId": submission ? submission.extId : '',
+        "User Roles": userRoles,
+        "Reviewer First Name": session.firstName || '',
+        "Reviewer Last Name": session.lastName || '',
+        "Reviewer User Name": reviewer ? reviewer.userName : '',
+        "Reviewer Roles": reviewerRoles,
+        "Links": session.link || '',
+        "Text": this.text_format
+          .replace("~SESSION_LINKS~", session.link)
+          .replace("~USERNAME~", ((docObj.firstName || '') + " " + (docObj.lastName || '')).trim()),
+      });
+
+      const rows = [];
+
       if (this.linkCollection === 'studies') {
         this.formattedStudies.forEach((doc) => {
-          const user = this.users.find(u => u.id === doc.document.userId || u.extId === doc.document.extId);
+          const ownerDoc = doc.document;
+          const user = this.users.find(u => u.id === ownerDoc.userId || u.extId === ownerDoc.extId);
           const userRoles = user ? this.getUserRoles(user.id) : '';
-          const submission = this.submissions.find(s => s.id === doc.document.submissionId);
-          
+          const submission = this.submissions.find(s => s.id === ownerDoc.submissionId);
+
           doc.sessions.forEach((session) => {
             const reviewer = this.users.find(u => u.id === session.userId);
             const reviewerRoles = reviewer ? this.getUserRoles(reviewer.id) : '';
-            
-            csvRows.push([
-              escapeCsv(doc.document.extId || ''),
-              escapeCsv(doc.document.firstName || ''),
-              escapeCsv(doc.document.lastName || ''),
-              escapeCsv(user ? user.userName : ''),
-              escapeCsv(doc.document.submissionId || ''),
-              escapeCsv(submission ? submission.extId : ''),
-              escapeCsv(userRoles),
-              escapeCsv(session.firstName || ''),
-              escapeCsv(session.lastName || ''),
-              escapeCsv(reviewer ? reviewer.userName : ''),
-              escapeCsv(reviewerRoles),
-              escapeCsv(session.link || ''),
-              escapeCsv(this.text_format.replace("~SESSION_LINKS~", session.link).replace("~USERNAME~", doc.document.firstName + " " + doc.document.lastName))
-            ]);
+            rows.push(buildRow(ownerDoc, user, userRoles, submission, session, reviewer, reviewerRoles));
           });
         });
       } else {
@@ -539,43 +514,19 @@ export default {
           const sessions = this.formattedSessions[userId];
           const reviewer = this.users.find(u => u.id === parseInt(userId));
           const reviewerRoles = reviewer ? this.getUserRoles(reviewer.id) : '';
-          
+
           sessions.forEach((session) => {
-            const user = this.users.find(u => u.id === session.document.userId || u.extId === session.document.extId);
+            const ownerDoc = session.document;
+            const user = this.users.find(u => u.id === ownerDoc.userId || u.extId === ownerDoc.extId);
             const userRoles = user ? this.getUserRoles(user.id) : '';
-            const submission = this.submissions.find(s => s.id === session.document.submissionId);
-            
-            csvRows.push([
-              escapeCsv(session.document.extId || ''),
-              escapeCsv(session.document.firstName || ''),
-              escapeCsv(session.document.lastName || ''),
-              escapeCsv(user ? user.userName : ''),
-              escapeCsv(session.document.submissionId || ''),
-              escapeCsv(submission ? submission.extId : ''),
-              escapeCsv(userRoles),
-              escapeCsv(session.firstName || ''),
-              escapeCsv(session.lastName || ''),
-              escapeCsv(reviewer ? reviewer.userName : ''),
-              escapeCsv(reviewerRoles),
-              escapeCsv(session.link || ''),
-              //escapeCsv(this.text_format.replace("~SESSION_LINKS~", session.link))
-            ]);
-          });
+            const submission = this.submissions.find(s => s.id === ownerDoc.submissionId);
+            rows.push(buildRow(ownerDoc, user, userRoles, submission, session, reviewer, reviewerRoles));
+            });
         });
       }
-      
-      const csv = [header.join(",")]
-        .concat(csvRows.map((row) => row.join(",")))
-        .join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `feedback_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+
+      const fileBaseName = `feedback_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}`;
+      downloadObjectsAs(rows, fileBaseName, 'csv');
     }
   },
 };
