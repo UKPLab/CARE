@@ -120,8 +120,14 @@ export default {
         });
 
         // Exclude items based on `disabled` conditions
+        // Override: if a workflow step defines a configuration, it should be selectable
+        // even when it references another step via `workflowStepDocument`.
         const validChoices = filteredChoices.filter((item) => {
           if (choicesConfig.disabled) {
+            // If this step provides its own configuration, keep it visible/selectable
+            if (item && item.configuration && Object.keys(item.configuration || {}).length > 0) {
+              return true;
+            }
             return choicesConfig.disabled.every((rule) => {
               return !(rule.type === "disabledItems" && item[rule.key] !== rule.value);
             });

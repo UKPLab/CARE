@@ -126,7 +126,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 export default {
   name: "StepModal",
   components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison },
-  subscribeTable: ["study_step", "document_data", "configuration"],
+  subscribeTable: ["document", "document_data", "study_step", "configuration"],
   inject: {
     studySessionId: {
       type: Number,
@@ -192,6 +192,16 @@ export default {
   computed: {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);;
+    },
+    fetchConfiguration() {
+      return this.$store.getters["table/configuration/get"](this.studyStep?.configuration?.configFile)?.content;
+    },
+    fetchSubmission() {
+      const doc = this.$store.getters["table/document/get"](this.studyStep?.documentId);
+      const submissionId = doc?.submissionId;
+      return submissionId
+        ? this.$store.getters["table/document/getByKey"]("submissionId", submissionId)
+        : [];
     },
     studySteps() {
       return this.studyStep.studyId !== 0
@@ -713,7 +723,10 @@ export default {
           studyStepId: null,
           key
         }, (response) => {
-          resolve(this.normalizeDocumentDataGet(response, { unwrapData: false }));
+          const val = (response && response.success && response.data && response.data.value)
+            ? response.data.value
+            : response?.value;
+          resolve(val || null);
         });
       });
     },
@@ -732,7 +745,10 @@ export default {
           studyStepId: this.studyStepId,
           key
         }, (response) => {
-          resolve(this.normalizeDocumentDataGet(response));
+          const val = (response && response.success && response.data && response.data.value)
+            ? response.data.value
+            : response?.value;
+          resolve(val || null);
         });
       });
     },
@@ -765,67 +781,117 @@ export default {
       this.requests[requestId].input = input;
       await this.sendRequest(skill, input, uniqueId, requestId);
     },
-    // Builds payload for grading_expose; input: input (object); output: object
-    async buildGradingExposePayload(input) {
+    // Builds payload for grading_expose; input: none; output: object
+    async buildGradingExposePayload() {
       const result = { submission: {}, assessment_config: {} };
-      result.assessment_config = this.fetchConfigJson;
-
-      // Resolve submission into { pdf, zip }
-      result.submission = await this.resolveSubmission(input?.submission);
+      result.assessment_config = this.fetchConfiguration;
+      const docs = this.fetchSubmission || [];
+      result.submission = await this.buildSubmissionFromDocuments(docs);
       return result;
     },
     // Builds payload for generating_feedback; input: input (object); output: object
     async buildGeneratingFeedbackPayload(input) {
       const result = { submission: {}, grading_results: [], feedback_grading_criteria: {} };
-      // Resolve config (accepts id, numeric string, object with id, or full object)
-      const cfgRaw = input?.feedback_grading_criteria ?? input?.feedback_config ?? input?.config;
-      const resolvedCfg = await this.resolveConfig(cfgRaw);
-      if (resolvedCfg) result.feedback_grading_criteria = resolvedCfg;
-
-      // Resolve submission into { pdf, zip }
-      result.submission = await this.resolveSubmission(input?.submission);
-
-      // Build grading_results from the previous step's assessment data
-      const gradingResultsRaw = input?.grading_results;
-
-      const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
-
-      if (gradingResultsRaw && (Array.isArray(gradingResultsRaw) || Array.isArray(gradingResultsRaw?.assessment))) {
-        result.grading_results = toArray(gradingResultsRaw);
-      } else {
-        // Fetch from document_data from the previous step
-        const gradingData = await this.fetchGradingResults();
-        if (gradingData) {
-          result.grading_results = toArray(gradingData);
-        }
+      result.feedback_grading_criteria = this.getFeedbackConfiguration();
+      result.submission = await this.buildSubmissionFromInput(input);
+      if (!result.submission || (Object.keys(result.submission).length === 0)) {
+        const docs = this.fetchSubmission || [];
+        result.submission = await this.buildSubmissionFromDocuments(docs);
       }
+      result.grading_results = await this.buildGradingResults(input);
+      
       return result;
     },
-    // Resolves assessment configuration to JSON; input: cfgRaw (number|string|object); output: object|null
-    // Resolves a submission reference into base64 files; input: sub (number|string|object); output: { pdf?: string, zip?: string }
-    async resolveSubmission(sub) {
-      if (sub && typeof sub === 'object' && (sub.pdf || sub.zip)) {
-        return { pdf: sub.pdf || null, zip: sub.zip || null };
+    
+    // Helper method to get feedback configuration with fallback to previous step
+    getFeedbackConfiguration() {
+      let feedbackConfig = this.fetchConfiguration;
+      if (!feedbackConfig) {
+        const currentStepIndex = this.studySteps.findIndex(step => step.id === this.studyStepId);
+        const previousStep = currentStepIndex > 0 ? this.studySteps[currentStepIndex - 1] : null;
+        if (previousStep && previousStep.configuration && previousStep.configuration.configFile) {
+          const prevCfgRow = this.$store.getters["table/configuration/get"](previousStep.configuration.configFile);
+          feedbackConfig = prevCfgRow ? prevCfgRow.content : null;
+        }
       }
-      let docId = null;
-      if (typeof sub === 'number' && Number.isFinite(sub)) {
-        docId = sub;
-      } else if (typeof sub === 'string' && /^\d+$/.test(sub)) {
-        docId = parseInt(sub, 10);
-      } else if (typeof sub === 'string' && sub.startsWith('submission_')) {
-        const maybeId = this.extractIdByPrefix(sub, 'submission_');
-        if (maybeId) docId = maybeId;
-      } else if (sub && typeof sub === 'object' && 'id' in sub && (typeof sub.id === 'number' || (typeof sub.id === 'string' && /^\d+$/.test(sub.id)))) {
-        docId = typeof sub.id === 'number' ? sub.id : parseInt(sub.id, 10);
-      }
-      if (docId) {
-        const { pdf, zip } = await this.collectSubmissionFilesByDocument(docId);
-        const out = {};
-        if (pdf) out.pdf = pdf;
-        if (zip) out.zip = zip;
-        return out;
+      return feedbackConfig || {};
+    },
+    
+    // Helper method to build submission from input parameter
+    async buildSubmissionFromInput(input) {
+      try {
+        const inputSubmission = input?.submission;
+        if (inputSubmission && typeof inputSubmission === 'object' && (inputSubmission.pdf || inputSubmission.zip)) {
+          return inputSubmission;
+        } else if (inputSubmission && (typeof inputSubmission === 'string' || typeof inputSubmission === 'number')) {
+          const docId = parseInt(inputSubmission, 10);
+          if (Number.isFinite(docId)) {
+            return await this.buildSubmissionFromDocumentId(docId);
+          }
+        }
+      } catch (e) {
+        // ignore and fallback below
       }
       return {};
+    },
+    
+    // Helper method to build submission from a single document ID with sibling enrichment
+    async buildSubmissionFromDocumentId(docId) {
+      const base64 = await this.fetchBinaryAsBase64(docId);
+      if (!base64) return {};
+      
+      const docRow = this.$store.getters["table/document/get"](docId);
+      if (!docRow) return {};
+      
+      const isZip = docRow.type === 4;
+      const isPdf = docRow.type === 0;
+      const out = {};
+      
+      if (isZip) out.zip = base64;
+      if (isPdf) out.pdf = base64;
+      
+      // Try to find sibling (pdf for zip, zip for pdf) via submissionId
+      const submissionId = docRow?.submissionId;
+      if (submissionId) {
+        const docs = this.$store.getters["table/document/getByKey"]("submissionId", submissionId) || [];
+        const siblingPdf = !isPdf ? docs.find(d => d && d.type === 0) : null;
+        const siblingZip = !isZip ? docs.find(d => d && d.type === 4) : null;
+        const [pdf, zip] = await Promise.all([
+          siblingPdf ? this.fetchBinaryAsBase64(siblingPdf.id) : Promise.resolve(null),
+          siblingZip ? this.fetchBinaryAsBase64(siblingZip.id) : Promise.resolve(null),
+        ]);
+        if (pdf) out.pdf = pdf;
+        if (zip) out.zip = zip;
+      }
+      
+      return out;
+    },
+    
+    // Helper method to build submission from an array of documents
+    async buildSubmissionFromDocuments(docs) {
+      const pdfDoc = docs.find(d => d && d.type === 0);
+      const zipDoc = docs.find(d => d && d.type === 4);
+      const [pdf, zip] = await Promise.all([
+        pdfDoc ? this.fetchBinaryAsBase64(pdfDoc.id) : Promise.resolve(null),
+        zipDoc ? this.fetchBinaryAsBase64(zipDoc.id) : Promise.resolve(null),
+      ]);
+      const out = {};
+      if (pdf) out.pdf = pdf;
+      if (zip) out.zip = zip;
+      return out;
+    },
+    
+    // Helper method to build grading results from input or fetch from store
+    async buildGradingResults(input) {
+      const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
+      
+      const gradingResultsRaw = input?.grading_results;
+      if (gradingResultsRaw && (Array.isArray(gradingResultsRaw) || Array.isArray(gradingResultsRaw?.assessment))) {
+        return toArray(gradingResultsRaw);
+      } else {
+        const gradingData = await this.fetchGradingResults();
+        return gradingData ? toArray(gradingData) : [];
+      }
     },
     // Fetches grading results from the previous step; input: none; output: object|array|null
     async fetchGradingResults() {
@@ -837,67 +903,20 @@ export default {
         return null;
       }
 
-      // Use the previous step's documentId (where the assessment was saved)
-      const params = {
-        documentId: previousStep.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: previousStep.id,
-        key: 'nlpAssessment_grading_expose_assessment'
-      };
-
       // Fetch grading results from previous step with session ID
       return await new Promise(resolve => {
-        if (!params.key) { resolve(null); return; }
-        this.$socket.emit("documentDataGet", params, (response) => {
-          if (response && response.success && response.data && response.data.value) {
-            resolve(response.data.value);
-          } else if (response && response.value) {
-            resolve(response.value);
-          } else {
-            resolve(null);
-          }
+        this.$socket.emit("documentDataGet", {
+          documentId: previousStep.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: previousStep.id,
+          key: 'nlpAssessment_grading_expose_assessment'
+        }, (response) => {
+          const val = (response && response.success && response.data && response.data.value)
+            ? response.data.value
+            : response?.value;
+          resolve(val || null);
         });
       });
-    },
-    // Extracts a numeric id from a prefixed token; inputs: value (string), prefix (string); output: number|null
-    extractIdByPrefix(value, prefix) {
-      if (typeof value !== 'string') return null;
-      if (!value.startsWith(prefix)) return null;
-      const idStr = value.slice(prefix.length);
-      const id = parseInt(idStr, 10);
-      return Number.isFinite(id) ? id : null;
-    },
-    // Collects PDF and ZIP files for a submission by documentId; input: documentId (number); output: { pdf: string|null, zip: string|null }
-    async collectSubmissionFilesByDocument(documentId) {
-      // Find the selected document and its submissionId
-      const doc = this.$store.getters["table/document/get"] && this.$store.getters["table/document/get"](documentId);
-      if (!doc || !doc.submissionId) return { pdf: null, zip: null };
-
-      const allDocs = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('submissionId', doc.submissionId)) || [];
-      // Types: PDF=0, ZIP=4
-      const pdfDoc = allDocs.find(d => d && d.type === 0);
-      const zipDoc = allDocs.find(d => d && d.type === 4);
-
-      const [pdf, zip] = await Promise.all([
-        pdfDoc ? this.fetchBinaryAsBase64(pdfDoc.id) : Promise.resolve(null),
-        zipDoc ? this.fetchBinaryAsBase64(zipDoc.id) : Promise.resolve(null),
-      ]);
-
-      return { pdf, zip };
-    },
-    // Normalizes the response from documentDataGet; inputs: response (object), options { unwrapData?: boolean }; output: any|null
-    normalizeDocumentDataGet(response, { unwrapData = false } = {}) {
-      if (!response) return null;
-      let val = null;
-      if (response && response.success && response.data && response.data.value) {
-        val = response.data.value;
-      } else if (response && 'value' in response) {
-        val = response.value;
-      }
-      if (unwrapData && val && typeof val === 'object' && 'data' in val) {
-        return val.data;
-      }
-      return val ?? null;
     },
     // Fetches a document's binary and returns base64; input: documentId (number); output: string|null
     async fetchBinaryAsBase64(documentId) {
@@ -957,7 +976,7 @@ export default {
         }
       }
     },    
-    // Exports all study data to a JSON file for admins; input: none; output: void
+
     async exportStudyData() {
       if (this.isAdmin){
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
