@@ -19,14 +19,12 @@
         />
       </div>
     </template>
-
     <template #step-2>
       <BasicForm
         v-model="data"
         :fields="formFields"
       />
     </template>
-
     <template #step-3>
       <div class="summary-container">
         <h6>Assignment Summary</h6>
