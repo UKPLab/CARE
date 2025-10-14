@@ -89,32 +89,25 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
-import Assessment from "@/components/study/Assessment.vue";
 import Loader from "@/basic/Loading.vue";
 import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
-import LoadIcon from "@/basic/Icon.vue";
-import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
-import SidebarHistory from "@/components/editor/sidebar/History.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
-    SidebarTemplate, SidebarHistory,
-    LoadIcon,
+    SidebarTemplate,
     PDFViewer,
-    ExpandMenu,
     AnnotationSidebar,
-    Assessment,
     Loader,
     TopBarButton,
     BasicSidebar
