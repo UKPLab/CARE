@@ -489,20 +489,6 @@ export default {
     }
   },
   methods: {
-    async canProceed() {
-      // If assessment sidebar is available and active/enabled, delegate gating
-      if (this.assessmentEnabled && this.$refs.assessment && typeof this.$refs.assessment.canProceed === 'function') {
-        return await this.$refs.assessment.canProceed();
-      }
-      return true;
-    },
-    safeParseJSON(value) {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    },
     handleButtonAction(data) {
       switch (data.action) {
         case 'toggleStudyComments':

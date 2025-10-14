@@ -305,9 +305,6 @@ export default {
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
-      if (!this.isManualAssessmentWorkflow) {
-        return false;
-      }
       return this.currentStudyStep?.configuration.forcedAssessment;
     },
   },
@@ -602,7 +599,7 @@ export default {
 
       try {
         const keyManual = "assessment_result";
-        const keyAI = "grading_expose_nlpAssessment_data";
+        const keyAI = "nlpAssessment_grading_expose_assessment";
         const keyToUse = this.isAIAssessmentWorkflow ? keyAI : keyManual;
 
         // 1) Try to load already saved data for this step/session
@@ -642,7 +639,7 @@ export default {
       const currentDocumentId = this.documentId;
       if (!currentDocumentId) return null;
 
-      const key = "grading_expose_nlpAssessment_data";
+      const key = "nlpAssessment_grading_expose_assessment";
 
       return await new Promise(resolve => {
         this.$socket.emit("documentDataGet", {
@@ -726,7 +723,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_data" : "assessment_result",
+            key: this.isAIAssessmentWorkflow ? "nlpAssessment_grading_expose_assessment" : "assessment_result",
           }, (resp) => {
             const v = (resp && resp.success && resp.data && resp.data.value) ? resp.data.value : resp?.value;
             resolve(v || null);
@@ -772,7 +769,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_data" : "assessment_result",
+            key: this.isAIAssessmentWorkflow ? "nlpAssessment_grading_expose_assessment" : "assessment_result",
             value
           }, (response) => {
             if (response && response.success) {
@@ -797,15 +794,11 @@ export default {
     },
 
     // Gatekeeper used by parent before navigating to next step
-    async canProceed() {
+    canProceed() {
       // If not manual assessment workflow or no forced rule, allow
-      if (!this.isManualAssessmentWorkflow || !this.forcedAssessmentEnabled) {
+      if (!this.forcedAssessmentEnabled) {
         return true;
       }
-      // Ensure current state reflects saved flags
-      // Saving is already user-driven; just validate completeness
-      // In read-only, don't block
-      if (this.readOnly) return true;
       return this.areAllCriteriaSaved();
     },
 
@@ -857,6 +850,16 @@ export default {
     onInfoPanelCloseRequested() {
       // Handle close request from FloatingInfoPanel
       this.closeInfoPanel();
+    },
+
+    // Method called by Study component to check if user can proceed
+    canProceed() {
+      // If not forced assessment or no forced rule, allow
+      if (!this.forcedAssessmentEnabled) {
+        return true;
+      }
+      // Check if all criteria are saved
+      return this.areAllCriteriaSaved();
     }
   },
 };

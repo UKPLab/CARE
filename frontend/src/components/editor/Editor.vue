@@ -5,7 +5,7 @@
         <Editor ref="editor" @update:data="$emit('update:data', $event)"/>
       </div>
       <BasicSidebar
-          v-if="!sidebarDisabled && defaultActiveSidebar"
+          v-if="!sidebarDisabled && defaultActiveSidebar && studySessionId === null"
           ref="sidebar"
           :buttons="sidebarButtons"
           :side-bar-width="350"

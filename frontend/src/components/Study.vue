@@ -91,7 +91,7 @@
         <SidebarTemplate icon="list-check" title="Assessment">
           <template #content>
             <Assessment
-                ref="assessment"
+                ref="assessmentAnnotator"
                 @state-changed="onAssessmentStateChanged"/>
           </template>
         </SidebarTemplate>
@@ -108,7 +108,7 @@
         <SidebarTemplate icon="list-check" title="Assessment">
           <template #content>
             <Assessment
-                ref="assessment"
+                ref="assessmentEditor"
                 @state-changed="onAssessmentStateChanged"/>
           </template>
         </SidebarTemplate>
@@ -448,6 +448,15 @@ export default {
       }
     },
     updateStep(step) {
+      // Check if assessment allows proceeding (if current step has assessment)
+      // if (this.studyStepHasAssessment) {
+      //   this.eventBus.emit("toast", {
+      //     title: "Cannot proceed",
+      //     message: "Please complete the assessment before proceeding to the next step.",
+      //     variant: "danger",
+      //   });
+      //   return;
+      // }
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {
@@ -472,6 +481,28 @@ export default {
         );
       }
     },
+    
+    // Helper method to get assessment component and check if it can proceed
+    // getAssessmentCanProceed() {
+    //   let assessmentComponent = null;
+
+    //   if (this.currentStep.stepType === 1) {
+    //     // For Annotator: try to find Assessment through the component tree
+    //     console.log('Finding assessment component in Annotator', this.$refs.annotator.canProceed());
+    //     const annotator = this.$refs.annotator;
+    //     if (annotator && annotator.$refs && annotator.$refs.assessmentAnnotator) {
+    //       assessmentComponent = annotator.$refs.assessmentAnnotator;
+    //     }
+    //   } else if (this.currentStep.stepType === 2) {
+    //     // For Editor: try to find Assessment through the component tree  
+    //     const editor = this.$refs.editor;
+    //     if (editor && editor.$refs && editor.$refs.assessmentEditor) {
+    //       assessmentComponent = editor.$refs.assessmentEditor;
+    //     }
+    //   }
+    //   console.log('Editor assessmentComponent:', assessmentComponent);
+    //   return assessmentComponent?.canProceed();
+    // },
   },
 };
 </script>
