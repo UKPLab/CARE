@@ -177,6 +177,16 @@ export default {
                     state.services[service][serviceType] = cur;
                 }
             }
+
+            if (service === "BackgroundTaskService") {
+                if (!(serviceType in state.services[service])) {
+                    state.services[service][serviceType] = {};
+                }
+
+                if (serviceType === "backgroundTaskUpdate") {
+                    state.services[service][serviceType] = data.data;
+                }
+            }
         },
 
         /**

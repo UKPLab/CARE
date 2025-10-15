@@ -1078,18 +1078,18 @@ class DocumentSocket extends Socket {
      * @param {any} data.value The value to be stored, which can be any serializable type.
      * @param {Object} options Additional configuration for the operation.
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
-     * @returns {Promise<Object>} A promise that resolves with the newly created `document_data` record object from the database.
+     * @returns {Promise<Object>} A promise that resolves with the upserted `document_data` record object from the database.
      */
     async saveData(data, options) {
 
-        let documentData = await this.models['document_data'].add({
+        let documentData = await this.models['document_data'].upsertData({
             userId: this.userId,
             documentId: data.documentId,
             studySessionId: data.studySessionId,
             studyStepId: data.studyStepId,
             key: data.key,
             value: data.value
-        }, {transaction: options.transaction});
+        }, options);
 
         return documentData;
     }

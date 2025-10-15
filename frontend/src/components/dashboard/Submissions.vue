@@ -2,52 +2,60 @@
   <Card title="Submissions">
     <template #headerElements>
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Publish Reviews"
-        title="Publish Reviews"
-        @click="$refs.publishModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Publish Reviews"
+          title="Publish Reviews"
+          @click="$refs.publishModal.open()"
       />
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Publish Submissions"
-        title="Publish Submissions"
-        @click="$refs.publishSubmissionModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Publish Submissions"
+          title="Publish Submissions"
+          @click="$refs.publishSubmissionModal.open()"
       />
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Manual Import"
-        title="Manual Import"
-        @click="$refs.uploadModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Manual Import"
+          title="Manual Import"
+          @click="$refs.uploadModal.open()"
       />
       <BasicButton
-        class="btn-primary btn-sm"
-        title="Import via Moodle"
-        text="Import via Moodle"
-        @click="$refs.importModal.open()"
+          class="btn-primary btn-sm"
+          title="Import via Moodle"
+          text="Import via Moodle"
+          @click="$refs.importModal.open()"
       />
       <BasicButton
-        class="btn-success btn-sm ms-1"
-        text="Preprocess Grading"
-        title="Preprocess Grading"
-        @click="preprocessGrades"
-      />
+          :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
+          :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+          :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+          @click="preprocessGrades"
+      >
+        <span
+          v-if="isProcessingActive"
+          class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+          <span class="visually-hidden">Processing active</span>
+        </span>
+      </BasicButton>
     </template>
     <template #body>
       <BasicTable
-        :columns="tableColumns"
-        :data="submissionTable"
-        :options="tableOptions"
-        :buttons="tableButtons"
-        @action="action"
+          :columns="tableColumns"
+          :data="submissionTable"
+          :options="tableOptions"
+          :buttons="tableButtons"
+          @action="action"
       />
     </template>
   </Card>
-  <UploadModal ref="uploadModal" />
-  <ConfirmModal ref="deleteConf" />
-  <ImportModal ref="importModal" />
-  <PublishModal ref="publishModal" />
-  <PublishModal ref="publishSubmissionModal" mode="submission" />
-  <GradingModal ref="gradingModal" />
+  <UploadModal ref="uploadModal"/>
+  <ConfirmModal ref="deleteConf"/>
+  <ImportModal ref="importModal"/>
+  <PublishModal ref="publishModal"/>
+  <PublishModal ref="publishSubmissionModal" mode="submission"/>
+  <ApplySkillModal
+      ref="applySkillModal"
+  />
 </template>
 
 <script>
@@ -60,6 +68,7 @@ import PublishModal from "./submission/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
+import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
 
 /**
  * Submission list component
@@ -84,6 +93,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
+    ApplySkillModal,
   },
   data() {
     return {
@@ -96,12 +106,12 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        { name: "ID", key: "id" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Submission ID", key: "extId" },
-        { name: "Validation ID", key: "validationConfigurationId" },
-        { name: "Created At", key: "createdAt" },
+        {name: "ID", key: "id"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "Submission ID", key: "extId"},
+        {name: "Validation ID", key: "validationConfigurationId"},
+        {name: "Created At", key: "createdAt"},
       ],
       tableButtons: [
         {
@@ -151,8 +161,17 @@ export default {
   },
   computed: {
     submissions() {
-      // at the moment no readyForReview flag – return all
       return this.$store.getters["table/submission/getAll"];
+    },
+    isProcessingActive() {
+      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      const preprocess = bgTask.preprocess || {};
+      return (
+        preprocess &&
+        preprocess.requests &&
+        typeof preprocess.requests === 'object' &&
+        Object.keys(preprocess.requests).length > 0
+      );
     },
     submissionTable() {
       return this.submissions.map((s) => {
@@ -167,6 +186,13 @@ export default {
         };
       });
     },
+  },
+  mounted() {
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "getBackgroundTask",
+      data: {}
+    });
   },
   methods: {
     action(data) {
@@ -213,7 +239,7 @@ export default {
       });
     },
     preprocessGrades() {
-      this.$refs.gradingModal.open();
+      this.$refs.applySkillModal.open();
     },
     async downloadSubmission(submissionId) {
       try {
@@ -242,7 +268,7 @@ export default {
           try {
             // Request document content from server
             const response = await new Promise((resolve, reject) => {
-              this.$socket.emit("documentGet", { documentId: doc.id }, (res) => {
+              this.$socket.emit("documentGet", {documentId: doc.id}, (res) => {
                 if (res.success) {
                   resolve(res.data);
                 } else {
@@ -272,10 +298,10 @@ export default {
             if (response.file) {
               if (typeof response.file === "string") {
                 // If it's a string (like JSON), add as text
-                zip.file(`${folderName}/${fileName}`, response.file, { binary: false });
+                zip.file(`${folderName}/${fileName}`, response.file, {binary: false});
               } else {
                 // For binary data
-                zip.file(`${folderName}/${fileName}`, response.file, { binary: true });
+                zip.file(`${folderName}/${fileName}`, response.file, {binary: true});
               }
             } else {
               this.eventBus.emit("toast", {
@@ -293,7 +319,7 @@ export default {
           }
         }
 
-        zip.generateAsync({ type: "blob" }).then((content) => {
+        zip.generateAsync({type: "blob"}).then((content) => {
           FileSaver.saveAs(content, `${folderName}.zip`);
         });
 
