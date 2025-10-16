@@ -9,18 +9,7 @@
   >
     <div class="info-panel-header">
       <h6 class="mb-2">{{ selectedItem.name }}</h6>
-      <button 
-        v-if="pinnable"
-        type="button" 
-        class="btn btn-sm btn-outline-secondary ms-2" 
-        :class="{ 'active': isPinned }"
-        @click="togglePin"
-        :title="isPinned ? 'Unpin panel' : 'Pin panel'"
-      >
-        <LoadIcon :icon-name="isPinned ? 'pin-fill' : 'pin'" :size="12" />
-      </button>
     </div>
-    
     <div class="info-panel-content">
       <div v-if="selectedItem.description" class="mb-3">
         <strong>Description:</strong>
@@ -75,9 +64,9 @@ export default {
       required: true,
       default: null
     },
-    pinnable: {
+    isPinned: {
       type: Boolean,
-      default: true
+      default: false
     },
     width: {
       type: [Number, String],
@@ -98,7 +87,7 @@ export default {
     },
     closeDelay: {
       type: Number,
-      default: 150
+      default: 0
     }
   },
   
@@ -244,7 +233,9 @@ export default {
     },
     
     togglePin() {
+      console.log("Toggling pin state:", this.isPinned);
       this.isPinned = !this.isPinned;
+      console.log("Pin state changed to:", this.isPinned);
       this.$emit('pin-changed', this.isPinned);
       
       if (!this.isPinned) {
@@ -259,6 +250,7 @@ export default {
     },
     
     onMouseLeave() {
+      console.log("Mouse left info panel");
       this.isHovering = false;
       this.$emit('mouse-leave');
       this.requestClose();
@@ -266,7 +258,7 @@ export default {
     
     requestClose() {
       if (this.isPinned) return;
-      
+      console.log("Requesting close of info panel after delay:", this.closeDelay);
       this.clearCloseTimer();
       this.closeTimer = setTimeout(() => {
         if (!this.isPinned && !this.isHovering) {
@@ -282,18 +274,6 @@ export default {
       }
     },
     
-    onGlobalMouseDown(event) {
-      if (!this.show) return;
-      
-      const panel = this.$refs.infoPanel;
-      if (panel && panel.contains(event.target)) return;
-      
-      // Clicked outside -> force close regardless of pin state
-      this.isPinned = false;
-      this.isHovering = false;
-      this.clearCloseTimer();
-      this.$emit('close-requested');
-    },
     
     onWindowResize() {
       if (this.show) {
