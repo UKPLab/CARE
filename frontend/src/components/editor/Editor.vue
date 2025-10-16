@@ -11,9 +11,10 @@
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
           class="sidebar-container"
+          :show-toggle-button="true"
           @sidebar-change="handleSidebarChange"
           @sidebar-action="handleSidebarAction">
-        <template v-if="showHistory" #history>
+        <template v-if="showHistory && !withoutHistory" #history>
           <SidebarTemplate icon="clock-history" title="History">
             <template #content>
               <SidebarHistory/>
@@ -87,7 +88,6 @@ export default {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
       readOnly: computed(() => this.readOnlyOverwrite),
-      active: computed(() => this.active),
     }
   },
   inject: {
@@ -118,10 +118,10 @@ export default {
       required: false,
       default: null,
     },
-    active: {
+    withoutHistory: {
       type: Boolean,
       required: false,
-      default: true,
+      default: false,
     },
   },
   emits: ["update:data"],
@@ -132,10 +132,6 @@ export default {
       sidebarContent: null,
     };
   },
-  mounted() {
-    // Set initial sidebar content based on available tabs
-    this.sidebarContent = this.defaultActiveSidebar;
-  },
   computed: {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
@@ -144,10 +140,7 @@ export default {
       // Determine the default active sidebar based on available tabs
       if (this.document && this.document.type === 2) {
         return 'configurator';
-      } else if (this.showHistory) {
-        return 'history';
       }
-      // Return null if no tabs are available
       return null;
     },
     sidebarButtons() {

@@ -81,11 +81,6 @@ export default {
       required: false,
       default: null,
     },
-    active: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
   },
   emits: ["update:data"],
   data() {

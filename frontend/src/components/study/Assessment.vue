@@ -15,43 +15,42 @@
 
       <div v-else-if="assessmentOutput" class="assessment-results">
         <div
-          v-if="assessmentOutput.criteriaGroups"
-          class="criteria-groups-section"
+            v-if="assessmentOutput.criteriaGroups"
+            class="criteria-groups-section"
         >
           <div
-            v-for="(group, groupIndex) in assessmentOutput.criteriaGroups"
-            :key="groupIndex"
-            class="criteria-group-card card mb-2"
+              v-for="(group, groupIndex) in assessmentOutput.criteriaGroups"
+              :key="groupIndex"
+              class="criteria-group-card card mb-2"
           >
             <!-- Group Header -->
             <div
-              class="card-header d-flex justify-content-between align-items-center"
-              style="cursor: pointer"
-              @click="toggleGroup(groupIndex)"
+                class="card-header d-flex justify-content-between align-items-center"
+                style="cursor: pointer"
+                @click="toggleGroup(groupIndex)"
             >
               <div class="d-flex align-items-center flex-grow-1">
                 <LoadIcon
-                  :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
-                  :size="16"
-                  class="me-2"
+                    :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
+                    :size="16"
+                    class="me-2"
                 />
                 <span class="fw-bold">{{ group.name }}</span>
               </div>
               <div class="d-flex align-items-center">
-                <span 
-                  v-if="group.description"
-                  ref="infoIcon1" 
-                  class="info-icon me-2"
-                  style="cursor: help;"
-                  @click.stop="toggleInfoPanelPin(group, null, $event)"
-                  @mouseenter="openInfoPanel(group, null, $event)"
-                  @mouseleave="closeInfoPanel"
+                <span
+                    v-if="group.description"
+                    class="info-icon me-2"
+                    style="cursor: help;"
+                    @click.stop="toggleInfoPanelPin(group, null, $event)"
+                    @mouseenter="openInfoPanel(group, null, $event)"
+                    @mouseleave="closeInfoPanel"
                 >
-                  <LoadIcon icon-name="info-circle" :size="14" />
+                  <LoadIcon icon-name="info-circle" :size="14"/>
                 </span>
                 <span
-                  class="badge"
-                  :class="(readOnly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
+                    class="badge"
+                    :class="(readOnly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
                 >
                   {{ group.score }} P
                 </span>
@@ -62,21 +61,21 @@
             <div v-if="expandedGroups[groupIndex]" class="card-body">
               <div class="criteria-list">
                 <div
-                  v-for="(criterion, criterionIndex) in group.criteria"
-                  :key="criterionIndex"
-                  class="criterion-item"
+                    v-for="(criterion, criterionIndex) in group.criteria"
+                    :key="criterionIndex"
+                    class="criterion-item"
                 >
                   <!-- Criterion Header -->
-                  <div 
-                    class="d-flex justify-content-between align-items-center py-2"
-                    style="cursor: pointer"
-                    @click="toggleCriterion(groupIndex, criterionIndex)"
+                  <div
+                      class="d-flex justify-content-between align-items-center py-2"
+                      style="cursor: pointer"
+                      @click="toggleCriterion(groupIndex, criterionIndex)"
                   >
                     <div class="d-flex align-items-center">
                       <span class="criterion-icon me-2">
                         <LoadIcon
-                          :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
-                          :size="16"
+                            :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
+                            :size="16"
                         />
                       </span>
                       <span class="criterion-name">
@@ -84,21 +83,20 @@
                       </span>
                     </div>
                     <div class="d-flex align-items-center">
-                      <span 
-                        v-if="criterion.description || criterion.scoring" 
-                        ref="infoIcon2"
-                        class="info-icon me-2"
-                        style="cursor: help;"
-                        @click.stop="toggleInfoPanelPin(null, criterion, $event)"
-                        @mouseenter="openInfoPanel(null, criterion, $event)"
-                        @mouseleave="closeInfoPanel"
+                      <span
+                          v-if="criterion.description || criterion.scoring"
+                          class="info-icon me-2"
+                          style="cursor: help;"
+                          @click.stop="toggleInfoPanelPin(null, criterion, $event)"
+                          @mouseenter="openInfoPanel(null, criterion, $event)"
+                          @mouseleave="closeInfoPanel"
                       >
-                        <LoadIcon icon-name="info-circle" :size="14" />
+                        <LoadIcon icon-name="info-circle" :size="14"/>
                       </span>
                       <span
-                        class="badge"
-                        :class="(readOnly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
-                        :title="`isSaved: ${criterion.isSaved}`"
+                          class="badge"
+                          :class="(readOnly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
+                          :title="`isSaved: ${criterion.isSaved}`"
                       >
                         {{ criterion.currentScore || 0 }} P
                       </span>
@@ -107,8 +105,8 @@
 
                   <!-- Criterion Assessment -->
                   <div
-                    v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
-                    class="criterion-assessment mt-2 px-3 pb-2"
+                      v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
+                      class="criterion-assessment mt-2 px-3 pb-2"
                   >
                     <div class="assessment-text">
                       <strong>Justification:</strong>
@@ -118,12 +116,12 @@
                       <div v-else class="assessment-edit-form">
                         <div class="mb-3">
                           <textarea
-                            v-model="criterion.editedAssessment"
-                            class="form-control assessment-textarea"
-                            placeholder="Edit the justification..."
-                            :rows="getTextareaRows(criterion.editedAssessment)"
-                            :disabled="readOnly"
-                            @input="adjustTextareaRows"
+                              v-model="criterion.editedAssessment"
+                              class="form-control assessment-textarea"
+                              placeholder="Edit the justification..."
+                              :rows="getTextareaRows(criterion.editedAssessment)"
+                              :disabled="readOnly"
+                              @input="adjustTextareaRows"
                           ></textarea>
                         </div>
                       </div>
@@ -134,56 +132,56 @@
                       <div v-if="!criterion.isEditing" class="d-flex justify-content-between align-items-center">
                         <div>
                           <button
-                            v-if="!readOnly"
-                            class="btn btn-outline-primary btn-sm"
-                            title="Edit"
-                            @click="startEdit(groupIndex, criterionIndex)"
+                              v-if="!readOnly"
+                              class="btn btn-outline-primary btn-sm"
+                              title="Edit"
+                              @click="startEdit(groupIndex, criterionIndex)"
                           >
-                            <LoadIcon icon-name="pen" :size="14" />
+                            <LoadIcon icon-name="pen" :size="14"/>
                           </button>
                         </div>
 
                         <div v-if="!readOnly" class="d-flex align-items-center gap-2">
                           <select
-                            v-model="criterion.currentScore"
-                            class="form-select form-select-sm score-dropdown"
-                            title="Change score"
-                            @change="onScoreChange(groupIndex, criterionIndex)"
+                              v-model="criterion.currentScore"
+                              class="form-select form-select-sm score-dropdown"
+                              title="Change score"
+                              @change="onScoreChange(groupIndex, criterionIndex)"
                           >
                             <option
-                              v-for="point in getAvailablePoints(criterion)"
-                              :key="point"
-                              :value="point"
+                                v-for="point in getAvailablePoints(criterion)"
+                                :key="point"
+                                :value="point"
                             >
                               {{ point }} P
                             </option>
                           </select>
 
                           <button
-                            :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
-                            :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
-                            @click="saveAssessment(groupIndex, criterionIndex)"
+                              :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
+                              :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
+                              @click="saveAssessment(groupIndex, criterionIndex)"
                           >
-                            <LoadIcon icon-name="floppy" :size="14" />
+                            <LoadIcon icon-name="floppy" :size="14"/>
                           </button>
                         </div>
                       </div>
                       <div v-else class="d-flex gap-2">
                         <button
-                          v-if="!readOnly"
-                          class="btn btn-primary btn-sm"
-                          title="Save"
-                          @click="saveEdit(groupIndex, criterionIndex)"
+                            v-if="!readOnly"
+                            class="btn btn-primary btn-sm"
+                            title="Save"
+                            @click="saveEdit(groupIndex, criterionIndex)"
                         >
-                          <LoadIcon icon-name="floppy" :size="14" />
+                          <LoadIcon icon-name="floppy" :size="14"/>
                         </button>
                         <button
-                          v-if="!readOnly"
-                          class="btn btn-secondary btn-sm"
-                          title="Cancel"
-                          @click="cancelEdit(groupIndex, criterionIndex)"
+                            v-if="!readOnly"
+                            class="btn btn-secondary btn-sm"
+                            title="Cancel"
+                            @click="cancelEdit(groupIndex, criterionIndex)"
                         >
-                          <LoadIcon icon-name="x-lg" :size="14" />
+                          <LoadIcon icon-name="x-lg" :size="14"/>
                         </button>
                       </div>
                     </div>
@@ -213,13 +211,13 @@
 </template>
 
 /**
- * Assessment Output Component
- *
- * This component displays the assessment results, including criteria groups, scoring, and additional information panels.
- * It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
- *
- * @author: Akash Gundapuneni
- */
+* Assessment Output Component
+*
+* This component displays the assessment results, including criteria groups, scoring, and additional information panels.
+* It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
+*
+* @author: Akash Gundapuneni
+*/
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
@@ -227,31 +225,31 @@ import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 
 export default {
   name: "AssessmentOutput",
-  components: { 
+  components: {
     LoadIcon,
     FloatingInfoPanel
   },
-  subscribeTable: ["document", "study_step", "configuration", "workflow_step" ],
-  
+  subscribeTable: ["document", "study_step", "configuration", "workflow_step"],
+
   inject: {
-    documentId: { 
-      type: Number, 
-      required: true 
+    documentId: {
+      type: Number,
+      required: true
     },
-    studySessionId: { 
-      type: Number, 
-      required: false, 
-      default: null 
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null
     },
-    studyStepId: { 
-      type: Number, 
-      required: false, 
-      default: null 
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null
     },
-    studyData: { 
-      type: Array, 
-      required: false, 
-      default: () => [] 
+    studyData: {
+      type: Array,
+      required: false,
+      default: () => []
     },
     acceptStats: {
       type: Boolean,
@@ -262,20 +260,20 @@ export default {
       type: Boolean,
       required: false,
       default: false
-      },
+    },
     currentStudyStep: {
-        type: Object,
-        required: true,
-        default: null
-      }
+      type: Object,
+      required: true,
+      default: null
+    }
   },
   props: {
-    show: { type: Boolean, required: false, default: true },
-    savedState: { type: Object, required: false, default: () => ({}) },
+    show: {type: Boolean, required: false, default: true},
+    savedState: {type: Object, required: false, default: () => ({})},
   },
-  
-  emits: ['state-changed'],
-  
+
+  emits: ['state-changed', 'assessment-ready-changed'],
+
   data() {
     return {
       // Assessment data
@@ -283,7 +281,7 @@ export default {
       assessmentOutput: null,
       expandedGroups: {},
       expandedCriteria: {},
-      
+
       // Info panel
       showInfoPanel: false,
       selectedCriterion: null,
@@ -291,14 +289,14 @@ export default {
       isPinned: false
     };
   },
-  
+
   computed: {
     isManualAssessmentWorkflow() {
       const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
       const hasNoServices = !this.currentStudyStep.configuration.services;
       return hasConfigFile && hasNoServices;
     },
-    configuration(){
+    configuration() {
       return this.$store.getters['table/configuration/get'](this.currentStudyStep?.configuration.configurationId);
     },
     isAIAssessmentWorkflow() {
@@ -310,6 +308,21 @@ export default {
     forcedAssessmentEnabled() {
       return this.currentStudyStep?.configuration.forcedAssessment;
     },
+    areAllCriteriaSaved() {
+      if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
+        return false;
+      }
+      return this.assessmentOutput.criteriaGroups.every((group) => {
+        if (!group.criteria || group.criteria.length === 0) return true;
+        return group.criteria.every((criterion) => criterion.isSaved === true);
+      });
+    },
+    isAssessmentComplete() {
+      if (!this.forcedAssessmentEnabled) {
+        return true;
+      }
+      return this.areAllCriteriaSaved;
+    }
   },
   watch: {
     configuration: {
@@ -320,6 +333,12 @@ export default {
       },
       immediate: true
     },
+    isAssessmentComplete: {
+      handler(v) {
+        this.$emit('assessment-ready-changed', v)
+      },
+      immediate: true,
+    },
     show(newVal) {
       if (newVal && Object.keys(this.savedState).length > 0) {
         this.restoreState();
@@ -328,7 +347,7 @@ export default {
         this.loadSavedAssessmentData();
       }
     },
-    
+
     savedState: {
       handler(newState) {
         if (this.show && Object.keys(newState).length > 0) {
@@ -338,13 +357,14 @@ export default {
       deep: true
     },
   },
-  
+
   mounted() {
     document.addEventListener('mousedown', this.handleClickOutsideInfoPanel);
     this.initializeAssessmentOutput();
     if (Object.keys(this.savedState).length > 0) {
       this.restoreState();
     }
+    this.$emit('assessment-ready-changed', this.isAssessmentComplete);
   },
   
   beforeUnmount() {
@@ -376,9 +396,9 @@ export default {
         this.assessmentOutput = this.transformRubricsToCriteriaGroups(this.configuration.content);
       }
     },
-    
+
     transformRubricsToCriteriaGroups(configData) {
-      console.log("Transforming rubrics from configuration:", configData);  
+      console.log("Transforming rubrics from configuration:", configData);
       if (!configData.rubrics) {
         this.error = "Invalid assessment configuration: No rubrics found";
         return null;
@@ -427,12 +447,12 @@ export default {
 
       this.expandedCriteria = {};
       this.expandedGroups[groupIndex] = !this.expandedGroups[groupIndex];
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
     },
-    
+
     toggleCriterion(groupIndex, criterionIndex) {
       Object.keys(this.expandedCriteria).forEach((key) => {
         if (key !== `${groupIndex}-${criterionIndex}`) {
@@ -441,45 +461,45 @@ export default {
       });
 
       this.expandedCriteria[`${groupIndex}-${criterionIndex}`] = !this.expandedCriteria[`${groupIndex}-${criterionIndex}`];
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
     },
-    
+
     // Assessment editing
     startEdit(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
       criterion.isEditing = true;
       criterion.editedAssessment = criterion.assessment;
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
     },
-    
+
     saveEdit(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
       criterion.assessment = criterion.editedAssessment;
       criterion.isEditing = false;
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
       // Persist justification immediately after saving edits
       this.saveAssessmentData(groupIndex, criterionIndex);
     },
-    
+
     cancelEdit(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
       criterion.isEditing = false;
       criterion.editedAssessment = criterion.assessment;
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
     },
-    
+
     // Scoring
     getAvailablePoints(criterion) {
       const max = criterion.maxPoints || criterion.maxScore || 5;
@@ -489,22 +509,22 @@ export default {
       }
       return values;
     },
-    
+
     onScoreChange(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
-      
+
       // Don't automatically update the assessment field when points change
       // Let the user keep their own justification text
-      
-      const updatedCriterion = { ...criterion, isSaved: false };
+
+      const updatedCriterion = {...criterion, isSaved: false};
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
       this.updateGroupPoints(groupIndex);
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
     },
-    
+
     async saveAssessment(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
 
@@ -514,11 +534,11 @@ export default {
 
       this.updateGroupPoints(groupIndex);
 
-      const updatedCriterion = { ...criterion, isSaved: true };
+      const updatedCriterion = {...criterion, isSaved: true};
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
 
       // Emit removed: kept UI state local
-      
+
       this.$nextTick(() => {
         this.saveState();
       });
@@ -526,7 +546,7 @@ export default {
       // Persist immediately when user clicks Save on a criterion
       await this.saveAssessmentData(groupIndex, criterionIndex);
     },
-    
+
     updateGroupPoints(groupIndex) {
       const groups = this.assessmentOutput?.criteriaGroups || [];
       const group = groups[groupIndex];
@@ -535,26 +555,16 @@ export default {
         const v = criterion.currentScore !== undefined ? criterion.currentScore : (criterion.score || 0);
         return sum + v;
       }, 0);
-      const newGroups = groups.map((g, i) => i === groupIndex ? { ...g, score: total } : g);
-      this.assessmentOutput = { ...this.assessmentOutput, criteriaGroups: newGroups };
+      const newGroups = groups.map((g, i) => i === groupIndex ? {...g, score: total} : g);
+      this.assessmentOutput = {...this.assessmentOutput, criteriaGroups: newGroups};
     },
-    
+
     isGroupSaved(groupIndex) {
       const group = this.assessmentOutput.criteriaGroups[groupIndex];
       if (group && group.criteria) {
         return group.criteria.every((criterion) => criterion.isSaved === true);
       }
       return false;
-    },
-    // Check if all criteria across all groups are saved
-    areAllCriteriaSaved() {
-      if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
-        return false;
-      }
-      return this.assessmentOutput.criteriaGroups.every((group) => {
-        if (!group.criteria || group.criteria.length === 0) return true;
-        return group.criteria.every((criterion) => criterion.isSaved === true);
-      });
     },
     getTextareaRows(text) {
       if (!text) return 3;
@@ -563,14 +573,14 @@ export default {
       const calculatedRows = Math.max(lines, estimatedRows);
       return Math.max(3, Math.min(calculatedRows, 15));
     },
-    
+
     adjustTextareaRows(event) {
       const textarea = event.target;
       const text = textarea.value;
       const newRows = this.getTextareaRows(text);
       textarea.rows = newRows;
     },
-    
+
     initializeCurrentScore() {
       if (this.assessmentOutput && this.assessmentOutput.criteriaGroups) {
         this.assessmentOutput.criteriaGroups.forEach((group) => {
@@ -591,22 +601,22 @@ export default {
     // State management
     saveState() {
       const state = {
-        expandedGroups: { ...this.expandedGroups },
-        expandedCriteria: { ...this.expandedCriteria },
+        expandedGroups: {...this.expandedGroups},
+        expandedCriteria: {...this.expandedCriteria},
         assessmentOutput: this.assessmentOutput ? JSON.parse(JSON.stringify(this.assessmentOutput)) : null,
         error: this.error,
       };
       this.$emit('state-changed', state);
       return state;
     },
-    
+
     restoreState() {
       if (this.savedState && Object.keys(this.savedState).length > 0) {
         if (this.savedState.expandedGroups) {
-          this.expandedGroups = { ...this.savedState.expandedGroups };
+          this.expandedGroups = {...this.savedState.expandedGroups};
         }
         if (this.savedState.expandedCriteria) {
-          this.expandedCriteria = { ...this.savedState.expandedCriteria };
+          this.expandedCriteria = {...this.savedState.expandedCriteria};
         }
         if (this.savedState.assessmentOutput) {
           this.assessmentOutput = JSON.parse(JSON.stringify(this.savedState.assessmentOutput));
@@ -637,14 +647,14 @@ export default {
             key: keyToUse
           }, (response) => {
             const value = (response && response.success && response.data && response.data.value)
-              ? response.data.value
-              : response?.value;
+                ? response.data.value
+                : response?.value;
             resolve(value || null);
           });
         });
 
         if (stepScoped) {
-          this.mergeSavedDataWithConfiguration(stepScoped, { markAsSaved: true });
+          this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: true});
           return;
         }
 
@@ -652,7 +662,7 @@ export default {
         if (this.isAIAssessmentWorkflow) {
           const preprocessed = await this.getPreprocessedAssessmentData();
           if (preprocessed) {
-            this.mergeSavedDataWithConfiguration(preprocessed, { markAsSaved: false });
+            this.mergeSavedDataWithConfiguration(preprocessed, {markAsSaved: false});
           }
         }
       } catch (error) {
@@ -687,14 +697,14 @@ export default {
       });
     },
 
-    mergeSavedDataWithConfiguration(savedData, options = { markAsSaved: true }) {
+    mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
       if (!savedData || !this.assessmentOutput) {
         return;
       }
 
       const assessmentArray = Array.isArray(savedData)
-        ? savedData
-        : (Array.isArray(savedData.assessment) ? savedData.assessment : null);
+          ? savedData
+          : (Array.isArray(savedData.assessment) ? savedData.assessment : null);
       if (!assessmentArray) return;
 
       const newGroups = (this.assessmentOutput.criteriaGroups || []).map(group => {
@@ -702,15 +712,21 @@ export default {
           const match = assessmentArray.find(a => (a.criterion === criterion.name) || (a.name === criterion.name));
           if (match) {
             const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
-            return { ...criterion, assessment: match.justification || "", currentScore: sc, score: sc, isSaved: options.markAsSaved === true };
+            return {
+              ...criterion,
+              assessment: match.justification || "",
+              currentScore: sc,
+              score: sc,
+              isSaved: options.markAsSaved === true
+            };
           }
-          return { ...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false };
+          return {...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false};
         });
         const total = updatedCriteria.reduce((sum, c) => sum + (c.currentScore || 0), 0);
-        return { ...group, score: total, criteria: updatedCriteria };
+        return {...group, score: total, criteria: updatedCriteria};
       });
 
-      this.assessmentOutput = { ...this.assessmentOutput, criteriaGroups: newGroups };
+      this.assessmentOutput = {...this.assessmentOutput, criteriaGroups: newGroups};
       this.initializeCurrentScore();
     },
 
@@ -759,16 +775,16 @@ export default {
         const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
         const normalizeFull = (arrOrObj) => {
           return toArray(arrOrObj)
-            .map(item => {
-              const base = (item && typeof item === 'object') ? { ...item } : {};
-              // Unify field names while preserving extra keys
-              if (base.name && !base.criterion) base.criterion = base.name;
-              if (base.points !== undefined && base.score === undefined) base.score = base.points;
-              if (base.assessment !== undefined && base.justification === undefined) base.justification = base.assessment;
-              if (base.score !== undefined) base.score = Number(base.score || 0);
-              return base;
-            })
-            .filter(i => i && i.criterion);
+              .map(item => {
+                const base = (item && typeof item === 'object') ? {...item} : {};
+                // Unify field names while preserving extra keys
+                if (base.name && !base.criterion) base.criterion = base.name;
+                if (base.points !== undefined && base.score === undefined) base.score = base.points;
+                if (base.assessment !== undefined && base.justification === undefined) base.justification = base.assessment;
+                if (base.score !== undefined) base.score = Number(base.score || 0);
+                return base;
+              })
+              .filter(i => i && i.criterion);
         };
 
         let existingArr = normalizeFull(existing);
@@ -784,10 +800,10 @@ export default {
         const updatesArr = normalizeFull(updates);
         const byCriterion = new Map(existingArr.map(i => [i.criterion, i]));
         updatesArr.forEach(u => {
-          const prev = byCriterion.get(u.criterion) || { criterion: u.criterion };
-          byCriterion.set(u.criterion, { ...prev, ...u });
+          const prev = byCriterion.get(u.criterion) || {criterion: u.criterion};
+          byCriterion.set(u.criterion, {...prev, ...u});
         });
-        const value = { assessment: Array.from(byCriterion.values()) };
+        const value = {assessment: Array.from(byCriterion.values())};
 
         // Save to document_data table (wrap in Promise so callers can await)
         await new Promise((resolve, reject) => {
@@ -818,16 +834,6 @@ export default {
       await this.saveAssessmentData();
       return true;
     },
-
-    // Gatekeeper used by parent before navigating to next step
-    canProceed() {
-      // If not manual assessment workflow or no forced rule, allow
-      if (!this.forcedAssessmentEnabled) {
-        return true;
-      }
-      return this.areAllCriteriaSaved();
-    },
-
     // Compatibility for Annotator.leave() - do not save here to avoid duplicate saves
     async leave() {
       return this.saveState();
@@ -837,7 +843,7 @@ export default {
     openInfoPanel(group, criterion, event) {
       const target = criterion || group;
       if (!target) return;
-      
+
       this.selectedCriterion = target;
       this.selectedElement = this.$refs.assessmentSection;
       this.showInfoPanel = true;
@@ -864,16 +870,6 @@ export default {
       // Handle close request from FloatingInfoPanel
       this.closeInfoPanel();
     },
-
-    // Method called by Study component to check if user can proceed
-    canProceed() {
-      // If not forced assessment or no forced rule, allow
-      if (!this.forcedAssessmentEnabled) {
-        return true;
-      }
-      // Check if all criteria are saved
-      return this.areAllCriteriaSaved();
-    }
   },
 };
 </script>

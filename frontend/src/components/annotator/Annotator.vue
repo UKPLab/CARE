@@ -24,13 +24,11 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             :sidebar-configs="sidebarConfigs"
-            :show="isSidebarVisible"
-            :sidebar-width="sidebarWidth"
+            :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
             :min-sidebar-width="minSidebarWidth"
             @copy="onCopy"
             @sidebar-action="handleButtonAction"
-            @resize="handleResize"
         >
           <template #annotations>
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
@@ -46,22 +44,6 @@
         </BasicSidebar>
       </div>
     </div>
-    <Teleport to="#topBarNavItems">
-      <li class="nav-item">
-        <TopBarButton
-            v-show="studySessionId && studySessionId !== 0 ? active : true"
-            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
-            class="btn rounded-circle"
-            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
-            @click="toggleSidebar"
-        >
-          <LoadIcon
-              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-              :size="18"
-          />
-        </TopBarButton>
-      </li>
-    </Teleport>
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
         <TopBarButton
@@ -107,32 +89,25 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
-import Assessment from "../dashboard/study/assessment/Assessment.vue";
 import Loader from "@/basic/Loading.vue";
 import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
-import LoadIcon from "@/basic/Icon.vue";
-import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
-import SidebarHistory from "@/components/editor/sidebar/History.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
-    SidebarTemplate, SidebarHistory,
-    LoadIcon,
+    SidebarTemplate,
     PDFViewer,
-    ExpandMenu,
     AnnotationSidebar,
-    Assessment,
     Loader,
     TopBarButton,
     BasicSidebar
@@ -191,20 +166,11 @@ export default {
       required: false,
       default: null,
     },
-    active: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
-
   },
   data() {
     return {
       downloading: false,
-      isSidebarVisible: true,
       assessmentViewActive: true,
-      sidebarIconHighlight: false,
-      sidebarWidth: 400,
       maxSidebarWidth: 400,
       minSidebarWidth: 0,
       logScroll: debounce(function () {
@@ -219,32 +185,6 @@ export default {
           })
         }
       }, 500),
-      logHideSidebar: debounce(function () {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "hideSidebar",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-            }
-          });
-        }
-      }, 500),
-      logResize: debounce(function (windowWidth, sidebarVisible) {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "sidebarResize",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              windowWidth: windowWidth,
-              sidebarVisible: sidebarVisible
-            }
-          });
-        }
-      }, 500)
     }
   },
   computed: {
@@ -409,7 +349,6 @@ export default {
     }
   },
   mounted() {
-    window.addEventListener('resize', this.handleResize);
     // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
     // this.maxSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     // this.sidebarWidth = this.$store.getters["settings/getValue"]("sidebar.width") || this.minSidebarWidth;
@@ -428,23 +367,6 @@ export default {
       }
     });
 
-    // When a manual annotation is added, automatically switch to the annotator sidebar
-    this.eventBus.on('annotator:switchToSidebar', () => {
-      if (this.assessmentEnabled && this.assessmentViewActive) {
-        this.assessmentViewActive = false;
-        this.isSidebarVisible = true;
-      }
-    });
-
-    // When a manual annotation is added, automatically switch to the annotator sidebar
-    this.eventBus.on('annotator:switchToSidebar', () => {
-      if (this.assessmentEnabled && this.assessmentViewActive) {
-        this.assessmentViewActive = false;
-        this.isSidebarVisible = true;
-      }
-    });
-
-
     // init component
     this.load();
 
@@ -462,7 +384,6 @@ export default {
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
-    window.removeEventListener('resize', this.handleResize);
 
     const currentPage = this.getCurrentPageNumber();
     const payload = JSON.stringify({page: currentPage, value: this.$refs.viewer.scrollTop});
@@ -546,21 +467,6 @@ export default {
       const loaded = (visible && hasDimensions);
       return loaded;
     },
-    handleResize(data) {
-      if (data.width <= 900) {
-        this.isSidebarVisible = false;
-        this.sidebarIconHighlight = true;
-        setTimeout(() => {
-          this.sidebarIconHighlight = false;
-        }, 1000);
-        this.logHideSidebar();
-      } else if (data.width > 900) {
-        this.isSidebarVisible = true;
-      }
-
-      // Log resize event with debouncing
-      this.logResize(data.width, this.isSidebarVisible);
-    },
     ...mapMutations({
       setSetting: "settings/set",
     }),
@@ -577,10 +483,6 @@ export default {
         key: 'annotator.nlp.activated',
         value: newNlpActive
       })
-    },
-    toggleSidebar() {
-      this.isSidebarVisible = !this.isSidebarVisible;
-      this.sidebarWidth = this.isSidebarVisible ? 400 : 0;
     },
     scrollActivity() {
       this.logScroll();
