@@ -14,35 +14,43 @@
         @click="$refs.publishModal.open()"
       />
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Manual Import"
-        title="Manual Import"
-        @click="$refs.uploadModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Publish Submissions"
+          title="Publish Submissions"
+          @click="$refs.publishSubmissionModal.open()"
       />
       <BasicButton
-        class="btn-primary btn-sm"
-        title="Import via Moodle"
-        text="Import via Moodle"
-        @click="$refs.importModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Manual Import"
+          title="Manual Import"
+          @click="$refs.uploadModal.open()"
       />
       <BasicButton
-        :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
-        :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
-        :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
-        @click="preprocessGrades" 
+          class="btn-primary btn-sm"
+          title="Import via Moodle"
+          text="Import via Moodle"
+          @click="$refs.importModal.open()"
+      />
+      <BasicButton
+          :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
+          :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+          :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+          @click="preprocessGrades"
       >
-        <span v-if="isProcessingActive" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+        <span
+          v-if="isProcessingActive"
+          class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
           <span class="visually-hidden">Processing active</span>
         </span>
       </BasicButton>
     </template>
     <template #body>
       <BasicTable
-        :columns="tableColumns"
-        :data="submissionTable"
-        :options="tableOptions"
-        :buttons="tableButtons"
-        @action="action"
+          :columns="tableColumns"
+          :data="submissionTable"
+          :options="tableOptions"
+          :buttons="tableButtons"
+          @action="action"
       />
     </template>
   </Card>
@@ -51,8 +59,9 @@
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
   <AssignModal ref="assignModal" />
+  <PublishModal ref="publishSubmissionModal" mode="submission"/>
   <ApplySkillModal
-    ref="applySkillModal"
+      ref="applySkillModal"
   />
 </template>
 
@@ -188,7 +197,7 @@ export default {
         };
       });
     },
-  },  
+  },
   mounted() {
     this.$socket.emit("serviceCommand", {
       service: "BackgroundTaskService",
@@ -270,7 +279,7 @@ export default {
           try {
             // Request document content from server
             const response = await new Promise((resolve, reject) => {
-              this.$socket.emit("documentGet", { documentId: doc.id }, (res) => {
+              this.$socket.emit("documentGet", {documentId: doc.id}, (res) => {
                 if (res.success) {
                   resolve(res.data);
                 } else {
@@ -300,10 +309,10 @@ export default {
             if (response.file) {
               if (typeof response.file === "string") {
                 // If it's a string (like JSON), add as text
-                zip.file(`${folderName}/${fileName}`, response.file, { binary: false });
+                zip.file(`${folderName}/${fileName}`, response.file, {binary: false});
               } else {
                 // For binary data
-                zip.file(`${folderName}/${fileName}`, response.file, { binary: true });
+                zip.file(`${folderName}/${fileName}`, response.file, {binary: true});
               }
             } else {
               this.eventBus.emit("toast", {
@@ -321,7 +330,7 @@ export default {
           }
         }
 
-        zip.generateAsync({ type: "blob" }).then((content) => {
+        zip.generateAsync({type: "blob"}).then((content) => {
           FileSaver.saveAs(content, `${folderName}.zip`);
         });
 
