@@ -22,6 +22,7 @@
 
         </div>
         <BasicSidebar
+            ref="basicSidebar"
             v-if="!sidebarDisabled"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
@@ -33,7 +34,10 @@
           <template #annotations>
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
-                <AnnotationSidebar ref="sidebar"/>
+                <AnnotationSidebar ref="sidebar"
+                  @new-anno-card="changeSideBarView"
+                  @scroll-to-comment="scrollToComment"
+                />
               </template>
             </SidebarTemplate>
           </template>
@@ -410,6 +414,15 @@ export default {
     }
   },
   methods: {
+    scrollToComment(offset) {
+      this.$refs.basicSidebar.scrollTo(offset);
+    },
+
+    changeSideBarView() {
+      if (this.$refs.basicSidebar) {
+        this.$refs.basicSidebar.changeView('annotations');
+      }
+    },
     handleButtonAction(data) {
       switch (data.action) {
         case 'toggleStudyComments':
