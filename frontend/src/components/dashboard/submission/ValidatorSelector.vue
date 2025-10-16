@@ -201,10 +201,6 @@ export default {
 </script>
 
 <style scoped>
-.validator-selection-container {
-  padding: 20px;
-}
-
 .validation-preview {
   min-height: 150px;
 }

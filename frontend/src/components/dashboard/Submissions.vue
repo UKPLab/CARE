@@ -2,10 +2,16 @@
   <Card title="Submissions">
     <template #headerElements>
       <BasicButton
-          class="btn-secondary btn-sm me-1"
-          text="Publish Reviews"
-          title="Publish Reviews"
-          @click="$refs.publishModal.open()"
+        class="btn-secondary btn-sm me-1"
+        text="Assign Group"
+        title="Assign Group"
+        @click="$refs.assignModal.open()"
+      />
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
+        text="Publish Reviews"
+        title="Publish Reviews"
+        @click="$refs.publishModal.open()"
       />
       <BasicButton
           class="btn-secondary btn-sm me-1"
@@ -48,10 +54,11 @@
       />
     </template>
   </Card>
-  <UploadModal ref="uploadModal"/>
-  <ConfirmModal ref="deleteConf"/>
-  <ImportModal ref="importModal"/>
-  <PublishModal ref="publishModal"/>
+  <UploadModal ref="uploadModal" />
+  <ConfirmModal ref="deleteConf" />
+  <ImportModal ref="importModal" />
+  <PublishModal ref="publishModal" />
+  <AssignModal ref="assignModal" />
   <PublishModal ref="publishSubmissionModal" mode="submission"/>
   <ApplySkillModal
       ref="applySkillModal"
@@ -65,6 +72,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./submission/UploadModal.vue";
 import ImportModal from "./submission/ImportModal.vue";
 import PublishModal from "./submission/PublishModal.vue";
+import AssignModal from "./submission/AssignModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -90,6 +98,7 @@ export default {
     ImportModal,
     ConfirmModal,
     PublishModal,
+    AssignModal,
     Card,
     BasicTable,
     BasicButton,
@@ -106,12 +115,13 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        {name: "ID", key: "id"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Submission ID", key: "extId"},
-        {name: "Validation ID", key: "validationConfigurationId"},
-        {name: "Created At", key: "createdAt"},
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Submission ID", key: "extId" },
+        { name: "Group", key: "group", sortable: true },
+        { name: "Validation ID", key: "validationConfigurationId", sortable: true },
+        { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
         {
@@ -183,6 +193,7 @@ export default {
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
           validationConfigurationId: s.validationConfigurationId ?? "-",
+          group: s.group ?? "-",
         };
       });
     },
