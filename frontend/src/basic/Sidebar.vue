@@ -135,6 +135,7 @@
 
 <script>
 
+import { scrollElement } from "@/assets/anchoring/scroll";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import debounce from "lodash.debounce";
@@ -361,6 +362,9 @@ export default {
     toggleSidebar() {
       this.isSidebarVisible = !this.isSidebarVisible;
       this.sidebarWidth = this.isSidebarVisible ? 400 : 0;
+    },
+    async scrollTo(offset) {
+      await scrollElement(this.$refs.sidepane, offset);
     },
 
     /**

@@ -42,6 +42,7 @@
         :ref="'annocard' + comment.id"
         :comment-id="comment.id"
         @focus="sidebarScrollTo"
+        @new-anno-card="changeSideBarView"
       />
     </li>
 
@@ -123,7 +124,7 @@ export default {
       default: () => []
     },
   },
-  emits: ['copy', 'add-edit'],
+  emits: ['copy', 'add-edit', 'new-anno-card', 'scroll-to-comment'],
   data() {
     return {
       width: 400,
@@ -278,6 +279,9 @@ export default {
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },
+    changeSideBarView() {
+      this.$emit("new-anno-card");
+    },
     hover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
@@ -310,7 +314,9 @@ export default {
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
-      await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
+      this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
+
+      //await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
       if (this.$refs["annocard" + commentId]) {
         this.$refs["annocard" + commentId][0].putFocus();

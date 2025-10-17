@@ -1,5 +1,5 @@
 <template>
-  <div class="assessment-section">
+  <div ref="assessmentSection" class="assessment-section">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <h4 class="mb-0">Assessment</h4>
@@ -199,16 +199,16 @@
       </div>
     </div>
   </div>
-  <!-- Floating Info Panel -->
-  <FloatingInfoPanel
+    <!-- Floating Info Panel -->
+    <FloatingInfoPanel
+      ref="infoPanel"
       :show="showInfoPanel"
       :selected-item="selectedCriterion"
       :reference-element="selectedElement"
-      :pinnable="true"
+      :is-pinned="isPinned"
       :position="'left'"
       @close-requested="onInfoPanelCloseRequested"
-      @pin-changed="onInfoPanelPinChanged"
-  />
+    />
 </template>
 
 /**
@@ -278,6 +278,7 @@ export default {
       showInfoPanel: false,
       selectedCriterion: null,
       selectedElement: null,
+      isPinned: false
     };
   },
 
@@ -366,14 +367,38 @@ export default {
   },
 
   mounted() {
+    document.addEventListener('mousedown', this.handleClickOutsideInfoPanel);
     this.initializeAssessmentOutput();
     if (Object.keys(this.savedState).length > 0) {
       this.restoreState();
     }
     this.$emit('assessment-ready-changed', this.isAssessmentComplete);
   },
-
+  
+  beforeUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutsideInfoPanel);
+  },
+  
   methods: {
+    handleClickOutsideInfoPanel(event) {
+      if (!this.showInfoPanel) return;
+      
+      // Check if the click is inside the floating panel
+      const infoPanel = this.$refs.infoPanel?.$el;
+      if (infoPanel && infoPanel.contains(event.target)) {
+        console.log("Clicked inside info panel");
+        return;
+      }
+      
+      // Check if the click is on any info icon using class selector
+      const infoIcon = event.target.closest('.info-icon');
+      if (infoIcon){
+        console.log("Clicked on info icon");
+        return;
+      }
+      
+      this.toggleInfoPanelPin(null, null, event); 
+    },
     initializeAssessmentOutput() {
       if (this.configuration && this.configuration.content) {
         this.assessmentOutput = this.transformRubricsToCriteriaGroups(this.configuration.content);
@@ -827,11 +852,12 @@ export default {
       if (!target) return;
 
       this.selectedCriterion = target;
-      this.selectedElement = event?.currentTarget || event?.target;
+      this.selectedElement = this.$refs.assessmentSection;
       this.showInfoPanel = true;
     },
 
-    closeInfoPanel() {
+    closeInfoPanel(force = false) {
+      if (this.isPinned) return;
       this.showInfoPanel = false;
       this.selectedCriterion = null;
       this.selectedElement = null;
@@ -839,20 +865,13 @@ export default {
 
     toggleInfoPanelPin(group, criterion, event) {
       const target = criterion || group;
-
-      // If the panel is already showing the same target, let the FloatingInfoPanel handle the pin toggle
-      if (this.showInfoPanel && this.selectedCriterion === target) {
-        // The FloatingInfoPanel will handle the pin state internally
-        return;
-      }
-
-      // Otherwise, open the panel with the new target
-      this.openInfoPanel(group, criterion, event);
+      this.isPinned = !this.isPinned;
+      if(this.isPinned){
+        this.openInfoPanel(group, criterion, event);
+      }    
     },
 
-    onInfoPanelPinChanged(isPinned) {
-      // Handle pin state changes - could be used for analytics or state management
-    },
+
 
     onInfoPanelCloseRequested() {
       // Handle close request from FloatingInfoPanel
