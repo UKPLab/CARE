@@ -19,10 +19,20 @@
       </div>
     </template>
     <template #step-2>
-      <ValidatorSelector
-        v-model="selectedValidatorId"
-        @selection-changed="handleValidatorChange"
-      />
+      <div class="p-3">
+        <div class="mb-3">
+          <h4 class="mb-3">Assign Group</h4>
+          <BasicForm
+            v-model="formData"
+            :fields="formFields"
+          />
+        </div>
+        <ValidatorSelector
+          v-model="selectedValidatorId"
+          description=""
+          @selection-changed="handleValidatorChange"
+        />
+      </div>
     </template>
     <template #step-3>
       <BasicForm
@@ -77,6 +87,21 @@ export default {
         singleSelect: true,
         search: true,
       },
+      formData: {
+        group: null
+      },
+      formFields: [
+        {
+          key: "group",
+          label: "Group Number",
+          type: "number",
+          placeholder: "Enter group number",
+          min: 0,
+          class: "form-control",
+          required: true,
+          default: null,
+        },
+      ],
     };
   },
   computed: {
@@ -84,7 +109,7 @@ export default {
       return this.$store.getters["table/user/getAll"];
     },
     stepValid() {
-      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0, this.checkRequiredFiles()];
+      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
     },
     fileFields() {
       if (!this.selectedValidatorData?.files || !Array.isArray(this.selectedValidatorData.files)) {
@@ -109,6 +134,7 @@ export default {
       this.files = null;
       this.selectedUser = [];
       this.selectedValidatorId = 0;
+      this.formData = {};
       this.$refs.uploadStepper.open();
     },
     handleValidatorChange(validatorData) {
@@ -141,6 +167,7 @@ export default {
         "documentUploadSingleSubmission",
         {
           userId: this.selectedUser[0].id,
+          group: this.formData.group,
           validationConfigurationId: this.selectedValidatorId,
           files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
         },

@@ -27,16 +27,26 @@
         />
       </div>
     </template>
-    <!-- Validator Selection Step -->
+    <!-- Config Selection Step -->
     <template #step-3>
-      <ValidatorSelector
-        v-model="selectedValidatorId"
-        @selection-changed="
-          (validatorData) => {
-            selectedValidatorData = validatorData;
-          }
-        "
-      />
+      <div class="p-3">
+        <div class="mb-3">
+          <h4 class="mb-3">Assign Group</h4>
+          <BasicForm
+            v-model="formData"
+            :fields="formFields"
+          />
+        </div>
+        <ValidatorSelector
+          v-model="selectedValidatorId"
+          description=""
+          @selection-changed="
+            (validatorData) => {
+              selectedValidatorData = validatorData;
+            }
+          "
+        />
+      </div>
     </template>
     <!-- Confirm Step -->
     <template #step-4>
@@ -47,6 +57,7 @@
             <h5 class="card-title">Import Summary</h5>
             <ul class="list-unstyled mb-0">
               <li>• Submissions to import: {{ selectedSubmissions.length }}</li>
+              <li>• Group Number: {{ formData.group }}</li>
               <li>
                 • Validation schema:
                 {{ selectedValidatorData?.name || "None selected" }}
@@ -106,6 +117,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicForm from "@/basic/Form.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import ValidatorSelector from "./ValidatorSelector.vue";
 import { downloadObjectsAs } from "@/assets/utils.js";
@@ -116,11 +128,11 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, BasicTable, StepperModal, BasicButton, ValidatorSelector },
+  components: { MoodleOptions, BasicTable, BasicButton, BasicForm, ValidatorSelector, StepperModal },
   subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
   data() {
     return {
-      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Validate" }, { title: "Confirm" }, { title: "Result" }],
+      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Configure" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
       selectedValidatorId: 0,
       selectedValidatorData: null,
@@ -155,6 +167,21 @@ export default {
         { name: "Last Name", key: "lastName" },
         { name: "File Count", key: "fileCount" },
       ],
+      formData: {
+        group: null
+      },
+      formFields: [
+        {
+          key: "group",
+          label: "Group Number",
+          type: "number",
+          placeholder: "Enter group number",
+          min: 0,
+          class: "form-control",
+          required: true,
+          default: null,
+        },
+      ],
       downloadedSubmissions: [],
       selectedSubmissions: [],
       importedSubmissions: [],
@@ -163,13 +190,7 @@ export default {
   },
   computed: {
     stepValid() {
-      return [
-        Object.values(this.moodleOptions).every((v) => v !== ""),
-        this.selectedSubmissions.length > 0,
-        this.selectedValidatorId !== 0,
-        true,
-        false,
-      ];
+      return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, false];
     },
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
@@ -221,6 +242,7 @@ export default {
     },
     reset() {
       this.selectedSubmissions = [];
+      this.formData = {};
       this.selectedValidatorId = 0;
       this.importResults = {};
       if (this.importedSubmissions.length > 0) {
@@ -276,13 +298,13 @@ export default {
             files: s.files,
           })),
           options: this.moodleOptions,
+          group: this.formData.group,
           validationConfigurationId: this.selectedValidatorId,
           progressId: this.$refs.importStepper.startProgress(),
         },
         (res) => {
           this.$refs.importStepper.stopProgress();
           if (res.success) {
-            console.log({ res });
             const { downloadedSubmissions = [], downloadedErrors = [] } = res["data"] || {};
             this.importedSubmissions = downloadedSubmissions;
             // Process import results for display
@@ -329,14 +351,6 @@ export default {
   max-height: 400px;
   min-height: 80px;
   overflow-y: auto;
-}
-
-.validator-selection-container {
-  padding: 20px;
-}
-
-.validation-preview {
-  min-height: 150px;
 }
 
 .link-container {

@@ -1,16 +1,11 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
-const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const {inject} = require("../../utils/generic");
 const path = require("path");
-const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
 const {enqueueDocumentTask} = require("../../utils/queue.js");
-
-const yauzl = require("yauzl");
-
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
 
@@ -747,6 +742,7 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.submissions - The submissions from Moodle
      * @param {Object} data.options - The configuration options (e.g., API key, URL) passed to the Moodle RPC service
      * @param {string} data.progressId - The unique ID used for reporting progress back to the frontend.
+     * @param {number} data.group - The group number to be assigned to the submissions
      * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
@@ -779,6 +775,7 @@ class DocumentSocket extends Socket {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
+                        group: data.group,
                         validationConfigurationId: data.validationConfigurationId,
                     },
                     { transaction }
@@ -830,16 +827,16 @@ class DocumentSocket extends Socket {
      * @author Linyin Huang
      * @param {Object} data - The input data from the frontend
      * @param {number} data.userId - The ID of the user who owns the submission
-     * @param {number} data.extId - The ID that comes from an external platform
      * @param {Array<Object>} data.files - The submissions files
+     * @param {number} data.group - The group number to be assigned to the submissions
      * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The result of the processed submission
-     * @throws {Error} - If the upload fails, if the extId is invalid, or if saving to server fails
+     * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const { files, userId, extId = null, validationConfigurationId } = data;
+        const { files, userId, group, validationConfigurationId } = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -850,7 +847,7 @@ class DocumentSocket extends Socket {
 
             const submission = await this.models["submission"].add({ 
                 userId, 
-                extId, 
+                group,
                 validationConfigurationId, 
                 createdByUserId: this.userId 
             }, { transaction });
