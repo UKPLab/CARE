@@ -27,6 +27,12 @@
         <p class="mb-0 mt-1">{{ selectedItem.description }}</p>
       </div>
       
+      <!-- Show maximum points for rubric groups only (groups have maxScore) -->
+      <div v-if="selectedItem.maxScore !== undefined" class="mb-3">
+        <strong>Maximum Points:</strong>
+        <span class="badge bg-secondary ms-2">{{ selectedItem.maxScore }} P</span>
+      </div>
+      
       <div v-if="selectedItem.scoring && selectedItem.scoring.length > 0">
         <strong>Scoring Criteria:</strong>
         <div class="scoring-list mt-2">

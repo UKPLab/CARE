@@ -210,9 +210,6 @@ export default {
     },
     configuration() {
       return this.studyStep?.configuration || null;
-    },
-    fetchConfigJson(){
-      return this.$store.getters["table/configuration/get"](this.studyStep?.configuration?.ConfigurationId);
     },    
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -380,12 +377,16 @@ export default {
     placeholders: {
       handler() {
         if (!this.loadingOnly) {
-          if (this.placeholders == null || Object.keys(this.placeholders).length === 0) {   
+          if ((this.placeholders == null || Object.keys(this.placeholders).length === 0) && !this.openRequests) {   
             this.waiting = false;   
           }
         }
       },
       immediate: true
+    },
+    // Ensure the loading state reflects presence of pending NLP requests
+    openRequests(val) {
+      this.waiting = !!val;
     },
     waiting(val) {
       if (val && !this.timeoutError) {

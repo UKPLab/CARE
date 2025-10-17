@@ -2,7 +2,8 @@
   <div class="assessment-section">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
-        <h4 class="mb-0">Assessment Results</h4>
+        <h4 class="mb-0">Assessment</h4>
+        <span v-if="assessmentOutput && assessmentOutput.criteriaGroups" class="badge">{{ totalPoints }} P</span>
         <span v-if="readOnly" class="badge bg-secondary">Read Only</span>
       </div>
     </div>
@@ -229,7 +230,7 @@ export default {
     LoadIcon,
     FloatingInfoPanel
   },
-  subscribeTable: ["document", "study_step", "configuration", "workflow_step"],
+  subscribeTable: ["configuration"],
 
   inject: {
     documentId: {
@@ -246,16 +247,7 @@ export default {
       required: false,
       default: null
     },
-    studyData: {
-      type: Array,
-      required: false,
-      default: () => []
-    },
-    acceptStats: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
+    
     readOnly: {
       type: Boolean,
       required: false,
@@ -272,7 +264,7 @@ export default {
     savedState: {type: Object, required: false, default: () => ({})},
   },
 
-  emits: ['state-changed', 'assessment-ready-changed'],
+  emits: ['state-changed', 'assessment-ready-changed', 'update:data'],
 
   data() {
     return {
@@ -291,17 +283,21 @@ export default {
 
   computed: {
     isManualAssessmentWorkflow() {
-      const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
-      const hasNoServices = !this.currentStudyStep.configuration.services;
-      return hasConfigFile && hasNoServices;
+      const cfg = this.currentStudyStep?.configuration || {};
+      const hasConfig = !!(cfg.configFile || cfg.configurationId);
+      const hasNoServices = !cfg.services;
+      return hasConfig && hasNoServices;
     },
     configuration() {
-      return this.$store.getters['table/configuration/get'](this.currentStudyStep?.configuration.configurationId);
+      const cfg = this.currentStudyStep?.configuration || {};
+      const cfgId = cfg.configurationId || cfg.configFile;
+      return this.$store.getters['table/configuration/get'](cfgId);
     },
     isAIAssessmentWorkflow() {
-      const hasConfigFile = !!this.currentStudyStep.configuration.configFile;
-      const hasServices = !!this.currentStudyStep.configuration.services;
-      return hasConfigFile && hasServices;
+      const cfg = this.currentStudyStep?.configuration || {};
+      const hasConfig = !!(cfg.configFile || cfg.configurationId);
+      const hasServices = !!cfg.services;
+      return hasConfig && hasServices;
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
@@ -321,6 +317,15 @@ export default {
         return true;
       }
       return this.areAllCriteriaSaved;
+    },
+    totalPoints() {
+      if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
+        return 0;
+      }
+      return this.assessmentOutput.criteriaGroups.reduce((sum, group) => {
+        const s = Number(group?.score || 0);
+        return sum + (isNaN(s) ? 0 : s);
+      }, 0);
     }
   },
   watch: {
@@ -328,6 +333,9 @@ export default {
       handler(newConfig) {
         if (newConfig && newConfig.content) {
           this.initializeAssessmentOutput();
+          this.$nextTick(() => {
+            this.loadSavedAssessmentData();
+          });
         }
       },
       immediate: true
@@ -373,7 +381,6 @@ export default {
     },
 
     transformRubricsToCriteriaGroups(configData) {
-      console.log("Transforming rubrics from configuration:", configData);
       if (!configData.rubrics) {
         this.error = "Invalid assessment configuration: No rubrics found";
         return null;
@@ -395,11 +402,17 @@ export default {
           };
         });
 
+        // Determine group scoring behavior and max score based on rubric-level calculation
+        const calculation = rubric.calculation || 'sum';
+        const sumOfCriteriaMax = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
+        const computedMaxScore = calculation === 'min' ? (rubric.maxPoints || sumOfCriteriaMax) : sumOfCriteriaMax;
+
         return {
           name: rubric.name,
           description: rubric.description,
+          calculation,
           score: 0,
-          maxScore: criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0),
+          maxScore: computedMaxScore,
           criteria: criteria
         };
       });
@@ -530,7 +543,8 @@ export default {
         const v = criterion.currentScore !== undefined ? criterion.currentScore : (criterion.score || 0);
         return sum + v;
       }, 0);
-      const newGroups = groups.map((g, i) => i === groupIndex ? {...g, score: total} : g);
+      const clamped = (group.calculation === 'min') ? Math.min(total, Number(group.maxScore ?? total)) : total;
+      const newGroups = groups.map((g, i) => i === groupIndex ? {...g, score: clamped} : g);
       this.assessmentOutput = {...this.assessmentOutput, criteriaGroups: newGroups};
     },
 
@@ -629,7 +643,7 @@ export default {
         });
 
         if (stepScoped) {
-          this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: true});
+          this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: false});
           return;
         }
 
@@ -643,33 +657,6 @@ export default {
       } catch (error) {
         console.error("Error loading saved assessment data:", error);
       }
-    },
-
-    async getPreprocessedAssessmentData() {
-      // Only fetch preprocessed data for the CURRENT document to avoid cross-document leakage
-      const currentDocumentId = this.documentId;
-      if (!currentDocumentId) return null;
-
-      const key = "nlpAssessment_grading_expose_assessment";
-
-      return await new Promise(resolve => {
-        this.$socket.emit("documentDataGet", {
-          documentId: currentDocumentId,
-          studySessionId: null,
-          studyStepId: null,
-          key
-        }, (response) => {
-          if (response && response.success && response.data && response.data.value) {
-            const val = response.data.value;
-            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
-          } else if (response && response.value) {
-            const val = response.value;
-            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
-          } else {
-            resolve(null);
-          }
-        });
-      });
     },
 
     mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
@@ -698,7 +685,8 @@ export default {
           return {...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false};
         });
         const total = updatedCriteria.reduce((sum, c) => sum + (c.currentScore || 0), 0);
-        return {...group, score: total, criteria: updatedCriteria};
+        const clamped = (group.calculation === 'min') ? Math.min(total, Number(group.maxScore ?? total)) : total;
+        return {...group, score: clamped, criteria: updatedCriteria};
       });
 
       this.assessmentOutput = {...this.assessmentOutput, criteriaGroups: newGroups};
