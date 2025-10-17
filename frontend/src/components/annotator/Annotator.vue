@@ -271,20 +271,6 @@ export default {
         return comments;
       }
     },
-    currentStudyStep() {
-      return this.studyStepId ? this.$store.getters["table/study_step/get"](this.studyStepId) : null;
-    },
-    currentWorkflowStep() {
-      const step = this.currentStudyStep;
-      if (!step || !step.workflowStepId) return null;
-      return this.$store.getters["table/workflow_step/get"](step.workflowStepId);
-    },
-    assessmentEnabled() {
-      const step = this.currentStudyStep;
-      if (!step) return false;
-      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
-      return !!(cfg && cfg.configFile);
-    },
     sidebarButtons() {
       const buttons = [];
 
@@ -613,15 +599,6 @@ export default {
           data: {name: "sentiment_classification"}
         });
       }
-    },
-    async leave() {
-      if (this.assessmentEnabled && this.assessmentViewActive && this.$refs.assessment && this.$refs.assessment.leave) {
-        return await this.$refs.assessment.leave();
-      }
-      if (this.$refs.sidebar && this.$refs.sidebar.leave) {
-        return await this.$refs.sidebar.leave();
-      }
-      return true;
     },
     downloadAnnotations() {
 
