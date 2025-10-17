@@ -16,6 +16,16 @@
         </h5>
       </template>  
       <template #body>
+        <NlpRequest
+          ref="req"
+          :study-step-id="studyStepId"
+          :loading-only="loadingOnly"
+          :auto-close-on-complete="autoCloseOnComplete"
+          @waiting-change="onReqWaitingChange"
+          @timeout-error="onReqTimeoutError"
+          @complete="onReqComplete"
+          @close="onReqChildClose"
+        />
         <div
           v-if="waiting"
           class="justify-content-center flex-grow-1 d-flex"
@@ -111,10 +121,10 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
-import {v4 as uuid} from "uuid";
 import TextPlaceholder from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
 import Comparison from "./placeholders/Comparison.vue";
+import NlpRequestCore from "./NlpRequestCore.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -125,7 +135,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison },
+  components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison, NlpRequest: NlpRequestCore },
   subscribeTable: ["document", "document_data", "study_step", "configuration"],
   inject: {
     studySessionId: {
@@ -173,14 +183,13 @@ export default {
       loadingConfig: true,
       documentText: null,
       waiting: false,
-      requests: {},
+      rotatingStartTs: 0,
       timeoutError: false,
       deferredSent: false,
       rotatingStatusIndex: 0,
       rotatingStatusText: "",
       rotatingTimer: null,
       rotatingLongTimer: null,
-      rotatingStartTs: 0,
       rotatingMessages: [
         "Checking preprocessed data",
         "Sending the NLP request",
@@ -193,16 +202,6 @@ export default {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);;
     },
-    fetchConfiguration() {
-      return this.$store.getters["table/configuration/get"](this.studyStep?.configuration?.configFile)?.content;
-    },
-    fetchSubmission() {
-      const doc = this.$store.getters["table/document/get"](this.studyStep?.documentId);
-      const submissionId = doc?.submissionId;
-      return submissionId
-        ? this.$store.getters["table/document/getByKey"]("submissionId", submissionId)
-        : [];
-    },
     studySteps() {
       return this.studyStep.studyId !== 0
         ? this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId)
@@ -210,34 +209,6 @@ export default {
     },
     configuration() {
       return this.studyStep?.configuration || null;
-    },    
-    nlpResults() {
-      return this.$store.getters["service/getResults"]("NLPService");
-    }, 
-    nlpResultsStatus() {
-      const requestIds = Object.keys(this.requests);
-      if (requestIds.length === 0) return [];
-      
-      return requestIds.map((requestId) => {
-        const resultExists = requestId in this.nlpResults;
-        const result = resultExists ? this.nlpResults[requestId] : null;
-
-        const isValid = resultExists && Object.keys(result).length > 0;
-        
-        return isValid;
-      });
-    },
-    allNlpRequestsCompleted() {
-      const statuses = this.nlpResultsStatus;
-      return statuses.length > 0 && statuses.every(status => status === true);
-    },
-    openRequests() {
-      return Object.keys(this.requests).length > 0;
-    },
-    nlpRequestTimeout() {
-      const v = parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
-      const min = 300000; // 5 minutes
-      return Math.max(Number.isFinite(v) && v > 0 ? v : min, min);
     },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
@@ -304,89 +275,15 @@ export default {
       },
       deep: true,
     },
-    studyData: {
-      handler() {
-        const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
-
-        const allAvailable = uniqueIds.every(uniqueId => {
-          const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-          if (!requestId || !this.nlpResults[requestId]) return false;
-          const { skill } = this.requests[requestId] || {};
-          if (this.isNotStudyBased(skill)) {
-            return true;
-          }
-          const raw = this.nlpResults[requestId];
-          const suffix = this.computeSuffixFromResult(skill, raw);
-          const key = this.expectedCompositeKey(uniqueId, skill, suffix);
-          return this.stepDataHasKey(key);
-        });
-        
-        if (this.readOnly && allAvailable) {
-          this.waiting = false;
-        }
-      },
-      deep: true,
-    },
-    nlpResultsStatus: {
-      handler(currentStatuses, previousStatuses) {
-        // Proceed when there is any change, including the first emission
-        if (
-          previousStatuses &&
-          currentStatuses.length === previousStatuses.length &&
-          !currentStatuses.some((status, i) => status !== previousStatuses[i])
-        ) {
-          return;
-        }
-        const requestIds = Object.keys(this.requests);
-        const readyIndices = currentStatuses.flatMap((status, i) => {
-          const prev = Array.isArray(previousStatuses) ? previousStatuses[i] : false;
-          return (status === true && prev === false) ? i : [];
-        });
-        readyIndices.forEach(i => {
-          const requestId = requestIds[i];
-          const result = this.nlpResults[requestId];
-          const { uniqueId, skill } = this.requests[requestId];
-          if (result) {
-          const suffix = this.computeSuffixFromResult(skill, result);
-          this.saveResult(skill, uniqueId, result, suffix);
-
-            if (skill === 'generating_feedback') {
-              this.emitGeneratedFeedback(result);
-            }
-
-            //clear request immediately after handling results to stop loading
-            this.$store.commit('service/removeResults', {
-              service: 'NLPService',
-              requestId: requestId
-            });
-            if (this.requests && this.requests[requestId]) {
-              delete this.requests[requestId];
-            }
-            if (!this.requests || Object.keys(this.requests).length === 0) {
-              this.waiting = false;
-              if (this.loadingOnly && this.autoCloseOnComplete) {
-                this.$emit('close', { autoClosed: true });
-                this.$refs.modal.close();
-              }
-            }
-          }
-        });
-      },
-      deep: true
-    },
     placeholders: {
       handler() {
         if (!this.loadingOnly) {
-          if ((this.placeholders == null || Object.keys(this.placeholders).length === 0) && !this.openRequests) {   
+          if ((this.placeholders == null || Object.keys(this.placeholders).length === 0) && !this.waiting) {   
             this.waiting = false;   
           }
         }
       },
       immediate: true
-    },
-    // Ensure the loading state reflects presence of pending NLP requests
-    openRequests(val) {
-      this.waiting = !!val;
     },
     waiting(val) {
       if (val && !this.timeoutError) {
@@ -427,37 +324,8 @@ export default {
 
   },  
   async mounted() {
-    if (this.loadingOnly && await this.getPreprocessedResult()) { return; }
     if (this.readOnly) {
       this.waiting = false;
-    } else if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
-      // If generating_feedback was already created earlier for this session/step, reuse and close immediately
-      const hasGeneratingFeedback = this.configuration.services.some(s => s?.type === 'nlpRequest' && s.skill === 'generating_feedback');
-      if (hasGeneratingFeedback) {
-        const existing = await this.fetchGeneratedFeedback();
-        if (existing) {
-          this.emitGeneratedFeedback(existing);
-          this.waiting = false;
-          this.$emit('close', { autoClosed: true, existing: true });
-          this.$refs.modal.close();
-          return;
-        }
-      }
-      let sentCount = 0;
-
-      for (const service of this.configuration.services) {
-        if (service.type === "nlpRequest") {
-          // Defer services configured to run on Next
-          if (service.trigger === "onNext" && !this.loadingOnly) continue;
-          if (!service.name || !service.skill || !service.inputs) {
-            continue;
-          }
-          const { skill, inputs: inputs, name } = service;
-          this.request(skill, inputs, ("service_" + name));
-          sentCount += 1;
-        }
-      }
-      this.waiting = sentCount > 0;
     }
     
     // Inspect sessions update the specific document data sometimes before the modal opens and the watcher is not triggered
@@ -465,9 +333,7 @@ export default {
       this.$emit("update:data", this.specificDocumentData); 
     }
 
-    if(!this.requests || Object.keys(this.requests).length === 0) {
-      this.waiting = false;
-    }
+    this.waiting = false;
 
     if (this.loadingOnly && !this.waiting) {
       return;
@@ -483,72 +349,6 @@ export default {
       this.data = data;
       this.$refs.modal.open();
     },
-    // Utils: common helpers to avoid duplication
-    // Derives the service name from a uniqueId; input: uniqueId (string|number); output: string
-    computeServiceName(uniqueId) {
-      if (typeof uniqueId === 'string' && uniqueId.startsWith('service_')) {
-        return uniqueId.slice('service_'.length);
-      }
-      return uniqueId;
-    },
-    // Builds a composite key for storing results; inputs: serviceName (string), skill (string), suffix (string); output: string
-    generatingKey(serviceName, skill, suffix = 'data') {
-      return `${serviceName}_${skill}_${suffix}`;
-    },
-    // Checks if a skill's data is not study-based (saved independent of session/step); input: skill (string); output: boolean
-    isNotStudyBased(skill) {
-      return skill === 'grading_expose';
-    },
-    // Computes a suffix name based on the result shape; inputs: skill (string), result (any); output: string
-    computeSuffixFromResult(skill, result) {
-      if (result && typeof result === 'object' && !Array.isArray(result)) {
-        const keys = Object.keys(result);
-        return keys.length > 0 ? keys[0] : 'data';
-      }
-      if (typeof result === 'string') {
-        return 'value';
-      }
-      return 'data';
-    },
-    // Saves NLP result to backend storage; inputs: skill (string), uniqueId (string), result (any), suffixOverride (string|null); output: key (string)
-    saveResult(skill, uniqueId, result, suffixOverride = null) {
-      const serviceName = this.computeServiceName(uniqueId);
-      const suffix = suffixOverride || this.computeSuffixFromResult(skill, result);
-      const key = this.generatingKey(serviceName, skill, suffix);
-      const notStudyBased = this.isNotStudyBased(skill);
-      this.$socket.emit("documentDataSave", {
-        documentId: this.studyStep?.documentId,
-        studySessionId: notStudyBased ? null : this.studySessionId,
-        studyStepId: notStudyBased ? null : this.studyStepId,
-        key,
-        value: result,
-      });
-      return key;
-    },
-    // Emits generated feedback to the editor; input: result (string|object); output: void
-    emitGeneratedFeedback(result) {
-      const feedbackText = (typeof result === 'object' && result !== null)
-        ? (result.textual_feedback || '')
-        : ((typeof result === 'string') ? result : '');
-      this.eventBus.emit('editorApplyGeneratedFeedback', {
-        documentId: this.studyStep?.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId,
-        feedbackText,
-      });
-    },
-    // Returns the expected composite key for a result; inputs: uniqueId (string), skill (string), suffix (string); output: string
-    expectedCompositeKey(uniqueId, skill, suffix = 'data') {
-      const serviceName = this.computeServiceName(uniqueId);
-      return this.generatingKey(serviceName, skill, suffix);
-    },
-    // Checks if the current step data contains a key; input: key (string); output: boolean
-    stepDataHasKey(key) {
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepDataArr = this.studyData[realStepId] || [];
-      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
-      return stepDataList.some(entry => entry && entry.key === key);
-    },
     // Closes the modal and optionally triggers deferred NLP; input: event (object); output: void
     async closeModal(event) {
       // If user clicks Next and there are deferred NLP services, run them before closing
@@ -558,22 +358,13 @@ export default {
       if (event?.nextStep && hasDeferred && !this.deferredSent) {
         this.deferredSent = true;
         this.waiting = true;
-
-        for (const service of this.configuration.services) {
-          if (service?.type === 'nlpRequest' && service.trigger === 'onNext') {
-            if (!service.name || !service.skill || !service.inputs) {
-              continue;
-            }
-            const { skill, inputs, name } = service;
-            await this.request(skill, inputs, ("service_" + name));
+        if (this.$refs.req && this.$refs.req.runDeferred) {
+          await this.$refs.req.runDeferred();
+          try {
+            await this.$refs.req.waitForRequestsToComplete();
+          } catch (e) {
+            // ignore
           }
-        }
-
-        // Wait for requests to be processed and saved by existing watcher
-        try {
-          await this.waitForRequestsToComplete();
-        } catch (e) {
-          // proceed even on timeout
         }
         this.waiting = false;
       }
@@ -581,400 +372,29 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    // Waits until all pending requests are finished; input: none; output: Promise<boolean>
-    async waitForRequestsToComplete() {
-      return await new Promise((resolve) => {
-        const check = () => {
-          if (!this.requests || Object.keys(this.requests).length === 0) {
-            resolve(true);
-            return;
-          }
-          setTimeout(check, 200);
-        };
-        check();
-      });
+    onReqWaitingChange(val) {
+      this.waiting = val;
     },
-    // Checks if a request's results already exist in study data; input: uniqueId (string); output: boolean
-    hasResultsInStudyData(uniqueId) {
-      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-      if (!foundRequestId) return false;
-      const { skill } = this.requests[foundRequestId] || {};
-      if (this.isNotStudyBased(skill)) return false;
-      const raw = this.nlpResults[foundRequestId];
-      const suffix = this.computeSuffixFromResult(skill, raw);
-      const key = this.expectedCompositeKey(uniqueId, skill, suffix);
-      return this.stepDataHasKey(key);
+    onReqTimeoutError(val) {
+      this.timeoutError = val;
     },
-    // Sends an NLP request or reuses existing results; inputs: skill (string), input (object), uniqueId (string), requestId (string); output: void
-    async sendRequest(skill, input, uniqueId, requestId) {
-      // 1) Try to reuse existing results and avoid resending
-      // grading_expose: use preprocessed data saved with null session/step
-      if (skill === 'grading_expose') {
-        const preprocessed = await this.getPreprocessedResult();
-        if (preprocessed) {
-          if (this.requests && this.requests[requestId]) {
-            delete this.requests[requestId];
-          }
-          if (!this.requests || Object.keys(this.requests).length === 0) {
+    onReqComplete() {
             this.waiting = false;
-            if (this.loadingOnly) {
-              this.$emit('close', { autoClosed: true, preprocessed: true });
-              this.$refs.modal.close();
-            }
-          }
-          return;
-        }
-      } else if (skill === 'generating_feedback') {
-        // generating_feedback: if we already have feedback saved for this session/step, don't resend
-        const existing = await this.fetchGeneratedFeedback();
-        if (existing) {
-          this.emitGeneratedFeedback(existing);
-          if (this.requests && this.requests[requestId]) {
-            delete this.requests[requestId];
-          }
-          if (!this.requests || Object.keys(this.requests).length === 0) {
-            this.waiting = false;
-            // Always auto-close when existing feedback is reused to avoid empty modal
-            this.$emit('close', { autoClosed: true, existing: true });
+      if (this.loadingOnly && this.autoCloseOnComplete) {
+        this.$emit('close', { autoClosed: true });
             this.$refs.modal.close();
-          }
-          return;
-        }
-      }
-
-      // 2) Prepare payload and send NLP request
-      if (!this.hasResultsInStudyData(uniqueId)) {
-        let payload = input || {};
-        if (skill === 'grading_expose') {
-          payload = await this.buildGradingExposePayload(input);
-          const hasFiles = payload?.submission && (payload.submission.zip || payload.submission.pdf);
-          
-          if (!hasFiles) {
-            // No files available from inputs and no preprocessed data: do not send
-            if (this.requests && this.requests[requestId]) {
-              delete this.requests[requestId];
-            }
-            this.eventBus.emit('toast', {
-              title: 'Grading Preprocessing Required',
-              message: 'No preprocessed data found',
-              variant: 'warning'
-            });
-            if (!this.requests || Object.keys(this.requests).length === 0) {
-              this.waiting = false;
-            }
-            return;
-          }
-        } else if (skill === 'generating_feedback') {
-          payload = await this.buildGeneratingFeedbackPayload(input);
-          
-          const hasSubmission = payload?.submission && (payload.submission.zip || payload.submission.pdf);
-          const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
-          
-          if (!hasSubmission || !hasGradingResults) {
-            // Missing required data: do not send
-            if (this.requests && this.requests[requestId]) {
-              delete this.requests[requestId];
-            }
-            this.eventBus.emit('toast', {
-              title: 'Feedback Generation Failed',
-              message: !hasSubmission ? 'No submission found' : 'No grading results found from previous step',
-              variant: 'warning'
-            });
-            if (!this.requests || Object.keys(this.requests).length === 0) {
-              this.waiting = false;
-            }
-            return;
-          }
-        }
-        
-        await this.$socket.emit("serviceRequest", {
-          service: "NLPService",
-          data: {
-            id: requestId,
-            name: skill,
-            data: payload,
-          },
-        });
-        setTimeout(() => {
-          if (this.requests[requestId]) {
-            this.eventBus.emit('toast', {
-              title: "NLP Service Request",
-              message: "Timeout in request for skill " + skill + " - Request failed!",
-              variant: "danger"
-            });
-            this.timeoutError = true;
-          }
-        }, this.nlpRequestTimeout);
       }
     },
-
-
-    // Gets preprocessed grading results for the current document; input: none; output: object|null
-    async getPreprocessedResult() {
-      // Only fetch preprocessed data for the CURRENT document to avoid cross-document leakage
-      const currentDocumentId = this.studyStep?.documentId;
-      if (!currentDocumentId) return null;
-
-      const key = 'nlpAssessment_grading_expose_assessment';
-
-      return await new Promise(resolve => {
-        this.$socket.emit("documentDataGet", {
-          documentId: currentDocumentId,
-          studySessionId: null,
-          studyStepId: null,
-          key
-        }, (response) => {
-          const val = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          resolve(val || null);
-        });
-      });
+    onReqChildClose(payload) {
+      // Propagate closes initiated by child request component
+      this.waiting = false;
+      this.$emit('close', payload || {});
+      this.$refs.modal.close();
     },
-
-    // Fetches previously generated feedback for this step/session; input: none; output: string|object|null
-    async fetchGeneratedFeedback() {
-      const currentDocumentId = this.studyStep?.documentId;
-      if (!currentDocumentId) return null;
-
-      const key = 'textualFeedback_generating_feedback_textual_feedback';
-
-      return await new Promise(resolve => {
-        this.$socket.emit("documentDataGet", {
-          documentId: currentDocumentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          key
-        }, (response) => {
-          const val = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          resolve(val || null);
-        });
-      });
-    },
-
-    // intentionally no saving of preprocessed data here
-    // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
-    // Queues an NLP request with resolved inputs; inputs: skill (string), inputs (object), uniqueId (string); output: void
-    async request(skill, inputs, uniqueId) {
-      const requestId = uuid();
-      this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
-
-      const input = Object.entries(inputs).reduce((acc, [entry, value]) => {
-        let resolved = null;
-        if (value && typeof value === 'object' && 'stepId' in value && 'dataSource' in value) {
-          const stepBucket = (this.studyData && this.studyData[value.stepId]) ? this.studyData[value.stepId] : null;
-          if (stepBucket && value.dataSource in stepBucket) {
-            resolved = stepBucket[value.dataSource];
-          } else {
-            // Fallback: pass configured token/id through (e.g., 'submission_29', 'config_123')
-            resolved = value.dataSource;
-          }
-        } else {
-          // Pass through non-referenced inputs as-is (may include numbers or other primitives)
-          resolved = value;
-        }
-        acc[entry] = resolved;
-        return acc;
-      }, {});
-
-      this.requests[requestId].input = input;
-      await this.sendRequest(skill, input, uniqueId, requestId);
-    },
-    // Builds payload for grading_expose; input: none; output: object
-    async buildGradingExposePayload() {
-      const result = { submission: {}, assessment_config: {} };
-      result.assessment_config = this.fetchConfiguration;
-      const docs = this.fetchSubmission || [];
-      result.submission = await this.buildSubmissionFromDocuments(docs);
-      return result;
-    },
-    // Builds payload for generating_feedback; input: input (object); output: object
-    async buildGeneratingFeedbackPayload(input) {
-      const result = { submission: {}, grading_results: [], feedback_grading_criteria: {} };
-      result.feedback_grading_criteria = this.getFeedbackConfiguration();
-      result.submission = await this.buildSubmissionFromInput(input);
-      if (!result.submission || (Object.keys(result.submission).length === 0)) {
-        const docs = this.fetchSubmission || [];
-        result.submission = await this.buildSubmissionFromDocuments(docs);
-      }
-      result.grading_results = await this.buildGradingResults(input);
-      
-      return result;
-    },
-    
-    // Helper method to get feedback configuration with fallback to previous step
-    getFeedbackConfiguration() {
-      let feedbackConfig = this.fetchConfiguration;
-      if (!feedbackConfig) {
-        const currentStepIndex = this.studySteps.findIndex(step => step.id === this.studyStepId);
-        const previousStep = currentStepIndex > 0 ? this.studySteps[currentStepIndex - 1] : null;
-        if (previousStep && previousStep.configuration && previousStep.configuration.configFile) {
-          const prevCfgRow = this.$store.getters["table/configuration/get"](previousStep.configuration.configFile);
-          feedbackConfig = prevCfgRow ? prevCfgRow.content : null;
-        }
-      }
-      return feedbackConfig || {};
-    },
-    
-    // Helper method to build submission from input parameter
-    async buildSubmissionFromInput(input) {
-      try {
-        const inputSubmission = input?.submission;
-        if (inputSubmission && typeof inputSubmission === 'object' && (inputSubmission.pdf || inputSubmission.zip)) {
-          return inputSubmission;
-        } else if (inputSubmission && (typeof inputSubmission === 'string' || typeof inputSubmission === 'number')) {
-          const docId = parseInt(inputSubmission, 10);
-          if (Number.isFinite(docId)) {
-            return await this.buildSubmissionFromDocumentId(docId);
-          }
-        }
-      } catch (e) {
-        // ignore and fallback below
-      }
-      return {};
-    },
-    
-    // Helper method to build submission from a single document ID with sibling enrichment
-    async buildSubmissionFromDocumentId(docId) {
-      const base64 = await this.fetchBinaryAsBase64(docId);
-      if (!base64) return {};
-      
-      const docRow = this.$store.getters["table/document/get"](docId);
-      if (!docRow) return {};
-      
-      const isZip = docRow.type === 4;
-      const isPdf = docRow.type === 0;
-      const out = {};
-      
-      if (isZip) out.zip = base64;
-      if (isPdf) out.pdf = base64;
-      
-      // Try to find sibling (pdf for zip, zip for pdf) via submissionId
-      const submissionId = docRow?.submissionId;
-      if (submissionId) {
-        const docs = this.$store.getters["table/document/getByKey"]("submissionId", submissionId) || [];
-        const siblingPdf = !isPdf ? docs.find(d => d && d.type === 0) : null;
-        const siblingZip = !isZip ? docs.find(d => d && d.type === 4) : null;
-        const [pdf, zip] = await Promise.all([
-          siblingPdf ? this.fetchBinaryAsBase64(siblingPdf.id) : Promise.resolve(null),
-          siblingZip ? this.fetchBinaryAsBase64(siblingZip.id) : Promise.resolve(null),
-        ]);
-        if (pdf) out.pdf = pdf;
-        if (zip) out.zip = zip;
-      }
-      
-      return out;
-    },
-    
-    // Helper method to build submission from an array of documents
-    async buildSubmissionFromDocuments(docs) {
-      const pdfDoc = docs.find(d => d && d.type === 0);
-      const zipDoc = docs.find(d => d && d.type === 4);
-      const [pdf, zip] = await Promise.all([
-        pdfDoc ? this.fetchBinaryAsBase64(pdfDoc.id) : Promise.resolve(null),
-        zipDoc ? this.fetchBinaryAsBase64(zipDoc.id) : Promise.resolve(null),
-      ]);
-      const out = {};
-      if (pdf) out.pdf = pdf;
-      if (zip) out.zip = zip;
-      return out;
-    },
-    
-    // Helper method to build grading results from input or fetch from store
-    async buildGradingResults(input) {
-      const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
-      
-      const gradingResultsRaw = input?.grading_results;
-      if (gradingResultsRaw && (Array.isArray(gradingResultsRaw) || Array.isArray(gradingResultsRaw?.assessment))) {
-        return toArray(gradingResultsRaw);
-      } else {
-        const gradingData = await this.fetchGradingResults();
-        return gradingData ? toArray(gradingData) : [];
-      }
-    },
-    // Fetches grading results from the previous step; input: none; output: object|array|null
-    async fetchGradingResults() {
-      // Find the previous step (step 1 for assessment)
-      const currentStepIndex = this.studySteps.findIndex(step => step.id === this.studyStepId);
-      const previousStep = currentStepIndex > 0 ? this.studySteps[currentStepIndex - 1] : null;
-      
-      if (!previousStep) {
-        return null;
-      }
-
-      // Fetch grading results from previous step with session ID
-      return await new Promise(resolve => {
-        this.$socket.emit("documentDataGet", {
-          documentId: previousStep.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: previousStep.id,
-          key: 'nlpAssessment_grading_expose_assessment'
-        }, (response) => {
-          const val = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          resolve(val || null);
-        });
-      });
-    },
-    // Fetches a document's binary and returns base64; input: documentId (number); output: string|null
-    async fetchBinaryAsBase64(documentId) {
-      const buffer = await new Promise((resolve) => {
-        this.$socket.emit("documentGet", { documentId }, (response) => {
-          if (response && response.success && response.data && response.data.file) {
-            const file = response.data.file;
-            if (file instanceof ArrayBuffer) {
-              resolve(file);
-            } else if (file && file.data && Array.isArray(file.data)) {
-              // Node Buffer serialized
-              resolve(Uint8Array.from(file.data).buffer);
-            } else {
-              // Fallback: try to coerce
-              try {
-                const arr = new Uint8Array(file);
-                resolve(arr.buffer);
-              } catch (e) {
-                resolve(null);
-              }
-            }
-          } else {
-            resolve(null);
-          }
-        });
-      });
-      if (!buffer) return null;
-      return this.arrayBufferToBase64(buffer);
-    },
-    // Converts an ArrayBuffer to a base64 string; input: buffer (ArrayBuffer); output: string
-    arrayBufferToBase64(buffer) {
-      let binary = '';
-      const bytes = new Uint8Array(buffer);
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
-    },
-    
-    // Retries any timed-out NLP requests; input: none; output: Promise<void>
     async retryNlpRequests() {
       this.timeoutError = false;
-      
-      const statuses = this.nlpResultsStatus;
-      const requestIds = Object.keys(this.requests);
-      const failedIndices = statuses.flatMap((status, i) => status === false ? i : []);
-      const retriedUniqueIds = new Set();
-      for (const i of failedIndices) {
-        const requestId = requestIds[i];
-        if (this.requests[requestId]) {
-          const { skill, input, uniqueId } = this.requests[requestId];
-          if (!retriedUniqueIds.has(uniqueId) && !this.hasResultsInStudyData(uniqueId)) {
-            retriedUniqueIds.add(uniqueId);
-            await this.sendRequest(skill, input, uniqueId, requestId);
-          }
-        }
+      if (this.$refs.req) {
+        await this.$refs.req.retryNlpRequests();
       }
     },    
 

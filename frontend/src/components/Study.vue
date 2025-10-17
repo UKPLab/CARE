@@ -53,7 +53,7 @@
           :disabled="!isCurrentStepReady"
           class="btn btn-outline-primary ms-3"
           title="Next"
-          @click="updateStep(nextStudyStep.id)"
+          @click="nextWithNlpGuard()"
       >
         Next
       </TopBarButton>
@@ -118,6 +118,12 @@
         </SidebarTemplate>
       </template>
     </Editor>
+    <NlpModal
+        v-if="currentStep.stepType !== 3 && studyTrajectory.includes(currentStep.id)"
+        ref="nlpModal"
+        :study-step-id="currentStep.id"
+        @close="onNlpModalClose"
+    />
     <StepModal
         v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
         :study-step-id="currentStep.id"
@@ -145,6 +151,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed, nextTick} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
+import NlpModal from "./stepmodal/NlpModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
@@ -159,7 +166,8 @@ export default {
     Annotator,
     Editor,
     TopBarButton,
-    StepModal
+    StepModal,
+    NlpModal
   },
   provide() {
     return {
@@ -230,6 +238,7 @@ export default {
         // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
         return this.studySteps.find((step) => step.studyStepPrevious === this.currentStudyStep.id);
       }
+      return null;
     },
     lastStep() {
       const previousStepIds = this.studySteps.map((step) => step.studyStepPrevious).filter((id) => id !== null); // Excluding null to avoid the first step
@@ -284,6 +293,7 @@ export default {
       if (this.studySession && this.studySession.studyStepId) {
         return this.studySession.studyStepId;
       }
+      return null;
     },
     studyClosed() {
       if (this.study) {
@@ -308,15 +318,7 @@ export default {
       }
       return false;
     },
-    async populateStudyData() {
-      await nextTick();
-      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
-        this.studyData = this.studySteps.reduce((acc, step, index) => {
-          acc[index + 1] = {};
-          return acc;
-        }, {});
-      }
-    },
+    
   },
   watch: {
     studySession() {
@@ -344,7 +346,7 @@ export default {
     async studySteps(newSteps) {
       if (newSteps.length > 0) {
         await nextTick();
-        this.populateStudyData;
+        this.populateStudyData();
       }
     },
   },
@@ -352,7 +354,7 @@ export default {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
     await nextTick();
-    this.populateStudyData;
+    this.populateStudyData();
   },
   sockets: {
     studyError: function (data) {
@@ -368,6 +370,38 @@ export default {
     },
   },
   methods: {
+    populateStudyData() {
+      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
+        this.studyData = this.studySteps.reduce((acc, step, index) => {
+          acc[index + 1] = {};
+          return acc;
+        }, {});
+      }
+    },
+    nextWithNlpGuard() {
+      // For step types 1 and 2, if there are deferred NLP services for the NEXT step, run them before navigating
+      const nextStep = this.nextStudyStep;
+      if (!nextStep) return;
+      if (this.readOnlyComputed) {
+        this.updateStep(nextStep.id);
+        return;
+      }
+      // Open the NLP modal if the CURRENT step (1 or 2) has deferred services
+      const hasDeferredNlp = Array.isArray(this.currentStep?.configuration?.services)
+        && this.currentStep.configuration.services.some(s => s?.type === 'nlpRequest' && s.trigger === 'onNext');
+      if (hasDeferredNlp && this.$refs.nlpModal && typeof this.$refs.nlpModal.open === 'function') {
+        this.$refs.nlpModal.open();
+        // After NlpModal completes, onNlpModalClose will navigate
+      } else {
+        this.updateStep(nextStep.id);
+      }
+    },
+    onNlpModalClose() {
+      const nextStep = this.nextStudyStep;
+      if (nextStep) {
+        this.updateStep(nextStep.id);
+      }
+    },
     getStudyData() {
       if (this.studyHash) {
         this.$socket.emit(
