@@ -461,7 +461,7 @@ export default {
             });
           }
         });
-      } else if (data.action === "saveStudyAsTemplate") {
+      } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
         const {deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams} = data.params;
@@ -513,8 +513,32 @@ export default {
     closeStudies() {
       this.$refs.bulkConfirmModal.open();
     },
-    saveAsTemplate() {
-      this.$refs.saveAsTemplateModal.open();
+    saveAsTemplate(study) {
+      const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
+      this.$refs.confirmModal.open(
+        "Save Study as Template",
+        "Are you sure you want to save this study as a template?",
+        warningMessage,
+        (confirmed) => {
+          if (confirmed) {
+            this.$socket.emit("studySaveAsTemplate", {id: study.id}, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Template Save Failed",
+                  message: result.message,
+                  variant: "danger",
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "Template Saved",
+                  message: "This study has been saved as a template.",
+                  variant: "success",
+                });
+              }
+            });
+          }
+        }
+      );
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](
@@ -563,33 +587,7 @@ export default {
         }
       );
     },
-    saveAsTemplate(study) {
-      const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
-      this.$refs.confirmModal.open(
-        "Save Study as Template",
-        "Are you sure you want to save this study as a template?",
-        warningMessage,
-        (confirmed) => {
-          if (confirmed) {
-            this.$socket.emit("studySaveAsTemplate", {id: study.id}, (result) => {
-              if (!result.success) {
-                this.eventBus.emit('toast', {
-                  title: "Template Save Failed",
-                  message: result.message,
-                  variant: "danger",
-                });
-              } else {
-                this.eventBus.emit('toast', {
-                  title: "Template Saved",
-                  message: "This study has been saved as a template.",
-                  variant: "success",
-                });
-              }
-            });
-          }
-        }
-      );
-    },
+    
   }
 }
 </script>

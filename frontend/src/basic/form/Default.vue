@@ -10,6 +10,7 @@
         :class="options.class"
         :disabled="options.readOnly !== undefined || options.disabled !== undefined"
         :maxlength="options.maxLength"
+        :min="options.min"
         :name="options.key"
         :placeholder="options.placeholder"
         :required="options.required"
