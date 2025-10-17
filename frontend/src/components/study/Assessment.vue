@@ -300,6 +300,12 @@ export default {
       const hasServices = !!cfg.services;
       return hasConfig && hasServices;
     },
+    // Centralized key management for document data operations
+    assessmentDataKey() {
+      return this.isAIAssessmentWorkflow 
+        ? "nlpAssessment_grading_expose_assessment" 
+        : "assessment_result";
+    },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
       return this.currentStudyStep?.configuration.forcedAssessment;
@@ -648,17 +654,13 @@ export default {
       }
 
       try {
-        const keyManual = "assessment_result";
-        const keyAI = "nlpAssessment_grading_expose_assessment";
-        const keyToUse = this.isAIAssessmentWorkflow ? keyAI : keyManual;
-
         // 1) Try to load already saved data for this step/session
         const stepScoped = await new Promise((resolve) => {
           this.$socket.emit("documentDataGet", {
             documentId: this.documentId,
             studySessionId: this.studySessionId || null,
             studyStepId: this.studyStepId,
-            key: keyToUse
+            key: this.assessmentDataKey
           }, (response) => {
             const value = (response && response.success && response.data && response.data.value)
                 ? response.data.value
@@ -687,13 +689,12 @@ export default {
     // Fetch preprocessed grading results stored without session/step scope
     async getPreprocessedAssessmentData() {
       if (!this.documentId) return null;
-      const key = 'nlpAssessment_grading_expose_assessment';
       return await new Promise((resolve) => {
         this.$socket.emit("documentDataGet", {
           documentId: this.documentId,
           studySessionId: null,
           studyStepId: null,
-          key
+          key: this.assessmentDataKey
         }, (response) => {
           const value = (response && response.success && response.data && response.data.value)
             ? response.data.value
@@ -772,7 +773,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: this.isAIAssessmentWorkflow ? "nlpAssessment_grading_expose_assessment" : "assessment_result",
+            key: this.assessmentDataKey,
           }, (resp) => {
             const v = (resp && resp.success && resp.data && resp.data.value) ? resp.data.value : resp?.value;
             resolve(v || null);
@@ -818,7 +819,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: this.isAIAssessmentWorkflow ? "nlpAssessment_grading_expose_assessment" : "assessment_result",
+            key: this.assessmentDataKey,
             value
           }, (response) => {
             if (response && response.success) {
