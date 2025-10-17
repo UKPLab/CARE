@@ -10,8 +10,7 @@
           :columns="currentTableColumns"
           :data="currentTableData"
           :options="tableOptions"
-          :modelValue="selectedFiles"
-          @update:modelValue="onFileSelectionChange"
+          v-model="selectedFiles"
           :key="tableParam ? tableParam.name : 'no-param'"
         />
       </div>
@@ -54,6 +53,8 @@ export default {
   data() {
     return {
       selectedFiles: [],
+      cachedDocumentsData: [],
+      cachedSubmissionsData: [],
       tableOptions: {
         striped: true,
         hover: true,
@@ -88,9 +89,6 @@ export default {
       const files = this.modelValue[this.tableParam.name];
       return files && Array.isArray(files) && files.length > 0;
     },
-    currentParameterData() {
-      return this.tableParam;
-    },
     currentTableType() {
       return this.tableParam?.tableType || '';
     },
@@ -98,9 +96,9 @@ export default {
       if (!this.tableParam) return [];
       
       if (this.currentTableType === 'document') {
-        return this.documentsData;
+        return this.cachedDocumentsData;
       } else if (this.currentTableType === 'submission') {
-        return this.submissionsData;
+        return this.cachedSubmissionsData;
       }
       return [];
     },
@@ -136,24 +134,15 @@ export default {
         };
       });
     },
-    hasAnySelections() {
-      return Object.values(this.modelValue).some(files => 
-        Array.isArray(files) && files.length > 0
-      );
-    },
     selectionSummary() {
-      if (!this.tableParam) {
-        return '';
-      }
+      if (!this.tableParam) return '';
       
-      const param = this.tableParam;
-      const files = this.modelValue[param.name];
+      const files = this.modelValue[this.tableParam.name];
       
       if (files && Array.isArray(files) && files.length > 0) {
-        return `Files selected for ${param.name}: ${files.length} file(s)`;
-      } else {
-        return `Please select files for parameter: ${param.name}`;
+        return `Files selected for ${this.tableParam.name}: ${files.length} file(s)`;
       }
+      return `Please select files for parameter: ${this.tableParam.name}`;
     },
     documentColumns() {
       return [
@@ -221,14 +210,35 @@ export default {
       },
       immediate: true,
     },
+    documentsData: {
+      handler(newData) {
+        this.cachedDocumentsData = newData;
+      },
+      deep: true,
+      immediate: true,
+    },
+    submissionsData: {
+      handler(newData) {
+        this.cachedSubmissionsData = newData;
+      },
+      deep: true,
+      immediate: true,
+    },
+    currentTableData: {
+      handler(newData) {
+        if (this.selectedFiles.length > 0 && newData.length > 0) {
+          this.syncSelectedFiles(this.selectedFiles);
+        }
+      },
+      deep: true,
+    },
     modelValue: {
       handler(newValue) {
-        // Reset selections when modelValue is empty or parameter changed
         if (!newValue || Object.keys(newValue).length === 0) {
           this.selectedFiles = [];
         } else if (this.tableParam && newValue[this.tableParam.name]) {
-          this.selectedFiles = newValue[this.tableParam.name];
-        } else {
+          this.syncSelectedFiles(newValue[this.tableParam.name]);
+        } else if (this.tableParam) {
           this.selectedFiles = [];
         }
       },
@@ -241,7 +251,7 @@ export default {
           this.selectedFiles = [];
           this.$emit('update:modelValue', {});
         } else if (newParam && this.modelValue[newParam.name]) {
-          this.selectedFiles = this.modelValue[newParam.name];
+          this.syncSelectedFiles(this.modelValue[newParam.name]);
         } else {
           this.selectedFiles = [];
         }
@@ -261,9 +271,7 @@ export default {
   },
   mounted() {
     if (this.tableParam && this.modelValue && this.modelValue[this.tableParam.name]) {
-      this.selectedFiles = this.modelValue[this.tableParam.name];
-    } else {
-      this.selectedFiles = [];
+      this.syncSelectedFiles(this.modelValue[this.tableParam.name]);
     }
     this.$emit('update:valid', this.isValid);
   },
@@ -271,15 +279,12 @@ export default {
     getTableType() {
       return this.currentTableType === 'document' ? 'Documents' : 'Submissions';
     },
-    onFileSelectionChange(files) {
-      this.selectedFiles = Array.isArray(files) ? files : [];
-      
-      if (this.tableParam) {
-        const updatedValue = { ...this.modelValue };
-        updatedValue[this.tableParam.name] = this.selectedFiles;
-        this.$emit('update:modelValue', updatedValue);
+    syncSelectedFiles(savedSelection) {
+      if (savedSelection && Array.isArray(savedSelection) && savedSelection.length > 0) {
+        const selectedIds = savedSelection.map(item => item.id);
+        this.selectedFiles = this.currentTableData.filter(item => selectedIds.includes(item.id));
       } else {
-        this.$emit('update:modelValue', {});
+        this.selectedFiles = [];
       }
     },
   },
@@ -287,14 +292,6 @@ export default {
 </script>
 
 <style scoped>
-.form-label {
-  font-weight: bold;
-}
-
-.alert {
-  margin-top: 1rem;
-}
-
 .selection-summary-custom {
   background-color: #e7f3ff;
   border: 1px solid #007bff;
@@ -303,35 +300,5 @@ export default {
   color: #007bff;
   font-weight: normal;
   line-height: 1.5;
-}
-
-.selections-summary {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-}
-
-.selection-summary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.25rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.selection-summary-item:last-child {
-  border-bottom: none;
-}
-
-.selection-summary-item .param-name {
-  font-weight: 600;
-  color: #495057;
-}
-
-.file-count {
-  color: #28a745;
-  font-weight: 500;
-  font-size: 0.875rem;
 }
 </style>
