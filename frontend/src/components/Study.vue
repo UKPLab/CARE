@@ -43,7 +43,7 @@
           class="btn btn-outline-secondary mx-3"
           :disabled="!isCurrentStepReady"
           :title="studySession.end ? 'Finish Study Again' : 'Finish Study'"
-          @click="finish"
+          @click="finishWithNlpGuard()"
       >
         {{ studySession.end ? "Finish Study Again" : "Finish Study" }}
       </TopBarButton>
@@ -119,10 +119,12 @@
       </template>
     </Editor>
     <NlpModal
-        v-if="currentStep.stepType !== 3 && studyTrajectory.includes(currentStep.id)"
+        v-if="currentStep.stepType !== 3 && (studyTrajectory.includes(currentStep.id) || currentStep.id === currentStudyStepId || readOnlyComputed)"
+        :key="(nlpModalStepId || currentStep.id) + '-nlp'"
         ref="nlpModal"
-        :study-step-id="currentStep.id"
+        :study-step-id="nlpModalStepId || currentStep.id"
         @close="onNlpModalClose"
+        @update:data="onNlpDataUpdate($event)"
     />
     <StepModal
         v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
@@ -201,7 +203,10 @@ export default {
       timerInterval: null,
       localStudyStepId: 0,
       studyData: [], // Data from all the study steps
-      isCurrentStepReady: true
+      isCurrentStepReady: true,
+      pendingFinishAfterNlp: false,
+      nlpModalStepId: null,
+      openNlpOnStepEnter: false
     };
   },
   computed: {
@@ -338,6 +343,12 @@ export default {
     currentStep(oldStep, newStep) {
       if (oldStep && newStep && oldStep.id !== newStep.id) {
         this.isCurrentStepReady = true;
+        if (this.openNlpOnStepEnter && newStep && this.nlpModalStepId === newStep.id) {
+          this.openNlpOnStepEnter = false;
+          if (this.$refs.nlpModal && typeof this.$refs.nlpModal.open === 'function') {
+            this.$refs.nlpModal.open();
+          }
+        }
       }
     },
     studyHash() {
@@ -370,6 +381,24 @@ export default {
     },
   },
   methods: {
+    onNlpDataUpdate(entries) {
+      try {
+        const idx = this.studySteps.findIndex(step => step.id === (this.nlpModalStepId || this.currentStep.id));
+        const bucketIndex = idx + 1;
+        if (!this.studyData[bucketIndex]) this.studyData[bucketIndex] = {};
+        const bucket = this.studyData[bucketIndex];
+        if (Array.isArray(entries)) {
+          entries.forEach(entry => {
+            if (entry && entry.key) {
+              bucket[entry.key] = entry.value;
+            }
+          });
+        }
+        this.$forceUpdate();
+      } catch (e) {
+        // Failed to merge NLP data into studyData
+      }
+    },
     populateStudyData() {
       if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
         this.studyData = this.studySteps.reduce((acc, step, index) => {
@@ -379,27 +408,56 @@ export default {
       }
     },
     nextWithNlpGuard() {
-      // For step types 1 and 2, if there are deferred NLP services for the NEXT step, run them before navigating
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       if (this.readOnlyComputed) {
         this.updateStep(nextStep.id);
         return;
       }
-      // Open the NLP modal if the CURRENT step (1 or 2) has deferred services
-      const hasDeferredNlp = Array.isArray(this.currentStep?.configuration?.services)
+      // Check current (deferred) vs incoming (immediate) NLP
+      const currentHasDeferred = Array.isArray(this.currentStep?.configuration?.services)
         && this.currentStep.configuration.services.some(s => s?.type === 'nlpRequest' && s.trigger === 'onNext');
-      if (hasDeferredNlp && this.$refs.nlpModal && typeof this.$refs.nlpModal.open === 'function') {
-        this.$refs.nlpModal.open();
+      const incomingHasImmediate = Array.isArray(nextStep?.configuration?.services)
+        && nextStep.configuration.services.some(s => s?.type === 'nlpRequest' && s.trigger !== 'onNext');
+
+      if (currentHasDeferred) {
+        // Run deferred NLP on current step BEFORE navigating
+        this.nlpModalStepId = this.currentStep.id;
+        this.nlpModalReason = 'currentDeferred';
+        if (this.$refs.nlpModal && typeof this.$refs.nlpModal.open === 'function') {
+          this.$refs.nlpModal.open();
+        }
         // After NlpModal completes, onNlpModalClose will navigate
+      } else if (incomingHasImmediate) {
+        // Navigate first, then run immediate NLP for the incoming step AFTER navigation
+        this.nlpModalStepId = nextStep.id;
+        this.nlpModalReason = 'incomingImmediate';
+        this.openNlpOnStepEnter = true;
+        this.updateStep(nextStep.id);
       } else {
         this.updateStep(nextStep.id);
       }
     },
     onNlpModalClose() {
-      const nextStep = this.nextStudyStep;
-      if (nextStep) {
-        this.updateStep(nextStep.id);
+      if (this.pendingFinishAfterNlp) {
+        this.pendingFinishAfterNlp = false;
+        this.nlpModalReason = null;
+        this.nlpModalStepId = null;
+        this.finish();
+        return;
+      }
+      // Only navigate to the next step if we just ran deferred NLP for the current step
+      if (this.nlpModalReason === 'currentDeferred') {
+        const nextStep = this.nextStudyStep;
+        this.nlpModalReason = null;
+        this.nlpModalStepId = null;
+        if (nextStep) {
+          this.updateStep(nextStep.id);
+        }
+      } else {
+        // For incomingImmediate, we are already on the next step; stay on it
+        this.nlpModalReason = null;
+        this.nlpModalStepId = null;
       }
     },
     getStudyData() {
@@ -475,6 +533,20 @@ export default {
     finish() {
       this.$refs.studyFinishModal.open();
     },
+    finishWithNlpGuard() {
+      if (this.readOnlyComputed) {
+        this.finish();
+        return;
+      }
+      const hasDeferredNlp = Array.isArray(this.currentStep?.configuration?.services)
+        && this.currentStep.configuration.services.some(s => s?.type === 'nlpRequest' && s.trigger === 'onNext');
+      if (hasDeferredNlp && this.$refs.nlpModal && typeof this.$refs.nlpModal.open === 'function') {
+        this.pendingFinishAfterNlp = true;
+        this.$refs.nlpModal.open();
+      } else {
+        this.finish();
+      }
+    },
     handleModalClose(event) {
       if (event.endStudy) {
         this.finish(); // End the study
@@ -525,27 +597,6 @@ export default {
       }
     },
 
-    // Helper method to get assessment component and check if it can proceed
-    // getAssessmentCanProceed() {
-    //   let assessmentComponent = null;
-
-    //   if (this.currentStep.stepType === 1) {
-    //     // For Annotator: try to find Assessment through the component tree
-    //     console.log('Finding assessment component in Annotator', this.$refs.annotator.canProceed());
-    //     const annotator = this.$refs.annotator;
-    //     if (annotator && annotator.$refs && annotator.$refs.assessmentAnnotator) {
-    //       assessmentComponent = annotator.$refs.assessmentAnnotator;
-    //     }
-    //   } else if (this.currentStep.stepType === 2) {
-    //     // For Editor: try to find Assessment through the component tree  
-    //     const editor = this.$refs.editor;
-    //     if (editor && editor.$refs && editor.$refs.assessmentEditor) {
-    //       assessmentComponent = editor.$refs.assessmentEditor;
-    //     }
-    //   }
-    //   console.log('Editor assessmentComponent:', assessmentComponent);
-    //   return assessmentComponent?.canProceed();
-    // },
   },
 };
 </script>

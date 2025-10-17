@@ -49,6 +49,7 @@
           @timeout-error="onTimeoutError"
           @complete="onComplete"
           @close="onReqClose"
+          @update:data="$emit('update:data', $event)"
         />
       </template>
       <template #footer>
@@ -89,10 +90,10 @@ export default {
       required: true
     }
   },
-  emits: ["close"],
+  emits: ["close", "update:data"],
   data() {
     return {
-      waiting: true,
+      waiting: false,
       timeoutError: false,
       rotatingStatusIndex: 0,
       rotatingStatusText: "",
@@ -110,14 +111,31 @@ export default {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
     },
+    documentData() {
+      return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
+    },
+    specificDocumentData() {
+      return this.documentData && this.studyStep?.documentId
+        ? this.documentData.filter(d => d.documentId === this.studyStep.documentId)
+        : [];
+    },
   },
   watch: {
     waiting(val) {
       if (val && !this.timeoutError) {
         this.startRotatingStatus();
+        if (this.$refs.modal) {
+          this.$refs.modal.open();
+        }
       } else {
         this.stopRotatingStatus();
       }
+    },
+    specificDocumentData: {
+      handler() {
+        this.$emit("update:data", this.specificDocumentData);
+      },
+      deep: true,
     }
   },
   mounted() {},
@@ -145,7 +163,9 @@ export default {
     onReqClose(payload) {
       this.waiting = false;
       this.$emit('close', payload || { closed: true });
-      this.$refs.modal.close();
+      this.$nextTick(() => {
+        this.$refs.modal.close();
+      });
     },
     retry() {
       if (this.$refs.req) {

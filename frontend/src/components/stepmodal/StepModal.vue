@@ -304,6 +304,8 @@ export default {
     }
 
     if (!this.loadingOnly) {
+      // Show loader while fetching document content
+      this.waiting = true;
       this.$socket.emit("documentGet",
         {
           documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
@@ -318,6 +320,8 @@ export default {
           } else {
             this.documentText = "Failed to load the document content.";
           }
+          // Hide loader after content is processed
+          this.waiting = false;
         }
       );
     }
@@ -332,8 +336,6 @@ export default {
     if (this.readOnly){
       this.$emit("update:data", this.specificDocumentData); 
     }
-
-    this.waiting = false;
 
     if (this.loadingOnly && !this.waiting) {
       return;

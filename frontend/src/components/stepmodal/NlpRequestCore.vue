@@ -44,7 +44,7 @@ export default {
       default: true
     }
   },
-  emits: ["waiting-change", "timeout-error", "complete", "close"],
+  emits: ["waiting-change", "timeout-error", "complete", "close", "update:data"],
   data() {
     return {
       requests: {},
@@ -61,7 +61,10 @@ export default {
       return this.studyStep?.configuration || null;
     },
     fetchConfiguration() {
-      return this.$store.getters["table/configuration/get"](this.studyStep?.configuration?.configFile)?.content;
+      const cfg = this.studyStep?.configuration || {};
+      const cfgId = cfg.configurationId || cfg.configFile;
+      const row = this.$store.getters["table/configuration/get"](cfgId);
+      return row ? row.content : null;
     },
     fetchSubmission() {
       const doc = this.$store.getters["table/document/get"](this.studyStep?.documentId);
@@ -92,6 +95,7 @@ export default {
       return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
+      // add it in the settings
       const v = parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
       const min = 300000;
       return Math.max(Number.isFinite(v) && v > 0 ? v : min, min);
@@ -119,9 +123,6 @@ export default {
           if (result) {
             const suffix = this.computeSuffixFromResult(skill, result);
             this.saveResult(skill, uniqueId, result, suffix);
-            if (skill === 'generating_feedback') {
-              this.emitGeneratedFeedback(result);
-            }
             this.$store.commit('service/removeResults', {
               service: 'NLPService',
               requestId: requestId
@@ -152,33 +153,23 @@ export default {
     }
   },
   async mounted() {
-    if (this.loadingOnly && await this.getPreprocessedResult()) { return; }
     if (this.readOnly) {
       this.waiting = false;
       return;
     }
     if (this.configuration && Array.isArray(this.configuration?.services)) {
-      const hasGeneratingFeedback = this.configuration.services.some(s => s?.type === 'nlpRequest' && s.skill === 'generating_feedback');
-      if (hasGeneratingFeedback) {
-        const existing = await this.fetchGeneratedFeedback();
-        if (existing) {
-          this.emitGeneratedFeedback(existing);
-          this.waiting = false;
-          this.$emit('close', { autoClosed: true, existing: true });
-          return;
+      // For loadingOnly=true (modal mode), auto-run only non-deferred services; for core embedded usages, StepModal controls deferred flow
+      if (this.loadingOnly) {
+        for (const service of this.configuration.services) {
+          if (service.type === 'nlpRequest') {
+            if (service.trigger === 'onNext') continue; // don't auto-run deferred here
+            if (!service.name || !service.skill || !service.inputs) continue;
+            const { skill, inputs, name } = service;
+            await this.request(skill, inputs, ("service_" + name));
+          }
         }
+        // Don't manually set waiting here - let the openRequests computed property handle it
       }
-      let sentCount = 0;
-      for (const service of this.configuration.services) {
-        if (service.type === 'nlpRequest') {
-          if (service.trigger === 'onNext' && !this.loadingOnly) continue;
-          if (!service.name || !service.skill || !service.inputs) continue;
-          const { skill, inputs, name } = service;
-          await this.request(skill, inputs, ("service_" + name));
-          sentCount += 1;
-        }
-      }
-      this.waiting = sentCount > 0;
     }
   },
   methods: {
@@ -203,34 +194,36 @@ export default {
       }
       return uniqueId;
     },
-    generatingKey(serviceName, skill, suffix = 'data') {
-      return `${serviceName}_${skill}_${suffix}`;
+    generatingKey(serviceName, skill , suffix) {
+      const key = `${serviceName}_${skill}_${suffix}`;
+      return key;
     },
     isNotStudyBased(skill) {
       return skill === 'grading_expose';
     },
     computeSuffixFromResult(skill, result) {
-      if (result && typeof result === 'object' && !Array.isArray(result)) {
+      if (result && !Array.isArray(result)) {
         const keys = Object.keys(result);
-        return keys.length > 0 ? keys[0] : 'data';
+        const suffix = keys.length > 0 ? keys[0] : null;
+        return suffix;
       }
-      if (typeof result === 'string') {
-        return 'value';
-      }
-      return 'data';
+      return null;
     },
     saveResult(skill, uniqueId, result, suffixOverride = null) {
       const serviceName = this.computeServiceName(uniqueId);
       const suffix = suffixOverride || this.computeSuffixFromResult(skill, result);
       const key = this.generatingKey(serviceName, skill, suffix);
       const notStudyBased = this.isNotStudyBased(skill);
-      this.$socket.emit("documentDataSave", {
+      const entry = {
         documentId: this.studyStep?.documentId,
         studySessionId: notStudyBased ? null : this.studySessionId,
         studyStepId: notStudyBased ? null : this.studyStepId,
         key,
         value: result,
-      });
+      };
+      this.$socket.emit("documentDataSave", entry);
+      // Emit immediately so Study can update studyData without waiting for store propagation
+      this.$emit('update:data', [entry]);
       return key;
     },
     expectedCompositeKey(uniqueId, skill, suffix = 'data') {
@@ -268,9 +261,10 @@ export default {
     async request(skill, inputs, uniqueId) {
       const requestId = uuid();
       this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
+
       const input = Object.entries(inputs).reduce((acc, [entry, value]) => {
         let resolved = null;
-        if (value && typeof value === 'object' && 'stepId' in value && 'dataSource' in value) {
+        if (value) {
           const stepBucket = (this.studyData && this.studyData[value.stepId]) ? this.studyData[value.stepId] : null;
           if (stepBucket && value.dataSource in stepBucket) {
             resolved = stepBucket[value.dataSource];
@@ -283,39 +277,31 @@ export default {
         acc[entry] = resolved;
         return acc;
       }, {});
+
       this.requests[requestId].input = input;
+
       await this.sendRequest(skill, input, uniqueId, requestId);
     },
     async sendRequest(skill, input, uniqueId, requestId) {
-      if (skill === 'grading_expose') {
-        const preprocessed = await this.getPreprocessedResult();
-        if (preprocessed) {
-          if (this.requests && this.requests[requestId]) {
-            delete this.requests[requestId];
-          }
-          if (!this.requests || Object.keys(this.requests).length === 0) {
-            this.waiting = false;
-            if (this.loadingOnly) {
-              this.$emit('close', { autoClosed: true, preprocessed: true });
-            }
-          }
-          return;
+      // Check if we already have preprocessed data for any skill
+      const hasPreprocessedData = await this.getPreprocessedData(uniqueId, skill);
+      
+      if (hasPreprocessedData) {
+        if (this.requests && this.requests[requestId]) {
+          delete this.requests[requestId];
         }
-      } else if (skill === 'generating_feedback') {
-        const existing = await this.fetchGeneratedFeedback();
-        if (existing) {
-          this.emitGeneratedFeedback(existing);
-          if (this.requests && this.requests[requestId]) {
-            delete this.requests[requestId];
+        if (!this.requests || Object.keys(this.requests).length === 0) {
+          this.waiting = false;
+          if (this.loadingOnly) {
+            this.$emit('close', { autoClosed: true, preprocessed: true });
           }
-          if (!this.requests || Object.keys(this.requests).length === 0) {
-            this.waiting = false;
-            this.$emit('close', { autoClosed: true, existing: true });
-          }
-          return;
         }
+        return;
       }
-      if (!(await this.hasResultsInStudyData(uniqueId))) {
+      
+      const hasStudyData = await this.hasResultsInStudyData(uniqueId);
+      
+      if (!hasStudyData) {
         let payload = input || {};
         if (skill === 'grading_expose') {
           payload = await this.buildGradingExposePayload(input);
@@ -324,11 +310,6 @@ export default {
             if (this.requests && this.requests[requestId]) {
               delete this.requests[requestId];
             }
-            this.eventBus.emit('toast', {
-              title: 'Grading Preprocessing Required',
-              message: 'No preprocessed data found',
-              variant: 'warning'
-            });
             if (!this.requests || Object.keys(this.requests).length === 0) {
               this.waiting = false;
             }
@@ -342,17 +323,13 @@ export default {
             if (this.requests && this.requests[requestId]) {
               delete this.requests[requestId];
             }
-            this.eventBus.emit('toast', {
-              title: 'Feedback Generation Failed',
-              message: !hasSubmission ? 'No submission found' : 'No grading results found from previous step',
-              variant: 'warning'
-            });
             if (!this.requests || Object.keys(this.requests).length === 0) {
               this.waiting = false;
             }
             return;
           }
         }
+        
         await this.$socket.emit("serviceRequest", {
           service: "NLPService",
           data: {
@@ -373,53 +350,6 @@ export default {
         }, this.nlpRequestTimeout);
       }
     },
-    async getPreprocessedResult() {
-      const currentDocumentId = this.studyStep?.documentId;
-      if (!currentDocumentId) return null;
-      const key = 'nlpAssessment_grading_expose_assessment';
-      return await new Promise(resolve => {
-        this.$socket.emit("documentDataGet", {
-          documentId: currentDocumentId,
-          studySessionId: null,
-          studyStepId: null,
-          key
-        }, (response) => {
-          const val = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          resolve(val || null);
-        });
-      });
-    },
-    async fetchGeneratedFeedback() {
-      const currentDocumentId = this.studyStep?.documentId;
-      if (!currentDocumentId) return null;
-      const key = 'textualFeedback_generating_feedback_textual_feedback';
-      return await new Promise(resolve => {
-        this.$socket.emit("documentDataGet", {
-          documentId: currentDocumentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          key
-        }, (response) => {
-          const val = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          resolve(val || null);
-        });
-      });
-    },
-    emitGeneratedFeedback(result) {
-      const feedbackText = (typeof result === 'object' && result !== null)
-        ? (result.textual_feedback || '')
-        : ((typeof result === 'string') ? result : '');
-      this.eventBus.emit('editorApplyGeneratedFeedback', {
-        documentId: this.studyStep?.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId,
-        feedbackText,
-      });
-    },
     async buildGradingExposePayload() {
       const result = { submission: {}, assessment_config: {} };
       result.assessment_config = this.fetchConfiguration;
@@ -439,29 +369,33 @@ export default {
       return result;
     },
     getFeedbackConfiguration() {
-      let feedbackConfig = this.fetchConfiguration;
-      if (!feedbackConfig) {
-        const currentStepIndex = this.studySteps.findIndex(step => step.id === this.studyStepId);
-        const previousStep = currentStepIndex > 0 ? this.studySteps[currentStepIndex - 1] : null;
-        if (previousStep && previousStep.configuration && previousStep.configuration.configFile) {
-          const prevCfgRow = this.$store.getters["table/configuration/get"](previousStep.configuration.configFile);
-          feedbackConfig = prevCfgRow ? prevCfgRow.content : null;
+      // Check if this is the new format with services
+      const config = this.studyStep?.configuration;
+      if (config?.services && config.services.length > 0) {
+        const service = config.services[0];
+        const feedbackConfigInput = service?.inputs?.feedback_grading_criteria;
+        
+        if (feedbackConfigInput?.dataSource) {
+          const configId = feedbackConfigInput.dataSource;
+          const row = this.$store.getters["table/configuration/get"](configId);
+          return row ? row.content : {};
         }
       }
-      return feedbackConfig || {};
+      
+      // Fallback to old format
+      return this.fetchConfiguration || {};
     },
     async buildSubmissionFromInput(input) {
-      try {
-        const inputSubmission = input?.submission;
-        if (inputSubmission && typeof inputSubmission === 'object' && (inputSubmission.pdf || inputSubmission.zip)) {
-          return inputSubmission;
-        } else if (inputSubmission && (typeof inputSubmission === 'string' || typeof inputSubmission === 'number')) {
-          const docId = parseInt(inputSubmission, 10);
-          if (Number.isFinite(docId)) {
-            return await this.buildSubmissionFromDocumentId(docId);
-          }
+      const inputSubmission = input?.submission;
+      if (inputSubmission && typeof inputSubmission === 'object' && (inputSubmission.pdf || inputSubmission.zip)) {
+        return inputSubmission;
+      }
+      if (inputSubmission && (typeof inputSubmission === 'string' || typeof inputSubmission === 'number')) {
+        const docId = parseInt(inputSubmission, 10);
+        if (Number.isFinite(docId)) {
+          return await this.buildSubmissionFromDocumentId(docId);
         }
-      } catch (e) {}
+      }
       return {};
     },
     async buildSubmissionFromDocumentId(docId) {
@@ -578,6 +512,36 @@ export default {
           }
         }
       }
+    },
+    async getPreprocessedData(uniqueId, skillName) {
+      const serviceName = this.computeServiceName(uniqueId);
+      const partialKey = `${serviceName}_${skillName}`;
+      const notStudyBased = this.isNotStudyBased(skillName);
+      
+      const findMatchingEntry = (data) => {
+        if (!Array.isArray(data)) return null;
+        return data.filter(entry => {
+          if (notStudyBased) {
+            return entry.studySessionId === null && entry.studyStepId === null;
+          } else {
+            return entry.studySessionId === this.studySessionId && entry.studyStepId === this.studyStepId;
+          }
+        }).find(entry => entry && entry.key && entry.key.includes(partialKey));
+      };
+      
+      // Get document data from store
+      const documentData = this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
+      let matchingEntry = findMatchingEntry(documentData);
+      
+      // If no match found, wait and try again
+      if (!matchingEntry) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const documentDataAfterDelay = this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
+        matchingEntry = findMatchingEntry(documentDataAfterDelay);
+      }
+      
+      const hasData = !!(matchingEntry && matchingEntry.value);
+      return hasData;
     },
   }
 };

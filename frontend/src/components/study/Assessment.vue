@@ -655,8 +655,27 @@ export default {
           }
         }
       } catch (error) {
-        console.error("Error loading saved assessment data:", error);
+        // Error loading saved assessment data
       }
+    },
+
+    // Fetch preprocessed grading results stored without session/step scope
+    async getPreprocessedAssessmentData() {
+      if (!this.documentId) return null;
+      const key = 'nlpAssessment_grading_expose_assessment';
+      return await new Promise((resolve) => {
+        this.$socket.emit("documentDataGet", {
+          documentId: this.documentId,
+          studySessionId: null,
+          studyStepId: null,
+          key
+        }, (response) => {
+          const value = (response && response.success && response.data && response.data.value)
+            ? response.data.value
+            : response?.value;
+          resolve(value || null);
+        });
+      });
     },
 
     mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
@@ -786,7 +805,7 @@ export default {
         });
 
       } catch (error) {
-        console.error("Error saving assessment data:", error);
+        // Error saving assessment data
       } finally {
         this.isSaving = false;
       }
@@ -805,12 +824,10 @@ export default {
     // Info panel methods
     openInfoPanel(group, criterion, event) {
       const target = criterion || group;
-      console.log("Opening info panel for:", target);
       if (!target) return;
 
       this.selectedCriterion = target;
       this.selectedElement = event?.currentTarget || event?.target;
-      console.log("Reference element:", this.selectedElement);
       this.showInfoPanel = true;
     },
 
@@ -835,11 +852,6 @@ export default {
 
     onInfoPanelPinChanged(isPinned) {
       // Handle pin state changes - could be used for analytics or state management
-      if (isPinned) {
-        console.log('Info panel pinned for:', this.selectedCriterion?.name);
-      } else {
-        console.log('Info panel unpinned');
-      }
     },
 
     onInfoPanelCloseRequested() {
