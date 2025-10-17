@@ -27,6 +27,18 @@ class StudySocket extends Socket {
         const currentStudy = await this.models['study'].getById(data['id']);
 
         if (await this.checkUserAccess(currentStudy.userId)) {
+            const studySteps = await this.models['study_step'].getAllByKey("studyId", currentStudy.id);
+            
+            const stepDocuments = [];
+            for (const step of studySteps) {
+                if (step.workflowStepId) {
+                    stepDocuments.push({
+                        id: step.workflowStepId,
+                        documentId: step.documentId,
+                        configuration: step.configuration
+                    });
+                }
+            }
 
             const newStudyData = {
                 ...currentStudy,
@@ -34,7 +46,11 @@ class StudySocket extends Socket {
                 hash: undefined,
                 template: true,
             };
-            return await this.models['study'].add(newStudyData, {transaction: options.transaction});
+            
+            return await this.models['study'].add(newStudyData, {
+                transaction: options.transaction,
+                context: { stepDocuments: stepDocuments }
+            });
         } else {
             throw new Error("No permission to save study as template");
         }

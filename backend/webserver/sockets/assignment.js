@@ -28,6 +28,20 @@ class AssignmentSocket extends Socket {
      */
     async createAssignment(data, options) {
 
+        const templateStudySteps = await this.models['study_step'].getAllByKey("studyId", data['template'].id);
+        
+        const stepDocuments = [];
+        for (const step of templateStudySteps) {
+            if (step.workflowStepId) {
+                const documentOverride = data['documents'].find(doc => doc.id === step.workflowStepId);
+                stepDocuments.push({
+                    id: step.workflowStepId,
+                    documentId: documentOverride ? documentOverride.documentId : step.documentId,
+                    configuration: step.configuration
+                });
+            }
+        }
+
         const new_study = {
             ...data['template'],
             createdByUserId: this.userId,
@@ -40,7 +54,7 @@ class AssignmentSocket extends Socket {
             limitSessions: data["reviewer"].length,
             limitSessionsPerUser: 1,
             resumable: true,
-            stepDocuments: data['documents']
+            stepDocuments: stepDocuments
         }
 
         const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
