@@ -813,6 +813,12 @@ export default {
         });
         const value = {assessment: Array.from(byCriterion.values())};
 
+        // Emit to parent so Study stores assessment_output in studyData immediately
+        // Only for AI workflows to drive step-2 inputs without relying on document_data
+        if (this.isAIAssessmentWorkflow && Array.isArray(value.assessment)) {
+          this.$emit('update:data', [{ key: 'assessment_output', value: value.assessment }]);
+        }
+
         // Save to document_data table (wrap in Promise so callers can await)
         await new Promise((resolve, reject) => {
           this.$socket.emit("documentDataSave", {
@@ -848,7 +854,7 @@ export default {
     },
 
     // Info panel methods
-    openInfoPanel(group, criterion, event) {
+    openInfoPanel(group, criterion) {
       const target = criterion || group;
       if (!target) return;
 
@@ -857,7 +863,7 @@ export default {
       this.showInfoPanel = true;
     },
 
-    closeInfoPanel(force = false) {
+    closeInfoPanel() {
       if (this.isPinned) return;
       this.showInfoPanel = false;
       this.selectedCriterion = null;
@@ -865,14 +871,11 @@ export default {
     },
 
     toggleInfoPanelPin(group, criterion, event) {
-      const target = criterion || group;
       this.isPinned = !this.isPinned;
       if(this.isPinned){
         this.openInfoPanel(group, criterion, event);
       }    
     },
-
-
 
     onInfoPanelCloseRequested() {
       // Handle close request from FloatingInfoPanel

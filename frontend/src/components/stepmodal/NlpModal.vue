@@ -145,10 +145,6 @@ export default {
       this.timeoutError = false;
       this.$nextTick(async () => {
         this.$refs.modal.open();
-        // Run only deferred NLP for this step
-        if (this.$refs.req && this.$refs.req.runDeferred) {
-          await this.$refs.req.runDeferred();
-        }
       });
     },
     onWaitingChange(val) {
