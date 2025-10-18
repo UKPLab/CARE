@@ -43,7 +43,7 @@
                       :model-value="currentData[index].configuration"
                       :study-step-id="choice.id"
                       :step-number="choice.stepNumber"
-                      :document-id="currentData.find((entry) => entry.id === choice.id)?.documentId"
+                      :document-id="getResolvedDocumentId(choice.id)"
                       :workflow-steps="workflowSteps"
                       @update:model-value="(configData) => handleConfigUpdate(configData, choice.id)"
                     />
@@ -205,6 +205,24 @@ export default {
     },
   },
   methods: {
+    // Resolve the effective document for a workflow step.
+    // Prefers linked document via workflowStepDocument, falls back to step's own document.
+    getResolvedDocumentId(workflowStepId) {
+      // If this step links its document to another workflow step, resolve that first
+      const step = this.workflowSteps.find((s) => s.id === workflowStepId);
+      if (step && step.workflowStepDocument) {
+        const sourceEntry = this.currentData.find((entry) => entry.id === step.workflowStepDocument);
+        const linkedDocId = sourceEntry?.documentId || sourceEntry?.parentDocumentId || null;
+        if (linkedDocId) return Number(linkedDocId);
+      }
+
+      // Fallback: use explicitly selected document for this step (if any)
+      const currentEntry = this.currentData.find((entry) => entry.id === workflowStepId);
+      const directDocId = currentEntry?.documentId || currentEntry?.parentDocumentId || null;
+      if (directDocId) return Number(directDocId);
+
+      return null;
+    },
     initializeCurrentData() {
       this.currentData = this.choices.map((c) => {
         return this.fields.reduce((acc, field) => {

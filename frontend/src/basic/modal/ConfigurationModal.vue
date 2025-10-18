@@ -25,10 +25,10 @@
         <StepTemplates
           v-if="step.type === 'general'"
           v-model="formData"
+          v-model:general-form-data="generalFormData"
           type="general"
           :fields="(workflowSteps.find(s => s.id === studyStepId)?.configuration?.fields) || []"
           :general-settings="generalSettings"
-          v-model:general-form-data="generalFormData"
         />
         <StepTemplates
           v-else-if="step.type === 'services'"
@@ -39,7 +39,10 @@
           :skill-map="skillMap"
           :available-data-sources="availableDataSources"
           :get-skill-inputs="getSkillInputs"
-          :provide-options-for-input="provideOptionsForInput"
+          :study-step-id="studyStepId"
+          :workflow-steps="workflowSteps"
+          :current-stepper-step="currentStepperStep"
+          :document-id="documentId"
         />
         <StepTemplates
           v-else-if="step.type === 'placeholders'"
@@ -419,58 +422,6 @@ export default {
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.config.input.data || {});
     },
-    provideOptionsForInput(skillName, inputName, baseSources) {
-      const base = Array.isArray(baseSources) ? baseSources : [];
-      const isSubmissionInput = (name) => name === 'submission';
-      const isAssessmentConfigInput = (name) => name === 'assessment_config' || name === 'feedback_grading_criteria';
-
-      if (skillName === 'grading_expose') {
-        if (isSubmissionInput(inputName)) {
-          return this.getSubmissionOptions();
-        }
-        if (isAssessmentConfigInput(inputName)) {
-          return this.getConfigOptions();
-        }
-      }
-
-      if (skillName === 'generating_feedback') {
-        if (isSubmissionInput(inputName)) {
-          return this.getSubmissionOptions();
-        }
-        if (inputName === 'grading_results') {
-          return [{ value: 'assessment_output', name: 'Assessment Output (step 1)', stepId: 0 }];
-        }
-        if (isAssessmentConfigInput(inputName)) {
-          return this.getConfigOptions();
-        }
-      }
-
-      return base;
-    },
-    getSubmissionOptions() {
-      // Prefer the submission belonging to the currently selected document (if any)
-      const documents = (this.$store.getters["table/document/getAll"]) || [];
-      const submissions = (this.$store.getters["table/submission/getAll"]) || [];
-
-      const submissionIds = submissions.map((s) => s.id);
-
-      let filteredDocs = documents.filter((d) => d && d.type === 4 && !d.hideInFrontend && submissionIds.includes(d.submissionId));
-
-      if (this.documentId) {
-        const selectedDoc = documents.find((d) => d && Number(d.id) === Number(this.documentId));
-        if (selectedDoc && selectedDoc.submissionId) {
-          filteredDocs = filteredDocs.filter((d) => d.submissionId === selectedDoc.submissionId);
-        }
-      }
-
-      return filteredDocs.map((d) => ({ value: `${d.id}`, name: d.name, stepId: 0 }));
-    },
-    getConfigOptions() {
-      const configs = (this.$store.getters["table/configuration/getAll"]) || [];
-      return configs
-        .filter((c) => c && c.type === 0 && c.deleted !== true)
-        .map((c) => ({ value: `${c.id}`, name: c.name || (c.content && c.content.name) || `Configuration ${c.id}`, stepId: 0 }));
-    },
     getSettingsForStep() {
       const cfg = this.workflowSteps.find((s) => s && s.id === this.studyStepId)?.configuration;
       return Array.isArray(cfg?.settings) ? cfg.settings : [];
@@ -552,10 +503,8 @@ export default {
     updateDataInput(index, input, source) {
       if (!source) return;
 
-      // Deep clone to avoid reference issues
       const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
 
-      // Ensure dataInput exists
       if (!updatedSkills[index].dataInput) {
         updatedSkills[index].dataInput = {};
       }
@@ -565,14 +514,12 @@ export default {
         dataSource: source.value,
       };
 
-      // Replace the entire array
       this.selectedSkills = updatedSkills;
     },
     getFormattedDataInput(index, input) {
       const dataInput = this.selectedSkills[index]?.dataInput?.[input];
       if (!dataInput) return null;
 
-      // Return the source object that matches this data input
       return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {

@@ -66,24 +66,18 @@
                 :options="skillMap"
               />
             </div>
-            <div
+            <InputMap
               v-if="selectedSkillsProxy[index].skillName"
-              class="mb-3"
-            >
-              <h6 class="text-secondary">Input Mapping</h6>
-              <div
-                v-for="input in getSkillInputs(selectedSkillsProxy[index].skillName)"
-                :key="input"
-                class="mb-2"
-              >
-                <label class="form-label">{{ input }}:</label>
-                <FormSelect
-                  v-model="inputMappingsProxy[index][input]"
-                  :options="{ options: getOptionsForInput(selectedSkillsProxy[index].skillName, input) }"
-                  :value-as-object="true"
-                />
-              </div>
-            </div>
+              :skill-name="selectedSkillsProxy[index].skillName"
+              v-model="inputMappingsProxy[index]"
+              :study-based="true"
+              :study-step-id="studyStepId"
+              :workflow-steps="workflowSteps"
+              :current-stepper-step="currentStepperStep"
+              :step-config="parsedStepConfig"
+              :selected-skills="selectedSkillsProxy"
+              :document-id="documentId"
+            />
           </div>
         </div>
         <div v-else class="alert alert-info">
@@ -165,10 +159,11 @@
 <script>
 import BasicForm from "@/basic/Form.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import InputMap from "@/basic/modal/skills/InputMap.vue";
 
 export default {
   name: "StepTemplates",
-  components: { BasicForm, FormSelect },
+  components: { BasicForm, FormSelect, InputMap },
   props: {
     type: { type: String, required: true },
     // General
@@ -184,6 +179,10 @@ export default {
     availableDataSources: { type: Array, default: () => [] },
     getSkillInputs: { type: Function, default: () => [] },
     provideOptionsForInput: { type: Function, default: null },
+    studyStepId: { type: Number, default: null },
+    workflowSteps: { type: Array, default: () => [] },
+    currentStepperStep: { type: Number, default: 0 },
+    documentId: { type: Number, default: null },
     // Placeholders
     placeholders: { type: Array, default: () => [] },
     placeholderColors: { type: Array, default: () => [] },
@@ -258,14 +257,6 @@ export default {
       } catch (e) {
         return null;
       }
-    },
-    getOptionsForInput(skillName, inputName) {
-      if (typeof this.provideOptionsForInput === 'function') {
-        const provided = this.provideOptionsForInput(skillName, inputName, this.availableDataSources);
-        if (Array.isArray(provided)) return provided;
-      }
-      const base = Array.isArray(this.availableDataSources) ? this.availableDataSources : [];
-      return base;
     },
   },
 };
