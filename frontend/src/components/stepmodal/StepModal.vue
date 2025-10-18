@@ -34,9 +34,6 @@
           <div v-if="!timeoutError" class="spinner-border m-5">
             <span class="visually-hidden">Loading...</span>          
           </div>
-          <div v-if="!timeoutError" class="align-self-center text-center">
-            <small class="text-muted">{{ rotatingStatusText }}</small>
-          </div>
           <div v-else>
             <div class="d-flex flex-column align-items-center">
               <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
@@ -183,29 +180,12 @@ export default {
       loadingConfig: true,
       documentText: null,
       waiting: false,
-      rotatingStartTs: 0,
       timeoutError: false,
-      deferredSent: false,
-      rotatingStatusIndex: 0,
-      rotatingStatusText: "",
-      rotatingTimer: null,
-      rotatingLongTimer: null,
-      rotatingMessages: [
-        "Checking preprocessed data",
-        "Sending the NLP request",
-        "Gathering the data",
-        "Parsing the data, waiting for responses",
-      ],
     };
   },
   computed: {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);;
-    },
-    studySteps() {
-      return this.studyStep.studyId !== 0
-        ? this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId)
-        : [];
     },
     configuration() {
       return this.studyStep?.configuration || null;
@@ -285,18 +265,6 @@ export default {
       },
       immediate: true
     },
-    waiting(val) {
-      if (val && !this.timeoutError) {
-        this.startRotatingStatus();
-      } else {
-        this.stopRotatingStatus();
-      }
-    },
-    timeoutError(val) {
-      if (val) {
-        this.stopRotatingStatus();
-      }
-    }
   },
   created() {
     if (this.configuration) {
@@ -341,36 +309,15 @@ export default {
       return;
     }
     this.$refs.modal.open();
-  },
-  beforeUnmount() {
-    this.stopRotatingStatus();
-  },
+  },  
   methods: {
     // Opens the modal with provided data; input: data (any); output: void
     open(data) {
       this.data = data;
       this.$refs.modal.open();
     },
-    // Closes the modal and optionally triggers deferred NLP; input: event (object); output: void
+    // Closes the modal; input: event (object); output: void
     async closeModal(event) {
-      // If user clicks Next and there are deferred NLP services, run them before closing
-      const hasDeferred = Array.isArray(this.configuration?.services)
-        && this.configuration.services.some(s => s?.type === 'nlpRequest' && s.trigger === 'onNext');
-
-      if (event?.nextStep && hasDeferred && !this.deferredSent) {
-        this.deferredSent = true;
-        this.waiting = true;
-        if (this.$refs.req && this.$refs.req.runDeferred) {
-          await this.$refs.req.runDeferred();
-          try {
-            await this.$refs.req.waitForRequestsToComplete();
-          } catch (e) {
-            // ignore
-          }
-        }
-        this.waiting = false;
-      }
-
       this.$emit("close", event);
       this.$refs.modal.close();
     },
@@ -405,41 +352,6 @@ export default {
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
         downloadObjectsAs(this.studyData, filename, 'json');
       }
-    },
-    // Starts rotating user-facing status messages and timers; input: none; output: void
-    startRotatingStatus() {
-      this.stopRotatingStatus();
-      this.rotatingStartTs = Date.now();
-      this.rotatingStatusIndex = 0;
-      this.rotatingStatusText = this.rotatingMessages[this.rotatingStatusIndex] || "";
-      // advance message every 30s, do not loop; hold last message until long timeout
-      this.rotatingTimer = setInterval(() => {
-        if (!this.waiting || this.timeoutError) {
-          this.stopRotatingStatus(false);
-          return;
-        }
-        if (this.rotatingStatusIndex < this.rotatingMessages.length - 1) {
-          this.rotatingStatusIndex += 1;
-          this.rotatingStatusText = this.rotatingMessages[this.rotatingStatusIndex] || "";
-        }
-      }, 30000);
-      // after 2 minutes, show longer than expected and stop timers
-      this.rotatingLongTimer = setTimeout(() => {
-        this.rotatingStatusText = "NLP is taking longer than expected...";
-        this.stopRotatingStatus(false);
-      }, 120000);
-    },
-    // Stops rotating status messages and clears timers; input: clearText (boolean); output: void
-    stopRotatingStatus(clearText = true) {
-      if (this.rotatingTimer) {
-        clearInterval(this.rotatingTimer);
-        this.rotatingTimer = null;
-      }
-      if (this.rotatingLongTimer) {
-        clearTimeout(this.rotatingLongTimer);
-        this.rotatingLongTimer = null;
-      }
-      if (clearText) this.rotatingStatusText = "";
     }
   }
 };
