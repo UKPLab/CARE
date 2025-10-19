@@ -13,6 +13,7 @@
           class="sidebar-container"
           :show-toggle-button="true"
           @sidebar-change="handleSidebarChange"
+          @sidebar-visibility-change="handleSidebarVisibilityChange"
           @sidebar-action="handleSidebarAction">
         <template v-if="showHistory && !withoutHistory" #history>
           <SidebarTemplate icon="clock-history" title="History">
@@ -159,8 +160,8 @@ export default {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
     readOnlyOverwrite() {
-      if (this.sidebarContent === 'history') {
-        return true;
+      if (this.sidebarContent === 'history' ) {
+        return this.isSidebarVisible;
       }
       return this.readOnly;
     },
@@ -198,7 +199,9 @@ export default {
         this.$refs.editor.downloadDocumentAsHTML();
       }
     },
-
+    handleSidebarVisibilityChange(visible) { 
+      this.isSidebarVisible = visible;
+    },  
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;

@@ -231,25 +231,7 @@ export default {
 
     // Emit the current active sidebar view after mount
     this.$emit('sidebar-change', this.resolvedActiveSlot);
-
-    //TODO adapt both eventbus to one generic eventbus
-    // "sidebarActiveView" with parameter to where to switch
-    // this is then e.g. called when a manual annotation is added
-      // When a manual annotation is added, automatically switch to the annotator sidebar
-    this.eventBus.on('annotator:switchToSidebar', () => {
-      if (this.assessmentEnabled && this.assessmentViewActive) {
-        this.assessmentViewActive = false;
-        this.isSidebarVisible = true;
-      }
-    });
-
-    // When a manual annotation is added, automatically switch to the annotator sidebar
-    this.eventBus.on('annotator:switchToSidebar', () => {
-      if (this.assessmentEnabled && this.assessmentViewActive) {
-        this.assessmentViewActive = false;
-        this.isSidebarVisible = true;
-      }
-    });
+    this.visibilityChange();
 
   },
   beforeUnmount() {
@@ -362,6 +344,7 @@ export default {
     toggleSidebar() {
       this.isSidebarVisible = !this.isSidebarVisible;
       this.sidebarWidth = this.isSidebarVisible ? 400 : 0;
+      this.visibilityChange();
     },
     async scrollTo(offset) {
       await scrollElement(this.$refs.sidepane, offset);
