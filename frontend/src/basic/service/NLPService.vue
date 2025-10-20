@@ -93,7 +93,9 @@ export default {
   },
   computed: {
     nlpRequestTimeout() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
+      const v = parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
+      const min = 300000; // 5 minutes
+      return Math.max(Number.isFinite(v) && v > 0 ? v : min, min);
     },
     nlpSkills() {
       return this.$store.getters["service/getSkills"]("NLPService");

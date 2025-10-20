@@ -1,0 +1,117 @@
+name: generating_feedback
+description: This skill is used to generate feedback for the exposé based on the grading result
+version: 0.0.1
+author: Haishuo Fang
+input:
+  data:
+    submission:
+      type: object
+      description: The submission of the exposé
+      properties:
+        zip:
+          type: string
+          description: The zip file of the submission
+        pdf:
+          type: string
+          description: The pdf file of the submission
+    grading_results:
+      type: array
+      description: The grading results of the exposé
+      properties:
+        criterion:
+          type: string
+          description: The criterion of the grading result
+        score:
+          type: integer
+          description: The score of the criterion
+        justification:
+          type: string
+          description: The justification of the grading result
+        possible_concerns:
+          type: string
+          description: The possible concerns of the grading result
+        thinking:
+          type: string
+          description: The reasoning process for the grading result
+    feedback_grading_criteria:
+      type: object
+      description: The feedback grading criteria the model can extract principles from
+      properties:
+        criterion:
+          type: string
+          description: The criterion of the feedback grading criteria
+        scoring:
+          type: array
+          description: The scoring of the feedback grading criteria
+          items:
+            type: object
+            properties:
+              points:
+                type: integer
+                description: The points of the feedback grading criteria
+              description:
+                type: string
+                description: The description of the feedback grading criteria
+      required: False
+
+  example:
+    {
+      "submission": {
+        "zip": zip_file,
+        "pdf": pdf_file
+      },
+      "grading_results": [{
+        "criterion": Language quality,
+        "score": 1,
+        "justification": Example justification,
+        "possible_concerns": Example possible concerns,
+        "thinking": "The reasoning process for the grading"
+        }],
+      "feedback_grading_criteria": {
+        "description": "the configuration for grading criteria which be used for LLMentor",
+        "version": "0.0.1",
+        "type": "assessment",
+        "rubrics": [
+          {
+            "name": "Overall",
+            "description": "Overall assessment criteria for feedback quality",
+            "criteria": [
+              {
+                "name": "Summary available",
+                "description": "",
+                "function": "feedback_generation",
+                "maxPoints": 2,
+                "scoring": [
+                  {
+                    "points": 0,
+                    "description": "No summary available or does not reflect understanding of the performance"
+                  },
+                  {
+                    "points": 1,
+                    "description": "Simple summary, demonstrates basic understanding of the performance"
+                  },
+                  {
+                    "points": 2,
+                    "description": "Concise and accurate summary that clearly reflects understanding of performance and builds confidence in feedback"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+output:
+  data:
+    textual_feedback:
+      type: string
+      description: The textual feedback for the exposé
+    thinking_content:
+      type: string
+      description: The reasoning process for the feedback
+  example:
+    {
+      "textual_feedback": This is a test feedback,
+      "thinking_content": This is a thinking content from a reasoning LLM
+    }

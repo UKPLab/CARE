@@ -11,7 +11,7 @@
         v-model="inputMappings[input]"
         :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
         :value-as-object="true"
-        @update:modelValue="updateMapping(input, $event)"
+        @update:model-value="updateMapping(input, $event)"
       />
     </div>
   </div>
@@ -70,6 +70,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    documentId: {
+      type: Number,
+      default: null,
+    },
   },
   emits: ["update:modelValue"],
   data() {
@@ -78,6 +82,28 @@ export default {
     };
   },
   computed: {
+    // Single source of truth to resolve the data-bearing document (PDF with submission)
+    // Efficient: a single store read + light logic, reused in both case 1 and case 2
+    resolvedSourceDocumentId() {
+      const docId = this.documentId || null;
+      if (!docId) return null;
+      const doc = this.$store.getters["table/document/get"](docId);
+      if (!doc) return null;
+      // If this step's document is an HTML/editor or modal clone, use its parent
+      if ((doc.type === 1 || doc.type === 2) && doc.parentDocumentId) return doc.parentDocumentId;
+      return docId;
+    },
+    resolvedSourceDocument() {
+      const id = this.resolvedSourceDocumentId;
+      return id ? this.$store.getters["table/document/get"](id) : null;
+    },
+    resolvedSubmissionDocs() {
+      const doc = this.resolvedSourceDocument;
+      const submissionId = doc && doc.submissionId ? doc.submissionId : null;
+      if (!submissionId) return [];
+      const docs = this.$store.getters["table/document/getByKey"]("submissionId", submissionId) || [];
+      return docs.filter(d => d && d.type === 4);
+    },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
@@ -169,6 +195,23 @@ export default {
     },
   },
   methods: {
+    // Append resolved document and submission-derived sources for the current step
+    appendResolvedDocSources(sources, stepIndex) {
+      if (!this.resolvedSourceDocument) return;
+      const doc = this.resolvedSourceDocument;
+      const docName = doc && doc.name ? doc.name : `Document ${doc.id}`;
+      sources.push({ value: `${doc.id}`, name: `<Document> ${docName}`, stepId: stepIndex });
+      this.resolvedSubmissionDocs.forEach(d => {
+        const name = d && d.name ? d.name : `Document ${d.id}`;
+        sources.push({ value: `${d.id}`, name: `<submission> ${name}`, stepId: stepIndex });
+      });
+    },
+    // Study-based configuration sources (value=id, name as <configuration> name, with stepId)
+    getStudyConfigSources(stepIndex) {
+      return (this.configurationEntries || [])
+        .filter(entry => entry && entry.type === 0 && entry.hideInFrontend === false)
+        .map(entry => ({ value: `${entry.id}`, name: `<configuration> ${entry.name}`, stepId: stepIndex }));
+    },
     updateMapping(input, source) {
       if (source && source.requiresTableSelection) {
         Object.keys(this.inputMappings).forEach(paramName => {
@@ -198,12 +241,22 @@ export default {
       stepCollector.forEach((step, index) => {
         const stepIndex = index + 1;
         switch (step.stepType) {
+          case 1: {
+            // Add specific document/submission sources
+            if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
+            // Add configuration sources (study-based format)
+            sources.push(...this.getStudyConfigSources(stepIndex));
+            break;
+          }
           // Editor
           case 2:
             sources.push(
               { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
-              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
+              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex },
+              { value: "assessment_output", name: `Assessment Output (Step ${stepIndex-1})`, stepId: stepIndex-1 },
             );
+            // If this is the current editor step, also expose the resolved doc/submission sources
+            if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
             break;
           // Modal
           case 3:
