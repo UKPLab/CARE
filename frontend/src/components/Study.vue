@@ -155,7 +155,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed, nextTick} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import NlpModal from "./stepmodal/NlpModal.vue";
+import NlpModal from "../basic/modal/NlpModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
@@ -179,6 +179,18 @@ export default {
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
       currentStudyStep: computed(() => this.currentStep),
+      isManualAssessmentWorkflow: computed(() => {
+        const cfg = this.currentStep?.configuration || {};
+        const hasConfig = !!(cfg.configFile || cfg.configurationId);
+        const hasServices = !!cfg.services;
+        return hasConfig && !hasServices;
+      }),
+      isAIAssessmentWorkflow: computed(() => {
+        const cfg = this.currentStep?.configuration || {};
+        const hasConfig = !!(cfg.configFile || cfg.configurationId);
+        const hasServices = !!cfg.services;
+        return hasConfig && !!hasServices;
+      }),
     };
   },
   props: {
