@@ -50,7 +50,7 @@ import LoadIcon from "@/basic/Icon.vue";
  * A reusable floating panel that displays detailed information about criteria or groups.
  * Supports pinning, hover interactions, and positioning relative to a reference element.
  * 
- * @author GitHub Copilot
+ * @author Akash Gundapuneni
  */
 export default {
   name: "FloatingInfoPanel",
