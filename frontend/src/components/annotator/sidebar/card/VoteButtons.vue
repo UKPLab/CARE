@@ -59,7 +59,6 @@ export default {
     },
     myVoteValue() {
       if (this.myVote) {
-        console.log("My vote value", this.myVote.vote);
         return this.myVote.vote;
       }
       return 0;
@@ -76,9 +75,7 @@ export default {
   },
   methods: {
     vote(value) {
-      console.log("Vote", value, this.myVote, this.myVoteValue);
       if (this.myVote && this.myVoteValue === value) {
-        console.log("Remove vote", this.myVote.id);
         this.$socket.emit('appDataUpdate', {
           table: "comment_vote",
           data: {
@@ -87,7 +84,6 @@ export default {
           },
         });
       } else {
-        console.log("Add/Update vote", this.commentId, value);
         this.$socket.emit('appDataUpdate', {
           table: "comment_vote",
           data: {
