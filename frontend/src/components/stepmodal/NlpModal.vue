@@ -64,6 +64,15 @@
   </span>
 </template>
 
+<!-- 
+  Modal wrapper for NLP requests in a study step.
+
+  Shows status, error/retry logic, and delegates NLP execution to NlpRequestCore,
+  auto-closing when appropriate.
+  
+  @author Akash Gundapuneni
+-->
+
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
@@ -100,10 +109,15 @@ export default {
       rotatingTimer: null,
       rotatingLongTimer: null,
       rotatingMessages: [
-        "Checking preprocessed data",
-        "Sending the NLP request",
-        "Gathering the data",
-        "Parsing the data, waiting for responses",
+        "Thinking through your request...", 
+        "Almost there, just refining the details.", 
+        "Gathering the best possible answer...", 
+        "Just a few more moments, precision takes time.", 
+        "Working on something smart for you...", 
+        "One moment... I'm thinking faster than it looks.", 
+        "Just aligning a few neurons...", 
+        "Spinning up some linguistic magic...", 
+        "Your request is traveling through a billion neurons...",
       ],
     };
   },
