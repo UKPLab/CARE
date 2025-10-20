@@ -424,6 +424,9 @@ export default {
           console.warn('Unknown sidebar button action:', data.action);
       }
     },
+    leave(){
+      return this.$refs.sidebar.leave();
+    },
     toggleStudyComments() {
       this.setSetting({
         key: 'annotator.showAllComments',

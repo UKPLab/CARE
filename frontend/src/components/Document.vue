@@ -83,9 +83,11 @@ export default {
   methods: {
     async confirmLeave() {
       if (this.$refs.annotator) {
-        return await this.$refs.annotator.leave();
+        const result = await this.$refs.annotator.leave()
+        return result;
       } else if (this.$refs.editor) {
-        return await this.$refs.editor.leave();
+        const result = await this.$refs.editor.leave()
+        return result;
       }
     }
   }
