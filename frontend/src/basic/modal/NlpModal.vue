@@ -76,7 +76,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import NlpRequestCore from "./NlpRequestCore.vue";
+import NlpRequestCore from "@/basic/service/NlpRequestCore.vue";
 
 export default {
   name: "NlpModal",
