@@ -22,7 +22,7 @@
         <h5 class="modal-title text-primary">Configuration</h5>
       </template>
       <template #step="{ step }">
-        <StepTemplates
+        <StepTemplate
           v-if="step.type === 'general'"
           v-model="formData"
           v-model:general-form-data="generalFormData"
@@ -30,7 +30,7 @@
           :fields="(workflowSteps.find(s => s.id === studyStepId)?.configuration?.fields) || []"
           :general-settings="generalSettings"
         />
-        <StepTemplates
+        <StepTemplate
           v-else-if="step.type === 'services'"
           v-model:selected-skills="selectedSkills"
           v-model:input-mappings="inputMappings"
@@ -44,7 +44,7 @@
           :current-stepper-step="currentStepperStep"
           :document-id="documentId"
         />
-        <StepTemplates
+        <StepTemplate
           v-else-if="step.type === 'placeholders'"
           v-model:placeholder-form-data="placeholderFormData"
           type="placeholders"
@@ -62,7 +62,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import StepTemplates from "@/basic/modal/StepTemplates.vue";
+import StepTemplate from "@/basic/modal/StepTemplate.vue";
 import Quill from "quill";
 
 /**
@@ -77,7 +77,7 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, StepTemplates },
+  components: { StepperModal, StepTemplate },
   subscribeTable: ["document", "submission", "configuration"],
   props: {
     modelValue: {

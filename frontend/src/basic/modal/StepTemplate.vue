@@ -162,7 +162,7 @@ import FormSelect from "@/basic/form/Select.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
 
 export default {
-  name: "StepTemplates",
+  name: "StepTemplate",
   components: { BasicForm, FormSelect, InputMap },
   props: {
     type: { type: String, required: true },
