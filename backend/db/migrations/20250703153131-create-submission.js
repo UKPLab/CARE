@@ -60,7 +60,6 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
-        unique: true,
       },
       group: {
         type: Sequelize.INTEGER,
