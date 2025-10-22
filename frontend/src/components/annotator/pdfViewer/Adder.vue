@@ -30,7 +30,6 @@
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
-import { left } from "@popperjs/core";
 
 export default {
   name: "PDFAdder",
