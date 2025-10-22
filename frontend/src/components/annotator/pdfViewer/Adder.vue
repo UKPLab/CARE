@@ -93,6 +93,7 @@ export default {
       pendingCallback: null,
       isExtended: false,
       searchTerm: '',
+      usageHistory: [],
     }
   },
   computed: {
@@ -109,13 +110,33 @@ export default {
 
     },
     filteredTags() {
+      let tagList;
       if(!this.searchTerm.trim()) {
-        return this.assignableTags;
+        tagList = this.assignableTags;
+      }else {
+        const term = this.searchTerm.trim().toLowerCase();
+        tagList = this.assignableTags.filter(tag =>
+          tag.name.toLowerCase().includes(term)
+        );
       }
-      const term = this.searchTerm.trim().toLowerCase();
-      return this.assignableTags.filter(tag =>
-        tag.name.toLowerCase().includes(term)
-      );
+      
+      // sort tags by recency 
+      tagList.sort((a,b) => {
+        const idxA = this.usageHistory.indexOf(a.name);
+        const idxB = this.usageHistory.indexOf(b.name);
+
+        if (idxA === -1 && idxB === -1){
+          return 0;
+        }
+        if (idxA === -1) {
+          return 1;
+        }
+        if (idxB === -1) {
+          return -1;
+        }
+        return idxA - idxB;
+      });
+      return tagList;
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
@@ -160,6 +181,17 @@ export default {
       }, 10);
     },
     async annotate(tag) {
+      // track tag usage history, if tag is in the list, remove it 
+      // then add it to the front, keep the list no longer than 20 
+      const currentIdx = this.usageHistory.indexOf(tag.name)
+      if (currentIdx > -1){
+        this.usageHistory.splice(currentIdx, 1);
+      }
+      this.usageHistory.unshift(tag.name);
+      if (this.usageHistory.length > 20) {
+        this.usageHistory.pop()
+      }
+
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
 
