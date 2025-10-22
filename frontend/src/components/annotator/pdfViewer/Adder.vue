@@ -1,23 +1,50 @@
 <template>
   <div
-      id="adder"
-      :style="{visibility: isVisible ? 'visible':'hidden'}"
-  > <div class="scrollable-menu-wrapper" @wheel.prevent="handleAdderScrolling" ref="adderWrapper">
-      <div class="btn-group">
+    id="adder"
+    :style="{visibility: isVisible ? 'visible':'hidden'}"
+  > 
+    <div
+      class="menu-search-bar" 
+      v-if="isExtended">
+      <input
+        type="text"
+        v-model="searchTerm"
+        placeholder="Search tags"
+        class="form-control"
+        @mouseup.stop
+      />
+    </div> 
+    <div 
+      class="scrollable-menu-wrapper"
+      @wheel.prevent="handleAdderScrolling" ref="adderWrapper"
+      :class="{ 'is-extended': isExtended }"
+    >
+      <div
+        class="btn-group" 
+        @click.stop
+      >
         <button
-            v-for="t in assignableTags"
-            :key="t.name"
-            :class="`btn-${t.colorCode}`"
-            :title="t.description"
-            class="btn"
-            data-placement="top"
-            data-toggle="tooltip"
-            @click="annotate(t)"
+          v-for="t in filteredTags"
+          :key="t.name"
+          :class="`btn-${t.colorCode}`"
+          :title="t.description"
+          class="btn"
+          data-placement="top"
+          data-toggle="tooltip"
+          @click="annotate(t)"
         >
           {{ t.name }}
         </button>
       </div>
-  </div>
+    </div>
+    <button
+      v-if="!isExtended"
+      @click="isExtended=true"
+      class="expand-btn btn "
+      title="Expand Adder"
+    >
+    ...
+  </button>
   </div>
 </template>
 
@@ -62,7 +89,10 @@ export default {
       fadeOutBox: [],
       isVisible: false,
       selectedRanges: [],
+      previousRanges: [],
       pendingCallback: null,
+      isExtended: false,
+      searchTerm: '',
     }
   },
   computed: {
@@ -77,6 +107,15 @@ export default {
         return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.defaultTagSet && !e.deleted);
       }
 
+    },
+    filteredTags() {
+      if(!this.searchTerm.trim()) {
+        return this.assignableTags;
+      }
+      const term = this.searchTerm.trim().toLowerCase();
+      return this.assignableTags.filter(tag =>
+        tag.name.toLowerCase().includes(term)
+      );
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
@@ -192,8 +231,10 @@ export default {
       }
 
       this.selectedRanges = [range];
-
-      this.show(event.clientX, event.clientY);
+      if (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0])) {
+        this.show(event.clientX, event.clientY);
+      }
+      this.previousRanges = [range];
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "onTextSelect",
@@ -208,12 +249,23 @@ export default {
       }
 
     },
+    areRangesEqual(range1, range2) {
+      return (
+        range1.startContainer === range2.startContainer &&
+        range1.startOffset === range2.startOffset &&
+        range1.endContainer === range2.endContainer &&
+        range1.endOffset === range2.endOffset
+      );
+    },
     _onClearSelection() {
       this.isVisible = false;
+      this.isExtended = false;
       this.selectedRanges = [];
     },
     show(x, y) {
-
+      //reset the extended status of the adder and the searchTerm
+      this.isExtended = false;
+      this.searchTerm = '';
       // get size of the box
       const adder = /** @type {Element} */ (document.getElementById("adder"));
       const width = adder.getBoundingClientRect().width;
@@ -248,7 +300,7 @@ export default {
         y + height + additional_size_of_box + 40
       ]
 
-      document.body.addEventListener('mousemove', this.fadeOut);
+      //document.body.addEventListener('mousemove', this.fadeOut);
 
       this.isVisible = true;
     },
@@ -356,8 +408,20 @@ export default {
   white-space: nowrap;
 }
 .scrollable-menu-wrapper {
-  max-width: 20vw;
+  max-width: 15vw;
   overflow-x: auto;
   overflow-y: hidden;
+}
+.scrollable-menu-wrapper.is-extended {
+  max-width: 30vw;
+}
+.expand-btn {
+  border-radius: 5px;
+  box-shadow: 2px 3px #CCCCCC;
+  background-color: #dcdcdc;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: -35px;
 }
 </style>
