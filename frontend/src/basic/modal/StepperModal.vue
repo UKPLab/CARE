@@ -24,6 +24,9 @@
           <template v-if="!!$slots['error']">
             <slot name="error"/>
           </template>
+          <template v-else-if="$slots['step']">
+            <slot name="step" :index="currentStep" :step="steps[currentStep]"/>
+          </template>
           <template v-else-if="$slots['step-' + (currentStep + 1)]">
             <slot :name="'step-' + (currentStep + 1)"/>
           </template>

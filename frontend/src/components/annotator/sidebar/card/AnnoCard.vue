@@ -252,7 +252,7 @@ export default {
       required: true,
     },
   },
-  emits: ['focus'],
+  emits: ['focus', 'new-anno-card'],
   data: function () {
     return {
       shake: false,
@@ -416,6 +416,7 @@ export default {
   mounted() {
     if (this.comment.draft) {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
+      this.$emit('new-anno-card');
       setTimeout(() => this.$emit("focus", this.commentId), 100);
       this.shakeIt();
     }

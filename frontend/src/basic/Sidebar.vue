@@ -1,10 +1,10 @@
 <template>
-  <div 
-    id="sidebarContainer" 
-    class="sidebar-wrapper"
-    :class="sidebarClasses"
-    :show="show"
-    :style="sidebarStyle"
+  <div
+      v-show="isSidebarVisible"
+      id="sidebarContainer"
+      class="sidebar-wrapper"
+      :class="sidebarClasses"
+      :style="sidebarStyle"
   >
     <div id="hoverHotZone"></div>
     <div id="sidebar" class="sidebar border-end d-flex flex-column">
@@ -13,84 +13,83 @@
         <div id="spacer"></div>
         <div v-if="sidebarConfigs" class="sidebar-header">
           <ul class="nav nav-tabs flex-grow-1">
-            <li 
-              v-for="(config, slotName) in sidebarConfigs.tabs" 
-              :key="slotName"
-              class="nav-item"
+            <li
+                v-for="(config, slotName) in sidebarConfigs.tabs"
+                :key="slotName"
+                class="nav-item"
             >
               <TopBarButton
-                class="nav-link d-flex align-items-center"
-                :class="{ 
+                  class="nav-link align-items-center"
+                  :class="{
                   'active': resolvedActiveSlot === slotName,
                 }"
-                :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
-                :title="config.title || ''"
-                :aria-label="config.title || 'Sidebar section'"
-                :tabindex="isSingleConfig ? '-1' : '0'"
-                :aria-disabled="isSingleConfig ? 'true' : 'false'"
-                :disabled="isSingleConfig"
-                @click="changeView(slotName)"
+                  :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
+                  :title="config.title || ''"
+                  :aria-label="config.title || 'Sidebar section'"
+                  :tabindex="isSingleConfig ? '-1' : '0'"
+                  :aria-disabled="isSingleConfig ? 'true' : 'false'"
+                  :disabled="isSingleConfig"
+                  @click="changeView(slotName)"
               >
                 <LoadIcon
-                  v-if="config.icon"
-                  :icon-name="config.icon"
-                  :size="20"
-                  :color="isSingleConfig ? '#495057' : (resolvedActiveSlot === slotName ? '#0d6efd' : '#495057')"
-                  :cursor="isSingleConfig ? 'default' : 'pointer'"
-                  class="sidebar-icon"
+                    v-if="config.icon"
+                    :icon-name="config.icon"
+                    :size="20"
+                    :color="isSingleConfig ? '#495057' : (resolvedActiveSlot === slotName ? '#0d6efd' : '#495057')"
+                    :cursor="isSingleConfig ? 'default' : 'pointer'"
                 />
               </TopBarButton>
             </li>
           </ul>
-          
+
           <!-- Right side - action buttons (general + active slot) -->
           <div class="sidebar-buttons ms-2">
             <template v-if="combinedButtons.length > 0">
               <TopBarButton
-                v-for="button in visibleButtons"
-                :key="button.action"
-                :title="button.title"
-                class="btn btn-sm sidebar-action-button"
-                @click="handleButtonAction(button.action, button)"
-                :disabled="button.disabled"
+                  v-for="button in visibleButtons"
+                  :key="button.action"
+                  :title="button.title"
+                  class="btn btn-sm sidebar-action-button"
+                  @click="handleButtonAction(button.action, button)"
+                  :disabled="button.disabled"
               >
                 <LoadIcon
-                  v-if="button.icon"
-                  :icon-name="button.icon"
-                  :size="18"
-                  :color="button.color"
+                    v-if="button.icon"
+                    :icon-name="button.icon"
+                    :size="18"
+                    :color="button.color"
                 />
               </TopBarButton>
-              
+
               <!-- Dropdown for additional buttons when more than limit -->
               <div v-if="hiddenButtons.length > 0" class="dropdown">
-                <TopBarButton 
-                  id="sidebarDropdownButton"
-                  class="btn btn-sm sidebar-action-button dropdown-toggle"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  title="More actions"
+                <TopBarButton
+                    id="sidebarDropdownButton"
+                    class="btn btn-sm sidebar-action-button dropdown-toggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="More actions"
                 >
                   <LoadIcon
-                    icon-name="three-dots-vertical"
-                    :size="18"
-                    color="#495057"
+                      icon-name="three-dots-vertical"
+                      :size="18"
+                      color="#495057"
                   />
                 </TopBarButton>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sidebarDropdownButton">
                   <li v-for="button in hiddenButtons" :key="button.action">
                     <TopBarButton
-                      class="dropdown-item"
-                      :title="button.title"
-                      :disabled="button.disabled"
-                      @click="handleButtonAction(button.action, button)"
+                        class="dropdown-item"
+                        :title="button.title"
+                        :disabled="button.disabled"
+                        @click="handleButtonAction(button.action, button)"
                     >
                       <LoadIcon
-                        v-if="button.icon"
-                        :icon-name="button.icon"
-                        :size="16"
-                        :color="button.disabled ? '#6c757d' : (button.color || '#495057')"
-                        class="me-2"
+                          v-if="button.icon"
+                          :icon-name="button.icon"
+                          :size="16"
+                          :color="button.disabled ? '#6c757d' : (button.color || '#495057')"
+                          class="me-2"
                       />
                       {{ button.title }}
                     </TopBarButton>
@@ -103,9 +102,11 @@
         <!-- Dynamic slot content -->
         <div class="sidebar-content">
           <template v-for="slotName in availableSlots" :key="slotName">
-            <div v-if="resolvedActiveSlot === slotName">
-              <slot :name="slotName"/>
-            </div>
+            <keep-alive>
+              <div v-show="resolvedActiveSlot === slotName">
+                <slot :name="slotName"/>
+              </div>
+            </keep-alive>
           </template>
           <div v-if="!resolvedActiveSlot">
             <p>No sidebar content selected.</p>
@@ -113,45 +114,52 @@
         </div>
       </div>
     </div>
+    <Teleport to="#topBarNavItems">
+      <li class="nav-item">
+        <TopBarButton
+            v-show="studySessionId && studySessionId !== 0 ? showToggleButton : true"
+            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+            class="btn rounded-circle"
+            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
+            @click="toggleSidebar"
+        >
+          <LoadIcon
+              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
+              :size="18"
+          />
+        </TopBarButton>
+      </li>
+    </Teleport>
   </div>
 </template>
 
 <script>
 
+import { scrollElement } from "@/assets/anchoring/scroll";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import BasicButton from "@/basic/Button.vue"
+import debounce from "lodash.debounce";
 
 /** BasicSidebar component
- *
- * A reusable sidebar component that can display different content based on dynamic slots 
+ *      sidebarWidth: 400,
+
+ * A reusable sidebar component that can display different content based on dynamic slots
  * with optional icons, titles, and configurable action buttons.
  *
  * @author Karim Ouf
  */
 export default {
   name: "BasicSidebar",
-  components: {LoadIcon, TopBarButton, BasicButton},
-  emits: ['sidebar-change', 'sidebar-action', 'resize'],
+  components: {LoadIcon, TopBarButton},
   props: {
     activeSideBar: {
       type: String,
       required: false,
       default: null,
     },
-    sidebarConfigs: {
-      type: Object,
-      default: () => ({})
-    },
-    show: {
-      type: Boolean,
-      required: false,
-      default: true
-    },
-    sidebarWidth: {
-      type: Number,
-      required: false,
-      default: 400
+    buttons: {
+      type: Array,
+      default: () => ([])
     },
     maxSidebarWidth: {
       type: Number,
@@ -162,15 +170,46 @@ export default {
       type: Number,
       required: false,
       default: 0
+    },
+    showToggleButton: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+  },
+  emits: ['sidebar-change', 'sidebar-action', 'resize', 'sidebar-visibility-change'],
+  inject: {
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    documentId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    acceptStats: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   data() {
     return {
-      internalActiveSlot: this.activeSideBar || null,
+      internalActiveSlot: null,
       width: 400,
-      minWidth: 200, 
-      maxWidth: 800, 
-      numberOfVisibleButtons: 4,
+      minWidth: 200,
+      maxWidth: 800,
+      sidebarWidth: 400,
+      isSidebarVisible: true,
+      sidebarIconHighlight: false,
+      numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
       isFixed: false,
       isDragging: false,
       sidebarContainerDom: undefined,
@@ -183,7 +222,8 @@ export default {
     this.minWidth = this.minSidebarWidth;
     this.maxWidth = this.maxSidebarWidth;
     this.originalWidth = this.width;
-    
+    this.internalActiveSlot = this.activeSideBar || null;
+
     this.initDragController();
     this.initHoverController();
     this.onResize();
@@ -191,28 +231,56 @@ export default {
 
     // Emit the current active sidebar view after mount
     this.$emit('sidebar-change', this.resolvedActiveSlot);
+    this.visibilityChange();
+
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.onResize);
   },
-  watch:{
-    show(newVal) {
-          if (newVal) {
-            this.width = this.originalWidth;
-            this.isFixed = false;
-            this.isHovering = false;
-          }
-        }
+  watch: {
+    isSidebarVisible(newVal) {
+      if (newVal) {
+        this.width = this.originalWidth;
+        this.isFixed = false;
+        this.isHovering = false;
+      }
+    }
   },
   computed: {
     availableSlots() {
       return Object.keys(this.$slots).filter(slot => slot !== 'default');
     },
+    sidebarConfigs() {
+      const configs = {tabs: {}, buttons: []};
+      this.availableSlots.forEach(slotName => {
+        const slot = this.$slots[slotName];
+        if (slot) {
+          const vnodes = slot();
+          const firstVNode = vnodes[0];
+          if (firstVNode) {
+            let props = firstVNode.props || {};
+            if (slotName === "additionalSidebars" || !props.title) {
+              props = vnodes[0].children[0].props || {};
+            }
+            configs.tabs[slotName] = {
+              title: props.title,
+              icon: props.icon,
+              buttons: props.buttons || []
+            };
+          }
+        }
+      });
+      // Add general buttons from props
+      if (this.buttons && this.buttons.length > 0) {
+        configs.buttons = this.buttons.filter(btn => btn.isGeneral);
+      }
+      return configs;
+    },
     combinedButtons() {
       let buttons = [];
       // Add general buttons (not tied to a specific slot)
-      if (this.sidebarConfigs && this.sidebarConfigs.generalButtons) {
-        buttons = buttons.concat(this.sidebarConfigs.generalButtons);
+      if (this.sidebarConfigs && this.sidebarConfigs.buttons) {
+        buttons = buttons.concat(this.sidebarConfigs.buttons);
       }
       // Add buttons for the active slot
       if (this.activeSlotConfig && this.activeSlotConfig.buttons) {
@@ -226,7 +294,7 @@ export default {
         return this.combinedButtons;
       }
       // If more than 3, show only first 2
-      return this.combinedButtons.slice(0, this.numberOfVisibleButtons-1);
+      return this.combinedButtons.slice(0, this.numberOfVisibleButtons - 1);
     },
     hiddenButtons() {
       // If 3 or fewer buttons, none are hidden
@@ -234,9 +302,10 @@ export default {
         return [];
       }
       // If more than 3, hide everything after first 2
-      return this.combinedButtons.slice(this.numberOfVisibleButtons-1);
+      return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
     },
     resolvedActiveSlot() {
+      console.log(this.internalActiveSlot);
       return this.internalActiveSlot || this.availableSlots[0] || null;
     },
     isSingleConfig() {
@@ -247,32 +316,40 @@ export default {
     },
     sidebarStyle() {
       return {
-        width: this.show ? `${this.width}px` : '0px',
+        width: this.isSidebarVisible ? `${this.width}px` : '0px',
         maxWidth: `${this.width}px`,
-        minWidth: this.show ? `${this.width}px` : '0px',
+        minWidth: this.isSidebarVisible ? `${this.width}px` : '0px',
         flexShrink: 0,
-        transition: this.isDragging?'none':'all 0.3s ease-in-out'
+        transition: this.isDragging ? 'none' : 'all 0.3s ease-in-out'
       };
     },
     sidebarClasses() {
       return {
-        'sidebar-visible': this.show,
-        'sidebar-hidden': !this.show,
-        'border': this.show,
+        'sidebar-visible': this.isSidebarVisible,
+        'sidebar-hidden': !this.isSidebarVisible,
+        'border': this.isSidebarVisible,
         'mh-100': true
       };
     }
   },
   methods: {
     changeView(slotName) {
-      if(this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
+      if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
       const newSlot = slotName;
       this.internalActiveSlot = newSlot;
-    
+
       // Emit slot change for parent component handling
       this.$emit('sidebar-change', newSlot);
     },
-    
+    toggleSidebar() {
+      this.isSidebarVisible = !this.isSidebarVisible;
+      this.sidebarWidth = this.isSidebarVisible ? 400 : 0;
+      this.visibilityChange();
+    },
+    async scrollTo(offset) {
+      await scrollElement(this.$refs.sidepane, offset);
+    },
+
     /**
      * Handle button action click
      * @param {string} action - The action name from button config
@@ -286,13 +363,13 @@ export default {
       });
     },
 
-   /**
+    /**
      * Initializes the drag controller for the sidebar
      *
      * When the mouse is pressed on the hot zone, the sidebar can be resized
      *
      * @author Zheyu Zhang
-    */
+     */
     initDragController() {
       const dom = document.querySelector('#hotZone');
       const that = this;
@@ -388,14 +465,48 @@ export default {
       this.$emit('copy', event);
     },
     onResize() {
-      // Force re-evaluation of window dimensions
-      const currentWidth = window.innerWidth;
-      const currentHeight = window.innerHeight;
-      this.$emit('resize', {
-        width: currentWidth,
-        height: currentHeight
-      });
+      if (window.innerWidth <= 900) {
+        this.isSidebarVisible = false;
+        this.sidebarIconHighlight = true;
+        setTimeout(() => {
+          this.sidebarIconHighlight = false;
+        }, 1000);
+        this.visibilityChange();
+      } else if (window.innerWidth > 900) {
+        this.isSidebarVisible = true;
+      }
+
+      // Log resize event with debouncing
+      this.logResize();
     },
+    visibilityChange() {
+      this.$emit('sidebar-visibility-change', this.isSidebarVisible);
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "sidebar-visibility",
+          data: {
+            isSidebarVisible: this.isSidebarVisible,
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+          }
+        });
+      }
+    },
+    logResize: debounce(function () {
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "sidebarResize",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              windowWidth: window.innerWidth,
+              sidebarVisible: this.isSidebarVisible
+            }
+          });
+        }
+      }, 500)
   },
 };
 </script>
@@ -436,8 +547,10 @@ export default {
   position: relative;
   overflow-y: hidden;
 }
+
 .sidebar-content {
- overflow-y: scroll;
+  height: 100%;
+  overflow-y: scroll;
 }
 
 #sidepane {
@@ -544,7 +657,11 @@ export default {
   padding: 4px
 }
 
-.dropdown-item:hover { background-color: #f8f9fa; transform: translateY(-1px); transition: all 0.2s ease; }
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
 
 .dropdown-toggle::after {
   display: none;
@@ -560,11 +677,6 @@ export default {
   color: #575757;
 }
 
-/* ===== ICON STYLES ===== */
-.sidebar-icon {
-  flex-shrink: 0;
-}
-
 .nav-text {
   font-size: 0.875rem;
   font-weight: 500;
@@ -578,7 +690,7 @@ export default {
   .nav-text {
     display: none;
   }
-  
+
   .sidebar-header .nav-tabs .nav-link {
     padding: 8px;
   }
