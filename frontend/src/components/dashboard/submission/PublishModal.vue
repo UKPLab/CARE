@@ -107,6 +107,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "ReviewPublishModal",
+  components: {MoodleOptions, BasicTable, StepperModal},
   props: {
     // mode: 'reviews' (document-based) or 'submission' (submission-based)
     mode: {
@@ -144,7 +145,6 @@ export default {
       table: "user_role_matching",
     }
   ],
-  components: {MoodleOptions, BasicTable, StepperModal},
   data() {
     return {
       tableOptions: {
@@ -383,6 +383,7 @@ export default {
       return [
         {name: "extId", key: "extId"},
         {name: "Submission ID", key: "submissionId"},
+        {name: "Group", key: "group"},
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
         {name: "Studies", key: "studies"},
