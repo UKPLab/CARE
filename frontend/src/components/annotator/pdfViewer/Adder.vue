@@ -185,6 +185,9 @@ export default {
             message: res.message,
             variant: "danger",
           });
+        } else {
+          // Notify parent container to switch to Annotator sidebar if currently in Assessment
+          this.eventBus.emit('annotator:switchToSidebar');
         }
       });
 
