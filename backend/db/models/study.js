@@ -391,9 +391,6 @@ module.exports = (sequelize, DataTypes) => {
                 }
             },
             afterCreate: async (study, options) => {
-                if (study.template && (!options.context || !options.context.stepDocuments)) {
-                    return;
-                }
 
                 if (!options.context || !options.context.stepDocuments) {
                     throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
