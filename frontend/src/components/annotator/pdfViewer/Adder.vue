@@ -2,21 +2,22 @@
   <div
       id="adder"
       :style="{visibility: isVisible ? 'visible':'hidden'}"
-  >
-    <div class="btn-group">
-      <button
-          v-for="t in assignableTags"
-          :key="t.name"
-          :class="`btn-${t.colorCode}`"
-          :title="t.description"
-          class="btn"
-          data-placement="top"
-          data-toggle="tooltip"
-          @click="annotate(t)"
-      >
-        {{ t.name }}
-      </button>
-    </div>
+  > <div class="scrollable-menu-wrapper" @wheel.prevent="handleAdderScrolling" ref="adderWrapper">
+      <div class="btn-group">
+        <button
+            v-for="t in assignableTags"
+            :key="t.name"
+            :class="`btn-${t.colorCode}`"
+            :title="t.description"
+            class="btn"
+            data-placement="top"
+            data-toggle="tooltip"
+            @click="annotate(t)"
+        >
+          {{ t.name }}
+        </button>
+      </div>
+  </div>
   </div>
 </template>
 
@@ -26,7 +27,7 @@
  *
  * This components handles the range selector and the button to add new annotations.
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Jannik Holmer
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
@@ -102,6 +103,11 @@ export default {
     document.body.removeEventListener('mouseup', this.checkSelection);
   },
   methods: {
+    handleAdderScrolling(event) {
+      const adderContent = this.$refs.adderWrapper;
+      const scrollAmount = event.deltaY;
+      adderContent.scrollLeft += scrollAmount;
+    },
     checkSelection(event) {
       // cancel pending callbacks
       if (this.pendingCallback) {
@@ -347,5 +353,11 @@ export default {
   left: 0;
   padding: 2px;
   background-color: white;
+  white-space: nowrap;
+}
+.scrollable-menu-wrapper {
+  max-width: 20vw;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 </style>
