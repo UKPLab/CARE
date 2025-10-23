@@ -30,14 +30,21 @@
           {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
         </li>
       </ul>
+      <div class="mt-3">
+        <label class="form-label"><strong>Assignment should be based on:</strong></label>
+        <FormSelect
+          v-model="assignmentTypeSelection.type"
+          :options="assignmentTypeFields"
+        />
+      </div>
     </template>
 
     <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedAssignments"
-          :columns="documentsTableColumns"
-          :data="documentsTable"
+          :columns="currentTableColumns"
+          :data="currentTableData"
           :options="documentTableOptions"
         />
       </div>
@@ -172,6 +179,7 @@
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import FormSelect from "@/basic/form/Select.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -200,15 +208,17 @@ export default {
       key: "template",
       value: true
     }]
-  }
+  },
+  "submission"
   ],
-  components: {StepperModal, BasicTable, BasicForm},
+  components: {StepperModal, BasicTable, BasicForm, FormSelect},
   data() {
     return {
       selectedReviewer: [],
       reviewerSelectionMode: {},
       roleSelection: {},
       templateSelection: {},
+      assignmentTypeSelection: {},
       selectedAssignments: [],
       reviewerSelection: {},
       filterHasDocuments: false,
@@ -239,9 +249,12 @@ export default {
     };
   },
   computed: {
+    assignmentType() {
+      return this.assignmentTypeSelection.type || 'document';
+    },
     stepValid() {
       return [
-        this.workflowStepsAssignment.length !== 0,
+        this.workflowStepsAssignment.length !== 0 && !!this.assignmentType,
         this.selectedAssignments.length > 0,
         this.selectedReviewer.length > 0,
         this.selectionValid,
@@ -272,14 +285,32 @@ export default {
       return this.workflowSteps.filter(step => step.stepType === 1 && step.workflowStepDocument === null);
     },
     workflowStepsAssignments() {
-      return this.selectedAssignments.map((document) => {
-        return this.workflowSteps.map((c, index) => {
-          return {
-            documentId: (index === 0) ? document.id : null,
-            id: c.id
-          }
+      if (this.assignmentType === 'submission') {
+        return this.selectedAssignments.map((submission) => {
+          return this.workflowSteps.map((c, index) => {
+            if (index === 0) {
+              const primaryDocId = this.getPrimaryDocumentId(submission.id);
+              return {
+                documentId: primaryDocId,
+                id: c.id
+              };
+            }
+            return {
+              documentId: null,
+              id: c.id
+            };
+          });
         });
-      });
+      } else {
+        return this.selectedAssignments.map((document) => {
+          return this.workflowSteps.map((c, index) => {
+            return {
+              documentId: (index === 0) ? document.id : null,
+              id: c.id
+            }
+          });
+        });
+      }
     },
     numberOfReviews() {
       if (this.reviewerSelectionMode.mode === 'role') {
@@ -290,6 +321,15 @@ export default {
     },
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
+    },
+    submissions() {
+      return this.$store.getters["table/submission/getAll"];
+    },
+    currentTableData() {
+      return this.assignmentType === 'submission' ? this.submissionsTable : this.documentsTable;
+    },
+    currentTableColumns() {
+      return this.assignmentType === 'submission' ? this.submissionColumns : this.documentsTableColumns;
     },
     documentsTable() {
       return this.documents.map((d) => {
@@ -309,12 +349,40 @@ export default {
         {name: "Last Name", key: "lastName"},
       ]
     },
+    submissionsTable() {
+      return this.submissions.map((s) => {
+        let newS = {...s};
+        const user = this.$store.getters["table/user/get"](s.userId);
+        newS.name = s.name || `Submission ${s.id}`;
+        newS.userName = user ? user.userName : "N/A";
+        newS.firstName = user ? user.firstName : "Unknown";
+        newS.lastName = user ? user.lastName : "Unknown";
+        newS.group = (s.group !== null && s.group !== undefined && s.group !== '') ? s.group : '';
+        return newS;
+      });
+    },
+    submissionColumns() {
+      return [
+        {name: "ID", key: "id"},
+        {name: "Submission Name", key: "name"},
+        {name: "User Name", key: "userName"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "Group ID", key: "group"},
+        {name: "Created At", key: "createdAt"},
+      ]
+    },
     reviewerTable() {
       return this.reviewer.map((r) => {
         let newR = {...r};
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
-        newR.rolesNames = r.roles.map((role) => this.roles.find((r) => r.id === role).name);
-        newR.rolesNames = newR.rolesNames.join(", ");
+        newR.rolesNames = (r.roles || [])
+          .map((role) => {
+            const foundRole = (this.roles || []).find((roleObj) => roleObj.id === role);
+            return foundRole ? foundRole.name : null;
+          })
+          .filter(name => name !== null)
+          .join(", ");
         return newR;
       })
         .filter((reviewer) => {
@@ -330,7 +398,7 @@ export default {
         })
     },
     roles() {
-      return this.$store.getters["admin/getSystemRoles"];
+      return this.$store.getters["admin/getSystemRoles"] || [];
     },
     reviewerRoles() { // unique roles of all possible reviewers
       return [...new Set(this.reviewerTable.flatMap(obj => {
@@ -411,6 +479,14 @@ export default {
         },
       ]
     },
+    assignmentTypeFields() {
+      return {
+        options: [
+          { value: 'document', name: 'Documents' },
+          { value: 'submission', name: 'Submissions' }
+        ]
+      };
+    },
     reviewerSelectionModeFields() {
       return [
         {
@@ -461,8 +537,19 @@ export default {
       },
       deep: true
     },
+    assignmentType(newType, oldType) {
+      if (oldType && newType !== oldType) {
+        this.selectedAssignments = [];
+      }
+    }
   },
   methods: {
+    getPrimaryDocumentId(submissionId) {
+      const docs = this.$store.getters["table/document/getFiltered"](
+        (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
+      );
+      return docs && docs.length !== 0 ? docs[0].id : null;
+    },
     open() {
       this.reset();
       this.$refs.assignmentStepper.open();
@@ -472,6 +559,7 @@ export default {
       this.roleSelection = {};
       this.selectedReviewer = [];
       this.selectedAssignments = [];
+      this.assignmentTypeSelection = {};
     },
     createAssignments() {
       this.$refs.assignmentStepper.setWaiting(true);

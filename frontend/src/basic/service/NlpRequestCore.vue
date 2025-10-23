@@ -104,10 +104,7 @@ export default {
       return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
-      // add it in the settings
-      const v = parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
-      const min = 300000;
-      return Math.max(Number.isFinite(v) && v > 0 ? v : min, min);
+      return parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
     },
   },
   watch: {
@@ -334,6 +331,17 @@ export default {
       return this.stepDataHasKey(key);
     },
     async request(skill, inputs, uniqueId) {
+      // Check for preprocessed data first, before adding to requests queue
+      const preprocessedData = await this.getPreprocessedData();
+      if (preprocessedData) {
+        // Emit the preprocessed data so it gets loaded into studyData
+        this.$emit('update:data', [preprocessedData]);
+        if (this.loadingOnly && this.autoCloseOnComplete) {
+          this.$emit('close', { autoClosed: true, preprocessed: true });
+        }
+        return;
+      }
+
       const requestId = uuid();
       this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
 
@@ -357,20 +365,6 @@ export default {
       await this.sendRequest(skill, input, uniqueId, requestId, inputs);
     },
     async sendRequest(skill, input, uniqueId, requestId, stepconfig) {
-      const hasPreprocessedData = await this.getPreprocessedData();
-      if (hasPreprocessedData) {
-        if (this.requests && this.requests[requestId]) {
-          delete this.requests[requestId];
-        }
-        if (!this.requests || Object.keys(this.requests).length === 0) {
-          this.waiting = false;
-          if (this.loadingOnly) {
-            this.$emit('close', { autoClosed: true, preprocessed: true });
-          }
-        }
-        return;
-      }
-      
       const hasStudyData = await this.hasResultsInStudyData(uniqueId);
       
       if (!hasStudyData) {
@@ -478,23 +472,40 @@ export default {
     },
     async getPreprocessedData() {
       const documentId = this.studyStep?.documentId;
-      if (!documentId) return false;
+      if (!documentId) return null;
       const service = this.getServiceFromStep(this.studyStep);
-      if (!service || !service.name || !service.skill) return false;
+      if (!service || !service.name || !service.skill) return null;
       const serviceName = service.name;
       const skill = service.skill;
       const partialKey = `${serviceName}_${skill}`;
       const requireCurrentStep = !this.isNotStudyBased(skill);
-      const hasMatch = () => {
-        const expectedSessionId = requireCurrentStep ? this.studySessionId : null;
-        const expectedStepId = requireCurrentStep ? this.studyStepId : null;
-        const entry = this.documentDataEntryByIds(documentId, expectedSessionId, expectedStepId);
-        return !!(entry && entry.key && entry.value && entry.key.includes(partialKey));
-      };
-
-      if (hasMatch()) return true;
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return hasMatch();
+      const expectedSessionId = requireCurrentStep ? this.studySessionId : null;
+      const expectedStepId = requireCurrentStep ? this.studyStepId : null;
+      
+      const dbEntry = await new Promise((resolve) => {
+        this.$socket.emit("documentDataGet", {
+          documentId: documentId,
+          studySessionId: expectedSessionId,
+          studyStepId: expectedStepId,
+          key: partialKey,
+          partialMatch: true
+        }, (response) => {
+          let entry = null;
+          if (response) {
+            if (response.success && response.data) {
+              entry = response.data;
+            } else if (response.id && response.key) {
+              entry = response;
+            }
+          }
+          resolve(entry);
+        });
+      });
+      
+      if (dbEntry && dbEntry.key && dbEntry.value && dbEntry.key.includes(partialKey)) {
+        return dbEntry;
+      }
+      return null;
     },
   }
 };
