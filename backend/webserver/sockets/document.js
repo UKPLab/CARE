@@ -8,6 +8,7 @@ const {getTextPositions} = require("../../utils/text.js");
 const {enqueueDocumentTask} = require("../../utils/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
+const { Op } = require('sequelize');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -1031,19 +1032,23 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
      */
     async getDocumentData(data, options) {
-        const documentData = await this.models['document_data'].findOne({
-            where: {
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                key: data.key,
-                deleted: false
-            },
-            order: [['updatedAt', 'DESC']],
-            transaction: options?.transaction
-        });
+        const whereClause = {
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            deleted: false
+        };
 
-        return documentData;
+        if (data.key != null) {
+            whereClause.key = data.partialMatch ? { [Op.like]: `${data.key}%` } : data.key;
+        }
+
+        return await this.models['document_data'].findOne({
+            where: whereClause,
+            order: [['updatedAt', 'DESC']],
+            raw: true,
+            transaction: options && options.transaction
+        });
     }
 
     /**
