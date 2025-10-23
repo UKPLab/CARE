@@ -4,6 +4,7 @@
     name="stepperModal"
     size="lg"
     @hide="$emit('hide')"
+    @close-requested="handleCloseRequest"
   >
     <template #title>
       <slot name="title"/>
@@ -111,10 +112,11 @@ export default {
       default: false
     },
   },
-  emits: ["stepChange", "submit", 'hide'],
+  emits: ["stepChange", "submit", 'hide', 'close-requested'],
   data() {
     return {
-      currentStep: 0
+      currentStep: 0,
+      _closeRequestHandled: false,
     }
   },
   watch: {
@@ -130,10 +132,20 @@ export default {
       this.reset();
       this.$refs.stepperModal.open();
     },
-    close() {
-      this.$refs.stepperModal.close();
+    handleCloseRequest() {
+      this.$refs.stepperModal.markCloseRequestHandled();
+      this._closeRequestHandled = false;
+      this.$emit('close-requested');
+      this.$nextTick(() => {
+        if (!this._closeRequestHandled) {
+          this.close();
+        }
+      });
     },
-    hide() {
+    markCloseRequestHandled() {
+      this._closeRequestHandled = true;
+    },
+    close() {
       this.$refs.stepperModal.hide();
     },
     show() {
