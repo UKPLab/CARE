@@ -10,14 +10,6 @@
       <h5 class="modal-title">Saved Templates</h5>
     </template>
     <template #body>
-      <div class="d-flex justify-content-end align-items-center w-100 mb-3">
-        <BasicButton
-          class="btn btn-primary btn-sm"
-          title="Create Template"
-          name="Create Template"
-          @click="createTemplate"
-        />
-      </div>
       <BasicTable
         :columns="columns"
         :data="savedTemplates"
@@ -28,11 +20,16 @@
     </template>
     <template #footer>
       <BasicButton
+        class="btn btn-primary"
+        title="Create Template"
+        name="Create Template"
+        @click="createTemplate"
+      />
+      <BasicButton
         class="btn btn-secondary"
         title="Close"
         @click="close"
-      />
-      
+      />      
     </template>
   </BasicModal>
 </span>
