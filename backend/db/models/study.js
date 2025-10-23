@@ -391,12 +391,7 @@ module.exports = (sequelize, DataTypes) => {
                 }
             },
             afterCreate: async (study, options) => {
-                // Skip step creation for template studies
-                if (study.template) {
-                    return;
-                }
 
-                // Check if the context and stepDocuments are available - needed for study creation!!!
                 if (!options.context || !options.context.stepDocuments) {
                     throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
                 }
