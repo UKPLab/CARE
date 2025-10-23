@@ -234,11 +234,21 @@ export default {
     },
     modelValue: {
       handler(newValue) {
+        if (!this.tableParam) return;
+        
+        const currentParamFiles = newValue?.[this.tableParam.name];
+        const currentSelectedIds = this.selectedFiles.map(f => f.id).sort().join(',');
+        const newSelectedIds = currentParamFiles?.map(f => f.id).sort().join(',') || '';
+        
+        if (currentSelectedIds === newSelectedIds) {
+          return;
+        }
+        
         if (!newValue || Object.keys(newValue).length === 0) {
           this.selectedFiles = [];
-        } else if (this.tableParam && newValue[this.tableParam.name]) {
-          this.syncSelectedFiles(newValue[this.tableParam.name]);
-        } else if (this.tableParam) {
+        } else if (currentParamFiles) {
+          this.syncSelectedFiles(currentParamFiles);
+        } else {
           this.selectedFiles = [];
         }
       },
