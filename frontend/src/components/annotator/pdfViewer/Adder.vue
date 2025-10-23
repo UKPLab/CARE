@@ -154,8 +154,6 @@ export default {
       const isSelection = (selection && (this.isDoubleClick || distanceMoved > this.dragThreshold))
       if (isLeftClick && isSelection) {
         event.preventDefault();
-      } else if (isLeftClick && !isSelection) {
-        selection.empty();
       }
     },
     async annotate(tag) {
