@@ -105,6 +105,7 @@ export default {
     },
     resetForm() {
       this.$refs.form.modelValue.password = '';
+      this.$refs.form.modelValue.confirmPassword = '';
       this.eventBus.emit("resetFormField");
     },
     validatePassword() {
