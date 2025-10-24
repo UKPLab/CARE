@@ -123,7 +123,6 @@ export default {
     },
     validatePassword() {
       const { confirmPassword, password } = this.$refs.form.modelValue;
-      console.log(password, confirmPassword !== password)
       if (password !== confirmPassword) {
         this.eventBus.emit("toast", {
           title: "Validation Error",
