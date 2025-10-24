@@ -24,7 +24,7 @@
               v-if="!removeClose"
               aria-label="Close"
               class="btn-close"
-              @click="close"
+              @click="handleCloseClick"
               type="button"
             />
           </div>
@@ -130,7 +130,7 @@ export default {
       required: true
     }
   },
-  emits: ['show', 'hide'],
+  emits: ['show', 'hide', 'close-requested'],
   provide() {
     return {
       parentModal: this
@@ -143,7 +143,8 @@ export default {
       progress: false,
       progressData: null,
       progressId: null,
-  _suspendedByChild: false,
+      _suspendedByChild: false,
+      _closeRequestHandled: false,
     }
   },
   computed: {
@@ -226,6 +227,18 @@ export default {
       this.suspendParentModal();
       this.modal.show();
     },
+    handleCloseClick() {
+      this._closeRequestHandled = false;
+      this.$emit('close-requested');
+      this.$nextTick(() => {
+        if (!this._closeRequestHandled) {
+          this.close();
+        }
+      });
+    },
+    markCloseRequestHandled() {
+      this._closeRequestHandled = true;
+    },
     close() {
       this.modal.hide();
       this.resumeParentModal();
@@ -269,7 +282,7 @@ export default {
   animation: shake-animation 0.5s ease-in-out;
 }
 .nested-suspended {
-  visibility: hidden; /* keep DOM & state, just not visible or interactive */
+  visibility: hidden;
   pointer-events: none;
 }
 </style>

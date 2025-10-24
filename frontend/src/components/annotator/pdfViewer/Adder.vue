@@ -94,6 +94,10 @@ export default {
       isExtended: false,
       searchTerm: '',
       usageHistory: [],
+      dragThreshold: 5,
+      isDoubleClick: false,
+      startX: 0, 
+      startY: 0,
     }
   },
   computed: {
@@ -158,9 +162,13 @@ export default {
   },
   created() {
     document.body.addEventListener('mouseup', this.checkSelection);
+    document.body.addEventListener('dblclick', this.doubleClickHandler);
+    document.body.addEventListener('mousedown', this.positionTracker);
   },
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
+    document.body.removeEventListener('dblclick', this.doubleClickHandler);
+    document.body.removeEventListener('mousedown', this.positionTracker);
   },
   methods: {
     handleAdderScrolling(event) {
@@ -168,7 +176,22 @@ export default {
       const scrollAmount = event.deltaY;
       adderContent.scrollLeft += scrollAmount;
     },
+    doubleClickHandler() {
+      this.isDoubleClick = true;
+    },
+    positionTracker(event) {
+      //tracks the start position when the user presses down left click and possibly starts a selection
+      if (event.button === 0) {
+        this.isDoubleClick =false;
+        this.startX = event.clientX;
+        this.startY = event.clientY;
+      }
+    },
     checkSelection(event) {
+      // stop any default behavior like the Edge built-in mini-menu 
+      // which can visually block our Annotations Adder
+      this.stopDefaultOnSelection(event);
+      
       // cancel pending callbacks
       if (this.pendingCallback) {
         clearTimeout(this.pendingCallback);
@@ -176,9 +199,28 @@ export default {
       }
 
       // delay for having the right data
-      this.pendingCallback = setTimeout(() => {
+      this.pendingCallback = setTimeout(() => {        
         this._onSelection(event);
       }, 10);
+    },
+    stopDefaultOnSelection(event) {
+      // check if the mouseup event came from a left click 
+      // and if something has been selected 
+      const isLeftClick = event.button === 0;
+      const selection = document.getSelection();
+
+      //if not a doubleClick, check if the distance the selection was dragged
+      let distanceMoved = 0;
+      if (!this.isDoubleClick) {
+        distanceMoved = Math.sqrt(Math.pow(event.clientX - this.startX, 2 ) + Math.pow(event.clientY - this.startY, 2));
+      }
+
+      //decide if it is a selection and then block the default behavior
+      //clear the selection on left click without dragging or double clicking  
+      const isSelection = (selection && (this.isDoubleClick || distanceMoved > this.dragThreshold))
+      if (isLeftClick && isSelection) {
+        event.preventDefault();
+      }
     },
     async annotate(tag) {
       // track tag usage history, if tag is in the list, remove it 
