@@ -36,7 +36,7 @@ import BasicButton from "@/basic/Button.vue";
 /**
  * Modal for resetting user's password
  *
- * @author: Linyin Huang
+ * @author: Linyin Huang, Jannik Holmer
  */
 export default {
   name: "PasswordModal",
@@ -45,7 +45,7 @@ export default {
     return {
       userId: 0,
       data: {},
-      fields: [
+      allFields: [
         {
           key:"oldPassword",
           type: "password",
@@ -73,6 +73,19 @@ export default {
         }
       ],
     };
+  },
+  computed: {
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
+    fields() {
+      const thisUserID = this.$store.getters['auth/getUserId'];
+      if (this.isAdmin && !(this.userId === thisUserID)) {
+        return this.allFields.slice(1);
+      } else {
+        return this.allFields;
+      }
+    }
   },
   methods: {
     open(id) {
