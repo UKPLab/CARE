@@ -168,7 +168,7 @@ export default {
     useTemplate(template) {
       console.log("Using template:", template);
       this.close();
-      this.$refs.studyCoordinator.open(template.id, null, false);
+      this.$refs.studyCoordinator.open(template.id, null, false, false, true);
     },
     createTemplate() {
       console.log("Creating new template");
