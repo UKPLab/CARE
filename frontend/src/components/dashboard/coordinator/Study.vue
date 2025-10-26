@@ -5,6 +5,7 @@
       :title="isTemplateMode ? 'Template' : 'Study'"
       :textAdd="isTemplateMode ? 'Create' : 'Add'"
       :customSubmit="isTemplateMode"
+      :defaultValue="{ isTemplateMode: isTemplateMode }"
       @success="success"
       @submit="handleSubmit"
   >
