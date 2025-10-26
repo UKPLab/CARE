@@ -153,7 +153,7 @@ export default {
       }
 
       if (this.isTemplateMode && this.options.options.table === 'document' && this.parentValue?.stepType === 1) {
-        baseOptions = [{ id: null, name: '<Document>' }, ...baseOptions];
+        baseOptions = [{ id: null, name: '< >' }, ...baseOptions];
       }
 
       return baseOptions;
