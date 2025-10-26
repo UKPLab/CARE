@@ -121,7 +121,7 @@ import Quill from "quill";
 import TextPlaceholder from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
 import Comparison from "./placeholders/Comparison.vue";
-import NlpRequestCore from "./NlpRequestCore.vue";
+import NlpRequestCore from "../../basic/service/NlpRequestCore.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
