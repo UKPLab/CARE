@@ -2,7 +2,7 @@
   <BasicCoordinator
       ref="coordinator"
       table="study"
-      title="Study"
+      :title="isTemplateMode ? 'Template' : 'Study'"
       :textAdd="isTemplateMode ? 'Create' : 'Add'"
       :customSubmit="isTemplateMode"
       @success="success"
