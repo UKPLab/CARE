@@ -1,115 +1,83 @@
-<template>  
-  <StepTemplate title="Placeholders Configuration">
-    <template #additional-content>
-        <div class="placeholders-step">
-        <!-- Short Preview -->
-        <div v-if="shortPreview" class="short-preview mb-4">
-            <h6 class="section-title">Document Preview</h6>
-            <div class="preview-content" v-html="shortPreview"></div>
+<template>
+  <div class="placeholders-step">
+    <!-- Short Preview -->
+    <div v-if="shortPreview" class="short-preview mb-4">
+      <h6 class="section-title">Document Preview</h6>
+      <div class="preview-content" v-html="shortPreview"></div>
+    </div>
+
+    <!-- Placeholder Legend -->
+    <div v-if="placeholders.length" class="legend mb-4">
+      <h6 class="section-title">Placeholder Legend</h6>
+      <div class="legend-items">
+        <span v-for="(placeholder, index) in placeholders" :key="index" class="legend-item"
+          :style="{ color: placeholderColors[index] }">
+          {{ placeholder.text }} ({{ placeholder.type }})
+        </span>
+      </div>
+    </div>
+
+    <!-- Placeholders Configuration -->
+    <div v-if="placeholders.length" class="placeholders-config mb-4">
+      <h6 class="section-title">Configure Placeholders</h6>
+
+      <div v-for="(placeholder, index) in placeholders" :key="index" class="placeholder-item mb-3">
+        <div class="placeholder-header mb-2">
+          <span class="placeholder-badge" :style="{ backgroundColor: placeholderColors[index] }">
+            {{ placeholder.text }}
+          </span>
+          <span class="placeholder-type">{{ placeholder.type }}</span>
         </div>
-        
-        <!-- Placeholder Legend -->
-        <div v-if="placeholders.length" class="legend mb-4">
-            <h6 class="section-title">Placeholder Legend</h6>
-            <div class="legend-items">
-            <span 
-                v-for="(placeholder, index) in placeholders" 
-                :key="index"
-                class="legend-item"
-                :style="{ color: placeholderColors[index] }"
-            >
-                {{ placeholder.text }} ({{ placeholder.type }})
-            </span>
-            </div>
+
+        <!-- Comparison Type (requires 2 inputs) -->
+        <div v-if="placeholder.type === placeholderType.comparison" class="comparison-inputs">
+          <div class="input-group mb-2">
+            <label class="form-label">First Data Source:</label>
+            <select :value="formData[index]?.dataInput?.[0]?.value || ''"
+              @change="updateComparisonInput(index, 0, $event.target.value)" class="form-control">
+              <option value="">Select first data source...</option>
+              <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-0`"
+                :value="source.value" :data-step-id="source.stepId">
+                {{ source.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="input-group mb-2">
+            <label class="form-label">Second Data Source:</label>
+            <select :value="formData[index]?.dataInput?.[1]?.value || ''"
+              @change="updateComparisonInput(index, 1, $event.target.value)" class="form-control">
+              <option value="">Select second data source...</option>
+              <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-1`"
+                :value="source.value" :data-step-id="source.stepId">
+                {{ source.name }}
+              </option>
+            </select>
+          </div>
         </div>
-        
-        <!-- Placeholders Configuration -->
-        <div v-if="placeholders.length" class="placeholders-config mb-4">
-            <h6 class="section-title">Configure Placeholders</h6>
-            
-            <div v-for="(placeholder, index) in placeholders" :key="index" class="placeholder-item mb-3">
-            <div class="placeholder-header mb-2">
-                <span 
-                class="placeholder-badge"
-                :style="{ backgroundColor: placeholderColors[index] }"
-                >
-                {{ placeholder.text }}
-                </span>
-                <span class="placeholder-type">{{ placeholder.type }}</span>
-            </div>
-            
-            <!-- Comparison Type (requires 2 inputs) -->
-            <div v-if="placeholder.type === placeholderType.comparison" class="comparison-inputs">
-                <div class="input-group mb-2">
-                <label class="form-label">First Data Source:</label>
-                <select 
-                    :value="placeholderFormData[index]?.dataInput?.[0]?.value || ''"
-                    @change="updateComparisonInput(index, 0, $event.target.value)"
-                    class="form-control"
-                >
-                    <option value="">Select first data source...</option>
-                    <option 
-                    v-for="source in availableDataSources" 
-                    :key="`${source.stepId}-${source.value}-0`" 
-                    :value="source.value"
-                    :data-step-id="source.stepId"
-                    >
-                    {{ source.name }}
-                    </option>
-                </select>
-                </div>
-                
-                <div class="input-group mb-2">
-                <label class="form-label">Second Data Source:</label>
-                <select 
-                    :value="placeholderFormData[index]?.dataInput?.[1]?.value || ''"
-                    @change="updateComparisonInput(index, 1, $event.target.value)"
-                    class="form-control"
-                >
-                    <option value="">Select second data source...</option>
-                    <option 
-                    v-for="source in availableDataSources" 
-                    :key="`${source.stepId}-${source.value}-1`" 
-                    :value="source.value"
-                    :data-step-id="source.stepId"
-                    >
-                    {{ source.name }}
-                    </option>
-                </select>
-                </div>
-            </div>
-            
-            <!-- Single Input Types (text, chart) -->
-            <div v-else class="single-input">
-                <label class="form-label">Data Source:</label>
-                <select 
-                :value="placeholderFormData[index]?.dataInput?.value || ''"
-                @change="updateSingleInput(index, $event.target.value)"
-                class="form-control"
-                >
-                <option value="">Select data source...</option>
-                <option 
-                    v-for="source in availableDataSources" 
-                    :key="`${source.stepId}-${source.value}`" 
-                    :value="source.value"
-                    :data-step-id="source.stepId"
-                >
-                    {{ source.name }}
-                </option>
-                </select>
-            </div>
-            </div>
+
+        <!-- Single Input Types (text, chart) -->
+        <div v-else class="single-input">
+          <label class="form-label">Data Source:</label>
+          <select :value="formData[index]?.dataInput?.value || ''"
+            @change="updateSingleInput(index, $event.target.value)" class="form-control">
+            <option value="">Select data source...</option>
+            <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}`"
+              :value="source.value" :data-step-id="source.stepId">
+              {{ source.name }}
+            </option>
+          </select>
         </div>
-        
-        <!-- No Placeholders Message -->
-        <div v-else class="no-content">
-            <div class="alert alert-info" role="alert">
-            No placeholders found in the document.
-            </div>
-        </div>
-        </div>
-    </template>    
-  </StepTemplate>
+      </div>
+    </div>
+
+    <!-- No Placeholders Message -->
+    <div v-else class="no-content">
+      <div class="alert alert-info" role="alert">
+        No placeholders found in the document.
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -124,48 +92,57 @@ import Quill from "quill";
  */
 export default {
   name: "PlaceholdersStep",
-  components: { 
+  components: {
     StepTemplate
   },
   props: {
-    availableDataSources: {
+    modelValue: {
       type: Array,
-      default: () => []
-    },
-    documentId: {
-      type: Number,
       required: true
     },
+  },
+  inject: {
     studyStepId: {
       type: Number,
       required: true
     },
-    stepConfig: {
-      type: Object,
-      default: () => ({})
+    documentId: {
+      type: Number,
+      required: false,
+      default: null
     },
-    isUpdateMode: {
-      type: Boolean,
-      default: false
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    workflowSteps: {
+      type: Array,
+      required: true
     }
   },
-  emits: ['update:placeholderFormData', 'validation-change'],
+  emits: ['update:formData', 'validation-change'],
   data() {
     return {
       placeholders: [],
       placeholderColors: [],
       shortPreview: "",
-      isInitialized: false
+      formData: [],
+      placeholderType: {
+        comparison: "comparison",
+        text: "text",
+        chart: "chart",
+      },
+      isInitialized: false,
+      isUpdateMode: false,
     };
   },
-  mounted() {
-    if (this.documentId && !this.isInitialized) {
-      this.fetchDocument();
-    }
-  },
   computed: {
+    availableDataSources() {
+      return this.getSourcesUpToCurrentStep(this.studyStepId);
+    },
     isValid() {
-      return this.placeholderFormData?.every((data) => {
+      return this.formData?.every((data) => {
         if (data.type === this.placeholderType.comparison) {
           return data.dataInput && data.dataInput[0] && data.dataInput[1];
         }
@@ -174,20 +151,33 @@ export default {
     }
   },
   watch: {
+    modelValue: {
+      handler(newVal) {
+        this.isUpdateMode = newVal && newVal.placeholders;
+      },
+      immediate: true,
+      deep: true,
+    },
     isValid: {
       handler(newVal) {
         this.$emit('validation-change', newVal);
       },
       immediate: true
     },
-    placeholderFormData: {
+    formData: {
       handler(newVal) {
-        this.$emit('update:placeholderFormData', newVal);
+        const updated = {
+          text: this.formatPlaceholder(this.placeholderType.text),
+          chart: this.formatPlaceholder(this.placeholderType.chart),
+          comparison: this.formatPlaceholder(this.placeholderType.comparison),
+        }
+        this.$emit('update:formData', updated);
       },
       deep: true
     },
   },
   mounted() {
+    this.isUpdateMode = this.modelValue.placeholders !== undefined;
     if (this.documentId && !this.isInitialized) {
       this.fetchDocument();
     }
@@ -195,49 +185,49 @@ export default {
   methods: {
     updateComparisonInput(placeholderIndex, inputIndex, sourceValue) {
       if (!sourceValue) return;
-      
+
       const source = this.availableDataSources.find(src => src.value === sourceValue);
       if (!source) return;
-      
-      const updatedFormData = [...this.placeholderFormData];
+
+      const updatedFormData = [...this.formData];
       if (!updatedFormData[placeholderIndex]) {
         updatedFormData[placeholderIndex] = {
           type: this.placeholderType.comparison,
           dataInput: [null, null]
         };
       }
-      
+
       if (!updatedFormData[placeholderIndex].dataInput) {
         updatedFormData[placeholderIndex].dataInput = [null, null];
       }
-      
+
       updatedFormData[placeholderIndex].dataInput[inputIndex] = source;
-      this.$emit('update:placeholderFormData', updatedFormData);
+      this.formData = updatedFormData;
     },
-    
+
     updateSingleInput(placeholderIndex, sourceValue) {
       if (!sourceValue) return;
-      
+
       const source = this.availableDataSources.find(src => src.value === sourceValue);
       if (!source) return;
-      
-      const updatedFormData = [...this.placeholderFormData];
+
+      const updatedFormData = [...this.formData];
       const placeholder = this.placeholders[placeholderIndex];
-      
+
       if (!updatedFormData[placeholderIndex]) {
         updatedFormData[placeholderIndex] = {
           type: placeholder.type,
           dataInput: null
         };
       }
-      
+
       updatedFormData[placeholderIndex].dataInput = source;
-      this.$emit('update:placeholderFormData', updatedFormData);
+      this.formData = updatedFormData;
     },
-    
+
     fetchDocument() {
       if (!this.documentId || !this.studyStepId) return;
-      
+
       const requestData = {
         documentId: this.documentId,
         studyStepId: this.studyStepId,
@@ -278,10 +268,8 @@ export default {
         }
       });
     },
-    
-    initializePlaceholderFormData() {
-      const formData = [];
 
+    initializePlaceholderFormData() {
       for (let i = 0; i < this.placeholders.length; i++) {
         const placeholder = this.placeholders[i];
         const type = placeholder.type;
@@ -293,8 +281,8 @@ export default {
         };
 
         // If in update mode, try to fill in existing data based on its type
-        if (this.isUpdateMode && this.stepConfig.placeholders) {
-          const typeArray = this.stepConfig.placeholders[type] || [];
+        if (this.isUpdateMode && this.modelValue.placeholders) {
+          const typeArray = this.modelValue.placeholders[type] || [];
           const index = placeholder.number - 1;
 
           if (typeArray[index]) {
@@ -308,20 +296,18 @@ export default {
           }
         }
 
-        formData.push(data);
+        this.formData.push(data);
       }
-
-      this.$emit('update:placeholderFormData', formData);
     },
-    
+
     findPlaceholderDataSource(input) {
       if (!input) return null;
-
-      return this.availableDataSources.find((source) => 
+      
+      return this.availableDataSources.find((source) =>
         source.stepId === input.stepId && source.value === input.dataSource
       ) || null;
     },
-    
+
     extractPlaceholders(text) {
       const textRegex = /~text~/g;
       const chartRegex = /~chart~/g;
@@ -370,12 +356,12 @@ export default {
         return typeOrder[a.type] - typeOrder[b.type];
       });
     },
-    
+
     generatePlaceholderColors() {
       const colors = ["#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"];
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
     },
-    
+
     generateShortPreview(text) {
       this.shortPreview = text.replace(/~nlp~/g, (match, num) => {
         const colorIndex = this.placeholders.findIndex((p) => p.number == num);
@@ -383,9 +369,9 @@ export default {
         return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
       });
     },
-    
+
     formatPlaceholder(type) {
-      return this.placeholderFormData
+      return this.formData
         .filter((data) => data.type === type)
         .map((data) => {
           if (type === this.placeholderType.comparison) {
@@ -399,13 +385,82 @@ export default {
             return {
               input: data.dataInput
                 ? {
-                    stepId: data.dataInput.stepId,
-                    dataSource: data.dataInput.value,
-                  }
+                  stepId: data.dataInput.stepId,
+                  dataSource: data.dataInput.value,
+                }
                 : null,
             };
           }
         });
+    },
+
+    /**
+     * Construct and get all the available data sources up to the stepId
+     * @param {number} stepId - The ID of the workflow step
+     * @returns {Array<Object>} An array of data source object, consisting of value and name
+     */
+    getSourcesUpToCurrentStep(stepId) {
+      const sources = [];
+      const stepCollector = this.workflowSteps.filter((step) => step.id <= stepId);
+
+      stepCollector.forEach((step, index) => {
+        const stepIndex = index + 1;
+        switch (step.stepType) {
+          // Editor
+          case 2:
+            sources.push(
+              { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
+              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
+            );
+            break;
+          // Modal
+          case 3:
+            if (step.id < this.studyStepId) {
+              sources.push(...this.getSkillSources(stepIndex));
+            }
+            break;
+        }
+      });
+
+      return sources;
+    },
+
+    /**
+     * Get the output from the nlpSkill
+     * @param {number} stepIndex - The index of the step that indicates which step the user is at in the whole workflow.
+     * @returns {Array<Object>} An array of objects derived from nlpSkill
+     */
+    getSkillSources(stepIndex) {
+      const sources = [];
+
+      // For placeholders, we don't have selectedSkills, so we'll check modelValue
+      if (!this.modelValue || !this.modelValue.services) return sources;
+
+      const services = Array.isArray(this.modelValue.services) 
+        ? this.modelValue.services 
+        : Object.values(this.modelValue.services);
+
+      services.forEach((service) => {
+        if (!service.skill) return;
+
+        // Get skills from store
+        const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+        const nlpSkills = skills && typeof skills === "object" ? Object.values(skills) : [];
+        
+        const skill = nlpSkills.find((s) => s.name === service.skill);
+        if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
+
+        const result = Object.keys(skill.config.output.data || {});
+        result.forEach((r) =>
+          sources.push({
+            value: `service_${service.name}_${r}`,
+            name: `${service.skill}_${r} (Step ${stepIndex})`,
+            stepId: stepIndex,
+          })
+        );
+      });
+
+      return sources;
     }
   }
 };
@@ -496,7 +551,8 @@ export default {
   font-weight: bold;
 }
 
-.comparison-inputs, .single-input {
+.comparison-inputs,
+.single-input {
   background-color: #f1f3f4;
   padding: 0.75rem;
   border-radius: 0.375rem;

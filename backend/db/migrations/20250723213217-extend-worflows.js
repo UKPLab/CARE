@@ -23,21 +23,23 @@ module.exports = {
 
           const updatedConfig = {
             ...existingConfig,
-            settings: [
+            settings: 
               {
-                name: "modalSize",
-                label: "Modal Size",
-                type: "select",
-                required: true,
-                default: "md",
-                options: [
-                  { value: "sm", name: "Small" },
-                  { value: "md", name: "Medium" },
-                  { value: "lg", name: "Large" },
-                  { value: "xl", name: "Extra Large" },
-                ],
+                fields: [
+                  {
+                    key: "modalSize",
+                    label: "Modal Size",
+                    type: "select",
+                    required: true,
+                    options: [
+                      { value: "sm", name: "Small" },
+                      { value: "md", name: "Medium" },
+                      { value: "lg", name: "Large" },
+                      { value: "xl", name: "Extra Large" },
+                    ],
+                  }
+                ]             
               }
-            ]
           };
 
           await queryInterface.bulkUpdate(

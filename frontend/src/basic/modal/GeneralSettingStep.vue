@@ -1,9 +1,12 @@
 
 <template>  
-  <StepTemplate title="General Configuration" :fields="fields" @update:form-data="updateData"/>
+  <BasicForm
+    :model-value="formData"
+    :fields="fields"
+    @update:model-value="updateData"
+  />
 </template>
 <script>
-import StepTemplate from "@/basic/modal/StepTemplate.vue";
 
 /**
  * GeneralStep Component
@@ -11,12 +14,17 @@ import StepTemplate from "@/basic/modal/StepTemplate.vue";
  * A component that uses StepTemplate to display general configuration
  * forms and settings in a consistent wrapper.
  */
+import BasicForm from "@/basic/Form.vue";
+
 export default {
   name: "GeneralStep",
-  components: { 
-    StepTemplate, 
-  },
+  components: { BasicForm },
   props: {
+    modelValue: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    }
   },
   inject: {
     studyStepId: {
@@ -31,11 +39,6 @@ export default {
     workflowSteps: {
       type: Array,
       required: true
-    },
-    modelValue: {
-      type: Object,
-      required: false,
-      default: () => ({})
     }
   },
   emits: ['update:formData', 'validation-change'],
@@ -44,11 +47,7 @@ export default {
       return this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings || [];
     },
     fields() {
-      console.log("Settings fields:", this.settings);
       return this.settings.fields || [];
-    },
-    hasConfigFields() {
-      return this.fields.length > 0;
     },
     isValid() {
       const fieldsValid = this.fields.every((field) => {
@@ -61,11 +60,8 @@ export default {
   },
   data() {
     return {
-      formData: {}
+      formData: this.modelValue.settings
     };
-  },
-  mounted() {
-    this.formData = { ...this.modelValue.settings };
   },
   watch: {
     isValid: {
@@ -74,12 +70,6 @@ export default {
       },
       immediate: true
     },
-    formData: {
-      handler(newVal) {
-        console.log("Form Data Updated:", newVal);
-      },
-      deep: true
-    }
   },
   methods: {
     updateData(newData) {
