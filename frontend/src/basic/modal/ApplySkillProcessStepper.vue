@@ -44,7 +44,11 @@
         </div>
 
         <h6 class="mt-4">Submissions in Queue</h6>
+        <div v-if="remainingSubmissions.length === 0" class="text-muted fst-italic">
+          No submissions in queue. Processing the last request...
+        </div>
         <BasicTable
+          v-else
           :columns="remainingColumns"
           :data="remainingSubmissions"
           :options="{ ...options, pagination: 5 }"
@@ -141,12 +145,10 @@ export default {
       return Math.round((processed / total) * 100);
     },
     activeRequestStartTime() {
-      const requests = this.preprocess?.requests || {};
-      const startTimes = Object.values(requests)
-        .map(r => r && r.startTime)
-        .filter(t => typeof t === 'number' && !Number.isNaN(t));
-      if (startTimes.length === 0) return null;
-      return Math.max(...startTimes);
+      const currentRequestId = this.preprocess?.currentRequestId;
+      if (!currentRequestId) return null;
+      const currentRequest = this.preprocess.requests[currentRequestId];
+      return currentRequest?.startTime || null;
     },
     currentRequestElapsedTime() {
       const start = this.activeRequestStartTime;
@@ -154,8 +156,24 @@ export default {
     },
     remainingSubmissions() {
       if (!this.isProcessingActive) return [];
-      const remainingIds = new Set(Object.values(this.preprocess.requests).map(r => r.submissionId));
-      return this.inputFiles.filter(s => remainingIds.has(s.id));
+      
+      const currentRequestId = this.preprocess?.currentRequestId;
+      
+      const remainingIds = new Set(
+        Object.entries(this.preprocess.requests)
+          .filter(([requestId]) => requestId !== currentRequestId)
+          .map(([_, request]) => request.submissionId || request.documentId)
+          .filter(id => id != null)
+      );
+      
+      const uniqueSubmissions = this.inputFiles.filter(s => remainingIds.has(s.id));
+      
+      const seen = new Set();
+      return uniqueSubmissions.filter(s => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
     },
     remainingColumns() {
       return [
