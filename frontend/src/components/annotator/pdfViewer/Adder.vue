@@ -157,7 +157,6 @@ export default {
       if (!this.studySession) {
         return null;
       }
-      console.log("StudySession: ", this.studySession); 
       return this.$store.getters["table/study/get"](this.studySession.studyId);
     },
     tagSetId() {
@@ -183,7 +182,6 @@ export default {
   mounted() {
     // if available, load usage history of Tagset
     if (this.savedUsageHistory) {
-      console.log("loaded saved usage history");
       const data = JSON.parse(this.savedUsageHistory.value);
       this.usageHistory = data;
     }
