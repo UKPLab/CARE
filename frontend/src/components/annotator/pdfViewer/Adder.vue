@@ -33,7 +33,9 @@
           data-toggle="tooltip"
           @click="annotate(t)"
         >
-          {{ t.name }}
+          <span>
+            {{ t.name }} 
+          </span>
         </button>
       </div>
     </div>
@@ -541,6 +543,17 @@ export default {
   padding: 2px;
   background-color: white;
   white-space: nowrap;
+}
+.btn {
+  max-width: 5vw;
+  text-align: left;
+  overflow: hidden;
+}
+.btn span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .scrollable-menu-wrapper {
   max-width: 15vw;
