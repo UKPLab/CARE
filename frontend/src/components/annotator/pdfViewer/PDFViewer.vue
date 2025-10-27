@@ -8,7 +8,10 @@
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
-  <div class="pdf-toolbar">
+  <div 
+    class="pdf-toolbar"
+    id="pdfToolbar"
+  >
       <button class="toolbar-btn" @click="zoomOut" title="Zoom Out">
         <LoadIcon icon-name="zoom-out" :size="18" />
       </button>

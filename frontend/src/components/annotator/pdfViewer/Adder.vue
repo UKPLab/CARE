@@ -389,13 +389,27 @@ export default {
       this.searchTerm = '';
       // get size of the box
       const adder = /** @type {Element} */ (document.getElementById("adder"));
+      const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer")).getBoundingClientRect();
+      const pdfToolbarRect = /** @type {Element} */ (document.getElementById("pdfToolbar")).getBoundingClientRect();
       const width = adder.getBoundingClientRect().width;
       const height = adder.getBoundingClientRect().height;
-
+      const bottom = pdfToolbarRect.bottom;
       // calculate position of adder
+      // slight offset from event positions up and to the right 
       x = x + 10;
       y = y - (40 + height);
 
+
+      const relativeX = x - pdfContainerRect.left;
+      // check if adder will overlap to the right
+      if (relativeX + width > pdfContainerRect.width) {
+        x = pdfContainerRect.width - width;
+      }
+      //restrict the adder from being generated too far up
+      // or too far left after repositioning because of overlap 
+      y = Math.max(bottom, y);
+      x = Math.max(0, x);
+      
       // get max z index
       const maxZIndex = Math.max(
           ...Array.from(document.querySelectorAll('body *'), el =>
@@ -534,7 +548,7 @@ export default {
   overflow-y: hidden;
 }
 .scrollable-menu-wrapper.is-extended {
-  max-width: 30vw;
+  max-width: 17vw;
 }
 .expand-btn {
   border-radius: 5px;
