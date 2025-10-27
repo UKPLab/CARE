@@ -8,7 +8,7 @@
       Terms
     </template>
     <template #body>
-      <BasicEditor :modelValue="terms" :readOnly="true" />
+      <BasicEditor :model-value="terms" :read-only="true" />
     </template>
     <template #footer>
       <button
