@@ -2,12 +2,16 @@
   <BasicCoordinator
       ref="coordinator"
       table="study"
-      title="Study"
+      :title="isTemplateMode ? 'Template' : 'Study'"
       :textAdd="isTemplateMode ? 'Create' : 'Add'"
       :customSubmit="isTemplateMode"
+      :defaultValue="{ isTemplateMode: isTemplateMode }"
       @success="success"
       @submit="handleSubmit"
   >
+    <template #title>
+      {{ modalTitle }}
+    </template>
     <template #success>
       The study has been successfully published<br>
       Participants can join the study under the following link:<br><br>
@@ -45,6 +49,7 @@ export default {
       documentId: 0,
       isSuccess: false,
       isTemplateMode: false,
+      isUsingTemplate: false,
     }
   },
   computed: {
@@ -57,21 +62,27 @@ export default {
     link() {
       return window.location.origin + "/study/" + this.study.hash;
     },
+    modalTitle() {
+      const prefix = this.isUsingTemplate ? 'Create' : (this.studyId !== 0 ? 'Edit' : 'New');
+      const suffix = this.isTemplateMode ? 'Template' : 'Study';
+      return `${prefix} ${suffix}`;
+    },
   },
   methods: {
-    open(studyId, documentId = null, loadInitialized = false, templateMode = false) {
+    open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
       if (documentId !== null) {
         this.documentId = documentId;
       }
       this.isSuccess = false;
       this.studyId = studyId;
       this.isTemplateMode = templateMode;
+      this.isUsingTemplate = copy && studyId !== 0;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
 
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
-      this.$refs.coordinator.open(studyId, {documentId: this.documentId});
+      this.$refs.coordinator.open(studyId, {documentId: this.documentId}, copy);
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
