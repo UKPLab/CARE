@@ -81,7 +81,7 @@ export default {
     fields() {
       const thisUserID = this.$store.getters['auth/getUserId'];
       if (this.isAdmin && !(this.userId === thisUserID)) {
-        return this.allFields.slice(1);
+        return this.allFields.filter(field => field.key !== 'oldPassword');
       } else {
         return this.allFields;
       }
