@@ -107,6 +107,19 @@ export default {
     assignableTags() {
         return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.tagSetId && !e.deleted);
     },
+    userId() {
+      return this.$store.getters['auth/getUserId'];
+    },
+    savedUsageHistory() {
+      const key = "UH" + this.tagSetId; 
+      const data = this.$store.getters['table/user_environment/getAll'].filter(
+        e => e.userId === this.userId &&
+          e.documentId === this.documentId &&
+          e.studySessionId === this.studySessionId &&
+          e.studyStepId === this.studyStepId &&
+          e.key === key
+      );
+      return data[0] || null;
     },
     filteredTags() {
       let tagList;
@@ -167,10 +180,44 @@ export default {
     document.body.addEventListener('dblclick', this.doubleClickHandler);
     document.body.addEventListener('mousedown', this.positionTracker);
   },
+  mounted() {
+    // if available, load usage history of Tagset
+    if (this.savedUsageHistory) {
+      console.log("loaded saved usage history");
+      const data = JSON.parse(this.savedUsageHistory.value);
+      this.usageHistory = data;
+    }
+  },
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
     document.body.removeEventListener('dblclick', this.doubleClickHandler);
     document.body.removeEventListener('mousedown', this.positionTracker);
+    
+    
+    const key = "UH" + this.tagSetId;
+    const payload = JSON.stringify(this.usageHistory);
+    // save the usage history 
+    if (!this.savedUsageHistory){
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          userId: this.userId,
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          key: key,
+          value: payload
+        }
+      });
+    } else {
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          id: this.savedUsageHistory.id,
+          value: payload
+        }
+      });
+    }
   },
   methods: {
     handleAdderScrolling(event) {
