@@ -12,10 +12,14 @@ function readJsonFromDisk(filename) {
 const ASSESSMENT_JSON_PATH = "20250919125851-basic-configuration-expose_assessment.json";
 const VALIDATION_JSON_PATH = "20250919125851-basic-configuration-expose_validation.json";
 const FEEDBACK_JSON_PATH = "20250919125851-basic-configuration-expose_feedback.json";
+const ASSESSMENT_JSON_PATH_GERMAN = "20250919125851-basic-configuration-expose_assessment_german.json";
+const FEEDBACK_JSON_PATH_GERMAN = "20250919125851-basic-configuration-expose_feedback_german.json";
 
 const assessmentContent = readJsonFromDisk(ASSESSMENT_JSON_PATH);
 const feedbackContent = readJsonFromDisk(FEEDBACK_JSON_PATH);
 const validationContent = readJsonFromDisk(VALIDATION_JSON_PATH);
+const assessmentContentGerman = readJsonFromDisk(ASSESSMENT_JSON_PATH_GERMAN);
+const feedbackContentGerman = readJsonFromDisk(FEEDBACK_JSON_PATH_GERMAN);
 
 module.exports = {
   /**
@@ -66,6 +70,22 @@ module.exports = {
           createdAt: now,
           updatedAt: now,
         },
+        {
+          name: assessmentContentGerman.name,
+          description: assessmentContentGerman.description,
+          userId: userId,
+          hideInFrontend: false,
+          type: 0,
+          content: toJsonb(assessmentContentGerman),
+        },
+        {
+          name: feedbackContentGerman.name,
+          description: feedbackContentGerman.description,
+          userId: userId,
+          hideInFrontend: false,
+          type: 0,
+          content: toJsonb(feedbackContentGerman),
+        },
       ],
       {}
     );
@@ -76,6 +96,8 @@ module.exports = {
       assessmentContent && assessmentContent.name,
       feedbackContent && feedbackContent.name,
       validationContent && validationContent.name,
+      assessmentContentGerman && assessmentContentGerman.name,
+      feedbackContentGerman && feedbackContentGerman.name,
     ].filter(Boolean);
 
     await queryInterface.bulkDelete("configuration", { name: { [Sequelize.Op.in]: namesToDelete } }, {});
