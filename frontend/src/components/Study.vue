@@ -221,7 +221,7 @@ export default {
       return services.some(s => s && s.type === 'nlpRequest');
     },
     studyStepHasAssessment() {
-      return !!this.currentStep.configuration.configurationId;
+      return !!this.currentStep.configuration.settings.configurationId;
     },
     studySession() {
       if (this.studySessionId !== 0) {

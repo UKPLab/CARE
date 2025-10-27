@@ -284,13 +284,13 @@ export default {
 
   computed: {
     isManualAssessmentWorkflow() {
-      const cfg = this.currentStudyStep?.configuration || {};
+      const cfg = this.currentStudyStep?.configuration.settings || {};
       const hasConfig = !!(cfg.configFile || cfg.configurationId);
       const hasNoServices = !cfg.services;
       return hasConfig && hasNoServices;
     },
     configuration() {
-      const cfg = this.currentStudyStep?.configuration || {};
+      const cfg = this.currentStudyStep?.configuration.settings || {};
       const cfgId = cfg.configurationId || cfg.configFile;
       return this.$store.getters['table/configuration/get'](cfgId);
     },
@@ -308,7 +308,7 @@ export default {
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
-      return this.currentStudyStep?.configuration.forcedAssessment;
+      return this.currentStudyStep?.configuration?.settings?.forcedAssessment;
     },
     areAllCriteriaSaved() {
       if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
