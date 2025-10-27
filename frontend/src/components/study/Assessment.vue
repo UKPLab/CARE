@@ -682,7 +682,7 @@ export default {
         const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
 
         if (stepScoped) {
-          this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: false});
+          this.mergeSavedDataWithConfiguration(stepScoped);
           return;
         }
 
@@ -690,7 +690,7 @@ export default {
         if (this.isAIAssessmentWorkflow) {
           const preprocessed = await this.getPreprocessedAssessmentData();
           if (preprocessed) {
-            this.mergeSavedDataWithConfiguration(preprocessed, {markAsSaved: false});
+            this.mergeSavedDataWithConfiguration(preprocessed);
           }
         }
       } catch (error) {
@@ -701,10 +701,19 @@ export default {
     // Fetch preprocessed grading results stored without session/step scope
     async getPreprocessedAssessmentData() {
       if (!this.documentId) return null;
-      return await this.documentDataGet(null, null, this.assessmentDataKey);
+      const svc = this.getNlpServiceFromStep();
+      if (!this.isAIAssessmentWorkflow || !svc || !svc.skill) return null;
+
+      const keys = [
+        `${svc.type}_${svc.skill}_assessment`,
+        this.assessmentDataKey,
+      ];
+
+      const results = await Promise.all(keys.map(k => this.documentDataGet(null, null, k)));
+      return results.find(v => !!v) || null;
     },
 
-    mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
+    mergeSavedDataWithConfiguration(savedData) {
       if (!savedData || !this.assessmentOutput) {
         return;
       }
@@ -725,7 +734,7 @@ export default {
               assessment: match.justification || "",
               currentScore: sc,
               score: sc,
-              isSaved: options.markAsSaved === true
+              isSaved: this.isAIAssessmentWorkflow ? false : true
             };
           }
           return {...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false};
