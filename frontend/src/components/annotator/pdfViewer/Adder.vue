@@ -105,13 +105,8 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
-      if (this.study?.tagSetId) {
-        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
-      }
-      else {
-        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.defaultTagSet && !e.deleted);
-      }
-
+        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.tagSetId && !e.deleted);
+    },
     },
     filteredTags() {
       let tagList;
@@ -151,6 +146,13 @@ export default {
       }
       console.log("StudySession: ", this.studySession); 
       return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
+    tagSetId() {
+      if (this.study?.tagSetId) {
+        return this.study.tagSetId;
+      } else {
+        return this.defaultTagSet;
+      }
     },
     anonymize() {
       if (!this.study) {
