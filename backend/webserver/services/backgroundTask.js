@@ -117,11 +117,15 @@ module.exports = class BackgroundTaskService extends Service {
             
             if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests) {
                 delete this.backgroundTask.preprocess.requests[item.requestId];
+                if (this.backgroundTask.preprocess.currentRequestId === item.requestId) {
+                    this.backgroundTask.preprocess.currentRequestId = null;
+                }
                 this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             }
         }
         
         if (!Object.keys(this.backgroundTask.preprocess.requests).length) {
+            this.backgroundTask.preprocess.currentRequestId = null;
             delete this.backgroundTask.preprocess;
         }
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
@@ -140,6 +144,7 @@ module.exports = class BackgroundTaskService extends Service {
             cancelled: false,
             requests: {},
             currentSubmissionsCount: 0,
+            currentRequestId: null,
             batchStartTime: Date.now()
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
@@ -178,18 +183,27 @@ module.exports = class BackgroundTaskService extends Service {
             const requestId = this.server.uuidv4 ? this.server.uuidv4() : require('uuid').v4();
             this.requestIds.push(requestId);
             
+            const baseParamData = combination.find(c => c.paramName === baseFileParameter);
+            const baseFileId = baseParamData ? baseParamData.fileId : null;
+            const baseFileTable = baseParamData ? baseParamData.table : null;
+            
             const item = {
                 requestId,
                 skillName,
                 combination,
                 baseFileParameter,
-                baseFiles
+                baseFiles,
+                submissionId: baseFileTable === 'submission' ? baseFileId : null,
+                documentId: baseFileTable === 'document' ? baseFileId : null
             };
             
             this.preprocessItems.push(item);
             this.backgroundTask.preprocess.requests[requestId] = { 
                 combination: combination.map(c => `${c.paramName}:${c.fileId}`).join(','),
-                skillName 
+                skillName,
+                submissionId: item.submissionId,
+                documentId: item.documentId,
+                startTime: null
             };
         }
         
@@ -370,6 +384,7 @@ module.exports = class BackgroundTaskService extends Service {
     async sendNlpRequest(documentSocket, item) {
         if (this.server.services['NLPService']) {
             this.backgroundTask.preprocess.requests[item.requestId].startTime = Date.now();
+            this.backgroundTask.preprocess.currentRequestId = item.requestId;
             this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             this.server.services['NLPService'].backgroundRequest(documentSocket, {
                 id: item.requestId,

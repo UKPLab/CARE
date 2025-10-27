@@ -77,6 +77,11 @@ export default {
       default: false,
       description: "If true, the modalValue will be an object",
     },
+    isTemplateMode: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["update:modelValue"],
   data() {
@@ -146,6 +151,11 @@ export default {
 
         baseOptions = [...baseOptions, ...additionalOptions];
       }
+
+      if (this.isTemplateMode && this.options.options.table === 'document' && this.parentValue?.stepType === 1) {
+        baseOptions = [{ id: null, name: '< >' }, ...baseOptions];
+      }
+
       return baseOptions;
     },
   },

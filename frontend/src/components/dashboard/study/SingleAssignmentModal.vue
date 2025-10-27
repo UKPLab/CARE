@@ -365,7 +365,7 @@ export default {
         {name: "User Name", key: "userName"},
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
-        {name: "Group ID", key: "group"},
+        {name: "Group ID", key: "group", filter: this.groupFilterOptions},
         {name: "Created At", key: "createdAt"},
       ]
     },
@@ -402,6 +402,33 @@ export default {
           key: "rolesNames",
         }
       ]
+    },
+    groupFilterOptions() {
+      const groups = new Set();
+      let hasEmptyGroups = false;
+      
+      (this.submissionsTable || []).forEach((s) => {
+        if (s && s.group !== null && s.group !== undefined && s.group !== '') {
+          groups.add(String(s.group));
+        } else {
+          hasEmptyGroups = true;
+        }
+      });
+      
+      const options = Array.from(groups)
+        .sort((a, b) => {
+          const na = Number(a);
+          const nb = Number(b);
+          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        })
+        .map((g) => ({ key: g, name: g }));
+      
+      if (hasEmptyGroups) {
+        options.unshift({ key: '', name: 'No GroupID' });
+      }
+      
+      return options;
     },
     steps() {
       const baseSteps = [

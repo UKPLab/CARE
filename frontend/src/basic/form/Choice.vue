@@ -24,6 +24,7 @@
                     :parent-value="choice"
                     :options="{ options: field.options }"
                     :placeholder="field.label"
+                    :is-template-mode="isTemplateMode"
                     class="flex-grow-1"
                     style="min-width: 200px; max-width: 800px"
                     @update:model-value="(val) => updateFieldValue(index, field.key, val)"
@@ -98,6 +99,9 @@ export default {
   computed: {
     fields() {
       return this.$store.getters[`table/${this.options.options.table}/getFields`];
+    },
+    isTemplateMode() {
+      return this.formData?.isTemplateMode || false;
     },
     workflowSteps() {
       if (!this.formData) return [];
