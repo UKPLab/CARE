@@ -65,27 +65,7 @@ module.exports = class Socket {
                     options.transaction = t;
 
                     t.afterCommit(() => {
-                        try {
-                            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
-                            if (t.changes) {
-                                const changesMap = t.changes.reduce((acc, entry) => {
-                                    if (entry.constructor.autoTable) {
-                                        const tableName = entry.constructor.tableName;
-                                        const entryData = _.omit(entry.dataValues, defaultExcludes);
-                                        if (!acc.has(tableName)) {
-                                            acc.set(tableName, []);
-                                        }
-                                        acc.get(tableName).push(entryData);
-                                    }
-                                    return acc;
-                                }, new Map());
-                                for (const [table, changes] of changesMap) {
-                                    this.broadcastTable(table, changes);
-                                }
-                            }
-                        } catch (e) {
-                            this.logger.error("Error in afterCommit sending data to client: " + e);
-                        }
+                        this.broadcastTransactionChanges(t);
                     });
                 }
 
@@ -106,6 +86,34 @@ module.exports = class Socket {
                 }
             }
         });
+    }
+
+    /**
+     * Broadcasts all autoTable changes collected on a transaction after commit.
+     * @param {import("sequelize").Transaction} transaction
+     */
+    broadcastTransactionChanges(transaction) {
+        try {
+            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
+            if (transaction && transaction.changes) {
+                const changesMap = transaction.changes.reduce((acc, entry) => {
+                    if (entry.constructor.autoTable) {
+                        const tableName = entry.constructor.tableName;
+                        const entryData = _.omit(entry.dataValues, defaultExcludes);
+                        if (!acc.has(tableName)) {
+                            acc.set(tableName, []);
+                        }
+                        acc.get(tableName).push(entryData);
+                    }
+                    return acc;
+                }, new Map());
+                for (const [table, changes] of changesMap) {
+                    this.broadcastTable(table, changes);
+                }
+            }
+        } catch (e) {
+            this.logger.error("Error in afterCommit sending data to client: " + e);
+        }
     }
 
     /**
