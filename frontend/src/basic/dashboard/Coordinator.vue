@@ -267,7 +267,7 @@ export default {
             .filter((e) => e[field.options.key] === data[field.key])
             .map((e) => {
               // Create a copy of the original entry
-              const copyData = { ...e };
+              const{id, ...copyData} = e;
 
               // If this entry has a documentId, fetch the parent document ID
               if (e.documentId) {
