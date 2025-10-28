@@ -1,632 +1,342 @@
 {
-  "version": "0.0.1",
+  "version": "0.0.2",
   "name": "Exposé-Bewertungskonfiguration",
-  "description": "Die Konfiguration der Bewertungskriterien für LLMentor",
+  "description": "Erweiterte Konfiguration der Bewertungskriterien für LLMentor",
   "type": "assessment",
   "rubrics": [
     {
-      "name": "Sprache/Qualität",
-      "description": "Bewertung der Sprachqualität und der strukturellen Kohärenz des Textes",
+      "name": "Form",
+      "description": "Formale Aspekte des Exposés",
       "criteria": [
         {
-          "name": "Sprachqualität",
-          "description": "Bewertung der sprachlichen Genauigkeit und Satzklarheit",
+          "name": "Form und sprachliche Qualität",
+          "function": "auto_grading",
+          "maxPoints": 6,
+          "scoring": []
+        },
+        {
+          "name": "Form und Struktur",
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "scoring": []
+        },
+        {
+          "name": "Template genutzt",
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "scoring": [
+            { "points": 0, "description": "Latex Template wird nicht genutzt" },
+            { "points": 1, "description": "Latex Template wird genutzt" }
+          ]
+        },
+        {
+          "name": "Seitenanzahl",
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "scoring": [
+            { "points": 0, "description": "> drei Seiten (nur Motivation + Approach)" },
+            { "points": 1, "description": "≤ drei Seiten (nur Motivation + Approach)" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sprache/Qualität",
+      "description": "Sprachliche Qualität und Struktur des Textes",
+      "criteria": [
+        {
+          "name": "Sprache/Qualität des Exposés",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Viele sprachliche Fehler (über 10 Fehler) (z. B. falsches Tempus, falsche Personalpronomen)"
-            },
-            {
-              "points": 1,
-              "description": "Wenige sprachliche Fehler (0–10 Fehler), klare und verständliche Sätze"
-            },
-            {
-              "points": 2,
-              "description": "Keine sprachlichen Fehler (0 Fehler), klare und verständliche Sätze mit konsistenter Terminologie"
-            }
+            { "points": 0, "description": "Viele sprachliche Fehler" },
+            { "points": 1, "description": "Kaum sprachliche Fehler, klare Sätze" },
+            { "points": 2, "description": "Keine sprachlichen Fehler, klare Sätze mit einheitlicher Terminologie" }
           ]
         },
         {
           "name": "Roter Faden",
-          "description": "Bewertung der strukturellen Kontinuität und Kohärenz im gesamten Text",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Kein erkennbarer roter Faden, die Struktur ist unklar und sprunghaft"
-            },
-            {
-              "points": 1,
-              "description": "Teilweise erkennbar, aber die Struktur ist nicht durchgängig"
-            },
-            {
-              "points": 2,
-              "description": "Text hat eine durchgängige, gut nachvollziehbare Struktur; der rote Faden ist von Anfang bis Ende klar erkennbar"
-            }
+            { "points": 0, "description": "Kein roter Faden, Struktur unklar und sprunghaft" },
+            { "points": 1, "description": "Teilweise erkennbar, aber nicht durchgehend" },
+            { "points": 2, "description": "Durchgehende Struktur, roter Faden klar erkennbar" }
           ]
         }
       ]
     },
     {
       "name": "Metadaten",
-      "description": "Bewertung der Angemessenheit und Kreativität des Titels",
+      "description": "Titel, Angaben und formale Metadaten",
       "criteria": [
         {
+          "name": "Titelblatt",
+          "function": "auto_grading",
+          "maxPoints": 3,
+          "scoring": []
+        },
+        {
           "name": "Vorläufiger Titel",
-          "description": "Bewertung, wie gut der Titel zum Thema passt und es repräsentiert",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Titel passt nicht zum Thema"
-            },
-            {
-              "points": 1,
-              "description": "Titel passt zum Thema; ähnlicher Titel wie in den Themenvorschlägen"
-            },
-            {
-              "points": 2,
-              "description": "Titel passt zum Thema; kreativer Titel, der neuartig verändert wurde und/oder sich in die Geschichte des Exposés einfügt"
-            }
+            { "points": 0, "description": "Titel passt nicht zum Thema" },
+            { "points": 1, "description": "Titel passt zum Thema; ähnlich wie Themenvorschläge" },
+            { "points": 2, "description": "Titel passt; kreativ/neu und in Story integriert" }
           ]
         },
         {
           "name": "Metadaten vorhanden",
-          "description": "Bewertung korrekter Studierenden-Identifikationsangaben",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Name, Datum und Matrikelnummer sind nicht korrekt/einheitlich eingetragen bzw. geändert"
-            },
-            {
-              "points": 1,
-              "description": "Name, Datum, Matrikelnummer sind korrekt und aktuell"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Form/Struktur",
-      "description": "Bewertung der Dokumentformatierung und strukturellen Anforderungen",
-      "criteria": [
-        {
-          "name": "Vorlage verwendet",
-          "description": "LaTeX-Vorlage verwendet",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "LaTeX-Vorlage wird nicht verwendet"
-            },
-            {
-              "points": 1,
-              "description": "LaTeX-Vorlage wird verwendet"
-            }
-          ]
-        },
-        {
-          "name": "Seitenanzahl",
-          "description": "Seitenbegrenzung für fokussierteres Schreiben",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "> drei Seiten (nur Motivation + Vorgehen)"
-            },
-            {
-              "points": 1,
-              "description": "≤ drei Seiten (nur Motivation + Vorgehen)"
-            }
+            { "points": 0, "description": "Name, Matrikelnummer nicht korrekt angegeben" },
+            { "points": 1, "description": "Name, Matrikelnummer korrekt angegeben" }
           ]
         }
       ]
     },
     {
       "name": "Motivation",
-      "description": "Bewertung der Problemidentifikation, Kontextsetzung und Formulierung der Forschungsfrage",
+      "description": "Motivation und Problemstellung",
       "criteria": [
         {
-          "name": "Aufhänger vorhanden",
-          "description": "Bewertung von Vorhandensein und Eignung eines einleitenden Aufhängers",
+          "name": "Hook",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Aufhänger nicht vorhanden"
-            },
-            {
-              "points": 1,
-              "description": "Aufhänger vorhanden und für das Thema geeignet"
-            }
+            { "points": 0, "description": "Hook nicht vorhanden" },
+            { "points": 1, "description": "Hook vorhanden und passend" }
           ]
         },
         {
-          "name": "Anker",
-          "description": "Bewertung der Detailtiefe und Vollständigkeit der Problemstellung",
+          "name": "Anker (Problem)",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Das Problem wird überhaupt nicht erwähnt."
-            },
-            {
-              "points": 1,
-              "description": "Das Problem wird allgemein ohne spezifische Details beschrieben. Es ist erkennbar, welches Problem adressiert wird, aber wichtige Informationen fehlen."
-            },
-            {
-              "points": 2,
-              "description": "Das Problem wird detailliert beschrieben. Alle relevanten Aspekte werden genannt und verdeutlichen Umfang und mögliche Auswirkungen."
-            }
+            { "points": 0, "description": "Problem nicht angesprochen" },
+            { "points": 1, "description": "Problem in Grundzügen benannt" },
+            { "points": 2, "description": "Problem detailliert beschrieben" }
           ]
         },
         {
-          "name": "Domäne",
-          "description": "Bewertung von Kontext- und Domänenspezifikation des Problems",
+          "name": "Domäne des Problems",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Die Domäne oder der Kontext, in dem das Problem auftritt, wird nicht genannt."
-            },
-            {
-              "points": 1,
-              "description": "Die Domäne bzw. das relevante Fachgebiet des Problems wird genannt. Es ist klar, in welchem Umfeld das Problem besteht."
-            }
+            { "points": 0, "description": "Domäne nicht erwähnt" },
+            { "points": 1, "description": "Domäne/Fachbereich klar benannt" }
           ]
         },
         {
-          "name": "Problemrelevanz",
-          "description": "Bewertung, wie gut Bedeutung und Auswirkungen des Problems vermittelt werden",
+          "name": "Relevanz des Problems",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Die Relevanz oder Bedeutung des Problems wird nicht behandelt. Es bleibt unklar, warum das Problem relevant oder diskussionswürdig ist."
-            },
-            {
-              "points": 1,
-              "description": "Die Bedeutung und Relevanz des Problems wird beschrieben. Es wird deutlich, warum das Problem wichtig ist und welche Auswirkungen es haben könnte (z. B. für bestimmte Personen, Organisationen oder die Gesellschaft insgesamt)."
-            }
+            { "points": 0, "description": "Relevanz nicht angesprochen" },
+            { "points": 1, "description": "Relevanz klar dargestellt" }
           ]
         },
         {
-          "name": "Problembehandlung",
-          "description": "Bewertung aktueller Ansätze oder kritischer Betrachtungen zum Problem",
+          "name": "Aktueller Umgang/Kritik",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Aktuelle Behandlung des Problems oder aktuelle Kritik wird nicht angegeben"
-            },
-            {
-              "points": 1,
-              "description": "Aktuelle Behandlung des Problems oder aktuelle Kritik wird angegeben"
-            }
+            { "points": 0, "description": "Kein aktueller Umgang/Kritik" },
+            { "points": 1, "description": "Aktueller Umgang/Kritik dargestellt" }
           ]
         },
         {
-          "name": "Teaser (RQ)",
-          "description": "Bewertung der Klarheit der Forschungsfrage und ihrer Passung zur Problembeschreibung",
+          "name": "Teaser (Forschungsfrage)",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Es ist keine Forschungsfrage vorhanden"
-            },
-            {
-              "points": 1,
-              "description": "Eine Forschungsfrage ist vorhanden, weist aber Schwächen auf, z. B. durch unklare Terminologie oder vage Formulierung. Es ist schwer zu erkennen, was untersucht werden soll und wie die Frage zur Problembeschreibung passt."
-            },
-            {
-              "points": 2,
-              "description": "Die Forschungsfrage ist klar und präzise formuliert. Sie vermittelt eindeutig, was untersucht werden soll, und passt thematisch zur Problembeschreibung."
-            }
+            { "points": 0, "description": "Keine Forschungsfrage" },
+            { "points": 1, "description": "Forschungsfrage vorhanden, aber schwach" },
+            { "points": 2, "description": "Forschungsfrage klar und präzise formuliert" }
           ]
         },
         {
-          "name": "Begrenzung der Forschungsfrage (RQ)",
-          "description": "Bewertung von Umfang und Machbarkeit der Forschungsfrage im Kontext einer Bachelorarbeit",
+          "name": "Begrenzung/Konkretisierung der Forschungsfrage",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Die Forschungsfrage ist entweder zu allgemein oder zu breit, sodass eine Beantwortung im Rahmen einer Bachelorarbeit nicht realistisch erscheint."
-            },
-            {
-              "points": 1,
-              "description": "Die Forschungsfrage ist präzise und klar definiert, sodass sie realistisch im Rahmen einer Bachelorarbeit bearbeitet werden kann. Sie beschreibt konkret, welche Aspekte untersucht werden sollen, ohne vom Thema abzuweichen."
-            }
+            { "points": 0, "description": "Forschungsfrage zu allgemein/zu weit" },
+            { "points": 1, "description": "Forschungsfrage klar begrenzt und konkret" }
           ]
         }
       ]
     },
     {
       "name": "Vorgehen",
-      "description": "Bewertung der State-of-the-Art-Analyse, des theoretischen Rahmens und der Methodik",
+      "description": "Darstellung des Vorgehens, SOTA, Methodik und Theorien",
       "criteria": [
         {
-          "name": "SOTA",
-          "description": "Bewertung von Vorhandensein und korrekter Zitierung des State of the Art",
+          "name": "State-of-the-Art",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "SOTA nicht vorhanden"
-            },
-            {
-              "points": 1,
-              "description": "SOTA vorhanden und korrekt zitiert"
-            }
+            { "points": 0, "description": "SOTA nicht vorhanden" },
+            { "points": 1, "description": "SOTA vorhanden und zitiert" }
           ]
         },
         {
-          "name": "SOTA-Relevanz",
-          "description": "Bewertung, wie gut die Relevanz des State of the Art dargestellt wird",
+          "name": "Relevanz SOTA",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Die Relevanz von SOTA ist nicht vorhanden oder unklar."
-            },
-            {
-              "points": 1,
-              "description": "Die Relevanz von SOTA wird erwähnt, ist aber nur teilweise nachvollziehbar oder schwach dargestellt."
-            },
-            {
-              "points": 2,
-              "description": "Es wird klar gezeigt, wie SOTA für das Thema des Exposés relevant ist und warum es für die Forschung bedeutsam ist."
-            }
+            { "points": 0, "description": "Relevanz unklar/nicht vorhanden" },
+            { "points": 1, "description": "Relevanz schwach dargestellt" },
+            { "points": 2, "description": "Relevanz klar und nachvollziehbar dargestellt" }
           ]
         },
         {
-          "name": "SOTA-Schwächen",
-          "description": "Bewertung der Identifikation und Erklärung von Einschränkungen im State of the Art",
+          "name": "Schwachpunkte SOTA",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Schwächen des SOTA werden nicht genannt"
-            },
-            {
-              "points": 1,
-              "description": "Schwächen des SOTA werden genannt, aber nur oberflächlich oder unklar beschrieben"
-            },
-            {
-              "points": 2,
-              "description": "Schwächen des SOTA werden klar identifiziert und präzise erklärt; es ist deutlich, welche Schwächen für die eigene Forschung relevant sind"
-            }
+            { "points": 0, "description": "Nicht genannt" },
+            { "points": 1, "description": "Oberflächlich genannt" },
+            { "points": 2, "description": "Klar und präzise erläutert" }
           ]
         },
         {
-          "name": "SOTA-Abgrenzung",
-          "description": "Bewertung der Abgrenzung der eigenen Arbeit von bestehender Forschung",
+          "name": "Abgrenzung eigene Leistung",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Keine Abgrenzung der eigenen Leistung vom aktuellen Forschungsstand"
-            },
-            {
-              "points": 1,
-              "description": "Die eigene Leistung wird vom SOTA abgegrenzt; es wird explizit betont, was an der eigenen Forschung neu oder einzigartig ist"
-            }
+            { "points": 0, "description": "Keine Abgrenzung" },
+            { "points": 1, "description": "Eigene Leistung klar abgegrenzt" }
           ]
         },
         {
-          "name": "SOTA-Kombination",
-          "description": "Bewertung der sinnvollen Kombination und Konsolidierung vorhandenen Materials",
+          "name": "Kombination",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Keine sinnvolle Kombination vorhandenen Materials (auch wenn auf Material verwiesen wird, ist dessen Kombination oder Konsolidierung unüberzeugend oder unklar)"
-            },
-            {
-              "points": 1,
-              "description": "Vorhandenes Material wird klar und sinnvoll kombiniert; der Mehrwert der Kombination ist deutlich"
-            }
+            { "points": 0, "description": "Keine sinnvolle Kombination" },
+            { "points": 1, "description": "Kombination klar und sinnvoll" }
           ]
         },
         {
           "name": "Theoretischer Rahmen",
-          "description": "Bewertung von Struktur und Klarheit des theoretischen Rahmens",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Der theoretische Rahmen ist nicht vorhanden oder völlig irreführend"
-            },
-            {
-              "points": 1,
-              "description": "Der theoretische Rahmen ist vorhanden, aber unklar, schlecht strukturiert oder schwer verständlich"
-            },
-            {
-              "points": 2,
-              "description": "Der theoretische Rahmen ist klar und logisch aufgebaut. Die theoretischen Ansätze werden verständlich und nachvollziehbar dargestellt"
-            }
+            { "points": 0, "description": "Nicht vorhanden/unverständlich" },
+            { "points": 1, "description": "Vorhanden, aber unklar" },
+            { "points": 2, "description": "Klar und logisch strukturiert" }
           ]
         },
         {
-          "name": "Relevanz des theoretischen Rahmens",
-          "description": "Bewertung der Verbindung des theoretischen Rahmens zum Forschungsthema",
+          "name": "Relevanz theoretischer Rahmen",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Der theoretische Rahmen zeigt keinen Bezug zum Forschungsthema oder die Theorie ist irrelevant"
-            },
-            {
-              "points": 1,
-              "description": "Der theoretische Rahmen zeigt klar, wie die ausgewählten Theorien direkt mit dem Forschungsthema zusammenhängen und die Forschungsfrage unterstützen"
-            }
+            { "points": 0, "description": "Keine Verbindung zum Thema" },
+            { "points": 1, "description": "Direkter Bezug zur Forschungsfrage" }
           ]
         },
         {
-          "name": "Methodik Verfügbarkeit",
-          "description": "Bewertung von Vorhandensein der Methodik und Eignung für die Forschungsfragen",
+          "name": "Methodik",
           "function": "auto_grading",
-          "maxPoints": 1,
+          "maxPoints": 6,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Methodik nicht vorhanden"
-            },
-            {
-              "points": 1,
-              "description": "Methodik vorhanden und geeignet zur Beantwortung der Forschungsfrage(n)"
-            }
-          ]
-        },
-        {
-          "name": "Methodik Vollständigkeit",
-          "description": "Bewertung, ob die Methodik alle Forschungsfragen abdeckt",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Methodik ist vorhanden, aber nicht alle Forschungsfragen werden adressiert"
-            },
-            {
-              "points": 1,
-              "description": "Methodik ist vorhanden und adressiert alle Aspekte der Forschungsfragen"
-            }
-          ]
-        },
-        {
-          "name": "Methodik Relevanz",
-          "description": "Bewertung der Relevanz der Methodik und ihres Beitrags zum Forschungsprojekt",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Die Relevanz der Methodik für das Forschungsprojekt ist nicht gegeben oder unklar"
-            },
-            {
-              "points": 1,
-              "description": "Es wird klar und präzise gezeigt, warum die gewählte Methodik für das Forschungsprojekt relevant ist und wie sie zu den Forschungsfragen beiträgt"
-            }
-          ]
-        },
-        {
-          "name": "Methodik Zielgruppe",
-          "description": "Bewertung der Spezifikation und Relevanz der Zielgruppe",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Die Zielgruppe ist nicht spezifiziert oder es gibt keine präzise Abgrenzung"
-            },
-            {
-              "points": 1,
-              "description": "Die Zielgruppe ist klar und präzise definiert, und es ist ersichtlich, warum sie für die Methodik relevant ist"
-            }
-          ]
-        },
-        {
-          "name": "Methodik Vorhandenes Material",
-          "description": "Bewertung angemessener Bezugnahme auf vorhandenes Material in der Methodik",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Es wird kein Bezug auf vorhandenes Material genommen oder das Material ist unpassend"
-            },
-            {
-              "points": 1,
-              "description": "Das vorhandene Material wird angemessen und treffend auf das Thema bezogen; es ist klar, dass dieses Material für die Methodik relevant ist"
-            }
-          ]
-        },
-        {
-          "name": "Methodik Schwierigkeiten",
-          "description": "Bewertung der Identifikation und Lösung möglicher Umsetzungsherausforderungen",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Potenzielle Schwierigkeiten bei der praktischen Umsetzung der Methoden werden nicht behandelt. Mögliche Herausforderungen, die den Forschungsprozess behindern könnten, werden übersehen."
-            },
-            {
-              "points": 1,
-              "description": "Potenzielle Schwierigkeiten bei der praktischen Umsetzung der Methoden werden klar und präzise beschrieben. Es werden auch konkrete Lösungen oder Strategien vorgestellt, um diese Schwierigkeiten zu überwinden und den Forschungsprozess möglichst effizient und zielorientiert zu gestalten."
-            }
-          ]
-        },
-        {
-          "name": "Methodik Möglichkeiten/Einschränkungen",
-          "description": "Bewertung von Stärken, Begrenzungen und kritischer Reflexion der Methodik",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Die Möglichkeiten oder Einschränkungen der verwendeten Methoden werden nicht behandelt oder nur oberflächlich erwähnt, ohne konkrete Details. Es bleibt unklar, wie diese Methoden zur Beantwortung der Forschungsfrage beitragen und welche Begrenzungen die Validität der Ergebnisse beeinflussen könnten."
-            },
-            {
-              "points": 1,
-              "description": "Die Möglichkeiten und Einschränkungen der Methoden werden klar und präzise beschrieben. Es ist ersichtlich, welche Stärken die Methoden in die Studie einbringen und welche Schwächen bzw. Begrenzungen die Ergebnisse beeinflussen könnten. Die Methodenwahl wird kritisch reflektiert und auf das Forschungsprojekt bezogen."
-            }
-          ]
-        },
-        {
-          "name": "Methodik Details",
-          "description": "Bewertung einer umfassenden Methodikbeschreibung und von Umsetzungsdetails",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "scoring": [
-            {
-              "points": 0,
-              "description": "Es werden keine zusätzlichen Erläuterungen zur Methodik oder Umsetzung gegeben"
-            },
-            {
-              "points": 1,
-              "description": "Die Methodik wird umfassend und präzise mit zusätzlichen Erläuterungen (z. B. Details zur Umsetzung) erklärt, sodass das Vorgehen klar nachvollziehbar ist"
-            }
+            { "points": 0, "description": "Methodik nicht vorhanden" },
+            { "points": 1, "description": "Methodik vorhanden und passend" },
+            { "points": 2, "description": "Vollständig, beantwortet alle RQs" },
+            { "points": 3, "description": "Relevanz klar gezeigt" },
+            { "points": 4, "description": "Zielgruppe klar definiert" },
+            { "points": 5, "description": "Passendes Material eingebunden" },
+            { "points": 6, "description": "Mögliche Schwierigkeiten und Einschränkungen reflektiert, Durchführung erläutert" }
           ]
         }
       ]
     },
     {
       "name": "Zeitplan",
-      "description": "Bewertung von Struktur, Vollständigkeit und Realismus des Projektzeitplans",
+      "description": "Bewertung der Zeitplanung",
       "criteria": [
         {
-          "name": "Zeitplan Verfügbarkeit",
-          "description": "Bewertung von Vorhandensein eines tabellarischen Zeitplans und chronologischer Ordnung",
+          "name": "Tabellarischer Zeitplan",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Tabellarischer Zeitplan nicht vorhanden"
-            },
-            {
-              "points": 1,
-              "description": "Tabellarischer Zeitplan in chronologischer Reihenfolge vorhanden"
-            }
+            { "points": 0, "description": "Nicht vorhanden" },
+            { "points": 1, "description": "Tabellarisch und chronologisch vorhanden" }
           ]
         },
         {
-          "name": "Zeitplan Vollständigkeit",
-          "description": "Bewertung der Abdeckung des Zeitplans und sinnvoller Unterteilung in Arbeitsblöcke",
+          "name": "Vollständige Einteilung",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Tabellarischer Zeitplan enthält Lücken"
-            },
-            {
-              "points": 1,
-              "description": "Tabellarischer Zeitplan von Anfang bis Ende vorhanden und sinnvoll in Blöcke unterteilt"
-            }
+            { "points": 0, "description": "Lücken vorhanden" },
+            { "points": 1, "description": "Von Anfang bis Ende sinnvoll unterteilt" }
           ]
         },
         {
-          "name": "Zeitplan Blockbeschreibung",
-          "description": "Bewertung detaillierter Beschreibungen für einzelne Zeitplanblöcke",
+          "name": "Beschreibung Blöcke",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Nicht vorhanden oder nur Überschriften vorhanden"
-            },
-            {
-              "points": 1,
-              "description": "Einzelne Blöcke beschrieben (nicht nur Überschriften)"
-            }
+            { "points": 0, "description": "Nicht vorhanden" },
+            { "points": 1, "description": "Einzelne Blöcke beschrieben" }
           ]
         },
         {
-          "name": "Zeitplan Realismus/Relevanz",
-          "description": "Bewertung des Realismus der Zeitplanung und der Passung zum Umfang einer Bachelorarbeit",
+          "name": "Realistische Zeitplanung",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Die Zeitverteilung ist offensichtlich unrealistisch und wichtige Arbeitsschritte fehlen. Die Forschungsfragen werden nicht oder nur unzureichend adressiert."
-            },
-            {
-              "points": 1,
-              "description": "Der Zeitplan enthält die wichtigsten Schritte, einige Zeitangaben sind jedoch unrealistisch oder unklar. Teilweise ist unklar, wie die Schritte zur Beantwortung der Forschungsfragen beitragen. Der Zeitplan ist nicht vollständig auf den Kontext der Bachelorarbeit ausgerichtet."
-            },
-            {
-              "points": 2,
-              "description": "Der Zeitplan ist klar strukturiert, realistisch und auf den Umfang der Bachelorarbeit ausgerichtet. Alle wichtigen Arbeitsschritte sind enthalten und in einem sinnvollen Zeitrahmen organisiert. Jeder Schritt trägt zur Beantwortung der Forschungsfragen bei, und der gesamte Plan fügt sich kohärent ins Exposé und in den Kontext der Arbeit ein."
-            }
+            { "points": 0, "description": "Unrealistisch, wichtige Schritte fehlen" },
+            { "points": 1, "description": "Wichtige Schritte enthalten, aber teilweise unrealistisch" },
+            { "points": 2, "description": "Realistisch, vollständig und passend" }
           ]
         }
       ]
     },
     {
       "name": "Literaturverzeichnis",
-      "description": "Bewertung der Konsistenz des Literaturverzeichnisses und der Relevanz der Literatur",
+      "description": "Bewertung der Literatur",
       "criteria": [
         {
-          "name": "Konsistenz des Literaturverzeichnisses",
-          "description": "Bewertung der Einheitlichkeit des Zitierstils und Vollständigkeit bibliografischer Angaben",
+          "name": "Einheitlich/Konsistent",
           "function": "auto_grading",
           "maxPoints": 1,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Literaturverzeichnis mit unterschiedlichen Zitierstilen"
-            },
-            {
-              "points": 1,
-              "description": "Literaturverzeichnis ist standardisiert (einheitlicher Zitierstil) und im Wesentlichen sind alle Angaben zur Literatur vorhanden"
-            }
+            { "points": 0, "description": "Uneinheitlicher Zitationsstil" },
+            { "points": 1, "description": "Einheitlich und vollständig" }
           ]
         },
         {
-          "name": "Zentrale Literatur",
-          "description": "Bewertung der Relevanz und Qualität der Literatur für das Forschungsthema",
+          "name": "Schlüsselliteratur",
           "function": "auto_grading",
           "maxPoints": 2,
           "scoring": [
-            {
-              "points": 0,
-              "description": "Literatur passt nicht zum Thema"
-            },
-            {
-              "points": 1,
-              "description": "Literatur passt zum Thema"
-            },
-            {
-              "points": 2,
-              "description": "Literatur passt zum Thema und ist überwiegend hochrelevant"
-            }
+            { "points": 0, "description": "Nicht passend" },
+            { "points": 1, "description": "Passend" },
+            { "points": 2, "description": "Passend und überwiegend relevant" }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Sonstiges",
+      "description": "Zusatzpunkte oder Abzüge",
+      "criteria": [
+        {
+          "name": "Zusatzpunkte",
+          "function": "manual_grading",
+          "maxPoints": 2,
+          "scoring": []
+        },
+        {
+          "name": "Punktabzüge",
+          "function": "manual_grading",
+          "maxPoints": -2,
+          "scoring": []
         }
       ]
     }
