@@ -95,8 +95,7 @@ module.exports = (sequelize, DataTypes) => {
                     createdByUserId: createdByUserId,
                     projectId: originalSubmission.projectId || null,
                     parentSubmissionId: originalSubmissionId, // Link to parent
-                    // TODO: If copied, constraint on exId will be violated. Need to check this value.
-                    extId: null, 
+                    extId: originalSubmission.extId || null, 
                     group: originalSubmission.group,
                     additionalSettings: originalSubmission.additionalSettings || null,
                     validationConfigurationId: originalSubmission.validationConfigurationId || null,

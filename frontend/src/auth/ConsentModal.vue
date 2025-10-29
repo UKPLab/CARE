@@ -8,8 +8,14 @@
   >
     <template #title> Terms</template>
     <template #body>
-      <div class="terms-container">
-        <div v-html="terms"/>
+      <div class="terms-wrapper" :class="{ 'is-bottom': isAtBottom }">
+        <div 
+          ref="termsContainer" 
+          class="terms-container"
+          @scroll="checkScrollPosition"
+        >
+          <BasicEditor :model-value="terms" :read-only="true" />
+        </div>
       </div>
       <div
         v-if="requestData"
@@ -70,14 +76,16 @@
 import Modal from "@/basic/Modal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import BasicEditor from "@/basic/editor/Editor.vue";
 
 export default {
   name: "ConsentModal",
-  components: {Modal},
+  components: {Modal, BasicEditor},
   data() {
     return {
       acceptStats: false,
       acceptDataSharing: false,
+      isAtBottom: false,
     };
   },
   computed: {
@@ -104,6 +112,27 @@ export default {
   methods: {
     open() {
       this.$refs.modal.open();
+      this.$nextTick(() => {
+        // Check if content needs scrolling upon opening the modal
+        this.checkScrollPosition();
+      });
+    },
+    checkScrollPosition() {
+      const container = this.$refs.termsContainer;
+      if (!container) return;
+      
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+      
+      // Check if content needs scrolling
+      if (scrollHeight <= clientHeight) {
+        this.isAtBottom = true;
+        return;
+      }
+      
+      // Check if scrolled to bottom
+      this.isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
     },
     async handleDecline() {
       this.resetForm();
@@ -145,12 +174,31 @@ export default {
 </script>
 
 <style scoped>
-.terms-container {
+.terms-wrapper {
+  position: relative;
   height: 400px;
-  overflow-y: auto;
-  border: 1px solid #e0e0e0;
-  padding: 1rem;
   margin-bottom: 15px;
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, white);
+    pointer-events: none;
+    border-radius: 0 0 4px 4px;
+    transition: opacity 0.2s ease;
+  }
+  
+  &.is-bottom::after {
+    opacity: 0;
+  }
+}
+
+.terms-container {
+  height: 100%;
+  overflow-y: auto;
   border-radius: 4px;
 }
 

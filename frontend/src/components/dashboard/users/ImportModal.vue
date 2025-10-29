@@ -360,6 +360,7 @@ export default {
             new: this.createdUsers.filter((u) => !u.exists).length,
             updated: this.createdUsers.filter((u) => u.exists).length,
           };
+          this.$emit("updateUser");
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to bulk create users",
