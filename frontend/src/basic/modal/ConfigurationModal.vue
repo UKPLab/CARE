@@ -41,6 +41,7 @@
           <template #content>
             <ServicesStep
               :modelValue="modelValue"
+              :currentStepperStep="currentStepperStep"
               @validation-change="handleServicesValidationChange"
               @update:form-data="handleServicesFormDataUpdate"
             />

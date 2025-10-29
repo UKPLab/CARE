@@ -10,51 +10,24 @@
             class="skill-item mb-3"
           >
             <div class="skill-selection mb-2">
-              <label class="form-label">Select Skill:</label>
-              <select
-                :value="skill.skillName"
-                @change="updateSkillName(index, $event.target.value)"
-                class="form-control"
-              >
-                <option value="">Select a skill...</option>
-                <option
-                  v-for="option in skillMap.options"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.name }}
-                </option>
-              </select>
+              <SkillSelector
+                v-model="skill.skillName"
+              />
             </div>
-
             <!-- Input Mappings for Selected Skill -->
-            <div v-if="skill.skillName" class="input-mappings">
-              <h6 class="input-title">Input Mappings:</h6>
-              <div
-                v-for="input in getSkillInputs(skill.skillName)"
-                :key="input"
-                class="input-mapping mb-2"
-              >
-                <label class="form-label">{{ input }}:</label>
-                <select
-                  :value="getFormattedDataInput(index, input)?.value || ''"
-                  @change="
-                    handleInputMappingChange(index, input, $event.target.value)
-                  "
-                  class="form-control"
-                >
-                  <option value="">Select data source...</option>
-                  <option
-                    v-for="source in availableDataSources"
-                    :key="`${source.stepId}-${source.value}`"
-                    :value="source.value"
-                    :data-step-id="source.stepId"
-                  >
-                    {{ source.name }}
-                  </option>
-                </select>
-              </div>
-            </div>
+            <InputMap
+              v-if="skill.skillName"
+              :skill-name="skill.skillName"
+              :study-based="true"
+              :model-value="modelValue.services[index]?.inputs || {}"
+              :study-step-id="studyStepId"
+              :workflow-steps="workflowSteps"
+              :current-stepper-step="currentStepperStep"
+              :step-config="modelValue"
+              :selected-skills="selectedSkills"
+              :document-id="documentId"
+              @update:model-value="handleInputMappingUpdate(index, $event)"
+            />
           </div>
         </div>
 
@@ -69,6 +42,8 @@
 
 <script>
 import StepTemplate from "@/basic/modal/StepTemplate.vue";
+import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
+import InputMap from "@/basic/modal/skills/InputMap.vue";
 
 /**
  * ServicesStep Component
@@ -80,10 +55,16 @@ export default {
   name: "ServicesStep",
   components: {
     StepTemplate,
+    SkillSelector,
+    InputMap,
   },
   props: {
     modelValue: {
       type: Object,
+      required: true,
+    },
+    currentStepperStep: {
+      type: Number,
       required: true,
     },
   },
@@ -122,9 +103,7 @@ export default {
   },
   emits: ["update:form-data", "validation-change"],
   computed: {
-    availableDataSources() {
-      return this.getSourcesUpToCurrentStep(this.studyStepId);
-    },
+
     hasConfigServices() {
       return !!(
         this.modelValue &&
@@ -135,21 +114,7 @@ export default {
     isValid() {
       return this.selectedSkills.every(skill => skill.skillName !== "");
     },
-    nlpSkills() {
-      const skills = this.$store.getters["service/get"](
-        "NLPService",
-        "skillUpdate"
-      );
-      return skills && typeof skills === "object" ? Object.values(skills) : [];
-    },
-    skillMap() {
-      return {
-        options: this.nlpSkills.map((skill) => ({
-          value: skill.name,
-          name: skill.name,
-        })),
-      };
-    },
+
     inputMappings() {
       return this.selectedSkills?.map((skill, idx) => {
         const mapping = {};
@@ -170,32 +135,78 @@ export default {
       },
       immediate: true,
     },
-    selectedSkills: {
-      handler(newVal) {
-        const updatedFormData = newVal.map((service, index) => ({
-            name: this.modelValue.services[index]?.name || "",
-            type: this.modelValue.services[index]?.type || "",
-            skill: newVal[index]?.skillName,
-            inputs: newVal[index]?.dataInput,
-          }));
 
-        this.$emit("update:form-data", updatedFormData);
-      },
-      deep: true,
-    },
   },
   methods: {
-    updateSkillName(index, skillName) {
+    updateSkillName(index, skillName) {     
       const updatedSkills = [...this.selectedSkills];
       updatedSkills[index] = {
         ...updatedSkills[index],
         skillName,
-        dataInput: {},
+        dataInput: {}, // Reset input mappings when skill changes
       };
       this.selectedSkills = updatedSkills;
 
-      // Update input mappings
+      // Clear the input mappings for this skill since it changed
       this.updateInputMappingsForSkill(index, skillName);
+
+      // Emit the properly formatted data for the parent
+      const updatedFormData = updatedSkills.map((skill, skillIndex) => ({
+        name: this.modelValue.services[skillIndex]?.name || "",
+        type: this.modelValue.services[skillIndex]?.type || "",
+        skill: skill.skillName,
+        inputs: skill.dataInput,
+      }));
+
+      this.$emit("update:form-data", updatedFormData);
+    },
+    getFormattedDataInput(skillIndex, inputKey) {
+      const skill = this.selectedSkills[skillIndex];
+      if (
+        skill &&
+        skill.dataInput &&
+        skill.dataInput[inputKey]
+      ) {
+        const input = skill.dataInput[inputKey];
+        return {
+          stepId: input.stepId,
+          value: input.dataSource,
+        };
+      }
+      return null;
+    },
+
+    handleInputMappingUpdate(skillIndex, mappingData) {
+      
+      // Update the selectedSkills dataInput based on the new mapping
+      const updatedSkills = [...this.selectedSkills];
+      if (!updatedSkills[skillIndex]) {
+        updatedSkills[skillIndex] = { skillName: '', dataInput: {} };
+      }
+      
+      // Convert mapping data to the expected format
+      const dataInput = {};
+      Object.entries(mappingData).forEach(([input, source]) => {
+        if (source && source.value) {
+          dataInput[input] = {
+            value: parseInt(source.value, 10),
+            stepId: source.stepId,
+            name: source.name,
+            dataSource: source.value,
+          };
+        }
+      });
+      
+      updatedSkills[skillIndex].dataInput = dataInput;
+      //this.selectedSkills = updatedSkills;
+      // Emit the properly formatted data for the parent
+      const updatedFormData = updatedSkills.map((skill, index) => ({
+        name: this.modelValue.services[index]?.name || "",
+        type: this.modelValue.services[index]?.type || "",
+        skill: skill.skillName,
+        inputs: skill.dataInput,
+      }));
+      this.$emit("update:form-data", updatedFormData);
     },
 
     updateInputMappingsForSkill(index, skillName) {
@@ -212,117 +223,21 @@ export default {
       updatedMappings[index] = mapping;
     },
 
-    handleInputMappingChange(skillIndex, input, sourceValue) {
-      if (!sourceValue) return;
-
-      const source = this.availableDataSources.find(
-        (src) => src.value === sourceValue
-      );
-      if (!source) return;
-
-      this.updateDataInput(skillIndex, input, source);
-    },
-
-    updateDataInput(index, input, source) {
-      if (!source) return;
-
-      const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
-
-      if (!updatedSkills[index].dataInput) {
-        updatedSkills[index].dataInput = {};
-      }
-
-      updatedSkills[index].dataInput[input] = {
-        stepId: source.stepId,
-        dataSource: source.value,
-      };
-
-      this.selectedSkills = updatedSkills;
-    },
-
-    getFormattedDataInput(index, input) {
-      const dataInput = this.selectedSkills[index]?.dataInput?.[input];
-      if (!dataInput) return null;
-
-      return this.availableDataSources.find(
-        (source) =>
-          source.stepId === dataInput.stepId &&
-          source.value === dataInput.dataSource
-      );
-    },
-
     getSkillInputs(skillName) {
       // Find the skill in the skills list
-      const skill = this.nlpSkills.find((s) => s.name === skillName);
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      const nlpSkills = skills && typeof skills === "object" ? Object.values(skills) : [];
+      
+      const skill = nlpSkills.find((s) => s.name === skillName);
       if (!skill) return [];
+      
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.config?.input?.data || {});
     },
 
-    /**
-     * Construct and get all the available data sources up to the stepId
-     * @param {number} stepId - The ID of the workflow step
-     * @returns {Array<Object>} An array of data source object, consisting of value and name
-     */
-    getSourcesUpToCurrentStep(stepId) {
-      const sources = [];
-      const stepCollector = this.workflowSteps.filter((step) => step.id <= stepId);
 
-      stepCollector.forEach((step, index) => {
-        const stepIndex = index + 1;
-        switch (step.stepType) {
-          // Editor
-          case 2:
-            sources.push(
-              { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
-              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
-            );
-            break;
-          // Modal
-          case 3:
-            if (step.id < this.studyStepId) {
-              sources.push(...this.getSkillSources(stepIndex));
-            }
-            break;
-        }
-      });
 
-      return sources;
-    },
 
-    /**
-     * Get the output from the nlpSkill
-     * @param {number} stepIndex - The index of the step that indicates which step the user is at in the whole workflow.
-     * @returns {Array<Object>} An array of objects derived from nlpSkill
-     */
-    getSkillSources(stepIndex) {
-      const sources = [];
-
-      if (!this.selectedSkills.length) return sources;
-
-      // Get the services from modelValue
-      const services = this.modelValue.services || [];
-
-      services.forEach((service) => {
-        this.selectedSkills.forEach(({ skillName }) => {
-          if (!skillName) return;
-
-          const skill = this.nlpSkills.find((s) => s.name === skillName);
-          if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
-
-          const result = Object.keys(skill.config.output.data || {});
-          result.forEach((r) =>
-            sources.push({
-              value: `service_${service.name}_${r}`,
-              name: `${skillName}_${r} (Step ${stepIndex})`,
-              stepId: stepIndex,
-            })
-          );
-        });
-      });
-
-      return sources;
-    },
   },
 };
 </script>
