@@ -1017,40 +1017,6 @@ class DocumentSocket extends Socket {
         return null;
     }
 
-
-    
-    /**
-     * Retrieve document data for a particular document/study_session/study_step from the document_data table.
-     *
-     * @param {Object} data The data payload containing the retrieval parameters.
-     * @param {number} data.documentId The ID of the associated document.
-     * @param {number} data.studySessionId The ID of the associated study session.
-     * @param {number} data.studyStepId The ID of the associated study step.
-     * @param {string} data.key The key for the data being retrieved (e.g., 'assessment_results').
-     * @param {Object} options Additional configuration for the operation.
-     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
-     * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
-     */
-    async getDocumentData(data, options) {
-        const whereClause = {
-            documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            deleted: false
-        };
-
-        if (data.key != null) {
-            whereClause.key = data.partialMatch ? { [Op.like]: `${data.key}%` } : data.key;
-        }
-
-        return await this.models['document_data'].findOne({
-            where: whereClause,
-            order: [['updatedAt', 'DESC']],
-            raw: true,
-            transaction: options && options.transaction
-        });
-    }
-
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
      *
