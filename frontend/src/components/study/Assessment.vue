@@ -267,6 +267,11 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    studyData: {
+      type: Array,
+      required: false,
+      default: () => []
     }
   },
   props: {
@@ -297,6 +302,18 @@ export default {
       const cfg = this.currentStudyStep?.configuration || {};
       const cfgId = cfg.configurationId || cfg.configFile;
       return this.$store.getters['table/configuration/get'](cfgId);
+    },
+    studySteps() {
+      const sid = this.currentStudyStep?.studyId;
+      return sid ? (this.$store.getters['table/study_step/getByKey']('studyId', sid) || []) : [];
+    },
+    stepBucketIndex() {
+      const idx = this.studySteps.findIndex(s => s && s.id === this.currentStudyStep?.id);
+      return idx >= 0 ? idx + 1 : null;
+    },
+    stepBucket() {
+      if (this.stepBucketIndex == null) return null;
+      return this.studyData ? this.studyData[this.stepBucketIndex] : null;
     },
     // Centralized key management for document data operations
     assessmentDataKey() {
@@ -349,6 +366,16 @@ export default {
       },
       immediate: true
     },
+    stepBucket: {
+      handler() {
+        if (!this.isAIAssessmentWorkflow) return;
+        const v = this.findAssessmentValueInBucket();
+        if (v) {
+          this.mergeSavedDataWithConfiguration(v);
+        }
+      },
+      deep: true
+    },
     isAssessmentComplete: {
       handler(v) {
         this.$emit('assessment-ready-changed', v)
@@ -381,6 +408,10 @@ export default {
       this.restoreState();
     }
     this.$emit('assessment-ready-changed', this.isAssessmentComplete);
+    if (this.isAIAssessmentWorkflow) {
+      const v = this.findAssessmentValueInBucket();
+      if (v) this.mergeSavedDataWithConfiguration(v);
+    }
   },
   
   beforeUnmount() {
@@ -392,6 +423,22 @@ export default {
       const cfg = this.currentStudyStep?.configuration;
       if (cfg && Array.isArray(cfg.services)) {
         return cfg.services.find(s => s && s.type === 'nlpRequest') || null;
+      }
+      return null;
+    },
+    findAssessmentValueInBucket() {
+      if (!this.isAIAssessmentWorkflow || !this.stepBucket) return null;
+      const svc = this.getNlpServiceFromStep();
+      if (!svc || !svc.skill) return null;
+      const keys = [
+        `${svc.name}_${svc.skill}_assessment`,
+        `${svc.type}_${svc.skill}_assessment`,
+        this.assessmentDataKey,
+      ].filter(Boolean);
+      for (const k of keys) {
+        if (Object.prototype.hasOwnProperty.call(this.stepBucket, k)) {
+          return this.stepBucket[k];
+        }
       }
       return null;
     },
@@ -682,7 +729,7 @@ export default {
         const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
 
         if (stepScoped) {
-          this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: false});
+          this.mergeSavedDataWithConfiguration(stepScoped);
           return;
         }
 
@@ -690,7 +737,7 @@ export default {
         if (this.isAIAssessmentWorkflow) {
           const preprocessed = await this.getPreprocessedAssessmentData();
           if (preprocessed) {
-            this.mergeSavedDataWithConfiguration(preprocessed, {markAsSaved: false});
+            this.mergeSavedDataWithConfiguration(preprocessed);
           }
         }
       } catch (error) {
@@ -701,10 +748,19 @@ export default {
     // Fetch preprocessed grading results stored without session/step scope
     async getPreprocessedAssessmentData() {
       if (!this.documentId) return null;
-      return await this.documentDataGet(null, null, this.assessmentDataKey);
+      const svc = this.getNlpServiceFromStep();
+      if (!this.isAIAssessmentWorkflow || !svc || !svc.skill) return null;
+
+      const keys = [
+        `${svc.type}_${svc.skill}_assessment`,
+        this.assessmentDataKey,
+      ];
+
+      const results = await Promise.all(keys.map(k => this.documentDataGet(null, null, k)));
+      return results.find(v => !!v) || null;
     },
 
-    mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
+    mergeSavedDataWithConfiguration(savedData) {
       if (!savedData || !this.assessmentOutput) {
         return;
       }
@@ -725,7 +781,7 @@ export default {
               assessment: match.justification || "",
               currentScore: sc,
               score: sc,
-              isSaved: options.markAsSaved === true
+              isSaved: this.isAIAssessmentWorkflow ? false : true
             };
           }
           return {...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false};

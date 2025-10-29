@@ -220,7 +220,6 @@ export default {
       isCurrentStepReady: true,
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
-      openNlpOnStepEnter: false
     };
   },
   computed: {
@@ -427,12 +426,6 @@ export default {
     },
     onNlpModalClose() {
       this.nlpModalStepId = null;
-      this.nlpModalReason = null;
-      
-      // For AI assessment workflows, refresh assessment data when NLP modal closes
-      if (this.isAIAssessmentWorkflow && this.$refs.assessmentEditor) {
-        this.$refs.assessmentEditor.loadSavedAssessmentData();
-      }
     },
     getStudyData() {
       if (this.studyHash) {

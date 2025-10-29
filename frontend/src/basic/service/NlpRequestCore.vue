@@ -127,8 +127,7 @@ export default {
           const result = this.nlpResults[requestId];
           const { uniqueId, skill } = this.requests[requestId];
           if (result) {
-            const suffix = this.computeSuffixFromResult(skill, result);
-            this.saveResult(skill, uniqueId, result, suffix);
+            this.saveResult(skill, uniqueId, result);
             this.$store.commit('service/removeResults', {
               service: 'NLPService',
               requestId: requestId
@@ -173,6 +172,10 @@ export default {
           }
         }
       }
+    }
+    // Ensure waiting is false when no NLP services are found
+    if (!this.configuration?.services?.some(s => s?.type === 'nlpRequest')) {
+      this.waiting = false;
     }
   },
   methods: {
@@ -266,41 +269,31 @@ export default {
       }
       return uniqueId;
     },
-    generatingKey(serviceName, skill , suffix) {
-      const key = `${serviceName}_${skill}_${suffix}`;
+    generatingKey(serviceName, skill) {
+      const key = `${serviceName}_${skill}`;
       return key;
     },
     isNotStudyBased(skill) {
       return skill === 'grading_expose';
     },
-    computeSuffixFromResult(skill, result) {
-      if (result && !Array.isArray(result)) {
-        const keys = Object.keys(result);
-        const suffix = keys.length > 0 ? keys[0] : null;
-        return suffix;
-      }
-      return null;
-    },
-    saveResult(skill, uniqueId, result, suffixOverride = null) {
-      const serviceName = this.computeServiceName(uniqueId);
-      const suffix = suffixOverride || this.computeSuffixFromResult(skill, result);
-      const key = this.generatingKey(serviceName, skill, suffix);
-      const notStudyBased = this.isNotStudyBased(skill);
-      const entry = {
+    
+    saveResult(skill, uniqueId, result) {
+      const entries = Object.keys(result || {}).map(k => ({
         documentId: this.studyStep?.documentId,
-        studySessionId: notStudyBased ? null : this.studySessionId,
-        studyStepId: notStudyBased ? null : this.studyStepId,
-        key,
-        value: result,
-      };
-      this.$socket.emit("documentDataSave", entry);
+        studySessionId: this.isNotStudyBased(skill) ? null : this.studySessionId,
+        studyStepId: this.isNotStudyBased(skill) ? null : this.studyStepId,
+        key: `${this.generatingKey(this.computeServiceName(uniqueId), skill)}_${k}`,
+        value: result[k]
+      }));
+
+      entries.forEach(e => this.$socket.emit("documentDataSave", e));
       // Emit immediately so Study can update studyData without waiting for store propagation
-      this.$emit('update:data', [entry]);
-      return key;
+      this.$emit('update:data', entries);
+      return entries[0]?.key || null;
     },
     expectedCompositeKey(uniqueId, skill, suffix = 'data') {
       const serviceName = this.computeServiceName(uniqueId);
-      return this.generatingKey(serviceName, skill, suffix);
+      return `${this.generatingKey(serviceName, skill)}_${suffix}`;
     },
     stepDataHasKey(key) {
       const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
@@ -326,15 +319,19 @@ export default {
       const { skill } = this.requests[foundRequestId] || {};
       if (this.isNotStudyBased(skill)) return false;
       const raw = this.nlpResults[foundRequestId];
-      const suffix = this.computeSuffixFromResult(skill, raw);
-      const key = this.expectedCompositeKey(uniqueId, skill, suffix);
-      return this.stepDataHasKey(key);
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        const keys = Object.keys(raw);
+        if (keys.length === 0) return false;
+        return keys.some(k => this.stepDataHasKey(this.expectedCompositeKey(uniqueId, skill, k)));
+      }
+      const serviceName = this.computeServiceName(uniqueId);
+      const baseKey = this.generatingKey(serviceName, skill);
+      return this.stepDataHasKey(baseKey);
     },
     async request(skill, inputs, uniqueId) {
-      // Check for preprocessed data first, before adding to requests queue
+      // Check for preprocessed data first, allow brief time for store to populate
       const preprocessedData = await this.getPreprocessedData();
       if (preprocessedData) {
-        // Emit the preprocessed data so it gets loaded into studyData
         this.$emit('update:data', [preprocessedData]);
         if (this.loadingOnly && this.autoCloseOnComplete) {
           this.$emit('close', { autoClosed: true, preprocessed: true });
@@ -371,6 +368,7 @@ export default {
         let payload = input || {};
         if (skill === 'grading_expose') {
           payload = await this.buildGradingExposePayloadFromSpec(stepconfig);
+          console.log('payload', payload);
           const hasPdf = payload?.submission && payload.submission.pdf;
           if (!hasPdf) {
             if (this.requests && this.requests[requestId]) {
@@ -383,6 +381,7 @@ export default {
           }
         } else if (skill === 'generating_feedback') {
           payload = await this.buildGeneratingFeedbackPayloadFromSpec(stepconfig);
+          console.log('payload', payload);
           const hasPdf = payload?.submission && payload.submission.pdf;
           const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
           if (!hasPdf || !hasGradingResults) {
@@ -471,41 +470,28 @@ export default {
       }
     },
     async getPreprocessedData() {
-      const documentId = this.studyStep?.documentId;
-      if (!documentId) return null;
-      const service = this.getServiceFromStep(this.studyStep);
-      if (!service || !service.name || !service.skill) return null;
-      const serviceName = service.name;
-      const skill = service.skill;
-      const partialKey = `${serviceName}_${skill}`;
-      const requireCurrentStep = !this.isNotStudyBased(skill);
-      const expectedSessionId = requireCurrentStep ? this.studySessionId : null;
-      const expectedStepId = requireCurrentStep ? this.studyStepId : null;
-      
-      const dbEntry = await new Promise((resolve) => {
-        this.$socket.emit("documentDataGet", {
-          documentId: documentId,
-          studySessionId: expectedSessionId,
-          studyStepId: expectedStepId,
-          key: partialKey,
-          partialMatch: true
-        }, (response) => {
-          let entry = null;
-          if (response) {
-            if (response.success && response.data) {
-              entry = response.data;
-            } else if (response.id && response.key) {
-              entry = response;
-            }
-          }
-          resolve(entry);
-        });
-      });
-      
-      if (dbEntry && dbEntry.key && dbEntry.value && dbEntry.key.includes(partialKey)) {
-        return dbEntry;
-      }
-      return null;
+			const documentId = this.studyStep?.documentId;
+			if (!documentId) return null;
+			const service = this.getServiceFromStep(this.studyStep);
+			if (!service || !service.skill) return null;
+			const skill = service.skill;
+			const requireCurrentStep = !this.isNotStudyBased(skill);
+			const expectedSessionId = requireCurrentStep ? this.studySessionId : null;
+			const expectedStepId = requireCurrentStep ? this.studyStepId : null;
+			
+			const timeoutMs = 5000;
+			const intervalMs = 200;
+			const start = Date.now();
+			while ((Date.now() - start) < timeoutMs) {
+				const entry = this.documentDataEntryByIds(documentId, expectedSessionId, expectedStepId);
+				if (entry && entry.key && entry.key.includes(skill)) {
+          console.log('entry found', entry);
+					return entry;
+				}
+				await new Promise(resolve => setTimeout(resolve, intervalMs));
+			}
+      console.log('no entry found');
+			return null;
     },
   }
 };
