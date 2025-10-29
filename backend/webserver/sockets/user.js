@@ -288,18 +288,19 @@ class UserSocket extends Socket {
      */
     async resetUserPwd(data, options) {
         const {userId, password, oldPassword} = data;
-        
-        if (!await this.isAdmin() && userId !== this.userId) {
-            throw new Error("User rights and argument mismatch");
-        }
-        const user = await this.models["user"].findOne({where:{
-            id: userId
-        }});
-        const hashedOldPassword = await genPwdHash(oldPassword, user.salt);
-        const iscorrectPassword = user.passwordHash === hashedOldPassword;
-        if(!iscorrectPassword){
-            throw new Error("You entered an incorrect Password")
-        }
+        if (!this.isAdmin() || this.userId === userId) {
+            if (userId !== this.userId) {
+                throw new Error("User rights and argument mismatch");
+            }
+            const user = await this.models["user"].findOne({where:{
+                id: userId
+            }});
+            const hashedOldPassword = await genPwdHash(oldPassword, user.salt);
+            const iscorrectPassword = user.passwordHash === hashedOldPassword;
+            if(!iscorrectPassword){
+                throw new Error("You entered an incorrect Password")
+            }
+        } 
         await this.models["user"].resetUserPwd(userId, password);
     }
 

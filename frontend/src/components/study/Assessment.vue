@@ -43,8 +43,8 @@
                     v-if="group.description"
                     class="info-icon me-2"
                     style="cursor: help;"
-                    @click.stop="toggleInfoPanelPin(group, null, $event)"
-                    @mouseenter="openInfoPanel(group, null, $event)"
+                    @click.stop="toggleInfoPanelPin(group, null)"
+                    @mouseenter="openInfoPanel(group, null)"
                     @mouseleave="closeInfoPanel"
                 >
                   <LoadIcon icon-name="info-circle" :size="14"/>
@@ -88,8 +88,8 @@
                           v-if="criterion.description || criterion.scoring"
                           class="info-icon me-2"
                           style="cursor: help;"
-                          @click.stop="toggleInfoPanelPin(null, criterion, $event)"
-                          @mouseenter="openInfoPanel(null, criterion, $event)"
+                          @click.stop="toggleInfoPanelPin(null, criterion)"
+                          @mouseenter="openInfoPanel(null, criterion)"
                           @mouseleave="closeInfoPanel"
                       >
                         <LoadIcon icon-name="info-circle" :size="14"/>
@@ -212,7 +212,7 @@
 </template>
 
 /**
-* Assessment Output Component
+* Assessment Component
 *
 * This component displays the assessment results, including criteria groups, scoring, and additional information panels.
 * It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
@@ -257,6 +257,16 @@ export default {
       type: Object,
       required: true,
       default: null
+    },
+    isManualAssessmentWorkflow: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    isAIAssessmentWorkflow: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   props: {
@@ -294,17 +304,15 @@ export default {
       const cfgId = cfg.configurationId || cfg.configFile;
       return this.$store.getters['table/configuration/get'](cfgId);
     },
-    isAIAssessmentWorkflow() {
-      const cfg = this.currentStudyStep?.configuration || {};
-      const hasConfig = !!(cfg.configFile || cfg.configurationId);
-      const hasServices = !!cfg.services;
-      return hasConfig && hasServices;
-    },
     // Centralized key management for document data operations
     assessmentDataKey() {
-      return this.isAIAssessmentWorkflow 
-        ? "nlpAssessment_grading_expose_assessment" 
-        : "assessment_result";
+      if (this.isAIAssessmentWorkflow) {
+        const svc = this.getNlpServiceFromStep();
+        if (svc && svc.name && svc.skill) {
+          return `${svc.name}_${svc.skill}_assessment`;
+        }
+      }
+      return "assessment_result";
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
@@ -386,24 +394,46 @@ export default {
   },
   
   methods: {
+    getNlpServiceFromStep() {
+      const cfg = this.currentStudyStep?.configuration;
+      if (cfg && Array.isArray(cfg.services)) {
+        return cfg.services.find(s => s && s.type === 'nlpRequest') || null;
+      }
+      return null;
+    },
     handleClickOutsideInfoPanel(event) {
       if (!this.showInfoPanel) return;
       
       // Check if the click is inside the floating panel
       const infoPanel = this.$refs.infoPanel?.$el;
       if (infoPanel && infoPanel.contains(event.target)) {
-        console.log("Clicked inside info panel");
         return;
       }
       
       // Check if the click is on any info icon using class selector
       const infoIcon = event.target.closest('.info-icon');
       if (infoIcon){
-        console.log("Clicked on info icon");
         return;
       }
       
-      this.toggleInfoPanelPin(null, null, event); 
+      // Outside click closes panel and unpins
+      this.isPinned = false;
+      this.closeInfoPanel(); 
+    },
+    async documentDataGet(studySessionId, studyStepId, key){
+      return await new Promise((resolve) => {
+        this.$socket.emit("documentDataGet", {
+          documentId: this.documentId,
+          studySessionId,
+          studyStepId,
+          key
+        }, (response) => {
+          const value = (response && response.success && response.data && response.data.value)
+              ? response.data.value
+              : response?.value;
+          resolve(value || null);
+        });
+      });
     },
     initializeAssessmentOutput() {
       if (this.configuration && this.configuration.content) {
@@ -655,19 +685,7 @@ export default {
 
       try {
         // 1) Try to load already saved data for this step/session
-        const stepScoped = await new Promise((resolve) => {
-          this.$socket.emit("documentDataGet", {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId || null,
-            studyStepId: this.studyStepId,
-            key: this.assessmentDataKey
-          }, (response) => {
-            const value = (response && response.success && response.data && response.data.value)
-                ? response.data.value
-                : response?.value;
-            resolve(value || null);
-          });
-        });
+        const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
 
         if (stepScoped) {
           this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: false});
@@ -689,19 +707,7 @@ export default {
     // Fetch preprocessed grading results stored without session/step scope
     async getPreprocessedAssessmentData() {
       if (!this.documentId) return null;
-      return await new Promise((resolve) => {
-        this.$socket.emit("documentDataGet", {
-          documentId: this.documentId,
-          studySessionId: null,
-          studyStepId: null,
-          key: this.assessmentDataKey
-        }, (response) => {
-          const value = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          resolve(value || null);
-        });
-      });
+      return await this.documentDataGet(null, null, this.assessmentDataKey);
     },
 
     mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
@@ -714,9 +720,10 @@ export default {
           : (Array.isArray(savedData.assessment) ? savedData.assessment : null);
       if (!assessmentArray) return;
 
+      const byName = new Map(assessmentArray.map(a => [(a.criterion || a.name), a]));
       const newGroups = (this.assessmentOutput.criteriaGroups || []).map(group => {
         const updatedCriteria = (group.criteria || []).map(criterion => {
-          const match = assessmentArray.find(a => (a.criterion === criterion.name) || (a.name === criterion.name));
+          const match = byName.get(criterion.name);
           if (match) {
             const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
             return {
@@ -768,17 +775,7 @@ export default {
         }
 
         // Merge with existing saved data, updating only provided criteria
-        const existing = await new Promise((resolve) => {
-          this.$socket.emit("documentDataGet", {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            key: this.assessmentDataKey,
-          }, (resp) => {
-            const v = (resp && resp.success && resp.data && resp.data.value) ? resp.data.value : resp?.value;
-            resolve(v || null);
-          });
-        });
+        const existing = await this.documentDataGet(this.studySessionId, this.studyStepId, this.assessmentDataKey);
 
         const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
         const normalizeFull = (arrOrObj) => {
@@ -818,7 +815,7 @@ export default {
         if (this.isAIAssessmentWorkflow && Array.isArray(value.assessment)) {
           this.$emit('update:data', [{ key: 'assessment_output', value: value.assessment }]);
         }
-
+        
         // Save to document_data table (wrap in Promise so callers can await)
         await new Promise((resolve, reject) => {
           this.$socket.emit("documentDataSave", {
@@ -838,8 +835,6 @@ export default {
 
       } catch (error) {
         // Error saving assessment data
-      } finally {
-        this.isSaving = false;
       }
     },
 
@@ -859,7 +854,8 @@ export default {
       if (!target) return;
 
       this.selectedCriterion = target;
-      this.selectedElement = this.$refs.assessmentSection;
+      // Anchor to sidebar container so the panel sits beside the sidebar
+      this.selectedElement = '#sidepane';
       this.showInfoPanel = true;
     },
 
@@ -870,11 +866,14 @@ export default {
       this.selectedElement = null;
     },
 
-    toggleInfoPanelPin(group, criterion, event) {
-      this.isPinned = !this.isPinned;
-      if(this.isPinned){
-        this.openInfoPanel(group, criterion, event);
-      }    
+    toggleInfoPanelPin(group, criterion) {
+      if (this.isPinned) {
+        this.isPinned = false;
+        this.closeInfoPanel();
+      } else {
+        this.isPinned = true;
+        this.openInfoPanel(group, criterion);
+      }
     },
 
     onInfoPanelCloseRequested() {

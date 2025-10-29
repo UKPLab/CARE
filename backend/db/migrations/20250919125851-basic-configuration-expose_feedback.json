@@ -1,424 +1,481 @@
 {
-    "version": "0.0.1",  
-    "name": "Exposé feedback configuration", 
-    "description": "the configuration of grading criteria for LLMentor",
-    "type": "assessment",
-    "rubrics": [
-      {
-        "name": "Overall",
-        "description": "Overall assessment criteria for feedback quality",
-        "criteria": [
-          {
-            "name": "Summary available",
-            "description": "",
-            "function": "feedback_generation",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No summary available or does not reflect understanding of the performance"
-              },
-              {
-                "points": 1,
-                "description": "Simple summary, demonstrates basic understanding of the performance"
-              },
-              {
-                "points": 2,
-                "description": "Concise and accurate summary that clearly reflects understanding of performance and builds confidence in feedback"
-              }
-            ]
-          },
-          {
-            "name": "Clarity",
-            "description": "Clarity with regard to the overall structure",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Feedback needs considerable improvement in clarity and comprehensibility, comments are disjointed or difficult to follow"
-              },
-              {
-                "points": 1,
-                "description": "Feedback is largely clear, but sometimes lacks specific references to particular lines, pages, sections or figures/tables"
-              },
-              {
-                "points": 2,
-                "description": "Feedback is clear, well-structured and easy to understand, with coherent comments and precise references to specific points in the text"
-              }
-            ]
-          },
-          {
-            "name": "Language",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Many linguistic errors (e.g. wrong tense, wrong personal pronouns)"
-              },
-              {
-                "points": 1,
-                "description": "Almost no linguistic errors, clear and comprehensible sentences with standardised terminology"
-              }
-            ]
-          },
-          {
-            "name": "Tone",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "The tone is inappropriate, sounds judgemental or reproachful, criticism comes across as destructive or personal"
-              },
-              {
-                "points": 1,
-                "description": "The tone is generally respectful, avoids personal attacks, but remains unclear or less friendly in places"
-              },
-              {
-                "points": 2,
-                "description": "The tone is consistently calm, respectful and polite; criticism is constructive, factual and only directed at the text, not the person"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Feed Up",
-        "description": "Assessment of goal setting and success criteria",
-        "criteria": [
-          {
-            "name": "Learning Goals",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No learning objectives, unclear what is to be achieved, no orientation"
-              },
-              {
-                "points": 1,
-                "description": "Partly unclear learning objectives, generally formulated, offer only limited orientation"
-              },
-              {
-                "points": 2,
-                "description": "Clear learning objectives, specific, challenging, comparable and provide clear direction"
-              }
-            ]
-          },
-          {
-            "name": "Success Criteria",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No success criteria, success unclear or vaguely formulated, objectives not defined"
-              },
-              {
-                "points": 1,
-                "description": "Partly unclear success criteria, available but imprecise or general, orientation partly missing"
-              },
-              {
-                "points": 2,
-                "description": "Clear success criteria, concrete, measurable goals and clear definition of success"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Feed Back",
-        "description": "Assessment of feedback quality and knowledge transfer",
-        "criteria": [
-          {
-            "name": "Knowledge of result",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No information as to whether the task has been solved or not"
-              },
-              {
-                "points": 1,
-                "description": "Information given as to whether the task has been solved or not"
-              }
-            ]
-          },
-          {
-            "name": "Knowledge of correct response",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No information on the correct answer"
-              },
-              {
-                "points": 1,
-                "description": "Correct answer is clearly communicated"
-              }
-            ]
-          },
-          {
-            "name": "Knowledge about task constraints",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No information on rules, requirements or restrictions of the task"
-              },
-              {
-                "points": 1,
-                "description": "Clear information on rules, requirements or restrictions of the task (e.g. specifications)"
-              }
-            ]
-          },
-          {
-            "name": "Knowledge about concepts",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No information on conceptual knowledge"
-              },
-              {
-                "points": 1,
-                "description": "Basic information on relevant concepts is provided"
-              }
-            ]
-          },
-          {
-            "name": "Knowledge about mistakes",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No information about errors"
-              },
-              {
-                "points": 1,
-                "description": "Information on the number, location, source or type of errors"
-              }
-            ]
-          },
-          {
-            "name": "Self-feedback",
-            "description": "Self Feedback (e.g. praise or recognition) not available or only in combination with learning strategies or self-regulation",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Self-feedback is available that has not been combined with task, process or self-regulation (including feedback on the learner's abilities (i.e. intelligence or talent))"
-              },
-              {
-                "points": 1,
-                "description": "No self-feedback is available or, if available, in combination with task, process or self-regulation"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Feed Forward",
-        "description": "Assessment of future learning guidance",
-        "criteria": [
-          {
-            "name": "Self-regulation",
-            "description": "Knowledge about how to process the task or about self regulation",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No indication of how to approach the task, no recognisable approaches to self-monitoring or self-assessment"
-              },
-              {
-                "points": 1,
-                "description": "Either indications of strategies for working on the task and recognising errors (e.g. suggestions for improvement, targeted search for information) or approaches to self-monitoring and self-assessment (e.g. reflection on own understanding, strategies or willingness to seek help)"
-              }
-            ]
-          },
-          {
-            "name": "Learning Skills",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No information on how to develop or improve learning skills"
-              },
-              {
-                "points": 1,
-                "description": "Information on how to improve the learning objective and how to deal with challenges"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Content Quality",
-        "description": "Assessment of content accuracy and usefulness",
-        "criteria": [
-          {
-            "name": "Correctness",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "The content has significant deficiencies in terms of correctness"
-              },
-              {
-                "points": 1,
-                "description": "The content is largely correct"
-              },
-              {
-                "points": 2,
-                "description": "The content is completely correct"
-              }
-            ]
-          },
-          {
-            "name": "Actionability",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "No specific instructions available, feedback is difficult to implement"
-              },
-              {
-                "points": 1,
-                "description": "Some instructions available, but only partially clear or specific"
-              },
-              {
-                "points": 2,
-                "description": "Clear, specific feedback with actionable instructions, e.g. comparisons with existing methods, application to other tasks, definitions, explanations, discussions, additional analyses or specific suggestions to remove confusion"
-              }
-            ]
-          },
-          {
-            "name": "Argumentation",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": 2,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Statements or conclusions are not supported by evidence or comprehensible explanations. The argumentation remains superficial or unsystematic, making the content unconvincing."
-              },
-              {
-                "points": 1,
-                "description": "Statements are supported by comprehensible evidence, examples or explanations. The argumentation shows a clear link between evidence and conclusions, which strengthens the quality of the content."
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Errors",
-        "description": "Assessment of potential errors and issues in feedback",
-        "criteria": [
-          {
-            "name": "Neglect",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": -1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "All important details have been considered and no unnecessary questions are asked"
-              },
-              {
-                "points": -1,
-                "description": "Important details have been overlooked, leading to unnecessary questions or criticism"
-              }
-            ]
-          },
-          {
-            "name": "Vague Critic",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": -1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Criticism is specific and clearly states what is missing or can be improved"
-              },
-              {
-                "points": -1,
-                "description": "Unspecific criticism, mentions missing components without clearly stating what is missing"
-              }
-            ]
-          },
-          {
-            "name": "Out-of-Scope",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": -1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Proposals remain within the scope of the task and are relevant"
-              },
-              {
-                "points": -1,
-                "description": "Suggestions refer to methods or analyses that go beyond the intended scope"
-              }
-            ]
-          },
-          {
-            "name": "Missing Reference",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": -1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Alternative methods, etc. (if available) are supported with justification or references"
-              },
-              {
-                "points": -1,
-                "description": "Alternative methods, etc. (if available) are suggested without justification or references"
-              }
-            ]
-          },
-          {
-            "name": "Contradiction",
-            "description": "",
-            "function": "auto_grading",
-            "maxPoints": -1,
-            "scoring": [
-              {
-                "points": 0,
-                "description": "Feedback is consistent in itself, no contradictory statements"
-              },
-              {
-                "points": -1,
-                "description": "Contradictory feedback, e.g. criticism and praise for the same methods"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+  "name": "Exposé feedback configuration",
+  "description": "Review Criteria by rubrics including calculation",
+  "version": "1.0.0",
+  "type": "assessment",
+  "rubrics": [
+    {
+      "name": "Structure and Clarity",
+      "code": "structure",
+      "description": "Assessment of overall structure and clarity",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Summary available",
+          "description": "Concise summary that reflects understanding of the performance",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No summary available or does not reflect understanding of the performance"
+            },
+            {
+              "points": 1,
+              "description": "Simple summary, demonstrates basic understanding of the performance"
+            },
+            {
+              "points": 2,
+              "description": "Concise and accurate summary that clearly reflects understanding of performance and builds confidence in feedback"
+            }
+          ]
+        },
+        {
+          "name": "Clarity",
+          "description": "Clarity with regard to the overall structure",
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Feedback needs considerable improvement in clarity and comprehensibility, comments are disjointed or difficult to follow"
+            },
+            {
+              "points": 1,
+              "description": "Feedback is largely clear, but sometimes lacks specific references to particular lines, pages, sections or figures/tables"
+            },
+            {
+              "points": 2,
+              "description": "Feedback is clear, well-structured and easy to understand, with coherent comments and precise references to specific points in the text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Language",
+      "code": "language",
+      "description": "Assessment of language quality and tone",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 3,
+      "criteria": [
+        {
+          "name": "Language",
+          "description": "Accuracy and correctness of language used",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Many linguistic errors (e.g. wrong tense, wrong personal pronouns)"
+            },
+            {
+              "points": 1,
+              "description": "Almost no linguistic errors, clear and comprehensible sentences with standardised terminology"
+            }
+          ]
+        },
+        {
+          "name": "Tone",
+          "description": "Evaluates the respectfulness, clarity, and constructiveness of feedback",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "The tone is inappropriate, sounds judgemental or reproachful, criticism comes across as destructive or personal"
+            },
+            {
+              "points": 1,
+              "description": "The tone is generally respectful, avoids personal attacks, but remains unclear or less friendly in places"
+            },
+            {
+              "points": 2,
+              "description": "The tone is consistently calm, respectful and polite; criticism is constructive, factual and only directed at the text, not the person"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feed Up",
+      "code": "feed_up",
+      "description": "Assessment of learning goals and success criteria",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Learning Goals",
+          "description": "Measures the clarity, specificity, and guidance of learning objectives.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No learning objectives, unclear what is to be achieved, no orientation"
+            },
+            {
+              "points": 1,
+              "description": "Partly unclear learning objectives, generally formulated, offer only limited orientation"
+            },
+            {
+              "points": 2,
+              "description": "Clear learning objectives, specific, challenging, comparable and provide clear direction"
+            }
+          ]
+        },
+        {
+          "name": "Success Criteria",
+          "description": "Measures the clarity and specificity of success criteria for achieving learning goals.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No success criteria, success unclear or vaguely formulated, objectives not defined"
+            },
+            {
+              "points": 1,
+              "description": "Partly unclear success criteria, available but imprecise or general, orientation partly missing"
+            },
+            {
+              "points": 2,
+              "description": "Clear success criteria, concrete, measurable goals and clear definition of success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feed Back",
+      "code": "feed_back",
+      "description": "Assessment of feedback quality and knowledge transfer",
+      "calculation": "min",
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Knowledge of result",
+          "description": "Information on whether the task has been solved or not",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No information as to whether the task has been solved or not"
+            },
+            {
+              "points": 1,
+              "description": "Information given as to whether the task has been solved or not"
+            }
+          ]
+        },
+        {
+          "name": "Knowledge of correct response",
+          "description": "Information on the correct answer or solution",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No information on the correct answer"
+            },
+            {
+              "points": 1,
+              "description": "Correct answer is clearly communicated"
+            }
+          ]
+        },
+        {
+          "name": "Knowledge about task constraints",
+          "description": "Information on rules, requirements or restrictions of the task",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No information on rules, requirements or restrictions of the task"
+            },
+            {
+              "points": 1,
+              "description": "Clear information on rules, requirements or restrictions of the task (e.g. specifications)"
+            }
+          ]
+        },
+        {
+          "name": "Knowledge about concepts",
+          "description": "Information on relevant concepts, principles or relationships",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No information on conceptual knowledge"
+            },
+            {
+              "points": 1,
+              "description": "Basic information on relevant concepts is provided"
+            }
+          ]
+        },
+        {
+          "name": "Knowledge about mistakes",
+          "description": "Information on the number, location, source or type of errors",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No information about errors"
+            },
+            {
+              "points": 1,
+              "description": "Information on the number, location, source or type of errors"
+            }
+          ]
+        },
+        {
+          "name": "Self-feedback",
+          "description": "Self Feedback (e.g. praise or recognition) not available or only in combination with learning strategies or self-regulation",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Self-feedback is available that has not been combined with task, process or self-regulation (including feedback on the learner's abilities (i.e. intelligence or talent))"
+            },
+            {
+              "points": 1,
+              "description": "No self-feedback is available or, if available, in combination with task, process or self-regulation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feed Forward",
+      "code": "feed_forward",
+      "description": "Assessment of future learning guidance",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 2,
+      "criteria": [
+        {
+          "name": "Self-regulation",
+          "description": "Knowledge about how to process the task or about self regulation",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No indication of how to approach the task, no recognisable approaches to self-monitoring or self-assessment"
+            },
+            {
+              "points": 1,
+              "description": "Either indications of strategies for working on the task and recognising errors (e.g. suggestions for improvement, targeted search for information) or approaches to self-monitoring and self-assessment (e.g. reflection on own understanding, strategies or willingness to seek help)"
+            }
+          ]
+        },
+        {
+          "name": "Learning Skills",
+          "description": "Information on how to develop or improve learning skills",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No information on how to develop or improve learning skills"
+            },
+            {
+              "points": 1,
+              "description": "Information on how to improve the learning objective and how to deal with challenges"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content Quality",
+      "code": "content_quality",
+      "description": "Assessment of content accuracy and usefulness",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 6,
+      "criteria": [
+        {
+          "name": "Correctness",
+          "description": "Evaluates the accuracy and correctness of the feedback content",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "The content has significant deficiencies in terms of correctness"
+            },
+            {
+              "points": 1,
+              "description": "The content is largely correct"
+            },
+            {
+              "points": 2,
+              "description": "The content is completely correct"
+            }
+          ]
+        },
+        {
+          "name": "Actionability",
+          "description": "Assesses whether the feedback provides clear and specific instructions for improvement",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "No specific instructions available, feedback is difficult to implement"
+            },
+            {
+              "points": 1,
+              "description": "Some instructions available, but only partially clear or specific"
+            },
+            {
+              "points": 2,
+              "description": "Clear, specific feedback with actionable instructions, e.g. comparisons with existing methods, application to other tasks, definitions, explanations, discussions, additional analyses or specific suggestions to remove confusion"
+            }
+          ]
+        },
+        {
+          "name": "Argumentation",
+          "description": "Evaluates the quality of argumentation and evidence provided in the feedback",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Statements or conclusions are not supported by evidence or comprehensible explanations. The argumentation remains superficial or unsystematic, making the content unconvincing."
+            },
+            {
+              "points": 1,
+              "description": "Statements are supported by comprehensible evidence, examples or explanations. The argumentation shows a clear link between evidence and conclusions, which strengthens the quality of the content."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errors",
+      "code": "errors",
+      "description": "Assessment of potential errors and issues in feedback",
+      "calculation": "max",
+      "defaultPoints": 4,
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Neglect",
+          "description": "Assesses whether important details have been overlooked",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "All important details have been considered and no unnecessary questions are asked"
+            },
+            {
+              "points": -1,
+              "description": "Important details have been overlooked, leading to unnecessary questions or criticism"
+            }
+          ]
+        },
+        {
+          "name": "Vague Critic",
+          "description": "Assesses the specificity and clarity of criticism provided",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Criticism is specific and clearly states what is missing or can be improved"
+            },
+            {
+              "points": -1,
+              "description": "Unspecific criticism, mentions missing components without clearly stating what is missing"
+            }
+          ]
+        },
+        {
+          "name": "Out-of-Scope",
+          "description": "Assesses whether suggestions remain within the intended scope",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Proposals remain within the scope of the task and are relevant"
+            },
+            {
+              "points": -1,
+              "description": "Suggestions refer to methods or analyses that go beyond the intended scope"
+            }
+          ]
+        },
+        {
+          "name": "Missing Reference",
+          "description": "Assesses whether suggestions are supported by justification or references",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Alternative methods, etc. (if available) are supported with justification or references"
+            },
+            {
+              "points": -1,
+              "description": "Alternative methods, etc. (if available) are suggested without justification or references"
+            }
+          ]
+        },
+        {
+          "name": "Contradiction",
+          "description": "Assesses whether the feedback is consistent and free of contradictions",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "Feedback is consistent in itself, no contradictory statements"
+            },
+            {
+              "points": -1,
+              "description": "Contradictory feedback, e.g. criticism and praise for the same methods"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

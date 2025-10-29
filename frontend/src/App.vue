@@ -1,44 +1,44 @@
 <template>
   <div
-    v-if="disconnected"
-    class="modal-backdrop fade show"
-    style="opacity: 0.75"
+      v-if="disconnected"
+      class="modal-backdrop fade show"
+      style="opacity: 0.75"
   >
     <Loader
-      text-class="text-light"
-      class="text disconnect_error"
-      :loading="true"
-      :size="5"
-      text="Connection error! Reconnecting..."
+        text-class="text-light"
+        class="text disconnect_error"
+        :loading="true"
+        :size="5"
+        text="Connection error! Reconnecting..."
     />
   </div>
   <div v-if="requireAuth">
-    <TopBar v-if="!hideTopbar && appLoaded" />
+    <TopBar v-if="!hideTopbar && appLoaded"/>
     <div
-      v-if="!appLoaded"
-      class="pageLoader"
+        v-if="!appLoaded"
+        class="pageLoader"
     >
       <Loader
-        :loading="!appLoaded"
-        :text="appLoadText"
+          :loading="!appLoaded"
+          :text="appLoadText"
       />
     </div>
     <div v-else>
-      <ConsentModal ref="consentModal" />
-      <router-view class="top-padding" />
+      <ConsentModal ref="consentModal"/>
+      <router-view class="top-padding"/>
     </div>
   </div>
   <div v-else>
-    <router-view />
+    <router-view/>
   </div>
-  <Toast />
+  <Toast/>
 </template>
 
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
 import Loader from "@/basic/Loading.vue";
-import { createTable } from "@/store/utils";
+import {createTable} from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import ConsentModal from "@/auth/ConsentModal.vue";
@@ -86,7 +86,7 @@ export default {
       this.$socket.disconnect();
       this.$router.push({
         name: "login",
-        query: { redirectedFrom: this.$route.path },
+        query: {redirectedFrom: this.$route.path},
       });
     },
     appTables: function (data) {
@@ -104,7 +104,7 @@ export default {
       this.$store.commit("settings/setSettings", data);
       this.loaded.settings = true;
     },
-    appSystemRoles: function(data) {
+    appSystemRoles: function (data) {
       this.$store.commit("admin/setSystemRoles", data);
       this.loaded.systemRoles = true;
     },
@@ -112,7 +112,7 @@ export default {
   computed: {
     hideTopbar() {
       return (
-        this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar
+          this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar
       );
     },
     appLoaded() {
@@ -120,9 +120,9 @@ export default {
     },
     appLoadPercent() {
       return (
-        (Object.values(this.loaded).filter((v) => v).length /
-          Object.values(this.loaded).length) *
-        100
+          (Object.values(this.loaded).filter((v) => v).length /
+              Object.values(this.loaded).length) *
+          100
       );
     },
     appLoadStep() {
@@ -146,8 +146,8 @@ export default {
     },
     requireAuth() {
       return (
-        this.$route.meta.requireAuth !== undefined &&
-        this.$route.meta.requireAuth
+          this.$route.meta.requireAuth !== undefined &&
+          this.$route.meta.requireAuth
       );
     },
     mouseDebounceTime() {
@@ -223,6 +223,11 @@ export default {
 </script>
 
 <style>
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 .top-padding {
   padding-top: 52.5px;
 }
