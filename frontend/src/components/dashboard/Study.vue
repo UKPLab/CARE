@@ -514,11 +514,10 @@ export default {
       this.$refs.bulkConfirmModal.open();
     },
     saveAsTemplate(study) {
-      const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
       this.$refs.confirmModal.open(
         "Save Study as Template",
         "Are you sure you want to save this study as a template?",
-        warningMessage,
+        "",
         (confirmed) => {
           if (confirmed) {
             this.$socket.emit("studySaveAsTemplate", {id: study.id}, (result) => {

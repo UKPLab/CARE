@@ -12,31 +12,62 @@ const Socket = require("../Socket.js");
 class StudySocket extends Socket {
 
     /**
-     * Creates a new study template based on an existing study.
+     * Creates a new study template based on an existing study or directly from data.
      * This operation is restricted to the owner of the original study or an administrator.
      * 
      * @socketEvent studySaveAsTemplate
-     * @param {object} data The data object containing the identifier for the source study.
-     * @param {number} data.id the ID of the study to save as template
+     * @param {object} data The data object containing the identifier for the source study or template data.
+     * @param {number} data.id the ID of the study to save as template (required if onlyTemplate is false)
+     * @param {boolean} data.onlyTemplate if true, creates template directly from provided data without creating a study
+     * @param {object} data.templateData the template data when onlyTemplate is true
      * @param {object} options Configuration for the database operation.
      * @param {Object} options.transaction A Sequelize DB transaction object.
      * @returns {Promise<*>} A promise that resolves with the newly created study template object from the database.
      * @throws {Error} Throws an error if the user does not have permission to access the source study.
      */
     async saveStudyAsTemplate(data, options) {
-        const currentStudy = await this.models['study'].getById(data['id']);
-
-        if (await this.checkUserAccess(currentStudy.userId)) {
-
-            const newStudyData = {
-                ...currentStudy,
-                id: undefined,
-                hash: undefined,
+        if (data.onlyTemplate && data.templateData) {
+            const templateData = {
+                ...data.templateData,
+                userId: this.socket.user.id,
                 template: true,
             };
-            return await this.models['study'].add(newStudyData, {transaction: options.transaction});
+            
+            return await this.models['study'].add(templateData, {
+                transaction: options.transaction,
+                context: { stepDocuments: data.templateData.stepDocuments || [] }
+            });
         } else {
-            throw new Error("No permission to save study as template");
+            const currentStudy = await this.models['study'].getById(data['id']);
+
+            if (await this.checkUserAccess(currentStudy.userId)) {
+                const studySteps = await this.models['study_step'].getAllByKey("studyId", currentStudy.id);
+                
+                const stepDocuments = [];
+                for (const step of studySteps) {
+                    if (step.workflowStepId) {
+                        stepDocuments.push({
+                            id: step.workflowStepId,
+                            documentId: step.documentId,
+                            configuration: step.configuration
+                        });
+                    }
+                }
+
+                const newStudyData = {
+                    ...currentStudy,
+                    id: undefined,
+                    hash: undefined,
+                    template: true,
+                };
+                
+                return await this.models['study'].add(newStudyData, {
+                    transaction: options.transaction,
+                    context: { stepDocuments: stepDocuments }
+                });
+            } else {
+                throw new Error("No permission to save study as template");
+            }
         }
     }
 

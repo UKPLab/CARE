@@ -7,7 +7,6 @@ module.exports = {
             ALTER TABLE "document_data"
                 ADD COLUMN "conflict_key" text
                     GENERATED ALWAYS AS (
-                        coalesce("userId"::text, '0') || '|' ||
                         coalesce("documentId"::text, '0') || '|' ||
                         coalesce("studySessionId"::text, '0') || '|' ||
                         coalesce("studyStepId"::text, '0') || '|' ||

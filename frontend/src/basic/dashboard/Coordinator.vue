@@ -131,6 +131,11 @@ export default {
         return [];
       },
     },
+    customSubmit: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["submit", "success"],
   data() {
@@ -198,6 +203,12 @@ export default {
 
       const data = { ...this.data };
       this.$emit("submit", data);
+
+      if (this.customSubmit) {
+        this.$refs.coordinatorModal.waiting = true;
+        return;
+      }
+
       this.$socket.emit(
         "appDataUpdate",
         {

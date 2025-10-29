@@ -6,6 +6,7 @@
       :validation="stepValid"
       submit-text="Apply Skills"
       @submit="applySkills"
+      @close-requested="handleCloseRequest"
     >
       <template #title>
         <h5 class="modal-title text-primary">Apply Skills</h5>
@@ -65,6 +66,7 @@
         />
       </template>
     </StepperModal>
+    <ConfirmModal ref="closeConfirmModal" />
   </div>
 </template>
 
@@ -82,10 +84,11 @@ import InputMap from "@/basic/modal/skills/InputMap.vue";
 import InputFiles from "@/basic/modal/skills/InputFiles.vue";
 import InputGroup from "@/basic/modal/skills/InputGroup.vue";
 import InputConfirm from "@/basic/modal/skills/InputConfirm.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
   name: "ApplySkillSetup",
-  components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm },
+  components: { StepperModal, SkillSelector, InputMap, InputFiles, InputGroup, InputConfirm, ConfirmModal },
   subscribeTable: ["document", "submission", "document_data", "user", "configuration"],
   emits: ["submit", "start-preprocessing"],
   data() {
@@ -133,16 +136,7 @@ export default {
     },
     stepValid() {
       const step1Valid = !!this.selectedSkill && this.hasValidInputMappings && this.hasTableBasedParameter;
-      
-      const hasFilesSelected = this.hasTableBasedParameter && 
-        this.selectedFiles && 
-        Object.keys(this.selectedFiles).length > 0 &&
-        Object.values(this.selectedFiles).some(files => 
-          Array.isArray(files) && files.length > 0
-        );
-
-      const filesValidState = this.inputFilesValid === true;
-      const step2Valid = this.hasTableBasedParameter && filesValidState && hasFilesSelected && this.hasInteractedWithFiles;
+      const step2Valid = this.hasTableBasedParameter && this.inputFilesValid && this.hasFilesSelected && this.hasInteractedWithFiles;
       
       const steps = [step1Valid, step2Valid];
       
@@ -157,8 +151,14 @@ export default {
     hasValidInputMappings() {
       if (!this.selectedSkill || !this.inputMappings) return false;
       const mappingValues = Object.values(this.inputMappings);
-      const isValid = mappingValues.length > 0 && mappingValues.every(mapping => !!mapping);
-      return isValid;
+      return mappingValues.length > 0 && mappingValues.every(mapping => !!mapping);
+    },
+    hasFilesSelected() {
+      return this.selectedFiles && 
+        Object.keys(this.selectedFiles).length > 0 &&
+        Object.values(this.selectedFiles).some(files => 
+          Array.isArray(files) && files.length > 0
+        );
     },
   },
   watch: {
@@ -278,6 +278,24 @@ export default {
     },
     close() {
       this.$refs.applySkillsStepper.close();
+    },
+    handleCloseRequest() {
+      this.$refs.applySkillsStepper.markCloseRequestHandled();
+      
+      if (this.$refs.applySkillsStepper.currentStep >= 1 && this.hasFilesSelected) {
+        this.$refs.closeConfirmModal.open(
+          'Close Modal',
+          'Current selections will be lost if you close this modal. Are you sure you want to continue?',
+          null,
+          (confirmed) => {
+            if (confirmed) {
+              this.$refs.applySkillsStepper.close();
+            }
+          }
+        );
+      } else {
+        this.$refs.applySkillsStepper.close();
+      }
     },
     applySkills() {
       const skillParameterMappings = this.formatSkillParameterMappings();

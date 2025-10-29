@@ -20,11 +20,16 @@
     </template>
     <template #footer>
       <BasicButton
+        class="btn btn-primary"
+        title="Create Template"
+        name="Create Template"
+        @click="createTemplate"
+      />
+      <BasicButton
         class="btn btn-secondary"
         title="Close"
         @click="close"
-      />
-      
+      />      
     </template>
   </BasicModal>
 </span>
@@ -122,14 +127,12 @@ export default {
   },
   methods: {
     open() {
-      console.log("Opening Saved Templates Modal with templates:", this.savedTemplates);
       this.$refs.savedTemplatesModal.open();
     },
     close() {
       this.$refs.savedTemplatesModal.close();
     },
     handleAction({ action, params }) {
-      console.log("Action:", action, "Params:", params);
       if (action === "deleteTemplate") {
         this.deleteTemplate(params);
       } else if (action === "useTemplate") {
@@ -137,7 +140,6 @@ export default {
       }
     },
     deleteTemplate(template) {
-        console.log("Deleting template:", template);
         this.$socket.emit("appDataUpdate", {
           table: "study",
           data: {
@@ -161,9 +163,12 @@ export default {
         });
     },
     useTemplate(template) {
-      console.log("Using template:", template);
       this.close();
-      this.$refs.studyCoordinator.open(template.id, null, false);
+      this.$refs.studyCoordinator.open(template.id, null, false, false, true);
+    },
+    createTemplate() {
+      this.close();
+      this.$refs.studyCoordinator.open(0, null, false, true);
     },
   },
 };
