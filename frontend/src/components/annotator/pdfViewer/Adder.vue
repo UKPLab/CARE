@@ -40,7 +40,7 @@
       </div>
     </div>
     <button
-      v-if="!isExtended"
+      v-if="shouldShowExtender"
       @click="isExtended=true"
       class="expand-btn btn "
       title="Expand Adder"
@@ -100,6 +100,7 @@ export default {
       isDoubleClick: false,
       startX: 0, 
       startY: 0,
+      isOverflowing: false,
     }
   },
   computed: {
@@ -168,6 +169,9 @@ export default {
         return this.defaultTagSet;
       }
     },
+    shouldShowExtender() {
+      return !this.isExtended && this.isOverflowing;
+    },
     anonymize() {
       if (!this.study) {
         return false;
@@ -187,12 +191,16 @@ export default {
       const data = JSON.parse(this.savedUsageHistory.value);
       this.usageHistory = data;
     }
+
+    // check if the tagsets will make the adder overflow 
+    this.checkOverflow();
+    document.body.addEventListener('resize', this.checkOverflow);
   },
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
     document.body.removeEventListener('dblclick', this.doubleClickHandler);
     document.body.removeEventListener('mousedown', this.positionTracker);
-    
+    document.body.removeEventListener('resize', this.checkOverflow);
     
     const key = "UH" + this.tagSetId;
     const payload = JSON.stringify(this.usageHistory);
@@ -220,6 +228,10 @@ export default {
     }
   },
   methods: {
+    checkOverflow() {
+      const el = this.$refs.adderWrapper;
+      this.isOverflowing = el.scrollWidth > el.clientWidth;
+    },
     handleAdderScrolling(event) {
       const adderContent = this.$refs.adderWrapper;
       const scrollAmount = event.deltaY;
@@ -556,7 +568,7 @@ export default {
   text-overflow: ellipsis;
 }
 .scrollable-menu-wrapper {
-  max-width: 15vw;
+  max-width: 16vw;
   overflow-x: auto;
   overflow-y: hidden;
 }
