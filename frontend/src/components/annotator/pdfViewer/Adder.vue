@@ -2,6 +2,7 @@
   <div
     id="adder"
     :style="{visibility: isVisible ? 'visible':'hidden'}"
+    :class="{ 'is-extended': isExtended }"
   > 
     <div
       class="menu-search-bar" 
@@ -16,11 +17,11 @@
     </div> 
     <div 
       class="scrollable-menu-wrapper"
-      @wheel.prevent="handleAdderScrolling" ref="adderWrapper"
+      ref="adderWrapper"
       :class="{ 'is-extended': isExtended }"
     >
       <div
-        class="btn-group" 
+        class="btn-group-vertical" 
         @click.stop
       >
         <button
@@ -45,8 +46,8 @@
       class="expand-btn btn "
       title="Expand Adder"
     >
-    ...
-  </button>
+    <i class="bi bi-three-dots"></i>
+    </button>
   </div>
 </template>
 
@@ -230,7 +231,7 @@ export default {
   methods: {
     checkOverflow() {
       const el = this.$refs.adderWrapper;
-      this.isOverflowing = el.scrollWidth > el.clientWidth;
+      this.isOverflowing = el.scrollHeight > el.clientHeight;
     },
     handleAdderScrolling(event) {
       const adderContent = this.$refs.adderWrapper;
@@ -401,6 +402,7 @@ export default {
       //reset the extended status of the adder and the searchTerm
       this.isExtended = false;
       this.searchTerm = '';
+      this.$refs.adderWrapper.scrollTop =0;
       // get size of the box
       const adder = /** @type {Element} */ (document.getElementById("adder"));
       const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer")).getBoundingClientRect();
@@ -410,8 +412,8 @@ export default {
       const bottom = pdfToolbarRect.bottom;
       // calculate position of adder
       // slight offset from event positions up and to the right 
-      x = x + 10;
-      y = y - (40 + height);
+      x = x;
+      y = y - height;
 
 
       const relativeX = x - pdfContainerRect.left;
@@ -555,33 +557,47 @@ export default {
   padding: 2px;
   background-color: white;
   white-space: nowrap;
+  width: fit-content;
+  max-width: 5vw;
+}
+#adder.is-extended {
+  max-width: 8vw;
+}
+.btn-group-vertical {
+  width: 100%;
+  max-width: inherit;
 }
 .btn {
-  max-width: 5vw;
-  text-align: left;
-  overflow: hidden;
+  text-align: center;
+  width: 100%;
+  max-width: inherit;
 }
 .btn span {
   display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  width: 100%;
+  max-width: inherit;
 }
 .scrollable-menu-wrapper {
-  max-width: 16vw;
-  overflow-x: auto;
-  overflow-y: hidden;
+  max-height: 7vw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-width: inherit;
+  border-radius: 5px;
 }
 .scrollable-menu-wrapper.is-extended {
-  max-width: 17vw;
+  max-height: 11vw;
+  max-width: inherit;
 }
 .expand-btn {
+  background-color: lightgrey;
   border-radius: 5px;
-  box-shadow: 2px 3px #CCCCCC;
-  background-color: #dcdcdc;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  right: -35px;
+  padding: 5px;
+  box-shadow: 2px,2px #CCCCCC;
+}
+.menu-search-bar {
+  width: 100%;
 }
 </style>
