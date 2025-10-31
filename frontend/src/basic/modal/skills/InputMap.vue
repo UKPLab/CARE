@@ -26,6 +26,7 @@
  * @author Manu Sundar Raj Nandyal
  */
 import FormSelect from "@/basic/form/Select.vue";
+import deepEqual from "deep-equal";
 
 export default {
   name: "InputMap",
@@ -185,8 +186,12 @@ export default {
       immediate: true,
     },
     modelValue: {
-      handler(newValue) {
-        // If modelValue is empty object, reset inputMappings to empty
+      handler(newValue, oldValue) {
+        // Check if old and new values are deeply equal
+        if (deepEqual(oldValue, newValue)) {
+          return;
+        }
+        
         if (!newValue || Object.keys(newValue).length === 0) {
           this.inputMappings = {};
         } else if (newValue && typeof newValue === 'object' && Object.keys(newValue).length > 0) {

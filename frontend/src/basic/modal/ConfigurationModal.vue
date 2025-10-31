@@ -29,7 +29,7 @@
           <template #content>
             <GeneralSettingStep  
               @validation-change="handleGeneralValidationChange"
-              :modelValue="modelValue"
+              :modelValue="stepConfig"
               @update:form-data="handleGeneralFormDataUpdate"
             />
           </template>
@@ -40,7 +40,7 @@
         >
           <template #content>
             <ServicesStep
-              :modelValue="modelValue"
+              :modelValue="stepConfig"
               :currentStepperStep="currentStepperStep"
               @validation-change="handleServicesValidationChange"
               @update:form-data="handleServicesFormDataUpdate"
@@ -53,13 +53,12 @@
         >
           <template #content>
             <PlaceholdersStep
-              :modelValue="modelValue"
+              :modelValue="stepConfig"
               @update:form-data="handlePlaceholdersFormDataUpdate"
               @validation-change="handlePlaceholdersValidationChange"
             />
           </template>
         </StepTemplate>
-        <div v-else class="alert alert-info">Step not supported.</div>
       </template>
     </StepperModal>
   </div>
@@ -125,7 +124,7 @@ export default {
   data() {
     return {
       currentStepperStep: 0,
-      stepConfig: null,
+      stepConfig: this.modelValue,
       servicesFormData: {},
       selectedSkills: [],
       placeholderFormData: {},
@@ -175,12 +174,12 @@ export default {
     },
   },
   mounted() {
-    this.stepConfig = this.modelValue || {};
+    this.stepConfig = this.modelValue;
   },
   methods: {
     openModal(evt) {
       evt.preventDefault();
-      if (!this.documentId && !this.hasConfigFields) {
+      if (!this.documentId) {
         this.eventBus.emit("toast", {
           title: "Document Error",
           message: "You need to select a document.",
@@ -195,13 +194,16 @@ export default {
       // Reinitialize placeholder form data when switching to step 2
     },
     handleGeneralFormDataUpdate(data) {
-      this.generalFormData = { ...data };
+      //this.generalFormData = { ...data };
+      this.stepConfig.settings = { ...data };
     },
     handleServicesFormDataUpdate(data) {
-      this.servicesFormData = data;
+      //this.servicesFormData = data;
+      this.stepConfig.services = data;
     },
     handlePlaceholdersFormDataUpdate(data) {
-      this.placeholderFormData = data;
+      //this.placeholderFormData = data;
+      this.stepConfig.placeholders = data;
     },
     handleGeneralValidationChange(isValid) {
       this.generalValid = isValid;
@@ -216,14 +218,9 @@ export default {
       this.$refs.configurationStepper.close();
     },
     submit() {
-      let configData = {};
-
-      configData.settings = { ...this.generalFormData };
-      configData.services = this.servicesFormData;
-      configData.placeholders = this.placeholderFormData;
       
        // Add services configuration
-      this.$emit("update:modelValue", configData);
+      this.$emit("update:modelValue", this.stepConfig);
       this.$refs.configurationStepper.close();
       this.eventBus.emit("toast", {
         title: "Configuration Updated",
