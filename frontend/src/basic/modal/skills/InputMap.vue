@@ -26,6 +26,7 @@
  * @author Manu Sundar Raj Nandyal
  */
 import FormSelect from "@/basic/form/Select.vue";
+import deepEqual from "deep-equal";
 
 export default {
   name: "InputMap",
@@ -185,9 +186,44 @@ export default {
       immediate: true,
     },
     modelValue: {
-      handler(newValue) {
-        if (newValue && typeof newValue === 'object') {
-          this.inputMappings = { ...newValue };
+      handler(newValue, oldValue) {
+        // Check if old and new values are deeply equal
+        if (deepEqual(oldValue, newValue)) {
+          return;
+        }
+        
+        if (!newValue || Object.keys(newValue).length === 0) {
+          this.inputMappings = {};
+        } else if (newValue && typeof newValue === 'object' && Object.keys(newValue).length > 0) {
+          // Handle if newValue is an array (old format)
+          if (Array.isArray(newValue)) {
+            const mappings = {};
+            newValue.forEach(item => {
+              if (item.input) {
+                mappings[item.input] = {
+                  value: item.dataSource,
+                  name: item.name,
+                  stepId: item.stepId,
+                };
+              }
+            });
+            this.inputMappings = mappings;
+          } else {
+            // Handle if newValue is an object with input mappings
+            // Each key is an input name, each value contains mapping data
+            const mappings = {};
+            Object.keys(newValue).forEach(inputName => {
+              const mapping = newValue[inputName];
+              if (mapping && typeof mapping === 'object') {
+                mappings[inputName] = {
+                  value: mapping.dataSource || mapping.value,
+                  name: mapping.name,
+                  stepId: mapping.stepId,
+                };
+              }
+            });
+            this.inputMappings = mappings;
+          }
         }
       },
       immediate: true,

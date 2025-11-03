@@ -49,6 +49,7 @@
       <i>No comment</i>
     </div>
     <div
+      v-if="isSentimentAnalysisActive"
       class="text-end fw-light"
       title="Sentiment Analysis"
     >
@@ -235,6 +236,9 @@ export default {
     },
     skills() {
       return this.$store.getters["service/getSkills"]("NLPService");
+    },
+    isSentimentAnalysisActive(){
+      return this.$store.getters["settings/getValue"]("annotator.nlp.sentiment_analysis.activated") === "true"
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";

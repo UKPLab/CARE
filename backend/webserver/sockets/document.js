@@ -756,7 +756,8 @@ class DocumentSocket extends Socket {
         const submissions = data.submissions || [];
 
         for (const submission of submissions) {
-            const transaction = options.transaction;
+            // Create a new transaction for each submission
+            const transaction = await this.server.db.sequelize.transaction();
             let tempFiles = [];
 
             try {
@@ -797,12 +798,17 @@ class DocumentSocket extends Socket {
                     documentIds.push(doc.id);
                 }
 
+                await transaction.commit().then(() => {
+                    this.broadcastTransactionChanges(transaction);
+                });
+                
                 downloadedSubmissions.push({
                     submissionId: submissionEntry.id,
                     documentIds,
                 });
             } catch (err) {
                 this.logger.error(err.message);
+                await transaction.rollback();
                 downloadedErrors.push({
                     userId: submission.userId,
                     firstName: submission.firstName,
@@ -1138,7 +1144,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentAdd", this.addDocument, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
-        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
+        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
         this.createSocket("documentDataGet", this.getDocumentData, {}, false);

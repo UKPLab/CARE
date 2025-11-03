@@ -65,27 +65,7 @@ module.exports = class Socket {
                     options.transaction = t;
 
                     t.afterCommit(() => {
-                        try {
-                            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
-                            if (t.changes) {
-                                const changesMap = t.changes.reduce((acc, entry) => {
-                                    if (entry.constructor.autoTable) {
-                                        const tableName = entry.constructor.tableName;
-                                        const entryData = _.omit(entry.dataValues, defaultExcludes);
-                                        if (!acc.has(tableName)) {
-                                            acc.set(tableName, []);
-                                        }
-                                        acc.get(tableName).push(entryData);
-                                    }
-                                    return acc;
-                                }, new Map());
-                                for (const [table, changes] of changesMap) {
-                                    this.broadcastTable(table, changes);
-                                }
-                            }
-                        } catch (e) {
-                            this.logger.error("Error in afterCommit sending data to client: " + e);
-                        }
+                        this.broadcastTransactionChanges(t);
                     });
                 }
 
@@ -106,6 +86,34 @@ module.exports = class Socket {
                 }
             }
         });
+    }
+
+    /**
+     * Broadcasts all autoTable changes collected on a transaction after commit.
+     * @param {import("sequelize").Transaction} transaction
+     */
+    broadcastTransactionChanges(transaction) {
+        try {
+            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
+            if (transaction && transaction.changes) {
+                const changesMap = transaction.changes.reduce((acc, entry) => {
+                    if (entry.constructor.autoTable) {
+                        const tableName = entry.constructor.tableName;
+                        const entryData = _.omit(entry.dataValues, defaultExcludes);
+                        if (!acc.has(tableName)) {
+                            acc.set(tableName, []);
+                        }
+                        acc.get(tableName).push(entryData);
+                    }
+                    return acc;
+                }, new Map());
+                for (const [table, changes] of changesMap) {
+                    this.broadcastTable(table, changes);
+                }
+            }
+        } catch (e) {
+            this.logger.error("Error in afterCommit sending data to client: " + e);
+        }
     }
 
     /**
@@ -688,6 +696,26 @@ module.exports = class Socket {
     }
 
     /**
+     * Checks for a database entry whether it matches all filters
+     * @param {Object} entry the value to filter
+     * @param {Object} filter Sequelize-like filters to use
+     * @returns {boolean} true if all filters match
+     */
+    matchesFilter(entry, filter) {
+        if (!filter) {
+            return true;
+        }
+        if (filter[Op.and]) {
+            return filter[Op.and].every(subfilter => this.matchesFilter(entry, subfilter));
+        } if (filter[Op.or]) {
+            return filter[Op.or].some(subfilter => this.matchesFilter(entry, subfilter));
+        }
+        return Object.entries(filter).every(([key, val]) =>
+            entry[key] === val
+        );
+    }
+
+    /**
      * Broadcasts data to all clients that have permissions to see it
      * @param {string} tableName The name of table
      * @param {object} data The data to broadcast 
@@ -719,10 +747,7 @@ module.exports = class Socket {
                 continue;
             }
             allFilter = filtersAndAttributes.filter;
-            allAttributes = filtersAndAttributes.attributes;
-            const filteredData = data.filter(
-                item => Object.keys(allFilter).every(key => item[key] === allFilter[key])
-            );
+            const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
             this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
         };
     }

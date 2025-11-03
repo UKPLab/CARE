@@ -10,32 +10,34 @@ const workflows = [
         allowBackward: false,
         workflowStepDocument: null,
         configuration: {
-          fields: [
-            {
-              key: "configurationId",
-              label: "Configuration File:",
-              type: "select",
-              required: true,
-              options: {
-                table: "configuration",
-                name: "name",
-                value: "id",
-                filter: [
-                  { key: "type", value: 0 },
-                  { key: "deleted", value: false }
-                ]
+          settings: {
+            fields: [
+                {
+                key: "configurationId",
+                label: "Configuration File:",
+                type: "select",
+                required: true,
+                options: {
+                  table: "configuration",
+                  name: "name",
+                  value: "id",
+                  filter: [
+                    { key: "type", value: 0 },
+                    { key: "deleted", value: false }
+                  ]
+                },
+                help: "Select the configuration file for this workflow step."
               },
-              help: "Select the configuration file for this workflow step."
-            },
-            {
-              key: "forcedAssessment",
-              label: "Forced Assessment",
-              type: "switch",
-              required: false,
-              default: false,
-              help: "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
-            }
-          ],
+              {
+                key: "forcedAssessment",
+                label: "Forced Assessment",
+                type: "switch",
+                required: false,
+                default: false,
+                help: "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
+              }
+            ],
+          },
           placeholders: false
         }
       },
@@ -55,32 +57,34 @@ const workflows = [
         allowBackward: false, 
         workflowStepDocument: null,
         configuration: {
-          fields: [
-            {
-              key: "configurationId",
-              label: "Configuration File:",
-              type: "select",
-              required: true,
-              options: {
-                table: "configuration",
-                name: "name",
-                value: "id",
-                filter: [
-                  { key: "type", value: 0 },
-                  { key: "deleted", value: false }
-                ]
+          settings: {
+            fields: [
+              {
+                key: "configurationId",
+                label: "Configuration File:",
+                type: "select",
+                required: true,
+                options: {
+                  table: "configuration",
+                  name: "name",
+                  value: "id",
+                  filter: [
+                    { key: "type", value: 0 },
+                    { key: "deleted", value: false }
+                  ]
+                },
+                help: "Select the configuration file for this workflow step."
               },
-              help: "Select the configuration file for this workflow step."
-            },
-            {
-              key: "forcedAssessment",
-              label: "Forced Assessment",
-              type: "switch",
-              required: false,
-              default: false,
-              help: "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
-            }
-          ],
+              {
+                key: "forcedAssessment",
+                label: "Forced Assessment",
+                type: "switch",
+                required: false,
+                default: false,
+                help: "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
+              }
+            ],
+          },
           services: [
             {
               name: "nlpAssessment",

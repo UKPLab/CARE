@@ -165,7 +165,7 @@ export default {
           },
           title: "Export data",
           icon: "download",
-          action: "exportProject",
+          action: "export",
           stats: {
             projectId: "id",
           }
