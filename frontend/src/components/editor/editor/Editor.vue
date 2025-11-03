@@ -1,4 +1,4 @@
-<template>
+  <template>
   <Loader
     v-if="documentId && documentId === 0"
     :loading="true"
@@ -35,20 +35,16 @@
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
-import LoadIcon from "@/basic/Icon.vue";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 
 const Delta = Quill.import('delta');
 
 export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
-  components: {
-    LoadIcon, TopBarButton
-  },
+  subscribeTable: ["document_data"],
   inject: {
     studySessionId: {
       type: Number,
@@ -80,11 +76,6 @@ export default {
       required: false,
       default: null,
     },
-    active: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
   },
   emits: ["update:data"],
   data() {
@@ -96,6 +87,8 @@ export default {
       documentLoaded: false,
       data: {},
       firstVersion: null,
+      feedbackLoaded: false,
+      pendingFeedbackText: '',
     };
   },
   computed: {
@@ -198,6 +191,39 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    currentStepIndex() {
+      if (!this.studyStepId || !Array.isArray(this.studySteps)) return -1;
+      return this.studySteps.findIndex((s) => s && s.id === this.studyStepId);
+    },
+    studyBucket() {
+      const idx = this.currentStepIndex >= 0 ? this.currentStepIndex + 1 : null;
+      return (idx && this.studyData && this.studyData[idx]) ? this.studyData[idx] : {};
+    },
+    currentStudyStep() {
+      return this.$store.getters["table/study_step/get"](this.studyStepId);
+      },
+    skillName() {
+      const config = this.currentStudyStep?.configuration;
+      if (!config) return null;
+      
+      const services = config.services || [];
+      for (const service of services) {
+        if (service.skillName) {
+          return service.skillName;
+        }
+      }
+      return null;
+    },
+    studyGeneratedFeedbackRaw() {
+      const skillName = this.skillName;
+      if (!skillName) return null;
+      
+      const feedbackKey = Object.keys(this.studyBucket).find(key => 
+        key.includes(skillName) && key.includes('textual_feedback')
+      );
+      console.log('Looking for feedback key:', { skillName, availableKeys: Object.keys(this.studyBucket), foundKey: feedbackKey });
+      return feedbackKey ? this.studyBucket[feedbackKey] : null;
+    },
   },
   watch: {
     unappliedEdits: {
@@ -225,6 +251,18 @@ export default {
         }
 
       }
+    },
+    studyGeneratedFeedbackRaw(newRaw) {
+      if (!newRaw || this.feedbackLoaded) return;
+      
+      const feedbackText = newRaw.textual_feedback;
+      if (!feedbackText) return;
+      
+      if (!this.documentLoaded) {
+        this.pendingFeedbackText = feedbackText;
+        return;
+      }
+      this.applyFeedbackText(feedbackText);
     },
   },
   created() {
@@ -264,6 +302,21 @@ export default {
       };
       this.eventBus.on("editorInsertText", this.insertTextHandler);
 
+      // Handle generated feedback application from StepModal
+      this.applyGeneratedFeedbackHandler = (data) => {
+        if (data.documentId === this.documentId && this.editor && !this.feedbackLoaded) {
+          const feedbackText = data.feedbackText || '';
+          if (!feedbackText) return;
+
+          if (!this.documentLoaded) {
+            this.pendingFeedbackText = feedbackText;
+            return;
+          }
+          this.applyFeedbackText(feedbackText);
+        }
+      };
+      this.eventBus.on('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
+
       setTimeout(() => {
         this.emitContentForPlaceholders();
       }, 500);
@@ -289,6 +342,38 @@ export default {
             currentVersion: currentVersion,
           };
           this.$emit("update:data", studyData);
+          // Generated feedback will be applied via event from StepModal
+          // If feedback arrived early, apply it now after content initialization
+          if (!this.feedbackLoaded && this.pendingFeedbackText) {
+            this.applyFeedbackText(this.pendingFeedbackText);
+          }
+
+          // Also fetch any previously saved generated feedback in case the event was missed
+          const skillName = this.skillName;
+          if (skillName) {
+            // Find the key that includes the skill name and textual_feedback
+            const feedbackKey = Object.keys(this.studyBucket).find(key => 
+              key.includes(skillName) && key.includes('textual_feedback')
+            );
+            if (feedbackKey) {
+              this.$socket.emit("documentDataGet", {
+                documentId: this.documentId,
+                studySessionId: this.studySessionId,
+                studyStepId: this.studyStepId,
+                key: feedbackKey
+              }, (response) => {
+                const val = (response && response.success && response.data && response.data.value)
+                  ? response.data.value
+                  : (response && response.value) ? response.value : null;
+                if (!this.feedbackLoaded && val) {
+                  const feedbackText = val.textual_feedback || val;
+                  if (feedbackText) {
+                    this.applyFeedbackText(feedbackText);
+                  }
+                }
+              });
+            }
+          }
         } else {
           this.handleDocumentError(res.error);
         }
@@ -318,6 +403,7 @@ export default {
   unmounted() {
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);
+    this.eventBus.off('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
 
     this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
       if (!res.success) {
@@ -331,6 +417,26 @@ export default {
     this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
   },
   methods: {
+    applyFeedbackText(feedbackText) {
+      const editorInstance = this.editor && this.editor.getEditor ? this.editor.getEditor() : null;
+      if (!editorInstance || !feedbackText) return;
+
+      const currentContent = editorInstance.getContents();
+      if (currentContent.ops.length <= 1 && (!currentContent.ops[0].insert || currentContent.ops[0].insert === '\n')) {
+        editorInstance.setText(feedbackText);
+      } else {
+        const insertText = feedbackText.endsWith('\n') ? feedbackText : feedbackText + '\n\n';
+        editorInstance.updateContents(new Delta().retain(0).insert(insertText), 'api');
+      }
+      this.firstVersion = editorInstance.root.innerHTML;
+      const currentVersion = editorInstance.root.innerHTML;
+      this.$emit("update:data", {
+        firstVersion: this.firstVersion,
+        currentVersion: currentVersion,
+      });
+      this.feedbackLoaded = true;
+      this.pendingFeedbackText = '';
+    },
     clearEditor() {
       if (this.editor) {
         const quill = this.editor.getEditor();
@@ -461,7 +567,7 @@ export default {
 
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           this.$refs.leavePageConf.open(
             "Unsaved Changes",
             "Are you sure you want to leave? There are unsaved changes, which will be lost.",

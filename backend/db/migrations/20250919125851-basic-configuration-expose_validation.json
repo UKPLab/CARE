@@ -1,0 +1,53 @@
+{
+  "version": "0.0.1",
+  "name": "UKP Exposé Submission Validator",
+  "description": "Validation schema for UKP Exposé LaTeX submissions",
+  "type": "validation",
+  "rules": {
+    "additionalFilesAreAllowed": false,
+    "requiredFiles": [
+      {
+        "name": "PDF",
+        "description": "Main PDF of the Exposé",
+        "pattern": ".*\\.pdf$",
+        "required": true
+      },
+      {
+        "name": "ZIP",
+        "description": "Raw Latex Files for the Exposé",
+        "pattern": ".*\\.zip$",
+        "required": true,
+        "includeFiles": [
+          {
+            "name": "expose",
+            "description": "Main expose LaTeX document",
+            "pattern": "Expose\\.tex$",
+            "required": true,
+            "maxMatches": 1
+          },
+          {
+            "name": "bibliography",
+            "description": "Bibliography file for the exposé",
+            "pattern": "ExposeBibliography\\.bib$",
+            "required": true,
+            "maxMatches": 1
+          },
+          {
+            "name": "logo",
+            "description": "Official TUDa logo file",
+            "pattern": "tuda_logo\\.pdf$",
+            "required": true,
+            "maxMatches": 1
+          },
+          {
+            "name": "config",
+            "description": "TUDa thesis configuration file",
+            "pattern": "tudathesis\\.cfg$",
+            "required": true,
+            "maxMatches": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -10,6 +10,14 @@
       <h5 class="modal-title">Saved Templates</h5>
     </template>
     <template #body>
+      <div class="d-flex justify-content-end align-items-center w-100 mb-3">
+        <BasicButton
+          class="btn btn-primary btn-sm"
+          title="Create Template"
+          name="Create Template"
+          @click="createTemplate"
+        />
+      </div>
       <BasicTable
         :columns="columns"
         :data="savedTemplates"
@@ -164,6 +172,11 @@ export default {
       console.log("Using template:", template);
       this.close();
       this.$refs.studyCoordinator.open(template.id, null, false);
+    },
+    createTemplate() {
+      console.log("Creating new template");
+      this.close();
+      this.$refs.studyCoordinator.open(0, null, false, true);
     },
   },
 };

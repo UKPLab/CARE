@@ -5,7 +5,7 @@
     name="documentUpload"
   >
     <template #title>
-      Upload new document
+      {{ modalTitle }}
     </template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
@@ -78,7 +78,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  * to the server. The user is prompted the option to select a PDF from
  * disk.
  *
- * @author: Dennis Zyska, Nils Dycke
+ * @author: Dennis Zyska, Nils Dycke, Linyin Huang
  */
 export default {
   name: "DocumentUploadModal",
@@ -90,6 +90,7 @@ export default {
       isPdf: false,
       data: {},
       importAnnotations: false,
+      uploadType: "document", // "document" or "configuration"
       fileFields: [
         {
           key: "file",
@@ -105,6 +106,11 @@ export default {
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
+    modalTitle() {
+      return this.uploadType === "configuration"
+        ? "Upload new configuration file"
+        : "Upload new document";
+    }
   },
   methods: {
     handleFileChange(file) {
@@ -118,14 +124,93 @@ export default {
       this.importAnnotations = false;
 
     },
-    open() {
+    open(type = "document") {
+      this.uploadType = type;
       this.data.file = null;
       this.importAnnotations = false;
+
+      // Update file fields based on type
+      if (type === "configuration") {
+        this.fileFields[0].accept = ".json";
+      } else {
+        this.fileFields[0].accept = ".pdf,.delta";
+      }
+
+
       this.$refs.uploadModal.open();
     },
     async upload() {
       const fileName = this.data.file.name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+
+      // Route based on upload type
+      if (this.uploadType === "configuration") {
+        if (fileType !== ".json") {
+          this.eventBus.emit("toast", {
+            title: "Invalid file type",
+            message: "Only JSON files are allowed for configuration uploads.",
+            variant: "danger",
+          });
+          return;
+        }
+        this.$refs.uploadModal.waiting = true;
+        this.uploading = true;
+        try {
+          const text = await this.data.file.text();
+          const json = JSON.parse(text);
+
+          const name = json.name || fileName.replace(/\.json$/, "");
+          const description = json.description || "";
+          let type = undefined;
+          if (typeof json.type === "number") {
+            type = json.type;
+          } else if (typeof json.type === "string") {
+            const lower = json.type.toLowerCase();
+            if (lower.includes("assessment")) type = 0;
+            else if (lower.includes("validation")) type = 1;
+          }
+          if (typeof type !== "number") type = 0;
+
+          this.$socket.emit(
+            "configurationAdd",
+            {
+              name,
+              description,
+              type,
+              content: json,
+            },
+            (res) => {
+              this.uploading = false;
+              this.$refs.uploadModal.waiting = false;
+              if (res.success) {
+                this.eventBus.emit("toast", {
+                  title: "Configuration uploaded",
+                  message: "File successfully uploaded!",
+                  variant: "success",
+                });
+                this.$refs.uploadModal.close();
+              } else {
+                this.eventBus.emit("toast", {
+                  title: "Failed to upload configuration",
+                  message: res.message,
+                  variant: "danger",
+                });
+              }
+            }
+          );
+        } catch (e) {
+          this.uploading = false;
+          this.$refs.uploadModal.waiting = false;
+          this.eventBus.emit("toast", {
+            title: "Invalid JSON",
+            message: e.message,
+            variant: "danger",
+          });
+        }
+        return;
+      }
+
+      // Default upload flow
       if (fileType !== ".pdf" && fileType !== ".delta") {
         this.eventBus.emit("toast", {
           title: "Invalid file type",
@@ -136,6 +221,11 @@ export default {
       }
       this.$refs.uploadModal.waiting = true;
       this.uploading = true;
+
+      let f_type = 1; // default for PDF
+      if (fileType === ".delta") {
+        f_type = 2;
+      };
 
       try {
         let extractedText = null;
@@ -152,6 +242,7 @@ export default {
           importAnnotations: this.importAnnotations,
           name: fileName,
           projectId: this.projectId,
+          type: f_type,
           wholeText: extractedText // Send the extracted text with the upload
         }, (res) => {
           this.uploading = false;

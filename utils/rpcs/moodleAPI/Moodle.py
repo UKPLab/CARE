@@ -1,8 +1,9 @@
 from moodle_api import moodle_api
 import requests
 from User import User
+import logging
 
-__author__ = "Alexander Bürkle, Dennis Zyska"
+__author__ = "Alexander Bürkle, Dennis Zyska, Yiwei Wang, Linyin Huang"
 
 class Moodle:
     def __init__(self, api_key, url, endpoint="/webservice/rest/server.php"):
@@ -10,6 +11,7 @@ class Moodle:
         self.api_key = api_key
         self.url = url
         self.endpoint = endpoint
+        self.logger = logging.getLogger(__name__)
         moodle_api.URL = url
         moodle_api.KEY = api_key
      
@@ -190,20 +192,20 @@ class Moodle:
             parameters['plugindata[files_filemanager]'] = 0
             moodle_api.call('mod_assign_save_grade', **parameters)
                 
-            
-        
     def get_submission_infos_from_assignment(self, course_id, assignment_cmid):
         """
         Retrieves submission information from a specific assignment in a Moodle course.
         Args:
             course_id (int): The ID of the course.
-            assignment_id (int): The ID of the assignment.
+            assignment_cmid (int): The course module ID of the assignment.
         Returns:
             list: A list of dictionaries, each containing:
                 - 'userid' (int): The ID of the user who made the submission.
-                - 'submissionURLs' (list): A list of dictionaries, each containing:
-                    - 'filename' (str): The name of the submitted file.
-                    - 'fileurl' (str): The URL to access the submitted file.
+                - 'submissionId' (int): The unique submission ID from Moodle.
+                - 'timemodified' (int): Timestamp when submission was last modified.
+                - 'status' (str): Submission status (e.g., 'submitted', 'draft').
+                - 'files' (list): List of all files with detailed metadata.
+                - 'fileCategorization' (dict): Summary of file types without associations.
         """
         
         # Get users from the course
@@ -224,24 +226,60 @@ class Moodle:
         submission_infos = []  
         
         for sub in submissions['assignments'][0]['submissions']:
+            # Log each submission's raw data
+            self.logger.info(f"Processing submission: {sub}")
+
             submission_info = {}
             for user in users:
                 if sub['userid'] == user.id:   
                     submission_info['userid'] = sub['userid']
+                    submission_info['userInfo'] = {
+                        'firstName': user.firstname,
+                        'lastName': user.lastname,
+                        'email': user.email,
+                        'roles': user.roles
+                    }
                     break
+            
+            # Enhanced metadata collection
+            submission_info['submissionId'] = sub.get('id', 0)
+            submission_info['timemodified'] = sub.get('timemodified', 0)
+            submission_info['status'] = sub.get('status', 'unknown')
+            submission_info['files'] = []
+            submission_urls = []  # Legacy field for backward compatibility
+            
             for plugin in sub['plugins']:
                 if 'fileareas' in plugin:
                     for filearea in plugin['fileareas']:
-                        submission_urls = []
                         for files in filearea['files']:
                             file_url = files['fileurl']
                             file_url += f'?token={moodle_api.KEY}'
                             file_name = files['filename']
+                            
+                            # Enhanced file metadata
+                            file_info = {
+                                "filename": file_name,
+                                "fileurl": file_url,
+                                "filepath": files.get('filepath', '/'),
+                                "filesize": files.get('filesize', 0),
+                                "filearea": filearea.get('area', 'submission_files'),
+                                "mimetype": files.get('mimetype', ''),
+                                "timemodified": files.get('timemodified', 0),
+                                "isexternalfile": files.get('isexternalfile', False),
+                                "repositorytype": files.get('repositorytype', '')
+                            }
+                            submission_info['files'].append(file_info)
+                            
+                            # Legacy format for backward compatibility
                             submission_urls.append({"filename": file_name, "fileurl": file_url})
-            submission_info['submissionURLs'] = submission_urls
+            
             submission_infos.append(submission_info)
+
+        # Log the final processed data   
+        self.logger.info(f"Final submission_infos: {submission_infos}")
         
-        return submission_infos
+        return submission_infos            
+        
                             
     def download_submissions_from_url(self, file_urls):
         """

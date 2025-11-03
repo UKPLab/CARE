@@ -12,7 +12,9 @@ services:
       - ./backend:/backend
     command: make html
   postgres:
-    image: postgres:11.5-alpine
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 1s

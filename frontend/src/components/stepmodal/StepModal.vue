@@ -1,14 +1,11 @@
 <template>
-  <Loader v-if="loadingConfig" :loading="true" class="pageLoader"/>
-  <span v-else>
+  <span>
     <BasicModal
       ref="modal"
       :size="studyStep?.configuration?.settings?.modalSize"
       :name="studyStep?.configuration?.name || 'Modal'"
-      :class="modalClasses"
-      :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
-      disableKeyboard
-      removeClose
+      :disable-keyboard="true"
+      :remove-close="true"
     >
       <template #title>
         <h5
@@ -19,12 +16,22 @@
         </h5>
       </template>  
       <template #body>
+        <NlpRequest
+          ref="req"
+          :study-step-id="studyStepId"
+          :loading-only="loadingOnly"
+          :auto-close-on-complete="autoCloseOnComplete"
+          @waiting-change="onReqWaitingChange"
+          @timeout-error="onReqTimeoutError"
+          @complete="onReqComplete"
+          @close="onReqChildClose"
+        />
         <div
           v-if="waiting"
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
-          <div class="spinner-border m-5" v-if="!timeoutError">
+          <div v-if="!timeoutError" class="spinner-border m-5">
             <span class="visually-hidden">Loading...</span>          
           </div>
           <div v-else>
@@ -45,12 +52,12 @@
             </div>
           </div>
         </div>
-        <div v-else>
+        <div v-else-if="!loadingOnly">
           <div
             class="feedback-container p-3"
             :style="{ color: studyStep?.configuration?.textColor || '' }"
           >
-            <p v-if="!documentText">
+            <p v-if="!documentText && !loadingOnly">
               No content available for this step.
             </p>
 
@@ -59,7 +66,7 @@
                   <template v-if="segment.type === 'plainText'">
                     <span v-html="segment.value"></span>
                   </template>                    <template v-else-if="segment.type === 'text'">
-                    <Text :config="segment.config" />
+                    <TextPlaceholder :config="segment.config" />
                   </template>
                   <template v-else-if="segment.type === 'chart'">
                     <Chart :config="segment.config" />
@@ -73,7 +80,7 @@
         </div>      
       </template>
       <template #footer>
-        <div v-if="!waiting">
+        <div v-if="!waiting && !loadingOnly">
           <BasicButton
             v-if="!isLastStep"
             :title="studyStep?.configuration?.nextButtonText || 'Next'"
@@ -111,10 +118,10 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
-import {v4 as uuid} from "uuid";
-import Text from "./placeholders/Text.vue";
+import TextPlaceholder from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
 import Comparison from "./placeholders/Comparison.vue";
+import NlpRequestCore from "../../basic/service/NlpRequestCore.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -125,8 +132,8 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, Text, Chart, Comparison },
-  subscribeTable: [{ table: "document_data"}],
+  components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison, NlpRequest: NlpRequestCore },
+  subscribeTable: ["document", "document_data", "study_step", "configuration"],
   inject: {
     studySessionId: {
       type: Number,
@@ -158,13 +165,21 @@ export default {
       type: Boolean,
       default: false
     },
+    loadingOnly: {
+      type: Boolean,
+      default: false
+    },
+    autoCloseOnComplete: {
+      type: Boolean,
+      default: false
+    },
   },  
+  emits: ["update:data", "close"],
   data() {
     return {
       loadingConfig: true,
       documentText: null,
       waiting: false,
-      requests: {},
       timeoutError: false,
     };
   },
@@ -172,39 +187,8 @@ export default {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);;
     },
-    studySteps() {
-      return this.studyStep.studyId !== 0
-        ? this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId)
-        : [];
-    },
     configuration() {
       return this.studyStep?.configuration || null;
-    },    
-    nlpResults() {
-      return this.$store.getters["service/getResults"]("NLPService");
-    }, 
-    nlpResultsStatus() {
-      const requestIds = Object.keys(this.requests);
-      if (requestIds.length === 0) return [];
-      
-      return requestIds.map((requestId) => {
-        const resultExists = requestId in this.nlpResults;
-        const result = resultExists ? this.nlpResults[requestId] : null;
-
-        const isValid = resultExists && Object.keys(result).length > 0;
-        
-        return isValid;
-      });
-    },
-    allNlpRequestsCompleted() {
-      const statuses = this.nlpResultsStatus;
-      return statuses.length > 0 && statuses.every(status => status === true);
-    },
-    openRequests() {
-      return Object.keys(this.requests).length > 0;
-    },
-    nlpRequestTimeout() {
-      return parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
     },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
@@ -266,80 +250,17 @@ export default {
   },
   watch: {
     specificDocumentData: {
-      handler(newData) {
+      handler() {
         this.$emit("update:data", this.specificDocumentData);
       },
       deep: true,
     },
-    studyData: {
-      handler(newData) {
-        const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-        const stepDataArr = this.studyData[realStepId] || [];
-        const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
-        const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
-
-        const allAvailable = uniqueIds.every(uniqueId => {
-          const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-          if (!requestId || !this.nlpResults[requestId]) return false;
-          const resultKeys = Object.keys(this.nlpResults[requestId]);
-          return resultKeys.every(key =>
-            stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
-          );
-        });
-        
-        if (this.readOnly && allAvailable) {
-          this.waiting = false;
-        }
-
-        if (allAvailable && this.allNlpRequestsCompleted) {
-          Object.keys(this.requests).forEach(requestId => {
-            this.$store.commit('service/removeResults', {
-              service: 'NLPService',
-              requestId: requestId
-            });
-          });
-          this.requests = {};
-          this.waiting = false;
-        }
-      },
-      deep: true,
-    },
-    nlpResultsStatus: {
-      handler(currentStatuses, previousStatuses) {
-        if (
-          !previousStatuses ||
-          currentStatuses.length !== previousStatuses.length ||
-          !currentStatuses.some((status, i) => status !== previousStatuses[i])
-        ) {
-          return;
-        }
-        const requestIds = Object.keys(this.requests);
-        const readyIndices = currentStatuses.flatMap((status, i) => (status === true && previousStatuses[i] === false) ? i : []);
-        readyIndices.forEach(i => {
-          const requestId = requestIds[i];
-          const result = this.nlpResults[requestId];
-          const uniqueId = this.requests[requestId].uniqueId;
-          if (result) {
-            Object.keys(result).forEach(key => {
-              const keyName = uniqueId + "_" + key;
-              const value = result[key];
-              this.$socket.emit("documentDataSave", {
-                documentId: this.studyStep?.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                key: keyName,
-                value: value,
-              });
-            });
-          }
-        });
-      },
-      deep: true
-    },
     placeholders: {
-      handler(newData) {
-        if (this.placeholders == null || Object.keys(this.placeholders).length === 0) {   
-          this.waiting = false;   
+      handler() {
+        if (!this.loadingOnly) {
+          if ((this.placeholders == null || Object.keys(this.placeholders).length === 0) && !this.waiting) {   
+            this.waiting = false;   
+          }
         }
       },
       immediate: true
@@ -350,39 +271,33 @@ export default {
       this.loadingConfig = false;
     }
 
-    this.$socket.emit("documentGet",
-      {
-        documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId,
-      },
-      (response) => {
-        if (response?.success && response.data?.deltas) {
-          const quill = new Quill(document.createElement("div"));
-          quill.setContents(response.data.deltas);
-          this.documentText = quill.root.innerHTML;
-        } else {
-          this.documentText = "Failed to load the document content.";
+    if (!this.loadingOnly) {
+      // Show loader while fetching document content
+      this.waiting = true;
+      this.$socket.emit("documentGet",
+        {
+          documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+        },
+        (response) => {
+          if (response?.success && response.data?.deltas) {
+            const quill = new Quill(document.createElement("div"));
+            quill.setContents(response.data.deltas);
+            this.documentText = quill.root.innerHTML;
+          } else {
+            this.documentText = "Failed to load the document content.";
+          }
+          // Hide loader after content is processed
+          this.waiting = false;
         }
-      }
-    );
+      );
+    }
 
   },  
-  mounted() {
+  async mounted() {
     if (this.readOnly) {
       this.waiting = false;
-    } else if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
-      this.waiting = true;
-
-      for (const service of this.configuration.services) {
-        if (service.type === "nlpRequest") {
-          if (!service.name || !service.skill || !service.inputs) {
-            continue;
-          }          
-          const { skill, inputs: inputs, name } = service;
-          this.request(skill, inputs, ("service_" + name));
-        }
-      }
     }
     
     // Inspect sessions update the specific document data sometimes before the modal opens and the watcher is not triggered
@@ -390,94 +305,54 @@ export default {
       this.$emit("update:data", this.specificDocumentData); 
     }
 
-    if(!this.requests || Object.keys(this.requests).length === 0) {
-      this.waiting = false;
+    if (this.loadingOnly && !this.waiting) {
+      return;
     }
-
     this.$refs.modal.open();
-  },
+  },  
   methods: {
+    // Opens the modal with provided data; input: data (any); output: void
     open(data) {
       this.data = data;
       this.$refs.modal.open();
     },
-    closeModal(event) {
+    // Closes the modal; input: event (object); output: void
+    async closeModal(event) {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    hasResultsInStudyData(uniqueId) {
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepDataArr = this.studyData[realStepId] || [];
-      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
-      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-      const expectedKeys = foundRequestId && this.nlpResults[foundRequestId] ? Object.keys(this.nlpResults[foundRequestId]) : [];
-      if (expectedKeys.length > 0) {
-        return expectedKeys.every(key =>
-          stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
-        );
-      }
-      return false;
+    onReqWaitingChange(val) {
+      this.waiting = val;
     },
-    async sendRequest(skill, input, uniqueId, requestId) {
-      if (!this.hasResultsInStudyData(uniqueId)) {
-        await this.$socket.emit("serviceRequest", {
-          service: "NLPService",
-          data: {
-            id: requestId,
-            name: skill,
-            data: input,
-          },
-        });
-        setTimeout(() => {
-          if (this.requests[requestId]) {
-            this.eventBus.emit('toast', {
-              title: "NLP Service Request",
-              message: "Timeout in request for skill " + skill + " - Request failed!",
-              variant: "danger"
-            });
-            this.timeoutError = true;
-          }
-        }, this.nlpRequestTimeout);
+    onReqTimeoutError(val) {
+      this.timeoutError = val;
+    },
+    onReqComplete() {
+            this.waiting = false;
+      if (this.loadingOnly && this.autoCloseOnComplete) {
+        this.$emit('close', { autoClosed: true });
+            this.$refs.modal.close();
       }
     },
-    // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
-    async request(skill, inputs, uniqueId) {
-      const requestId = uuid();
-      this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
-
-      const input = Object.entries(inputs).reduce((acc, [entry, value]) => {
-        acc[entry] = this.studyData[value.stepId][value.dataSource];
-        return acc;
-      }, {});
-
-      this.requests[requestId].input = input;
-
-      await this.sendRequest(skill, input, uniqueId, requestId);
+    onReqChildClose(payload) {
+      // Propagate closes initiated by child request component
+      this.waiting = false;
+      this.$emit('close', payload || {});
+      this.$refs.modal.close();
     },
     async retryNlpRequests() {
       this.timeoutError = false;
-      
-      const statuses = this.nlpResultsStatus;
-      const requestIds = Object.keys(this.requests);
-      const failedIndices = statuses.flatMap((status, i) => status === false ? i : []);
-      const retriedUniqueIds = new Set();
-      for (const i of failedIndices) {
-        const requestId = requestIds[i];
-        if (this.requests[requestId]) {
-          const { skill, input, uniqueId } = this.requests[requestId];
-          if (!retriedUniqueIds.has(uniqueId) && !this.hasResultsInStudyData(uniqueId)) {
-            retriedUniqueIds.add(uniqueId);
-            await this.sendRequest(skill, input, uniqueId, requestId);
-          }
-        }
+      if (this.$refs.req) {
+        await this.$refs.req.retryNlpRequests();
       }
     },    
+
     async exportStudyData() {
       if (this.isAdmin){
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
         downloadObjectsAs(this.studyData, filename, 'json');
       }
-    },
+    }
   }
 };
 </script>

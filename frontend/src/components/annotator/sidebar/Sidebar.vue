@@ -28,10 +28,7 @@
     </div>
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
-  <ul id="anno-list" class="list-group" v-if="showAnnotations">
-    <li v-if="documentComments.length === 0">
-      <p class="text-center">No elements</p>
-    </li>
+  <ul v-if="showAnnotations" id="anno-list" class="list-group">
     <li
       v-for="comment in documentComments"
       :id="'comment-' + comment.id"
@@ -45,6 +42,7 @@
         :ref="'annocard' + comment.id"
         :comment-id="comment.id"
         @focus="sidebarScrollTo"
+        @new-anno-card="changeSideBarView"
       />
     </li>
 
@@ -90,7 +88,6 @@ export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
   components: {SideCard, AnnoCard, ConfirmModal},
-  emits: ['copy', 'add-edit'],
   inject: {
     documentId: {
       type: Number,
@@ -127,6 +124,7 @@ export default {
       default: () => []
     },
   },
+  emits: ['copy', 'add-edit', 'new-anno-card', 'scroll-to-comment'],
   data() {
     return {
       width: 400,
@@ -281,6 +279,9 @@ export default {
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },
+    changeSideBarView() {
+      this.$emit("new-anno-card");
+    },
     hover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
@@ -313,7 +314,9 @@ export default {
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
-      await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
+      this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
+
+      //await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
       if (this.$refs["annocard" + commentId]) {
         this.$refs["annocard" + commentId][0].putFocus();
@@ -339,7 +342,7 @@ export default {
     },
     async leave() {
       if (this.documentComments.filter(c => c.draft).length > 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           this.$refs.leavePageConf.open(
             "Unsaved Annotations",
             "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",

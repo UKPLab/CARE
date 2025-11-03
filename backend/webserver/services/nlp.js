@@ -161,11 +161,20 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillResults", (data) => {
-            const client = self.getClient(data.clientId)
-            delete data.clientId;
-            if (client) {
-                self.send(client, "skillResults", data);
+            if (data.clientId === 0) {
+                delete data.clientId;
+                this.server.services['BackgroundTaskService'].setResult(data);
+            } else {
+                const client = self.getClient(data.clientId);
+                delete data.clientId;
+                if (client) {
+                    self.send(client, "skillResults", data);
+                }
             }
+        });
+        
+        nlpSocket.on("error", (data) => {
+            this.logger.error("the error happened in the nlp service", data)
         });
 
         nlpSocket.on("error", (data) => {
@@ -256,22 +265,45 @@ module.exports = class NLPService extends Service {
     }
 
     /**
-     * Overwrite method to handle incoming requests
+     * Shared logic for handling skill requests
      * @param client
      * @param data
-     * @return {Promise<void>}
+     * @param {boolean} setClientId if true, the clientId is not set in data, but taken from the client
      */
-    async request(client, data) {
+    async _handleSkillRequest(client, data, setClientId = false) {
         if (this.nlpSocket && this.nlpSocket.connected) {
-            data["clientId"] = client.socket.id;
+            if (!(setClientId && "clientId" in data)) {
+                data["clientId"] = client.socket.id;
+            }
             this.nlpSocket.emit("skillRequest", data);
         } else if (this.skills && this.skills.find(s => this.#hasConfig(s) && s.name === data.name)) {
+            this.logger.info(`The request for skill ${data.name} is sent to the fallback nlp service`);
             await this.send(client, "skillResults", {
                 id: data.id,
                 data: this.skills.find(s => this.#hasConfig(s) && s.name === data.name).config.output.example,
                 fallback: true
             });
         }
+    }
+
+    /**
+     * Overwrite method to handle incoming requests
+     * @param client
+     * @param data
+     * @return {Promise<void>}
+     */
+    async request(client, data) {
+        await this._handleSkillRequest(client, data, false);
+    }
+
+    /**
+     * Overwrite method to handle incoming background requests
+     * @param client
+     * @param data
+     * @return {Promise<void>}
+     */
+    async backgroundRequest(client, data) {
+        await this._handleSkillRequest(client, data, true);
     }
 
     /**

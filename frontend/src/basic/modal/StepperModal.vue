@@ -4,6 +4,7 @@
     name="stepperModal"
     size="lg"
     @hide="$emit('hide')"
+    @close-requested="handleCloseRequest"
   >
     <template #title>
       <slot name="title"/>
@@ -24,6 +25,9 @@
           <template v-if="!!$slots['error']">
             <slot name="error"/>
           </template>
+          <template v-else-if="$slots['step']">
+            <slot name="step" :index="currentStep" :step="steps[currentStep]"/>
+          </template>
           <template v-else-if="$slots['step-' + (currentStep + 1)]">
             <slot :name="'step-' + (currentStep + 1)"/>
           </template>
@@ -43,9 +47,15 @@
           @click="currentStep--"
         />
         <BasicButton
+          v-if="currentStep === 0 && showClose"
+          title="Close"
+          class="btn btn-secondary"
+          @click="close"
+        />
+        <BasicButton
           v-if="currentStep < steps.length - 1"
-          title="Next"
-          class="btn btn-primary"
+          :title="nextText"
+          :class="['btn', currentStep === 0 && nextText && nextText.toLowerCase().includes('cancel') ? 'btn-danger' : 'btn-primary']"
           :disabled="disabled(currentStep)"
           @click="currentStep++"
         />
@@ -89,15 +99,24 @@ export default {
       type: String,
       default: "Submit"
     },
+    nextText: {
+      type: String,
+      default: "Next"
+    },
     validation: {
       type: Array,
       default: () => []
     },
+    showClose: {
+      type: Boolean,
+      default: false
+    },
   },
-  emits: ["stepChange", "submit", 'hide'],
+  emits: ["stepChange", "submit", 'hide', 'close-requested'],
   data() {
     return {
-      currentStep: 0
+      currentStep: 0,
+      _closeRequestHandled: false,
     }
   },
   watch: {
@@ -113,10 +132,20 @@ export default {
       this.reset();
       this.$refs.stepperModal.open();
     },
-    close() {
-      this.$refs.stepperModal.close();
+    handleCloseRequest() {
+      this.$refs.stepperModal.markCloseRequestHandled();
+      this._closeRequestHandled = false;
+      this.$emit('close-requested');
+      this.$nextTick(() => {
+        if (!this._closeRequestHandled) {
+          this.close();
+        }
+      });
     },
-    hide() {
+    markCloseRequestHandled() {
+      this._closeRequestHandled = true;
+    },
+    close() {
       this.$refs.stepperModal.hide();
     },
     show() {

@@ -3,81 +3,106 @@
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
+        text="Assign Group"
+        title="Assign Group"
+        @click="$refs.assignModal.open()"
+      />
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
         text="Publish Reviews"
         title="Publish Reviews"
         @click="$refs.publishModal.open()"
       />
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Manual Import"
-        title="Manual Import"
-        @click="$refs.uploadModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Publish Submissions"
+          title="Publish Submissions"
+          @click="$refs.publishSubmissionModal.open()"
       />
       <BasicButton
-        class="btn-primary btn-sm"
-        title="Import via Moodle"
-        text="Import via Moodle"
-        @click="$refs.importModal.open()"
+          class="btn-secondary btn-sm me-1"
+          text="Manual Import"
+          title="Manual Import"
+          @click="$refs.uploadModal.open()"
       />
+      <BasicButton
+          class="btn-primary btn-sm"
+          title="Import via Moodle"
+          text="Import via Moodle"
+          @click="$refs.importModal.open()"
+      />
+      <BasicButton
+          :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
+          :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+          :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+          @click="preprocessGrades"
+      >
+        <span
+          v-if="isProcessingActive"
+          class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+          <span class="visually-hidden">Processing active</span>
+        </span>
+      </BasicButton>
     </template>
     <template #body>
       <BasicTable
-        :columns="tableColumns"
-        :data="documentsTable"
-        :options="tableOptions"
-        :buttons="tableButtons"
-        @action="action"
+          :columns="tableColumns"
+          :data="submissionTable"
+          :options="tableOptions"
+          :buttons="tableButtons"
+          @action="action"
       />
     </template>
   </Card>
-  <UploadModal
-    ref="uploadModal"
-  />
-  <ConfirmModal ref="deleteConf"/>
-  <ImportModal
-    ref="importModal"
-  />
+  <UploadModal ref="uploadModal" />
+  <ConfirmModal ref="deleteConf" />
+  <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
+  <AssignModal ref="assignModal" />
+  <PublishModal ref="publishSubmissionModal" mode="submission"/>
+  <ApplySkillModal
+      ref="applySkillModal"
+  />
 </template>
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import UploadModal from "./review/UploadModal.vue";
-import ImportModal from "./review/ImportModal.vue";
-import PublishModal from "./review/PublishModal.vue";
+import UploadModal from "./submission/UploadModal.vue";
+import ImportModal from "./submission/ImportModal.vue";
+import PublishModal from "./submission/PublishModal.vue";
+import AssignModal from "./submission/AssignModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import JSZip from "jszip";
+import FileSaver from "file-saver";
+import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
 
 /**
  * Submission list component
  *
- * This component loads the documents for review from the server
- * and provide two ways to import documents: one is via manually importing;
+ * This component loads the submission documents for review from the server
+ * and provide two ways to import submission documents: one is via manually importing;
  * the other is via importing from Moodle API.
- * @author Linyin Huang, Dennis Zyska
+ * @author Linyin Huang, Dennis Zyska, Yiwei Wang
  */
 export default {
-  name: "Submissions",
-  subscribeTable: [{
-    table: "document",
-    filter: [{
-      key: "readyForReview",
-      value: true
-    }],
-    include: [{
-      table: "user",
-      by: "userId",
-    }]
-  }],
+  name: "DashboardSubmission",
+  subscribeTable: [
+    {
+      table: "submission",
+    },
+  ],
   components: {
     UploadModal,
     ImportModal,
     ConfirmModal,
     PublishModal,
+    AssignModal,
     Card,
     BasicTable,
     BasicButton,
+    ApplySkillModal,
   },
   data() {
     return {
@@ -90,26 +115,42 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        {name: "Title", key: "name"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Type", key: "type"},
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Submission ID", key: "extId" },
+        { name: "Group", key: "group", sortable: true },
+        { name: "Validation ID", key: "validationConfigurationId", sortable: true },
+        { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
         {
-          icon: "box-arrow-in-right",
+          icon: "download",
           options: {
             iconOnly: true,
             specifiers: {
               "btn-outline-secondary": true,
             },
           },
-          title: "Access document...",
-          action: "accessDoc",
+          title: "Download submission files",
+          action: "downloadSubmission",
+          stats: {
+            submissionId: "id",
+          },
+        },
+        {
+          icon: "check-square",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          title: "Validate Submission",
+          action: "validateSubmission",
           stats: {
             documentId: "id",
-          }
+          },
         },
         {
           icon: "trash",
@@ -123,31 +164,52 @@ export default {
           action: "deleteDoc",
           stats: {
             documentId: "id",
-          }
+          },
         },
-      ]
+      ],
     };
   },
   computed: {
-    documents() {
-      return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
+    submissions() {
+      return this.$store.getters["table/submission/getAll"];
     },
-    documentsTable() {
-      return this.documents.map((d) => {
-        let newD = {...d};
-        newD.type = d.type === 0 ? "PDF" : "HTML";
-        const user = this.$store.getters["table/user/get"](d.userId)
-        newD.firstName = (user) ? user.firstName : "Unknown";
-        newD.lastName = (user) ? user.lastName : "Unknown";
-        return newD;
+    isProcessingActive() {
+      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      const preprocess = bgTask.preprocess || {};
+      return (
+        preprocess &&
+        preprocess.requests &&
+        typeof preprocess.requests === 'object' &&
+        Object.keys(preprocess.requests).length > 0
+      );
+    },
+    submissionTable() {
+      return this.submissions.map((s) => {
+        const user = this.$store.getters["table/user/get"](s.userId);
+        return {
+          id: s.id,
+          extId: s.extId,
+          firstName: user ? user.firstName : "Unknown",
+          lastName: user ? user.lastName : "Unknown",
+          createdAt: new Date(s.createdAt).toLocaleDateString(),
+          validationConfigurationId: s.validationConfigurationId ?? "-",
+          group: s.group ?? "-",
+        };
       });
     },
+  },
+  mounted() {
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "getBackgroundTask",
+      data: {}
+    });
   },
   methods: {
     action(data) {
       switch (data.action) {
-        case "accessDoc":
-          this.accessDoc(data.params);
+        case "downloadSubmission":
+          this.downloadSubmission(data.params.id);
           break;
         case "deleteDoc":
           this.deleteDoc(data.params);
@@ -158,9 +220,7 @@ export default {
       const studies = this.$store.getters["table/study/getFiltered"]((e) => e.documentId === row.id);
       let warning;
       if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${
-          studies.length !== 1 ? "studies" : "study"
-        }
+        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"}
          running on this document. Deleting it will delete the ${studies.length !== 1 ? "studies" : "study"}!`;
       } else {
         warning = "";
@@ -189,8 +249,103 @@ export default {
         }
       });
     },
-    accessDoc(row) {
-      this.$router.push(`/document/${row.hash}`);
+    preprocessGrades() {
+      this.$refs.applySkillModal.open();
+    },
+    async downloadSubmission(submissionId) {
+      try {
+        // Get all documents for this submission
+        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submissionId);
+
+        if (!docs || docs.length === 0) {
+          this.eventBus.emit("toast", {
+            title: "No documents found",
+            message: "This submission has no associated documents to download",
+            variant: "warning",
+          });
+          return;
+        }
+
+        // Create a ZIP file to package all documents
+        const zip = new JSZip();
+
+        // Get submission info for folder naming
+        const submission = this.$store.getters["table/submission/get"](submissionId);
+        const user = this.$store.getters["table/user/get"](submission.userId);
+        const folderName = `submission_${submission.extId}_${user?.firstName}_${user?.lastName}`;
+
+        // Download each document and add to ZIP
+        for (const doc of docs) {
+          try {
+            // Request document content from server
+            const response = await new Promise((resolve, reject) => {
+              this.$socket.emit("documentGet", {documentId: doc.id}, (res) => {
+                if (res.success) {
+                  resolve(res.data);
+                } else {
+                  reject(new Error(res.message || "Failed to get document"));
+                }
+              });
+            });
+
+            // Determine file extension based on document type
+            let fileExtension;
+            let fileName;
+
+            switch (doc.type) {
+              case 3: // JSON/Config
+                fileExtension = ".json";
+                break;
+              case 4: // ZIP
+                fileExtension = ".zip";
+                break;
+              default:
+                fileExtension = ".pdf";
+            }
+
+            fileName = `${doc.name}${fileExtension}`;
+
+            // Add file to ZIP
+            if (response.file) {
+              if (typeof response.file === "string") {
+                // If it's a string (like JSON), add as text
+                zip.file(`${folderName}/${fileName}`, response.file, {binary: false});
+              } else {
+                // For binary data
+                zip.file(`${folderName}/${fileName}`, response.file, {binary: true});
+              }
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Document download issue",
+                message: `Could not download ${doc.name}`,
+                variant: "warning",
+              });
+            }
+          } catch (error) {
+            this.eventBus.emit("toast", {
+              title: "Download error",
+              message: `Failed to download ${doc.name}: ${error.message}`,
+              variant: "danger",
+            });
+          }
+        }
+
+        zip.generateAsync({type: "blob"}).then((content) => {
+          FileSaver.saveAs(content, `${folderName}.zip`);
+        });
+
+        this.eventBus.emit("toast", {
+          title: "Download complete",
+          message: `Downloaded submission ${submission.extId} with ${docs.length} documents`,
+          variant: "success",
+        });
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: "Download failed",
+          message: error.message,
+          variant: "danger",
+        });
+      }
     },
   },
 };

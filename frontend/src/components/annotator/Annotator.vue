@@ -22,40 +22,32 @@
 
         </div>
         <BasicSidebar
+            ref="basicSidebar"
             v-if="!sidebarDisabled"
             :sidebar-configs="sidebarConfigs"
-            :show="isSidebarVisible"
-            :sidebar-width="sidebarWidth"
+            :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
             :min-sidebar-width="minSidebarWidth"
             @copy="onCopy"
             @sidebar-action="handleButtonAction"
-            @resize="handleResize"
         >
           <template #annotations>
-            <AnnotationSidebar ref="sidebar" />
+            <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
+              <template #content>
+                <AnnotationSidebar ref="sidebar"
+                  @new-anno-card="changeSideBarView"
+                  @scroll-to-comment="scrollToComment"
+                />
+              </template>
+            </SidebarTemplate>
+          </template>
+          <!-- Pass through all additional slots directly to BasicSidebar -->
+          <template v-for="(slot, slotName) in $slots" :key="slotName" #[slotName]>
+            <slot v-if="slotName !== 'default'" :name="slotName"/>
           </template>
         </BasicSidebar>
       </div>
     </div>
-
-    <Teleport to="#topBarNavItems">
-      <li class="nav-item">
-        <TopBarButton
-            v-show="studySessionId && studySessionId !== 0 ? active : true"
-            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
-            class="btn rounded-circle"
-            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
-            @click="toggleSidebar"
-        >
-          <LoadIcon
-              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-              :size="18"
-          />
-        </TopBarButton>
-      </li>
-    </Teleport>
-
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
         <TopBarButton
@@ -106,21 +98,19 @@ import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
-import LoadIcon from "@/basic/Icon.vue";
-import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
+import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
+  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
-    LoadIcon,
+    SidebarTemplate,
     PDFViewer,
-    ExpandMenu,
     AnnotationSidebar,
     Loader,
     TopBarButton,
@@ -137,6 +127,11 @@ export default {
       type: Number,
       required: false,
       default: null
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false
     },
     acceptStats: {
       type: Boolean,
@@ -175,19 +170,11 @@ export default {
       required: false,
       default: null,
     },
-    active: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
-
   },
   data() {
     return {
       downloading: false,
-      isSidebarVisible: true,
-      sidebarIconHighlight: false,
-      sidebarWidth: 400,
+      assessmentViewActive: true,
       maxSidebarWidth: 400,
       minSidebarWidth: 0,
       logScroll: debounce(function () {
@@ -202,32 +189,6 @@ export default {
           })
         }
       }, 500),
-      logHideSidebar: debounce(function () {
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "hideSidebar",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-          }
-        });
-      }
-    }, 500),
-      logResize: debounce(function (windowWidth, sidebarVisible) {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "sidebarResize",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              windowWidth: windowWidth,
-              sidebarVisible: sidebarVisible
-            }
-          });
-        }
-      }, 500)
     }
   },
   computed: {
@@ -237,11 +198,11 @@ export default {
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
       const data = this.$store.getters['table/user_environment/getAll'].filter(
-        e => e.userId === this.userId &&
-          e.documentId === this.documentId &&
-          e.studySessionId === this.studySessionId &&
-          e.studyStepId === this.studyStepId &&
-          e.key === "scroll"
+          e => e.userId === this.userId &&
+              e.documentId === this.documentId &&
+              e.studySessionId === this.studySessionId &&
+              e.studyStepId === this.studyStepId &&
+              e.key === "scroll"
       );
       return data[0] || null;
     },
@@ -273,38 +234,38 @@ export default {
     },
     openSessionIds() {
       return this.$store.getters["table/study_session/getAll"].filter(
-        session => {
-          const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.closed === null;
-        }
+          session => {
+            const study = this.$store.getters["table/study/get"](session.studyId);
+            return study && study.closed === null;
+          }
       ).map(session => session.id);
     },
     annotations() {
       const annotations = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
-            const a_noanchor = a.anchors === null || a.anchors.length === 0;
-            const b_noanchor = b.anchors === null || b.anchors.length === 0;
+        const a_noanchor = a.anchors === null || a.anchors.length === 0;
+        const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-            if (a_noanchor || b_noanchor) {
-              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-            }
+        if (a_noanchor || b_noanchor) {
+          return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+        }
 
-            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-          });
+        return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+      });
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return annotations.filter(annotation =>
-          !this.openSessionIds.includes(annotation.studySessionId)
+            !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
         return annotations;
       }
     },
     comments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](c => 
+      const comments = this.$store.getters["table/comment/getFiltered"](c =>
           c.documentId === this.documentId && c.parentCommentId === null
-        );
+      );
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return comments.filter(comment =>
-          !this.openSessionIds.includes(comment.studySessionId)
+            !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
         return comments;
@@ -312,7 +273,7 @@ export default {
     },
     sidebarButtons() {
       const buttons = [];
-      
+
       // Study Comments Toggle Button
       if (this.studySessionId === null && this.numStudyComments > 0) {
         buttons.push({
@@ -322,7 +283,7 @@ export default {
           action: 'toggleStudyComments'
         });
       }
-      
+
       // NLP Toggle Button
       if (this.studySessionId && this.studySessionId !== 0 ? this.active && this.nlpEnabled : this.nlpEnabled) {
         buttons.push({
@@ -333,12 +294,12 @@ export default {
           action: 'toggleNlp'
         });
       }
-      
+
       // Download Button
       if (this.studySessionId && this.studySessionId !== 0 ? this.active : true) {
-        const canDownload = this.annotations.length + this.comments.length > 0 && 
-                           !this.downloading && 
-                           (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
+        const canDownload = this.annotations.length + this.comments.length > 0 &&
+            !this.downloading &&
+            (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
         buttons.push({
           id: 'download-annotations',
           icon: 'download',
@@ -347,19 +308,8 @@ export default {
           action: 'downloadAnnotations'
         });
       }
-      
+
       return buttons;
-    },
-    sidebarConfigs() {
-      return {
-        tabs: {
-          'annotations': {
-            title: 'Annotations',
-            icon: 'pencil-square',
-            buttons: this.sidebarButtons
-          }
-        }
-      };
     },
   },
   watch: {
@@ -389,7 +339,6 @@ export default {
     }
   },
   mounted() {
-    window.addEventListener('resize', this.handleResize);
     // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
     // this.maxSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     // this.sidebarWidth = this.$store.getters["settings/getValue"]("sidebar.width") || this.minSidebarWidth;
@@ -408,12 +357,11 @@ export default {
       }
     });
 
-
     // init component
     this.load();
 
     // scrolling
-   this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
+    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     // Scroll the viewer container to the saved scroll position
     this.$nextTick(async () => {
       if (this.savedScroll) {
@@ -426,11 +374,10 @@ export default {
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
-    window.removeEventListener('resize', this.handleResize);
-    
-     const currentPage = this.getCurrentPageNumber();
-     const payload = JSON.stringify({ page: currentPage, value: this.$refs.viewer.scrollTop });
-     if (!this.savedScroll) {
+
+    const currentPage = this.getCurrentPageNumber();
+    const payload = JSON.stringify({page: currentPage, value: this.$refs.viewer.scrollTop});
+    if (!this.savedScroll) {
       this.$socket.emit("appDataUpdate", {
         table: "user_environment",
         data: {
@@ -453,8 +400,17 @@ export default {
     }
   },
   methods: {
+    scrollToComment(offset) {
+      this.$refs.basicSidebar.scrollTo(offset);
+    },
+
+    changeSideBarView() {
+      if (this.$refs.basicSidebar) {
+        this.$refs.basicSidebar.changeView('annotations');
+      }
+    },
     handleButtonAction(data) {
-      switch(data.action) {
+      switch (data.action) {
         case 'toggleStudyComments':
           this.toggleStudyComments();
           break;
@@ -470,7 +426,7 @@ export default {
     },
     toggleStudyComments() {
       this.setSetting({
-        key: 'annotator.showAllComments', 
+        key: 'annotator.showAllComments',
         value: !this.showAll
       });
     },
@@ -479,7 +435,7 @@ export default {
       const container = this.$refs.viewer;
       await this.delay(delayMs);
       if (!this.isPdfPageLoaded(parseInt(data.page))) {
-        scrollToPage(container, data.page, { align: 'start', offset: 0 });
+        scrollToPage(container, data.page, {align: 'start', offset: 0});
         await this.delay(300);
       }
       await scrollElement(container, parseFloat(data.value));
@@ -503,28 +459,12 @@ export default {
       });
       return bestIndex + 1; // pages are 1-based
     },
-     isPdfPageLoaded(pageNumber) {
-        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
-        const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
-        const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
-        const loaded = (visible && hasDimensions);
-        return loaded;
-    },
-    handleResize(data) {
-      if (data.width <= 900) {
-        this.isSidebarVisible = false;
-        this.sidebarIconHighlight = true;
-        setTimeout(() => {
-          this.sidebarIconHighlight = false;
-        }, 1000);
-        this.logHideSidebar();
-      }
-      else if (data.width > 900) {
-        this.isSidebarVisible = true;
-      }
-      
-      // Log resize event with debouncing
-      this.logResize(data.width, this.isSidebarVisible);
+    isPdfPageLoaded(pageNumber) {
+      const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+      const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
+      const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
+      const loaded = (visible && hasDimensions);
+      return loaded;
     },
     ...mapMutations({
       setSetting: "settings/set",
@@ -542,10 +482,6 @@ export default {
         key: 'annotator.nlp.activated',
         value: newNlpActive
       })
-    },
-    toggleSidebar() {
-      this.isSidebarVisible = !this.isSidebarVisible;
-      this.sidebarWidth = this.isSidebarVisible ? 400 : 0;
     },
     scrollActivity() {
       this.logScroll();
@@ -588,7 +524,10 @@ export default {
           await scrollElement(scrollContainer, offset);
         }
       } else {
-        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, { align: 'start', maxDuration: 10 });
+        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, {
+          align: 'start',
+          maxDuration: 10
+        });
         await this._waitForAnnotationToBeAnchored(annotation, 2000);
         if (annotation.anchors === null) {
           console.error('[scrollTo] No anchors found after paging', annotation);
@@ -613,6 +552,9 @@ export default {
       }
       const highlight = anchor.highlights[0];
       return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
+    },
+    async leave() {
+      return await this.$refs.sidebar.leave();
     },
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();
@@ -661,9 +603,6 @@ export default {
         });
       }
     },
-    async leave() {
-      return await this.$refs.sidebar.leave();
-    },
     downloadAnnotations() {
 
       const attributesToDelete = [
@@ -679,10 +618,10 @@ export default {
         "userId"
       ];
       const annotations = this.annotations
-        .filter(a => a.studySessionId === this.studySessionId)
-        .map(a => {
-          return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-        });
+          .filter(a => a.studySessionId === this.studySessionId)
+          .map(a => {
+            return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
+          });
       // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {
@@ -705,7 +644,7 @@ export default {
     onCopy() {
       const selection = window.getSelection();
       const copiedText = selection ? selection.toString() : '';
-      
+
       if (this.acceptStats && copiedText.trim() !== '') {
         this.$socket.emit("stats", {
           action: "textCopied",

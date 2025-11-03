@@ -43,7 +43,7 @@
                       :model-value="currentData[index].configuration"
                       :study-step-id="choice.id"
                       :step-number="choice.stepNumber"
-                      :document-id="currentData.find((entry) => entry.id === choice.id)?.documentId"
+                      :document-id="getResolvedDocumentId(choice.id)"
                       :workflow-steps="workflowSteps"
                       @update:model-value="(configData) => handleConfigUpdate(configData, choice.id)"
                     />
@@ -62,7 +62,7 @@
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
+import { defineAsyncComponent } from "vue";
 
 
 /**
@@ -72,7 +72,7 @@ import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
  */
 export default {
   name: "FormChoice",
-  components: { FormElement, FormDefault, FormSelect, ConfigurationModal },
+  components: { FormElement, FormDefault, FormSelect, ConfigurationModal: defineAsyncComponent(() => import("@/basic/modal/ConfigurationModal.vue")) },
   inject: {
     formData: {
       default: () => null,
@@ -120,8 +120,14 @@ export default {
         });
 
         // Exclude items based on `disabled` conditions
+        // Override: if a workflow step defines a configuration, it should be selectable
+        // even when it references another step via `workflowStepDocument`.
         const validChoices = filteredChoices.filter((item) => {
           if (choicesConfig.disabled) {
+            // If this step provides its own configuration, keep it visible/selectable
+            if (item && item.configuration && Object.keys(item.configuration || {}).length > 0) {
+              return true;
+            }
             return choicesConfig.disabled.every((rule) => {
               return !(rule.type === "disabledItems" && item[rule.key] !== rule.value);
             });
@@ -199,6 +205,24 @@ export default {
     },
   },
   methods: {
+    // Resolve the effective document for a workflow step.
+    // Prefers linked document via workflowStepDocument, falls back to step's own document.
+    getResolvedDocumentId(workflowStepId) {
+      // If this step links its document to another workflow step, resolve that first
+      const step = this.workflowSteps.find((s) => s.id === workflowStepId);
+      if (step && step.workflowStepDocument) {
+        const sourceEntry = this.currentData.find((entry) => entry.id === step.workflowStepDocument);
+        const linkedDocId = sourceEntry?.documentId || sourceEntry?.parentDocumentId || null;
+        if (linkedDocId) return Number(linkedDocId);
+      }
+
+      // Fallback: use explicitly selected document for this step (if any)
+      const currentEntry = this.currentData.find((entry) => entry.id === workflowStepId);
+      const directDocId = currentEntry?.documentId || currentEntry?.parentDocumentId || null;
+      if (directDocId) return Number(directDocId);
+
+      return null;
+    },
     initializeCurrentData() {
       this.currentData = this.choices.map((c) => {
         return this.fields.reduce((acc, field) => {
