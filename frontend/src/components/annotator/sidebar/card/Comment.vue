@@ -9,7 +9,7 @@
           <LoadIcon
             :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
             :size="12"
-            @click="collapseComment = !collapseComment"
+            @click="collapseComment = !collapseComment; maxComments = defaultNumComments"
           />
 
           {{ comment.creator_name }}
@@ -116,7 +116,7 @@
               :props="$props"
               icon="reply-fill"
               title="Reply"
-              @click="reply"
+              @click="reply(); maxComments = numChildComments+1"
             />
             <VoteButtons :comment="comment"/>
             <SidebarButton
@@ -141,7 +141,7 @@
     </div>
     <span v-if="level >= 1">
       <span
-        v-for="c in childComments"
+        v-for="c in displayedComments"
         :key="c.id"
       >
         <hr class="hr">
@@ -150,6 +150,30 @@
           :level="level + 1"
         />
     </span>
+    <div class="btn-group">
+      <button
+        class="btn btn-light btn-sm"
+        v-if="showExtenderButton"
+        @click="maxComments+=5"
+      >
+        Show more
+      </button>
+      <button
+        class="btn btn-light btn-sm"
+        v-if="!showExtenderButton && numChildComments > defaultNumComments"
+        @click="maxComments=defaultNumComments"
+      >
+        Show less
+      </button>
+      <button
+        class="btn btn-light btn-sm"
+        v-if="maxComments > defaultNumComments"
+        @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
+      >
+        Hide replies
+      </button>
+    </div>
+    
     </span>
   </div>
 </template>
@@ -226,7 +250,9 @@ export default {
       awaitingNlpResult: false,
       editMode: false,
       collapseComment: true,
-      listeningToFocus: false
+      listeningToFocus: false,
+      maxComments: 1,
+      defaultNumComments: 1,
     }
   },
   computed: {
@@ -259,6 +285,18 @@ export default {
             return 0;
           }
         );
+    },
+    numChildComments(){
+      if (this.childComments){
+        return this.childComments.length;
+      }
+      return 0;
+    },
+    displayedComments() {
+      return this.childComments.slice(0, this.maxComments);
+    },
+    showExtenderButton() {
+      return this.numChildComments > this.maxComments;
     },
     nlp_active() {
       const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
@@ -472,6 +510,7 @@ export default {
 .comment {
   color: #666666;
   font-style: normal;
+  box-shadow: 2px, 3px lightgrey;
 }
 
 .blockquote {
