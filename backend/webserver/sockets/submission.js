@@ -23,9 +23,6 @@ class SubmissionSocket extends Socket {
     async assignGroupToSubmissions(data, options = {}) {
         const { group, isCopied, submissionIds, additionalSettings } = data;
         const transaction = options.transaction;
-
-        await this.models["submission"].assignGroup(submissionIds, group, additionalSettings, { transaction });
-
         if (isCopied) {
             // Copy submissions after group assignment (copies will inherit the group)
             const copiedResults = [];
@@ -37,13 +34,14 @@ class SubmissionSocket extends Socket {
                     throw new Error(`Failed to copy submission with ${submissionId}: ${error.message}`);
                 }
             }
+            const copiedSubmissionIds = copiedResults.map(({copiedSubmission}) => copiedSubmission.id);
+            await this.models["submission"].assignGroup(copiedSubmissionIds, group, additionalSettings, { transaction });
             return {
                 success: true,
                 copiedSubmissions: copiedResults,
-                originalSubmissionsUpdated: submissionIds.length,
-                copiedSubmissionsCreated: copiedResults.length,
             };
         } else {
+            await this.models["submission"].assignGroup(submissionIds, group, additionalSettings, { transaction });
             return {
                 success: true,
                 submissionsUpdated: submissionIds.length,

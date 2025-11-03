@@ -93,7 +93,7 @@ export default {
           required: true,
           options: [
             {
-              label: "Copy Submissions",
+              label: "Create copies of the selected submissions with the specified group number.",
               value: true,
             },
           ],

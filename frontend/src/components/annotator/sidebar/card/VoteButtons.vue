@@ -28,6 +28,7 @@ import SidebarButton from "./Button.vue"
  */
 export default {
   name: "VoteButtons",
+  subscribeTable: ["comment_vote"],
   components: {
     SidebarButton,
   },

@@ -88,7 +88,6 @@ export default {
       if (!this.studySession) {
         return null;
       }
-      console.log("StudySession: ", this.studySession); 
       return this.$store.getters["table/study/get"](this.studySession.studyId);
     },
     anonymize() {
@@ -183,9 +182,6 @@ export default {
             message: res.message,
             variant: "danger",
           });
-        } else {
-          // Notify parent container to switch to Annotator sidebar if currently in Assessment
-          this.eventBus.emit('annotator:switchToSidebar');
         }
       });
 

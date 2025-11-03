@@ -46,20 +46,21 @@ key ``static autoTable = true;``. It is also possible to publish a complete tabl
    For subscription setup and how socket refreshes update the store, see
    :doc:`Data Transfer <../backend/data_transfer>`.
 
-Loading Data for Auto Tables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Live Updates via Subscriptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To load data for auto tables, we provide a plugin that automatically loads the data from the backend. To use the plugin,
-you have to add a simple option ``fetchData`` with a list of the tables to the component definition.
-For live updates without manual reloads, combine with the :doc:`SubscribeTable plugin <../plugins>` (``subscribeTable`` option).
+For **real-time** updates (no manual reload), components can subscribe to auto tables.
+Use the frontend plugin option ``subscribeTable`` to establish a socket subscription. On mount,
+the plugin emits ``subscribeAppData``; on unmount, it sends ``unsubscribeAppData``. The backend
+then broadcasts ``<tableName>Refresh`` events that update the Vuex module.
 
 .. code-block:: javascript
 
-    export default {
-        name: "MyComponent",
-        fetchData: ["<auto_table_name>"],
-        ...
-    }
+   export default {
+       name: "MyComponent",
+       subscribeTable: ["document", "study"],  // keep this table live-synced
+       // ...
+   }
 
 Supported Getters
 ~~~~~~~~~~~~~~~~~
@@ -77,26 +78,6 @@ The following getters are supported for auto tables:
 - ``hasFields``: Returns true if the table has a fields definition defined in the backend (used for :doc:`basic/form`).
 - ``getFields``: Returns the fields definition defined in the backend (used for :doc:`basic/form`), if available (check before with hasFields).
 - ``refreshCount``: Returns the count how often the data was refreshed from the backend.
-
-Live Updates via Subscriptions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For **real-time** updates (no manual reload), components can subscribe to auto tables.
-Use the frontend plugin option ``subscribeTable`` to establish a socket subscription. On mount,
-the plugin emits ``subscribeAppData``; on unmount, it sends ``unsubscribeAppData``. The backend
-then broadcasts ``<tableName>Refresh`` events that update the Vuex module.
-
-.. code-block:: javascript
-
-   export default {
-       name: "MyComponent",
-       subscribeTable: ["document", "study"],  // keep this table live-synced
-       // ...
-   }
-
-.. tip::
-   If your project still uses ``fetchData`` for initial loads, you can use **both**:
-   ``fetchData`` for the first snapshot and ``subscribeTable`` for ongoing updates.
 
 For the full backend–frontend pipeline (sockets, broadcasts, refresh logic), see :doc:`Data Transfer <../backend/data_transfer>`.
 

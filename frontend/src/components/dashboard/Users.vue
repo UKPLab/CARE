@@ -76,6 +76,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "DashboardUsers",
+  subscribeTable: ["user"],
   components: {
     Card,
     BasicTable,
