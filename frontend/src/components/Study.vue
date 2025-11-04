@@ -232,7 +232,7 @@ export default {
       return services.some(s => s && s.type === 'nlpRequest');
     },
     studyStepHasAssessment() {
-      return !!this.currentStep.configuration.settings.configurationId;
+      return !!this.currentStep?.configuration?.settings?.configurationId;
     },
     studySession() {
       if (this.studySessionId !== 0) {
@@ -311,9 +311,11 @@ export default {
     },
     currentStudyStepId() {
       if (this.readOnlyComputed && this.firstStep) {
+        console.log("Using firstStep.id:", this.firstStep.id);
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
       }
       if (this.studySession && this.studySession.studyStepId) {
+        console.log("Using studySession.studyStepId:", this.studySession.studyStepId);
         return this.studySession.studyStepId;
       }
       return null;
