@@ -136,7 +136,12 @@ export default {
     },
     stepValid() {
       const step1Valid = !!this.selectedSkill && this.hasValidInputMappings && this.hasTableBasedParameter;
-      const step2Valid = this.hasTableBasedParameter && this.inputFilesValid && this.hasFilesSelected && this.hasInteractedWithFiles;
+      
+      let step2Valid = false;
+      if (this.hasTableBasedParameter) {
+        const fileCount = this.getSelectedFileCount();
+        step2Valid = fileCount > 0;
+      }
       
       const steps = [step1Valid, step2Valid];
       
@@ -197,6 +202,19 @@ export default {
     },
   },
   methods: {
+    getSelectedFileCount() {
+      if (!this.selectedFiles || typeof this.selectedFiles !== 'object') {
+        return 0;
+      }
+      
+      let count = 0;
+      for (const files of Object.values(this.selectedFiles)) {
+        if (Array.isArray(files)) {
+          count += files.length;
+        }
+      }
+      return count;
+    },
     hasMappingsChanged(newMappings, oldMappings) {
       const newKeys = Object.keys(newMappings);
       const oldKeys = Object.keys(oldMappings);
