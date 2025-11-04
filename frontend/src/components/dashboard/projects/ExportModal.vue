@@ -309,8 +309,9 @@ export default {
           switch (step.stepType) {
             case 1: // Annotator
               // download inline annotations
-              step_folder.file('annotations.json', JSON.stringify(this.annotations.filter(ann => ann.studyStepId === step.id), null, 2));
-              relevantComments = this.comments.filter(comm => comm.studyStepId === step.id);
+              step_folder.file('annotations.json', JSON.stringify(this.annotations.filter(
+                  ann => ann.studyStepId === step.id && ann.studySessionId === session.id), null, 2));
+              relevantComments = this.comments.filter(comm => comm.studyStepId === step.id && comm.studySessionId === session.id);
               step_folder.file('comments.json', JSON.stringify(relevantComments, null, 2));
               step_folder.file('comment_votes.json', JSON.stringify(this.commentVotes.filter(vote => relevantComments.map(comm => comm.id).includes(vote.commentId)), null, 2));
 

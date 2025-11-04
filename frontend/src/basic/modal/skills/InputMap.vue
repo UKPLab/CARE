@@ -26,6 +26,7 @@
  * @author Manu Sundar Raj Nandyal
  */
 import FormSelect from "@/basic/form/Select.vue";
+import deepEqual from "deep-equal";
 
 export default {
   name: "InputMap",

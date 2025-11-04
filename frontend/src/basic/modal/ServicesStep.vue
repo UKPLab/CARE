@@ -19,7 +19,7 @@
               v-if="skill.skillName"
               :skill-name="skill.skillName"
               :study-based="true"
-              :model-value="modelValue.services[index]?.inputs || {}"
+              :model-value="modelValue.services[index].inputs"
               :study-step-id="studyStepId"
               :workflow-steps="workflowSteps"
               :current-stepper-step="currentStepperStep"
@@ -85,7 +85,7 @@ export default {
   },
   data() {
     return {
-      selectedSkills: this.modelValue.services.map((service) => {
+      selectedSkills: this.modelValue?.services?.map((service) => {
           // Handle update case
           if (service.skill) {
             return {
@@ -189,10 +189,10 @@ export default {
       Object.entries(mappingData).forEach(([input, source]) => {
         if (source && source.value) {
           dataInput[input] = {
-            value: parseInt(source.value, 10),
-            stepId: source.stepId,
+            value: source.value,
             name: source.name,
-            dataSource: source.value,
+            stepId: source.stepId,
+            //dataSource: source.value,
           };
         }
       });
