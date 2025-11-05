@@ -374,7 +374,6 @@ export default {
       let payload = input || {};
       if (skill === 'grading_expose') {
           payload = await this.buildGradingExposePayloadFromSpec(stepconfig);
-          console.log('payload', payload);
           const hasPdf = payload?.submission && payload.submission.pdf;
           if (!hasPdf) {
             delete this.requests[requestId];
@@ -385,7 +384,6 @@ export default {
           }
         } else if (skill === 'generating_feedback') {
           payload = await this.buildGeneratingFeedbackPayloadFromSpec(stepconfig);
-          console.log('payload', payload);
           const hasPdf = payload?.submission && payload.submission.pdf;
           const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
           if (!hasPdf || !hasGradingResults) {

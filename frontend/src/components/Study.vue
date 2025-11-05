@@ -313,11 +313,9 @@ export default {
     },
     currentStudyStepId() {
       if (this.readOnlyComputed && this.firstStep) {
-        console.log("Using firstStep.id:", this.firstStep.id);
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
       }
       if (this.studySession && this.studySession.studyStepId) {
-        console.log("Using studySession.studyStepId:", this.studySession.studyStepId);
         return this.studySession.studyStepId;
       }
       return null;
