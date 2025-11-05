@@ -1,16 +1,22 @@
 {
-  "version": "0.0.1",
   "name": "Feedback-Bewertungskonfiguration",
   "description": "Bewertungskriterien für Feedbackqualität",
+  "version": "0.0.1",
   "type": "assessment",
   "rubrics": [
     {
       "name": "Form und sprachliche Qualität",
+      "code": "",
       "description": "Form, Struktur, Sprache und Ton des Feedbacks",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 4,
       "criteria": [
         {
           "name": "Zusammenfassung vorhanden",
+          "description": "Die prägnante Darstellung spiegelt ein Verständnis der Leistung wider.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 2,
           "scoring": [
             { "points": 0, "description": "Keine Zusammenfassung vorhanden oder spiegelt das Verständnis nicht wider" },
@@ -20,17 +26,31 @@
         },
         {
           "name": "Klarheit (Clarity)",
+          "description": "Klarheit in Bezug auf die Gesamtstruktur.",
           "function": "auto_grading",
           "maxPoints": 2,
+          "minPoints": 0,
           "scoring": [
             { "points": 0, "description": "Feedback unklar, unzusammenhängend, schwer nachvollziehbar" },
             { "points": 1, "description": "Weitgehend klar, aber ohne konkrete Verweise" },
             { "points": 2, "description": "Klar, gut strukturiert, leicht verständlich, mit präzisen Verweisen" }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "name": "Sprache",
+      "code": "sprache",
+      "description": "Bewertung der Sprachqualität und des Tons.",
+      "calculation": "sum",
+      "minPoints": 0,    
+      "maxPoints": 1,
+      "criteria": [
         {
           "name": "Sprache",
+          "description": "Accuracy and correctness of language used",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Viele sprachliche Fehler (z. B. falsches Tempus, falsche Personalpronomen)" },
@@ -39,7 +59,9 @@
         },
         {
           "name": "Ton",
+          "description": "Bewertet die Respekt, die Klarheit und die Konstruktivität des Feedbacks.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 2,
           "scoring": [
             { "points": 0, "description": "Unangemessen, wertend, destruktiv oder persönlich" },
@@ -48,14 +70,20 @@
           ]
         }
       ]
-    },
+    }, 
     {
       "name": "Feed Up (Where am I going?)",
+      "code": "feed_up",
       "description": "Informationen über Lernziele und Erfolgskriterien",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 4,
       "criteria": [
         {
           "name": "Lernziele",
+          "description": "Misst die Klarheit, die Spezifität und die Anleitung der Lernziele.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 2,
           "scoring": [
             { "points": 0, "description": "Keine Lernziele, unklar" },
@@ -65,7 +93,9 @@
         },
         {
           "name": "Erfolgskriterien",
+          "description": "Misst die Klarheit und Spezifität der Erfolgskriterien für das Erreichen von Lernzielen.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 2,
           "scoring": [
             { "points": 0, "description": "Keine Erfolgskriterien oder vage" },
@@ -77,11 +107,17 @@
     },
     {
       "name": "Feed Back (How am I going?)",
+      "code": "feed_back",
       "description": "Informationen zum aktuellen Leistungsstand",
+      "calculation": "min",
+      "minPoints": 0,
+      "maxPoints": 4,
       "criteria": [
         {
           "name": "Knowledge of result",
+          "description": "Informationen darüber, ob die Aufgabe gelöst wurde oder nicht.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Keine Information, ob die Aufgabe gelöst wurde" },
@@ -90,7 +126,9 @@
         },
         {
           "name": "Knowledge of correct response",
+          "description": "Informationen zur richtigen Antwort oder Lösung",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Keine Information zur richtigen Antwort" },
@@ -109,7 +147,9 @@
         },
         {
           "name": "Self Feedback",
+          "description": "Selbst-Feedback (z. B. Lob oder Anerkennung) ist nicht verfügbar oder nur in Kombination mit Lernstrategien oder Selbstregulation.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Self-Feedback vorhanden, aber nicht mit Task/Process kombiniert" },
@@ -120,11 +160,17 @@
     },
     {
       "name": "Feed Forward (Where to next?)",
+      "code": "feed_forward",
       "description": "Hinweise zur Weiterarbeit und Selbstregulation",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 2,
       "criteria": [
         {
           "name": "Knowledge about process/self regulation",
+          "description": "Wissen darüber, wie die Aufgabe zu bearbeiten ist, oder über die Selbstregulation.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Keine Hinweise, keine Ansätze zur Selbstüberwachung" },
@@ -133,7 +179,9 @@
         },
         {
           "name": "Lernkompetenz (Learning Skills)",
+          "description": "Informationen darüber, wie man Lernfähigkeiten entwickelt oder verbessert.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Keine Informationen zur Verbesserung von Lernfähigkeiten" },
@@ -144,11 +192,17 @@
     },
     {
       "name": "Content Quality",
+      "code": "content_quality",
       "description": "Korrektheit, Umsetzbarkeit und Argumentation",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 6,
       "criteria": [
         {
           "name": "Korrektheit",
+          "description": "Bewertet die Genauigkeit und Korrektheit des Feedback-Inhalts.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 2,
           "scoring": [
             { "points": 0, "description": "Inhalt mit erheblichen Mängeln" },
@@ -158,7 +212,9 @@
         },
         {
           "name": "Umsetzbarkeit",
+          "description": "Beurteilt, ob das Feedback klare und spezifische Anweisungen zur Verbesserung liefert.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 2,
           "scoring": [
             { "points": 0, "description": "Keine konkreten Handlungsanweisungen, schwer umsetzbar" },
@@ -168,7 +224,9 @@
         },
         {
           "name": "Argumentation",
+          "description": "Bewertet die Qualität der Argumentation und der Beweise/Belege, die im Feedback geliefert werden.",
           "function": "auto_grading",
+          "minPoints": 0,
           "maxPoints": 1,
           "scoring": [
             { "points": 0, "description": "Aussagen ohne Belege, oberflächlich" },
@@ -179,11 +237,18 @@
     },
     {
       "name": "Fehler in Feedback",
+      "code": "errors",
       "description": "Fehlerarten im Feedback (Abzüge)",
+      "calculation": "max",
+      "defaultPoints": 4,
+      "minPoints": 0,
+      "maxPoints": 4,
       "criteria": [
         {
           "name": "Vernachlässigung",
+          "description": "Beurteilt, ob wichtige Details übersehen wurden.",
           "function": "manual_grading",
+          "minPoints": -1,
           "maxPoints": -1,
           "scoring": [
             { "points": 0, "description": "Alle wichtigen Details berücksichtigt" },
@@ -192,7 +257,9 @@
         },
         {
           "name": "Vage Kritik",
+          "description": "Bewertet die Spezifität und Klarheit der vorgelegten Kritik.",
           "function": "manual_grading",
+          "minPoints": -1,
           "maxPoints": -1,
           "scoring": [
             { "points": 0, "description": "Kritik spezifisch" },
@@ -201,7 +268,9 @@
         },
         {
           "name": "Außerhalb des Umfangs",
+          "description": "Beurteilt, ob Vorschläge im vorgesehenen Rahmen bleiben.",
           "function": "manual_grading",
+          "minPoints": -1,
           "maxPoints": -1,
           "scoring": [
             { "points": 0, "description": "Vorschläge im Rahmen" },
@@ -210,7 +279,9 @@
         },
         {
           "name": "Fehlende Referenz",
+          "description": "Beurteilt, ob Vorschläge durch eine Begründung oder Quellenangaben/Referenzen gestützt werden.",
           "function": "manual_grading",
+          "minPoints": -1,
           "maxPoints": -1,
           "scoring": [
             { "points": 0, "description": "Methoden mit Begründung/Referenzen" },
@@ -219,7 +290,9 @@
         },
         {
           "name": "Widerspruch",
+          "description": "Beurteilt, ob das Feedback konsistent und widerspruchsfrei ist.",
           "function": "manual_grading",
+          "minPoints": -1,
           "maxPoints": -1,
           "scoring": [
             { "points": 0, "description": "Feedback konsistent" },
