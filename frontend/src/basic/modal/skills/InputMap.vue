@@ -80,6 +80,7 @@ export default {
   data() {
     return {
       inputMappings: {},
+      isUpdatingFromWithin: false,
     };
   },
   computed: {
@@ -186,9 +187,40 @@ export default {
       immediate: true,
     },
     modelValue: {
-      handler(newValue) {
-        if (newValue && typeof newValue === 'object') {
-          this.inputMappings = { ...newValue };
+      handler(newValue, oldValue) {
+        // Prevent loops: if we're currently updating from within, skip
+        // Check if old and new values are deeply equal
+        if (this.isUpdatingFromWithin || deepEqual(oldValue, newValue)) {
+          return;
+        }
+
+        // If modelValue is empty object or null, reset inputMappings to empty
+        if (!newValue || Object.keys(newValue).length === 0) {
+          this.inputMappings = {};
+          return;
+        }
+        
+        if (typeof newValue === 'object' && Object.keys(newValue).length > 0) {
+          // Handle if newValue is an array (old format)
+          if (Array.isArray(newValue)) {
+            const mappings = {};
+            newValue.forEach(item => {
+              if (item.input) {
+                mappings[item.input] = {
+                  value: item.dataSource,
+                  name: item.name,
+                  stepId: item.stepId,
+                  // Additional properties (if exists)
+                  requiresTableSelection: item.requiresTableSelection,
+                  tableType: item.tableType,
+                  configId: item.configId,
+                };
+              }
+            });
+            this.inputMappings = mappings;
+          } else {
+            this.inputMappings = { ...newValue };
+          }
         }
       },
       immediate: true,
@@ -214,6 +246,8 @@ export default {
         .map(entry => ({ value: `${entry.id}`, name: `<configuration> ${entry.name}`, stepId: stepIndex }));
     },
     updateMapping(input, source) {
+      this.isUpdatingFromWithin = true;
+      
       if (source && source.requiresTableSelection) {
         Object.keys(this.inputMappings).forEach(paramName => {
           if (paramName !== input && this.inputMappings[paramName] && this.inputMappings[paramName].requiresTableSelection) {
@@ -226,7 +260,12 @@ export default {
         ...this.inputMappings,
         [input]: source
       };
+      
       this.$emit('update:modelValue', { ...this.inputMappings });
+      
+      this.$nextTick(() => {
+        this.isUpdatingFromWithin = false;
+      });
     },
     /**
      * Construct and get all the available data sources up to the stepId

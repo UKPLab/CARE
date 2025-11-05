@@ -113,9 +113,8 @@ export default {
               return paramName;
             }
           }
-          
-          return null;
         }
+        return null;
     },
     stepperSteps() {
       const baseSteps = [{ title: 'Select Skill' }, { title: 'Select Files' }];
