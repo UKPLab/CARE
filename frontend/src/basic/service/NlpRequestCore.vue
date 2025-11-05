@@ -132,10 +132,8 @@ export default {
               service: 'NLPService',
               requestId: requestId
             });
-            if (this.requests && this.requests[requestId]) {
-              delete this.requests[requestId];
-            }
-            if (!this.requests || Object.keys(this.requests).length === 0) {
+            delete this.requests[requestId];
+            if (Object.keys(this.requests).length === 0) {
               this.waiting = false;
               this.$emit('complete');
               if (this.loadingOnly && this.autoCloseOnComplete) {
@@ -163,6 +161,11 @@ export default {
       return;
     }
     if (this.configuration && Array.isArray(this.configuration?.services)) {
+      const hasNlpServices = this.configuration.services.some(s => s?.type === 'nlpRequest');
+      if (!hasNlpServices) {
+        this.waiting = false;
+        return;
+      }
       if (this.loadingOnly) {
         for (const service of this.configuration.services) {
           if (service.type === 'nlpRequest') {
@@ -171,23 +174,25 @@ export default {
             await this.request(skill, inputs, ("service_" + name));
           }
         }
+        // If all requests were skipped (data already exists), set waiting to false
+        if (Object.keys(this.requests).length === 0) {
+          this.waiting = false;
+        }
       }
-    }
-    // Ensure waiting is false when no NLP services are found
-    if (!this.configuration?.services?.some(s => s?.type === 'nlpRequest')) {
+    } else {
       this.waiting = false;
     }
   },
   methods: {
     // Efficient resolution helpers based on step configuration inputs
     resolveConfigContentFromSpec(spec) {
-      const raw = (spec && typeof spec === 'object' && ('dataSource' in spec)) ? spec.dataSource : spec;
+      const raw = (spec && typeof spec === 'object') ? spec.value : spec;
       const configId = Number.isFinite(raw) ? raw : parseInt(raw, 10);
       if (!Number.isFinite(configId)) return {};
       return this.configContentById(configId);
     },
     async buildSubmission(spec) {
-      const raw = (spec && typeof spec === 'object' && ('dataSource' in spec)) ? spec.dataSource : spec;
+      const raw = (spec && typeof spec === 'object') ? spec.value : spec;
       const startDocId = Number.isFinite(raw) ? raw : parseInt(raw, 10);
       if (!Number.isFinite(startDocId)) return {};
       const base64 = await this.fetchBinaryAsBase64(startDocId);
@@ -248,7 +253,7 @@ export default {
       if (stepconfig && stepconfig.grading_results) {
         const map = stepconfig.grading_results;
         const stepIndex = Number(map.stepId);
-        const key = map.dataSource;
+        const key = (map && typeof map === 'object') ? map.value : map;
         if (Number.isFinite(stepIndex) && key && this.studyData && this.studyData[stepIndex]) {
           const bucket = this.studyData[stepIndex];
           const v = bucket[key];
@@ -297,14 +302,24 @@ export default {
     },
     stepDataHasKey(key) {
       const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepDataArr = this.studyData[realStepId] || [];
-      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
-      return stepDataList.some(entry => entry && entry.key === key);
+      const stepBucket = this.studyData[realStepId];
+      return stepBucket ? key in stepBucket : false;
+    },
+    hasDataInStudyDataBucket(uniqueId, skill) {
+      if (this.isNotStudyBased(skill)) return false;
+      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+      const stepBucket = this.studyData[realStepId];
+      if (!stepBucket) return false;
+      
+      const serviceName = this.computeServiceName(uniqueId);
+      const baseKey = this.generatingKey(serviceName, skill);
+      
+      return Object.keys(stepBucket).some(key => key.startsWith(baseKey));
     },
     async waitForRequestsToComplete() {
       return await new Promise((resolve) => {
         const check = () => {
-          if (!this.requests || Object.keys(this.requests).length === 0) {
+          if (Object.keys(this.requests).length === 0) {
             resolve(true);
             return;
           }
@@ -313,26 +328,19 @@ export default {
         check();
       });
     },
-    async hasResultsInStudyData(uniqueId) {
-      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-      if (!foundRequestId) return false;
-      const { skill } = this.requests[foundRequestId] || {};
-      if (this.isNotStudyBased(skill)) return false;
-      const raw = this.nlpResults[foundRequestId];
-      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-        const keys = Object.keys(raw);
-        if (keys.length === 0) return false;
-        return keys.some(k => this.stepDataHasKey(this.expectedCompositeKey(uniqueId, skill, k)));
-      }
-      const serviceName = this.computeServiceName(uniqueId);
-      const baseKey = this.generatingKey(serviceName, skill);
-      return this.stepDataHasKey(baseKey);
-    },
     async request(skill, inputs, uniqueId) {
-      // Check for preprocessed data first, allow brief time for store to populate
-      const preprocessedData = await this.getPreprocessedData();
-      if (preprocessedData) {
-        this.$emit('update:data', [preprocessedData]);
+      // First check if data already exists in studyData bucket
+      if (this.hasDataInStudyDataBucket(uniqueId, skill)) {
+        if (this.loadingOnly && this.autoCloseOnComplete) {
+          this.$emit('close', { autoClosed: true, dataExists: true });
+        }
+        return;
+      }
+      
+      // Check database for existing data and load into studyData if found
+      const existingData = await this.getPreprocessedData(uniqueId, skill);
+      if (existingData && existingData.length > 0) {
+        this.$emit('update:data', existingData);
         if (this.loadingOnly && this.autoCloseOnComplete) {
           this.$emit('close', { autoClosed: true, preprocessed: true });
         }
@@ -346,10 +354,11 @@ export default {
         let resolved = null;
         if (value) {
           const stepBucket = (this.studyData && this.studyData[value.stepId]) ? this.studyData[value.stepId] : null;
-          if (stepBucket && value.dataSource in stepBucket) {
-            resolved = stepBucket[value.dataSource];
+          const key = (value && typeof value === 'object') ? value.value : value;
+          if (stepBucket && key in stepBucket) {
+            resolved = stepBucket[key];
           } else {
-            resolved = value.dataSource;
+            resolved = key;
           }
         } else {
           resolved = value;
@@ -362,19 +371,14 @@ export default {
       await this.sendRequest(skill, input, uniqueId, requestId, inputs);
     },
     async sendRequest(skill, input, uniqueId, requestId, stepconfig) {
-      const hasStudyData = await this.hasResultsInStudyData(uniqueId);
-      
-      if (!hasStudyData) {
-        let payload = input || {};
-        if (skill === 'grading_expose') {
+      let payload = input || {};
+      if (skill === 'grading_expose') {
           payload = await this.buildGradingExposePayloadFromSpec(stepconfig);
           console.log('payload', payload);
           const hasPdf = payload?.submission && payload.submission.pdf;
           if (!hasPdf) {
-            if (this.requests && this.requests[requestId]) {
-              delete this.requests[requestId];
-            }
-            if (!this.requests || Object.keys(this.requests).length === 0) {
+            delete this.requests[requestId];
+            if (Object.keys(this.requests).length === 0) {
               this.waiting = false;
             }
             return;
@@ -385,37 +389,33 @@ export default {
           const hasPdf = payload?.submission && payload.submission.pdf;
           const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
           if (!hasPdf || !hasGradingResults) {
-            if (this.requests && this.requests[requestId]) {
-              delete this.requests[requestId];
-            }
-            if (!this.requests || Object.keys(this.requests).length === 0) {
+            delete this.requests[requestId];
+            if (Object.keys(this.requests).length === 0) {
               this.waiting = false;
             }
             return;
           }
         }
         
-
-        const nlpReq = {
-          service: "NLPService",
-          data: {
-            id: requestId,
-            name: skill,
-            data: payload,
-          },
-        };
-        await this.$socket.emit("serviceRequest", nlpReq);
-        setTimeout(() => {
-          if (this.requests[requestId]) {
-            this.eventBus.emit('toast', {
-              title: "NLP Service Request",
-              message: "Timeout in request for skill " + skill + " - Request failed!",
-              variant: "danger"
-            });
-            this.timeoutError = true;
-          }
-        }, this.nlpRequestTimeout);
-      }
+      const nlpReq = {
+        service: "NLPService",
+        data: {
+          id: requestId,
+          name: skill,
+          data: payload,
+        },
+      };
+      await this.$socket.emit("serviceRequest", nlpReq);
+      setTimeout(() => {
+        if (this.requests[requestId]) {
+          this.eventBus.emit('toast', {
+            title: "NLP Service Request",
+            message: "Timeout in request for skill " + skill + " - Request failed!",
+            variant: "danger"
+          });
+          this.timeoutError = true;
+        }
+      }, this.nlpRequestTimeout);
     },
     
     async fetchBinaryAsBase64(documentId) {
@@ -462,36 +462,48 @@ export default {
         const requestId = requestIds[i];
         if (this.requests[requestId]) {
           const { skill, input, uniqueId, inputs } = this.requests[requestId];
-          if (!retriedUniqueIds.has(uniqueId) && !(await this.hasResultsInStudyData(uniqueId))) {
+          if (!retriedUniqueIds.has(uniqueId) && !this.hasDataInStudyDataBucket(uniqueId, skill)) {
             retriedUniqueIds.add(uniqueId);
             await this.sendRequest(skill, input, uniqueId, requestId, inputs);
           }
         }
       }
     },
-    async getPreprocessedData() {
-			const documentId = this.studyStep?.documentId;
-			if (!documentId) return null;
-			const service = this.getServiceFromStep(this.studyStep);
-			if (!service || !service.skill) return null;
-			const skill = service.skill;
-			const requireCurrentStep = !this.isNotStudyBased(skill);
-			const expectedSessionId = requireCurrentStep ? this.studySessionId : null;
-			const expectedStepId = requireCurrentStep ? this.studyStepId : null;
-			
-			const timeoutMs = 5000;
-			const intervalMs = 200;
-			const start = Date.now();
-			while ((Date.now() - start) < timeoutMs) {
-				const entry = this.documentDataEntryByIds(documentId, expectedSessionId, expectedStepId);
-				if (entry && entry.key && entry.key.includes(skill)) {
-          console.log('entry found', entry);
-					return entry;
-				}
-				await new Promise(resolve => setTimeout(resolve, intervalMs));
-			}
-      console.log('no entry found');
-			return null;
+    async getPreprocessedData(uniqueId, skill) {
+      const documentId = this.studyStep?.documentId;
+      if (!documentId || !uniqueId || !skill) return null;
+      
+      const requireCurrentStep = !this.isNotStudyBased(skill);
+      const expectedSessionId = requireCurrentStep ? this.studySessionId : null;
+      const expectedStepId = requireCurrentStep ? this.studyStepId : null;
+      
+      const serviceName = this.computeServiceName(uniqueId);
+      const baseKey = this.generatingKey(serviceName, skill);
+
+      // Use socket call to check if any data exists with the base key pattern
+      return await new Promise((resolve) => {
+        this.$socket.emit("documentDataGet", {
+          documentId,
+          studySessionId: expectedSessionId,
+          studyStepId: expectedStepId,
+          key: baseKey,
+          partialMatch: true
+        }, (response) => {
+          if (response && response.success && response.data) {
+            // Found matching entry - subscription will populate other entries
+            // Return the found entry wrapped in array format
+            resolve([{
+              documentId: response.data.documentId,
+              studySessionId: response.data.studySessionId,
+              studyStepId: response.data.studyStepId,
+              key: response.data.key,
+              value: response.data.value
+            }]);
+          } else {
+            resolve(null);
+          }
+        });
+      });
     },
   }
 };

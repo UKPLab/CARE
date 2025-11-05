@@ -181,15 +181,17 @@ export default {
       currentStudyStep: computed(() => this.currentStep),
       isManualAssessmentWorkflow: computed(() => {
         const cfg = this.currentStep?.configuration || {};
-        const hasConfig = !!(cfg.configFile || cfg.configurationId);
-        const hasServices = !!cfg.services;
+        const settings = cfg.settings || {};
+        const hasConfig = !!(settings.configFile || settings.configurationId);
+        const hasServices = !!(cfg.services && Array.isArray(cfg.services) && cfg.services.length > 0);
         return hasConfig && !hasServices;
       }),
       isAIAssessmentWorkflow: computed(() => {
         const cfg = this.currentStep?.configuration || {};
-        const hasConfig = !!(cfg.configFile || cfg.configurationId);
-        const hasServices = !!cfg.services;
-        return hasConfig && !!hasServices;
+        const settings = cfg.settings || {};
+        const hasConfig = !!(settings.configFile || settings.configurationId);
+        const hasServices = !!(cfg.services && Array.isArray(cfg.services) && cfg.services.length > 0);
+        return hasConfig && hasServices;
       }),
     };
   },
@@ -399,15 +401,18 @@ export default {
       try {
         const idx = this.studySteps.findIndex(step => step.id === (this.nlpModalStepId || this.currentStep.id));
         const bucketIndex = idx + 1;
-        if (!this.studyData[bucketIndex]) this.studyData[bucketIndex] = {};
-        const bucket = this.studyData[bucketIndex];
-        if (Array.isArray(entries)) {
-          entries.forEach(entry => {
-            if (entry && entry.key) {
-              bucket[entry.key] = entry.value;
-            }
-          });
+        
+        if (!this.studyData[bucketIndex]) {
+          this.studyData[bucketIndex] = {};
         }
+        const bucket = this.studyData[bucketIndex];
+        
+        entries.forEach(entry => {
+          if (entry?.key) {
+            bucket[entry.key] = entry.value;
+          }
+        });
+        
         this.$forceUpdate();
       } catch (e) {
         // ignore

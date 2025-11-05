@@ -204,28 +204,59 @@ export default {
       },
     skillName() {
       const config = this.currentStudyStep?.configuration;
-      if (!config) return null;
-      
-      const services = config.services || [];
-      for (const service of services) {
-        if (service.skillName) {
-          return service.skillName;
-        }
+      if (!config?.services) {
+        return null;
       }
-      return null;
+      
+      const service = config.services.find(s => s.skill);
+      return service?.skill || null;
+    },
+    serviceName() {
+      const service = this.currentStudyStep?.configuration?.services?.find(s => s.skill);
+      if (!service) return null;
+      
+      const uniqueId = service.name || service.uniqueId;
+      if (!uniqueId) return null;
+      
+      // Remove 'service_' prefix if present
+      return uniqueId.startsWith('service_') ? uniqueId.slice('service_'.length) : uniqueId;
+    },
+    feedbackDataKey() {
+      const skillName = this.skillName;
+      const serviceName = this.serviceName;
+      
+      if (!skillName || !serviceName) {
+        return null;
+      }
+      
+      // Build key in the same format as NlpRequestCore.saveResult
+      // Key format: ${serviceName}_${skill}_textual_feedback
+      return `${serviceName}_${skillName}_textual_feedback`;
     },
     studyGeneratedFeedbackRaw() {
       const skillName = this.skillName;
-      if (!skillName) return null;
+      if (!skillName) {
+        return null;
+      }
       
       const feedbackKey = Object.keys(this.studyBucket).find(key => 
         key.includes(skillName) && key.includes('textual_feedback')
       );
-      console.log('Looking for feedback key:', { skillName, availableKeys: Object.keys(this.studyBucket), foundKey: feedbackKey });
+      
       return feedbackKey ? this.studyBucket[feedbackKey] : null;
     },
   },
   watch: {
+    studyStepId: {
+      handler(newStepId, oldStepId) {
+        // Reset feedbackLoaded when switching steps so feedback can be re-applied
+        if (newStepId !== oldStepId) {
+          this.feedbackLoaded = false;
+          this.pendingFeedbackText = '';
+        }
+      },
+      immediate: false
+    },
     unappliedEdits: {
       handler(newEdits) {
         if (newEdits.length > 0) {
@@ -255,7 +286,7 @@ export default {
     studyGeneratedFeedbackRaw(newRaw) {
       if (!newRaw || this.feedbackLoaded) return;
       
-      const feedbackText = newRaw.textual_feedback;
+      const feedbackText = newRaw.textual_feedback || newRaw;
       if (!feedbackText) return;
       
       if (!this.documentLoaded) {
@@ -330,49 +361,56 @@ export default {
       },
       (res) => {
         if (res.success) {
-          this.initializeEditorWithContent(res['data']['deltas']);
-
+          // Initialize with firstVersion (base content)
           let quill = new Quill(document.createElement('div'));
           quill.setContents(res['data']['firstVersion']);
           this.firstVersion = quill.root.innerHTML;
-          let currentVersion = this.editor.getEditor().root.innerHTML;
+          this.initializeEditorWithContent(res['data']['firstVersion']);
 
-          let studyData = {
-            firstVersion: this.firstVersion,
-            currentVersion: currentVersion,
-          };
-          this.$emit("update:data", studyData);
-          // Generated feedback will be applied via event from StepModal
-          // If feedback arrived early, apply it now after content initialization
+          // Apply pending feedback if available
           if (!this.feedbackLoaded && this.pendingFeedbackText) {
             this.applyFeedbackText(this.pendingFeedbackText);
           }
 
-          // Also fetch any previously saved generated feedback in case the event was missed
-          const skillName = this.skillName;
-          if (skillName) {
-            // Find the key that includes the skill name and textual_feedback
-            const feedbackKey = Object.keys(this.studyBucket).find(key => 
-              key.includes(skillName) && key.includes('textual_feedback')
-            );
-            if (feedbackKey) {
-              this.$socket.emit("documentDataGet", {
-                documentId: this.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                key: feedbackKey
-              }, (response) => {
-                const val = (response && response.success && response.data && response.data.value)
-                  ? response.data.value
-                  : (response && response.value) ? response.value : null;
-                if (!this.feedbackLoaded && val) {
-                  const feedbackText = val.textual_feedback || val;
-                  if (feedbackText) {
-                    this.applyFeedbackText(feedbackText);
-                  }
-                }
-              });
+          // Helper to apply deltas (edits) to editor
+          const applyDeltas = () => {
+            const deltas = res['data']['deltas'];
+            if (deltas?.ops?.length) {
+              this.editor.getEditor().updateContents(new Delta(deltas.ops), "api");
             }
+            
+            const currentVersion = this.editor.getEditor().root.innerHTML;
+            this.$emit("update:data", {
+              firstVersion: this.firstVersion,
+              currentVersion: currentVersion,
+            });
+          };
+
+          // Try to load feedback from document_data
+          const feedbackDataKey = this.feedbackDataKey;
+          if (feedbackDataKey && !this.feedbackLoaded) {
+            this.$socket.emit("documentDataGet", {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              key: feedbackDataKey
+            }, (response) => {
+              const val = (response?.success && response?.data?.value) 
+                ? response.data.value 
+                : response?.value;
+              
+              if (!this.feedbackLoaded && val) {
+                const feedbackText = val.textual_feedback || val;
+                if (feedbackText) {
+                  this.applyFeedbackText(feedbackText);
+                  setTimeout(applyDeltas, 100);
+                  return;
+                }
+              }
+              applyDeltas();
+            });
+          } else {
+            applyDeltas();
           }
         } else {
           this.handleDocumentError(res.error);
@@ -419,7 +457,9 @@ export default {
   methods: {
     applyFeedbackText(feedbackText) {
       const editorInstance = this.editor && this.editor.getEditor ? this.editor.getEditor() : null;
-      if (!editorInstance || !feedbackText) return;
+      if (!editorInstance || !feedbackText) {
+        return;
+      }
 
       const currentContent = editorInstance.getContents();
       if (currentContent.ops.length <= 1 && (!currentContent.ops[0].insert || currentContent.ops[0].insert === '\n')) {
@@ -526,7 +566,7 @@ export default {
       const quill = this.editor.getEditor();
       if (this.deltaBuffer.length > 0) {
         let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        let dbOps = deltaToDb(combinedDelta.ops);
+        let dbOps = deltaToDb(combinedDelta.ops);        
         if (dbOps.length > 0) {
           const backup = quill.getContents();
 

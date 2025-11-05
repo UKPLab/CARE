@@ -293,17 +293,16 @@ export default {
       showInfoPanel: false,
       selectedCriterion: null,
       selectedElement: null,
-      isPinned: false
+      isPinned: false,
+
+      // Prevent stepBucket watcher from overwriting during save
+      isSaving: false,
+      // Track if step-scoped saved data has been loaded to prevent overwriting
+      hasStepScopedData: false
     };
   },
 
   computed: {
-    isManualAssessmentWorkflow() {
-      const cfg = this.currentStudyStep?.configuration.settings || {};
-      const hasConfig = !!(cfg.configFile || cfg.configurationId);
-      const hasNoServices = !cfg.services;
-      return hasConfig && hasNoServices;
-    },
     configuration() {
       const cfg = this.currentStudyStep?.configuration.settings || {};
       const cfgId = cfg.configurationId || cfg.configFile;
@@ -374,10 +373,14 @@ export default {
     },
     stepBucket: {
       handler() {
+        // Skip if we're currently saving to prevent overwriting user changes
+        if (this.isSaving) return;
         if (!this.isAIAssessmentWorkflow) return;
+        // Skip if we have step-scoped saved data (user modifications) to prevent overwriting
+        if (this.hasStepScopedData) return;
         const v = this.findAssessmentValueInBucket();
         if (v) {
-          this.mergeSavedDataWithConfiguration(v);
+          this.mergeSavedDataWithConfiguration(v, false, null);
         }
       },
       deep: true
@@ -392,7 +395,9 @@ export default {
       if (newVal && Object.keys(this.savedState).length > 0) {
         this.restoreState();
       } else if (newVal && this.assessmentOutput) {
-        // When component becomes visible, refresh saved data to pick up any new preprocessed data
+        // When component becomes visible, refresh saved data
+        // Reset flag to allow checking for step-scoped data again
+        this.hasStepScopedData = false;
         this.loadSavedAssessmentData();
       }
     },
@@ -405,6 +410,15 @@ export default {
       },
       deep: true
     },
+    studyStepId: {
+      handler() {
+        // When step changes, reload saved data for the new step
+        if (this.assessmentOutput) {
+          this.hasStepScopedData = false;
+          this.loadSavedAssessmentData();
+        }
+      }
+    },
   },
 
   mounted() {
@@ -414,9 +428,10 @@ export default {
       this.restoreState();
     }
     this.$emit('assessment-ready-changed', this.isAssessmentComplete);
-    if (this.isAIAssessmentWorkflow) {
-      const v = this.findAssessmentValueInBucket();
-      if (v) this.mergeSavedDataWithConfiguration(v);
+    // Load saved data on mount, prioritizing step-scoped saved data
+    if (this.assessmentOutput) {
+      this.hasStepScopedData = false;
+      this.loadSavedAssessmentData();
     }
   },
   
@@ -633,8 +648,6 @@ export default {
       const updatedCriterion = {...criterion, isSaved: true};
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
 
-      // Emit removed: kept UI state local
-
       this.$nextTick(() => {
         this.saveState();
       });
@@ -731,20 +744,34 @@ export default {
       }
 
       try {
-        // 1) Try to load already saved data for this step/session
-        const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
+        // Get preprocessed data first for comparison
+        let preprocessed = null;
+        if (this.isAIAssessmentWorkflow) {
+          preprocessed = await this.getPreprocessedAssessmentData();
+        }
 
+        // 1) Priority: Try to load step-scoped saved data (user modifications) first
+        const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
         if (stepScoped) {
-          this.mergeSavedDataWithConfiguration(stepScoped);
+          this.hasStepScopedData = true;
+          this.mergeSavedDataWithConfiguration(stepScoped, true, preprocessed);
           return;
         }
 
-        // 2) If AI workflow, try to import preprocessed data saved with null session/step
-        if (this.isAIAssessmentWorkflow) {
-          const preprocessed = await this.getPreprocessedAssessmentData();
-          if (preprocessed) {
-            this.mergeSavedDataWithConfiguration(preprocessed);
+        // 2) For AI workflow, check stepBucket (studyData) if no step-scoped data exists
+        if (this.isAIAssessmentWorkflow && this.stepBucket) {
+          const bucketValue = this.findAssessmentValueInBucket();
+          if (bucketValue) {
+            this.hasStepScopedData = false;
+            this.mergeSavedDataWithConfiguration(bucketValue, false, null);
+            return;
           }
+        }
+
+        // 3) Fallback: Try to import preprocessed data saved with null session/step
+        if (preprocessed) {
+          this.hasStepScopedData = false;
+          this.mergeSavedDataWithConfiguration(preprocessed, false, null);
         }
       } catch (error) {
         // Error loading saved assessment data
@@ -766,31 +793,64 @@ export default {
       return results.find(v => !!v) || null;
     },
 
-    mergeSavedDataWithConfiguration(savedData) {
-      if (!savedData || !this.assessmentOutput) {
-        return;
-      }
+    normalizeAssessmentArray(data) {
+      return Array.isArray(data) ? data : (Array.isArray(data?.assessment) ? data.assessment : []);
+    },
+    mergeSavedDataWithConfiguration(savedData, isStepScoped = false, preprocessedData = null) {
+      if (!savedData || !this.assessmentOutput) return;
 
-      const assessmentArray = Array.isArray(savedData)
-          ? savedData
-          : (Array.isArray(savedData.assessment) ? savedData.assessment : null);
-      if (!assessmentArray) return;
+      const assessmentArray = this.normalizeAssessmentArray(savedData);
+      if (!assessmentArray.length) return;
+
+      // Build preprocessed map for comparison (only for step-scoped data)
+      const preprocessedMap = new Map();
+      if (isStepScoped && preprocessedData) {
+        this.normalizeAssessmentArray(preprocessedData).forEach(item => {
+          const key = item.criterion || item.name;
+          if (key) {
+            preprocessedMap.set(key, {
+              justification: item.justification || item.assessment || "",
+              score: item.score !== undefined ? Number(item.score) : Number(item.points || 0)
+            });
+          }
+        });
+      }
 
       const byName = new Map(assessmentArray.map(a => [(a.criterion || a.name), a]));
       const newGroups = (this.assessmentOutput.criteriaGroups || []).map(group => {
         const updatedCriteria = (group.criteria || []).map(criterion => {
           const match = byName.get(criterion.name);
-          if (match) {
-            const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
-            return {
-              ...criterion,
-              assessment: match.justification || "",
-              currentScore: sc,
-              score: sc,
-              isSaved: this.isAIAssessmentWorkflow ? false : true
-            };
+          if (!match) {
+            return {...criterion, assessment: criterion.assessment || "", currentScore: criterion.currentScore || 0, score: criterion.score || 0, isSaved: criterion.isSaved || false};
           }
-          return {...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false};
+
+          const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
+          const matchJustification = match.justification || "";
+          
+          // Determine if criterion should be marked as saved
+          let shouldBeSaved = false;
+          if (isStepScoped) {
+            if (criterion.isSaved === true) {
+              shouldBeSaved = true; // Preserve existing saved state
+            } else if (preprocessedMap.has(criterion.name)) {
+              const preprocessed = preprocessedMap.get(criterion.name);
+              // Mark as saved if it differs from preprocessed data
+              shouldBeSaved = matchJustification.trim() !== preprocessed.justification.trim() || sc !== preprocessed.score;
+            } else {
+              // No preprocessed data: mark as saved if has justification
+              shouldBeSaved = matchJustification.trim() !== "";
+            }
+            // Manual workflows always mark step-scoped as saved
+            if (!this.isAIAssessmentWorkflow) shouldBeSaved = true;
+          }
+
+          return {
+            ...criterion,
+            assessment: matchJustification || criterion.assessment || "",
+            currentScore: sc,
+            score: sc,
+            isSaved: shouldBeSaved
+          };
         });
         const total = updatedCriteria.reduce((sum, c) => sum + (c.currentScore || 0), 0);
         const clamped = (group.calculation === 'min') ? Math.min(total, Number(group.maxScore ?? total)) : total;
@@ -810,6 +870,9 @@ export default {
       if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
         return;
       }
+
+      // Set flag to prevent stepBucket watcher from overwriting during save
+      this.isSaving = true;
 
       try {
         // Build only changed criterion (if indices provided) or all criteria
@@ -833,9 +896,8 @@ export default {
         // Merge with existing saved data, updating only provided criteria
         const existing = await this.documentDataGet(this.studySessionId, this.studyStepId, this.assessmentDataKey);
 
-        const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
         const normalizeFull = (arrOrObj) => {
-          return toArray(arrOrObj)
+          return this.normalizeAssessmentArray(arrOrObj)
               .map(item => {
                 const base = (item && typeof item === 'object') ? {...item} : {};
                 // Unify field names while preserving extra keys
@@ -866,8 +928,9 @@ export default {
         });
         const value = {assessment: Array.from(byCriterion.values())};
 
-        // Emit to parent so Study stores assessment_output in studyData immediately
+        // Emit to parent so Study stores assessment data in studyData immediately
         // Only for AI workflows to drive step-2 inputs without relying on document_data
+        // Use 'assessment_output' to match InputMap's standard key for Editor steps
         if (this.isAIAssessmentWorkflow && Array.isArray(value.assessment)) {
           this.$emit('update:data', [{ key: 'assessment_output', value: value.assessment }]);
         }
@@ -882,6 +945,8 @@ export default {
             value
           }, (response) => {
             if (response && response.success) {
+              // Mark that we now have step-scoped saved data
+              this.hasStepScopedData = true;
               resolve(response);
             } else {
               reject(response);
@@ -891,6 +956,11 @@ export default {
 
       } catch (error) {
         // Error saving assessment data
+      } finally {
+        // Reset flag after save completes to allow future watcher updates
+        this.$nextTick(() => {
+          this.isSaving = false;
+        });
       }
     },
 
