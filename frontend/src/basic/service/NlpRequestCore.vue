@@ -106,6 +106,12 @@ export default {
     nlpRequestTimeout() {
       return parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
     },
+    realStepId() {
+      return this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+    },
+    stepBucket() {
+      return this.studyData[this.realStepId];
+    },
   },
   watch: {
     nlpResultsStatus: {
@@ -132,9 +138,8 @@ export default {
               service: 'NLPService',
               requestId: requestId
             });
-            delete this.requests[requestId];
-            if (Object.keys(this.requests).length === 0) {
-              this.waiting = false;
+            const allComplete = this.cleanupRequest(requestId);
+            if (allComplete) {
               this.$emit('complete');
               if (this.loadingOnly && this.autoCloseOnComplete) {
                 this.$emit('close', { autoClosed: true });
@@ -184,6 +189,16 @@ export default {
     }
   },
   methods: {
+    cleanupRequest(requestId) {
+      if (this.requests && this.requests[requestId]) {
+        delete this.requests[requestId];
+      }
+      if (!this.requests || Object.keys(this.requests).length === 0) {
+        this.waiting = false;
+        return true; // Indicates that all requests are complete
+      }
+      return false; // Indicates that there are still pending requests
+    },
     // Efficient resolution helpers based on step configuration inputs
     resolveConfigContentFromSpec(spec) {
       const raw = (spec && typeof spec === 'object') ? spec.value : spec;
@@ -301,20 +316,16 @@ export default {
       return `${this.generatingKey(serviceName, skill)}_${suffix}`;
     },
     stepDataHasKey(key) {
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepBucket = this.studyData[realStepId];
-      return stepBucket ? key in stepBucket : false;
+      return this.stepBucket ? key in this.stepBucket : false;
     },
     hasDataInStudyDataBucket(uniqueId, skill) {
       if (this.isNotStudyBased(skill)) return false;
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepBucket = this.studyData[realStepId];
-      if (!stepBucket) return false;
+      if (!this.stepBucket) return false;
       
       const serviceName = this.computeServiceName(uniqueId);
       const baseKey = this.generatingKey(serviceName, skill);
       
-      return Object.keys(stepBucket).some(key => key.startsWith(baseKey));
+      return Object.keys(this.stepBucket).some(key => key.startsWith(baseKey));
     },
     async waitForRequestsToComplete() {
       return await new Promise((resolve) => {
@@ -376,10 +387,7 @@ export default {
           payload = await this.buildGradingExposePayloadFromSpec(stepconfig);
           const hasPdf = payload?.submission && payload.submission.pdf;
           if (!hasPdf) {
-            delete this.requests[requestId];
-            if (Object.keys(this.requests).length === 0) {
-              this.waiting = false;
-            }
+            this.cleanupRequest(requestId);
             return;
           }
         } else if (skill === 'generating_feedback') {
@@ -387,10 +395,7 @@ export default {
           const hasPdf = payload?.submission && payload.submission.pdf;
           const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
           if (!hasPdf || !hasGradingResults) {
-            delete this.requests[requestId];
-            if (Object.keys(this.requests).length === 0) {
-              this.waiting = false;
-            }
+            this.cleanupRequest(requestId);
             return;
           }
         }
