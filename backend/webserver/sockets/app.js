@@ -392,7 +392,6 @@ class AppSocket extends Socket {
         const tableName = this.socket.appDataSubscriptions["ids"][data].table;
         delete this.socket.appDataSubscriptions["ids"][data];
         this.socket.appDataSubscriptions["tables"][tableName].delete(data);
-        this.io.appDataSubscriptions["tables"][tableName].delete(data);
     }
 
     /**
