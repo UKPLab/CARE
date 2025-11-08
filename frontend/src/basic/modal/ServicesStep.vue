@@ -204,7 +204,7 @@ export default {
       // Convert mapping data to the expected format
       const dataInput = {};
       Object.entries(mappingData).forEach(([input, source]) => {
-        if (source && source.value) {
+        if (source && (this.isTemplateMode || source.value !== null && source.value !== undefined)) {
           dataInput[input] = {
             value: source.value,
             name: source.name,
