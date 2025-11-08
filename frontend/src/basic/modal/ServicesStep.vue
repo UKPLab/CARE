@@ -82,6 +82,10 @@ export default {
       type: Array,
       required: true,
     },
+    isTemplateMode: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -112,7 +116,20 @@ export default {
       );
     },
     isValid() {
-      return this.selectedSkills?.every(skill => skill.skillName !== "");
+      // In template mode, allow null/empty input mappings
+      if (this.isTemplateMode) {
+        return this.selectedSkills?.every(skill => skill.skillName !== "");
+      }
+      // In normal mode, require all input mappings to be filled
+      return this.selectedSkills?.every(skill => {
+        if (!skill.skillName) return false;
+        // Check if all inputs have valid mappings
+        const inputs = this.getSkillInputs(skill.skillName);
+        return inputs.every(input => {
+          const mapping = skill.dataInput?.[input];
+          return mapping && mapping.value !== null && mapping.value !== undefined;
+        });
+      });
     },
 
     inputMappings() {

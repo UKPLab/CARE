@@ -237,6 +237,11 @@ export default {
       });
     },
     validate() {
+      // In template mode, allow null values for document selection
+      if (this.isTemplateMode) {
+        return true;
+      }
+      
       const allValid = this.choices.every((item, index) => {
         return this.fields.every((field) => {
           const fieldKey = field.key;

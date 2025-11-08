@@ -31,6 +31,12 @@ import deepEqual from "deep-equal";
 export default {
   name: "InputMap",
   components: { FormSelect },
+  inject: {
+    isTemplateMode: {
+      type: Boolean,
+      default: false,
+    },
+  },
   subscribeTable: [{
     table: "configuration",
     filter: [
@@ -166,11 +172,14 @@ export default {
       return dict;
     },
     availableDataSources() {
+      let sources = [];
       if (this.studyBased) {
-        return this.getSourcesUpToCurrentStep(this.studyStepId);
+        sources = this.getSourcesUpToCurrentStep(this.studyStepId);
       } else {
-        return this.applySkillsDataSources;
+        sources = this.applySkillsDataSources;
       }
+      
+      return sources;
     },
   },
   watch: {
@@ -282,8 +291,12 @@ export default {
         const stepIndex = index + 1;
         switch (step.stepType) {
           case 1: {
-            // Add specific document/submission sources
-            if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
+            if (this.isTemplateMode) {
+              sources.push({ value: null, name: `<Submission>`, stepId: null });
+            } else {
+              // Add specific document/submission sources
+              if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
+            }
             // Add configuration sources (study-based format)
             sources.push(...this.getStudyConfigSources(stepIndex));
             break;
