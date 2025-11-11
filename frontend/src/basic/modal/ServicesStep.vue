@@ -112,7 +112,7 @@ export default {
       );
     },
     isValid() {
-      return this.selectedSkills.every(skill => skill.skillName !== "");
+      return this.selectedSkills?.every(skill => skill.skillName !== "");
     },
 
     inputMappings() {
