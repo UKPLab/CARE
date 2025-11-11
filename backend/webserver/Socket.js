@@ -528,13 +528,13 @@ module.exports = class Socket {
         });
         // handle injects
         if (injects && injects.length > 0) {
-            data = this.handleInjections(injects, data);
+            data = await this.handleInjections(injects, data);
         }
 
         // send additional data if needed
         this.sendForeignTableData(tableName, data, defaultExcludes);
         this.sendParentTableData(tableName, data, defaultExcludes);
-        
+
         this.emit(tableName + "Refresh", data, true);
         return data;
 
