@@ -102,6 +102,7 @@
     </Annotator>
     <Editor
         v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
+        ref="editor"
         :document-id="currentStep.documentId"
         :study-step-id="currentStep.id"
         :without-history="true"
@@ -241,6 +242,37 @@ export default {
         return this.$store.getters["table/study_session/get"](this.studySessionId);
       }
       return null;
+    },
+    skillName() {
+      const config = this.currentStudyStep?.configuration;
+      if (!config?.services) {
+        return null;
+      }
+      
+      const service = config.services.find(s => s.skill);
+      return service?.skill || null;
+    },
+    serviceName() {
+      const service = this.currentStudyStep?.configuration?.services?.find(s => s.skill);
+      if (!service) return null;
+      
+      const uniqueId = service.name || service.uniqueId;
+      if (!uniqueId) return null;
+      
+      // Remove 'service_' prefix if present
+      return uniqueId.startsWith('service_') ? uniqueId.slice('service_'.length) : uniqueId;
+    },
+    feedbackDataKey() {
+      const skillName = this.skillName;
+      const serviceName = this.serviceName;
+      
+      if (!skillName || !serviceName) {
+        return null;
+      }
+      
+      // Build key in the same format as NlpRequestCore.saveResult
+      // Key format: ${serviceName}_${skill}_textual_feedback
+      return `${serviceName}_${skillName}_textual_feedback`;
     },
     study() {
       if (this.studySession) {
@@ -396,6 +428,7 @@ export default {
   },
   methods: {
     onNlpDataUpdate(entries) {
+      console.log("NLP Data Update:", entries);
       try {
         const idx = this.studySteps.findIndex(step => step.id === (this.nlpModalStepId || this.currentStep.id));
         const bucketIndex = idx + 1;
@@ -410,7 +443,9 @@ export default {
             bucket[entry.key] = entry.value;
           }
         });
-        
+        if (this.currentStep.stepType === 2 && this.hasNlpForCurrentStep) {
+          this.$refs.editor.addText(this.studyData[bucketIndex][this.feedbackDataKey] || '' );
+        }
         this.$forceUpdate();
       } catch (e) {
         // ignore
@@ -524,15 +559,6 @@ export default {
       }
     },
     updateStep(step) {
-      // Check if assessment allows proceeding (if current step has assessment)
-      // if (this.studyStepHasAssessment) {
-      //   this.eventBus.emit("toast", {
-      //     title: "Cannot proceed",
-      //     message: "Please complete the assessment before proceeding to the next step.",
-      //     variant: "danger",
-      //   });
-      //   return;
-      // }
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {
