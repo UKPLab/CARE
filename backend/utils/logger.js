@@ -11,16 +11,47 @@ class SQLTransport extends Transport {
 
     log(info, callback) {
         if (this.db) {
-            this.db.models['log'].createLog(info).then(() => {
-                setImmediate(() => {
-                    this.emit('logged', info);
+            // 🟢 Ensure message is a string
+            let message = typeof info.message === 'string'
+                ? info.message
+                : JSON.stringify(info.message);
+
+            // 🟢 Truncate if too long (DB column = varchar(1024))
+            if (message.length > 1024) {
+                message = message.slice(0, 1021) + '...';
+            }
+
+            // 🟢 Use safe, short message for DB insert
+            const safeInfo = {...info, message};
+
+            for (const [k, v] of Object.entries(safeInfo)) {
+                if (typeof v === 'number' && !Number.isFinite(v)) {
+                    safeInfo[k] = null;            // replace NaN/Infinity with NULL
+                } else if (v === undefined) {
+                    delete safeInfo[k];            // remove undefined so it won't be inserted
+                } else if (v instanceof Error) {
+                    safeInfo[k] = {                // serialize Errors nicely
+                        name: v.name,
+                        message: v.message,
+                        stack: v.stack,
+                    };
+                }
+            }
+
+            this.db.models['log'].createLog(safeInfo)
+                .then(() => {
+                    setImmediate(() => this.emit('logged', info));
+                    callback();
+                })
+                .catch((err) => {
+                    console.error('SQLTransport insert failed:', err);
+                    callback();
                 });
-                callback();
-            });
         } else {
             callback();
         }
     }
+
 }
 
 /**
@@ -36,12 +67,12 @@ function addCallerinfo() {
             // Look for the first line that's not from winston internals or this logger file
             for (let i = 1; i < stackLines.length; i++) {
                 const line = stackLines[i];
-                if (line && 
-                    !line.includes('winston') && 
+                if (line &&
+                    !line.includes('winston') &&
                     !line.includes('logger.js') &&
                     !line.includes('node_modules') &&
                     line.includes('at ')) {
-                    
+
                     // Parse the stack trace line
                     // Formats:
                     //  "at functionName (C:\\path\\file.js:line:column)"
@@ -52,10 +83,10 @@ function addCallerinfo() {
                         const filePath = match[2];
                         const lineNumber = match[3];
                         const columnNumber = match[4];
-                        
+
                         // Extract just the filename from the full path
                         const fileName = filePath ? filePath.split(/[/\\]/).pop() : 'unknown';
-                        
+
                         info.caller = {
                             file: fileName,
                             filePath: filePath,
