@@ -9,6 +9,8 @@ stages:          # List of stages for jobs, and their order of execution
 variables:
   DOCKER_HOST: tcp://docker:2375
   #
+  # force the current docker api version 
+  DOCKER_API_VERSION: "1.44"
   # This instructs Docker not to start over TLS.
   DOCKER_TLS_CERTDIR: ""
   #DOCKER_TLS_CERTDIR: "/certs"
