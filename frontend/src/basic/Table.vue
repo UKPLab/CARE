@@ -175,6 +175,7 @@
               v-if="c.type === 'icon'"
               :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
               :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
+              :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
             />
             <TBadge
               v-else-if="c.type === 'badge'"

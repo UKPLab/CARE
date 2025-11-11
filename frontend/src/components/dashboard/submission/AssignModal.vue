@@ -104,6 +104,7 @@ export default {
         { name: "Last Name", key: "lastName", sortable: true },
         { name: "Group", key: "group", sortable: true },
         { name: "Created At", key: "createdAt", sortable: true },
+        { name: "Additional Settings", key: "additionalSettings", type: "icon", sortable: false },
       ],
       submissionTableOptions: {
         striped: true,
@@ -132,6 +133,9 @@ export default {
           lastName: user.lastName,
           group: s.group ?? "-",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
+          additionalSettings: s.additionalSettings 
+            ? { icon: "gear-fill", color: "blue", title: s.additionalSettings }
+            : { icon: "gear", color: "gray", title: "No additional settings" },
         };
       });
     },
