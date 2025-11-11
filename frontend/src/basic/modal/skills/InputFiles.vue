@@ -126,8 +126,9 @@ export default {
         const user = this.$store.getters["table/user/get"](submission.userId);
         return {
           id: submission.id,
-          name: submission.name || `Submission ${submission.id}`,
           userName: user ? user.userName : "N/A",
+          firstName: user ? user.firstName : "N/A",
+          lastName: user ? user.lastName : "N/A",
           group: (submission.group !== null && submission.group !== undefined && submission.group !== '') ? submission.group : '',
           data_existing: dataExists ? 'Yes' : 'No',
           createdAt: submission.createdAt,
@@ -155,8 +156,9 @@ export default {
     submissionColumns() {
       return [
         { key: 'id', name: 'ID' },
-        { key: 'name', name: 'Submission Name' },
         { key: 'userName', name: 'User Name' },
+        { key: 'firstName', name: 'First Name' },
+        { key: 'lastName', name: 'Last Name'},
         { key: 'group', name: 'GroupID', filter: this.groupFilterOptions },
         { key: 'data_existing', name: 'Data Existing', filter: this.dataExistingFilterOptions },
         { key: 'createdAt', name: 'Created At' },
