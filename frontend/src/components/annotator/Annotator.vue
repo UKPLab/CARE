@@ -640,7 +640,7 @@ export default {
 
       const content = mergeAnnotationsAndComments(annotations, comments);
 
-      const filename = `annotations_${this.documentId}_${Date.now()}.json`;
+      const filename = `annotations_${this.documentId}_${Date.now()}`;
       downloadObjectsAs(content, filename, "json");
 
     },
