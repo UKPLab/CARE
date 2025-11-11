@@ -4,7 +4,7 @@
     :steps="steps"
     :validation="stepValid"
     @submit="createAssignments"
-    xl>
+    size="xl">
     <template #title>
       <h5 class="modal-title">Create bulk assignment</h5>
     </template>
@@ -54,7 +54,12 @@
       <div class="form-check">
         <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
         <label class="form-check-label" for="filterHasDocumentsCheckbox">
-          Select only with documents
+          Filter only users with documents
+        </label>
+        <br>
+        <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox" id="filterSelectedDocumentsCheckbox">
+        <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
+          Filter only users from previous selected documents
         </label>
       </div>
       <div class="table-scroll-container">
@@ -222,6 +227,7 @@ export default {
       selectedAssignments: [],
       reviewerSelection: {},
       filterHasDocuments: false,
+      filterSelectedDocuments: false,
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -364,7 +370,6 @@ export default {
     submissionColumns() {
       return [
         {name: "ID", key: "id"},
-        {name: "Submission Name", key: "name"},
         {name: "User Name", key: "userName"},
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
@@ -386,16 +391,17 @@ export default {
         return newR;
       })
         .filter((reviewer) => {
-          if (!this.filterHasDocuments) {
-            return true;
-          } else {
-            if (reviewer.documents >= 1) {
+            if (!this.filterHasDocuments && !this.filterSelectedDocuments) {
               return true;
-            } else {
+            }
+            if (this.filterHasDocuments && reviewer.documents < 1) {
               return false;
             }
-          }
+            return !(this.filterSelectedDocuments && !this.selectedAssignmentUserIds.includes(reviewer.id));
         })
+    },
+    selectedAssignmentUserIds() {
+      return this.selectedAssignments.map((assignment) => assignment.userId);
     },
     roles() {
       return this.$store.getters["admin/getSystemRoles"] || [];
