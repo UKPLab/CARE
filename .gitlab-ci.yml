@@ -6,7 +6,7 @@ stages:          # List of stages for jobs, and their order of execution
   - lint
 
 variables:
-  DOCKER_HOST: tcp://docker:2375
+  #DOCKER_HOST: tcp://docker:2375
   #
   # force the current docker api version 
   DOCKER_API_VERSION: "1.44"
