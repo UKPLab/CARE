@@ -39,6 +39,10 @@ export default {
     workflowSteps: {
       type: Array,
       required: true
+    },
+    isTemplateMode: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['update:formData', 'validation-change'],
@@ -53,17 +57,29 @@ export default {
       const fieldsValid = this.fields.every((field) => {
         if (!field || field.required !== true) return true;
         const value = this.formData ? this.formData[field.key] : undefined;
+        // In template mode, allow null/undefined values for required fields
+        if (this.isTemplateMode) {
+          return true;
+        }
         return value !== undefined && value !== null;
       });
-      return fieldsValid ;
+      return fieldsValid;
     },
   },
   data() {
     return {
-      formData: this.modelValue.settings
+      formData: this.modelValue?.settings || {}
     };
   },
   watch: {
+    'modelValue.settings': {
+      handler(newVal) {
+        if (newVal !== undefined) {
+          this.formData = newVal;
+        }
+      },
+      deep: true
+    },
     isValid: {
       handler(newVal) {
         this.$emit('validation-change', newVal);

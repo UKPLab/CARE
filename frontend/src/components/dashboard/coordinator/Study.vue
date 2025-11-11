@@ -82,7 +82,7 @@ export default {
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
-      this.$refs.coordinator.open(studyId, {documentId: this.documentId}, copy);
+      this.$refs.coordinator.open(studyId, {documentId: this.documentId, isTemplateMode: templateMode}, copy);
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
