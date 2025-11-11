@@ -1,29 +1,29 @@
 <template>
   <BasicModal
-    ref="modal"
-    @hide="reset"
-  >
+      ref="modal"
+      name="UserCreateModal"
+      @hide="reset">
     <template #title>
       <span>Add User</span>
     </template>
     <template #body>
       <BasicForm
-        ref="form"
-        v-model="formData"
-        :fields="formFields"
+          ref="form"
+          v-model="formData"
+          :fields="formFields"
       />
     </template>
     <template #footer>
       <BasicButton
-        title="Cancel"
-        class="btn btn-secondary"
-        @click="$refs.modal.close()"
+          title="Cancel"
+          class="btn btn-secondary"
+          @click="$refs.modal.close()"
       />
       <BasicButton
-        title="Add"
-        class="btn btn-primary"
-        :disabled="isDisabled"
-        @click="createUser"
+          title="Add"
+          class="btn btn-primary"
+          :disabled="isDisabled"
+          @click="createUser"
       />
     </template>
   </BasicModal>

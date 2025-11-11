@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="filterModal" name="filterModal" title="Filter" @hide="hide" size="xl">
+  <BasicModal ref="filterModal" name="filterModal" title="Filter" size="xl" @hide="hide">
     <template v-if="currentData" #body>
       <div class="table-scroll-container">
       <BasicForm
