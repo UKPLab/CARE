@@ -253,10 +253,12 @@ export default {
       collapseComment: true,
       listeningToFocus: false,
       maxComments: 1,
-      defaultNumComments: 1,
     }
   },
   computed: {
+    defaultNumComments() {
+      return this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelOneUp");
+    },
     comment() {
       return this.$store.getters["table/comment/get"](this.commentId);
     },
@@ -369,6 +371,7 @@ export default {
       this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
       this.listeningToFocus = true;
     }
+    this.maxComments = this.defaultNumComments;
   },
   unmounted() {
     if (this.editedByMyself) {
