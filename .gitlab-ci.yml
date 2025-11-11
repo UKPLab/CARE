@@ -30,7 +30,6 @@ build:
   before_script:
     - apk add --no-cache nodejs npm
     - apk add --no-cache make
-    - unset DOCKER_HOST
     - docker info
     - docker version
     - TOKEN=$DOCKER_TOKEN
@@ -90,7 +89,6 @@ lint:
   before_script:
     - apk add --no-cache nodejs npm
     - apk add --no-cache make
-    - unset DOCKER_HOST
     - docker info
     - docker version
     - TOKEN=$DOCKER_TOKEN
