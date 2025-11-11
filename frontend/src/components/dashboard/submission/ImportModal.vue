@@ -3,6 +3,8 @@
     ref="importStepper"
     :steps="steps"
     :validation="stepValid"
+    submit-text="Close"
+    @submit="$refs.importStepper.close()"
     @step-change="handleStepChange"
   >
     <template #title>
@@ -190,7 +192,7 @@ export default {
   },
   computed: {
     stepValid() {
-      return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, false];
+      return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, true];
     },
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
