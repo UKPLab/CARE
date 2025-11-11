@@ -3,8 +3,8 @@
     ref="assignmentStepper"
     :steps="steps"
     :validation="stepValid"
-    @submit="createAssignments"
-    size="xl">
+    size="xl"
+    @submit="createAssignments">
     <template #title>
       <h5 class="modal-title">Create bulk assignment</h5>
     </template>
@@ -118,7 +118,7 @@
         Are you sure you want to create the assignment with the following details?
       </p>
       <p class="text-danger">
-        <strong>Warning:</strong> The assignment process will make sure that a reviewer no reviews their own document.
+        <strong>Warning:</strong> The assignment process will make sure that a reviewer not reviews their own document.
         <br>
         This could lead to a failure in the assignment process, <br>
         so make sure that the values are set correct for a successful assignment.
