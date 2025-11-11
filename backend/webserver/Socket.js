@@ -77,6 +77,7 @@ module.exports = class Socket {
                     callback({success: true, data: result});
                 }
             } catch (err) {
+                console.log(err);
                 this.logger.error(err.message);
                 if (t) {
                     await t.rollback();
