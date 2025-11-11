@@ -7,6 +7,7 @@ stages:          # List of stages for jobs, and their order of execution
 
 variables:
   #DOCKER_HOST: tcp://docker:2375
+  DOCKER_HOST: "unix:///runner/services/docker/docker.sock"
   #
   # force the current docker api version 
   DOCKER_API_VERSION: "1.44"
