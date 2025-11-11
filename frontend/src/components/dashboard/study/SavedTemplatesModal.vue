@@ -168,7 +168,7 @@ export default {
     },
     createTemplate() {
       this.close();
-      this.$refs.studyCoordinator.open(0, null, false, true);
+      this.$refs.studyCoordinator.open(0, null, false, true, false);
     },
   },
 };

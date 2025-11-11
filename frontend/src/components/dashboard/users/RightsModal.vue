@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal">
+  <BasicModal ref="modal" name="RightsModal">
     <template #title>
       <slot name="title">
         <span>View User Right</span>

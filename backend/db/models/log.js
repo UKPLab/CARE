@@ -19,12 +19,14 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async getLogs(data) {
             return await Log.findAndCountAll({
-                where: ("filter" in data) ? data.filter : {},
-                order: ('order' in data && data.order) ? data.order.filter(o => o[0] in this.getAttributes()) : [
-                    ['timestamp', 'DESC']
-                ],
-                limit: data.limit,
-                offset: ("page" in data) ? data.page * data.limit : 0,
+                where: ("filter" in data && data.filter) ? data.filter : {},
+                order: ('order' in data && Array.isArray(data.order))
+                    ? data.order.filter(o => o[0] in this.getAttributes())
+                    : [['timestamp', 'DESC']],
+                limit: Number.isFinite(Number(data.limit)) ? Number(data.limit) : 10,
+                offset: (Number.isFinite(Number(data.page)) && Number.isFinite(Number(data.limit)))
+                    ? Number(data.page) * Number(data.limit)
+                    : 0,
                 raw: true
             });
         }

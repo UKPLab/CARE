@@ -112,12 +112,18 @@ export default {
       default: () => [],
     },
   },
+  inject: {
+    formData: {
+      default: () => null,
+    },
+  },
   provide() {
     return {
       studyStepId: computed(() => this.studyStepId),
       workflowSteps: computed(() => this.workflowSteps),
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
+      isTemplateMode: computed(() => this.formData?.isTemplateMode || false),
     };
   },  
   emits: ["update:modelValue"],
@@ -136,11 +142,13 @@ export default {
   },
   computed: {
     hasConfigSettings() {
-      const fields = this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings?.fields || [];
+      const step = this.workflowSteps.find(s => s.id === this.studyStepId);
+      const fields = step?.configuration?.settings?.fields || [];
       return !!(Array.isArray(fields) && fields.length);
     },
     hasConfigServices() {
-      const services = this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.services || [];
+      const step = this.workflowSteps.find(s => s.id === this.studyStepId);
+      const services = step?.configuration?.services || [];
       return !!(Array.isArray(services) && services.length);
     },
     hasPlaceholdersStep() {
@@ -179,7 +187,8 @@ export default {
   methods: {
     openModal(evt) {
       evt.preventDefault();
-      if (!this.documentId) {
+      const isTemplateMode = this.formData?.isTemplateMode || false;
+      if (!this.documentId && !isTemplateMode) {
         this.eventBus.emit("toast", {
           title: "Document Error",
           message: "You need to select a document.",

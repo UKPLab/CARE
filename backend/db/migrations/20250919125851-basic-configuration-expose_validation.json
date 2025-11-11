@@ -33,13 +33,6 @@
             "maxMatches": 1
           },
           {
-            "name": "logo",
-            "description": "Official TUDa logo file",
-            "pattern": "tuda_logo\\.pdf$",
-            "required": true,
-            "maxMatches": 1
-          },
-          {
             "name": "config",
             "description": "TUDa thesis configuration file",
             "pattern": "tudathesis\\.cfg$",
