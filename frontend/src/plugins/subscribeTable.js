@@ -21,7 +21,8 @@ export default {
                             }
                             this.$socket.emit("subscribeAppData", table, (result) => {
                                 if (result.success) {
-                                    this.$data.subscriptionId = result.data;}
+                                    this.$data.subscriptionId = result.data;
+                                }
                             });
                         });
                     }
