@@ -36,10 +36,13 @@ class AssignmentSocket extends Socket {
                 const documentOverride = data['documents'].find(doc => doc.id === step.workflowStepId);
                 const stepDocumentId = documentOverride ? documentOverride.documentId : step.documentId;
                 
+                const assignmentType = data.assignmentType === 'submission' ? 'submission' : 'document';
                 const configuration = await this.replaceTemplateValues(
                     step.configuration,
                     {
-                        assignmentId: data['assignment']?.id
+                        assignmentType: assignmentType,
+                        documentId: assignmentType === 'document' ? data['assignment']?.id : null,
+                        submissionId: assignmentType === 'submission' ? data['assignment']?.id : null
                     },
                     options
                 );
@@ -406,10 +409,16 @@ class AssignmentSocket extends Socket {
 
         const result = {};
         for (const [key, value] of Object.entries(config)) {
-            if (value?.value === null && value?.type === 'template') {
-                const resolvedValue = context.assignmentId || null;
-                result[key] = resolvedValue !== null ? { ...value, value: resolvedValue } : value;
-            } else if (value && typeof value === 'object') {
+            if (value && typeof value === 'object' && 'value' in value && value.value === null) {
+                const looksLikePlaceholder = typeof value.name === 'string' && value.name.startsWith('<') && value.name.endsWith('>');
+                const isTemplateMarker = value.type === 'template';
+                if (isTemplateMarker || looksLikePlaceholder) {
+                    const resolvedId = context.assignmentType === 'submission' ? context.submissionId : context.documentId;
+                    result[key] = { ...value, value: resolvedId };
+                    continue;
+                }
+            }
+            if (value && typeof value === 'object') {
                 result[key] = await this.replaceTemplateValues(value, context, options);
             } else {
                 result[key] = value;

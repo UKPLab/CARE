@@ -209,6 +209,7 @@ export default {
             value: source.value,
             name: source.name,
             stepId: source.stepId,
+            ...(source.type ? { type: source.type } : {}),
             //dataSource: source.value,
           };
         }

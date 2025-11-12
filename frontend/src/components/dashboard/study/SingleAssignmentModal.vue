@@ -488,6 +488,7 @@ export default {
       
       const assignmentData = {
         template: this.template,
+        assignmentType: this.assignmentType,
         reviewer: this.selectedReviewer,
         assignment: this.selectedAssignment[0],
         documents: this.workflowStepsAssignments,
