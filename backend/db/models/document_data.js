@@ -24,20 +24,6 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
-        /**
-         * Upsert document data based on composite unique key
-         * @param {Object} data - The data to insert or update
-         * @param {Object} options - Additional options for the upsert operation
-         * @returns {Promise<[DocumentData, boolean | null]>} - The upserted record and created flag
-         */
-        static async upsertData(data, options = {}) {
-            return await this.upsert(data, {
-                conflictFields: ['conflict_key'],
-                returning: true,
-                ...options
-            });
-        }
-
     }
 
     DocumentData.init(
