@@ -261,7 +261,7 @@ export default {
     },
     comments() {
       const comments = this.$store.getters["table/comment/getFiltered"](c =>
-          c.documentId === this.documentId && c.parentCommentId === null
+          c.documentId === this.documentId
       );
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return comments.filter(comment =>
