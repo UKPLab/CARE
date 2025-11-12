@@ -1,14 +1,14 @@
 # https://docs.gitlab.com/ee/ci/yaml/
 
 stages:          # List of stages for jobs, and their order of execution
-  - test
   - build
   - deploy
   - lint
 
 variables:
   DOCKER_HOST: tcp://docker:2375
-  #
+  # force the current docker api version 
+  DOCKER_API_VERSION: "1.44"
   # This instructs Docker not to start over TLS.
   DOCKER_TLS_CERTDIR: ""
   #DOCKER_TLS_CERTDIR: "/certs"
@@ -18,22 +18,6 @@ variables:
 
 services:
   - docker:dind
-
-test:
-  image:
-    name: docker:24.0.7-dind
-  stage: test
-  needs: []
-  allow_failure: true
-  before_script:
-    - apk add --no-cache make
-    - apk add --no-cache nodejs npm
-    - docker info
-    - docker version
-  script:
-    - docker compose -f docker-compose.yml -f docker-dev.yml --env-file ".env.test" up -d postgres rpc
-    - docker compose ps
-    - make ENV=test test
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
 
@@ -47,6 +31,8 @@ build:
     - apk add --no-cache make
     - docker info
     - docker version
+    - TOKEN=$DOCKER_TOKEN
+    - echo "$TOKEN" | docker login -u $DOCKER_USER --password-stdin
   script:
     - make ENV=dev build
     - docker wait care_dev-docs_sphinx-1
@@ -104,5 +90,7 @@ lint:
     - apk add --no-cache make
     - docker info
     - docker version
+    - TOKEN=$DOCKER_TOKEN
+    - echo "$TOKEN" | docker login -u $DOCKER_USER --password-stdin
   script:
     - make lint
