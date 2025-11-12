@@ -2,6 +2,10 @@
 
 const userRights = [
   {
+    name: "frontend.dashboard.home.view",
+    description: "access to view home in the dashboard",
+  }
+  {
     name: "frontend.dashboard.documents.view",
     description: "access to view documents in the dashboard",
   },

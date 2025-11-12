@@ -3,6 +3,10 @@
 const roleRights = [
   {
     role: "user",
+    userRightName: "frontend.dashboard.home.view",
+  },
+  {
+    role: "user",
     userRightName: "frontend.dashboard.documents.view",
   },
   {
