@@ -208,29 +208,22 @@ export default {
     },
     async buildSubmission(spec) {
       const raw = (spec && typeof spec === 'object') ? spec.value : spec;
-      const startDocId = Number.isFinite(raw) ? raw : parseInt(raw, 10);
-      if (!Number.isFinite(startDocId)) return {};
-      const base64 = await this.fetchBinaryAsBase64(startDocId);
-      if (!base64) return {};
-      const docRow = this.documentById(startDocId);
-      if (!docRow) return {};
-      const isZip = docRow.type === 4;
-      const isPdf = docRow.type === 0;
+      const submissionId = typeof raw === 'number' ? raw : parseInt(raw, 10);
+      
+      const docs = this.documentsBySubmissionId(submissionId) || [];
+      if (docs.length === 0) return {};
+      
+      const pdfDoc = docs.find(d => d && d.type === 0);
+      const zipDoc = docs.find(d => d && d.type === 4);
+      
+      const [pdf, zip] = await Promise.all([
+        pdfDoc ? this.fetchBinaryAsBase64(pdfDoc.id) : Promise.resolve(null),
+        zipDoc ? this.fetchBinaryAsBase64(zipDoc.id) : Promise.resolve(null),
+      ]);
+      
       const out = {};
-      if (isZip) out.zip = base64;
-      if (isPdf) out.pdf = base64;
-      const submissionId = docRow?.submissionId;
-      if (submissionId) {
-        const docs = this.documentsBySubmissionId(submissionId) || [];
-        const siblingPdf = !isPdf ? docs.find(d => d && d.type === 0) : null;
-        const siblingZip = !isZip ? docs.find(d => d && d.type === 4) : null;
-        const [pdf, zip] = await Promise.all([
-          siblingPdf ? this.fetchBinaryAsBase64(siblingPdf.id) : Promise.resolve(null),
-          siblingZip ? this.fetchBinaryAsBase64(siblingZip.id) : Promise.resolve(null),
-        ]);
-        if (pdf) out.pdf = pdf;
-        if (zip) out.zip = zip;
-      }
+      if (pdf) out.pdf = pdf;
+      if (zip) out.zip = zip;
       return out;
     },
     getServiceFromStep(step) {
@@ -246,7 +239,7 @@ export default {
       if (stepconfig && stepconfig.assessment_config) {
         result.assessment_config = this.resolveConfigContentFromSpec(stepconfig.assessment_config);
       }
-      // submission: resolve from spec (expects a document id or a reference to step/type)
+      // submission: resolve from spec (expects a submission id)
       if (stepconfig && stepconfig.submission) {
         const sub = await this.buildSubmission(stepconfig.submission);
         if (sub && (sub.pdf || sub.zip)) result.submission = sub;
@@ -259,7 +252,7 @@ export default {
       if (stepconfig && stepconfig.feedback_grading_criteria) {
         result.feedback_grading_criteria = this.resolveConfigContentFromSpec(stepconfig.feedback_grading_criteria);
       }
-      // Resolve and load submission binaries from a document id (pdf/zip)
+      // Resolve and load submission binaries from a submission id (pdf/zip)
       if (stepconfig && stepconfig.submission) {
         const sub = await this.buildSubmission(stepconfig.submission);
         if (sub && (sub.pdf || sub.zip)) result.submission = sub;
@@ -385,6 +378,7 @@ export default {
       let payload = input || {};
       if (skill === 'grading_expose') {
           payload = await this.buildGradingExposePayloadFromSpec(stepconfig);
+          console.log('grading_expose payload', payload)
           const hasPdf = payload?.submission && payload.submission.pdf;
           if (!hasPdf) {
             this.cleanupRequest(requestId);
@@ -392,6 +386,7 @@ export default {
           }
         } else if (skill === 'generating_feedback') {
           payload = await this.buildGeneratingFeedbackPayloadFromSpec(stepconfig);
+          console.log('generating_feedback payload', payload)
           const hasPdf = payload?.submission && payload.submission.pdf;
           const hasGradingResults = Array.isArray(payload?.grading_results) && payload.grading_results.length > 0;
           if (!hasPdf || !hasGradingResults) {

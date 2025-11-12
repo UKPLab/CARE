@@ -34,10 +34,20 @@ class AssignmentSocket extends Socket {
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
                 const documentOverride = data['documents'].find(doc => doc.id === step.workflowStepId);
+                const stepDocumentId = documentOverride ? documentOverride.documentId : step.documentId;
+                
+                const configuration = await this.replaceTemplateValues(
+                    step.configuration,
+                    {
+                        assignmentId: data['assignment']?.id
+                    },
+                    options
+                );
+                
                 stepDocuments.push({
                     id: step.workflowStepId,
-                    documentId: documentOverride ? documentOverride.documentId : step.documentId,
-                    configuration: step.configuration
+                    documentId: stepDocumentId,
+                    configuration: configuration
                 });
             }
         }
@@ -385,6 +395,30 @@ class AssignmentSocket extends Socket {
      * @param {string} data.options.apiUrl The URL of the Moodle instance.
      * @returns {Promise<ArrayLike<T>>} A promise that resolves with an array of assignment objects from Moodle.
      */
+    async replaceTemplateValues(config, context, options) {
+        if (Array.isArray(config)) {
+            return await Promise.all(config.map(item => this.replaceTemplateValues(item, context, options)));
+        }
+
+        if (!config || typeof config !== 'object') {
+            return config;
+        }
+
+        const result = {};
+        for (const [key, value] of Object.entries(config)) {
+            if (value?.value === null && value?.type === 'template') {
+                const resolvedValue = context.assignmentId || null;
+                result[key] = resolvedValue !== null ? { ...value, value: resolvedValue } : value;
+            } else if (value && typeof value === 'object') {
+                result[key] = await this.replaceTemplateValues(value, context, options);
+            } else {
+                result[key] = value;
+            }
+        }
+
+        return result;
+    }
+
     async getAssignmentInfoFromCourse(data) {
         return await this.server.rpcs["MoodleRPC"].getAssignmentInfoFromCourse(
             {
