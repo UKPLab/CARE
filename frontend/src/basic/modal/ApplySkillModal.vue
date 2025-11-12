@@ -1,21 +1,21 @@
 <template>
   <div>
     <ApplySkillSetupStepper
-      v-if="!isProcessingActive"
-      ref="applySkillSetupStepper"
-      @start-preprocessing="startPreprocessing"
+        v-if="!isProcessingActive"
+        ref="applySkillSetupStepper"
+        @start-preprocessing="startPreprocessing"
     />
 
     <ApplySkillProcessStepper
-      v-else
-      ref="processStepper"
-      title="Preprocess Grading"
-      :preprocess="preprocess"
-      :input-files="inputFiles"
-      :current-step="currentStep"
-      :show-close="true"
-      cancel-next-text="Cancel Preprocess"
-      @cancel="cancelProcessing"
+        v-else
+        ref="processStepper"
+        title="Preprocess Grading"
+        :preprocess="preprocess"
+        :input-files="inputFiles"
+        :current-step="currentStep"
+        :show-close="true"
+        cancel-next-text="Cancel Preprocess"
+        @cancel="cancelProcessing"
     />
   </div>
 </template>
@@ -26,8 +26,8 @@ import ApplySkillProcessStepper from "@/basic/modal/ApplySkillProcessStepper.vue
 
 export default {
   name: "ApplySkillModal",
-  components: { ApplySkillSetupStepper, ApplySkillProcessStepper },
-  subscribeTable: ["document","submission", "document_data", "user"],
+  components: {ApplySkillSetupStepper, ApplySkillProcessStepper},
+  subscribeTable: ["document", "submission", "document_data", "user"],
   emits: ["submit"],
   data() {
     return {
@@ -50,25 +50,25 @@ export default {
         data_existing: (submission.data_existing || false) ? 'Yes' : 'No',
       }));
     },
-    submissions(){
-        return this.$store.getters["table/submission/getAll"].map(submission => {
-            const documents = this.$store.getters["table/document/getByKey"]('submissionId', submission.id);
-            const docIds = documents.map(d => d.id);
-            const dataExists = docIds.some(docId => this.$store.getters["table/document_data/getByKey"]('documentId', docId).length > 0);
-            const user = this.$store.getters["table/user/get"](submission.userId);
-            return {
-                ...submission,
-                userName: user ? user.userName : "N/A",
-                data_existing: dataExists
-            }
-        });
+    submissions() {
+      return this.$store.getters["table/submission/getAll"].map(submission => {
+        const documents = this.$store.getters["table/document/getByKey"]('submissionId', submission.id);
+        const docIds = documents.map(d => d.id);
+        const dataExists = docIds.some(docId => this.$store.getters["table/document_data/getByKey"]('documentId', docId).length > 0);
+        const user = this.$store.getters["table/user/get"](submission.userId);
+        return {
+          ...submission,
+          userName: user ? user.userName : "N/A",
+          data_existing: dataExists
+        }
+      });
     },
     isProcessingActive() {
       return (
-        this.preprocess &&
-        this.preprocess.requests &&
-        typeof this.preprocess.requests === 'object' &&
-        Object.keys(this.preprocess.requests).length > 0
+          this.preprocess &&
+          this.preprocess.requests &&
+          typeof this.preprocess.requests === 'object' &&
+          Object.keys(this.preprocess.requests).length > 0
       );
     },
   },
@@ -83,29 +83,22 @@ export default {
       immediate: true
     }
   },
-  created() {
-    this.fetchBackgroundTaskState();
-  },
   mounted() {
-    this.fetchBackgroundTaskState();
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "subscribeBackgroundTaskUpdates",
+      data: {}
+    });
+  },
+  unmounted() {
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "unsubscribeBackgroundTaskUpdates",
+      data: {}
+    });
   },
   methods: {
-    fetchBackgroundTaskState() {
-      return new Promise((resolve) => {
-        this.$socket.emit("serviceCommand", {
-          service: "BackgroundTaskService",
-          command: "getBackgroundTask",
-          data: {}
-        }, () => {
-          this.$nextTick(() => {
-            resolve();
-          });
-        });
-      });
-    },
     async open() {
-      await this.fetchBackgroundTaskState();
-      
       if (!this.isProcessingActive) {
         this.$refs.applySkillSetupStepper.open();
       } else {
@@ -121,7 +114,7 @@ export default {
       this.stopPolling();
       this.isAutoOpened = false;
       this.isWaitingForData = false;
-      
+
       if (!this.isProcessingActive) {
         this.$refs.applySkillSetupStepper.close();
       } else {
@@ -154,15 +147,15 @@ export default {
     },
     async startPreprocessing(preprocessingData) {
       this.$refs.applySkillSetupStepper.close();
-      
+
       this.isWaitingForData = true;
-      
+
       this.$socket.emit("serviceCommand", {
         service: "BackgroundTaskService",
         command: "startPreprocessing",
         data: preprocessingData
       });
-      
+
       this.eventBus.emit("toast", {
         title: "Preprocessing Started",
         message: "Preprocessing has been initiated.",
@@ -170,14 +163,13 @@ export default {
         autohide: true,
         delay: 5000
       });
-      
+
       setTimeout(() => {
         this.checkAndOpenProcessStepper();
       }, 1000);
     },
-    
+
     async checkAndOpenProcessStepper() {
-      await this.fetchBackgroundTaskState();
       if (this.isProcessingActive) {
         this.autoOpenProcessStepper();
       } else if (this.isWaitingForData) {
@@ -186,18 +178,18 @@ export default {
         }, 2000);
       }
     },
-    
+
     autoOpenProcessStepper() {
       this.isAutoOpened = true;
       this.$refs.processStepper.open();
-      
+
       this.eventBus.emit("toast", {
         title: "Preprocesing In Progress",
         message: "Preprocessing is now running. Progress shown in the modal.",
         variant: "success",
       });
     },
-    
+
     openProcessStepperIfActive() {
       if (this.isProcessingActive && !this.isAutoOpened) {
         this.autoOpenProcessStepper();
@@ -205,7 +197,7 @@ export default {
     },
   },
 };
-</script> 
+</script>
 
 <style scoped>
 </style>
