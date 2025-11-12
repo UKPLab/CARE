@@ -371,7 +371,6 @@ class AppSocket extends Socket {
         }
 
         //TODO on unsubscribe, recalculate the merged filters
-        //TODO the io appDataSubscription should maybe hold relevant users where then the merged data is checked
 
         return newSubscriptionId;
     }
