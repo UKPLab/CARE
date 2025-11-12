@@ -35,8 +35,8 @@
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar ref="sidebar"
-                  @new-anno-card="changeSideBarView"
-                  @scroll-to-comment="scrollToComment"
+                                   @new-anno-card="changeSideBarView"
+                                   @scroll-to-comment="scrollToComment"
                 />
               </template>
             </SidebarTemplate>
@@ -171,6 +171,7 @@ export default {
       default: null,
     },
   },
+  emits: ['update:data'],
   data() {
     return {
       downloading: false,
@@ -256,7 +257,9 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return annotations;
+        return annotations.filter(annotation =>
+            annotation.studySessionId === this.studySessionId
+        );
       }
     },
     comments() {
@@ -268,7 +271,9 @@ export default {
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return comments;
+        return comments.filter(comment =>
+            comment.studySessionId === this.studySessionId
+        );
       }
     },
     sidebarButtons() {
@@ -336,6 +341,13 @@ export default {
           studyStepId: this.studyStepId
         });
       }
+    },
+    annotations() {
+      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+
+    },
+    comments() {
+      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
     }
   },
   mounted() {
@@ -424,7 +436,7 @@ export default {
           console.warn('Unknown sidebar button action:', data.action);
       }
     },
-    leave(){
+    leave() {
       return this.$refs.sidebar.leave();
     },
     toggleStudyComments() {
