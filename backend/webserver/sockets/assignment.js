@@ -288,12 +288,19 @@ class AssignmentSocket extends Socket {
             for (const [assignmentId, reviewerIds] of Object.entries(finalAssignments)) {
                 const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
-                await this.createAssignment({
+                const assignmentData = {
                     assignment: assignment,
                     reviewer: reviewers,
                     template: data.template,
                     documents: assignment["document"]
-                }, options);
+                };
+                if (data.assignmentType) {
+                    assignmentData.assignmentType = data.assignmentType;
+                }
+                if (data.baseFileSelections) {
+                    assignmentData.baseFileSelections = data.baseFileSelections;
+                }
+                await this.createAssignment(assignmentData, options);
             }
 
             return finalAssignments;
@@ -370,12 +377,19 @@ class AssignmentSocket extends Socket {
             // create the final assignments
             for (const [reviewerId, assignments] of Object.entries(finalAssignments)) {
                 for (const assignment of assignments) {
-                    await this.createAssignment({
+                    const assignmentData = {
                         assignment: assignment,
                         reviewer: [data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId))],
                         template: data.template,
                         documents: assignment["document"]
-                    }, options);
+                    };
+                    if (data.assignmentType) {
+                        assignmentData.assignmentType = data.assignmentType;
+                    }
+                    if (data.baseFileSelections) {
+                        assignmentData.baseFileSelections = data.baseFileSelections;
+                    }
+                    await this.createAssignment(assignmentData, options);
                 }
             }
 

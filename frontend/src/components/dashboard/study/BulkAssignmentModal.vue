@@ -51,27 +51,59 @@
     </template>
 
     <template #step-3>
-      <div class="form-check">
-        <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
-        <label class="form-check-label" for="filterHasDocumentsCheckbox">
-          Filter only users with documents
-        </label>
-        <br>
-        <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox" id="filterSelectedDocumentsCheckbox">
-        <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
-          Filter only users from previous selected documents
-        </label>
+      <div v-if="requiresBaseFileSelection" class="base-file-selection">
+        <InputGroup
+          v-model="baseFileSelections"
+          base-file-parameter="baseFile"
+          :selected-files="selectedFilesForInputGroup"
+          @update:valid="inputGroupValid = $event"
+          @update:validation-configurations="validationConfigurationNames = $event"
+        />
       </div>
-      <div class="table-scroll-container">
-        <BasicTable
-          v-model="selectedReviewer"
-          :columns="reviewerTableColumns"
-          :data="reviewerTable"
-          :options="reviewerTableOptions"/>
+      <div v-else>
+        <div class="form-check">
+          <input id="filterHasDocumentsCheckbox" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
+          <label class="form-check-label" for="filterHasDocumentsCheckbox">
+            Filter only users with documents
+          </label>
+          <br>
+          <input id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input" type="checkbox">
+          <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
+            Filter only users from previous selected documents
+          </label>
+        </div>
+        <div class="table-scroll-container">
+          <BasicTable
+            v-model="selectedReviewer"
+            :columns="reviewerTableColumns"
+            :data="reviewerTable"
+            :options="reviewerTableOptions"/>
+        </div>
       </div>
     </template>
 
     <template #step-4>
+      <div v-if="requiresBaseFileSelection">
+        <div class="form-check">
+          <input id="filterHasDocumentsCheckbox" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
+          <label class="form-check-label" for="filterHasDocumentsCheckbox">
+            Filter only users with documents
+          </label>
+          <br>
+          <input id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input" type="checkbox">
+          <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
+            Filter only users from previous selected documents
+          </label>
+        </div>
+        <div class="table-scroll-container">
+          <BasicTable
+            v-model="selectedReviewer"
+            :columns="reviewerTableColumns"
+            :data="reviewerTable"
+            :options="reviewerTableOptions"/>
+        </div>
+      </div>
+      <div v-else>
       <BasicForm
         ref="selectionModeForm"
         v-model="reviewerSelectionMode"
@@ -99,7 +131,7 @@
           Distribute the documents between the selected reviewers:
         </div>
         <div class="mb-4">
-          Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
+          Remaining Assignments: <strong>{{ remainingAssignments }}</strong>
         </div>
 
         <BasicForm
@@ -111,9 +143,132 @@
       <div v-else>
         Please select a reviewer selection mode
       </div>
+      </div>
     </template>
 
     <template #step-5>
+      <div v-if="requiresBaseFileSelection">
+        <BasicForm
+          ref="selectionModeForm"
+          v-model="reviewerSelectionMode"
+          :fields="reviewerSelectionModeFields"
+        />
+
+        <div v-if="reviewerSelectionMode['mode'] === 'role'">
+          <div class="mt-2">
+            Define the number of reviews that each user of the role should perform:
+          </div>
+          <BasicForm
+            v-if="roleSelectionFields.length > 0"
+            ref="roleBasedSelectionForm"
+            v-model="roleSelection"
+            class="mt-4"
+            :fields="roleSelectionFields"
+          />
+          <div v-else>
+            <p class="text-center text-danger mt-4">There are no roles available!</p>
+            <p class="text-center">Please select reviewers with roles or change selection mode!</p>
+          </div>
+        </div>
+        <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
+          <div class="mt-2">
+            Distribute the documents between the selected reviewers:
+          </div>
+          <div class="mb-4">
+            Remaining Assignments: <strong>{{ remainingAssignments }}</strong>
+          </div>
+
+          <BasicForm
+            ref="reviewerBasedSelectionForm"
+            v-model="reviewerSelection"
+            :fields="reviewerSelectionFields"
+          />
+        </div>
+        <div v-else>
+          Please select a reviewer selection mode
+        </div>
+      </div>
+      <div v-else>
+        <p>
+          Are you sure you want to create the assignment with the following details?
+        </p>
+        <p class="text-danger">
+          <strong>Warning:</strong> The assignment process will make sure that a reviewer not reviews their own document.
+          <br>
+          This could lead to a failure in the assignment process, <br>
+          so make sure that the values are set correct for a successful assignment.
+        </p>
+
+        <div class="container">
+        <div class="row mb-2">
+          <div class="col-2"><strong>Template:</strong></div>
+          <div class="col-8">{{ template.name }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Workflow:</strong></div>
+          <div class="col-8">{{ workflow.name }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Assignment Type:</strong></div>
+          <div class="col-8">{{ assignmentType === 'document' ? 'Documents' : 'Submissions' }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>{{ assignmentType === 'document' ? 'Documents' : 'Submissions' }}:</strong></div>
+          <div class="col-8">{{ selectedAssignments.length }}</div>
+        </div>
+        <div v-if="requiresBaseFileSelection && Object.keys(baseFileSelections).length > 0" class="row mb-2">
+          <div class="col-2"><strong>Base File Selections:</strong></div>
+          <div class="col-8">
+            <ul>
+              <li v-for="(fileType, configId) in baseFileSelections" :key="configId">
+                - {{ validationConfigurationNames[configId] || `Configuration ${configId}` }}: {{ fileType }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Reviewers:</strong></div>
+          <div class="col-8">{{ selectedReviewer.length }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Reviews to create:</strong></div>
+          <div class="col-8">{{ numberOfReviews }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Selection Mode:</strong></div>
+          <div class="col-8">
+            {{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}
+          </div>
+        </div>
+        <div v-if="reviewerSelectionMode.mode === 'role'">
+          <div class="row mb-2">
+            <div class="col-2"><strong>Roles:</strong></div>
+            <div class="col-8">
+              <ul>
+                <li v-for="(value, key) in listOfSelectedRoles" :key="key">
+                  - {{ value.role }}: {{ value.value }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div v-if="reviewerSelectionMode.mode === 'reviewer'">
+          <div class="row mb-2">
+            <div class="col-2"><strong>Reviewers:</strong></div>
+            <div class="col-8">
+              <ul>
+                <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
+                  - {{ value.reviewer }}: {{ value.value }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </template>
+
+    <template #step-6>
       <p>
         Are you sure you want to create the assignment with the following details?
       </p>
@@ -134,8 +289,22 @@
           <div class="col-8">{{ workflow.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Documents:</strong></div>
+          <div class="col-2"><strong>Assignment Type:</strong></div>
+          <div class="col-8">{{ assignmentType === 'document' ? 'Documents' : 'Submissions' }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>{{ assignmentType === 'document' ? 'Documents' : 'Submissions' }}:</strong></div>
           <div class="col-8">{{ selectedAssignments.length }}</div>
+        </div>
+        <div v-if="requiresBaseFileSelection && Object.keys(baseFileSelections).length > 0" class="row mb-2">
+          <div class="col-2"><strong>Base File Selections:</strong></div>
+          <div class="col-8">
+            <ul>
+              <li v-for="(fileType, configId) in baseFileSelections" :key="configId">
+                - {{ validationConfigurationNames[configId] || `Configuration ${configId}` }}: {{ fileType }}
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="row mb-2">
           <div class="col-2"><strong>Reviewers:</strong></div>
@@ -185,6 +354,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import InputGroup from "@/basic/modal/skills/InputGroup.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -214,9 +384,13 @@ export default {
       value: true
     }]
   },
-  "submission"
+  "submission",
+  {
+    table: "configuration",
+    filter: [{ key: "type", value: 1 }]
+  }
   ],
-  components: {StepperModal, BasicTable, BasicForm, FormSelect},
+  components: {StepperModal, BasicTable, BasicForm, FormSelect, InputGroup},
   data() {
     return {
       selectedReviewer: [],
@@ -228,6 +402,9 @@ export default {
       reviewerSelection: {},
       filterHasDocuments: false,
       filterSelectedDocuments: false,
+      baseFileSelections: {},
+      inputGroupValid: false,
+      validationConfigurationNames: {},
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -258,13 +435,22 @@ export default {
     assignmentType() {
       return this.assignmentTypeSelection.type || 'document';
     },
+    requiresBaseFileSelection() {
+      return this.assignmentType === 'submission';
+    },
     stepValid() {
-      return [
-        this.workflowStepsAssignment.length !== 0 && !!this.assignmentType,
-        this.selectedAssignments.length > 0,
-        this.selectedReviewer.length > 0,
-        this.selectionValid,
-      ];
+      const step1Valid = this.workflowStepsAssignment.length !== 0 && !!this.assignmentType;
+      const step2Valid = this.selectedAssignments.length > 0;
+      const step3Valid = this.requiresBaseFileSelection ? this.inputGroupValid : this.selectedReviewer.length > 0;
+      const step4Valid = this.requiresBaseFileSelection ? this.selectedReviewer.length > 0 : this.selectionValid;
+      const step5Valid = this.requiresBaseFileSelection ? this.selectionValid : true;
+      const step6Valid = this.requiresBaseFileSelection ? true : true; // Confirmation step is always valid
+      
+      if (this.requiresBaseFileSelection) {
+        return [step1Valid, step2Valid, step3Valid, step4Valid, step5Valid, step6Valid];
+      } else {
+        return [step1Valid, step2Valid, step3Valid, step4Valid, step5Valid];
+      }
     },
     selectionValid() {
       if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'reviewer') {
@@ -370,6 +556,7 @@ export default {
     submissionColumns() {
       return [
         {name: "ID", key: "id"},
+        {name: "Submission Name", key: "name"},
         {name: "User Name", key: "userName"},
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
@@ -468,13 +655,28 @@ export default {
       return this.$store.getters["table/user/getAll"];
     },
     steps() {
-      return [
+      const baseSteps = [
         {title: "Template Selection"},
-        {title: "Document Selection"},
-        {title: "Reviewer Selection"},
-        {title: "Distribution"},
-        {title: "Confirmation"}
+        {title: "Assignment Selection"},
       ];
+      
+      if (this.requiresBaseFileSelection) {
+        baseSteps.push({title: "Base File Selection"});
+      }
+      
+      baseSteps.push({title: "Reviewer Selection"});
+      baseSteps.push({title: "Distribution"});
+      baseSteps.push({title: "Confirmation"});
+      
+      return baseSteps;
+    },
+    selectedFilesForInputGroup() {
+      if (!this.requiresBaseFileSelection || this.selectedAssignments.length === 0) {
+        return {};
+      }
+      return {
+        baseFile: this.selectedAssignments
+      };
     },
     reviewerNumberOfAssignments() {
       return Object.values(this.reviewerSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0)
@@ -573,6 +775,9 @@ export default {
     assignmentType(newType, oldType) {
       if (oldType && newType !== oldType) {
         this.selectedAssignments = [];
+        this.baseFileSelections = {};
+        this.inputGroupValid = false;
+        this.validationConfigurationNames = {};
       }
     }
   },
@@ -593,10 +798,14 @@ export default {
       this.selectedReviewer = [];
       this.selectedAssignments = [];
       this.assignmentTypeSelection = {};
+      this.baseFileSelections = {};
+      this.inputGroupValid = false;
+      this.validationConfigurationNames = {};
     },
     createAssignments() {
       this.$refs.assignmentStepper.setWaiting(true);
-      this.$socket.emit("assignmentCreateBulk", {
+      
+      const assignmentData = {
         template: this.template,
         selectedReviewer: this.selectedReviewer,
         selectedAssignments: this.selectedAssignments,
@@ -605,7 +814,14 @@ export default {
         documents: this.workflowStepsAssignments,
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
-      }, (res) => {
+        assignmentType: this.assignmentType,
+      };
+      
+      if (this.requiresBaseFileSelection) {
+        assignmentData.baseFileSelections = this.baseFileSelections;
+      }
+      
+      this.$socket.emit("assignmentCreateBulk", assignmentData, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
           if (this.reviewerSelectionMode.mode === 'role') {
