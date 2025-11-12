@@ -131,8 +131,8 @@ export default {
           name: s.name,
           createdAt: new Date(s.createdAt).toLocaleDateString(),
           resumable: s.resumable,
-          collab: s.collaborative,
-          multipleSubmit: s.multipleSubmissions,
+          collab: s.collab,
+          multipleSubmit: s.multipleSubmit,
           showDeleteTemplateButton: this.showDeleteTemplateButton,
         };
       });
