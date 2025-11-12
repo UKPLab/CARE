@@ -389,9 +389,12 @@ class AppSocket extends Socket {
      */
     async unsubscribeAppData(data, options) {
         // remove subscription from the list
-        const tableName = this.socket.appDataSubscriptions["ids"][data].table;
-        delete this.socket.appDataSubscriptions["ids"][data];
-        this.socket.appDataSubscriptions["tables"][tableName].delete(data);
+        if (this.socket.appDataSubscriptions["ids"][data].table) {
+            const tableName = this.socket.appDataSubscriptions["ids"][data].table;
+            delete this.socket.appDataSubscriptions["ids"][data];
+            this.socket.appDataSubscriptions["tables"][tableName].delete(data);
+        }
+       
     }
 
     /**
