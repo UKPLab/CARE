@@ -93,6 +93,8 @@ module.exports = class Socket {
      * Broadcasts all autoTable changes collected on a transaction after commit.
      * @param {import("sequelize").Transaction} transaction
      */
+
+    // TODO : We need to optimize performance for broadcasting changes for user table.
     async broadcastTransactionChanges(transaction) {
         try {
             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
