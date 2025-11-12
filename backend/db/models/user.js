@@ -453,41 +453,38 @@ module.exports = (sequelize, DataTypes) => {
      */
     async function assignUserRoles(user, roles, roleMap, isUpdated = false, transaction) {
         try {
-            // User created via CARE registration procedure
-            if (!roles) {
-                const userRole = await user.sequelize.models["user_role"].findOne({
-                    where: {name: "user"},
-                    transaction,
-                });
-                await user.sequelize.models["user_role_matching"].create(
-                    {
-                        userId: user.id,
-                        userRoleId: userRole.id,
-                    },
-                    {transaction}
-                );
-                return;
-            }
+            const roleModel = user.sequelize.models["user_role"];
+            const roleMatchingModel = user.sequelize.models["user_role_matching"];
 
             // User updated via import procedure
             // To ensure user roles are consistent across different platforms, delete the existing roles first.
             if (isUpdated) {
-                await user.sequelize.models["user_role_matching"].destroy({
+                await roleMatchingModel.destroy({
                     where: {userId: user.id},
                     transaction,
                 });
             }
 
-            // User created via import procedure
-            const userRoles = roles.split(", ").map((role) => role.trim());
-            for (let roleName of userRoles) {
-                const userRole = await user.sequelize.models["user_role"].findOne({
-                    where: {name: roleMap[roleName]},
+            const addedRoleNames = new Set(["user"]);
+
+            if (roles) {
+                const userRoles = roles.split(",").map((role) => role.trim()).filter(Boolean);
+                for (let roleName of userRoles) {
+                    const mappedRoleName = roleMap ? roleMap[roleName] : roleName;
+                    if (mappedRoleName) {
+                        addedRoleNames.add(mappedRoleName);
+                    }
+                }
+            }
+
+            for (let roleName of addedRoleNames) {
+                const userRole = await roleModel.findOne({
+                    where: {name: roleName},
                     transaction,
                 });
 
                 if (userRole) {
-                    await user.sequelize.models["user_role_matching"].create(
+                    await roleMatchingModel.create(
                         {
                             userId: user.id,
                             userRoleId: userRole.id,
