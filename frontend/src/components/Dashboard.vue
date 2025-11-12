@@ -3,7 +3,8 @@
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-        <div
+        <div 
+          v-if="hasComponentAccess"
           id="sidebarContainer"
           class="col border mh-100 col-sm-auto g-0"
         >
@@ -14,7 +15,9 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll"
         >
+          <NotFoundPage v-if="!hasComponentAccess" />
           <component
+            v-else
             :is="currentComponent"
             :key="$route.path"
           />
@@ -41,7 +44,7 @@ import NotFoundPage from "@/auth/NotFound.vue";
 export default {
   name: "DashboardRoute",
   subscribeTable: ["nav_element"],
-  components: { Loading, Sidebar },
+  components: { Loading, Sidebar, NotFoundPage },
   props: {
     catchAll: {
       type: String,
@@ -78,6 +81,31 @@ export default {
       } else {
         return Loading;
       }
+    },
+    hasComponentAccess() {
+      // Find the current component from navElements
+      let component = undefined;
+      if (this.navElements.length > 0 && this.catchAll !== undefined) {
+        component = this.navElements.find((element) => element.path.toLowerCase() === this.catchAll.toLowerCase());
+        console.log('[Dashboard] Looking for component with catchAll:', this.catchAll, 'Found:', component);
+      }
+      if (component === undefined && this.defaultComponent) {
+        component = this.defaultComponent;
+        console.log('[Dashboard] Using default component:', component);
+        return true;
+      }
+      
+      // If no component found, allow Loading to display
+      if (component === undefined) {
+        console.log('[Dashboard] No component found, showing Loading');
+        return true;
+      }
+      
+      // Check if user has the required right for this component
+      const requiredRight = `frontend.dashboard.${component.path}.view`;
+      const hasAccess = this.$store.getters["auth/checkRight"](requiredRight);
+      console.log('[Dashboard] Access check - Required right:', requiredRight, 'Has access:', hasAccess);
+      return hasAccess;
     },
   },
 };
