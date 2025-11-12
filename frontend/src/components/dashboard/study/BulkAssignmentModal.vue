@@ -1,10 +1,10 @@
 <template>
   <StepperModal
-    ref="assignmentStepper"
-    :steps="steps"
-    :validation="stepValid"
-    size="xl"
-    @submit="createAssignments">
+      ref="assignmentStepper"
+      :steps="steps"
+      :validation="stepValid"
+      size="xl"
+      @submit="createAssignments">
     <template #title>
       <h5 class="modal-title">Create bulk assignment</h5>
     </template>
@@ -16,16 +16,16 @@
 
     <template #step-1>
       <BasicForm
-        ref="templateSelectionForm"
-        v-model="templateSelection"
-        :fields="templateSelectionFields"
+          ref="templateSelectionForm"
+          v-model="templateSelection"
+          :fields="templateSelectionFields"
       />
       <div class="mt-3"><strong>Workflow Steps:</strong></div>
       <ul class="list-group">
         <li
-          v-for="(workflowStep, index) in workflowSteps"
-          :key="workflowStep.id" class="list-group-item"
-          :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
+            v-for="(workflowStep, index) in workflowSteps"
+            :key="workflowStep.id" class="list-group-item"
+            :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
           Workflow Step {{ index + 1 }}:
           {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
         </li>
@@ -33,8 +33,8 @@
       <div class="mt-3">
         <label class="form-label"><strong>Assignment should be based on:</strong></label>
         <FormSelect
-          v-model="assignmentTypeSelection.type"
-          :options="assignmentTypeFields"
+            v-model="assignmentTypeSelection.type"
+            :options="assignmentTypeFields"
         />
       </div>
     </template>
@@ -42,10 +42,10 @@
     <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
-          v-model="selectedAssignments"
-          :columns="currentTableColumns"
-          :data="currentTableData"
-          :options="documentTableOptions"
+            v-model="selectedAssignments"
+            :columns="currentTableColumns"
+            :data="currentTableData"
+            :options="documentTableOptions"
         />
       </div>
     </template>
@@ -57,25 +57,26 @@
           Filter only users with documents
         </label>
         <br>
-        <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox" id="filterSelectedDocumentsCheckbox">
+        <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox"
+               id="filterSelectedDocumentsCheckbox">
         <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
           Filter only users from previous selected documents
         </label>
       </div>
       <div class="table-scroll-container">
         <BasicTable
-          v-model="selectedReviewer"
-          :columns="reviewerTableColumns"
-          :data="reviewerTable"
-          :options="reviewerTableOptions"/>
+            v-model="selectedReviewer"
+            :columns="reviewerTableColumns"
+            :data="reviewerTable"
+            :options="reviewerTableOptions"/>
       </div>
     </template>
 
     <template #step-4>
       <BasicForm
-        ref="selectionModeForm"
-        v-model="reviewerSelectionMode"
-        :fields="reviewerSelectionModeFields"
+          ref="selectionModeForm"
+          v-model="reviewerSelectionMode"
+          :fields="reviewerSelectionModeFields"
       />
 
       <div v-if="reviewerSelectionMode['mode'] === 'role'">
@@ -83,11 +84,11 @@
           Define the number of reviews that each user of the role should perform:
         </div>
         <BasicForm
-          v-if="roleSelectionFields.length > 0"
-          ref="roleBasedSelectionForm"
-          v-model="roleSelection"
-          class="mt-4"
-          :fields="roleSelectionFields"
+            v-if="roleSelectionFields.length > 0"
+            ref="roleBasedSelectionForm"
+            v-model="roleSelection"
+            class="mt-4"
+            :fields="roleSelectionFields"
         />
         <div v-else>
           <p class="text-center text-danger mt-4">There are no roles available!</p>
@@ -103,9 +104,9 @@
         </div>
 
         <BasicForm
-          ref="reviewerBasedSelectionForm"
-          v-model="reviewerSelection"
-          :fields="reviewerSelectionFields"
+            ref="reviewerBasedSelectionForm"
+            v-model="reviewerSelection"
+            :fields="reviewerSelectionFields"
         />
       </div>
       <div v-else>
@@ -214,7 +215,7 @@ export default {
       value: true
     }]
   },
-  "submission"
+    "submission"
   ],
   components: {StepperModal, BasicTable, BasicForm, FormSelect},
   data() {
@@ -382,15 +383,15 @@ export default {
         let newR = {...r};
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
         newR.rolesNames = (r.roles || [])
-          .map((role) => {
-            const foundRole = (this.roles || []).find((roleObj) => roleObj.id === role);
-            return foundRole ? foundRole.name : null;
-          })
-          .filter(name => name !== null)
-          .join(", ");
+            .map((role) => {
+              const foundRole = (this.roles || []).find((roleObj) => roleObj.id === role);
+              return foundRole ? foundRole.name : null;
+            })
+            .filter(name => name !== null)
+            .join(", ");
         return newR;
       })
-        .filter((reviewer) => {
+          .filter((reviewer) => {
             if (!this.filterHasDocuments && !this.filterSelectedDocuments) {
               return true;
             }
@@ -398,7 +399,7 @@ export default {
               return false;
             }
             return !(this.filterSelectedDocuments && !this.selectedAssignmentUserIds.includes(reviewer.id));
-        })
+          })
     },
     selectedAssignmentUserIds() {
       return this.selectedAssignments.map((assignment) => assignment.userId);
@@ -422,8 +423,8 @@ export default {
         {name: "Last Name", key: "lastName"},
         {name: "Number of Assignments", key: "studySessions"},
         {
-          name: "Documents", 
-          key: "documents", 
+          name: "Documents",
+          key: "documents",
           filter: {
             type: "numeric",
             defaultOperator: "gte",
@@ -433,14 +434,14 @@ export default {
         {
           name: "Roles",
           key: "rolesNames",
-          filter: this.reviewerRoles.map(r => ({ key: r, name: r})),
+          filter: this.reviewerRoles.map(r => ({key: r, name: r})),
         },
       ]
     },
     groupFilterOptions() {
       const groups = new Set();
       let hasEmptyGroups = false;
-      
+
       (this.submissionsTable || []).forEach((s) => {
         if (s && s.group !== null && s.group !== undefined && s.group !== '') {
           groups.add(String(s.group));
@@ -448,20 +449,20 @@ export default {
           hasEmptyGroups = true;
         }
       });
-      
+
       const options = Array.from(groups)
-        .sort((a, b) => {
-          const na = Number(a);
-          const nb = Number(b);
-          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-          return a.localeCompare(b);
-        })
-        .map((g) => ({ key: g, name: g }));
-      
+          .sort((a, b) => {
+            const na = Number(a);
+            const nb = Number(b);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+          })
+          .map((g) => ({key: g, name: g}));
+
       if (hasEmptyGroups) {
-        options.unshift({ key: '', name: 'No GroupID' });
+        options.unshift({key: '', name: 'No GroupID'});
       }
-      
+
       return options;
     },
     reviewer() {
@@ -515,8 +516,8 @@ export default {
     assignmentTypeFields() {
       return {
         options: [
-          { value: 'document', name: 'Documents' },
-          { value: 'submission', name: 'Submissions' }
+          {value: 'document', name: 'Documents'},
+          {value: 'submission', name: 'Submissions'}
         ]
       };
     },
@@ -579,7 +580,7 @@ export default {
   methods: {
     getPrimaryDocumentId(submissionId) {
       const docs = this.$store.getters["table/document/getFiltered"](
-        (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
+          (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
       );
       return docs && docs.length !== 0 ? docs[0].id : null;
     },
@@ -609,9 +610,19 @@ export default {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
           if (this.reviewerSelectionMode.mode === 'role') {
+
             const filename = "assignments";
             const returnData = Object.keys(res.data).map((assignmentId) => {
-              const assignment = this.documentsTable.find((document) => document.id === Number(assignmentId));
+              let assignment = null;
+              if (this.assignmentType === 'document') {
+                assignment = this.documentsTable.find((document) => document.id === Number(assignmentId));
+              } else {
+                assignment = this.submissionsTable.find((submission) => submission.id === Number(assignmentId));
+              }
+              if (!assignment) {
+                console.error(`Assignment with ID ${assignmentId} not found.`);
+                return null;
+              }
               const assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
               const reviewer = res.data[assignmentId];
 
