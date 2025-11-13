@@ -13,14 +13,31 @@
     </template>
     <template #body>
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-        <div class="spinner-border" role="status">
+        <div v-if="!nlpRequestsFailed" class="spinner-border" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-        <span v-if="!error" class="ms-3">{{ rotatingStatusText }}</span>
-        {{ studyStepId }}
+        <span v-if="!nlpRequestsFailed && !error" class="ms-3">{{ rotatingStatusText }}</span>
+        <div v-if="nlpRequestsFailed">
+          <div class="d-flex flex-column align-items-center">
+            <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
+            <div class="d-flex gap-2">
+              <BasicButton
+                title="Try Again"
+                class="btn btn-warning"
+                @click="retryNlpRequests"
+              />
+              <BasicButton
+                title="Skip NLP Support"
+                class="btn btn-secondary"
+                @click="closeModal"
+              />
+            </div>
+          </div>
+        </div>
         <div v-if="documentData">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
             <NlpRequest
+                ref="nlpRequest"
                 :skill="service.skill"
                 :inputs="service.inputs"
                 :name="service.name"
@@ -46,10 +63,11 @@
  */
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "StudyLoadingModal",
-  components: {NlpRequest, BasicModal},
+  components: {NlpRequest, BasicModal, BasicButton},
   inject: {
     readOnly: {
       type: Boolean,
@@ -137,6 +155,7 @@ export default {
       );
     },
     nlpRequestsFailed() {
+      console.log("NLP Requests:", this.nlpRequests);
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return false;
       }
@@ -227,6 +246,13 @@ export default {
         ...data,
       };
       this.$emit("update:data", this.documentData);
+    },
+    retryNlpRequests() {
+      // TODO: Implement retry logic
+      this.$refs.nlpRequest.retry();
+    },
+    closeModal() {
+      this.$refs.modal.close();
     }
   }
 }
