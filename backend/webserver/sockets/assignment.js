@@ -409,10 +409,6 @@ class AssignmentSocket extends Socket {
             return await Promise.all(config.map(item => this.replaceTemplateValues(item, context, options)));
         }
 
-        if (!config || typeof config !== 'object') {
-            return config;
-        }
-
         const result = {};
         for (const [key, value] of Object.entries(config)) {
             if (value && value?.value === null) {
