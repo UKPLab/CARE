@@ -25,6 +25,8 @@
                 :inputs="service.inputs"
                 :name="service.name"
                 :document-data="documentData"
+                @update:data="updateDocumentData($event)"
+                @update:state="nlpRequests[service.name] = $event"
             />
           </div>
         </div>
@@ -84,7 +86,7 @@ export default {
       error: false,
       rotatingIndex: 0,
       documentData: null,
-      nlpRequestsInProgress: false,
+      nlpRequests: {},
       rotatingMessages: [
         "Thinking through your request...",
         "Almost there, just refining the details...",
@@ -117,6 +119,30 @@ export default {
     },
     nlpServices() {
       return this.config.services?.filter(s => s.type === 'nlpRequest') || [];
+    },
+    nlpRequestsInProgress() {
+      if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
+        return true;
+      }
+      return Object.values(this.nlpRequests).some(
+          status => status === 'pending'
+      );
+    },
+    nlpRequestsCompleted() {
+      if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
+        return false;
+      }
+      return Object.values(this.nlpRequests).every(
+          status => status === 'completed'
+      );
+    },
+    nlpRequestsFailed() {
+      if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
+        return false;
+      }
+      return Object.values(this.nlpRequests).some(
+          status => status === 'timeout' || status === 'failed'
+      );
     }
   },
   watch: {
@@ -125,9 +151,24 @@ export default {
         if (this.documentData === null || (this.nlpServices.length > 0 && this.nlpRequestsInProgress)) {
           this.$refs.modal.open();
           console.log("Show modal");
-      console.log(this.$refs.modal)
+          console.log(this.$refs.modal)
         }
       }
+    },
+    nlpRequests: {
+      handler() {
+        this.nlpRequestsInProgress = Object.values(this.nlpRequests).some(
+            status => status === 'pending' || status === 'in_progress'
+        );
+        if (!this.nlpRequestsInProgress) {
+          this.$nextTick(() => {
+            if (this.$refs.modal) {
+              this.$refs.modal.close();
+            }
+          });
+        }
+      },
+      deep: true
     }
   },
   mounted() {
@@ -149,8 +190,8 @@ export default {
             if (this.nlpServices.length === 0) {
               console.log("CLLLOOOSOSING", this.studyStepId)
               this.$nextTick(() => {
-              this.$refs.modal.close();
-      });
+                this.$refs.modal.close();
+              });
             }
             this.$emit("update:data", response.data);
 
@@ -179,6 +220,13 @@ export default {
     stopRotatingMessages() {
       clearInterval(this.rotatingTimer);
       clearTimeout(this.rotatingLongTimer);
+    },
+    updateDocumentData(data) {
+      this.documentData = {
+        ...this.documentData,
+        ...data,
+      };
+      this.$emit("update:data", this.documentData);
     }
   }
 }
