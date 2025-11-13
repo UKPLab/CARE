@@ -292,14 +292,10 @@ class AssignmentSocket extends Socket {
                     assignment: assignment,
                     reviewer: reviewers,
                     template: data.template,
-                    documents: assignment["document"]
+                    documents: assignment["document"],
+                    // Pass through optional properties if they exist
+                    ...(data.assignmentType && { assignmentType: data.assignmentType }),
                 };
-                if (data.assignmentType) {
-                    assignmentData.assignmentType = data.assignmentType;
-                }
-                if (data.baseFileSelections) {
-                    assignmentData.baseFileSelections = data.baseFileSelections;
-                }
                 await this.createAssignment(assignmentData, options);
             }
 
@@ -381,14 +377,10 @@ class AssignmentSocket extends Socket {
                         assignment: assignment,
                         reviewer: [data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId))],
                         template: data.template,
-                        documents: assignment["document"]
+                        documents: assignment["document"],
+                        // Pass through optional properties if they exist
+                        ...(data.assignmentType && { assignmentType: data.assignmentType }),
                     };
-                    if (data.assignmentType) {
-                        assignmentData.assignmentType = data.assignmentType;
-                    }
-                    if (data.baseFileSelections) {
-                        assignmentData.baseFileSelections = data.baseFileSelections;
-                    }
                     await this.createAssignment(assignmentData, options);
                 }
             }
