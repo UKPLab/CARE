@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <h4 class="mb-0">Assessment</h4>
-        <span v-if="assessmentOutput && assessmentOutput.criteriaGroups" class="badge">{{ totalPoints }} P</span>
+        <span v-if="configuration && configuration.rubrics" class="badge">{{ totalPoints }} P</span>
         <span v-if="readOnly" class="badge bg-secondary">Read Only</span>
       </div>
     </div>
@@ -14,55 +14,55 @@
         <p class="mb-0">{{ error }}</p>
       </div>
 
-      <div v-else-if="assessmentOutput" class="assessment-results">
+      <div v-else-if="configuration" class="assessment-results">
         <div
-            v-if="assessmentOutput.criteriaGroups"
+            v-if="configuration.rubrics && configuration.rubrics.length > 0"
             class="criteria-groups-section"
         >
           <div
-              v-for="(group, groupIndex) in assessmentOutput.criteriaGroups"
-              :key="groupIndex"
+              v-for="(rubric, rubricIndex) in assessmentOutput.criteriaGroups"
+              :key="rubricIndex"
               class="criteria-group-card card mb-2"
           >
             <!-- Group Header -->
             <div
                 class="card-header d-flex justify-content-between align-items-center"
                 style="cursor: pointer"
-                @click="toggleGroup(groupIndex)"
+                @click="toggleGroup(rubricIndex)"
             >
               <div class="d-flex align-items-center flex-grow-1">
                 <LoadIcon
-                    :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
+                    :icon-name="expandedGroups[rubricIndex] ? 'chevron-down' : 'chevron-right'"
                     :size="16"
                     class="me-2"
                 />
-                <span class="fw-bold">{{ group.name }}</span>
+                <span class="fw-bold">{{ rubric.name }}</span>
               </div>
               <div class="d-flex align-items-center">
                 <span
-                    v-if="group.description"
+                    v-if="rubric.description"
                     class="info-icon me-2"
                     style="cursor: help;"
-                    @click.stop="toggleInfoPanelPin(group, null)"
-                    @mouseenter="openInfoPanel(group, null)"
+                    @click.stop="toggleInfoPanelPin(rubric, null)"
+                    @mouseenter="openInfoPanel(rubric, null)"
                     @mouseleave="closeInfoPanel"
                 >
                   <LoadIcon icon-name="info-circle" :size="14"/>
                 </span>
                 <span
                     class="badge"
-                    :class="(readOnly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
+                    :class="(readOnly || isGroupSaved(rubricIndex)) ? 'bg-success' : 'bg-secondary'"
                 >
-                  {{ group.score }} P
+                  {{ rubric.score }} P
                 </span>
               </div>
             </div>
 
             <!-- Group Content -->
-            <div v-if="expandedGroups[groupIndex]" class="card-body">
+            <div v-if="expandedGroups[rubricIndex]" class="card-body">
               <div class="criteria-list">
                 <div
-                    v-for="(criterion, criterionIndex) in group.criteria"
+                    v-for="(criterion, criterionIndex) in rubric.criteria"
                     :key="criterionIndex"
                     class="criterion-item"
                 >
@@ -70,12 +70,12 @@
                   <div
                       class="d-flex justify-content-between align-items-center py-2"
                       style="cursor: pointer"
-                      @click="toggleCriterion(groupIndex, criterionIndex)"
+                      @click="toggleCriterion(rubricIndex, criterionIndex)"
                   >
                     <div class="d-flex align-items-center">
                       <span class="criterion-icon me-2">
                         <LoadIcon
-                            :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
+                            :icon-name="expandedCriteria[`${rubricIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
                             :size="16"
                         />
                       </span>
@@ -106,7 +106,7 @@
 
                   <!-- Criterion Assessment -->
                   <div
-                      v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
+                      v-if="expandedCriteria[`${rubricIndex}-${criterionIndex}`]"
                       class="criterion-assessment mt-2 px-3 pb-2"
                   >
                     <div class="assessment-text">
@@ -136,7 +136,7 @@
                               v-if="!readOnly"
                               class="btn btn-outline-primary btn-sm"
                               title="Edit"
-                              @click="startEdit(groupIndex, criterionIndex)"
+                              @click="startEdit(rubricIndex, criterionIndex)"
                           >
                             <LoadIcon icon-name="pen" :size="14"/>
                           </button>
@@ -147,7 +147,7 @@
                               v-model="criterion.currentScore"
                               class="form-select form-select-sm score-dropdown"
                               title="Change score"
-                              @change="onScoreChange(groupIndex, criterionIndex)"
+                              @change="onScoreChange(rubricIndex, criterionIndex)"
                           >
                             <option
                                 v-for="point in getAvailablePoints(criterion)"
@@ -161,7 +161,7 @@
                           <button
                               :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
                               :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
-                              @click="saveAssessment(groupIndex, criterionIndex)"
+                              @click="saveAssessment(rubricIndex, criterionIndex)"
                           >
                             <LoadIcon icon-name="floppy" :size="14"/>
                           </button>
@@ -172,7 +172,7 @@
                             v-if="!readOnly"
                             class="btn btn-primary btn-sm"
                             title="Save"
-                            @click="saveEdit(groupIndex, criterionIndex)"
+                            @click="saveEdit(rubricIndex, criterionIndex)"
                         >
                           <LoadIcon icon-name="floppy" :size="14"/>
                         </button>
@@ -180,7 +180,7 @@
                             v-if="!readOnly"
                             class="btn btn-secondary btn-sm"
                             title="Cancel"
-                            @click="cancelEdit(groupIndex, criterionIndex)"
+                            @click="cancelEdit(rubricIndex, criterionIndex)"
                         >
                           <LoadIcon icon-name="x-lg" :size="14"/>
                         </button>
@@ -199,8 +199,8 @@
       </div>
     </div>
   </div>
-    <!-- Floating Info Panel -->
-    <FloatingInfoPanel
+  <!-- Floating Info Panel -->
+  <FloatingInfoPanel
       ref="infoPanel"
       :show="showInfoPanel"
       :selected-item="selectedCriterion"
@@ -208,30 +208,35 @@
       :is-pinned="isPinned"
       :position="'left'"
       @close-requested="onInfoPanelCloseRequested"
-    />
+  />
 </template>
 
-/**
-* Assessment Component
-*
-* This component displays the assessment results, including criteria groups, scoring, and additional information panels.
-* It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
-*
-* @author: Akash Gundapuneni
-*/
 
 <script>
+/**
+ * Assessment Component
+ *
+ * This component displays the assessment results, including criteria groups, scoring, and additional information panels.
+ * It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
+ *
+ * @author: Akash Gundapuneni, Dennis Zyska, Karim Ouf
+ */
 import LoadIcon from "@/basic/Icon.vue";
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 
 export default {
-  name: "AssessmentOutput",
+  name: "AssessmentSidebar",
   components: {
     LoadIcon,
     FloatingInfoPanel
   },
-  subscribeTable: ["configuration"],
-
+  subscribeTable: [{
+    table: "configuration",
+    filter: [{
+      key: "type",
+      value: 0
+    }],
+  }],
   inject: {
     documentId: {
       type: Number,
@@ -247,7 +252,6 @@ export default {
       required: false,
       default: null
     },
-    
     readOnly: {
       type: Boolean,
       required: false,
@@ -258,16 +262,6 @@ export default {
       required: true,
       default: null
     },
-    isManualAssessmentWorkflow: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    isAIAssessmentWorkflow: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
     studyData: {
       type: Array,
       required: false,
@@ -275,19 +269,30 @@ export default {
     }
   },
   props: {
-    show: {type: Boolean, required: false, default: true},
-    savedState: {type: Object, required: false, default: () => ({})},
+    show: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    savedState: {
+      type: Object,
+      required: false,
+      default: () => ({})
+    },
+    config: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    }
   },
-
   emits: ['state-changed', 'assessment-ready-changed', 'update:data'],
-
   data() {
     return {
       // Assessment data
       error: null,
-      assessmentOutput: null,
       expandedGroups: {},
       expandedCriteria: {},
+      assessmentOutput: null,
 
       // Info panel
       showInfoPanel: false,
@@ -301,12 +306,19 @@ export default {
       hasStepScopedData: false
     };
   },
-
   computed: {
+    isAIAssessmentWorkflow() {
+      const settings = this.config.settings || {};
+      const hasConfig = !!(settings.configFile || settings.configurationId);
+      const hasServices = !!(this.config.services && Array.isArray(this.config.services) && this.config.services.length > 0);
+      return hasConfig && hasServices;
+    },
+    configurationId() {
+      return this.config.settings?.configurationId || null;
+    },
     configuration() {
-      const cfg = this.currentStudyStep?.configuration.settings || {};
-      const cfgId = cfg.configurationId || cfg.configFile;
-      return this.$store.getters['table/configuration/get'](cfgId);
+      if (!this.configurationId) return null;
+      return this.$store.getters['table/configuration/get'](this.configurationId)?.content || null;
     },
     studySteps() {
       const sid = this.currentStudyStep?.studyId;
@@ -362,7 +374,7 @@ export default {
   watch: {
     configuration: {
       handler(newConfig) {
-        if (newConfig && newConfig.content) {
+        if (newConfig) {
           this.initializeAssessmentOutput();
           this.$nextTick(() => {
             this.loadSavedAssessmentData();
@@ -434,12 +446,54 @@ export default {
       this.loadSavedAssessmentData();
     }
   },
-  
+
   beforeUnmount() {
     document.removeEventListener('mousedown', this.handleClickOutsideInfoPanel);
   },
-  
+
   methods: {
+    initializeAssessmentOutput() {
+      if (this.configuration) {
+        const criteriaGroups = this.configuration.rubrics.map((rubric, groupIndex) => {
+          const criteria = rubric.criteria.map((criterion, criterionIndex) => {
+            return {
+              id: `${groupIndex + 1}-${criterionIndex + 1}`,
+              name: criterion.name,
+              description: criterion.description,
+              maxPoints: criterion.maxPoints,
+              assessment: "",
+              isEditing: false,
+              editedAssessment: "",
+              currentScore: 0,
+              isSaved: false,
+              scoring: criterion.scoring
+            };
+          });
+
+          // Determine group scoring behavior and max score based on rubric-level calculation
+          const calculation = rubric.calculation || 'sum';
+          const sumOfCriteriaMax = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
+          const computedMaxScore = calculation === 'min' ? (rubric.maxPoints || sumOfCriteriaMax) : sumOfCriteriaMax;
+
+          return {
+            name: rubric.name,
+            description: rubric.description,
+            calculation,
+            score: 0,
+            maxScore: computedMaxScore,
+            criteria: criteria
+          };
+        });
+
+        this.assessmentOutput = {
+          criteriaGroups: criteriaGroups,
+          description: this.configuration.description,
+          version: this.configuration.version,
+          type: this.configuration.type
+        };
+      }
+    },
+
     getNlpServiceFromStep() {
       const cfg = this.currentStudyStep?.configuration;
       if (cfg && Array.isArray(cfg.services)) {
@@ -465,24 +519,24 @@ export default {
     },
     handleClickOutsideInfoPanel(event) {
       if (!this.showInfoPanel) return;
-      
+
       // Check if the click is inside the floating panel
       const infoPanel = this.$refs.infoPanel?.$el;
       if (infoPanel && infoPanel.contains(event.target)) {
         return;
       }
-      
+
       // Check if the click is on any info icon using class selector
       const infoIcon = event.target.closest('.info-icon');
-      if (infoIcon){
+      if (infoIcon) {
         return;
       }
-      
+
       // Outside click closes panel and unpins
       this.isPinned = false;
-      this.closeInfoPanel(); 
+      this.closeInfoPanel();
     },
-    async documentDataGet(studySessionId, studyStepId, key){
+    async documentDataGet(studySessionId, studyStepId, key) {
       return await new Promise((resolve) => {
         this.$socket.emit("documentDataGet", {
           documentId: this.documentId,
@@ -497,57 +551,6 @@ export default {
         });
       });
     },
-    initializeAssessmentOutput() {
-      if (this.configuration && this.configuration.content) {
-        this.assessmentOutput = this.transformRubricsToCriteriaGroups(this.configuration.content);
-      }
-    },
-
-    transformRubricsToCriteriaGroups(configData) {
-      if (!configData.rubrics) {
-        this.error = "Invalid assessment configuration: No rubrics found";
-        return null;
-      }
-
-      const criteriaGroups = configData.rubrics.map((rubric, groupIndex) => {
-        const criteria = rubric.criteria.map((criterion, criterionIndex) => {
-          return {
-            id: `${groupIndex + 1}-${criterionIndex + 1}`,
-            name: criterion.name,
-            description: criterion.description,
-            maxPoints: criterion.maxPoints,
-            assessment: "",
-            isEditing: false,
-            editedAssessment: "",
-            currentScore: 0,
-            isSaved: false,
-            scoring: criterion.scoring
-          };
-        });
-
-        // Determine group scoring behavior and max score based on rubric-level calculation
-        const calculation = rubric.calculation || 'sum';
-        const sumOfCriteriaMax = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
-        const computedMaxScore = calculation === 'min' ? (rubric.maxPoints || sumOfCriteriaMax) : sumOfCriteriaMax;
-
-        return {
-          name: rubric.name,
-          description: rubric.description,
-          calculation,
-          score: 0,
-          maxScore: computedMaxScore,
-          criteria: criteria
-        };
-      });
-
-      return {
-        criteriaGroups: criteriaGroups,
-        description: configData.description,
-        version: configData.version,
-        type: configData.type
-      };
-    },
-
     // UI interactions
     toggleGroup(groupIndex) {
       Object.keys(this.expandedGroups).forEach((key) => {
@@ -821,12 +824,18 @@ export default {
         const updatedCriteria = (group.criteria || []).map(criterion => {
           const match = byName.get(criterion.name);
           if (!match) {
-            return {...criterion, assessment: criterion.assessment || "", currentScore: criterion.currentScore || 0, score: criterion.score || 0, isSaved: criterion.isSaved || false};
+            return {
+              ...criterion,
+              assessment: criterion.assessment || "",
+              currentScore: criterion.currentScore || 0,
+              score: criterion.score || 0,
+              isSaved: criterion.isSaved || false
+            };
           }
 
           const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
           const matchJustification = match.justification || "";
-          
+
           // Determine if criterion should be marked as saved
           let shouldBeSaved = false;
           if (isStepScoped) {
@@ -864,9 +873,6 @@ export default {
     // Save assessment data to document_data table
     async saveAssessmentData(groupIndex = null, criterionIndex = null) {
       if (this.readOnly) return;
-      if (!this.isManualAssessmentWorkflow && !this.isAIAssessmentWorkflow) {
-        return;
-      }
       if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
         return;
       }
@@ -928,13 +934,9 @@ export default {
         });
         const value = {assessment: Array.from(byCriterion.values())};
 
-        // Emit to parent so Study stores assessment data in studyData immediately
-        // Only for AI workflows to drive step-2 inputs without relying on document_data
-        // Use 'assessment_output' to match InputMap's standard key for Editor steps
-        if (this.isAIAssessmentWorkflow && Array.isArray(value.assessment)) {
-          this.$emit('update:data', [{ key: 'assessment_output', value: value.assessment }]);
-        }
-        
+        this.$emit('update:data', value.assessment);
+
+
         // Save to document_data table (wrap in Promise so callers can await)
         await new Promise((resolve, reject) => {
           this.$socket.emit("documentDataSave", {
