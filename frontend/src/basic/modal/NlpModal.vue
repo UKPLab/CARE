@@ -40,7 +40,7 @@
             </div>
           </div>
         </div>
-        <NlpRequest
+      <!--<NlpRequest
           ref="req"
           :study-step-id="studyStepId"
           :loading-only="true"
@@ -50,7 +50,7 @@
           @complete="onComplete"
           @close="onReqClose"
           @update:data="$emit('update:data', $event)"
-        />
+        />-->
       </template>
       <template #footer>
         <div v-if="!waiting">
@@ -76,11 +76,10 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import NlpRequestCore from "@/basic/service/NlpRequestCore.vue";
 
 export default {
   name: "NlpModal",
-  components: { BasicModal, BasicButton, NlpRequest: NlpRequestCore },
+  components: { BasicModal, BasicButton },
   inject: {
     studySessionId: {
       type: Number,
