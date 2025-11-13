@@ -147,20 +147,6 @@
         </div>
       </div>
     </div>
-
-    <!--
-
-          <NlpModal
-              v-if="currentStep.stepType !== 3 && hasNlpForCurrentStep && (studyTrajectory.includes(currentStep.id) || currentStep.id === currentStudyStepId || readOnlyComputed)"
-              :key="currentStep.id + '-nlp'"
-              ref="nlpModal"
-              :study-step-id="currentStep.id"
-              @close="onNlpModalClose"
-              @update:data="onNlpDataUpdate($event)"
-          />
-          -->
-
-
   </div>
 </template>
 
