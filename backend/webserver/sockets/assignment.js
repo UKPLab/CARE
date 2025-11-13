@@ -423,16 +423,15 @@ class AssignmentSocket extends Socket {
 
         const result = {};
         for (const [key, value] of Object.entries(config)) {
-            if (value && typeof value === 'object' && 'value' in value && value.value === null) {
-                const looksLikePlaceholder = typeof value.name === 'string' && value.name.startsWith('<') && value.name.endsWith('>');
+            if (value && value?.value === null) {
                 const isTemplateMarker = value.type === 'template';
-                if (isTemplateMarker || looksLikePlaceholder) {
+                if (isTemplateMarker) {
                     const resolvedId = context.assignmentType === 'submission' ? context.submissionId : context.documentId;
                     result[key] = { ...value, value: resolvedId };
                     continue;
                 }
             }
-            if (value && typeof value === 'object') {
+            if (value) {
                 result[key] = await this.replaceTemplateValues(value, context, options);
             } else {
                 result[key] = value;

@@ -223,6 +223,7 @@ export default {
                   requiresTableSelection: item.requiresTableSelection,
                   tableType: item.tableType,
                   configId: item.configId,
+                  type: item.type,
                 };
               }
             });
