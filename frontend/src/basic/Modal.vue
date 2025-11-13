@@ -240,26 +240,20 @@ export default {
       this._closeRequestHandled = true;
     },
     close() {
-      // Check if modal is fully shown
+      this.hide();
+    },
+    hide() {
       const modalElement = this.$refs.Modal;
-      const isShown = modalElement.classList.contains('show');
-      
+      const isShown = modalElement.classList.contains('show');     
       if (isShown) {
-        // Modal is fully shown, close immediately
-        console.log("Modal is shown, closing immediately");
         this.modal.hide();
       } else {
-        // Modal not fully shown yet, wait for shown.bs.modal event
         const onShown = () => {
           modalElement.removeEventListener('shown.bs.modal', onShown);
           this.modal.hide();
-          this.resumeParentModal();
         };
         modalElement.addEventListener('shown.bs.modal', onShown);
       }
-    },
-    hide() {
-      this.modal.hide();
       this.resumeParentModal();
     },
     showParentModal(){
