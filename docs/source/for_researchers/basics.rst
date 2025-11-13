@@ -101,9 +101,21 @@ in CARE. The general workflow for setting up such a study looks as follows:
 CARE for NLP Model Integration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For testing NLP models and human-in-the-loop scenarios, please consider the existing NLP model examples integrated in
-care (highlight summarization and comment sentiment classification) and the extensive guide on
-:doc:`modifying the frontend <../for_developers/frontend/frontend>` to add other models with different UI elements.
+For testing NLP models and human-in-the-loop scenarios, CARE provides two main workflows:
+
+1. **Real-time NLP during study**: Participants interact with documents that have live NLP annotations.
+   See :doc:`modifying the frontend <../for_developers/frontend/frontend>` to add custom UI elements for NLP results.
+
+2. **Asynchronous preprocessing of documents**: Apply NLP skills to submissions and documents in bulk before or after studies.
+   See :doc:`nlp_skill_application` for detailed instructions on using the skill application interface.
+
+The preprocesssing workflow is useful for:
+
+- Pre-processing of NLP results before starting a study, to avoid latency during user interaction
+- NLP requests: Asynchronous, sequential and runs in the background
+- Running multiple files with the same NLP configuration
+
+For managing and debugging connected NLP models, see the NLP Model Debugging section below.
 
 User Consent
 ~~~~~~~~~~~~
