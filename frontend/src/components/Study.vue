@@ -84,10 +84,16 @@
       <div v-show="currentStudyStepId === step.id">
         <div v-if="studyTrajectory.includes(currentStudyStepId) || readOnly">
 
-          <div v-if="false">
-            <LoadingModal/>
+          <div v-if="!(studySession && studySession.start === null)">
+            <LoadingModal
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :show="currentStudyStepId === step.id && !readOnly"
+                @update:data="updateStudyData(step.id, 'data', $event)"
+            />
           </div>
-          <div v-else>
+          <div>
 
             <Annotator
                 v-if="step.stepType === 1"
@@ -173,7 +179,7 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import {computed, nextTick} from "vue";
+import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import NlpModal from "../basic/modal/NlpModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
