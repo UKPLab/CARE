@@ -265,7 +265,7 @@ Extending the Service
 To add support for new parameter types:
 
 1. Update ``InputMap.vue`` to show the new data source in available options
-2. Add a ``load{Type}()`` method in ``BackgroundTaskService`` to fetch and prepare the data
+2. Add a ``load<fileType>()`` method in ``BackgroundTaskService`` to fetch and prepare the data
 3. Add a new case to the ``prepareNlpInput()`` switch statement
 
 To modify timeout or polling behavior:
