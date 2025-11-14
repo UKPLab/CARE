@@ -43,7 +43,7 @@ Each entry links to its dedicated documentation page:
    editor
    stepmodal
    study
-   nlp_preprocessing
+   apply_skill_preprocessing
 
 -----
 
