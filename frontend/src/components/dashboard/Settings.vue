@@ -147,6 +147,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
 import Modal from "@/basic/Modal.vue";
 import {downloadObjectsAs} from "@/assets/utils";
+import {onBeforeRouteUpdate} from 'vue-router'
 
 export default {
   name: "DashboardSettings",
@@ -156,18 +157,6 @@ export default {
     Loading,
     SettingItem,
     Modal,
-  },
-  // TODO: not working in dashboard
-  beforeRouteLeave(to, from, next) {
-    if (this.hasUnsavedChanges) {
-      const answer = window.confirm(
-          "You have unsaved changes in your settings. Are you sure you want to leave without saving?"
-      );
-      if (!answer) {
-        return next(false);
-      }
-    }
-    next();
   },
   data() {
     return {
@@ -197,10 +186,21 @@ export default {
       }
     },
   },
-
   mounted() {
     this.settings = null;
     this.load();
+
+    onBeforeRouteUpdate((to, from, next) => {
+      if (this.hasUnsavedChanges) {
+        const answer = window.confirm(
+            "You have unsaved changes in your settings. Are you sure you want to leave without saving?"
+        );
+        if (!answer) {
+          return next(false);
+        }
+      }
+      return next();
+    });
   },
   methods: {
     nestSettings(obj, keys, setting) {
