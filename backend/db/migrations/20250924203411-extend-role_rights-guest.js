@@ -4,7 +4,7 @@ const roleRights = [
   {
     role: "guest",
     userRightName: "frontend.dashboard.home.view",
-  }
+  },
   {
     role: "guest",
     userRightName: "frontend.dashboard.documents.view",
