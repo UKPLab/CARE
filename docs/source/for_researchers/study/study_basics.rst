@@ -185,3 +185,37 @@ Creating the Study
 .. note::
 
    Participants joining through this link will automatically start a new **Study Session**.
+
+Working with Study Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Study templates allow you to reuse study configurations for future studies, saving time and ensuring consistency.
+
+**Creating Templates:**
+
+You can create a template in two ways:
+
+1. **From an existing study:**
+   
+   - After creating and saving a study, locate it in the studies list
+   - Click on ``Save as template`` to convert the study configuration into a reusable template
+
+2. **Directly from the Saved Templates modal:**
+   
+   - Navigate to ``/dashboard/studies``
+   - Click the ``Saved Templates`` button
+   - In the modal, click ``Create Template``
+   - Define the workflow, settings, and document assignments
+   - Save to create a new template without creating a full study first
+
+**Using Templates:**
+
+- Click ``Saved Templates`` to view all your saved templates
+- Browse available templates with their configuration details (resumable, collaborative, multiple submissions, etc.)
+- Click the ``Use`` button (play icon) on any template to create a new study based on that template
+- The template's workflow and settings will be pre-filled, which you can then customize as needed
+
+**Managing Templates:**
+
+- Templates can be deleted from the Saved Templates modal (requires appropriate permissions)
+- Templates are marked with the ``template`` flag and remain separate from active studies

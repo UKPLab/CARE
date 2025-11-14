@@ -114,13 +114,22 @@ To create a study:
 1. In the Dashboard go to ``Studies > Add Single Assignment``
 2. Choose a template or start from scratch.
 
-   If you don’t have a template yet, you can create one by first building a custom study:
+   If you don't have a template yet, you can create one in two ways:
 
+   **Option 1 - From an existing study:**
+   
    - In the Dashboard, go to ``Studies``
    - Click on ``Add`` to create a new study
    - Define the workflow and settings as needed
    - After saving, your study will appear in the list
    - Click on ``Save as template`` to reuse this setup in future studies
+
+   **Option 2 - Directly create a template:**
+   
+   - In the Dashboard, go to ``Studies``
+   - Click on ``Saved Templates``
+   - Click on ``Create Template`` in the modal
+   - Define the workflow and settings directly as a template
 
 3. Select the specific imported document you want to include in the assignment
 4. Assign reviewers and finalize setup
