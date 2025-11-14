@@ -93,8 +93,6 @@ module.exports = class Socket {
      * Broadcasts all autoTable changes collected on a transaction after commit.
      * @param {import("sequelize").Transaction} transaction
      */
-
-    // TODO : We need to optimize performance for broadcasting changes for user table.
     async broadcastTransactionChanges(transaction) {
         try {
             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
@@ -112,20 +110,6 @@ module.exports = class Socket {
                 }, new Map());
                 
                 for (const [table, changes] of changesMap) {
-                    if (table === "user") {
-                        const userIds = changes.map(c => c.id).filter(id => id);
-                        if (userIds.length > 0) {
-                            try {
-                                const completeUsers = await this.models["user"].getAll({
-                                    where: { id: { [Op.in]: userIds } }
-                                });
-                                this.broadcastTable(table, completeUsers);
-                                continue;
-                            } catch (error) {
-                                this.logger.error("Error fetching complete user data in broadcastTransactionChanges: " + error);
-                            }
-                        }
-                    }
                     this.broadcastTable(table, changes);
                 }
             }
