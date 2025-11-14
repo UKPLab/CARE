@@ -209,7 +209,11 @@ export default {
             value: source.value,
             name: source.name,
             stepId: source.stepId,
-            //dataSource: source.value,
+            // Preserve additional properties if they exist
+            ...(source.type ? { type: source.type } : {}),
+            ...(source.requiresTableSelection !== undefined ? { requiresTableSelection: source.requiresTableSelection } : {}),
+            ...(source.tableType ? { tableType: source.tableType } : {}),
+            ...(source.configId !== undefined ? { configId: source.configId } : {}),
           };
         }
       });

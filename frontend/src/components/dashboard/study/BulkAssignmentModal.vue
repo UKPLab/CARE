@@ -606,6 +606,7 @@ export default {
         documents: this.workflowStepsAssignments,
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
+        assignmentType: this.assignmentType,
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {

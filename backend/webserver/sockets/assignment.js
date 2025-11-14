@@ -34,10 +34,23 @@ class AssignmentSocket extends Socket {
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
                 const documentOverride = data['documents'].find(doc => doc.id === step.workflowStepId);
+                const stepDocumentId = documentOverride ? documentOverride.documentId : step.documentId;
+                
+                const assignmentType = data.assignmentType === 'submission' ? 'submission' : 'document';
+                const configuration = await this.replaceTemplateValues(
+                    step.configuration,
+                    {
+                        assignmentType: assignmentType,
+                        documentId: assignmentType === 'document' ? data['assignment']?.id : null,
+                        submissionId: assignmentType === 'submission' ? data['assignment']?.id : null
+                    },
+                    options
+                );
+                
                 stepDocuments.push({
                     id: step.workflowStepId,
-                    documentId: documentOverride ? documentOverride.documentId : step.documentId,
-                    configuration: step.configuration
+                    documentId: stepDocumentId,
+                    configuration: configuration
                 });
             }
         }
@@ -275,12 +288,15 @@ class AssignmentSocket extends Socket {
             for (const [assignmentId, reviewerIds] of Object.entries(finalAssignments)) {
                 const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
-                await this.createAssignment({
+                const assignmentData = {
                     assignment: assignment,
                     reviewer: reviewers,
                     template: data.template,
-                    documents: assignment["document"]
-                }, options);
+                    documents: assignment["document"],
+                    // Pass through optional properties if they exist
+                    ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                };
+                await this.createAssignment(assignmentData, options);
             }
 
             return finalAssignments;
@@ -357,12 +373,15 @@ class AssignmentSocket extends Socket {
             // create the final assignments
             for (const [reviewerId, assignments] of Object.entries(finalAssignments)) {
                 for (const assignment of assignments) {
-                    await this.createAssignment({
+                    const assignmentData = {
                         assignment: assignment,
                         reviewer: [data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId))],
                         template: data.template,
-                        documents: assignment["document"]
-                    }, options);
+                        documents: assignment["document"],
+                        // Pass through optional properties if they exist
+                        ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                    };
+                    await this.createAssignment(assignmentData, options);
                 }
             }
 
@@ -385,6 +404,35 @@ class AssignmentSocket extends Socket {
      * @param {string} data.options.apiUrl The URL of the Moodle instance.
      * @returns {Promise<ArrayLike<T>>} A promise that resolves with an array of assignment objects from Moodle.
      */
+    async replaceTemplateValues(config, context, options) {
+        if (Array.isArray(config)) {
+            return await Promise.all(config.map(item => this.replaceTemplateValues(item, context, options)));
+        }
+
+        if (!config || typeof config !== 'object') {
+            return config;
+        }
+
+        const result = {};
+        for (const [key, value] of Object.entries(config)) {
+            if (value && value?.value === null) {
+                const isTemplateMarker = value.type === 'template';
+                if (isTemplateMarker) {
+                    const resolvedId = context.assignmentType === 'submission' ? context.submissionId : context.documentId;
+                    result[key] = { ...value, value: resolvedId };
+                    continue;
+                }
+            }
+            if (value) {
+                result[key] = await this.replaceTemplateValues(value, context, options);
+            } else {
+                result[key] = value;
+            }
+        }
+
+        return result;
+    }
+
     async getAssignmentInfoFromCourse(data) {
         return await this.server.rpcs["MoodleRPC"].getAssignmentInfoFromCourse(
             {

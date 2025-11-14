@@ -210,26 +210,51 @@ module.exports = (sequelize, DataTypes) => {
                 options.include = options.include.concat(include);
             } else {
                 options.include = include;
-            }
-
+            }            
+            options.plain = false;
+            options.nest = false;
+            
             return await super.getAll(options).then((users) => {
                 const result = users.reduce((acc, item) => {
                     if (!acc[item.id]) {
+                        // Extract user roles from the result
+                        let extractedRoles = [];
+                        
+                        if (item['roles.userRoleId'] !== undefined && item['roles.userRoleId'] !== null) {
+                            // Flattened format (expected)
+                            extractedRoles.push(item['roles.userRoleId']);
+                            // { id: 1, firstName: "admin", "roles.userRoleId": 2 }
+                        } else if (Array.isArray(item.roles)) {
+                            // Nested format from cache - array of numbers
+                            extractedRoles = item.roles.filter(r => typeof r === 'number');
+                            // { id: 1, firstName: "admin", roles: [2] }
+                        }
+                        
                         acc[item.id] = item;
-                        acc[item.id].roles = [];
-                    }
-                    if (item['roles.userRoleId']) {
-                        acc[item.id].roles.push(item['roles.userRoleId']);
+                        acc[item.id].roles = extractedRoles;
+                    } else {
+                        // User already exists, add role if not already present
+                        const roleId = item['roles.userRoleId'] || (Array.isArray(item.roles) ? item.roles[0] : null);
+                        if (roleId !== null && roleId !== undefined && !acc[item.id].roles.includes(roleId)) {
+                            acc[item.id].roles.push(roleId);
+                        }
                     }
                     return acc;
                 }, {});
                 // return only list of values
-                return Object.values(result).map((item) => {
+                const finalUsers = Object.values(result).map((item) => {
                     // delete key roles.userRoleId
                     delete item['roles.userRoleId'];
+                    if (item.roles && !Array.isArray(item.roles)) { 
+                        delete item.roles;
+                    }
+                    if (!item.roles) {
+                        item.roles = [];
+                    }
                     return item;
                 });
 
+                return finalUsers; 
             });
         }
 

@@ -223,6 +223,7 @@ export default {
                   requiresTableSelection: item.requiresTableSelection,
                   tableType: item.tableType,
                   configId: item.configId,
+                  type: item.type,
                 };
               }
             });
@@ -292,7 +293,7 @@ export default {
         switch (step.stepType) {
           case 1: {
             if (this.isTemplateMode) {
-              sources.push({ value: null, name: `<Submission>`, stepId: null });
+              sources.push({ value: null, name: `<Submission>`, stepId: stepIndex, type: "template" });
             } else {
               // Add specific document/submission sources
               if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
