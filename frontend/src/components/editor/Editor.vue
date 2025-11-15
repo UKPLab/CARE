@@ -177,6 +177,9 @@ export default {
     },
   },
   methods: {
+    addText(text) {
+      this.$refs.editor.addText(text);
+    },
     handleSidebarChange(view) {
       // Update internal state to match sidebar selection
       this.sidebarContent = view;

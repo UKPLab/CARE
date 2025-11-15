@@ -24,7 +24,7 @@
   <ConfirmModal ref="deleteModal" />
   
   <!-- JSON Configuration Viewer Modal -->
-  <Modal ref="viewModal" name="json-viewer" lg>
+  <Modal ref="viewModal" name="json-viewer" size="xl">
     <template #title>
       Configuration: {{ selectedConfig?.name }}
     </template>
@@ -36,7 +36,7 @@
   </Modal>
 
   <!-- JSON Configuration Editor Modal -->
-  <Modal ref="editModal" name="json-editor" xl>
+  <Modal ref="editModal" name="json-editor" size="xl">
     <template #title>
       Edit Configuration: {{ selectedConfig?.name }}
     </template>

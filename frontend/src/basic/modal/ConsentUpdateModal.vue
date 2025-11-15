@@ -1,34 +1,34 @@
 <template>
   <BasicModal
-    ref="modal"
-    size="lg"
-  >
+      ref="modal"
+      size="lg"
+      name="ConsentUpdateModal">
     <template #title>
       <span>Update Consent</span>
     </template>
     <template #body>
       <div
-        v-if="requestData"
-        class="consent-item"
+          v-if="requestData"
+          class="consent-item"
       >
         <label class="consent-label">
           <input
-            v-model="acceptDataSharing"
-            class="consent-input"
-            type="checkbox"
+              v-model="acceptDataSharing"
+              class="consent-input"
+              type="checkbox"
           />
           I agree to my data being made available for research purposes
         </label>
       </div>
       <div
-        v-if="requestStats"
-        class="consent-item"
+          v-if="requestStats"
+          class="consent-item"
       >
         <label class="consent-label">
           <input
-            v-model="acceptStats"
-            class="consent-input"
-            type="checkbox"
+              v-model="acceptStats"
+              class="consent-input"
+              type="checkbox"
           />
           I allow the collection of behaviour statistics for research purposes
         </label>
@@ -37,14 +37,14 @@
     <template #footer>
       <span class="btn-group">
         <BasicButton
-          title="Cancel"
-          class="btn btn-secondary"
-          @click="$refs.modal.close()"
+            title="Cancel"
+            class="btn btn-secondary"
+            @click="$refs.modal.close()"
         />
         <BasicButton
-          title="Confirm"
-          class="btn btn-primary"
-          @click="confirm"
+            title="Confirm"
+            class="btn btn-primary"
+            @click="confirm"
         />
       </span>
     </template>
@@ -56,13 +56,13 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 
 /**
- * Modal for updating user's consent 
- * 
+ * Modal for updating user's consent
+ *
  * @author: Linyin Huang
  */
 export default {
   name: "ConsentUpdateModal",
-  components: { BasicModal, BasicButton },
+  components: {BasicModal, BasicButton},
   data() {
     return {
       acceptStats: false,

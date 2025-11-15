@@ -172,12 +172,12 @@ module.exports = class NLPService extends Service {
                 }
             }
         });
-        
-        nlpSocket.on("error", (data) => {
-            this.logger.error("the error happened in the nlp service", data)
-        });
 
         nlpSocket.on("error", (data) => {
+            if ('clientId' in data && data.clientId === 0) {
+                delete data.clientId;
+                this.server.services['BackgroundTaskService'].setError(data);
+            }
             this.logger.error("The error happened in the nlp service", data)
         });
 

@@ -4,6 +4,7 @@ const settings = [
     {
         key: "annotator.nlp.activated",
         value: true,
+        type: "boolean",
         description: "Indicates whether NLP support is activated in the annotation view."
     },
     {

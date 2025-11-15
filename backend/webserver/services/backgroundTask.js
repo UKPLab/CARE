@@ -6,7 +6,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
 /**
  * BackgroundTaskService - manages background tasks and status
  * @class
- * @author Manu Sundar Raj Nandyal
+ * @author Manu Sundar Raj Nandyal, Dennis Zyska
  * @classdesc A service to handle background tasks such as preprocessing documents.
  * @extends Service
  */
@@ -17,7 +17,9 @@ module.exports = class BackgroundTaskService extends Service {
                 "getBackgroundTask",
                 "startPreprocessing",
                 "cancelPreprocessing",
-                "setResult"
+                "setResult",
+                "subscribeBackgroundTaskUpdates",
+                "unsubscribeBackgroundTaskUpdates"
             ],
             resTypes: [
                 "backgroundTaskUpdate"
@@ -27,9 +29,10 @@ module.exports = class BackgroundTaskService extends Service {
         this.backgroundTask = {};
         this.requestIds = [];
         this.preprocessItems = [];
+        this.subscriptionClients = [];
     }
 
-     /**
+    /**
      * Overwrite method to handle incoming commands
      * @param client
      * @param {string} command
@@ -37,12 +40,16 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async command(client, command, data) {
         switch (command) {
-            case "getBackgroundTask":
-                return await this.getBackgroundTask(client);
             case "startPreprocessing":
                 return await this.startPreprocessing(client, data);
             case "cancelPreprocessing":
                 return await this.cancelPreprocessing(client);
+            case "subscribeBackgroundTaskUpdates":
+                this.subscriptionClients.push(client);
+                return;
+            case "unsubscribeBackgroundTaskUpdates":
+                this.subscriptionClients = this.subscriptionClients.filter(c => c !== client);
+                return;
             default:
                 return await super.command(client, command, data);
         }
@@ -73,7 +80,7 @@ module.exports = class BackgroundTaskService extends Service {
             this.server.logger.error("No DocumentSocket found for client");
             throw new Error("No DocumentSocket found for client");
         }
-        
+
         if (!preprocessingData || !preprocessingData.skillName || !preprocessingData.skillParameterMappings) {
             throw new Error("Invalid request data: missing skillName or skillParameterMappings");
         }
@@ -85,7 +92,7 @@ module.exports = class BackgroundTaskService extends Service {
         this.initializePreprocessingState();
 
         await this.prepareProcessingItems(preprocessingData);
-        
+
         for (const item of this.preprocessItems) {
 
             if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
@@ -94,27 +101,28 @@ module.exports = class BackgroundTaskService extends Service {
 
             try {
                 const nlpInput = await this.prepareNlpInput(item);
-                
+
                 if (!nlpInput || Object.keys(nlpInput).length === 0) {
                     this.server.logger.error(`No valid NLP input prepared for item ${item.requestId}`);
                     continue;
                 }
 
-                item.nlpInput = nlpInput;                
+                item.nlpInput = nlpInput;
                 await this.sendNlpRequest(documentSocket, item);
-                
+
                 const nlpResult = await this.waitForNlpResult(item.requestId);
-                
+
                 if (!this.backgroundTask.preprocess.cancelled && nlpResult) {
                     await this.saveNlpResult(documentSocket, item, nlpResult);
                 } else if (!nlpResult) {
                     this.server.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
                 }
-                
+
             } catch (err) {
+                this.sendAll("backgroundTaskUpdate", this.backgroundTask);
                 this.server.logger.error(`Error processing item ${item.requestId}: ${err.message}`, err);
             }
-            
+
             if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests) {
                 delete this.backgroundTask.preprocess.requests[item.requestId];
                 if (this.backgroundTask.preprocess.currentRequestId === item.requestId) {
@@ -123,14 +131,14 @@ module.exports = class BackgroundTaskService extends Service {
                 this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             }
         }
-        
+
         if (!Object.keys(this.backgroundTask.preprocess.requests).length) {
             this.backgroundTask.preprocess.currentRequestId = null;
             delete this.backgroundTask.preprocess;
         }
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
-        
-        return { count: this.preprocessItems.length };
+
+        return {count: this.preprocessItems.length};
     }
 
     /**
@@ -139,7 +147,7 @@ module.exports = class BackgroundTaskService extends Service {
     initializePreprocessingState() {
         this.requestIds = [];
         this.preprocessItems = [];
-        
+
         this.backgroundTask.preprocess = {
             cancelled: false,
             requests: {},
@@ -159,8 +167,8 @@ module.exports = class BackgroundTaskService extends Service {
      * @param {object} preprocessingData.baseFiles - Base file selections for validation
      */
     async prepareProcessingItems(preprocessingData) {
-        const { skillName, skillParameterMappings, baseFileParameter, baseFiles } = preprocessingData;
-        
+        const {skillName, skillParameterMappings, baseFileParameter, baseFiles} = preprocessingData;
+
         if (!skillParameterMappings) {
             throw new Error("No skill parameter mappings provided");
         }
@@ -169,7 +177,7 @@ module.exports = class BackgroundTaskService extends Service {
         this.requestIds = [];
 
         const parameterNames = Object.keys(skillParameterMappings);
-        const parameterValues = parameterNames.map(paramName => 
+        const parameterValues = parameterNames.map(paramName =>
             skillParameterMappings[paramName].fileIds.map(fileId => ({
                 paramName,
                 fileId,
@@ -182,11 +190,11 @@ module.exports = class BackgroundTaskService extends Service {
         for (const combination of combinations) {
             const requestId = this.server.uuidv4 ? this.server.uuidv4() : require('uuid').v4();
             this.requestIds.push(requestId);
-            
+
             const baseParamData = combination.find(c => c.paramName === baseFileParameter);
             const baseFileId = baseParamData ? baseParamData.fileId : null;
             const baseFileTable = baseParamData ? baseParamData.table : null;
-            
+
             const item = {
                 requestId,
                 skillName,
@@ -196,9 +204,9 @@ module.exports = class BackgroundTaskService extends Service {
                 submissionId: baseFileTable === 'submission' ? baseFileId : null,
                 documentId: baseFileTable === 'document' ? baseFileId : null
             };
-            
+
             this.preprocessItems.push(item);
-            this.backgroundTask.preprocess.requests[requestId] = { 
+            this.backgroundTask.preprocess.requests[requestId] = {
                 combination: combination.map(c => `${c.paramName}:${c.fileId}`).join(','),
                 skillName,
                 submissionId: item.submissionId,
@@ -206,7 +214,7 @@ module.exports = class BackgroundTaskService extends Service {
                 startTime: null
             };
         }
-        
+
         this.backgroundTask.preprocess.currentSubmissionsCount = this.preprocessItems.length;
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
@@ -234,11 +242,11 @@ module.exports = class BackgroundTaskService extends Service {
      * @returns {object} The prepared NLP input data
      */
     async prepareNlpInput(item) {
-        const { combination } = item;
+        const {combination} = item;
         const nlpInput = {};
 
         for (const paramData of combination) {
-            const { paramName, fileId, table } = paramData;
+            const {paramName, fileId, table} = paramData;
 
             switch (table) {
                 case "submission":
@@ -267,7 +275,7 @@ module.exports = class BackgroundTaskService extends Service {
         let docs;
         try {
             docs = await this.server.db.models['document'].findAll({
-                where: { submissionId: submissionId },
+                where: {submissionId: submissionId},
                 raw: true
             });
         } catch (err) {
@@ -276,7 +284,7 @@ module.exports = class BackgroundTaskService extends Service {
         }
 
         const submissionFiles = {};
-        
+
         await Promise.all(
             docs.map(async (doc) => {
                 const processedDoc = await this.processDocument(doc);
@@ -284,7 +292,7 @@ module.exports = class BackgroundTaskService extends Service {
                     const docType = doc.type;
                     const docTypeKey = Object.keys(this.server.db.models['document'].docTypes)
                         .find(type => this.server.db.models['document'].docTypes[type] === docType);
-                    
+
                     if (docTypeKey) {
                         const fileTypeKey = docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
                         submissionFiles[fileTypeKey] = processedDoc;
@@ -309,12 +317,12 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async loadDocument(documentId) {
         try {
-            const doc = await this.server.db.models['document'].findByPk(documentId, { raw: true });
+            const doc = await this.server.db.models['document'].findByPk(documentId, {raw: true});
             if (!doc) {
                 this.server.logger.warn(`Document ${documentId} not found`);
                 return null;
             }
-                        
+
             return await this.processDocument(doc);
         } catch (err) {
             this.server.logger.error(`Error processing document ${documentId}: ${err.message}`, err);
@@ -329,7 +337,7 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async loadConfiguration(configId) {
         try {
-            const config = await this.server.db.models['configuration'].findByPk(configId, { raw: true });
+            const config = await this.server.db.models['configuration'].findByPk(configId, {raw: true});
             if (!config) {
                 this.server.logger.warn(`Configuration ${configId} not found`);
                 return null;
@@ -354,14 +362,14 @@ module.exports = class BackgroundTaskService extends Service {
         const docType = doc.type;
         const docTypeKey = Object.keys(this.server.db.models['document'].docTypes)
             .find(type => this.server.db.models['document'].docTypes[type] === docType);
-        
+
         let fileExtension = '';
         if (docTypeKey) {
             fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
         }
-        
+
         const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
-        
+
         if (fs.existsSync(docFilePath)) {
             try {
                 const fileBuffer = await fs.promises.readFile(docFilePath);
@@ -404,7 +412,7 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async waitForNlpResult(requestId, intervalMs = 200) {
         const start = Date.now(); // TODO: This can be used to show the start time of the request
-        return await new Promise((resolve) => {
+        return await new Promise((resolve, reject) => {
             const interval = setInterval(() => {
                 if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
                     clearInterval(interval);
@@ -417,6 +425,13 @@ module.exports = class BackgroundTaskService extends Service {
                     delete this.backgroundTask.preprocess.nlpResult;
                     resolve(result);
                 }
+                const error = this.backgroundTask?.preprocess?.nlpError;
+                if (error) {
+                    clearInterval(interval);
+                    delete this.backgroundTask.preprocess.nlpError;
+                    reject(error.error?.message);
+                }
+
             }, intervalMs);
         });
     }
@@ -429,19 +444,19 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async saveNlpResult(documentSocket, item, nlpResult) {
         try {
-            const { combination, baseFileParameter, baseFiles } = item;
-            
+            const {combination, baseFileParameter, baseFiles} = item;
+
             const baseParamData = combination.find(param => param.paramName === baseFileParameter);
             if (!baseParamData) {
                 this.server.logger.error(`Base file parameter '${baseFileParameter}' not found in combination`);
                 return;
             }
 
-            const { table, fileId } = baseParamData;
+            const {table, fileId} = baseParamData;
             let baseFileToSave = null;
 
             if (table === 'submission') {
-                const submission = await this.server.db.models['submission'].findByPk(fileId, { raw: true });
+                const submission = await this.server.db.models['submission'].findByPk(fileId, {raw: true});
                 if (!submission) {
                     this.server.logger.error(`Submission ${fileId} not found`);
                     return;
@@ -456,12 +471,12 @@ module.exports = class BackgroundTaskService extends Service {
 
                 const docTypeKey = `DOC_TYPE_${baseFileType.toUpperCase()}`;
                 const docTypeValue = this.server.db.models['document'].docTypes[docTypeKey];
-                
+
                 if (docTypeKey in this.server.db.models['document'].docTypes) {
                     const doc = await this.server.db.models['document'].findOne({
-                        where: { 
+                        where: {
                             submissionId: fileId,
-                            type: docTypeValue 
+                            type: docTypeValue
                         },
                         raw: true
                     });
@@ -481,9 +496,9 @@ module.exports = class BackgroundTaskService extends Service {
                 this.server.logger.warn(`No valid document found to save results for request ${item.requestId}`);
                 return;
             }
-           
+
             const resultData = nlpResult.data || {};
-            
+
             await Promise.all(
                 Object.keys(resultData).map(key =>
                     this.server.db.models['document_data'].upsertData({
@@ -493,7 +508,7 @@ module.exports = class BackgroundTaskService extends Service {
                         studyStepId: null,
                         key: `nlpRequest_${item.skillName}_${key}`,
                         value: resultData[key]
-                    }, {}) 
+                    }, {})
                 )
             );
         } catch (saveErr) {
@@ -520,7 +535,7 @@ module.exports = class BackgroundTaskService extends Service {
         this.backgroundTask.preprocess.requests = {};
         this.backgroundTask.preprocess.currentSubmissionsCount = 0;
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
-        
+
         return "Preprocessing cancelled successfully.";
     }
 
@@ -532,9 +547,40 @@ module.exports = class BackgroundTaskService extends Service {
     async setResult(data) {
         if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests && !this.backgroundTask.preprocess.cancelled) {
             if (data) {
-                this.backgroundTask.preprocess.nlpResult = {...data} ;
+                this.backgroundTask.preprocess.nlpResult = {...data};
             } else {
                 this.logger.error("setResult command received without result data.");
+            }
+        }
+    }
+
+    /**
+     * Handles error logging for the service
+     * @param {object} data - The error data forwarded by the NLPService
+     */
+    async setError(data) {
+        if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests && !this.backgroundTask.preprocess.cancelled) {
+            if (data) {
+                this.backgroundTask.preprocess.nlpError = {...data};
+            } else {
+                this.logger.error("setResult command received without result data.");
+            }
+        }
+    }
+
+    /**
+     * Send data to all subscribed clients
+     * @param {string} type The type of data that is being sent
+     * @param {object} data The data to send
+     */
+    async sendAll(type, data) {
+        for (const client of this.subscriptionClients) {
+            try {
+                client.socket.emit("serviceRefresh", {service: this.constructor.name, type: type, data: data});
+            } catch (err) {
+                this.server.logger.error(`Error sending data to client ${client.socket.id}: ${err.message}`, err);
+                // Remove client from subscription list on error
+                this.subscriptionClients = this.subscriptionClients.filter(c => c !== client);
             }
         }
     }

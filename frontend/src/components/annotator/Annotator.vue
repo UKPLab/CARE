@@ -35,8 +35,8 @@
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar ref="sidebar"
-                  @new-anno-card="changeSideBarView"
-                  @scroll-to-comment="scrollToComment"
+                                   @new-anno-card="changeSideBarView"
+                                   @scroll-to-comment="scrollToComment"
                 />
               </template>
             </SidebarTemplate>
@@ -171,6 +171,7 @@ export default {
       default: null,
     },
   },
+  emits: ['update:data'],
   data() {
     return {
       downloading: false,
@@ -256,19 +257,23 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return annotations;
+        return annotations.filter(annotation =>
+            annotation.studySessionId === this.studySessionId
+        );
       }
     },
     comments() {
       const comments = this.$store.getters["table/comment/getFiltered"](c =>
-          c.documentId === this.documentId && c.parentCommentId === null
+          c.documentId === this.documentId
       );
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return comments.filter(comment =>
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return comments;
+        return comments.filter(comment =>
+            comment.studySessionId === this.studySessionId
+        );
       }
     },
     sidebarButtons() {
@@ -336,6 +341,13 @@ export default {
           studyStepId: this.studyStepId
         });
       }
+    },
+    annotations() {
+      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+
+    },
+    comments() {
+      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
     }
   },
   mounted() {
@@ -637,7 +649,7 @@ export default {
 
       const content = mergeAnnotationsAndComments(annotations, comments);
 
-      const filename = `annotations_${this.documentId}_${Date.now()}.json`;
+      const filename = `annotations_${this.documentId}_${Date.now()}`;
       downloadObjectsAs(content, filename, "json");
 
     },

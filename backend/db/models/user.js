@@ -210,26 +210,51 @@ module.exports = (sequelize, DataTypes) => {
                 options.include = options.include.concat(include);
             } else {
                 options.include = include;
-            }
-
+            }            
+            options.plain = false;
+            options.nest = false;
+            
             return await super.getAll(options).then((users) => {
                 const result = users.reduce((acc, item) => {
                     if (!acc[item.id]) {
+                        // Extract user roles from the result
+                        let extractedRoles = [];
+                        
+                        if (item['roles.userRoleId'] !== undefined && item['roles.userRoleId'] !== null) {
+                            // Flattened format (expected)
+                            extractedRoles.push(item['roles.userRoleId']);
+                            // { id: 1, firstName: "admin", "roles.userRoleId": 2 }
+                        } else if (Array.isArray(item.roles)) {
+                            // Nested format from cache - array of numbers
+                            extractedRoles = item.roles.filter(r => typeof r === 'number');
+                            // { id: 1, firstName: "admin", roles: [2] }
+                        }
+                        
                         acc[item.id] = item;
-                        acc[item.id].roles = [];
-                    }
-                    if (item['roles.userRoleId']) {
-                        acc[item.id].roles.push(item['roles.userRoleId']);
+                        acc[item.id].roles = extractedRoles;
+                    } else {
+                        // User already exists, add role if not already present
+                        const roleId = item['roles.userRoleId'] || (Array.isArray(item.roles) ? item.roles[0] : null);
+                        if (roleId !== null && roleId !== undefined && !acc[item.id].roles.includes(roleId)) {
+                            acc[item.id].roles.push(roleId);
+                        }
                     }
                     return acc;
                 }, {});
                 // return only list of values
-                return Object.values(result).map((item) => {
+                const finalUsers = Object.values(result).map((item) => {
                     // delete key roles.userRoleId
                     delete item['roles.userRoleId'];
+                    if (item.roles && !Array.isArray(item.roles)) { 
+                        delete item.roles;
+                    }
+                    if (!item.roles) {
+                        item.roles = [];
+                    }
                     return item;
                 });
 
+                return finalUsers; 
             });
         }
 
@@ -453,41 +478,38 @@ module.exports = (sequelize, DataTypes) => {
      */
     async function assignUserRoles(user, roles, roleMap, isUpdated = false, transaction) {
         try {
-            // User created via CARE registration procedure
-            if (!roles) {
-                const userRole = await user.sequelize.models["user_role"].findOne({
-                    where: {name: "user"},
-                    transaction,
-                });
-                await user.sequelize.models["user_role_matching"].create(
-                    {
-                        userId: user.id,
-                        userRoleId: userRole.id,
-                    },
-                    {transaction}
-                );
-                return;
-            }
+            const roleModel = user.sequelize.models["user_role"];
+            const roleMatchingModel = user.sequelize.models["user_role_matching"];
 
             // User updated via import procedure
             // To ensure user roles are consistent across different platforms, delete the existing roles first.
             if (isUpdated) {
-                await user.sequelize.models["user_role_matching"].destroy({
+                await roleMatchingModel.destroy({
                     where: {userId: user.id},
                     transaction,
                 });
             }
 
-            // User created via import procedure
-            const userRoles = roles.split(", ").map((role) => role.trim());
-            for (let roleName of userRoles) {
-                const userRole = await user.sequelize.models["user_role"].findOne({
-                    where: {name: roleMap[roleName]},
+            const addedRoleNames = new Set(["user"]);
+
+            if (roles) {
+                const userRoles = roles.split(",").map((role) => role.trim()).filter(Boolean);
+                for (let roleName of userRoles) {
+                    const mappedRoleName = roleMap ? roleMap[roleName] : roleName;
+                    if (mappedRoleName) {
+                        addedRoleNames.add(mappedRoleName);
+                    }
+                }
+            }
+
+            for (let roleName of addedRoleNames) {
+                const userRole = await roleModel.findOne({
+                    where: {name: roleName},
                     transaction,
                 });
 
                 if (userRole) {
-                    await user.sequelize.models["user_role_matching"].create(
+                    await roleMatchingModel.create(
                         {
                             userId: user.id,
                             userRoleId: userRole.id,

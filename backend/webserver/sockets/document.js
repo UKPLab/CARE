@@ -8,7 +8,7 @@ const {getTextPositions} = require("../../utils/text.js");
 const {enqueueDocumentTask} = require("../../utils/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
-const { Op } = require('sequelize');
+const {Op} = require('sequelize');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -140,7 +140,7 @@ class DocumentSocket extends Socket {
                     readyForReview: data.isUploaded ?? false,
                     submissionId: data.submissionId
                 },
-                { transaction: options.transaction }
+                {transaction: options.transaction}
             );
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
@@ -721,7 +721,7 @@ class DocumentSocket extends Socket {
 
     /**
      * Check a list of submissions if they have already existed in the database by extId
-     * 
+     *
      * @param data The data object containing the submissions to check at least extId key is required
      * @param options The options object
      * @returns {Promise<Array<Object>>} An array of objects containing the status of the submissions
@@ -756,7 +756,8 @@ class DocumentSocket extends Socket {
         const submissions = data.submissions || [];
 
         for (const submission of submissions) {
-            const transaction = options.transaction;
+            // Create a new transaction for each submission
+            const transaction = await this.server.db.sequelize.transaction();
             let tempFiles = [];
 
             try {
@@ -779,12 +780,12 @@ class DocumentSocket extends Socket {
                         group: data.group,
                         validationConfigurationId: data.validationConfigurationId,
                     },
-                    { transaction }
+                    {transaction}
                 );
 
                 const documentIds = [];
                 for (const file of tempFiles) {
-                    const { doc } = await this.addDocument(
+                    const {doc} = await this.addDocument(
                         {
                             file: file.content,
                             name: file.fileName,
@@ -792,10 +793,14 @@ class DocumentSocket extends Socket {
                             isUploaded: true,
                             submissionId: submissionEntry.id,
                         },
-                        { transaction }
+                        {transaction}
                     );
                     documentIds.push(doc.id);
                 }
+
+                await transaction.commit().then(() => {
+                    this.broadcastTransactionChanges(transaction);
+                });
 
                 downloadedSubmissions.push({
                     submissionId: submissionEntry.id,
@@ -803,6 +808,7 @@ class DocumentSocket extends Socket {
                 });
             } catch (err) {
                 this.logger.error(err.message);
+                await transaction.rollback();
                 downloadedErrors.push({
                     userId: submission.userId,
                     firstName: submission.firstName,
@@ -819,7 +825,7 @@ class DocumentSocket extends Socket {
             });
         }
 
-        return { downloadedSubmissions, downloadedErrors };
+        return {downloadedSubmissions, downloadedErrors};
     }
 
     /**
@@ -837,7 +843,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const { files, userId, group, validationConfigurationId } = data;
+        const {files, userId, group, validationConfigurationId} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -846,12 +852,12 @@ class DocumentSocket extends Socket {
                 throw new Error(result.message || "Validation failed");
             }
 
-            const submission = await this.models["submission"].add({ 
-                userId, 
+            const submission = await this.models["submission"].add({
+                userId,
                 group,
-                validationConfigurationId, 
-                createdByUserId: this.userId 
-            }, { transaction });
+                validationConfigurationId,
+                createdByUserId: this.userId
+            }, {transaction});
             for (const file of files) {
                 await this.addDocument(
                     {
@@ -861,7 +867,7 @@ class DocumentSocket extends Socket {
                         isUploaded: true,
                         submissionId: submission.id,
                     },
-                    { transaction }
+                    {transaction}
                 );
             }
         } catch (error) {
@@ -957,16 +963,16 @@ class DocumentSocket extends Socket {
             const extensionMap = {
                 [docTypes.DOC_TYPE_ZIP]: ".zip",
             }
-            
+
             const fileExtension = extensionMap[document.type] || ".pdf";
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
-            
+
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
             let file = fs.readFileSync(filePath); // Buffer
-            return { document, file };
+            return {document, file};
         }
     }
 
@@ -1018,7 +1024,6 @@ class DocumentSocket extends Socket {
     }
 
 
-    
     /**
      * Retrieve document data for a particular document/study_session/study_step from the document_data table.
      *
@@ -1039,16 +1044,22 @@ class DocumentSocket extends Socket {
             deleted: false
         };
 
-        if (data.key != null) {
-            whereClause.key = data.partialMatch ? { [Op.like]: `${data.key}%` } : data.key;
+        if (data.key) {
+            whereClause.key = data.partialMatch ? {[Op.like]: `${data.key}%`} : data.key;
         }
 
-        return await this.models['document_data'].findOne({
+        const documentData = await this.models['document_data'].findAll({
             where: whereClause,
             order: [['updatedAt', 'DESC']],
             raw: true,
             transaction: options && options.transaction
         });
+
+        return documentData.reduce((acc, item) => {
+            acc[item.key] = item.value;
+            return acc;
+        }, {});
+
     }
 
     /**
@@ -1138,7 +1149,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentAdd", this.addDocument, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
-        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
+        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
         this.createSocket("documentDataGet", this.getDocumentData, {}, false);

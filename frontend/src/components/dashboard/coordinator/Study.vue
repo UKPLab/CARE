@@ -13,15 +13,21 @@
       {{ modalTitle }}
     </template>
     <template #success>
-      The study has been successfully published<br>
-      Participants can join the study under the following link:<br><br>
-      <a
-          :href="link"
-          target="_blank"
-      >{{ link }}</a>
+      <div v-if="isTemplateMode">
+        Template has been successfully created.
+      </div>
+      <div v-else>
+        The study has been successfully published<br>
+        Participants can join the study under the following link:<br><br>
+        <a
+            :href="link"
+            target="_blank"
+        >{{ link }}</a>
+      </div>
     </template>
     <template v-if="isSuccess" #buttons>
       <button
+          v-if="!isTemplateMode"
           class="btn btn-primary"
           @click="copyURL"
       >Copy Link
@@ -82,7 +88,7 @@ export default {
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
-      this.$refs.coordinator.open(studyId, {documentId: this.documentId}, copy);
+      this.$refs.coordinator.open(studyId, {documentId: this.documentId, isTemplateMode: templateMode}, copy);
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {

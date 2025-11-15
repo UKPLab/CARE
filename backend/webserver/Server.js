@@ -323,10 +323,7 @@ module.exports = class Server {
         };
 
         this.io = new WebSocketServer(this.httpServer, socketIoOptions);
-        this.io.appDataSubscriptions = {
-                tables: {}
-        };
-        // initalize app data subscriptions
+
 
         const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
         this.io.use(wrap(this.session));
@@ -383,10 +380,6 @@ module.exports = class Server {
                         this.logger.warn("Failed to flush stats on disconnect: " + e);
                     }
 
-                    // delete table subscriptions on disconnect (in case unmounted is not called)
-                    Object.entries(socket.appDataSubscriptions).forEach(([key, value]) => {
-                        this.io.appDataSubscriptions[value.table].delete(key);
-                    });
                     
                     delete this.availSockets[socket.id];
                 } catch (err) {

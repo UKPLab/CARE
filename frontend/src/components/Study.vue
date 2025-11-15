@@ -80,61 +80,73 @@
       v-if="studySessionId !== 0"
       class="study-container"
   >
-    <Annotator
-        v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
-        ref="annotator"
-        :document-id="currentStep.documentId"
-        :study-step-id="currentStep.id"
-        @error="error"
-        @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    >
-      <template v-if="studyStepHasAssessment" #additionalSidebars>
-        <SidebarTemplate icon="list-check" title="Assessment">
-          <template #content>
-            <Assessment
-                ref="assessmentAnnotator"
-                @assessment-ready-changed="isCurrentStepReady = $event"
-                @state-changed="onAssessmentStateChanged"
-                @update:data="onNlpDataUpdate($event)"/>
-          </template>
-        </SidebarTemplate>
-      </template>
-    </Annotator>
-    <Editor
-        v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
-        :document-id="currentStep.documentId"
-        :study-step-id="currentStep.id"
-        :without-history="true"
-        @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    >
-      <template v-if="studyStepHasAssessment" #additionalSidebars>
-        <SidebarTemplate icon="list-check" title="Assessment">
-          <template #content>
-            <Assessment
-                ref="assessmentEditor"
-                @assessment-ready-changed="isCurrentStepReady = $event"
-                @can-proceed-changed="canProceed = $event"
-                @update:data="onNlpDataUpdate($event)"
+    <div v-for="step in studySteps" :key="'step_' + step.id">
+      <div v-show="currentStudyStepId === step.id">
+        <div v-if="studyTrajectory.includes(currentStudyStepId) || readOnly">
+
+          <div v-if="!(studySession && studySession.start === null)">
+            <LoadingModal
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :show="currentStudyStepId === step.id && !readOnly"
+                @update:data="updateStudyData(step.id, 'data', $event)"
             />
-          </template>
-        </SidebarTemplate>
-      </template>
-    </Editor>
-    <NlpModal
-        v-if="currentStep.stepType !== 3 && hasNlpForCurrentStep && (studyTrajectory.includes(currentStep.id) || currentStep.id === currentStudyStepId || readOnlyComputed)"
-        :key="currentStep.id + '-nlp'"
-        ref="nlpModal"
-        :study-step-id="currentStep.id"
-        @close="onNlpModalClose"
-        @update:data="onNlpDataUpdate($event)"
-    />
-    <StepModal
-        v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
-        :study-step-id="currentStep.id"
-        :is-last-step="currentStep.id === lastStep.id"
-        @close="handleModalClose"
-        @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
-    />
+          </div>
+          <div>
+
+            <Annotator
+                v-if="step.stepType === 1"
+                :document-id="step.documentId"
+                :study-step-id="step.id"
+                @error="error"
+                @update:data="updateStudyData(step.id, 'annotator', $event)"
+            >
+              <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
+                <SidebarTemplate icon="list-check" title="Assessment">
+                  <template #content>
+                    <Assessment
+                        :config="step.configuration"
+                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @update:data="updateStudyData(step.id, 'assessment', $event)"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
+            </Annotator>
+
+            <Editor
+                v-if="step.stepType === 2"
+                :document-id="step.documentId"
+                :study-step-id="step.id"
+                :without-history="true"
+                @update:data="updateStudyData(step.id, 'editor', $event)"
+            >
+              <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
+                <SidebarTemplate icon="list-check" title="Assessment">
+                  <template #content>
+                    <Assessment
+                        :config="step.configuration"
+                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @update:data="updateStudyData(step.id, 'assessment', $event)"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
+            </Editor>
+
+            <StepModal
+                v-if="step.stepType === 3"
+                :study-step-id="step.id"
+                :is-last-step="step.id === lastStep.id"
+                @close="handleModalClose"
+                @update:data="updateStudyData(step.id, 'modal', $event)"
+            />
+
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -153,11 +165,12 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import {computed, nextTick} from "vue";
+import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import NlpModal from "../basic/modal/NlpModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import LoadingModal from "@/components/study/LoadingModal.vue";
 
 export default {
   name: "StudyRoute",
@@ -171,28 +184,19 @@ export default {
     Editor,
     TopBarButton,
     StepModal,
-    NlpModal
+    NlpModal,
+    LoadingModal
   },
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
-      currentStudyStep: computed(() => this.currentStep),
-      isManualAssessmentWorkflow: computed(() => {
-        const cfg = this.currentStep?.configuration || {};
-        const hasConfig = !!(cfg.configFile || cfg.configurationId);
-        const hasServices = !!cfg.services;
-        return hasConfig && !hasServices;
-      }),
-      isAIAssessmentWorkflow: computed(() => {
-        const cfg = this.currentStep?.configuration || {};
-        const hasConfig = !!(cfg.configFile || cfg.configurationId);
-        const hasServices = !!cfg.services;
-        return hasConfig && !!hasServices;
-      }),
+      currentStudyStep: computed(() => this.currentStep)
     };
   },
+  // TODO: Only subscribe relevant entries (like current study session and steps)
+  subscribeTable: ["study_step", "study_session"],
   props: {
     studyHash: {
       type: String,
@@ -216,11 +220,10 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
-      studyData: [], // Data from all the study steps
-      isCurrentStepReady: true,
+      studyData: {}, // Data from all the study steps
+      stepsReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
-      openNlpOnStepEnter: false
     };
   },
   computed: {
@@ -232,14 +235,42 @@ export default {
       if (!Array.isArray(services)) return false;
       return services.some(s => s && s.type === 'nlpRequest');
     },
-    studyStepHasAssessment() {
-      return !!this.currentStep.configuration.configurationId;
-    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters["table/study_session/get"](this.studySessionId);
       }
       return null;
+    },
+    skillName() {
+      const config = this.currentStudyStep?.configuration;
+      if (!config?.services) {
+        return null;
+      }
+
+      const service = config.services.find(s => s.skill);
+      return service?.skill || null;
+    },
+    serviceName() {
+      const service = this.currentStudyStep?.configuration?.services?.find(s => s.skill);
+      if (!service) return null;
+
+      const uniqueId = service.name || service.uniqueId;
+      if (!uniqueId) return null;
+
+      // Remove 'service_' prefix if present
+      return uniqueId.startsWith('service_') ? uniqueId.slice('service_'.length) : uniqueId;
+    },
+    feedbackDataKey() {
+      const skillName = this.skillName;
+      const serviceName = this.serviceName;
+
+      if (!skillName || !serviceName) {
+        return null;
+      }
+
+      // Build key in the same format as NlpRequestCore.saveResult
+      // Key format: ${serviceName}_${skill}_textual_feedback
+      return `${serviceName}_${skillName}_textual_feedback`;
     },
     study() {
       if (this.studySession) {
@@ -330,6 +361,9 @@ export default {
       }
       return false;
     },
+    isCurrentStepReady() {
+      return this.stepsReady[this.currentStudyStepId] !== false;
+    },
     readOnlyComputed() {
       if (this.readOnly) {
         return this.readOnly;
@@ -342,7 +376,7 @@ export default {
       }
       return false;
     },
-    
+
   },
   watch: {
     studySession() {
@@ -358,66 +392,42 @@ export default {
           this.timerInterval = setInterval(this.calcTimeLeft, 1000);
         }
       }
-    },
-    currentStep(oldStep, newStep) {
-      if (oldStep && newStep && oldStep.id !== newStep.id) {
-        this.isCurrentStepReady = true;
-      }
-    },
-    studyHash() {
-      this.getStudyData();
-    },
-    async studySteps(newSteps) {
-      if (newSteps.length > 0) {
-        await nextTick();
-        this.populateStudyData();
-      }
-    },
+    }
   },
   async mounted() {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
-    await nextTick();
-    this.populateStudyData();
-  },
-  sockets: {
-    studyError: function (data) {
-      if (data.studyHash === this.studyHash) {
-        this.eventBus.emit("toast", {
-          title: "Study Error",
-          message: data.message,
-          variant: "danger",
-        });
-        this.error();
-        this.$router.push("/");
-      }
-    },
   },
   methods: {
+    updateStudyData(stepId, data_type, data) {
+      console.log("Study Data Update:", stepId, data_type, data);
+      if (!this.studyData[stepId]) {
+        this.studyData[stepId] = {};
+      }
+      this.studyData[stepId][data_type] = data;
+    },
     onNlpDataUpdate(entries) {
+      console.log("NLP Data Update:", entries);
       try {
         const idx = this.studySteps.findIndex(step => step.id === (this.nlpModalStepId || this.currentStep.id));
         const bucketIndex = idx + 1;
-        if (!this.studyData[bucketIndex]) this.studyData[bucketIndex] = {};
+
+        if (!this.studyData[bucketIndex]) {
+          this.studyData[bucketIndex] = {};
+        }
         const bucket = this.studyData[bucketIndex];
-        if (Array.isArray(entries)) {
-          entries.forEach(entry => {
-            if (entry && entry.key) {
-              bucket[entry.key] = entry.value;
-            }
-          });
+
+        entries.forEach(entry => {
+          if (entry?.key) {
+            bucket[entry.key] = entry.value;
+          }
+        });
+        if (this.currentStep.stepType === 2 && this.hasNlpForCurrentStep) {
+          this.$refs.editor.addText(this.studyData[bucketIndex][this.feedbackDataKey] || '');
         }
         this.$forceUpdate();
       } catch (e) {
         // ignore
-      }
-    },
-    populateStudyData() {
-      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
-        this.studyData = this.studySteps.reduce((acc, step, index) => {
-          acc[index + 1] = {};
-          return acc;
-        }, {});
       }
     },
     nextWithNlpGuard() {
@@ -427,12 +437,6 @@ export default {
     },
     onNlpModalClose() {
       this.nlpModalStepId = null;
-      this.nlpModalReason = null;
-      
-      // For AI assessment workflows, refresh assessment data when NLP modal closes
-      if (this.isAIAssessmentWorkflow && this.$refs.assessmentEditor) {
-        this.$refs.assessmentEditor.loadSavedAssessmentData();
-      }
     },
     getStudyData() {
       if (this.studyHash) {
@@ -440,7 +444,7 @@ export default {
             "appDataByHash",
             {
               table: "study",
-              hash: this.studyHash,
+              hash: this.studyHash
             },
             (response) => {
               if (!response.success) {
@@ -526,15 +530,6 @@ export default {
       }
     },
     updateStep(step) {
-      // Check if assessment allows proceeding (if current step has assessment)
-      // if (this.studyStepHasAssessment) {
-      //   this.eventBus.emit("toast", {
-      //     title: "Cannot proceed",
-      //     message: "Please complete the assessment before proceeding to the next step.",
-      //     variant: "danger",
-      //   });
-      //   return;
-      // }
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {

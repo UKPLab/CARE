@@ -99,7 +99,7 @@ export default {
   computed: {
     documents() {
       return this.$store.getters["table/document/getFiltered"](
-          (doc) => doc.projectId === this.projectId 
+          (doc) => doc.projectId === this.projectId && doc.type !== 4
       );
     },
     projectId() {

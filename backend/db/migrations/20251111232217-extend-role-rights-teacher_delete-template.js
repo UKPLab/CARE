@@ -2,25 +2,9 @@
 
 const roleRights = [
   {
-    role: "user",
-    userRightName: "frontend.dashboard.home.view",
-  },
-  {
-    role: "user",
-    userRightName: "frontend.dashboard.documents.view",
-  },
-  {
-    role: "user",
-    userRightName: "frontend.dashboard.tags.view",
-  },
-  {
-    role: "user",
-    userRightName: "frontend.dashboard.projects.view",
-  },
-  {
-    role: "user",
-    userRightName: "frontend.dashboard.study_sessions.view",
-  },
+    role: "admin",
+    userRightName: "study.template.delete",
+  }
 ];
 
 /** @type {import('sequelize-cli').Migration} */

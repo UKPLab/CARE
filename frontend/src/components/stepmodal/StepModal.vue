@@ -16,71 +16,33 @@
         </h5>
       </template>  
       <template #body>
-        <NlpRequest
-          ref="req"
-          :study-step-id="studyStepId"
-          :loading-only="loadingOnly"
-          :auto-close-on-complete="autoCloseOnComplete"
-          @waiting-change="onReqWaitingChange"
-          @timeout-error="onReqTimeoutError"
-          @complete="onReqComplete"
-          @close="onReqChildClose"
-        />
         <div
-          v-if="waiting"
-          class="justify-content-center flex-grow-1 d-flex"
-          role="status"
+          class="feedback-container p-3"
+          :style="{ color: studyStep?.configuration?.textColor || '' }"
         >
-          <div v-if="!timeoutError" class="spinner-border m-5">
-            <span class="visually-hidden">Loading...</span>          
-          </div>
-          <div v-else>
-            <div class="d-flex flex-column align-items-center">
-              <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
-              <div class="d-flex gap-2">
-                <BasicButton
-                  title="Try Again"
-                  class="btn btn-warning"
-                  @click="retryNlpRequests"
-                />
-                <BasicButton
-                  title="Skip NLP Support"
-                  class="btn btn-secondary"
-                  @click="closeModal({ nextStep: true })"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="!loadingOnly">
-          <div
-            class="feedback-container p-3"
-            :style="{ color: studyStep?.configuration?.textColor || '' }"
-          >
-            <p v-if="!documentText && !loadingOnly">
-              No content available for this step.
-            </p>
+          <p v-if="!documentText">
+            No content available for this step.
+          </p>
 
-            <div v-else>
-                <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
-                  <template v-if="segment.type === 'plainText'">
-                    <span v-html="segment.value"></span>
-                  </template>                    <template v-else-if="segment.type === 'text'">
-                    <TextPlaceholder :config="segment.config" />
-                  </template>
-                  <template v-else-if="segment.type === 'chart'">
-                    <Chart :config="segment.config" />
-                  </template>
-                  <template v-else-if="segment.type === 'comparison'">
-                    <Comparison :config="segment.config" />
-                  </template>
-                </div>
-            </div>
+          <div v-else>
+              <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
+                <template v-if="segment.type === 'plainText'">
+                  <span v-html="segment.value"></span>
+                </template>                    <template v-else-if="segment.type === 'text'">
+                  <TextPlaceholder :config="segment.config" />
+                </template>
+                <template v-else-if="segment.type === 'chart'">
+                  <Chart :config="segment.config" />
+                </template>
+                <template v-else-if="segment.type === 'comparison'">
+                  <Comparison :config="segment.config" />
+                </template>
+              </div>
           </div>
         </div>      
       </template>
       <template #footer>
-        <div v-if="!waiting && !loadingOnly">
+        <div v-if="!waiting">
           <BasicButton
             v-if="!isLastStep"
             :title="studyStep?.configuration?.nextButtonText || 'Next'"
@@ -121,7 +83,6 @@ import Quill from "quill";
 import TextPlaceholder from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
 import Comparison from "./placeholders/Comparison.vue";
-import NlpRequestCore from "../../basic/service/NlpRequestCore.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -132,7 +93,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison, NlpRequest: NlpRequestCore },
+  components: { BasicButton, BasicModal, TextPlaceholder, Chart, Comparison},
   subscribeTable: ["document", "document_data", "study_step", "configuration"],
   inject: {
     studySessionId: {
@@ -165,10 +126,6 @@ export default {
       type: Boolean,
       default: false
     },
-    loadingOnly: {
-      type: Boolean,
-      default: false
-    },
     autoCloseOnComplete: {
       type: Boolean,
       default: false
@@ -180,7 +137,6 @@ export default {
       loadingConfig: true,
       documentText: null,
       waiting: false,
-      timeoutError: false,
     };
   },
   computed: {
@@ -257,22 +213,18 @@ export default {
     },
     placeholders: {
       handler() {
-        if (!this.loadingOnly) {
           if ((this.placeholders == null || Object.keys(this.placeholders).length === 0) && !this.waiting) {   
             this.waiting = false;   
           }
         }
       },
       immediate: true
-    },
   },
   created() {
     if (this.configuration) {
       this.loadingConfig = false;
     }
 
-    if (!this.loadingOnly) {
-      // Show loader while fetching document content
       this.waiting = true;
       this.$socket.emit("documentGet",
         {
@@ -288,26 +240,17 @@ export default {
           } else {
             this.documentText = "Failed to load the document content.";
           }
-          // Hide loader after content is processed
           this.waiting = false;
         }
       );
-    }
 
   },  
   async mounted() {
-    if (this.readOnly) {
-      this.waiting = false;
-    }
-    
     // Inspect sessions update the specific document data sometimes before the modal opens and the watcher is not triggered
     if (this.readOnly){
       this.$emit("update:data", this.specificDocumentData); 
     }
 
-    if (this.loadingOnly && !this.waiting) {
-      return;
-    }
     this.$refs.modal.open();
   },  
   methods: {
@@ -321,31 +264,6 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    onReqWaitingChange(val) {
-      this.waiting = val;
-    },
-    onReqTimeoutError(val) {
-      this.timeoutError = val;
-    },
-    onReqComplete() {
-            this.waiting = false;
-      if (this.loadingOnly && this.autoCloseOnComplete) {
-        this.$emit('close', { autoClosed: true });
-            this.$refs.modal.close();
-      }
-    },
-    onReqChildClose(payload) {
-      // Propagate closes initiated by child request component
-      this.waiting = false;
-      this.$emit('close', payload || {});
-      this.$refs.modal.close();
-    },
-    async retryNlpRequests() {
-      this.timeoutError = false;
-      if (this.$refs.req) {
-        await this.$refs.req.retryNlpRequests();
-      }
-    },    
 
     async exportStudyData() {
       if (this.isAdmin){

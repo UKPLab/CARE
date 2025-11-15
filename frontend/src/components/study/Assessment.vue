@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <h4 class="mb-0">Assessment</h4>
-        <span v-if="assessmentOutput && assessmentOutput.criteriaGroups" class="badge">{{ totalPoints }} P</span>
+        <span v-if="configuration && configuration.rubrics" class="badge">{{ totalPoints }} P</span>
         <span v-if="readOnly" class="badge bg-secondary">Read Only</span>
       </div>
     </div>
@@ -14,55 +14,55 @@
         <p class="mb-0">{{ error }}</p>
       </div>
 
-      <div v-else-if="assessmentOutput" class="assessment-results">
+      <div v-else-if="configuration" class="assessment-results">
         <div
-            v-if="assessmentOutput.criteriaGroups"
+            v-if="configuration.rubrics && configuration.rubrics.length > 0"
             class="criteria-groups-section"
         >
           <div
-              v-for="(group, groupIndex) in assessmentOutput.criteriaGroups"
-              :key="groupIndex"
+              v-for="(rubric, rubricIndex) in assessmentOutput.criteriaGroups"
+              :key="rubricIndex"
               class="criteria-group-card card mb-2"
           >
             <!-- Group Header -->
             <div
                 class="card-header d-flex justify-content-between align-items-center"
                 style="cursor: pointer"
-                @click="toggleGroup(groupIndex)"
+                @click="toggleGroup(rubricIndex)"
             >
               <div class="d-flex align-items-center flex-grow-1">
                 <LoadIcon
-                    :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
+                    :icon-name="expandedGroups[rubricIndex] ? 'chevron-down' : 'chevron-right'"
                     :size="16"
                     class="me-2"
                 />
-                <span class="fw-bold">{{ group.name }}</span>
+                <span class="fw-bold">{{ rubric.name }}</span>
               </div>
               <div class="d-flex align-items-center">
                 <span
-                    v-if="group.description"
+                    v-if="rubric.description"
                     class="info-icon me-2"
                     style="cursor: help;"
-                    @click.stop="toggleInfoPanelPin(group, null)"
-                    @mouseenter="openInfoPanel(group, null)"
+                    @click.stop="toggleInfoPanelPin(rubric, null)"
+                    @mouseenter="openInfoPanel(rubric, null)"
                     @mouseleave="closeInfoPanel"
                 >
                   <LoadIcon icon-name="info-circle" :size="14"/>
                 </span>
                 <span
                     class="badge"
-                    :class="(readOnly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
+                    :class="(readOnly || isGroupSaved(rubricIndex)) ? 'bg-success' : 'bg-secondary'"
                 >
-                  {{ group.score }} P
+                  {{ rubric.score }} P
                 </span>
               </div>
             </div>
 
             <!-- Group Content -->
-            <div v-if="expandedGroups[groupIndex]" class="card-body">
+            <div v-if="expandedGroups[rubricIndex]" class="card-body">
               <div class="criteria-list">
                 <div
-                    v-for="(criterion, criterionIndex) in group.criteria"
+                    v-for="(criterion, criterionIndex) in rubric.criteria"
                     :key="criterionIndex"
                     class="criterion-item"
                 >
@@ -70,12 +70,12 @@
                   <div
                       class="d-flex justify-content-between align-items-center py-2"
                       style="cursor: pointer"
-                      @click="toggleCriterion(groupIndex, criterionIndex)"
+                      @click="toggleCriterion(rubricIndex, criterionIndex)"
                   >
                     <div class="d-flex align-items-center">
                       <span class="criterion-icon me-2">
                         <LoadIcon
-                            :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
+                            :icon-name="expandedCriteria[`${rubricIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
                             :size="16"
                         />
                       </span>
@@ -106,7 +106,7 @@
 
                   <!-- Criterion Assessment -->
                   <div
-                      v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
+                      v-if="expandedCriteria[`${rubricIndex}-${criterionIndex}`]"
                       class="criterion-assessment mt-2 px-3 pb-2"
                   >
                     <div class="assessment-text">
@@ -136,7 +136,7 @@
                               v-if="!readOnly"
                               class="btn btn-outline-primary btn-sm"
                               title="Edit"
-                              @click="startEdit(groupIndex, criterionIndex)"
+                              @click="startEdit(rubricIndex, criterionIndex)"
                           >
                             <LoadIcon icon-name="pen" :size="14"/>
                           </button>
@@ -147,7 +147,7 @@
                               v-model="criterion.currentScore"
                               class="form-select form-select-sm score-dropdown"
                               title="Change score"
-                              @change="onScoreChange(groupIndex, criterionIndex)"
+                              @change="onScoreChange(rubricIndex, criterionIndex)"
                           >
                             <option
                                 v-for="point in getAvailablePoints(criterion)"
@@ -161,7 +161,7 @@
                           <button
                               :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
                               :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
-                              @click="saveAssessment(groupIndex, criterionIndex)"
+                              @click="saveAssessment(rubricIndex, criterionIndex)"
                           >
                             <LoadIcon icon-name="floppy" :size="14"/>
                           </button>
@@ -172,7 +172,7 @@
                             v-if="!readOnly"
                             class="btn btn-primary btn-sm"
                             title="Save"
-                            @click="saveEdit(groupIndex, criterionIndex)"
+                            @click="saveEdit(rubricIndex, criterionIndex)"
                         >
                           <LoadIcon icon-name="floppy" :size="14"/>
                         </button>
@@ -180,7 +180,7 @@
                             v-if="!readOnly"
                             class="btn btn-secondary btn-sm"
                             title="Cancel"
-                            @click="cancelEdit(groupIndex, criterionIndex)"
+                            @click="cancelEdit(rubricIndex, criterionIndex)"
                         >
                           <LoadIcon icon-name="x-lg" :size="14"/>
                         </button>
@@ -199,8 +199,8 @@
       </div>
     </div>
   </div>
-    <!-- Floating Info Panel -->
-    <FloatingInfoPanel
+  <!-- Floating Info Panel -->
+  <FloatingInfoPanel
       ref="infoPanel"
       :show="showInfoPanel"
       :selected-item="selectedCriterion"
@@ -208,30 +208,35 @@
       :is-pinned="isPinned"
       :position="'left'"
       @close-requested="onInfoPanelCloseRequested"
-    />
+  />
 </template>
 
-/**
-* Assessment Component
-*
-* This component displays the assessment results, including criteria groups, scoring, and additional information panels.
-* It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
-*
-* @author: Akash Gundapuneni
-*/
 
 <script>
+/**
+ * Assessment Component
+ *
+ * This component displays the assessment results, including criteria groups, scoring, and additional information panels.
+ * It provides an interactive sidebar for navigating assessment details and supports read-only and editable modes.
+ *
+ * @author: Akash Gundapuneni, Dennis Zyska, Karim Ouf
+ */
 import LoadIcon from "@/basic/Icon.vue";
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 
 export default {
-  name: "AssessmentOutput",
+  name: "AssessmentSidebar",
   components: {
     LoadIcon,
     FloatingInfoPanel
   },
-  subscribeTable: ["configuration"],
-
+  subscribeTable: [{
+    table: "configuration",
+    filter: [{
+      key: "type",
+      value: 0
+    }],
+  }],
   inject: {
     documentId: {
       type: Number,
@@ -247,7 +252,6 @@ export default {
       required: false,
       default: null
     },
-    
     readOnly: {
       type: Boolean,
       required: false,
@@ -258,45 +262,75 @@ export default {
       required: true,
       default: null
     },
-    isManualAssessmentWorkflow: {
-      type: Boolean,
+    studyData: {
+      type: Array,
       required: false,
-      default: false
-    },
-    isAIAssessmentWorkflow: {
-      type: Boolean,
-      required: false,
-      default: false
+      default: () => []
     }
   },
   props: {
-    show: {type: Boolean, required: false, default: true},
-    savedState: {type: Object, required: false, default: () => ({})},
+    show: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    savedState: {
+      type: Object,
+      required: false,
+      default: () => ({})
+    },
+    config: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    }
   },
-
   emits: ['state-changed', 'assessment-ready-changed', 'update:data'],
-
   data() {
     return {
       // Assessment data
       error: null,
-      assessmentOutput: null,
       expandedGroups: {},
       expandedCriteria: {},
+      assessmentOutput: null,
 
       // Info panel
       showInfoPanel: false,
       selectedCriterion: null,
       selectedElement: null,
-      isPinned: false
+      isPinned: false,
+
+      // Prevent stepBucket watcher from overwriting during save
+      isSaving: false,
+      // Track if step-scoped saved data has been loaded to prevent overwriting
+      hasStepScopedData: false
     };
   },
-
   computed: {
+    isAIAssessmentWorkflow() {
+      const settings = this.config.settings || {};
+      const hasConfig = !!(settings.configFile || settings.configurationId);
+      const hasServices = !!(this.config.services && Array.isArray(this.config.services) && this.config.services.length > 0);
+      return hasConfig && hasServices;
+    },
+    configurationId() {
+      return this.config.settings?.configurationId || null;
+    },
     configuration() {
-      const cfg = this.currentStudyStep?.configuration || {};
-      const cfgId = cfg.configurationId || cfg.configFile;
-      return this.$store.getters['table/configuration/get'](cfgId);
+      if (!this.configurationId) return null;
+      return this.$store.getters['table/configuration/get'](this.configurationId)?.content || null;
+    },
+    studySteps() {
+      const sid = this.currentStudyStep?.studyId;
+      return sid ? (this.$store.getters['table/study_step/getByKey']('studyId', sid) || []) : [];
+    },
+    stepBucketIndex() {
+      const idx = this.studySteps.findIndex(s => s && s.id === this.currentStudyStep?.id);
+      return idx >= 0 ? idx + 1 : null;
+    },
+    stepBucket() {
+      if (this.stepBucketIndex == null) return null;
+      return this.studyData ? this.studyData[this.stepBucketIndex] : null;
     },
     // Centralized key management for document data operations
     assessmentDataKey() {
@@ -310,7 +344,7 @@ export default {
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
-      return this.currentStudyStep?.configuration.forcedAssessment;
+      return this.currentStudyStep?.configuration?.settings?.forcedAssessment;
     },
     areAllCriteriaSaved() {
       if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
@@ -340,7 +374,7 @@ export default {
   watch: {
     configuration: {
       handler(newConfig) {
-        if (newConfig && newConfig.content) {
+        if (newConfig) {
           this.initializeAssessmentOutput();
           this.$nextTick(() => {
             this.loadSavedAssessmentData();
@@ -348,6 +382,20 @@ export default {
         }
       },
       immediate: true
+    },
+    stepBucket: {
+      handler() {
+        // Skip if we're currently saving to prevent overwriting user changes
+        if (this.isSaving) return;
+        if (!this.isAIAssessmentWorkflow) return;
+        // Skip if we have step-scoped saved data (user modifications) to prevent overwriting
+        if (this.hasStepScopedData) return;
+        const v = this.findAssessmentValueInBucket();
+        if (v) {
+          this.mergeSavedDataWithConfiguration(v, false, null);
+        }
+      },
+      deep: true
     },
     isAssessmentComplete: {
       handler(v) {
@@ -359,7 +407,9 @@ export default {
       if (newVal && Object.keys(this.savedState).length > 0) {
         this.restoreState();
       } else if (newVal && this.assessmentOutput) {
-        // When component becomes visible, refresh saved data to pick up any new preprocessed data
+        // When component becomes visible, refresh saved data
+        // Reset flag to allow checking for step-scoped data again
+        this.hasStepScopedData = false;
         this.loadSavedAssessmentData();
       }
     },
@@ -372,6 +422,15 @@ export default {
       },
       deep: true
     },
+    studyStepId: {
+      handler() {
+        // When step changes, reload saved data for the new step
+        if (this.assessmentOutput) {
+          this.hasStepScopedData = false;
+          this.loadSavedAssessmentData();
+        }
+      }
+    },
   },
 
   mounted() {
@@ -381,13 +440,60 @@ export default {
       this.restoreState();
     }
     this.$emit('assessment-ready-changed', this.isAssessmentComplete);
+    // Load saved data on mount, prioritizing step-scoped saved data
+    if (this.assessmentOutput) {
+      this.hasStepScopedData = false;
+      this.loadSavedAssessmentData();
+    }
   },
-  
+
   beforeUnmount() {
     document.removeEventListener('mousedown', this.handleClickOutsideInfoPanel);
   },
-  
+
   methods: {
+    initializeAssessmentOutput() {
+      if (this.configuration) {
+        const criteriaGroups = this.configuration.rubrics.map((rubric, groupIndex) => {
+          const criteria = rubric.criteria.map((criterion, criterionIndex) => {
+            return {
+              id: `${groupIndex + 1}-${criterionIndex + 1}`,
+              name: criterion.name,
+              description: criterion.description,
+              maxPoints: criterion.maxPoints,
+              assessment: "",
+              isEditing: false,
+              editedAssessment: "",
+              currentScore: 0,
+              isSaved: false,
+              scoring: criterion.scoring
+            };
+          });
+
+          // Determine group scoring behavior and max score based on rubric-level calculation
+          const calculation = rubric.calculation || 'sum';
+          const sumOfCriteriaMax = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
+          const computedMaxScore = calculation === 'min' ? (rubric.maxPoints || sumOfCriteriaMax) : sumOfCriteriaMax;
+
+          return {
+            name: rubric.name,
+            description: rubric.description,
+            calculation,
+            score: 0,
+            maxScore: computedMaxScore,
+            criteria: criteria
+          };
+        });
+
+        this.assessmentOutput = {
+          criteriaGroups: criteriaGroups,
+          description: this.configuration.description,
+          version: this.configuration.version,
+          type: this.configuration.type
+        };
+      }
+    },
+
     getNlpServiceFromStep() {
       const cfg = this.currentStudyStep?.configuration;
       if (cfg && Array.isArray(cfg.services)) {
@@ -395,26 +501,42 @@ export default {
       }
       return null;
     },
+    findAssessmentValueInBucket() {
+      if (!this.isAIAssessmentWorkflow || !this.stepBucket) return null;
+      const svc = this.getNlpServiceFromStep();
+      if (!svc || !svc.skill) return null;
+      const keys = [
+        `${svc.name}_${svc.skill}_assessment`,
+        `${svc.type}_${svc.skill}_assessment`,
+        this.assessmentDataKey,
+      ].filter(Boolean);
+      for (const k of keys) {
+        if (Object.prototype.hasOwnProperty.call(this.stepBucket, k)) {
+          return this.stepBucket[k];
+        }
+      }
+      return null;
+    },
     handleClickOutsideInfoPanel(event) {
       if (!this.showInfoPanel) return;
-      
+
       // Check if the click is inside the floating panel
       const infoPanel = this.$refs.infoPanel?.$el;
       if (infoPanel && infoPanel.contains(event.target)) {
         return;
       }
-      
+
       // Check if the click is on any info icon using class selector
       const infoIcon = event.target.closest('.info-icon');
-      if (infoIcon){
+      if (infoIcon) {
         return;
       }
-      
+
       // Outside click closes panel and unpins
       this.isPinned = false;
-      this.closeInfoPanel(); 
+      this.closeInfoPanel();
     },
-    async documentDataGet(studySessionId, studyStepId, key){
+    async documentDataGet(studySessionId, studyStepId, key) {
       return await new Promise((resolve) => {
         this.$socket.emit("documentDataGet", {
           documentId: this.documentId,
@@ -429,57 +551,6 @@ export default {
         });
       });
     },
-    initializeAssessmentOutput() {
-      if (this.configuration && this.configuration.content) {
-        this.assessmentOutput = this.transformRubricsToCriteriaGroups(this.configuration.content);
-      }
-    },
-
-    transformRubricsToCriteriaGroups(configData) {
-      if (!configData.rubrics) {
-        this.error = "Invalid assessment configuration: No rubrics found";
-        return null;
-      }
-
-      const criteriaGroups = configData.rubrics.map((rubric, groupIndex) => {
-        const criteria = rubric.criteria.map((criterion, criterionIndex) => {
-          return {
-            id: `${groupIndex + 1}-${criterionIndex + 1}`,
-            name: criterion.name,
-            description: criterion.description,
-            maxPoints: criterion.maxPoints,
-            assessment: "",
-            isEditing: false,
-            editedAssessment: "",
-            currentScore: 0,
-            isSaved: false,
-            scoring: criterion.scoring
-          };
-        });
-
-        // Determine group scoring behavior and max score based on rubric-level calculation
-        const calculation = rubric.calculation || 'sum';
-        const sumOfCriteriaMax = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
-        const computedMaxScore = calculation === 'min' ? (rubric.maxPoints || sumOfCriteriaMax) : sumOfCriteriaMax;
-
-        return {
-          name: rubric.name,
-          description: rubric.description,
-          calculation,
-          score: 0,
-          maxScore: computedMaxScore,
-          criteria: criteria
-        };
-      });
-
-      return {
-        criteriaGroups: criteriaGroups,
-        description: configData.description,
-        version: configData.version,
-        type: configData.type
-      };
-    },
-
     // UI interactions
     toggleGroup(groupIndex) {
       Object.keys(this.expandedGroups).forEach((key) => {
@@ -580,8 +651,6 @@ export default {
       const updatedCriterion = {...criterion, isSaved: true};
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
 
-      // Emit removed: kept UI state local
-
       this.$nextTick(() => {
         this.saveState();
       });
@@ -678,20 +747,34 @@ export default {
       }
 
       try {
-        // 1) Try to load already saved data for this step/session
-        const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
+        // Get preprocessed data first for comparison
+        let preprocessed = null;
+        if (this.isAIAssessmentWorkflow) {
+          preprocessed = await this.getPreprocessedAssessmentData();
+        }
 
+        // 1) Priority: Try to load step-scoped saved data (user modifications) first
+        const stepScoped = await this.documentDataGet(this.studySessionId || null, this.studyStepId, this.assessmentDataKey);
         if (stepScoped) {
-          this.mergeSavedDataWithConfiguration(stepScoped, {markAsSaved: false});
+          this.hasStepScopedData = true;
+          this.mergeSavedDataWithConfiguration(stepScoped, true, preprocessed);
           return;
         }
 
-        // 2) If AI workflow, try to import preprocessed data saved with null session/step
-        if (this.isAIAssessmentWorkflow) {
-          const preprocessed = await this.getPreprocessedAssessmentData();
-          if (preprocessed) {
-            this.mergeSavedDataWithConfiguration(preprocessed, {markAsSaved: false});
+        // 2) For AI workflow, check stepBucket (studyData) if no step-scoped data exists
+        if (this.isAIAssessmentWorkflow && this.stepBucket) {
+          const bucketValue = this.findAssessmentValueInBucket();
+          if (bucketValue) {
+            this.hasStepScopedData = false;
+            this.mergeSavedDataWithConfiguration(bucketValue, false, null);
+            return;
           }
+        }
+
+        // 3) Fallback: Try to import preprocessed data saved with null session/step
+        if (preprocessed) {
+          this.hasStepScopedData = false;
+          this.mergeSavedDataWithConfiguration(preprocessed, false, null);
         }
       } catch (error) {
         // Error loading saved assessment data
@@ -701,34 +784,82 @@ export default {
     // Fetch preprocessed grading results stored without session/step scope
     async getPreprocessedAssessmentData() {
       if (!this.documentId) return null;
-      return await this.documentDataGet(null, null, this.assessmentDataKey);
+      const svc = this.getNlpServiceFromStep();
+      if (!this.isAIAssessmentWorkflow || !svc || !svc.skill) return null;
+
+      const keys = [
+        `${svc.type}_${svc.skill}_assessment`,
+        this.assessmentDataKey,
+      ];
+
+      const results = await Promise.all(keys.map(k => this.documentDataGet(null, null, k)));
+      return results.find(v => !!v) || null;
     },
 
-    mergeSavedDataWithConfiguration(savedData, options = {markAsSaved: true}) {
-      if (!savedData || !this.assessmentOutput) {
-        return;
-      }
+    normalizeAssessmentArray(data) {
+      return Array.isArray(data) ? data : (Array.isArray(data?.assessment) ? data.assessment : []);
+    },
+    mergeSavedDataWithConfiguration(savedData, isStepScoped = false, preprocessedData = null) {
+      if (!savedData || !this.assessmentOutput) return;
 
-      const assessmentArray = Array.isArray(savedData)
-          ? savedData
-          : (Array.isArray(savedData.assessment) ? savedData.assessment : null);
-      if (!assessmentArray) return;
+      const assessmentArray = this.normalizeAssessmentArray(savedData);
+      if (!assessmentArray.length) return;
+
+      // Build preprocessed map for comparison (only for step-scoped data)
+      const preprocessedMap = new Map();
+      if (isStepScoped && preprocessedData) {
+        this.normalizeAssessmentArray(preprocessedData).forEach(item => {
+          const key = item.criterion || item.name;
+          if (key) {
+            preprocessedMap.set(key, {
+              justification: item.justification || item.assessment || "",
+              score: item.score !== undefined ? Number(item.score) : Number(item.points || 0)
+            });
+          }
+        });
+      }
 
       const byName = new Map(assessmentArray.map(a => [(a.criterion || a.name), a]));
       const newGroups = (this.assessmentOutput.criteriaGroups || []).map(group => {
         const updatedCriteria = (group.criteria || []).map(criterion => {
           const match = byName.get(criterion.name);
-          if (match) {
-            const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
+          if (!match) {
             return {
               ...criterion,
-              assessment: match.justification || "",
-              currentScore: sc,
-              score: sc,
-              isSaved: options.markAsSaved === true
+              assessment: criterion.assessment || "",
+              currentScore: criterion.currentScore || 0,
+              score: criterion.score || 0,
+              isSaved: criterion.isSaved || false
             };
           }
-          return {...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false};
+
+          const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
+          const matchJustification = match.justification || "";
+
+          // Determine if criterion should be marked as saved
+          let shouldBeSaved = false;
+          if (isStepScoped) {
+            if (criterion.isSaved === true) {
+              shouldBeSaved = true; // Preserve existing saved state
+            } else if (preprocessedMap.has(criterion.name)) {
+              const preprocessed = preprocessedMap.get(criterion.name);
+              // Mark as saved if it differs from preprocessed data
+              shouldBeSaved = matchJustification.trim() !== preprocessed.justification.trim() || sc !== preprocessed.score;
+            } else {
+              // No preprocessed data: mark as saved if has justification
+              shouldBeSaved = matchJustification.trim() !== "";
+            }
+            // Manual workflows always mark step-scoped as saved
+            if (!this.isAIAssessmentWorkflow) shouldBeSaved = true;
+          }
+
+          return {
+            ...criterion,
+            assessment: matchJustification || criterion.assessment || "",
+            currentScore: sc,
+            score: sc,
+            isSaved: shouldBeSaved
+          };
         });
         const total = updatedCriteria.reduce((sum, c) => sum + (c.currentScore || 0), 0);
         const clamped = (group.calculation === 'min') ? Math.min(total, Number(group.maxScore ?? total)) : total;
@@ -742,12 +873,12 @@ export default {
     // Save assessment data to document_data table
     async saveAssessmentData(groupIndex = null, criterionIndex = null) {
       if (this.readOnly) return;
-      if (!this.isManualAssessmentWorkflow && !this.isAIAssessmentWorkflow) {
-        return;
-      }
       if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
         return;
       }
+
+      // Set flag to prevent stepBucket watcher from overwriting during save
+      this.isSaving = true;
 
       try {
         // Build only changed criterion (if indices provided) or all criteria
@@ -771,9 +902,8 @@ export default {
         // Merge with existing saved data, updating only provided criteria
         const existing = await this.documentDataGet(this.studySessionId, this.studyStepId, this.assessmentDataKey);
 
-        const toArray = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []));
         const normalizeFull = (arrOrObj) => {
-          return toArray(arrOrObj)
+          return this.normalizeAssessmentArray(arrOrObj)
               .map(item => {
                 const base = (item && typeof item === 'object') ? {...item} : {};
                 // Unify field names while preserving extra keys
@@ -804,12 +934,9 @@ export default {
         });
         const value = {assessment: Array.from(byCriterion.values())};
 
-        // Emit to parent so Study stores assessment_output in studyData immediately
-        // Only for AI workflows to drive step-2 inputs without relying on document_data
-        if (this.isAIAssessmentWorkflow && Array.isArray(value.assessment)) {
-          this.$emit('update:data', [{ key: 'assessment_output', value: value.assessment }]);
-        }
-        
+        this.$emit('update:data', value.assessment);
+
+
         // Save to document_data table (wrap in Promise so callers can await)
         await new Promise((resolve, reject) => {
           this.$socket.emit("documentDataSave", {
@@ -820,6 +947,8 @@ export default {
             value
           }, (response) => {
             if (response && response.success) {
+              // Mark that we now have step-scoped saved data
+              this.hasStepScopedData = true;
               resolve(response);
             } else {
               reject(response);
@@ -829,6 +958,11 @@ export default {
 
       } catch (error) {
         // Error saving assessment data
+      } finally {
+        // Reset flag after save completes to allow future watcher updates
+        this.$nextTick(() => {
+          this.isSaving = false;
+        });
       }
     },
 

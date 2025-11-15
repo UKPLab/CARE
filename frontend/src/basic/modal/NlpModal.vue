@@ -40,7 +40,7 @@
             </div>
           </div>
         </div>
-        <NlpRequest
+      <!--<NlpRequest
           ref="req"
           :study-step-id="studyStepId"
           :loading-only="true"
@@ -50,7 +50,7 @@
           @complete="onComplete"
           @close="onReqClose"
           @update:data="$emit('update:data', $event)"
-        />
+        />-->
       </template>
       <template #footer>
         <div v-if="!waiting">
@@ -76,11 +76,10 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import NlpRequestCore from "@/basic/service/NlpRequestCore.vue";
 
 export default {
   name: "NlpModal",
-  components: { BasicModal, BasicButton, NlpRequest: NlpRequestCore },
+  components: { BasicModal, BasicButton },
   inject: {
     studySessionId: {
       type: Number,
@@ -124,6 +123,12 @@ export default {
   computed: {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
+    },
+    rotatingTimerLong(){
+      return this.$store.getters["settings/getValue"]('modal.nlp.rotation_timer.long');
+    },
+    rotatingTimerShort() {
+      return this.$store.getters["settings/getValue"]('modal.nlp.rotation_timer.short');
     },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
@@ -199,11 +204,11 @@ export default {
           this.rotatingStatusIndex += 1;
           this.rotatingStatusText = this.rotatingMessages[this.rotatingStatusIndex] || "";
         }
-      }, 30000);
+      }, this.rotatingTimerShort);
       this.rotatingLongTimer = setTimeout(() => {
         this.rotatingStatusText = "NLP is taking longer than expected...";
         this.stopRotatingStatus(false);
-      }, 120000);
+      }, this.rotatingTimerLong);
     },
     stopRotatingStatus(clearText = true) {
       if (this.rotatingTimer) {

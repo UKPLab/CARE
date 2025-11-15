@@ -4,7 +4,7 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
     class DocumentData extends MetaModel {
         static autoTable = true;
- 
+
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -38,6 +38,7 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
+
     }
 
     DocumentData.init(
@@ -45,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,
             studySessionId: DataTypes.INTEGER,
-            studyStepId: DataTypes.INTEGER,            
+            studyStepId: DataTypes.INTEGER,
             key: DataTypes.STRING,
             value: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,
@@ -54,8 +55,8 @@ module.exports = (sequelize, DataTypes) => {
             deletedAt: DataTypes.DATE,
         },
         {
-            sequelize: sequelize, 
-            modelName: "document_data", 
+            sequelize: sequelize,
+            modelName: "document_data",
             tableName: "document_data",
         }
     );

@@ -224,6 +224,24 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
+     * Upsert data based on conflict fields
+     * @param {Object} data - The data to insert or update
+     * @param {Object} [options={}] - Additional options for the upsert operation
+     * @returns {Promise<[MetaModel, boolean | null]>} - The upserted record and created flag
+     */
+    static async upsertData(data, options = {}) {
+        try {
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'deleted', 'deletedAt', 'creator_name'].includes(key));
+            return await this.upsert(this.subselectFields(data, possibleFields), {
+                ...options
+            });
+        } catch (err) {
+            console.log("DB MetaModel Class " + this.constructor.name + " upsert error: " + err.message);
+            throw new Error(err.message);
+        }
+    }
+
+    /**
      * Delete db entry by id
      * @param {number} id
      * @param {Object} [options={}] - Optional Sequelize query options
