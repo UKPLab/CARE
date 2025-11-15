@@ -62,7 +62,8 @@ module.exports = (sequelize, DataTypes) => {
 
             const [affectedCount] = await Submission.update(updateData, {
                 where: { id: { [Op.in]: submissionIds } },
-                transaction: options.transaction
+                transaction: options.transaction,
+                individualHooks: true
             });
 
             return affectedCount;
