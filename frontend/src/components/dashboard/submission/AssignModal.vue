@@ -13,7 +13,7 @@
       <div class="step-1-header w-100">
         <div class="percentage-control w-100">
           <label class="form-label mb-1">
-            Apply percentage of current selection
+            Apply percentage of current selection (randomly chosen):
           </label>
 
           <div class="d-flex align-items-center gap-2 w-100">
