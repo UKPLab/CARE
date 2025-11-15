@@ -4,7 +4,8 @@
       :steps="steps"
       :validation="stepValid"
       @submit="createAssignment"
-      xl>
+      size="xl"
+    >
     <template #title>
       <h5 class="modal-title">Create Assignment</h5>
     </template>
