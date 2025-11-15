@@ -99,13 +99,6 @@ export default {
           ],
         },
       ],
-      submissionColumns: [
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Group", key: "group", sortable: true },
-        { name: "Created At", key: "createdAt", sortable: true },
-        { name: "Additional Settings", key: "additionalSettings", type: "icon", sortable: false },
-      ],
       submissionTableOptions: {
         striped: true,
         hover: true,
@@ -138,6 +131,42 @@ export default {
             : { icon: "gear", color: "gray", title: "No additional settings" },
         };
       });
+    },
+    submissionColumns() {
+      return [
+        {name: "First Name", key: "firstName", sortable: true},
+        {name: "Last Name", key: "lastName", sortable: true},
+        {name: "Group", key: "group", sortable: true, filter: this.groupFilterOptions},
+        {name: "Created At", key: "createdAt", sortable: true},
+        {name: "Additional Settings", key: "additionalSettings", type: "icon", sortable: false},
+      ];
+    },
+    groupFilterOptions() {
+      const groups = new Set();
+      let hasEmptyGroups = false;
+
+      (this.submissionTable || []).forEach((s) => {
+        if (s && s.group !== null && s.group !== undefined && s.group !== '') {
+          groups.add(String(s.group));
+        } else {
+          hasEmptyGroups = true;
+        }
+      });
+
+      const options = Array.from(groups)
+          .sort((a, b) => {
+            const na = Number(a);
+            const nb = Number(b);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+          })
+          .map((g) => ({key: g, name: g}));
+
+      if (hasEmptyGroups) {
+        options.unshift({key: '', name: 'No GroupID'});
+      }
+
+      return options;
     },
     stepValid() {
       return [
