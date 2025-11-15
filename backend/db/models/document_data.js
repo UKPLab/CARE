@@ -4,7 +4,7 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
     class DocumentData extends MetaModel {
         static autoTable = true;
- 
+
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -24,6 +24,21 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
+        /**
+         * Upsert document data based on composite unique key
+         * @param {Object} data - The data to insert or update
+         * @param {Object} options - Additional options for the upsert operation
+         * @returns {Promise<[DocumentData, boolean | null]>} - The upserted record and created flag
+         */
+        static async upsertData(data, options = {}) {
+            return await this.upsert(data, {
+                conflictFields: ['conflict_key'],
+                returning: true,
+                ...options
+            });
+        }
+
+
     }
 
     DocumentData.init(
@@ -31,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,
             studySessionId: DataTypes.INTEGER,
-            studyStepId: DataTypes.INTEGER,            
+            studyStepId: DataTypes.INTEGER,
             key: DataTypes.STRING,
             value: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,
@@ -40,8 +55,8 @@ module.exports = (sequelize, DataTypes) => {
             deletedAt: DataTypes.DATE,
         },
         {
-            sequelize: sequelize, 
-            modelName: "document_data", 
+            sequelize: sequelize,
+            modelName: "document_data",
             tableName: "document_data",
         }
     );
