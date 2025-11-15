@@ -1,10 +1,10 @@
 <template>
   <StepperModal
-    ref="assignmentStepper"
-    :steps="steps"
-    :validation="stepValid"
-    @submit="createAssignment"
-    xl>
+      ref="assignmentStepper"
+      :steps="steps"
+      :validation="stepValid"
+      @submit="createAssignment"
+      xl>
     <template #title>
       <h5 class="modal-title">Create Assignment</h5>
     </template>
@@ -15,16 +15,16 @@
     </template>
     <template #step-1>
       <BasicForm
-        ref="templateSelectionForm"
-        v-model="templateSelection"
-        :fields="templateSelectionFields"
+          ref="templateSelectionForm"
+          v-model="templateSelection"
+          :fields="templateSelectionFields"
       />
       <div class="mt-3"><strong>Workflow Steps:</strong></div>
       <ul class="list-group">
         <li
-          v-for="(workflowStep, index) in workflowSteps"
-          :key="workflowStep.id" class="list-group-item"
-          :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
+            v-for="(workflowStep, index) in workflowSteps"
+            :key="workflowStep.id" class="list-group-item"
+            :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
           Workflow Step {{ index + 1 }}:
           {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
         </li>
@@ -32,50 +32,33 @@
       <div class="mt-3">
         <label class="form-label"><strong>Assignment should be based on:</strong></label>
         <FormSelect
-          v-model="assignmentTypeSelection.type"
-          :options="assignmentTypeFields"
+            v-model="assignmentTypeSelection.type"
+            :options="assignmentTypeFields"
         />
       </div>
     </template>
     <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
-          v-model="selectedAssignment"
-          :columns="currentTableColumns"
-          :data="currentTableData"
-          :options="documentTableOptions"
+            v-model="selectedAssignment"
+            :columns="currentTableColumns"
+            :data="currentTableData"
+            :options="documentTableOptions"
         />
       </div>
     </template>
     <template #step-3>
-      <div v-if="requiresBaseFileSelection" class="base-file-selection">
-        <InputGroup
-          base-file-parameter="baseFile"
-          :selected-files="selectedFilesForInputGroup"
-          v-model="baseFileSelections"
-          @update:valid="inputGroupValid = $event"
-          @update:validationConfigurations="validationConfigurationNames = $event"
-        />
-      </div>
-      <div v-else class="table-scroll-container">
+      <div class="table-scroll-container">
         <BasicTable
-          v-model="selectedReviewer"
-          :columns="reviewerTableColumns"
-          :data="reviewerTable"
-          :options="reviewerTableOptions"
+            v-model="selectedReviewer"
+            :columns="reviewerTableColumns"
+            :data="reviewerTable"
+            :options="reviewerTableOptions"
         />
       </div>
     </template>
     <template #step-4>
-      <div v-if="requiresBaseFileSelection" class="table-scroll-container">
-        <BasicTable
-          v-model="selectedReviewer"
-          :columns="reviewerTableColumns"
-          :data="reviewerTable"
-          :options="reviewerTableOptions"
-        />
-      </div>
-      <div v-else>
+      <div>
         <p>
           Are you sure you want to create the assignment with the following details?
         </p>
@@ -92,8 +75,8 @@
           <strong>Workflow Assignments:</strong>
           <ul>
             <li
-              v-for="(stepAssignment, index) in workflowStepsAssignments"
-              :key="stepAssignment.id"
+                v-for="(stepAssignment, index) in workflowStepsAssignments"
+                :key="stepAssignment.id"
             >
               - Workflow Step {{ index + 1 }}:
               <span v-if="stepAssignment.documentId && documents.find(doc => doc.id === stepAssignment.documentId)">
@@ -115,41 +98,12 @@
           <strong>Reviewers:</strong>
           <ul>
             <li
-              v-for="reviewer in selectedReviewer"
-              :key="reviewer.id">
+                v-for="reviewer in selectedReviewer"
+                :key="reviewer.id">
               - {{ reviewer.firstName }} {{ reviewer.lastName }}
             </li>
           </ul>
         </div>
-      </div>
-    </template>
-    <template #step-5>
-      <p>
-        Are you sure you want to create the assignment with the following details?
-      </p>
-      <div>
-        <strong>Template:</strong> {{ template.name }}
-      </div>
-      <div>
-        <strong>Workflow:</strong> {{ workflow.name }}
-      </div>
-      <div>
-        <strong>Assignment Type:</strong> {{ assignmentType === 'document' ? 'Document' : 'Submission' }}
-      </div>
-      <div v-if="assignmentType === 'submission'">
-        <strong>Selected Submission:</strong> {{ selectedAssignment[0].name || `Submission ${selectedAssignment[0].id}` }}
-        <br>
-        <strong>User:</strong> {{ selectedAssignment[0].firstName }} {{ selectedAssignment[0].lastName }}
-      </div>
-      <div>
-        <strong>Reviewers:</strong>
-        <ul>
-          <li
-            v-for="reviewer in selectedReviewer"
-            :key="reviewer.id">
-            - {{ reviewer.firstName }} {{ reviewer.lastName }}
-          </li>
-        </ul>
       </div>
     </template>
   </StepperModal>
@@ -159,7 +113,6 @@
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import InputGroup from "@/basic/modal/skills/InputGroup.vue";
 import FormSelect from "@/basic/form/Select.vue";
 
 /**
@@ -194,38 +147,26 @@ export default {
     "submission",
     {
       table: "configuration",
-      filter: [{ key: "type", value: 1 }]
+      filter: [{key: "type", value: 1}]
     }],
-  components: {StepperModal, BasicTable, BasicForm, InputGroup, FormSelect},
+  components: {StepperModal, BasicTable, BasicForm, FormSelect},
   data() {
     return {
       templateSelection: {},
       assignmentTypeSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
-      baseFileSelections: {},
-      inputGroupValid: false,
-      validationConfigurationNames: {},
     };
   },
   computed: {
     assignmentType() {
       return this.assignmentTypeSelection.type || 'document';
     },
-    requiresBaseFileSelection() {
-      return this.assignmentType === 'submission';
-    },
     stepValid() {
       const step1Valid = this.workflowStepsAssignment.length !== 0 && !!this.assignmentType;
       const step2Valid = this.selectedAssignment.length === 1;
-      const step3Valid = this.requiresBaseFileSelection ? this.inputGroupValid : this.selectedReviewer.length > 0;
-      const step4Valid = this.requiresBaseFileSelection ? this.selectedReviewer.length > 0 : true;
-      
-      if (this.requiresBaseFileSelection) {
-        return [step1Valid, step2Valid, step3Valid, step4Valid, true];
-      } else {
-        return [step1Valid, step2Valid, step3Valid, true];
-      }
+      const step3Valid = this.selectedReviewer.length > 0;
+      return [step1Valid, step2Valid, step3Valid, true];
     },
     documentTableOptions() {
       return {
@@ -271,8 +212,8 @@ export default {
     assignmentTypeFields() {
       return {
         options: [
-          { value: 'document', name: 'Documents' },
-          { value: 'submission', name: 'Submissions' }
+          {value: 'document', name: 'Documents'},
+          {value: 'submission', name: 'Submissions'}
         ]
       };
     },
@@ -380,12 +321,12 @@ export default {
         let newR = {...r};
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
         newR.rolesNames = (r.roles || [])
-          .map((role) => {
-            const foundRole = (this.roles || []).find((roleObj) => roleObj.id === role);
-            return foundRole ? foundRole.name : null;
-          })
-          .filter(name => name !== null)
-          .join(", ");
+            .map((role) => {
+              const foundRole = (this.roles || []).find((roleObj) => roleObj.id === role);
+              return foundRole ? foundRole.name : null;
+            })
+            .filter(name => name !== null)
+            .join(", ");
         return newR;
       })
     },
@@ -406,7 +347,7 @@ export default {
     groupFilterOptions() {
       const groups = new Set();
       let hasEmptyGroups = false;
-      
+
       (this.submissionsTable || []).forEach((s) => {
         if (s && s.group !== null && s.group !== undefined && s.group !== '') {
           groups.add(String(s.group));
@@ -414,44 +355,29 @@ export default {
           hasEmptyGroups = true;
         }
       });
-      
+
       const options = Array.from(groups)
-        .sort((a, b) => {
-          const na = Number(a);
-          const nb = Number(b);
-          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-          return a.localeCompare(b);
-        })
-        .map((g) => ({ key: g, name: g }));
-      
+          .sort((a, b) => {
+            const na = Number(a);
+            const nb = Number(b);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+          })
+          .map((g) => ({key: g, name: g}));
+
       if (hasEmptyGroups) {
-        options.unshift({ key: '', name: 'No GroupID' });
+        options.unshift({key: '', name: 'No GroupID'});
       }
-      
+
       return options;
     },
     steps() {
-      const baseSteps = [
+      return [
         {title: "Template Selection"},
         {title: "Assignment Selection"},
+        {title: "Reviewer Selection"},
+        {title: "Confirmation"}
       ];
-      
-      if (this.requiresBaseFileSelection) {
-        baseSteps.push({title: "Base File Selection"});
-      }
-      
-      baseSteps.push({title: "Reviewer Selection"});
-      baseSteps.push({title: "Confirmation"});
-      
-      return baseSteps;
-    },
-    selectedFilesForInputGroup() {
-      if (!this.requiresBaseFileSelection || this.selectedAssignment.length === 0) {
-        return {};
-      }
-      return {
-        baseFile: this.selectedAssignment
-      };
     },
   },
   watch: {
@@ -467,7 +393,7 @@ export default {
   methods: {
     getPrimaryDocumentId(submissionId) {
       const docs = this.$store.getters["table/document/getFiltered"](
-        (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
+          (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
       );
       return docs && docs.length !== 0 ? docs[0].id : null;
     },
@@ -485,7 +411,7 @@ export default {
     },
     createAssignment() {
       this.$refs.assignmentStepper.setWaiting(true);
-      
+
       const assignmentData = {
         template: this.template,
         assignmentType: this.assignmentType,
@@ -493,11 +419,7 @@ export default {
         assignment: this.selectedAssignment[0],
         documents: this.workflowStepsAssignments,
       };
-      
-      if (this.requiresBaseFileSelection) {
-        assignmentData.baseFileSelections = this.baseFileSelections;
-      }
-      
+
       this.$socket.emit("assignmentCreate", assignmentData, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
