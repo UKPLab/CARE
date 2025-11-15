@@ -1,7 +1,7 @@
 {
   "name": "Feedback-Bewertungskonfiguration",
   "description": "Bewertungskriterien für Feedbackqualität",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "assessment",
   "rubrics": [
     {
@@ -44,10 +44,10 @@
     },
     {
       "name": "Sprache",
-      "code": "sprache",
+      "code": "language",
       "description": "Bewertung der Sprachqualität und des Tons.",
       "calculation": "sum",
-      "minPoints": 0,    
+      "minPoints": 0,
       "maxPoints": 3,
       "criteria": [
         {
@@ -78,7 +78,7 @@
           ]
         }
       ]
-    }, 
+    },
     {
       "name": "Feed Up (Where am I going?)",
       "code": "feed_up",
@@ -322,7 +322,7 @@
         {
           "name": "Vernachlässigung",
           "description": "Beurteilt, ob wichtige Details übersehen wurden.",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "minPoints": -1,
           "maxPoints": 0,
           "expertLevel": 2,
@@ -335,7 +335,7 @@
         {
           "name": "Vage Kritik",
           "description": "Bewertet die Spezifität und Klarheit der vorgelegten Kritik.",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "minPoints": -1,
           "maxPoints": 0,
           "expertLevel": 1,
@@ -348,7 +348,7 @@
         {
           "name": "Außerhalb des Umfangs",
           "description": "Beurteilt, ob Vorschläge im vorgesehenen Rahmen bleiben.",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "minPoints": -1,
           "maxPoints": 0,
           "expertLevel": 1,
@@ -361,7 +361,7 @@
         {
           "name": "Fehlende Referenz",
           "description": "Beurteilt, ob Vorschläge durch eine Begründung oder Quellenangaben/Referenzen gestützt werden.",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "minPoints": -1,
           "maxPoints": 0,
           "expertLevel": 1,
@@ -374,7 +374,7 @@
         {
           "name": "Widerspruch",
           "description": "Beurteilt, ob das Feedback konsistent und widerspruchsfrei ist.",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "minPoints": -1,
           "maxPoints": 0,
           "expertLevel": 1,
@@ -388,7 +388,7 @@
     },
     {
       "name": "Zusätzliche Punkte",
-      "code": "zusätzlich",
+      "code": "additional",
       "maxPoints": 1,
       "minPoints": -1,
       "calculation": "sum",
