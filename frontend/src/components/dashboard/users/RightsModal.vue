@@ -95,7 +95,7 @@ export default {
         userId: userId
       }, (response) => {
         if (!response.success) {
-          this.$eventBus.emit("toast", {
+          this.eventBus.emit("toast", {
             title: "Error fetching user rights",
             message: response.message,
             variant: "danger",

@@ -23,6 +23,12 @@
         @click="$refs.importModal.open('moodle')"
       />
       <BasicButton
+        class="btn btn-secondary btn-sm me-1"
+        title="Assign Roles"
+        icon="person-badge"
+        @click="$refs.assignRolesModal.open()"
+      />
+      <BasicButton
         class="btn btn-primary btn-sm"
         title="Add User"
         @click="$refs.userAddModal.open()"
@@ -43,6 +49,10 @@
     @update-user="fetchUsers"
   />
   <RightsModal ref="rightsModal" />
+  <AssignRolesModal
+    ref="assignRolesModal"
+    @update-user="fetchUsers"
+  />
   <PasswordModal ref="passwordModal" />
   <ImportModal
     ref="importModal"
@@ -62,6 +72,7 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
+import AssignRolesModal from "./users/AssignRolesModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
@@ -83,6 +94,7 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
+    AssignRolesModal,
     BasicButton,
     ImportModal,
     UploadModal,
@@ -224,7 +236,7 @@ export default {
     fetchUsers() {
       this.$socket.emit("userGetByRole", {role: this.role} , (response) => {
         if (!response.success) {
-          this.$eventBus.emit("toast", {
+          this.eventBus.emit("toast", {
             title: "Error fetching users",
             message: response.message,
             variant: "danger",
