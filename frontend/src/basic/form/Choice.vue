@@ -245,7 +245,21 @@ export default {
       const allValid = this.choices.every((item, index) => {
         return this.fields.every((field) => {
           const fieldKey = field.key;
-          return this.currentData[index]?.[fieldKey] !== null;
+          const value = this.currentData[index]?.[fieldKey];
+          
+          if (fieldKey === 'documentId') {
+            if (value === null) {
+              const workflowStepId = this.currentData[index]?.id;
+              const workflowStep = this.workflowSteps.find((s) => s.id === workflowStepId);
+              if (workflowStep && workflowStep.stepType === 2) {
+                return true;
+              }
+              return false;
+            }
+            return true;
+          }
+          
+          return value !== null;
         });
       });
       return allValid;
