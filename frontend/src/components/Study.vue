@@ -107,6 +107,7 @@
                   <template #content>
                     <Assessment
                         :config="step.configuration"
+                        :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
