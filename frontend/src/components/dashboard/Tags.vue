@@ -4,6 +4,7 @@
       <BasicButton
         class="btn-primary btn-sm"
         title="Add new tag set"
+        icon="plus"
         @click="$refs.tagSetModal.open(0)"
       />
     </template>

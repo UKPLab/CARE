@@ -1,48 +1,63 @@
 <template>
   <Card title="Submissions">
     <template #headerElements>
-      <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Assign Group"
-        title="Assign Group"
-        @click="$refs.assignModal.open()"
-      />
-      <BasicButton
-        class="btn-secondary btn-sm me-1"
-        text="Publish Reviews"
-        title="Publish Reviews"
-        @click="$refs.publishModal.open()"
-      />
-      <BasicButton
-          class="btn-secondary btn-sm me-1"
-          text="Publish Submissions"
-          title="Publish Submissions"
-          @click="$refs.publishSubmissionModal.open()"
-      />
-      <BasicButton
-          class="btn-secondary btn-sm me-1"
-          text="Manual Import"
-          title="Manual Import"
-          @click="$refs.uploadModal.open()"
-      />
-      <BasicButton
-          class="btn-primary btn-sm"
-          title="Import via Moodle"
-          text="Import via Moodle"
-          @click="$refs.importModal.open()"
-      />
-      <BasicButton
-          :class="isProcessingActive ? 'btn-warning btn-sm ms-1 position-relative' : 'btn-success btn-sm ms-1'"
-          :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
-          :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
-          @click="preprocessGrades"
-      >
-        <span
-          v-if="isProcessingActive"
-          class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-          <span class="visually-hidden">Processing active</span>
-        </span>
-      </BasicButton>
+      <div class="btn-group gap-2">
+        <BasicButton
+            class="btn-secondary btn-sm"
+            text="Assign Group"
+            title="Assign Group"
+            icon="folder-check"
+            @click="$refs.assignModal.open()"
+        />
+
+        <BasicButton
+            class="btn-secondary btn-sm"
+            text="Publish Reviews"
+            title="Publish Reviews"
+            icon="upload"
+            @click="$refs.publishModal.open()"
+        />
+
+        <BasicButton
+            class="btn-secondary btn-sm"
+            text="Publish Submissions"
+            title="Publish Submissions"
+            icon="cloud-upload"
+            @click="$refs.publishSubmissionModal.open()"
+        />
+
+        <BasicButton
+            class="btn-secondary btn-sm"
+            text="Manual Import"
+            title="Manual Import"
+            icon="file-earmark-arrow-up"
+            @click="$refs.uploadModal.open()"
+        />
+
+        <BasicButton
+            class="btn-primary btn-sm"
+            text="Import via Moodle"
+            title="Import via Moodle"
+            icon="box-arrow-in-down"
+            @click="$refs.importModal.open()"
+        />
+
+        <BasicButton
+            :class="isProcessingActive ? 'btn-warning btn-sm position-relative' : 'btn-success btn-sm'"
+            :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
+            :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+            :icon="isProcessingActive ? 'hourglass-split' : 'gear-fill'"
+            @click="preprocessGrades"
+        >
+    <span
+        v-if="isProcessingActive"
+        class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+      <span class="visually-hidden">Processing active</span>
+    </span>
+        </BasicButton>
+      </div>
+
+
     </template>
     <template #body>
       <BasicTable
@@ -54,11 +69,11 @@
       />
     </template>
   </Card>
-  <UploadModal ref="uploadModal" />
-  <ConfirmModal ref="deleteConf" />
-  <ImportModal ref="importModal" />
-  <PublishModal ref="publishModal" />
-  <AssignModal ref="assignModal" />
+  <UploadModal ref="uploadModal"/>
+  <ConfirmModal ref="deleteConf"/>
+  <ImportModal ref="importModal"/>
+  <PublishModal ref="publishModal"/>
+  <AssignModal ref="assignModal"/>
   <PublishModal ref="publishSubmissionModal" mode="submission"/>
   <ApplySkillModal
       ref="applySkillModal"
@@ -115,13 +130,13 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        { name: "ID", key: "id" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Submission ID", key: "extId" },
-        { name: "Group", key: "group", sortable: true },
-        { name: "Validation ID", key: "validationConfigurationId", sortable: true },
-        { name: "Created At", key: "createdAt" },
+        {name: "ID", key: "id"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "Submission ID", key: "extId"},
+        {name: "Group", key: "group", sortable: true},
+        {name: "Validation ID", key: "validationConfigurationId", sortable: true},
+        {name: "Created At", key: "createdAt"},
       ],
       tableButtons: [
         {
@@ -177,10 +192,10 @@ export default {
       const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
       const preprocess = bgTask.preprocess || {};
       return (
-        preprocess &&
-        preprocess.requests &&
-        typeof preprocess.requests === 'object' &&
-        Object.keys(preprocess.requests).length > 0
+          preprocess &&
+          preprocess.requests &&
+          typeof preprocess.requests === 'object' &&
+          Object.keys(preprocess.requests).length > 0
       );
     },
     submissionTable() {
