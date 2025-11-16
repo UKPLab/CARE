@@ -167,7 +167,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import NlpModal from "../basic/modal/NlpModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
@@ -184,7 +183,6 @@ export default {
     Editor,
     TopBarButton,
     StepModal,
-    NlpModal,
     LoadingModal
   },
   provide() {
