@@ -461,6 +461,7 @@ export default {
               name: criterion.name,
               description: criterion.description,
               maxPoints: criterion.maxPoints,
+              minPoints: criterion.minPoints,
               assessment: "",
               isEditing: false,
               editedAssessment: "",
@@ -616,9 +617,19 @@ export default {
 
     // Scoring
     getAvailablePoints(criterion) {
-      const max = criterion.maxPoints || criterion.maxScore || 5;
+      // If scoring array exists, extract points from it (supports negative values)
+      if (criterion.scoring && Array.isArray(criterion.scoring) && criterion.scoring.length > 0) {
+        return criterion.scoring.map(option => option.points !== undefined ? option.points : option.score);
+      }
+      
+      // Otherwise, use minPoints and maxPoints
+      const min = criterion.minPoints !== undefined ? criterion.minPoints : 0;
+      const max = criterion.maxPoints || criterion.maxScore;
+      if (max === undefined) {
+        return [];
+      }
       const values = [];
-      for (let i = 0; i <= max; i++) {
+      for (let i = min; i <= max; i++) {
         values.push(i);
       }
       return values;
