@@ -169,7 +169,7 @@ export default {
     currentStudyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
     },
-    getNlpServiceFromStep() {
+    nlpService() {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
@@ -187,7 +187,7 @@ export default {
     },
 
     preprocessedAssessmentKeyCandidates() {
-      const svc = this.getNlpServiceFromStep && this.getNlpServiceFromStep();
+      const svc = this.nlpService;
       if (!svc || !svc.skill) return [];
 
       const keys = [
@@ -474,26 +474,56 @@ export default {
     normalizeAssessmentArray(v) {
       if (!v) return null;
 
+      let arr = null;
+
       // If backend stored JSON as string
       if (typeof v === "string") {
         try {
           const parsed = JSON.parse(v);
-          return Array.isArray(parsed) ? parsed : null;
+          if (Array.isArray(parsed)) {
+            arr = parsed;
+          } else if (parsed && Array.isArray(parsed.assessment)) {
+            // sometimes wrapped like { assessment: [...] }
+            arr = parsed.assessment;
+          }
         } catch (e) {
           console.error("Failed to parse AI assessment JSON", e);
           return null;
         }
+      } else if (Array.isArray(v)) {
+        arr = v;
+      } else if (typeof v === "object" && Array.isArray(v.assessment)) {
+        arr = v.assessment;
       }
 
-      // If it's already an array
-      if (Array.isArray(v)) return v;
+      if (!arr) return null;
 
-      // Sometimes wrapped like { assessment: [...] }
-      if (typeof v === "object" && Array.isArray(v.assessment)) {
-        return v.assessment;
-      }
+      return arr
+          .map((item) => {
+            if (!item) return null;
 
-      return null;
+            if (
+                (item.assessment !== undefined || item.currentScore !== undefined) &&
+                (item.name || item.criterion)
+            ) {
+              return {
+                name: item.name || item.criterion,
+                ...item,
+              };
+            }
+
+            const criterionName = item.criterion || item.name;
+            if (!criterionName) return null;
+
+            return {
+              name: criterionName,
+              assessment: item.justification || "",
+              editedAssessment: "",
+              currentScore:
+                  typeof item.score === "number" ? item.score : 0,
+            };
+          })
+          .filter(Boolean);
     },
     async saveAssessmentData() {
       if (!this.documentId || !this.assessmentDataKey) {
