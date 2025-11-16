@@ -3,38 +3,45 @@
       ref="modal"
       name="StudyLoadingModal"
       :disable-keyboard="true"
-      :remove-close="false"
+      :remove-close="true"
       :auto-open="false"
   >
     <template #title>
       <h5 class="modal-title">
-        Loading Study Step...
+        Loading Study Step
       </h5>
     </template>
     <template #body>
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-        <div v-if="!nlpRequestsFailed" class="spinner-border" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <span v-if="!nlpRequestsFailed && !error" class="ms-3">{{ rotatingStatusText }}</span>
         <div v-if="nlpRequestsFailed">
           <div class="d-flex flex-column align-items-center">
-            <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
+            <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP
+              support.</p>
             <div class="d-flex gap-2">
               <BasicButton
-                title="Try Again"
-                class="btn btn-warning"
-                @click="retryNlpRequests"
+                  title="Try Again"
+                  class="btn btn-warning"
+                  @click="retryNlpRequests"
               />
               <BasicButton
-                title="Skip NLP Support"
-                class="btn btn-secondary"
-                @click="closeModal"
+                  title="Skip NLP Support"
+                  class="btn btn-secondary"
+                  @click="closeModal"
               />
             </div>
           </div>
         </div>
-        <div v-if="documentData">
+        <div v-else-if="error">
+          <p class="text-danger">An error occurred while loading the study step. Please try again later.</p>
+        </div>
+        <div v-else class="d-flex align-items-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <span class="ms-3">{{ rotatingStatusText }}</span>
+        </div>
+
+        <div v-if="documentDataLoaded">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
             <NlpRequest
                 ref="nlpRequest"
@@ -42,11 +49,11 @@
                 :inputs="service.inputs"
                 :name="service.name"
                 :document-data="documentData"
-                @update:data="updateDocumentData($event)"
                 @update:state="nlpRequests[service.name] = $event"
             />
           </div>
         </div>
+
       </div>
     </template>
   </BasicModal>
@@ -103,7 +110,7 @@ export default {
     return {
       error: false,
       rotatingIndex: 0,
-      documentData: null,
+      documentDataLoaded: false,
       nlpRequests: {},
       rotatingMessages: [
         "Thinking through your request...",
@@ -134,6 +141,16 @@ export default {
     },
     rotatingStatusText() {
       return this.rotatingMessages[this.rotatingIndex];
+    },
+    documentData() {
+      return this.$store.getters["table/document_data/getFiltered"]((item) => {
+        return item.documentId === this.documentId &&
+            item.studySessionId === this.studySessionId &&
+            item.studyStepId === this.studyStepId;
+      }).reduce((acc, item) => {
+        acc[item.key] = item.value;
+        return acc;
+      }, {});
     },
     nlpServices() {
       return this.config.services?.filter(s => s.type === 'nlpRequest') || [];
@@ -169,8 +186,6 @@ export default {
       if (val && this.$refs.modal) {
         if (this.documentData === null || (this.nlpServices.length > 0 && this.nlpRequestsInProgress)) {
           this.$refs.modal.open();
-          console.log("Show modal");
-          console.log(this.$refs.modal)
         }
       }
     },
@@ -188,14 +203,18 @@ export default {
         }
       },
       deep: true
-    }
+    },
+    documentData: {
+      handler(newVal) {
+        this.$emit("update:data", newVal);
+      },
+      immediate: true
+    },
   },
   mounted() {
     this.startRotatingMessages();
     if (this.show && this.$refs.modal) {
       this.$refs.modal.open();
-      console.log("Show modal");
-      console.log(this.$refs.modal)
     }
     this.$socket.emit("documentDataGet", {
           documentId: this.documentId,
@@ -204,16 +223,12 @@ export default {
         },
         (response) => {
           if (response.success) {
-            this.documentData = response.data;
-            console.log("Loaded document data for StudyLoadingModal:", response.data);
+            this.documentDataLoaded = true;
             if (this.nlpServices.length === 0) {
-              console.log("CLLLOOOSOSING", this.studyStepId)
               this.$nextTick(() => {
                 this.$refs.modal.close();
               });
             }
-            this.$emit("update:data", response.data);
-
           } else {
             this.error = true;
           }
@@ -240,16 +255,10 @@ export default {
       clearInterval(this.rotatingTimer);
       clearTimeout(this.rotatingLongTimer);
     },
-    updateDocumentData(data) {
-      this.documentData = {
-        ...this.documentData,
-        ...data,
-      };
-      this.$emit("update:data", this.documentData);
-    },
     retryNlpRequests() {
       // TODO: Implement retry logic
-      this.$refs.nlpRequest.retry();
+      // TODO only retry failed requests
+      this.$refs.nlpRequest.retryRequest();
     },
     closeModal() {
       this.$refs.modal.close();

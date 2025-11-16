@@ -1,52 +1,57 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <BasicButton
-        class="btn btn-secondary btn-sm me-1"
-        title="Download Users"
-        icon="download"
-        @click="downloadUsers"
-      />
-      <BasicButton
-        class="btn btn-secondary btn-sm me-1"
-        title="Upload Password"
-        @click="$refs.uploadModal.open()"
-      />
-      <BasicButton
-        class="btn btn-secondary btn-sm me-1"
-        title="Import via CSV"
-        @click="$refs.importModal.open('csv')"
-      />
-      <BasicButton
-        class="btn btn-secondary btn-sm me-1"
-        title="Import via Moodle"
-        @click="$refs.importModal.open('moodle')"
-      />
-      <BasicButton
-        class="btn btn-secondary btn-sm me-1"
-        title="Assign Roles"
-        icon="person-badge"
-        @click="$refs.assignRolesModal.open()"
-      />
-      <BasicButton
-        class="btn btn-primary btn-sm"
-        title="Add User"
-        @click="$refs.userAddModal.open()"
-      />
+      <div class="btn-group gap-2">
+        <BasicButton
+            class="btn btn-secondary btn-sm"
+            title="Download Users"
+            text="Download Users"
+            icon="download"
+            @click="downloadUsers"
+        />
+        <BasicButton
+            class="btn btn-secondary btn-sm"
+            title="Upload Password"
+            text="Upload Password"
+            icon="key"
+            @click="$refs.uploadModal.open()"
+        />
+        <BasicButton
+            class="btn btn-secondary btn-sm"
+            title="Import via CSV"
+            text="Import CSV"
+            icon="filetype-csv"
+            @click="$refs.importModal.open('csv')"
+        />
+        <BasicButton
+            class="btn btn-secondary btn-sm"
+            title="Import via Moodle"
+            text="Import Moodle"
+            icon="box-arrow-in-down"
+            @click="$refs.importModal.open('moodle')"
+        />
+        <BasicButton
+            class="btn btn-primary btn-sm"
+            title="Add User"
+            text="Add User"
+            icon="person-plus"
+            @click="$refs.userAddModal.open()"
+        />
+      </div>
     </template>
     <template #body>
       <BasicTable
-        :columns="columns"
-        :data="users"
-        :options="options"
-        :buttons="buttons"
-        @action="chooseAction"
+          :columns="columns"
+          :data="users"
+          :options="options"
+          :buttons="buttons"
+          @action="chooseAction"
       />
     </template>
   </Card>
   <DetailsModal
-    ref="detailsModal"
-    @update-user="fetchUsers"
+      ref="detailsModal"
+      @update-user="fetchUsers"
   />
   <RightsModal ref="rightsModal" />
   <AssignRolesModal
@@ -55,15 +60,15 @@
   />
   <PasswordModal ref="passwordModal" />
   <ImportModal
-    ref="importModal"
-    @update-user="fetchUsers"
+      ref="importModal"
+      @update-user="fetchUsers"
   />
-  <UploadModal ref="uploadModal" />
+  <UploadModal ref="uploadModal"/>
   <UserAddModal
-    ref="userAddModal"
-    @update-user="fetchUsers"
+      ref="userAddModal"
+      @update-user="fetchUsers"
   />
-  <ConfirmModal ref="confirmModal" />
+  <ConfirmModal ref="confirmModal"/>
 </template>
 
 <script>
@@ -234,7 +239,7 @@ export default {
   },
   methods: {
     fetchUsers() {
-      this.$socket.emit("userGetByRole", {role: this.role} , (response) => {
+      this.$socket.emit("userGetByRole", {role: this.role}, (response) => {
         if (!response.success) {
           this.eventBus.emit("toast", {
             title: "Error fetching users",
@@ -242,7 +247,7 @@ export default {
             variant: "danger",
           });
         }
-      });    
+      });
     },
     formatUserData(user) {
       const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
@@ -284,30 +289,30 @@ export default {
       this.$refs.confirmModal.open("Delete User", "Are you sure you want to delete this user?", null, (val) => {
         if (val) {
           this.$socket.emit(
-            "appDataUpdate",
-            {
-              table: "user",
-              data: {
-                id: user.id,
-                deleted: true,
+              "appDataUpdate",
+              {
+                table: "user",
+                data: {
+                  id: user.id,
+                  deleted: true,
+                },
               },
-            },
-            (result) => {
-              if (result.success) {
-                this.eventBus.emit("toast", {
-                  title: "User deleted",
-                  message: "User has been deleted",
-                  variant: "success",
-                });
-                this.fetchUsers();
-              } else {
-                this.eventBus.emit("toast", {
-                  title: "User not deleted",
-                  message: result.message,
-                  variant: "danger",
-                });
+              (result) => {
+                if (result.success) {
+                  this.eventBus.emit("toast", {
+                    title: "User deleted",
+                    message: "User has been deleted",
+                    variant: "success",
+                  });
+                  this.fetchUsers();
+                } else {
+                  this.eventBus.emit("toast", {
+                    title: "User not deleted",
+                    message: result.message,
+                    variant: "danger",
+                  });
+                }
               }
-            }
           );
         }
       });

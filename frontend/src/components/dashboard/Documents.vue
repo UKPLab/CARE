@@ -1,19 +1,23 @@
 <template>
   <Card title="Documents">
     <template #headerElements>
+      <div class="btn-group gap-2">
       <BasicButton
-          class="btn-primary btn-sm me-1"
+          class="btn-primary btn-sm"
           title="Add document"
-          text="Add"
+          text="Upload document"
+          icon="upload"
           @click="$refs.uploadModal.open()"
       />
       <BasicButton
           v-if="showCreateButton"
           class="btn-primary btn-sm"
           title="Create document"
-          text="Create"
+          text="Create document"
+          icon="file-earmark-plus"
           @click="$refs.createModal.open()"
       />
+      </div>
     </template>
     <template #body>
       <BasicTable

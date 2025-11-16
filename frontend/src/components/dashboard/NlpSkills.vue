@@ -7,20 +7,23 @@
       <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
         <span class="visually-hidden">Loading...</span>
       </div>
-      <BasicButton
-        class="btn btn-sm me-1"
-        title="Refresh"
-        icon="arrow-clockwise"
-        @click="load()"
-      />
+      <div class="btn-group gap-2 ms-3">
+        <BasicButton
+            class="btn-primary btn-sm"
+            title="Refresh"
+            text="Refresh"
+            icon="arrow-clockwise"
+            @click="load"
+        />
+      </div>
     </template>
     <template #body>
       <BasicTable
-        :columns="columns"
-        :data="data"
-        :options="options"
-        :buttons="buttons"
-        @action="action"
+          :columns="columns"
+          :data="data"
+          :options="options"
+          :buttons="buttons"
+          @action="action"
       />
     </template>
   </Card>
@@ -146,22 +149,25 @@ export default {
       }
     },
     changeSkillActiveStatus(skill_row, newActiveState) {
-      this.$socket.emit("settingSave", [{ key: `annotator.nlp.${skill_row.name}.activated`, value: newActiveState }], (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "Setting Updated",
-            message: `Skill "${skill_row.name}" activation updated.`,
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to Update Setting",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      }
-    );
+      this.$socket.emit("settingSave", [{
+            key: `annotator.nlp.${skill_row.name}.activated`,
+            value: newActiveState
+          }], (res) => {
+            if (res.success) {
+              this.eventBus.emit("toast", {
+                title: "Setting Updated",
+                message: `Skill "${skill_row.name}" activation updated.`,
+                variant: "success",
+              });
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Failed to Update Setting",
+                message: res.message,
+                variant: "danger",
+              });
+            }
+          }
+      );
     },
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);

@@ -2,58 +2,42 @@
   <div>
     <Card title="Settings">
       <template #headerElements>
-        <div class="d-flex align-items-center">
+        <div class="btn-group gap-2">
 
-          <button
-              class="btn btn-outline-secondary btn-sm me-2"
-              type="button"
+          <BasicButton
+              class="btn-outline-secondary btn-sm"
+              text="Export JSON"
+              title="Export JSON"
+              icon="download"
               :disabled="!settings || !settings.length"
               @click="exportSettings"
-          >
-            <LoadIcon
-                class="me-1"
-                icon-name="download"
-            />
-            Export JSON
-          </button>
+          />
 
-          <button
-              class="btn btn-outline-secondary btn-sm me-2"
-              type="button"
+          <BasicButton
+              class="btn-outline-secondary btn-sm"
+              text="Import JSON"
+              title="Import JSON"
+              icon="upload"
               :disabled="!settings || !settings.length"
               @click="openUploadModal"
-          >
-            <LoadIcon
-                class="me-1"
-                icon-name="upload"
-            />
-            Import JSON
-          </button>
+          />
 
-          <button
-              class="btn btn-outline-secondary btn-sm me-2"
-              type="button"
+          <BasicButton
+              class="btn-outline-secondary btn-sm"
+              text="Reload"
+              title="Reload"
+              icon="arrow-clockwise"
               @click="load"
-          >
-            <LoadIcon
-                class="me-1"
-                icon-name="arrow-clockwise"
-            />
-            Reload
-          </button>
+          />
 
-          <button
-              type="button"
-              class="btn btn-sm me-2"
+          <BasicButton
+              class="btn-sm"
               :class="hasUnsavedChanges ? 'btn-warning' : 'btn-primary'"
+              :text="hasUnsavedChanges ? 'Save Settings (Unsaved changes)' : 'Save Settings'"
+              :title="hasUnsavedChanges ? 'Save Settings (Unsaved changes)' : 'Save Settings'"
+              icon="upload"
               @click="save"
-          >
-            <LoadIcon
-                class="me-1"
-                icon-name="upload"
-            />
-            {{ hasUnsavedChanges ? 'Save Settings (Unsaved changes)' : 'Save Settings' }}
-          </button>
+          />
 
         </div>
       </template>
@@ -146,6 +130,7 @@ import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import {onBeforeRouteUpdate} from 'vue-router'
 
@@ -156,6 +141,7 @@ export default {
     LoadIcon,
     Loading,
     SettingItem,
+    BasicButton,
     Modal,
   },
   data() {

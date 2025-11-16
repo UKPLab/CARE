@@ -34,7 +34,7 @@ export default {
       required: true,
     }
   },
-  emits: ["update:data", "update:state"],
+  emits: ["update:state"],
   data() {
     return {
       data: null,
@@ -178,11 +178,6 @@ export default {
       }));
 
       entries.forEach(e => this.$socket.emit("documentDataSave", e));
-
-      this.$emit('update:data', entries.reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {}));
     },
     getConfig(config) {
       const raw = (config && typeof config === 'object') ? config.value : config;

@@ -43,7 +43,7 @@
           class="btn btn-outline-secondary mx-3"
           :disabled="!isCurrentStepReady"
           :title="studySession.end ? 'Finish Study Again' : 'Finish Study'"
-          @click="finishWithNlpGuard()"
+          @click="finish()"
       >
         {{ studySession.end ? "Finish Study Again" : "Finish Study" }}
       </TopBarButton>
@@ -53,7 +53,7 @@
           :disabled="!isCurrentStepReady"
           class="btn btn-outline-primary ms-3"
           title="Next"
-          @click="nextWithNlpGuard()"
+          @click="next()"
       >
         Next
       </TopBarButton>
@@ -107,6 +107,7 @@
                   <template #content>
                     <Assessment
                         :config="step.configuration"
+                        :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -167,7 +168,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import NlpModal from "../basic/modal/NlpModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
@@ -184,7 +184,6 @@ export default {
     Editor,
     TopBarButton,
     StepModal,
-    NlpModal,
     LoadingModal
   },
   provide() {
@@ -220,7 +219,7 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
-      studyData: {}, // Data from all the study steps
+      studyData: {},
       stepsReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
@@ -230,47 +229,11 @@ export default {
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
     },
-    hasNlpForCurrentStep() {
-      const services = this.currentStep?.configuration?.services;
-      if (!Array.isArray(services)) return false;
-      return services.some(s => s && s.type === 'nlpRequest');
-    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters["table/study_session/get"](this.studySessionId);
       }
       return null;
-    },
-    skillName() {
-      const config = this.currentStudyStep?.configuration;
-      if (!config?.services) {
-        return null;
-      }
-
-      const service = config.services.find(s => s.skill);
-      return service?.skill || null;
-    },
-    serviceName() {
-      const service = this.currentStudyStep?.configuration?.services?.find(s => s.skill);
-      if (!service) return null;
-
-      const uniqueId = service.name || service.uniqueId;
-      if (!uniqueId) return null;
-
-      // Remove 'service_' prefix if present
-      return uniqueId.startsWith('service_') ? uniqueId.slice('service_'.length) : uniqueId;
-    },
-    feedbackDataKey() {
-      const skillName = this.skillName;
-      const serviceName = this.serviceName;
-
-      if (!skillName || !serviceName) {
-        return null;
-      }
-
-      // Build key in the same format as NlpRequestCore.saveResult
-      // Key format: ${serviceName}_${skill}_textual_feedback
-      return `${serviceName}_${skillName}_textual_feedback`;
     },
     study() {
       if (this.studySession) {
@@ -406,37 +369,10 @@ export default {
       }
       this.studyData[stepId][data_type] = data;
     },
-    onNlpDataUpdate(entries) {
-      console.log("NLP Data Update:", entries);
-      try {
-        const idx = this.studySteps.findIndex(step => step.id === (this.nlpModalStepId || this.currentStep.id));
-        const bucketIndex = idx + 1;
-
-        if (!this.studyData[bucketIndex]) {
-          this.studyData[bucketIndex] = {};
-        }
-        const bucket = this.studyData[bucketIndex];
-
-        entries.forEach(entry => {
-          if (entry?.key) {
-            bucket[entry.key] = entry.value;
-          }
-        });
-        if (this.currentStep.stepType === 2 && this.hasNlpForCurrentStep) {
-          this.$refs.editor.addText(this.studyData[bucketIndex][this.feedbackDataKey] || '');
-        }
-        this.$forceUpdate();
-      } catch (e) {
-        // ignore
-      }
-    },
-    nextWithNlpGuard() {
+    next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       this.updateStep(nextStep.id);
-    },
-    onNlpModalClose() {
-      this.nlpModalStepId = null;
     },
     getStudyData() {
       if (this.studyHash) {
@@ -511,9 +447,6 @@ export default {
     finish() {
       this.$refs.studyFinishModal.open();
     },
-    finishWithNlpGuard() {
-      this.finish();
-    },
     handleModalClose(event) {
       if (event.endStudy) {
         this.finish(); // End the study
@@ -522,7 +455,7 @@ export default {
         if (nextStep) {
           this.updateStep(nextStep.id);
         }
-      } else if (event.previousStep && this.currentWorkflowStep.allowBackward) {
+      } else if (event.previousStep && this.currentStep.allowBackward) {
         const previousStep = this.studySteps.find((step) => step.id === this.currentStudyStep.studyStepPrevious);
         if (previousStep) {
           this.updateStep(previousStep.id);
