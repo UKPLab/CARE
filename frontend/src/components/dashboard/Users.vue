@@ -11,6 +11,13 @@
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
+            title="Assign Roles"
+            text="Assign Roles"
+            icon="person-bounding-box"
+            @click="$refs.assignRolesModal.open()"
+        />
+        <BasicButton
+            class="btn btn-secondary btn-sm"
             title="Upload Password"
             text="Upload Password"
             icon="key"
