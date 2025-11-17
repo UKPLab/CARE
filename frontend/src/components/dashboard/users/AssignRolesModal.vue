@@ -19,7 +19,10 @@
       </div>
       <div v-else-if="index === 1">
         <div class="mb-3">
-          <h6>Rights for selected role: <strong>{{ selectedRoleName }}</strong> are checked: </h6>
+          <h6>Manage rights for <strong class="text-primary">{{ selectedRoleName }}</strong> role</h6>
+          <small class="text-muted">
+            Select the rights for this role. Note: All users have basic <strong>"user"</strong> rights by default.
+          </small>
         </div>
         <BasicTable
           :columns="rightsColumns"
