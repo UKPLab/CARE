@@ -26,7 +26,7 @@
               <BasicButton
                   title="Skip NLP Support"
                   class="btn btn-secondary"
-                  @click="closeModal"
+                  @click="close"
               />
             </div>
           </div>
@@ -106,7 +106,7 @@ export default {
       default: true,
     }
   },
-  emits: ["update:data"],
+  emits: ["update:data", "update:ready"],
   data() {
     return {
       error: false,
@@ -188,7 +188,7 @@ export default {
         if (!this.nlpRequestsInProgress) {
           this.$nextTick(() => {
             if (this.$refs.modal) {
-              this.$refs.modal.close();
+              this.close();
             }
           });
         }
@@ -217,7 +217,7 @@ export default {
             this.documentDataRefresh(response.data);
             if (this.nlpServices.length === 0) {
               this.$nextTick(() => {
-                this.$refs.modal.close();
+                this.close();
               });
             }
           } else {
@@ -258,7 +258,8 @@ export default {
       // TODO only retry failed requests
       this.$refs.nlpRequest.retryRequest();
     },
-    closeModal() {
+    close() {
+      this.$emit("update:ready", true);
       this.$refs.modal.close();
     }
   }

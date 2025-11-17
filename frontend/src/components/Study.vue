@@ -91,9 +91,10 @@
                 :config="step.configuration"
                 :show="currentStudyStepId === step.id && !readOnly"
                 @update:data="updateStudyData(step.id, 'data', $event)"
+                @update:ready="loadingReady[step.id] = $event"
             />
           </div>
-          <div>
+          <div v-if="isStepLoaded(step.id)">
 
             <Annotator
                 v-if="step.stepType === 1"
@@ -221,6 +222,7 @@ export default {
       localStudyStepId: 0,
       studyData: {},
       stepsReady: {},
+      loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
     };
@@ -325,7 +327,10 @@ export default {
       return false;
     },
     isCurrentStepReady() {
-      return this.stepsReady[this.currentStudyStepId] !== false;
+      if (this.currentStudyStepId in this.stepsReady) {
+        return this.stepsReady[this.currentStudyStepId];
+      }
+      return false;
     },
     readOnlyComputed() {
       if (this.readOnly) {
@@ -373,6 +378,12 @@ export default {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       this.updateStep(nextStep.id);
+    },
+    isStepLoaded(stepId) {
+      if (stepId in this.loadingReady) {
+        return this.loadingReady[stepId];
+      }
+      return false;
     },
     getStudyData() {
       if (this.studyHash) {
