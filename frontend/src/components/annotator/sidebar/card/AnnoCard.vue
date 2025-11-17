@@ -53,7 +53,7 @@
             :style="{
               display: 'inline-block',
               borderLeft: '4px solid #' + color,
-              height: '20px',
+              height: '38px',
               fontSize: 'small',
               fontStyle: 'italic'
             }"
