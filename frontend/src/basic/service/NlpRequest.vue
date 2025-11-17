@@ -11,7 +11,12 @@ export default {
   inject: {
     studyData: {
       type: Array,
-      required: false,
+      required: true,
+      default: () => [],
+    },
+    orderedStudySteps: {
+      type: Array,
+      required: true,
       default: () => [],
     }
   },
@@ -133,38 +138,45 @@ export default {
       }
       this.sendRequest();
     },
-    buildPayload(inputSpec) {
-      console.log(inputSpec);
-      return null;
+    buildPayloadFromStudyData(inputSpec, type, key) {
+      const studyStepFromIndex = this.orderedStudySteps[inputSpec.stepIndex];
+      const studyStepData = this.studyData[studyStepFromIndex.id];
+      if (inputSpec.key) {
+        return studyStepData[inputSpec.type][key];
+      } else {
+        return studyStepData[inputSpec.type];
+      }
+    },
+    async buildPayload(inputSpec) {
+
+      switch (inputSpec.type) {
+        case 'submission':
+          return await this.buildSubmission(this.inputData.submission);
+          // TODO add submission document --> should be done in the backend
+          // reduces async operation here and additional complexity
+          // also to reduce same code in backend and frontend
+        case 'document':
+          // TODO add document data --> should be done in the backend
+          break;
+        case 'assessment':
+          return this.buildPayloadFromStudyData(inputSpec);
+        case 'configuration':
+          return this.$store.getters["table/configuration/get"](inputSpec.configId)?.content || {};
+        case 'annotator':
+          return this.buildPayloadFromStudyData(inputSpec);
+        case 'editor':
+          return this.buildPayloadFromStudyData(inputSpec);
+        default:
+          return null
+      }
+
     },
     async sendRequest() {
       this.status = 'pending';
 
-      // TODO generalize skill handling and payload construction
-      console.log("Services");
-      console.log(this.service);
       const basePayload = {};
       for (const input in this.service.inputs) {
-        basePayload[input] = this.buildPayload(this.service.inputs[input]);
-
-      }
-      console.log("PAYLOAD could be sent to NLP Service:");
-      console.log(basePayload);
-
-
-      switch (this.skill) {
-        case 'grading_expose':
-          basePayload.submission = await this.buildSubmission(this.inputData.submission);
-          basePayload.assessment_config = this.getConfig(this.inputData.assessment_config);
-          break;
-        case 'generating_feedback':
-          basePayload.submission = await this.buildSubmission(this.inputData.submission);
-          basePayload.grading_results = this.buildGradingResults(this.inputData.grading_results);
-          basePayload.feedback_grading_criteria = this.getConfig(this.inputData.feedback_grading_criteria);
-          break;
-        default:
-          console.warn(`Unknown NLP skill: ${this.skill}`);
-          return;
+        basePayload[input] = await this.buildPayload(this.service.inputs[input]);
       }
 
       this.$socket.emit("serviceRequest", {
@@ -203,27 +215,6 @@ export default {
         acc[item.key] = item.value;
         return acc;
       }, {}));
-    },
-    getConfig(config) {
-      const raw = (config && typeof config === 'object') ? config.value : config;
-      const configId = Number.isFinite(raw) ? raw : parseInt(raw, 10);
-      if (!Number.isFinite(configId)) return {};
-      return this.$store.getters["table/configuration/get"](configId)?.content || {};
-    },
-    buildGradingResults(gradingResultsSpec) {
-      const map = gradingResultsSpec;
-      const stepIndex = Number(map.stepId);
-      const key = (map && typeof map === 'object') ? map.value : map;
-      if (Number.isFinite(stepIndex) && key && this.studyData && this.studyData[stepIndex]) {
-        const bucket = this.studyData[stepIndex];
-        const v = bucket[key];
-        if (Array.isArray(v)) {
-          return v;
-        } else if (v && Array.isArray(v.assessment)) {
-          return v.assessment;
-        }
-      }
-      return [];
     },
     async buildSubmission(spec) {
       const raw = (spec && typeof spec === 'object') ? spec.value : spec;

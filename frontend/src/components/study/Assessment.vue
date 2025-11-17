@@ -132,6 +132,7 @@ export default {
       isPinned: false,
       isSavingAssessment: false,
       lastSavedAssessmentJson: null,
+      isLoaded: false
     };
   },
   computed: {
@@ -223,6 +224,9 @@ export default {
       return true;
     },
     isAssessmentComplete() {
+      if (!this.isLoaded) {
+        return false;
+      }
       if (!this.forcedAssessmentEnabled) {
         return true;
       }
@@ -276,7 +280,7 @@ export default {
   },
   mounted() {
     document.addEventListener("mousedown", this.handleClickOutsideInfoPanel);
-    //this.initialize();
+    this.initialize();
   },
   beforeUnmount() {
     document.removeEventListener("mousedown", this.handleClickOutsideInfoPanel);
@@ -445,6 +449,8 @@ export default {
       });
 
       this.assessmentState = state;
+      this.$emit("update:data", this.buildAssessmentPersistedData());
+      this.isLoaded = true;
     },
     buildAssessmentPersistedData() {
       const data = {};
@@ -551,6 +557,7 @@ export default {
               }
             }
         );
+        this.$emit("update:data", value);
       }).catch((err) => {
         console.error("Failed to save assessment data", err);
       });

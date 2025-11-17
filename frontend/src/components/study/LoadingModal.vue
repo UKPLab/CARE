@@ -3,7 +3,7 @@
       ref="modal"
       name="StudyLoadingModal"
       :disable-keyboard="true"
-      :remove-close="true"
+      :remove-close="false"
       :auto-open="false"
   >
     <template #title>
@@ -106,6 +106,11 @@ export default {
       type: Boolean,
       required: false,
       default: true,
+    },
+    canLoad: {
+      type: Boolean,
+      required: false,
+      default: true,
     }
   },
   emits: ["update:data", "update:ready"],
@@ -182,6 +187,13 @@ export default {
         }
       }
     },
+    canLoad: {
+      handler(newVal, oldVal) {
+        if (oldVal !== newVal && newVal) {
+          this.startRequest();
+        }
+      }
+    },
     nlpRequests: {
       handler() {
         if (!this.nlpRequestsInProgress && !this.nlpRequestsFailed) {
@@ -206,28 +218,34 @@ export default {
     if (this.show && this.$refs.modal) {
       this.$refs.modal.open();
     }
-    this.$socket.emit("documentDataGet", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-        },
-        (response) => {
-          if (response.success) {
-            this.documentDataRefresh(response.data);
-            if (this.nlpServices.length === 0) {
-              this.$nextTick(() => {
-                this.close();
-              });
-            }
-          } else {
-            this.error = true;
-          }
-        });
+    if (this.canLoad) {
+      this.startRequest();
+    }
   },
   unmounted() {
     this.stopRotatingMessages();
   },
   methods: {
+    startRequest() {
+      this.$socket.emit("documentDataGet", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+          },
+          (response) => {
+            if (response.success) {
+              this.documentDataRefresh(response.data);
+              if (this.nlpServices.length === 0) {
+                this.$nextTick(() => {
+                  this.close();
+                });
+              }
+            } else {
+              this.error = true;
+            }
+          }
+      );
+    },
     startRotatingMessages() {
       this.rotatingIndex = Math.floor(Math.random() * this.rotatingMessages.length);
       this.rotatingTimer = setInterval(() => {
