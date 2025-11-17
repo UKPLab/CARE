@@ -337,8 +337,8 @@ export default {
         case "renameDoc":
           this.renameDoc(data.params);
           break;
-        case "studyCoordinator":
-          this.studyCoordinator(data.params);
+        case "openStudyCoordinator":
+          this.openStudyCoordinator(data.params);
           break;
         case "exportDeltaDoc":
           this.$refs.editorDownload.exportDeltaDoc(data.params);
@@ -404,7 +404,7 @@ export default {
     publishDoc(row) {
       this.$refs.publishModal.open(row.id);
     },
-    studyCoordinator(row) {
+    openStudyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
     },
   },
