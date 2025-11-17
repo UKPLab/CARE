@@ -34,7 +34,7 @@ export default {
       required: true,
     }
   },
-  emits: ["update:state"],
+  emits: ["update:state", "update:data"],
   data() {
     return {
       data: null,
@@ -47,9 +47,6 @@ export default {
     uniqueId() {
       return "service_" + this.name;
     },
-    isNotStudyBased() {
-      return this.skill === 'grading_expose';
-    },
     serviceName() {
       if (typeof this.uniqueId === 'string' && this.uniqueId.startsWith('service_')) {
         return this.uniqueId.slice('service_'.length);
@@ -58,10 +55,6 @@ export default {
     },
     skillKey() {
       return `${this.serviceName}_${this.skill}`;
-    },
-    requestAlreadyDone() {
-      if (this.isNotStudyBased) return false;
-      return Object.keys(this.documentData).some(key => key.startsWith(this.skillKey));
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -114,12 +107,17 @@ export default {
   },
   mounted() {
     this.id = uuid();
-    this.status = (this.requestAlreadyDone) ? 'completed' : 'pending';
-    if (!this.requestAlreadyDone) {
+    this.status = (this.requestAlreadyDone()) ? 'completed' : 'pending';
+    if (!this.requestAlreadyDone()) {
       this.sendRequest();
     }
   },
   methods: {
+    requestAlreadyDone() {
+      return Object.keys(this.documentData).some(key =>
+          key.includes(this.skill)
+      );
+    },
     retryRequest() {
       if (this.timeoutId) {
         clearTimeout(this.timeoutId);
@@ -171,13 +169,18 @@ export default {
     saveResult(result) {
       const entries = Object.keys(result || {}).map(k => ({
         documentId: this.studyStep?.documentId,
-        studySessionId: this.isNotStudyBased ? null : this.studySessionId,
-        studyStepId: this.isNotStudyBased ? null : this.studyStepId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
         key: `${this.skillKey}_${k}`,
         value: result[k]
       }));
 
       entries.forEach(e => this.$socket.emit("documentDataSave", e));
+
+      this.$emit('update:data', entries.reduce((acc, item) => {
+        acc[item.key] = item.value;
+        return acc;
+      }, {}));
     },
     getConfig(config) {
       const raw = (config && typeof config === 'object') ? config.value : config;

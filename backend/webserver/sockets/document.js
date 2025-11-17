@@ -1039,9 +1039,17 @@ class DocumentSocket extends Socket {
     async getDocumentData(data, options) {
         const whereClause = {
             documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            deleted: false
+            deleted: false,
+            [Op.or]: [
+                {
+                    studySessionId: data.studySessionId,
+                    studyStepId: data.studyStepId
+                },
+                {
+                    studySessionId: null,
+                    studyStepId: null
+                }
+            ],
         };
 
         if (data.key) {

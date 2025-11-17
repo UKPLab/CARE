@@ -13,7 +13,7 @@
     </template>
     <template #body>
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-        <div v-if="nlpRequestsFailed">
+        <div v-if="documentData && nlpRequestsFailed">
           <div class="d-flex flex-column align-items-center">
             <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP
               support.</p>
@@ -41,7 +41,7 @@
           <span class="ms-3">{{ rotatingStatusText }}</span>
         </div>
 
-        <div v-if="documentDataLoaded">
+        <div v-if="documentData">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
             <NlpRequest
                 ref="nlpRequest"
@@ -50,6 +50,7 @@
                 :name="service.name"
                 :document-data="documentData"
                 @update:state="nlpRequests[service.name] = $event"
+                @update:data="documentDataRefresh"
             />
           </div>
         </div>
@@ -110,7 +111,7 @@ export default {
     return {
       error: false,
       rotatingIndex: 0,
-      documentDataLoaded: false,
+      documentData: null,
       nlpRequests: {},
       rotatingMessages: [
         "Thinking through your request...",
@@ -141,16 +142,6 @@ export default {
     },
     rotatingStatusText() {
       return this.rotatingMessages[this.rotatingIndex];
-    },
-    documentData() {
-      return this.$store.getters["table/document_data/getFiltered"]((item) => {
-        return item.documentId === this.documentId &&
-            item.studySessionId === this.studySessionId &&
-            item.studyStepId === this.studyStepId;
-      }).reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {});
     },
     nlpServices() {
       return this.config.services?.filter(s => s.type === 'nlpRequest') || [];
@@ -223,7 +214,7 @@ export default {
         },
         (response) => {
           if (response.success) {
-            this.documentDataLoaded = true;
+            this.documentDataRefresh(response.data);
             if (this.nlpServices.length === 0) {
               this.$nextTick(() => {
                 this.$refs.modal.close();
@@ -254,6 +245,13 @@ export default {
     stopRotatingMessages() {
       clearInterval(this.rotatingTimer);
       clearTimeout(this.rotatingLongTimer);
+    },
+    documentDataRefresh(data) {
+      const updatedData = {...this.documentData};
+      for (const [key, value] of Object.entries(data)) {
+        updatedData[key] = value;
+      }
+      this.documentData = updatedData;
     },
     retryNlpRequests() {
       // TODO: Implement retry logic
