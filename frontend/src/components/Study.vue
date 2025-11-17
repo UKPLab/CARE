@@ -410,7 +410,6 @@ export default {
   },
   methods: {
     updateStudyData(stepId, data_type, data) {
-      console.log("Study Data Update:", stepId, data_type, data);
       if (!this.studyData[stepId]) {
         this.studyData[stepId] = {};
       }

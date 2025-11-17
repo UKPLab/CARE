@@ -3,7 +3,7 @@
       ref="modal"
       name="StudyLoadingModal"
       :disable-keyboard="true"
-      :remove-close="false"
+      :remove-close="true"
       :auto-open="false"
   >
     <template #title>
@@ -138,6 +138,7 @@ export default {
     }
   },
   computed: {
+
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
     },
@@ -153,7 +154,13 @@ export default {
     nlpServices() {
       return this.config.services?.filter(s => s.type === 'nlpRequest') || [];
     },
+    nlpShouldWait() {
+      return !this.readOnly && this.nlpServices.length > 0;
+    },
     nlpRequestsInProgress() {
+      if (!this.nlpShouldWait) {
+        return false;
+      }
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return true;
       }
@@ -162,6 +169,9 @@ export default {
       );
     },
     nlpRequestsCompleted() {
+      if (!this.nlpShouldWait) {
+        return true;
+      }
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return false;
       }
@@ -170,7 +180,9 @@ export default {
       );
     },
     nlpRequestsFailed() {
-      console.log("NLP Requests:", this.nlpRequests);
+      if (!this.nlpShouldWait) {
+        return false;
+      }
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return false;
       }
@@ -235,7 +247,7 @@ export default {
           (response) => {
             if (response.success) {
               this.documentDataRefresh(response.data);
-              if (this.nlpServices.length === 0) {
+              if (!this.nlpShouldWait) {
                 this.$nextTick(() => {
                   this.close();
                 });
@@ -264,7 +276,7 @@ export default {
       clearTimeout(this.rotatingLongTimer);
     },
     documentDataRefresh(data) {
-      const updatedData = {...this.documentData};
+      const updatedData = {...(this.documentData || {})};
       for (const [key, value] of Object.entries(data)) {
         updatedData[key] = value;
       }
