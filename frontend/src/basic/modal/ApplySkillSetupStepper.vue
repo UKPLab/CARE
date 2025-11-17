@@ -111,7 +111,7 @@ export default {
     autoBaseFileParameter() {
       for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
         if (mapping && mapping.requiresTableSelection) {
-          if (mapping.tableType === 'submission' || mapping.tableType === 'document') {
+          if (mapping.type === 'submission' || mapping.type === 'document') {
             return paramName;
           }
         }
@@ -128,7 +128,7 @@ export default {
     },
     requireValidation() {
       if (!this.autoBaseFileParameter || !this.inputMappings[this.autoBaseFileParameter]) return false;
-      return this.inputMappings[this.autoBaseFileParameter].tableType === 'submission';
+      return this.inputMappings[this.autoBaseFileParameter].type === 'submission';
     },
     hasTableBasedParameter() {
       return Object.values(this.inputMappings).some(mapping =>
@@ -233,7 +233,7 @@ export default {
         }
 
         if (newMapping.value !== oldMapping.value ||
-            newMapping.tableType !== oldMapping.tableType ||
+            newMapping.type !== oldMapping.type ||
             newMapping.requiresTableSelection !== oldMapping.requiresTableSelection) {
           return true;
         }
@@ -256,13 +256,12 @@ export default {
           if (mapping.requiresTableSelection) {
             const files = this.selectedFiles[paramName] || [];
             mappings[paramName] = {
-              table: mapping.tableType,
+              table: mapping.table,
               fileIds: files.map(file => file.id),
             };
           } else {
-            const tableType = mapping.tableType || "configuration";
             mappings[paramName] = {
-              table: tableType,
+              table: mapping.table || "configuration",
               fileIds: [mapping.configId],
             };
           }
