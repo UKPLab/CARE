@@ -3,12 +3,12 @@
       ref="modal"
       name="StudyLoadingModal"
       :disable-keyboard="true"
-      :remove-close="false"
+      :remove-close="true"
       :auto-open="false"
   >
     <template #title>
       <h5 class="modal-title">
-        Loading Study Step {{ studyStepId }}
+        Loading Study Step
       </h5>
     </template>
     <template #body>
@@ -44,7 +44,7 @@
         <div v-if="documentData && !readOnly">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
             <NlpRequest
-                ref="nlpRequest"
+                :ref="`nlpRequest[${service.name}]`"
                 :skill="service.skill"
                 :inputs="service.inputs"
                 :name="service.name"
@@ -168,7 +168,7 @@ export default {
         return false;
       }
       return Object.values(this.nlpRequests).some(
-          req => req.status  === 'timeout' || req.status === 'failed'
+          req => req.status === 'timeout' || req.status === 'failed'
       );
     }
   },
@@ -182,9 +182,7 @@ export default {
     },
     nlpRequests: {
       handler() {
-        console.log("NLP Requests In Progress:", this.nlpRequestsInProgress);
-        console.log(Object.values(this.nlpRequests));
-        if (!this.nlpRequestsInProgress) {
+        if (!this.nlpRequestsInProgress && !this.nlpRequestsFailed) {
           this.$nextTick(() => {
             if (this.$refs.modal) {
               this.close();
@@ -253,9 +251,18 @@ export default {
       this.documentData = updatedData;
     },
     retryNlpRequests() {
-      // TODO: Implement retry logic
-      // TODO only retry failed requests
-      this.$refs.nlpRequest.retryRequest();
+      Object.entries(this.nlpRequests).forEach(([key, request]) => {
+        if (request.status === 'timeout') {
+          const refName = `nlpRequest[${key}]`;
+          const ref = this.$refs[refName];
+
+          const component = Array.isArray(ref) ? ref[0] : ref;
+
+          if (component && typeof component.retryRequest === 'function') {
+            component.retryRequest();
+          }
+        }
+      });
     },
     close() {
       this.$emit("update:ready", true);
