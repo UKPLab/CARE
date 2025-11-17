@@ -82,7 +82,7 @@
   >
     <div v-for="step in studySteps" :key="'step_' + step.id">
       <div v-show="currentStudyStepId === step.id">
-        <div v-if="studyTrajectory.includes(currentStudyStepId) || readOnly">
+        <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal

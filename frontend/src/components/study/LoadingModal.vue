@@ -3,12 +3,12 @@
       ref="modal"
       name="StudyLoadingModal"
       :disable-keyboard="true"
-      :remove-close="true"
+      :remove-close="false"
       :auto-open="false"
   >
     <template #title>
       <h5 class="modal-title">
-        Loading Study Step
+        Loading Study Step {{ studyStepId }}
       </h5>
     </template>
     <template #body>
@@ -41,7 +41,7 @@
           <span class="ms-3">{{ rotatingStatusText }}</span>
         </div>
 
-        <div v-if="documentData">
+        <div v-if="documentData && !readOnly">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
             <NlpRequest
                 ref="nlpRequest"
@@ -151,7 +151,7 @@ export default {
         return true;
       }
       return Object.values(this.nlpRequests).some(
-          status => status === 'pending'
+          req => req.status === 'pending'
       );
     },
     nlpRequestsCompleted() {
@@ -159,7 +159,7 @@ export default {
         return false;
       }
       return Object.values(this.nlpRequests).every(
-          status => status === 'completed'
+          req => req.status === 'completed'
       );
     },
     nlpRequestsFailed() {
@@ -168,7 +168,7 @@ export default {
         return false;
       }
       return Object.values(this.nlpRequests).some(
-          status => status === 'timeout' || status === 'failed'
+          req => req.status  === 'timeout' || req.status === 'failed'
       );
     }
   },
@@ -182,9 +182,8 @@ export default {
     },
     nlpRequests: {
       handler() {
-        this.nlpRequestsInProgress = Object.values(this.nlpRequests).some(
-            status => status === 'pending' || status === 'in_progress'
-        );
+        console.log("NLP Requests In Progress:", this.nlpRequestsInProgress);
+        console.log(Object.values(this.nlpRequests));
         if (!this.nlpRequestsInProgress) {
           this.$nextTick(() => {
             if (this.$refs.modal) {
