@@ -26,35 +26,37 @@
 
       <template #step-2>
         <InputFiles
-            :input-mappings="inputMappings"
             v-model="selectedFiles"
+            :input-mappings="inputMappings"
             @update:valid="inputFilesValid = $event"
         />
       </template>
 
-      <template #step-3 v-if="requireValidation">
-        <InputGroup
-            :base-file-parameter="autoBaseFileParameter"
-            :selected-files="selectedFiles"
-            v-model="baseFileSelections"
-            @update:valid="inputGroupValid = $event"
-            @update:validationConfigurations="validationConfigurationNames = $event"
-        />
+      <template #step-3>
+        <div v-if="requireValidation">
+          <InputGroup
+              v-model="baseFileSelections"
+              :base-file-parameter="autoBaseFileParameter"
+              :selected-files="selectedFiles"
+              @update:valid="inputGroupValid = $event"
+              @update:validation-configurations="validationConfigurationNames = $event"
+          />
+        </div>
+        <div v-if="!requireValidation">
+
+          <InputConfirm
+              :selected-skill="selectedSkill"
+              :input-mappings="inputMappings"
+              :selected-files="selectedFiles"
+              :base-file-parameter="autoBaseFileParameter"
+              :base-file-selections="baseFileSelections"
+              :validation-configuration-names="validationConfigurationNames"
+              :show-base-file-selections="false"
+          />
+        </div>
       </template>
 
-      <template #step-3 v-if="!requireValidation">
-        <InputConfirm
-            :selected-skill="selectedSkill"
-            :input-mappings="inputMappings"
-            :selected-files="selectedFiles"
-            :base-file-parameter="autoBaseFileParameter"
-            :base-file-selections="baseFileSelections"
-            :validation-configuration-names="validationConfigurationNames"
-            :show-base-file-selections="false"
-        />
-      </template>
-
-      <template #step-4 v-if="requireValidation">
+      <template v-if="requireValidation" #step-4>
         <InputConfirm
             :selected-skill="selectedSkill"
             :input-mappings="inputMappings"
