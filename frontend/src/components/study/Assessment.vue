@@ -102,7 +102,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
-    }
+    },
+    studyData: {
+      type: Array,
+      required: true,
+    },
   },
   props: {
     config: {
@@ -142,14 +146,7 @@ export default {
       );
     },
     documentData() {
-      return this.$store.getters["table/document_data/getFiltered"]((item) => {
-        return item.documentId === this.documentId &&
-            item.studySessionId === this.studySessionId &&
-            item.studyStepId === this.studyStepId;
-      }).reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {});
+      return this.studyData[this.studyStepId]?.data;
     },
     assessmentResultFromDocumentData() {
       const raw = this.documentData[this.assessmentDataKey];
@@ -201,18 +198,12 @@ export default {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
         return null;
       }
-
-      const items = this.$store.getters["table/document_data/getFiltered"](
-          (item) => {
-            if (item.documentId !== this.documentId) return false;
-            if (item.studySessionId != null) return false;
-            if (item.studyStepId != null) return false;
-            return this.preprocessedAssessmentKeyCandidates.includes(item.key);
-          }
+      const items = Object.keys(this.documentData).filter(item =>
+          this.preprocessedAssessmentKeyCandidates.includes(item)
       );
 
       if (!items || !items.length) return null;
-      return items[0].value;
+      return this.documentData[items[0]];
     },
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
