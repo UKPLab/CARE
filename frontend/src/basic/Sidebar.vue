@@ -253,7 +253,7 @@ export default {
   },
   computed: {
     isActive() {
-      return this.currentStudyStep.stepType === 1; ;
+      return this.currentStudyStep?.stepType === 1; ;
     },
     availableSlots() {
       return Object.keys(this.$slots).filter(slot => slot !== 'default');
