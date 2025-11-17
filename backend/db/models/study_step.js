@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         static stepTypes = stepTypes;
         static accessMap = [
             {
-                right: "frontend.dashboard.studies.view",
+                right: "frontend.dashboard.studies.fullAccess",
                 columns: StudyStep.getAttributes()
             },
         ];
@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
                                 [sequelize.models.document.docTypes.DOC_TYPE_MODAL]: stepTypes.STEP_TYPE_MODAL,
                             }
                         },
-                        {type:"byUserId", key: "userId"},
+                        // {type:"byUserId", key: "userId"},
                         {type:"byProjectId", key: "projectId"}
                     ],
                     additionalOptions: [

@@ -18,6 +18,10 @@ const userRights = [
     description: "access to view projects in the dashboard",
   },
   {
+    name: "frontend.dashboard.studies.view",
+    description: "access to view studies in the dashboard",
+  },
+  {
     name: "frontend.dashboard.study_sessions.view",
     description: "access to view study sessions in the dashboard",
   },
