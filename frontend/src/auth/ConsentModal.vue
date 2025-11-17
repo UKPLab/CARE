@@ -1,7 +1,7 @@
 <template>
   <Modal
     ref="modal"
-    xl
+    size="xl"
     name="terms"
     disable-keyboard
     remove-close
