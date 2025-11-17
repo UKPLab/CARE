@@ -353,6 +353,25 @@ export default {
               // Add specific document/submission sources
               if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
             }
+
+            if (stepIndex < currentWorkflowStepIndex) {
+              sources.push(
+                  {
+                    value: "annotator_annotation_step" + stepIndex,
+                    name: `<Annotator> Annotations (Workflow Step ${stepIndex + 1})`,
+                    stepIndex: stepIndex,
+                    key: 'annotations',
+                    type: 'annotator',
+                  },
+                  {
+                    value: "annotator_comments_step" + stepIndex,
+                    name: `<Annotator> Comments (Workflow Step ${stepIndex + 1})`,
+                    stepIndex: stepIndex,
+                    key: 'comments',
+                    type: 'annotator',
+                  }
+              );
+            }
             break;
           }
 
