@@ -330,7 +330,7 @@ export default {
       if (this.currentStudyStepId in this.stepsReady) {
         return this.stepsReady[this.currentStudyStepId];
       }
-      return false;
+      return true;
     },
     readOnlyComputed() {
       if (this.readOnly) {
