@@ -261,16 +261,7 @@ export default {
             const mappings = {};
             newValue.forEach(item => {
               if (item.input) {
-                mappings[item.input] = {
-                  value: item.dataSource,
-                  name: item.name,
-                  stepIndex: item.stepIndex,
-                  // Additional properties (if exists)
-                  requiresTableSelection: item.requiresTableSelection,
-                  tableType: item.tableType,
-                  configId: item.configId,
-                  type: item.type,
-                };
+                mappings[item.input] = {...item};
               }
             });
             this.inputMappings = mappings;
