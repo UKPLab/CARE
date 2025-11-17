@@ -14,7 +14,7 @@ const workflows = [
             fields: [
                 {
                 key: "configurationId",
-                label: "Configuration File:",
+                label: "Assessment Configuration File:",
                 type: "select",
                 required: true,
                 options: {
@@ -26,7 +26,7 @@ const workflows = [
                     { key: "deleted", value: false }
                   ]
                 },
-                help: "Select the configuration file for this workflow step."
+                help: "Select the configuration file for this workflow step assessment."
               },
               {
                 key: "forcedAssessment",

@@ -141,6 +141,8 @@ export default {
       this.status = 'pending';
 
       // TODO generalize skill handling and payload construction
+      console.log("Services");
+      console.log(this.service);
       const basePayload = {};
       for (const input in this.service.inputs) {
         basePayload[input] = this.buildPayload(this.service.inputs[input]);
