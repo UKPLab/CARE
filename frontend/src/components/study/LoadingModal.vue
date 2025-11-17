@@ -48,7 +48,9 @@
                 :skill="service.skill"
                 :inputs="service.inputs"
                 :name="service.name"
+                :service="service"
                 :document-data="documentData"
+                :study-step-id="studyStepId"
                 @update:state="nlpRequests[service.name] = $event"
                 @update:data="documentDataRefresh"
             />

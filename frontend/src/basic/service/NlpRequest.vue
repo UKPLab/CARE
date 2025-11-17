@@ -20,6 +20,10 @@ export default {
       type: String,
       required: true
     },
+    studyStepId: {
+      type: Number,
+      required: true,
+    },
     inputs: {
       type: Object,
       required: true
@@ -30,6 +34,10 @@ export default {
       default: ""
     },
     documentData: {
+      type: Object,
+      required: true,
+    },
+    service: {
       type: Object,
       required: true,
     }
@@ -125,11 +133,23 @@ export default {
       }
       this.sendRequest();
     },
+    buildPayload(inputSpec) {
+      console.log(inputSpec);
+      return null;
+    },
     async sendRequest() {
       this.status = 'pending';
 
       // TODO generalize skill handling and payload construction
       const basePayload = {};
+      for (const input in this.service.inputs) {
+        basePayload[input] = this.buildPayload(this.service.inputs[input]);
+
+      }
+      console.log("PAYLOAD could be sent to NLP Service:");
+      console.log(basePayload);
+
+
       switch (this.skill) {
         case 'grading_expose':
           basePayload.submission = await this.buildSubmission(this.inputData.submission);
