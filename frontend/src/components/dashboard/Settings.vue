@@ -226,6 +226,11 @@ export default {
     load() {
       this.$socket.emit("settingGetData", null, (res) => {
         if (res.success) {
+          this.eventBus.emit("toast", {
+              title: "Settings Loaded",
+              message: "Settings have been successfully loaded.",
+              variant: "success",
+          });
           this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
           this.collapseFirst = this.settings.reduce((acc, setting) => {
             const key = setting.key.split(".")[0];
