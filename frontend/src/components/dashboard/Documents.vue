@@ -89,7 +89,12 @@ export default {
       },
       columns: [
         {name: "ID", key: "id"},
-        {name: "Title", key: "name"},
+        {
+          name: "Title",
+          key: "name",
+          multiline: true,
+          width: 5,
+        },
         {name: "Created At", key: "createdAt"},
         {name: "Type", key: "typeName"},
         {
