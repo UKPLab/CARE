@@ -332,7 +332,7 @@ export default {
   },
   computed: {
     defaultNumComments() {
-      return this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero");
+      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);

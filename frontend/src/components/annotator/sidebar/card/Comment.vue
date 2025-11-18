@@ -257,7 +257,7 @@ export default {
   },
   computed: {
     defaultNumComments() {
-      return this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelOneUp");
+      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelOneUp"));
     },
     comment() {
       return this.$store.getters["table/comment/get"](this.commentId);
