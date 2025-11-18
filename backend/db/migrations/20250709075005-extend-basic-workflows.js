@@ -11,20 +11,33 @@ module.exports = {
     for (const step of steps) {
       let config;
       try {
-        config = JSON.parse(step.configuration);
+        if (typeof step.configuration === 'object' && step.configuration !== null) {
+          config = step.configuration;
+        } else {
+          config = JSON.parse(step.configuration);
+        }
       } catch (e) {
-        continue; 
+        continue;
       }
 
       if (config?.fields) {
         const newFields = config.fields.filter(field => field.type !== 'addLinkEOD');
         if (newFields.length !== config.fields.length) {
           config.fields = newFields;
-          await queryInterface.bulkUpdate(
-            'workflow_step',
-            { configuration: JSON.stringify(config) },
-            { id: step.id }
-          );
+          if (config.fields.length === 0) {
+            await queryInterface.bulkUpdate(
+              'workflow_step',
+              { configuration: JSON.stringify({}) },
+              { id: step.id }
+            );
+          }
+          else {
+            await queryInterface.bulkUpdate(
+              'workflow_step',
+              { configuration: JSON.stringify(config) },
+              { id: step.id }
+            );
+          }
         }
       }
     }

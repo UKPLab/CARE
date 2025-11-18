@@ -1,15 +1,15 @@
 <template>
   <button
-    class="btn btn-sm"
-    :class="buttonClass.specifiers"
-    type="button"
-    :title="title"
-    @click="actionEmitter"
+      class="btn btn-sm"
+      :class="buttonClass.specifiers"
+      type="button"
+      :title="title"
+      @click="actionEmitter"
   >
     <LoadIcon
-      v-if="icon !== null"
-      :icon-name="icon"
-      :size="16"
+        v-if="icon !== null"
+        :icon-name="icon"
+        :size="16"
     />
     <span v-if="icon === null || !buttonClass.iconOnly">{{ title }}</span>
   </button>
@@ -22,8 +22,8 @@ export default {
   name: "TableButton",
   components: {LoadIcon},
   props: {
-    stats:{
-      type: Array,
+    stats: {
+      type: [Array, Object],
       required: false,
       default: () => ([])
     },
@@ -59,7 +59,7 @@ export default {
     }
   },
   methods: {
-    actionEmitter(){
+    actionEmitter() {
       this.$emit('action', {action: this.action, params: this.params, stats: this.stats});
     }
   }

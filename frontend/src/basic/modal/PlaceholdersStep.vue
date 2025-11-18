@@ -252,7 +252,7 @@ export default {
             this.isInitialized = true;
           } else {
             console.error("Invalid document content:", response);
-            this.$eventBus?.emit("toast", {
+            this.eventBus?.emit("toast", {
               title: "Document Error",
               message: "The document content is invalid or empty. Please try again.",
               variant: "danger",
@@ -260,7 +260,7 @@ export default {
           }
         } else {
           console.error("Failed to fetch document content:", response);
-          this.$eventBus?.emit("toast", {
+          this.eventBus.emit("toast", {
             title: "Document Error",
             message: response.message || "Failed to fetch the document.",
             variant: "danger",

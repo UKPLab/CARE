@@ -3,9 +3,9 @@
     <div class="mb-3">
       <label class="form-label">Select NLP Skill:</label>
       <FormSelect
-        :modelValue="modelValue"
+        :model-value="modelValue"
         :options="skillOptions"
-        @update:modelValue="$emit('update:modelValue', $event)"
+        @update:model-value="$emit('update:modelValue', $event)"
       />
     </div>
   </div>

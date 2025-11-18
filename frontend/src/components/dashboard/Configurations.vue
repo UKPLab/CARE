@@ -1,30 +1,33 @@
 <template>
   <Card title="Configuration Files">
     <template #headerElements>
-      <BasicButton
-        class="btn-primary btn-sm"
-        text="Upload Configuration"
-        title="Upload new configuration file"
-        @click="$refs.uploadModal.open('configuration')"
-      />
+      <div class="btn-group gap-2">
+        <BasicButton
+            class="btn-primary btn-sm"
+            text="Upload Configuration"
+            title="Upload new configuration file"
+            icon="upload"
+            @click="$refs.uploadModal.open('configuration')"
+        />
+      </div>
     </template>
     <template #body>
       <BasicTable
-        :columns="columns"
-        :data="configurationsTable"
-        :options="options"
-        :buttons="buttons"
-        @action="action"
+          :columns="columns"
+          :data="configurationsTable"
+          :options="options"
+          :buttons="buttons"
+          @action="action"
       />
     </template>
   </Card>
 
   <!-- Upload Modal for JSON configuration files -->
-  <UploadModal ref="uploadModal" />
-  <ConfirmModal ref="deleteModal" />
-  
+  <UploadModal ref="uploadModal"/>
+  <ConfirmModal ref="deleteModal"/>
+
   <!-- JSON Configuration Viewer Modal -->
-  <Modal ref="viewModal" name="json-viewer" lg>
+  <Modal ref="viewModal" name="json-viewer" size="xl">
     <template #title>
       Configuration: {{ selectedConfig?.name }}
     </template>
@@ -36,32 +39,32 @@
   </Modal>
 
   <!-- JSON Configuration Editor Modal -->
-  <Modal ref="editModal" name="json-editor" xl>
+  <Modal ref="editModal" name="json-editor" size="xl">
     <template #title>
       Edit Configuration: {{ selectedConfig?.name }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-editor-container">
-        <div 
-          ref="quillContainer" 
-          class="quill-editor-container"
+        <div
+            ref="quillContainer"
+            class="quill-editor-container"
         ></div>
       </div>
     </template>
     <template #footer>
       <button
-        class="btn btn-secondary"
-        data-bs-dismiss="modal"
-        type="button"
-        @click="$refs.editModal.close()"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          type="button"
+          @click="$refs.editModal.close()"
       >
         Cancel
       </button>
       <button
-        class="btn btn-primary"
-        type="button"
-        :disabled="saving"
-        @click="saveConfiguration"
+          class="btn btn-primary"
+          type="button"
+          :disabled="saving"
+          @click="saveConfiguration"
       >
         <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
         Save
@@ -77,7 +80,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
-import { Editor } from "@/components/editor/editorStore.js";
+import {Editor} from "@/components/editor/editorStore.js";
 
 /**
  * Configuration Files Dashboard Component
@@ -113,17 +116,17 @@ export default {
         search: true,
       },
       columns: [
-        { name: "Name", key: "name", sortable: true },
-        { name: "Created", key: "createdAt", sortable: true, type: "datetime" },
-        { name: "Updated", key: "updatedAt", sortable: true, type: "datetime" },
-        { name: "Type", key: "typeName", sortable: true },
+        {name: "Name", key: "name", sortable: true},
+        {name: "Created", key: "createdAt", sortable: true, type: "datetime"},
+        {name: "Updated", key: "updatedAt", sortable: true, type: "datetime"},
+        {name: "Type", key: "typeName", sortable: true},
       ],
       buttons: [
         {
           icon: "eye",
           options: {
             iconOnly: true,
-            specifiers: { "btn-outline-secondary": true },
+            specifiers: {"btn-outline-secondary": true},
           },
           title: "View configuration",
           action: "view",
@@ -132,7 +135,7 @@ export default {
           icon: "pencil-square",
           options: {
             iconOnly: true,
-            specifiers: { "btn-outline-primary": true },
+            specifiers: {"btn-outline-primary": true},
           },
           title: "Edit configuration",
           action: "edit",
@@ -141,7 +144,7 @@ export default {
           icon: "trash",
           options: {
             iconOnly: true,
-            specifiers: { "btn-outline-danger": true },
+            specifiers: {"btn-outline-danger": true},
           },
           title: "Delete configuration",
           action: "delete",
@@ -235,7 +238,7 @@ export default {
           },
           placeholder: "Edit JSON content here..."
         });
-        
+
         // Set the formatted JSON content
         this.quillEditor.getEditor().setText(this.editableConfigContent);
       }
@@ -279,61 +282,61 @@ export default {
 
       const jsonContent = JSON.parse(editorContent);
       this.$socket.emit("configurationUpdate", {
-          configurationId: this.selectedConfig.id,
-          content: jsonContent,
-        },
-        (response) => {
-          this.saving = false;
+            configurationId: this.selectedConfig.id,
+            content: jsonContent,
+          },
+          (response) => {
+            this.saving = false;
 
-          if (response && response.success) {
-            this.eventBus.emit("toast", {
-              title: "Configuration Updated",
-              message: "Configuration file has been successfully updated",
-              variant: "success",
-            });
-            setTimeout(() => {
-              this.$refs.editModal.close();
-            }, 100);
-          } else {
-            const errorMessage = response && response.message ? response.message : "Failed to update configuration";
-            this.eventBus.emit("toast", {
-              title: "Configuration Update Error",
-              message: errorMessage,
-              variant: "danger",
-            });
+            if (response && response.success) {
+              this.eventBus.emit("toast", {
+                title: "Configuration Updated",
+                message: "Configuration file has been successfully updated",
+                variant: "success",
+              });
+              setTimeout(() => {
+                this.$refs.editModal.close();
+              }, 100);
+            } else {
+              const errorMessage = response && response.message ? response.message : "Failed to update configuration";
+              this.eventBus.emit("toast", {
+                title: "Configuration Update Error",
+                message: errorMessage,
+                variant: "danger",
+              });
+            }
           }
-        }
       );
     },
 
     deleteConfiguration(config) {
       this.$refs.deleteModal.open(
-        "Delete Configuration",
-        `Are you sure you want to delete "${config.name}"?`,
-        null,
-        (confirmed) => {
-        if (confirmed) {
-          this.$socket.emit(
-            "appDataUpdate",
-            {
-              table: "configuration",
-              data: {
-                id: config.id,
-                deleted: true,
-              },
-            },
-            (result) => {
-              if (!result.success) {
-                this.eventBus.emit("toast", {
-                  title: "Configuration delete failed",
-                  message: result.message,
-                  variant: "danger",
-                });
-              }
+          "Delete Configuration",
+          `Are you sure you want to delete "${config.name}"?`,
+          null,
+          (confirmed) => {
+            if (confirmed) {
+              this.$socket.emit(
+                  "appDataUpdate",
+                  {
+                    table: "configuration",
+                    data: {
+                      id: config.id,
+                      deleted: true,
+                    },
+                  },
+                  (result) => {
+                    if (!result.success) {
+                      this.eventBus.emit("toast", {
+                        title: "Configuration delete failed",
+                        message: result.message,
+                        variant: "danger",
+                      });
+                    }
+                  }
+              );
             }
-          );
-        }
-      });
+          });
     },
 
     cleanupQuillEditor() {

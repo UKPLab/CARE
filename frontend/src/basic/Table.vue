@@ -166,15 +166,17 @@
         <td
           v-for="c in columns"
           :key="c"
-          :class="{
-            pointer: selectableRows && !r.isDisabled,
-          }"
+           :class="[
+            'width' in c ? 'col-' + c.width : 'col-auto',
+            { pointer: selectableRows && !r.isDisabled },
+          ]"
         >
           <span v-if="c.key in r">
             <TIcon
               v-if="c.type === 'icon'"
               :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
               :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
+              :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
             />
             <TBadge
               v-else-if="c.type === 'badge'"
@@ -221,8 +223,13 @@
                 @click="actionEmitter({ action: r[c.key].action, params: r })"
               />
             </span>
-
-            <span v-else>
+            <span
+              v-else
+              :class="{
+                'multiline': c.multiline,
+              }"
+              :style="getMultilineStyles(c)"
+            >
               {{ r[c.key] }}
             </span>
           </span>
@@ -728,6 +735,20 @@ export default {
 
       return filteredButtons;
     },
+    getMultilineStyles(column) {
+      if (!column.multiline) {
+        return null;
+      }
+      const lines =
+        typeof column.multiline === "number" ? 
+          column.multiline
+          : column.multiline === true
+            ? 2
+            : column.multiline;
+      return {
+        "--line-clamp": lines,
+      };
+    },
   },
 };
 </script>
@@ -743,5 +764,16 @@ export default {
 
 .pointer {
   cursor: pointer;
+}
+
+.multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--line-clamp, 2);
+  line-clamp: var(--line-clamp, 2);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
 }
 </style>

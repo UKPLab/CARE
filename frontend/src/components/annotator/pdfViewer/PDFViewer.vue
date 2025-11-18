@@ -8,22 +8,46 @@
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
-  <div 
-    class="pdf-toolbar"
-    id="pdfToolbar"
-  >
-      <button class="toolbar-btn" @click="zoomOut" title="Zoom Out">
-        <LoadIcon icon-name="zoom-out" :size="18" />
+    <!-- Toolbar -->
+    <div 
+      ref="toolbar"
+      id="pdfToolbar"
+      class="pdf-toolbar" 
+      :class="{ 'collapsed': !toolbarVisible }"
+    >  
+      <template v-if="toolbarVisible">       
+        <TopBarButton
+          title="Reset"
+          text="Reset"
+          @click="resetZoom"
+        />      
+        <TopBarButton
+          icon="plus-lg"
+          @click="zoomIn"
+        />
+        <TopBarButton
+          icon="dash-lg"
+          @click="zoomOut"
+        />      
+        <!-- Zoom Percentage Form -->
+        <div class="zoom-form-wrapper">
+          <BasicForm
+            v-model="zoomFormData"
+            :fields="zoomFields"
+          />
+        </div>
+      </template>
+
+      <!-- Toggle Button (always visible) -->
+      <button 
+        class="toolbar-toggle-btn" 
+        @click="toolbarVisible = !toolbarVisible" 
+        :title="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
+      >
+        <LoadIcon :icon-name="toolbarVisible ? 'chevron-right' : 'tools'" :size="20" />
       </button>
-      <button class="toolbar-btn" @click="resetZoom" title="Reset Zoom">
-        <LoadIcon icon-name="arrow-counterclockwise" :size="18" />
-      </button>
-      <button class="toolbar-btn" @click="zoomIn" title="Zoom In">
-        <LoadIcon icon-name="zoom-in" :size="18" />
-      </button>
-      <span class="toolbar-label">{{ Math.round(scale * 100) }}%</span>
-      <!-- Add more buttons here as needed -->
     </div>
+
     <PDFPage
       v-for="page in pdf.pageCount"
       :key="'PDFPageKey' + page"
@@ -48,6 +72,8 @@ import {computed} from "vue";
 import Adder from "./Adder.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import BasicLoading from "@/basic/Loading.vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import BasicForm from "@/basic/Form.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -63,7 +89,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "PDFViewer",
-  components: {BasicLoading, PDFPage, Adder, LoadIcon},
+  components: {BasicLoading, PDFPage, Adder, LoadIcon, TopBarButton, BasicForm},
   inject: {
     documentId: {
       type: Number,
@@ -106,7 +132,27 @@ export default {
       MIN_SCALE: 0.25,
       MAX_SCALE: 10.0,
       DEFAULT_SCALE_DELTA: 1.1,
-      isZooming: false
+      isZooming: false,
+      toolbarVisible: false,
+      zoomFormData: {
+        zoom: 1.0,
+      },
+      zoomFields: [
+        {
+          key: "zoom",
+          label: "Zoom",
+          type: "select",
+          options: [
+            { value: 0.8, name: "80%" },
+            { value: 0.9, name: "90%" },
+            { value: 1.0, name: "100%" },
+            { value: 1.1, name: "110%" },
+            { value: 1.2, name: "120%" },
+            { value: 1.3, name: "130%" },
+            { value: 1.4, name: "140%" },
+          ],
+        },
+      ],
     }
   },
   computed: {
@@ -121,6 +167,24 @@ export default {
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
+      }
+    },
+    zoomFormData: {
+      handler(newZoom) {
+        if (!this.isZooming) {
+          this.isZooming = true;
+          this.scale = newZoom.zoom;
+          setTimeout(() => {
+            this.isZooming = false;
+          }, 1000);
+        }
+      },
+      deep: true,
+    },
+    scale(newScale) {
+      // Keep form data in sync with scale
+      if (this.zoomFormData.zoom !== newScale) {
+        this.zoomFormData.zoom = newScale;
       }
     },
   },
@@ -240,32 +304,85 @@ export default {
   border-bottom: 1px solid #ddd;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  min-height: 38px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  gap: 12px;
+  padding: 8px 16px;
+  min-height: 48px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  justify-content: flex-end;
 }
 
-.toolbar-btn {
+.pdf-toolbar.collapsed {
+  width: 64px;
+  padding: 8px;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.pdf-toolbar :deep(.btn) {
+  transition: all 0.2s ease;
+}
+
+.pdf-toolbar :deep(.btn:hover) {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toolbar-toggle-btn {
+  margin-left: auto;
   background: none;
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
+  justify-content: center;
   cursor: pointer;
+  color: #6c757d;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 32px;
+  min-height: 32px;
 }
 
-.toolbar-btn:hover{
-  background: #e3e6ea;
+.toolbar-toggle-btn:hover {
+  background: #e9ecef;
+  transform: scale(1.1);
 }
 
-.toolbar-label {
+.pdf-toolbar.collapsed .toolbar-toggle-btn {
+  margin-left: 0;
+  color: #6c757d;
+}
+
+.pdf-toolbar.collapsed .toolbar-toggle-btn:hover {
+  color: #6c757d;
+}
+
+.zoom-form-wrapper {
+  min-width: 100px;
+}
+
+.zoom-form-wrapper :deep(.form-label) {
+  display: none;
+}
+
+.zoom-form-wrapper :deep(.form-select) {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
   font-size: 0.95em;
-  color: #333;
-  margin-left: 8px;
-  margin-right: 8px;
-  min-width: 40px;
-  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.zoom-form-wrapper :deep(.form-select:hover) {
+  border-color: #007bff;
+}
+
+.zoom-form-wrapper :deep(.form-select:focus) {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
 }
 </style>

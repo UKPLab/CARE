@@ -104,6 +104,9 @@ export default {
             }
           },
           title: "Delete",
+          filter: [
+            {key: "showDeleteTemplateButton", value: true},
+          ],
           action: "deleteTemplate",
         },
         {
@@ -122,7 +125,20 @@ export default {
   },
   computed:{
     savedTemplates() {
-      return this.$store.getters["table/study/getFiltered"]((s) => s.template === true);
+      return this.$store.getters["table/study/getFiltered"]((s) => s.template === true).map((s) => {
+        return {
+          id: s.id,
+          name: s.name,
+          createdAt: new Date(s.createdAt).toLocaleDateString(),
+          resumable: s.resumable,
+          collab: s.collab,
+          multipleSubmit: s.multipleSubmit,
+          showDeleteTemplateButton: this.showDeleteTemplateButton,
+        };
+      });
+    },
+    showDeleteTemplateButton() {
+      return this.$store.getters["auth/checkRight"]("study.template.delete");
     }
   },
   methods: {
@@ -168,7 +184,7 @@ export default {
     },
     createTemplate() {
       this.close();
-      this.$refs.studyCoordinator.open(0, null, false, true);
+      this.$refs.studyCoordinator.open(0, null, false, true, false);
     },
   },
 };

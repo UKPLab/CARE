@@ -191,39 +191,6 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    currentStepIndex() {
-      if (!this.studyStepId || !Array.isArray(this.studySteps)) return -1;
-      return this.studySteps.findIndex((s) => s && s.id === this.studyStepId);
-    },
-    studyBucket() {
-      const idx = this.currentStepIndex >= 0 ? this.currentStepIndex + 1 : null;
-      return (idx && this.studyData && this.studyData[idx]) ? this.studyData[idx] : {};
-    },
-    currentStudyStep() {
-      return this.$store.getters["table/study_step/get"](this.studyStepId);
-      },
-    skillName() {
-      const config = this.currentStudyStep?.configuration;
-      if (!config) return null;
-      
-      const services = config.services || [];
-      for (const service of services) {
-        if (service.skillName) {
-          return service.skillName;
-        }
-      }
-      return null;
-    },
-    studyGeneratedFeedbackRaw() {
-      const skillName = this.skillName;
-      if (!skillName) return null;
-      
-      const feedbackKey = Object.keys(this.studyBucket).find(key => 
-        key.includes(skillName) && key.includes('textual_feedback')
-      );
-      console.log('Looking for feedback key:', { skillName, availableKeys: Object.keys(this.studyBucket), foundKey: feedbackKey });
-      return feedbackKey ? this.studyBucket[feedbackKey] : null;
-    },
   },
   watch: {
     unappliedEdits: {
@@ -251,18 +218,6 @@ export default {
         }
 
       }
-    },
-    studyGeneratedFeedbackRaw(newRaw) {
-      if (!newRaw || this.feedbackLoaded) return;
-      
-      const feedbackText = newRaw.textual_feedback;
-      if (!feedbackText) return;
-      
-      if (!this.documentLoaded) {
-        this.pendingFeedbackText = feedbackText;
-        return;
-      }
-      this.applyFeedbackText(feedbackText);
     },
   },
   created() {
@@ -302,21 +257,6 @@ export default {
       };
       this.eventBus.on("editorInsertText", this.insertTextHandler);
 
-      // Handle generated feedback application from StepModal
-      this.applyGeneratedFeedbackHandler = (data) => {
-        if (data.documentId === this.documentId && this.editor && !this.feedbackLoaded) {
-          const feedbackText = data.feedbackText || '';
-          if (!feedbackText) return;
-
-          if (!this.documentLoaded) {
-            this.pendingFeedbackText = feedbackText;
-            return;
-          }
-          this.applyFeedbackText(feedbackText);
-        }
-      };
-      this.eventBus.on('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
-
       setTimeout(() => {
         this.emitContentForPlaceholders();
       }, 500);
@@ -342,38 +282,6 @@ export default {
             currentVersion: currentVersion,
           };
           this.$emit("update:data", studyData);
-          // Generated feedback will be applied via event from StepModal
-          // If feedback arrived early, apply it now after content initialization
-          if (!this.feedbackLoaded && this.pendingFeedbackText) {
-            this.applyFeedbackText(this.pendingFeedbackText);
-          }
-
-          // Also fetch any previously saved generated feedback in case the event was missed
-          const skillName = this.skillName;
-          if (skillName) {
-            // Find the key that includes the skill name and textual_feedback
-            const feedbackKey = Object.keys(this.studyBucket).find(key => 
-              key.includes(skillName) && key.includes('textual_feedback')
-            );
-            if (feedbackKey) {
-              this.$socket.emit("documentDataGet", {
-                documentId: this.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                key: feedbackKey
-              }, (response) => {
-                const val = (response && response.success && response.data && response.data.value)
-                  ? response.data.value
-                  : (response && response.value) ? response.value : null;
-                if (!this.feedbackLoaded && val) {
-                  const feedbackText = val.textual_feedback || val;
-                  if (feedbackText) {
-                    this.applyFeedbackText(feedbackText);
-                  }
-                }
-              });
-            }
-          }
         } else {
           this.handleDocumentError(res.error);
         }
@@ -417,31 +325,18 @@ export default {
     this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
   },
   methods: {
-    applyFeedbackText(feedbackText) {
-      const editorInstance = this.editor && this.editor.getEditor ? this.editor.getEditor() : null;
-      if (!editorInstance || !feedbackText) return;
-
-      const currentContent = editorInstance.getContents();
-      if (currentContent.ops.length <= 1 && (!currentContent.ops[0].insert || currentContent.ops[0].insert === '\n')) {
-        editorInstance.setText(feedbackText);
-      } else {
-        const insertText = feedbackText.endsWith('\n') ? feedbackText : feedbackText + '\n\n';
-        editorInstance.updateContents(new Delta().retain(0).insert(insertText), 'api');
-      }
-      this.firstVersion = editorInstance.root.innerHTML;
-      const currentVersion = editorInstance.root.innerHTML;
-      this.$emit("update:data", {
-        firstVersion: this.firstVersion,
-        currentVersion: currentVersion,
-      });
-      this.feedbackLoaded = true;
-      this.pendingFeedbackText = '';
-    },
     clearEditor() {
       if (this.editor) {
         const quill = this.editor.getEditor();
         quill.setContents([{insert: ''}]);
       }
+    },
+    addText(text) {
+      console.log("Adding text to editor:", text);
+      if (!text || !this.editor) {
+        return;
+      }
+      this.editor.getEditor().insertText(0, text, "user");
     },
     setEditInEditor(editId) {
       const index = this.allEdits.findIndex((edit) => edit.id === editId);
@@ -517,6 +412,7 @@ export default {
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
+        console.log("Delta buffer length:", this.deltaBuffer.length);
         this.debouncedProcessDelta();
 
         this.emitContentForPlaceholders();
@@ -526,7 +422,7 @@ export default {
       const quill = this.editor.getEditor();
       if (this.deltaBuffer.length > 0) {
         let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        let dbOps = deltaToDb(combinedDelta.ops);
+        let dbOps = deltaToDb(combinedDelta.ops);        
         if (dbOps.length > 0) {
           const backup = quill.getContents();
 

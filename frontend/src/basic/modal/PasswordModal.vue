@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal" @hide="resetForm">
+  <BasicModal ref="modal" name="PasswordModal" @hide="resetForm">
     <template #title>
       <span>Reset Password</span>
     </template>
