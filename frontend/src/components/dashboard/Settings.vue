@@ -6,6 +6,15 @@
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
+              text="User Settings"
+              title="User Settings"
+              icon="sliders"
+              :disabled="!settings || !settings.length"
+              @click="$refs.userSettingsModal.open()"
+          />
+
+          <BasicButton
+              class="btn-outline-secondary btn-sm"
               text="Export JSON"
               title="Export JSON"
               icon="download"
@@ -65,6 +74,11 @@
         </div>
       </template>
     </Card>
+
+    <UserSettingsModal
+        ref="userSettingsModal"
+        :settings="settings"
+    />
 
     <Modal
         ref="settingsUploadModal"
@@ -133,6 +147,7 @@ import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import {onBeforeRouteUpdate} from 'vue-router'
+import UserSettingsModal from "@/components/dashboard/settings/UserSettingsModal.vue";
 
 export default {
   name: "DashboardSettings",
@@ -143,6 +158,7 @@ export default {
     SettingItem,
     BasicButton,
     Modal,
+    UserSettingsModal,
   },
   data() {
     return {
