@@ -64,6 +64,25 @@ module.exports = (sequelize, DataTypes) => {
         ).then((results) => results.some((r) => Boolean(r)));
     }
 
+    /**
+     * Permanently deletes user-role matching entries.
+     * 
+     * @param {number} userId The user ID
+     * @param {number[]} roleIds Array of role IDs to delete
+     * @param {object} options Sequelize options including transaction
+     * @returns {Promise<number>} Number of deleted entries
+     */
+    static async deleteUserRoles(userId, roleIds, options = {}) {
+      return await sequelize.models.user_role_matching.destroy({
+        where: {
+          userId: userId,
+          userRoleId: roleIds,
+        },
+        transaction: options.transaction,
+        force: true,
+      });
+    }
+
     
   }
 

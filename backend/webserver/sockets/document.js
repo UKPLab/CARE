@@ -53,7 +53,7 @@ class DocumentSocket extends Socket {
         const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_steps.map(step => step.studyId));
 
         for (const session of study_sessions) {
-            if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.view")) {
+            if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
                 return true;
             }
         }
@@ -1039,9 +1039,17 @@ class DocumentSocket extends Socket {
     async getDocumentData(data, options) {
         const whereClause = {
             documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            deleted: false
+            deleted: false,
+            [Op.or]: [
+                {
+                    studySessionId: data.studySessionId,
+                    studyStepId: data.studyStepId
+                },
+                {
+                    studySessionId: null,
+                    studyStepId: null
+                }
+            ],
         };
 
         if (data.key) {

@@ -13,7 +13,7 @@
     </template>
     <template #body>
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-        <div v-if="nlpRequestsFailed">
+        <div v-if="documentData && nlpRequestsFailed">
           <div class="d-flex flex-column align-items-center">
             <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP
               support.</p>
@@ -26,7 +26,7 @@
               <BasicButton
                   title="Skip NLP Support"
                   class="btn btn-secondary"
-                  @click="closeModal"
+                  @click="close"
               />
             </div>
           </div>
@@ -41,15 +41,18 @@
           <span class="ms-3">{{ rotatingStatusText }}</span>
         </div>
 
-        <div v-if="documentDataLoaded">
+        <div v-if="documentData && !readOnly">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
             <NlpRequest
-                ref="nlpRequest"
+                :ref="`nlpRequest[${service.name}]`"
                 :skill="service.skill"
                 :inputs="service.inputs"
                 :name="service.name"
+                :service="service"
                 :document-data="documentData"
+                :study-step-id="studyStepId"
                 @update:state="nlpRequests[service.name] = $event"
+                @update:data="documentDataRefresh"
             />
           </div>
         </div>
@@ -103,14 +106,19 @@ export default {
       type: Boolean,
       required: false,
       default: true,
+    },
+    canLoad: {
+      type: Boolean,
+      required: false,
+      default: true,
     }
   },
-  emits: ["update:data"],
+  emits: ["update:data", "update:ready"],
   data() {
     return {
       error: false,
       rotatingIndex: 0,
-      documentDataLoaded: false,
+      documentData: null,
       nlpRequests: {},
       rotatingMessages: [
         "Thinking through your request...",
@@ -130,6 +138,7 @@ export default {
     }
   },
   computed: {
+
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
     },
@@ -142,42 +151,43 @@ export default {
     rotatingStatusText() {
       return this.rotatingMessages[this.rotatingIndex];
     },
-    documentData() {
-      return this.$store.getters["table/document_data/getFiltered"]((item) => {
-        return item.documentId === this.documentId &&
-            item.studySessionId === this.studySessionId &&
-            item.studyStepId === this.studyStepId;
-      }).reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {});
-    },
     nlpServices() {
       return this.config.services?.filter(s => s.type === 'nlpRequest') || [];
     },
+    nlpShouldWait() {
+      return !this.readOnly && this.nlpServices.length > 0;
+    },
     nlpRequestsInProgress() {
+      if (!this.nlpShouldWait) {
+        return false;
+      }
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return true;
       }
       return Object.values(this.nlpRequests).some(
-          status => status === 'pending'
+          req => req.status === 'pending'
       );
     },
     nlpRequestsCompleted() {
+      if (!this.nlpShouldWait) {
+        return true;
+      }
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return false;
       }
       return Object.values(this.nlpRequests).every(
-          status => status === 'completed'
+          req => req.status === 'completed'
       );
     },
     nlpRequestsFailed() {
-      console.log("NLP Requests:", this.nlpRequests);
+      if (!this.nlpShouldWait) {
+        return false;
+      }
       if (this.nlpServices.length !== Object.keys(this.nlpRequests).length) {
         return false;
       }
       return Object.values(this.nlpRequests).some(
-          status => status === 'timeout' || status === 'failed'
+          req => req.status === 'timeout' || req.status === 'failed'
       );
     }
   },
@@ -189,15 +199,19 @@ export default {
         }
       }
     },
+    canLoad: {
+      handler(newVal, oldVal) {
+        if (oldVal !== newVal && newVal) {
+          this.startRequest();
+        }
+      }
+    },
     nlpRequests: {
       handler() {
-        this.nlpRequestsInProgress = Object.values(this.nlpRequests).some(
-            status => status === 'pending' || status === 'in_progress'
-        );
-        if (!this.nlpRequestsInProgress) {
+        if (!this.nlpRequestsInProgress && !this.nlpRequestsFailed) {
           this.$nextTick(() => {
             if (this.$refs.modal) {
-              this.$refs.modal.close();
+              this.close();
             }
           });
         }
@@ -216,28 +230,34 @@ export default {
     if (this.show && this.$refs.modal) {
       this.$refs.modal.open();
     }
-    this.$socket.emit("documentDataGet", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-        },
-        (response) => {
-          if (response.success) {
-            this.documentDataLoaded = true;
-            if (this.nlpServices.length === 0) {
-              this.$nextTick(() => {
-                this.$refs.modal.close();
-              });
-            }
-          } else {
-            this.error = true;
-          }
-        });
+    if (this.canLoad) {
+      this.startRequest();
+    }
   },
   unmounted() {
     this.stopRotatingMessages();
   },
   methods: {
+    startRequest() {
+      this.$socket.emit("documentDataGet", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+          },
+          (response) => {
+            if (response.success) {
+              this.documentDataRefresh(response.data);
+              if (!this.nlpShouldWait) {
+                this.$nextTick(() => {
+                  this.close();
+                });
+              }
+            } else {
+              this.error = true;
+            }
+          }
+      );
+    },
     startRotatingMessages() {
       this.rotatingIndex = Math.floor(Math.random() * this.rotatingMessages.length);
       this.rotatingTimer = setInterval(() => {
@@ -255,12 +275,29 @@ export default {
       clearInterval(this.rotatingTimer);
       clearTimeout(this.rotatingLongTimer);
     },
-    retryNlpRequests() {
-      // TODO: Implement retry logic
-      // TODO only retry failed requests
-      this.$refs.nlpRequest.retryRequest();
+    documentDataRefresh(data) {
+      const updatedData = {...(this.documentData || {})};
+      for (const [key, value] of Object.entries(data)) {
+        updatedData[key] = value;
+      }
+      this.documentData = updatedData;
     },
-    closeModal() {
+    retryNlpRequests() {
+      Object.entries(this.nlpRequests).forEach(([key, request]) => {
+        if (request.status === 'timeout') {
+          const refName = `nlpRequest[${key}]`;
+          const ref = this.$refs[refName];
+
+          const component = Array.isArray(ref) ? ref[0] : ref;
+
+          if (component && typeof component.retryRequest === 'function') {
+            component.retryRequest();
+          }
+        }
+      });
+    },
+    close() {
+      this.$emit("update:ready", true);
       this.$refs.modal.close();
     }
   }

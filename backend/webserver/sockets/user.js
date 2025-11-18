@@ -340,6 +340,62 @@ class UserSocket extends Socket {
             return userRight;
     }
 
+    async getRoleRights(data, options) {
+        if(!(await this.isAdmin())){
+            throw new Error("no permission to get role rights");
+        }
+        const rights = await this.models["role_right_matching"].findAll({
+                            where: {userRoleId: data.roleId, deleted: false},
+                            raw: true,
+                        });
+
+        return rights;
+    }
+    async getAllRights(data, options) {
+        if(!(await this.isAdmin())){
+            throw new Error("no permission to get all rights");
+        }
+        const rights = await this.models["user_right"].findAll({
+                            where: {deleted: false},
+                            raw: true,
+                        });
+
+        return rights;
+    }
+    async assignRoleRights(data, options) {
+        if(!(await this.isAdmin())){
+            throw new Error("no permission to assign role rights");
+        }
+        const roleId = data.roleId;
+        const newRights = data.newRights || []; // array of right names to add
+        const deletedRights = data.deletedRights || []; // array of right names to remove
+        
+        // Permanently delete removed rights
+        if (deletedRights.length > 0) {
+            await this.models["role_right_matching"].deleteRoleRights(
+                roleId,
+                deletedRights,
+                { transaction: options.transaction }
+            );
+        }
+        // Add new rights
+        if (newRights.length > 0) {
+            const newRoleRights = newRights.map((rightName) => ({
+                userRoleId: roleId,
+                userRightName: rightName,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                deleted: false,
+            }));
+            await this.models["role_right_matching"].bulkCreate(newRoleRights, {
+                transaction: options.transaction,
+            });
+        }
+               
+        return { newRights, deletedRights };
+    }
+
+
     init() {
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
@@ -352,6 +408,9 @@ class UserSocket extends Socket {
         this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
         this.createSocket("userCreate", this.createUser, {}, true);
         this.createSocket("userPublishMoodle", this.userPublishMoodle, {}, false);
+        this.createSocket("userGetRoleBasedRights", this.getRoleRights, {}, false);
+        this.createSocket("userGetAllRights", this.getAllRights, {}, false);
+        this.createSocket("userAssignRoleRights", this.assignRoleRights, {}, true);
     }
 };
 

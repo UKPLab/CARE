@@ -102,7 +102,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
-    }
+    },
+    studyData: {
+      type: Array,
+      required: true,
+    },
   },
   props: {
     config: {
@@ -128,6 +132,7 @@ export default {
       isPinned: false,
       isSavingAssessment: false,
       lastSavedAssessmentJson: null,
+      isLoaded: false
     };
   },
   computed: {
@@ -142,14 +147,7 @@ export default {
       );
     },
     documentData() {
-      return this.$store.getters["table/document_data/getFiltered"]((item) => {
-        return item.documentId === this.documentId &&
-            item.studySessionId === this.studySessionId &&
-            item.studyStepId === this.studyStepId;
-      }).reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {});
+      return this.studyData[this.studyStepId]?.data;
     },
     assessmentResultFromDocumentData() {
       const raw = this.documentData[this.assessmentDataKey];
@@ -169,7 +167,7 @@ export default {
     currentStudyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
     },
-    getNlpServiceFromStep() {
+    nlpService() {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
@@ -187,7 +185,7 @@ export default {
     },
 
     preprocessedAssessmentKeyCandidates() {
-      const svc = this.getNlpServiceFromStep && this.getNlpServiceFromStep();
+      const svc = this.nlpService;
       if (!svc || !svc.skill) return [];
 
       const keys = [
@@ -201,18 +199,12 @@ export default {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
         return null;
       }
-
-      const items = this.$store.getters["table/document_data/getFiltered"](
-          (item) => {
-            if (item.documentId !== this.documentId) return false;
-            if (item.studySessionId != null) return false;
-            if (item.studyStepId != null) return false;
-            return this.preprocessedAssessmentKeyCandidates.includes(item.key);
-          }
+      const items = Object.keys(this.documentData).filter(item =>
+          this.preprocessedAssessmentKeyCandidates.includes(item)
       );
 
       if (!items || !items.length) return null;
-      return items[0].value;
+      return this.documentData[items[0]];
     },
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
@@ -232,6 +224,9 @@ export default {
       return true;
     },
     isAssessmentComplete() {
+      if (!this.isLoaded) {
+        return false;
+      }
       if (!this.forcedAssessmentEnabled) {
         return true;
       }
@@ -285,7 +280,7 @@ export default {
   },
   mounted() {
     document.addEventListener("mousedown", this.handleClickOutsideInfoPanel);
-    //this.initialize();
+    this.initialize();
   },
   beforeUnmount() {
     document.removeEventListener("mousedown", this.handleClickOutsideInfoPanel);
@@ -454,6 +449,8 @@ export default {
       });
 
       this.assessmentState = state;
+      this.$emit("update:data", this.buildAssessmentPersistedData());
+      this.isLoaded = true;
     },
     buildAssessmentPersistedData() {
       const data = {};
@@ -474,26 +471,56 @@ export default {
     normalizeAssessmentArray(v) {
       if (!v) return null;
 
+      let arr = null;
+
       // If backend stored JSON as string
       if (typeof v === "string") {
         try {
           const parsed = JSON.parse(v);
-          return Array.isArray(parsed) ? parsed : null;
+          if (Array.isArray(parsed)) {
+            arr = parsed;
+          } else if (parsed && Array.isArray(parsed.assessment)) {
+            // sometimes wrapped like { assessment: [...] }
+            arr = parsed.assessment;
+          }
         } catch (e) {
           console.error("Failed to parse AI assessment JSON", e);
           return null;
         }
+      } else if (Array.isArray(v)) {
+        arr = v;
+      } else if (typeof v === "object" && Array.isArray(v.assessment)) {
+        arr = v.assessment;
       }
 
-      // If it's already an array
-      if (Array.isArray(v)) return v;
+      if (!arr) return null;
 
-      // Sometimes wrapped like { assessment: [...] }
-      if (typeof v === "object" && Array.isArray(v.assessment)) {
-        return v.assessment;
-      }
+      return arr
+          .map((item) => {
+            if (!item) return null;
 
-      return null;
+            if (
+                (item.assessment !== undefined || item.currentScore !== undefined) &&
+                (item.name || item.criterion)
+            ) {
+              return {
+                name: item.name || item.criterion,
+                ...item,
+              };
+            }
+
+            const criterionName = item.criterion || item.name;
+            if (!criterionName) return null;
+
+            return {
+              name: criterionName,
+              assessment: item.justification || "",
+              editedAssessment: "",
+              currentScore:
+                  typeof item.score === "number" ? item.score : 0,
+            };
+          })
+          .filter(Boolean);
     },
     async saveAssessmentData() {
       if (!this.documentId || !this.assessmentDataKey) {
@@ -530,6 +557,7 @@ export default {
               }
             }
         );
+        this.$emit("update:data", value);
       }).catch((err) => {
         console.error("Failed to save assessment data", err);
       });

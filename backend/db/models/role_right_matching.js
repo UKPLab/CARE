@@ -12,6 +12,25 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
     }
+
+    /**
+     * Permanently deletes role-right matching entries.
+     * 
+     * @param {number} roleId The role ID
+     * @param {string[]} rightNames Array of right names to delete
+     * @param {object} options Sequelize options including transaction
+     * @returns {Promise<number>} Number of deleted entries
+     */
+    static async deleteRoleRights(roleId, rightNames, options = {}) {
+      return await sequelize.models.role_right_matching.destroy({
+        where: {
+          userRoleId: roleId,
+          userRightName: rightNames,
+        },
+        transaction: options.transaction,
+        force: true,
+      });
+    }
   }
 
   RoleRightMatching.init(
