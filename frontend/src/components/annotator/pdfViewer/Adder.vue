@@ -105,6 +105,9 @@ export default {
     }
   },
   computed: {
+    recencySortingOn() {
+      return this.$store.getters["settings/getValue"]("tags.recencySortingIsOn");
+    },
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
@@ -137,21 +140,24 @@ export default {
       }
       
       // sort tags by recency 
-      tagList.sort((a,b) => {
-        const idxA = this.usageHistory.indexOf(a.name);
-        const idxB = this.usageHistory.indexOf(b.name);
+      if (this.recencySortingOn === true) {
+          tagList.sort((a,b) => {
+          const idxA = this.usageHistory.indexOf(a.name);
+          const idxB = this.usageHistory.indexOf(b.name);
 
-        if (idxA === -1 && idxB === -1){
-          return 0;
-        }
-        if (idxA === -1) {
-          return 1;
-        }
-        if (idxB === -1) {
-          return -1;
-        }
-        return idxA - idxB;
-      });
+          if (idxA === -1 && idxB === -1){
+            return 0;
+          }
+          if (idxA === -1) {
+            return 1;
+          }
+          if (idxB === -1) {
+            return -1;
+          }
+          return idxA - idxB;
+        });
+      }
+      
       return tagList;
     },
     studySession() {
