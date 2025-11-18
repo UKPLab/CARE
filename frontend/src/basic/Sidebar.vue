@@ -117,7 +117,7 @@
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <TopBarButton
-            v-show="studySessionId && studySessionId !== 0 ? showToggleButton : true"
+            v-show="isActive"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
             :class="{ 'sidebar-highlight': sidebarIconHighlight }"
@@ -198,6 +198,11 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    currentStudyStep: {
+      type: Number,
+      required: false,
+      default: null
     }
   },
   data() {
@@ -247,6 +252,9 @@ export default {
     }
   },
   computed: {
+    isActive() {
+      return this.currentStudyStep?.stepType === 1; ;
+    },
     availableSlots() {
       return Object.keys(this.$slots).filter(slot => slot !== 'default');
     },

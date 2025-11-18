@@ -6,6 +6,7 @@
         class="btn-primary btn-sm"
         title="Create project"
         text="Create"
+        icon="plus"
         @click="$refs.projectModal.open(0)"
       />
       <BasicButton
@@ -13,6 +14,7 @@
         class="btn-secondary btn-sm"
         title="Assign projects"
         text="Assign projects"
+        icon="people-fill"
         @click="$refs.assignProjectModal.open()"
       />
       </div>

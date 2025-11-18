@@ -1,8 +1,8 @@
 <template>
   <BasicModal
-    ref="modal"
-    @hide="resetForm"
-  >
+      ref="modal"
+      name="DetailsModal"
+      @hide="resetForm">
     <template #title>
       <slot name="title">
         <span>Edit User</span>
@@ -10,29 +10,29 @@
     </template>
     <template #body>
       <BasicForm
-        ref="form"
-        v-model="userInfo"
-        :fields="formFields"
+          ref="form"
+          v-model="userInfo"
+          :fields="formFields"
       />
       <div class="detail-table-container">
         <BasicTable
-          :columns="columns"
-          :data="[userInfo]"
-          :options="options"
+            :columns="columns"
+            :data="[userInfo]"
+            :options="options"
         />
       </div>
     </template>
     <template #footer>
       <span class="btn-group">
         <BasicButton
-          class="btn btn-secondary"
-          title="Cancel"
-          @click="$refs.modal.close()"
+            class="btn btn-secondary"
+            title="Cancel"
+            @click="$refs.modal.close()"
         />
         <BasicButton
-          class="btn btn-primary"
-          title="Save"
-          @click="submit"
+            class="btn btn-primary"
+            title="Save"
+            @click="submit"
         />
       </span>
     </template>
@@ -52,7 +52,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "DetailsModal",
-  components: { BasicModal, BasicForm, BasicTable, BasicButton },
+  components: {BasicModal, BasicForm, BasicTable, BasicButton},
   emits: ["updateUser"],
   data() {
     return {
@@ -100,12 +100,12 @@ export default {
         small: false,
       },
       columns: [
-        { name: "Accept Terms", key: "acceptTerms" },
-        { name: "Accept Stats", key: "acceptStats" },
-        { name: "Last Login", key: "lastLoginAt" },
-        { name: "Created At", key: "createdAt" },
-        { name: "Updated At", key: "updatedAt" },
-        { name: "Deleted At", key: "deletedAt" },
+        {name: "Accept Terms", key: "acceptTerms"},
+        {name: "Accept Stats", key: "acceptStats"},
+        {name: "Last Login", key: "lastLoginAt"},
+        {name: "Created At", key: "createdAt"},
+        {name: "Updated At", key: "updatedAt"},
+        {name: "Deleted At", key: "deletedAt"},
       ],
     };
   },
@@ -119,7 +119,7 @@ export default {
       value: role.name,
       label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
     }));
-    const index = this.formFields.findIndex(({ key }) => key === "roles");
+    const index = this.formFields.findIndex(({key}) => key === "roles");
     this.formFields[index].options = options;
   },
   methods: {
@@ -133,7 +133,7 @@ export default {
         return;
       }
       const userId = this.userId;
-      const { firstName, lastName, email, roles } = this.userInfo;
+      const {firstName, lastName, email, roles} = this.userInfo;
       const userData = {
         firstName,
         lastName,
@@ -141,7 +141,7 @@ export default {
         roles,
       };
       this.$refs.modal.waiting = true;
-      this.$socket.emit("userUpdateDetails", { userId, userData }, (response) => {
+      this.$socket.emit("userUpdateDetails", {userId, userData}, (response) => {
         if (response.success) {
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();

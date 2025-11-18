@@ -240,11 +240,20 @@ export default {
       this._closeRequestHandled = true;
     },
     close() {
-      this.modal.hide();
-      this.resumeParentModal();
+      this.hide();
     },
     hide() {
-      this.modal.hide();
+      const modalElement = this.$refs.Modal;
+      const isShown = modalElement.classList.contains('show');     
+      if (isShown) {
+        this.modal.hide();
+      } else {
+        const onShown = () => {
+          modalElement.removeEventListener('shown.bs.modal', onShown);
+          this.modal.hide();
+        };
+        modalElement.addEventListener('shown.bs.modal', onShown);
+      }
       this.resumeParentModal();
     },
     showParentModal(){

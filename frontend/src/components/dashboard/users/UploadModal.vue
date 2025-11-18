@@ -1,38 +1,39 @@
 <template>
   <BasicModal
-    ref="modal"
-    @hide="reset"
+      ref="modal"
+      name="UploadModal"
+      @hide="reset"
   >
     <template #title>
       <span>Upload Password</span>
     </template>
     <template #body>
       <MoodleOptions
-        ref="moodleOptionsForm"
-        v-model="moodleOptions" 
-        with-assignment-id
+          ref="moodleOptionsForm"
+          v-model="moodleOptions"
+          with-assignment-id
       />
       <!-- TODO: Turn this file uploading functionality into a component -->
       <div class="form-field">
         <div class="flex-grow-1">
           <input
-            ref="fileInput"
-            class="form-control"
-            type="file"
-            accept=".csv"
-            @change="handleFileUpload"
+              ref="fileInput"
+              class="form-control"
+              type="file"
+              accept=".csv"
+              @change="handleFileUpload"
           />
         </div>
       </div>
       <div
-        v-if="fileErrors.length > 0"
-        class="scrollable-error-container"
+          v-if="fileErrors.length > 0"
+          class="scrollable-error-container"
       >
         <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
         <ul>
           <li
-            v-for="(error, index) in fileErrors"
-            :key="index"
+              v-for="(error, index) in fileErrors"
+              :key="index"
           >
             {{ error }}
           </li>
@@ -41,15 +42,15 @@
     </template>
     <template #footer>
       <BasicButton
-        title="Cancel"
-        class="btn btn-secondary"
-        @click="$refs.modal.close()"
+          title="Cancel"
+          class="btn btn-secondary"
+          @click="$refs.modal.close()"
       />
       <BasicButton
-        title="Upload"
-        class="btn btn-primary"
-        :disabled="isDisabled"
-        @click="uploadToMoodle"
+          title="Upload"
+          class="btn btn-primary"
+          :disabled="isDisabled"
+          @click="uploadToMoodle"
       />
     </template>
   </BasicModal>

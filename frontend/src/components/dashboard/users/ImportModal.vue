@@ -3,6 +3,8 @@
     ref="importStepper"
     :steps="steps"
     :validation="stepValid"
+    submit-text="Close"
+    @submit="$refs.importStepper.close()"
     @step-change="handleStepChange"
   >
     <template #title>
@@ -230,7 +232,7 @@ export default {
         const { courseID, apiUrl, apiKey } = this.moodleOptions;
         validStates.push(courseID && apiUrl && apiKey);
       }
-      validStates = [...validStates, this.selectedUsers.length > 0, true, false];
+      validStates = [...validStates, this.selectedUsers.length > 0, true, true];
       return validStates;
     },
   },

@@ -279,7 +279,7 @@ export default {
           this.$emit("session-opened", data.params);
           break;
         }
-        case "startSession":
+        case "startStudySession":
           this.$router.push("/session/" + data.params.hash);
           break;
         case "reviewSession":

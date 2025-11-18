@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     class Configuration extends MetaModel {
         static autoTable = true;
+        static publicTable = true;
 
         static fields = [
             {

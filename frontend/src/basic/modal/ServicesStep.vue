@@ -1,43 +1,43 @@
 <template>
-      <div class="services-step">
-        <!-- Services Configuration Content -->
-        <div v-if="hasConfigServices" class="services-config mb-4">
-          <h6 class="section-title">Available Services</h6>
+  <div class="services-step">
+    <!-- Services Configuration Content -->
+    <div v-if="hasConfigServices" class="services-config mb-4">
+      <h6 class="section-title">Available Services</h6>
 
-          <div
-            v-for="(skill, index) in selectedSkills"
-            :key="index"
-            class="skill-item mb-3"
-          >
-            <div class="skill-selection mb-2">
-              <SkillSelector
-                v-model="skill.skillName"
-              />
-            </div>
-            <!-- Input Mappings for Selected Skill -->
-            <InputMap
-              v-if="skill.skillName"
-              :skill-name="skill.skillName"
-              :study-based="true"
-              :model-value="modelValue.services[index].inputs"
-              :study-step-id="studyStepId"
-              :workflow-steps="workflowSteps"
-              :current-stepper-step="currentStepperStep"
-              :step-config="modelValue"
-              :selected-skills="selectedSkills"
-              :document-id="documentId"
-              @update:model-value="handleInputMappingUpdate(index, $event)"
-            />
-          </div>
+      <div
+          v-for="(skill, index) in selectedSkills"
+          :key="index"
+          class="skill-item mb-3"
+      >
+        <div class="skill-selection mb-2">
+          <SkillSelector
+              v-model="skill.skillName"
+          />
         </div>
-
-        <!-- No Services Message -->
-        <div v-else class="no-content">
-          <div class="alert alert-info" role="alert">
-            No services configuration available for this step.
-          </div>
-        </div>
+        <!-- Input Mappings for Selected Skill -->
+        <InputMap
+            v-if="skill.skillName"
+            :skill-name="skill.skillName"
+            :study-based="true"
+            :model-value="modelValue.services[index].inputs"
+            :study-step-id="studyStepId"
+            :workflow-steps="workflowSteps"
+            :current-stepper-step="currentStepperStep"
+            :step-config="modelValue"
+            :selected-skills="selectedSkills"
+            :document-id="documentId"
+            @update:model-value="handleInputMappingUpdate(index, $event)"
+        />
       </div>
+    </div>
+
+    <!-- No Services Message -->
+    <div v-else class="no-content">
+      <div class="alert alert-info" role="alert">
+        No services configuration available for this step.
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -82,23 +82,27 @@ export default {
       type: Array,
       required: true,
     },
+    isTemplateMode: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       selectedSkills: this.modelValue?.services?.map((service) => {
-          // Handle update case
-          if (service.skill) {
-            return {
-              skillName: service.skill,
-              dataInput: service.inputs || {},
-            };
-          }
-          // Handle create case
+        // Handle update case
+        if (service.skill) {
           return {
-            skillName: "",
-            dataInput: {},
+            skillName: service.skill,
+            dataInput: service.inputs || {},
           };
-        })
+        }
+        // Handle create case
+        return {
+          skillName: "",
+          dataInput: {},
+        };
+      })
     };
   },
   emits: ["update:form-data", "validation-change"],
@@ -106,13 +110,26 @@ export default {
 
     hasConfigServices() {
       return !!(
-        this.modelValue &&
-        Array.isArray(this.modelValue.services) &&
-        this.modelValue.services.length
+          this.modelValue &&
+          Array.isArray(this.modelValue.services) &&
+          this.modelValue.services.length
       );
     },
     isValid() {
-      return this.selectedSkills?.every(skill => skill.skillName !== "");
+      // In template mode, allow null/empty input mappings
+      if (this.isTemplateMode) {
+        return this.selectedSkills?.every(skill => skill.skillName !== "");
+      }
+      // In normal mode, require all input mappings to be filled
+      return this.selectedSkills?.every(skill => {
+        if (!skill.skillName) return false;
+        // Check if all inputs have valid mappings
+        const inputs = this.getSkillInputs(skill.skillName);
+        return inputs.every(input => {
+          const mapping = skill.dataInput?.[input];
+          return mapping && mapping.value !== null && mapping.value !== undefined;
+        });
+      });
     },
 
     inputMappings() {
@@ -138,7 +155,7 @@ export default {
 
   },
   methods: {
-    updateSkillName(index, skillName) {     
+    updateSkillName(index, skillName) {
       const updatedSkills = [...this.selectedSkills];
       updatedSkills[index] = {
         ...updatedSkills[index],
@@ -163,9 +180,9 @@ export default {
     getFormattedDataInput(skillIndex, inputKey) {
       const skill = this.selectedSkills[skillIndex];
       if (
-        skill &&
-        skill.dataInput &&
-        skill.dataInput[inputKey]
+          skill &&
+          skill.dataInput &&
+          skill.dataInput[inputKey]
       ) {
         const input = skill.dataInput[inputKey];
         return {
@@ -177,26 +194,21 @@ export default {
     },
 
     handleInputMappingUpdate(skillIndex, mappingData) {
-      
+
       // Update the selectedSkills dataInput based on the new mapping
       const updatedSkills = [...this.selectedSkills];
       if (!updatedSkills[skillIndex]) {
-        updatedSkills[skillIndex] = { skillName: '', dataInput: {} };
+        updatedSkills[skillIndex] = {skillName: '', dataInput: {}};
       }
-      
-      // Convert mapping data to the expected format
+
       const dataInput = {};
+
       Object.entries(mappingData).forEach(([input, source]) => {
-        if (source && source.value) {
-          dataInput[input] = {
-            value: source.value,
-            name: source.name,
-            stepId: source.stepId,
-            //dataSource: source.value,
-          };
+        if (source && (this.isTemplateMode || source.value != null)) {
+          dataInput[input] = {...source};
         }
       });
-      
+
       updatedSkills[skillIndex].dataInput = dataInput;
       //this.selectedSkills = updatedSkills;
       // Emit the properly formatted data for the parent
@@ -227,15 +239,13 @@ export default {
       // Find the skill in the skills list
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       const nlpSkills = skills && typeof skills === "object" ? Object.values(skills) : [];
-      
+
       const skill = nlpSkills.find((s) => s.name === skillName);
       if (!skill) return [];
-      
+
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.config?.input?.data || {});
     },
-
-
 
 
   },

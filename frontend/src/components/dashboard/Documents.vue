@@ -1,19 +1,23 @@
 <template>
   <Card title="Documents">
     <template #headerElements>
+      <div class="btn-group gap-2">
       <BasicButton
-          class="btn-primary btn-sm me-1"
+          class="btn-primary btn-sm"
           title="Add document"
-          text="Add"
+          text="Upload document"
+          icon="upload"
           @click="$refs.uploadModal.open()"
       />
       <BasicButton
           v-if="showCreateButton"
           class="btn-primary btn-sm"
           title="Create document"
-          text="Create"
+          text="Create document"
+          icon="file-earmark-plus"
           @click="$refs.createModal.open()"
       />
+      </div>
     </template>
     <template #body>
       <BasicTable
@@ -85,7 +89,12 @@ export default {
       },
       columns: [
         {name: "ID", key: "id"},
-        {name: "Title", key: "name"},
+        {
+          name: "Title",
+          key: "name",
+          multiline: true,
+          width: 5,
+        },
         {name: "Created At", key: "createdAt"},
         {name: "Type", key: "typeName"},
         {
@@ -99,7 +108,7 @@ export default {
   computed: {
     documents() {
       return this.$store.getters["table/document/getFiltered"](
-          (doc) => doc.projectId === this.projectId 
+          (doc) => doc.projectId === this.projectId && doc.type !== 4
       );
     },
     projectId() {
@@ -328,8 +337,8 @@ export default {
         case "renameDoc":
           this.renameDoc(data.params);
           break;
-        case "studyCoordinator":
-          this.studyCoordinator(data.params);
+        case "openStudyCoordinator":
+          this.openStudyCoordinator(data.params);
           break;
         case "exportDeltaDoc":
           this.$refs.editorDownload.exportDeltaDoc(data.params);
@@ -395,7 +404,7 @@ export default {
     publishDoc(row) {
       this.$refs.publishModal.open(row.id);
     },
-    studyCoordinator(row) {
+    openStudyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
     },
   },

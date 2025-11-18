@@ -1,28 +1,60 @@
 <template>
   <StepperModal
-    ref="assignStepper"
-    :steps="steps"
-    :validation="stepValid"
-    @submit="assignGroup"
+      ref="assignStepper"
+      :steps="steps"
+      :validation="stepValid"
+      @submit="assignGroup"
   >
     <template #title>
       <h5 class="modal-title">Assign Group</h5>
     </template>
 
     <template #step-1>
-      <div class="table-scroll-container">
+      <div class="step-1-header w-100">
+        <div class="percentage-control w-100">
+          <label class="form-label mb-1">
+            Apply percentage of current selection (randomly chosen):
+          </label>
+
+          <div class="d-flex align-items-center gap-2 w-100">
+            <input
+                v-model.number="selectionPercentage"
+                type="range"
+                min="1"
+                max="100"
+                class="flex-grow-1"
+            />
+            <span class="small text-muted text-nowrap">
+              {{ selectionPercentage }}% → {{ selectionTargetCount }} of {{ selectedSubmissions.length }}
+            </span>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-primary text-nowrap"
+                :disabled="selectedSubmissions.length === 0"
+                @click="applySelectionPercentage"
+            >
+              Apply
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="table-scroll-container mt-2">
         <BasicTable
-          v-model="selectedSubmissions"
-          :columns="submissionColumns"
-          :options="submissionTableOptions"
-          :data="submissionTable"
+            v-model="selectedSubmissions"
+            :columns="submissionColumns"
+            :options="submissionTableOptions"
+            :data="submissionTable"
         />
       </div>
     </template>
+
     <template #step-2>
       <BasicForm
-        v-model="data"
-        :fields="formFields"
+          v-model="data"
+          :fields="formFields"
       />
     </template>
     <template #step-3>
@@ -56,7 +88,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "AssignModal",
-  components: { BasicForm, BasicTable, StepperModal },
+  components: {BasicForm, BasicTable, StepperModal},
   subscribeTable: ["submission", "user", "document"],
   data() {
     return {
@@ -66,7 +98,8 @@ export default {
         settings: "",
         copySubmissions: false,
       },
-      steps: [{ title: "Select Submissions" }, { title: "Group Settings" }, { title: "Review & Confirm" }],
+      selectionPercentage: 100,
+      steps: [{title: "Select Submissions"}, {title: "Group Settings"}, {title: "Review & Confirm"}],
       formFields: [
         {
           key: "group",
@@ -99,12 +132,6 @@ export default {
           ],
         },
       ],
-      submissionColumns: [
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Group", key: "group", sortable: true },
-        { name: "Created At", key: "createdAt", sortable: true },
-      ],
       submissionTableOptions: {
         striped: true,
         hover: true,
@@ -120,6 +147,11 @@ export default {
     };
   },
   computed: {
+    selectionTargetCount() {
+      if (!this.selectedSubmissions.length) return 0;
+      const raw = (this.selectedSubmissions.length * this.selectionPercentage) / 100;
+      return Math.max(1, Math.round(raw)); // always keep at least 1 if there is any selection
+    },
     submissions() {
       return this.$store.getters["table/submission/getAll"];
     },
@@ -132,8 +164,47 @@ export default {
           lastName: user.lastName,
           group: s.group ?? "-",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
+          additionalSettings: s.additionalSettings
+              ? {icon: "gear-fill", color: "blue", title: s.additionalSettings}
+              : {icon: "gear", color: "gray", title: "No additional settings"},
         };
       });
+    },
+    submissionColumns() {
+      return [
+        {name: "First Name", key: "firstName", sortable: true},
+        {name: "Last Name", key: "lastName", sortable: true},
+        {name: "Group", key: "group", sortable: true, filter: this.groupFilterOptions},
+        {name: "Created At", key: "createdAt", sortable: true},
+        {name: "Additional Settings", key: "additionalSettings", type: "icon", sortable: false},
+      ];
+    },
+    groupFilterOptions() {
+      const groups = new Set();
+      let hasEmptyGroups = false;
+
+      (this.submissionTable || []).forEach((s) => {
+        if (s && s.group !== null && s.group !== undefined && s.group !== '') {
+          groups.add(String(s.group));
+        } else {
+          hasEmptyGroups = true;
+        }
+      });
+
+      const options = Array.from(groups)
+          .sort((a, b) => {
+            const na = Number(a);
+            const nb = Number(b);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+          })
+          .map((g) => ({key: g, name: g}));
+
+      if (hasEmptyGroups) {
+        options.unshift({key: '', name: 'No GroupID'});
+      }
+
+      return options;
     },
     stepValid() {
       return [
@@ -152,6 +223,24 @@ export default {
         copySubmissions: false,
       };
       this.$refs.assignStepper.open();
+    },
+    applySelectionPercentage() {
+      const total = this.selectedSubmissions.length;
+      if (!total) return;
+
+      const target = this.selectionTargetCount;
+
+      // 1) Take the currently selected IDs
+      const selectedIds = this.selectedSubmissions.map(s => s.id);
+
+      // 2) Shuffle IDs and keep only the first N
+      const shuffledIds = [...selectedIds].sort(() => Math.random() - 0.5);
+      const keepIds = new Set(shuffledIds.slice(0, target));
+
+      // 3) Rebuild selection from the *current* table rows
+      this.selectedSubmissions = this.submissionTable.filter(row =>
+          keepIds.has(row.id)
+      );
     },
     assignGroup() {
       this.$refs.assignStepper.setWaiting(true);

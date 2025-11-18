@@ -77,6 +77,7 @@ module.exports = class Socket {
                     callback({success: true, data: result});
                 }
             } catch (err) {
+                console.log(err);
                 this.logger.error(err.message);
                 if (t) {
                     await t.rollback();
@@ -92,7 +93,7 @@ module.exports = class Socket {
      * Broadcasts all autoTable changes collected on a transaction after commit.
      * @param {import("sequelize").Transaction} transaction
      */
-    broadcastTransactionChanges(transaction) {
+    async broadcastTransactionChanges(transaction) {
         try {
             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
             if (transaction && transaction.changes) {
@@ -107,6 +108,7 @@ module.exports = class Socket {
                     }
                     return acc;
                 }, new Map());
+                
                 for (const [table, changes] of changesMap) {
                     this.broadcastTable(table, changes);
                 }
@@ -237,7 +239,7 @@ module.exports = class Socket {
      * @return {Promise<boolean>} True if the user has access
      */
     async checkUserAccess(userId) {
-        if (await this.isAdmin(userId)) {
+        if (await this.isAdmin()) {
             return true;
         }
         if (this.userId !== userId) {
@@ -357,11 +359,14 @@ module.exports = class Socket {
 
     /**
      * Creates database filters according to limitations in the accessMap.
+     * @param {string} tableName The name of the table to create limitations for
+     * @param {Object} allFilter Starting filters
      * @param {Object} accessMap AccessMap with limitations
+     * @param {Array<Object>} accessRights Access rights for the user
      * @param {number} userId Id of user to check limitations for
      * @returns {Object} array of limitation filters
      */
-    handleLimitations(accessMap, userId) {
+    handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
         let filteredAccessMap = accessMap.flatMap(a => {
             const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
             return a.limitation
@@ -411,7 +416,7 @@ module.exports = class Socket {
             if (accessRights.length > 0) {
             // check if all accessRights has limitations?
             if (relevantAccessMap.every(item => item.limitation)) {
-                allAttributes['include'] = this.handleLimitations(relevantAccessMap, userId);
+                allAttributes['include'] = this.handleLimitations(tableName, allFilter, accessRights, relevantAccessMap, userId);
             } else { // do without limitations
                 allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
             }
@@ -525,13 +530,13 @@ module.exports = class Socket {
         });
         // handle injects
         if (injects && injects.length > 0) {
-            data = this.handleInjections(injects, data);
+            data = await this.handleInjections(injects, data);
         }
 
         // send additional data if needed
         this.sendForeignTableData(tableName, data, defaultExcludes);
         this.sendParentTableData(tableName, data, defaultExcludes);
-        
+
         this.emit(tableName + "Refresh", data, true);
         return data;
 

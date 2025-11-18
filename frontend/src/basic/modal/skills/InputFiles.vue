@@ -7,11 +7,11 @@
     <div v-if="tableParam" class="mb-3">
       <div v-if="currentTableData.length > 0" class="mt-3">
         <BasicTable
+          :key="tableParam ? tableParam.name : 'no-param'"
+          v-model="selectedFiles"
           :columns="currentTableColumns"
           :data="currentTableData"
           :options="tableOptions"
-          v-model="selectedFiles"
-          :key="tableParam ? tableParam.name : 'no-param'"
         />
       </div>
       
@@ -73,7 +73,7 @@ export default {
         if (mapping && mapping.requiresTableSelection) {
           parameters.push({
             name: paramName,
-            tableType: mapping.tableType,
+            table: mapping.table,
             value: mapping.value,
           });
         }
@@ -90,7 +90,7 @@ export default {
       return files && Array.isArray(files) && files.length > 0;
     },
     currentTableType() {
-      return this.tableParam?.tableType || '';
+      return this.tableParam?.table || '';
     },
     currentTableData() {
       if (!this.tableParam) return [];
@@ -126,8 +126,9 @@ export default {
         const user = this.$store.getters["table/user/get"](submission.userId);
         return {
           id: submission.id,
-          name: submission.name || `Submission ${submission.id}`,
           userName: user ? user.userName : "N/A",
+          firstName: user ? user.firstName : "N/A",
+          lastName: user ? user.lastName : "N/A",
           group: (submission.group !== null && submission.group !== undefined && submission.group !== '') ? submission.group : '',
           data_existing: dataExists ? 'Yes' : 'No',
           createdAt: submission.createdAt,
@@ -155,8 +156,9 @@ export default {
     submissionColumns() {
       return [
         { key: 'id', name: 'ID' },
-        { key: 'name', name: 'Submission Name' },
         { key: 'userName', name: 'User Name' },
+        { key: 'firstName', name: 'First Name' },
+        { key: 'lastName', name: 'Last Name'},
         { key: 'group', name: 'GroupID', filter: this.groupFilterOptions },
         { key: 'data_existing', name: 'Data Existing', filter: this.dataExistingFilterOptions },
         { key: 'createdAt', name: 'Created At' },

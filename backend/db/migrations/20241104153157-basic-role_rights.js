@@ -3,7 +3,7 @@
 const roleRights = [
   {
     role: "teacher",
-    userRightName: "frontend.dashboard.studies.view",
+    userRightName: "frontend.dashboard.studies.fullAccess",
   },
   {
     role: "teacher",
@@ -15,7 +15,7 @@ const roleRights = [
   },
   {
     role: "mentor",
-    userRightName: "frontend.dashboard.studies.view",
+    userRightName: "frontend.dashboard.studies.fullAccess",
   },
   {
     role: "mentor",
