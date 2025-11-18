@@ -342,12 +342,17 @@ export default {
         });
       }
     },
-    annotations() {
-      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
-
+    annotations: {
+      handler() {
+        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+      },
+      deep: true
     },
-    comments() {
-      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+    comments: {
+      handler() {
+        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+      },
+      deep: true
     }
   },
   mounted() {

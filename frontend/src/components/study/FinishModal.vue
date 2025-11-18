@@ -85,7 +85,8 @@ export default {
     },
     closeable: {
       type: Boolean,
-      required: true,
+      required: false,
+      default: false,
     },
     showTimeUp: {
       type: Boolean,
