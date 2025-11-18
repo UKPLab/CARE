@@ -60,6 +60,10 @@ export default {
     tableColumns() {
       const columns = [
         {
+          name: "ID",
+          key: "id",
+        },
+        {
           name: "Started",
           key: "startParsed",
         },
