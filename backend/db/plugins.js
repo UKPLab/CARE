@@ -21,6 +21,13 @@ function GlobalChangeTrackingPlugin(sequelize) {
                     options.transaction.changes.push(instance);
                 }
             },
+            afterUpsert: (instance, options) => {
+                if (options.transaction) {
+                    options.transaction.changes = options.transaction.changes || [];
+                    const record = Array.isArray(instance) ? instance[0] : instance;
+                    options.transaction.changes.push(record);
+                }
+            },
             afterDestroy: (instance, options) => {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];

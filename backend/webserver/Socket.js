@@ -93,7 +93,7 @@ module.exports = class Socket {
      * Broadcasts all autoTable changes collected on a transaction after commit.
      * @param {import("sequelize").Transaction} transaction
      */
-    broadcastTransactionChanges(transaction) {
+    async broadcastTransactionChanges(transaction) {
         try {
             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
             if (transaction && transaction.changes) {
@@ -108,6 +108,7 @@ module.exports = class Socket {
                     }
                     return acc;
                 }, new Map());
+                
                 for (const [table, changes] of changesMap) {
                     this.broadcastTable(table, changes);
                 }
@@ -238,7 +239,7 @@ module.exports = class Socket {
      * @return {Promise<boolean>} True if the user has access
      */
     async checkUserAccess(userId) {
-        if (await this.isAdmin(userId)) {
+        if (await this.isAdmin()) {
             return true;
         }
         if (this.userId !== userId) {

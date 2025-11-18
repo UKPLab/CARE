@@ -142,6 +142,15 @@ export default {
         const additionalOptions = this.options.options.additionalOptions.filter((option) => {
           const stepType = mapping[option.type];
           return stepType === parentType;
+        }).map((option) => {
+          // Normalize to match vuex-table option shape (id/name/value lookup)
+          const valueKey = this.options.options.value || 'id';
+          const nameKey = this.options.options.name || 'name';
+          return {
+            ...option,
+            [valueKey]: option.value,
+            [nameKey]: option.name,
+          };
         });
 
         baseOptions = [...baseOptions, ...additionalOptions];
@@ -167,7 +176,8 @@ export default {
   },
   methods: {
     updateData() {
-      if (this.modelValue === -1 || this.modelValue === null) {
+      // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
+      if (this.modelValue === -1) {
         if (this.options.default) {
           this.currentData = this.options.default;
         } else {

@@ -1,18 +1,20 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <BasicButton
-          class="btn btn-sm me-1 btn-secondary"
-          title="Export as CSV"
-          icon="cloud-arrow-down"
-          @click="downloadBehaviourData('csv')"
-      />
-      <BasicButton
-          class="btn btn-sm me-1 btn-secondary"
-          title="Export as JSON"
-          icon="cloud-arrow-down"
-          @click="downloadBehaviourData('json')"
-      />
+      <div class="btn-group gap-2">
+        <BasicButton
+            class="btn btn-sm btn-secondary"
+            title="Export as CSV"
+            icon="cloud-arrow-down"
+            @click="downloadBehaviourData('csv')"
+        />
+        <BasicButton
+            class="btn btn-sm btn-secondary"
+            title="Export as JSON"
+            icon="cloud-arrow-down"
+            @click="downloadBehaviourData('json')"
+        />
+      </div>
     </template>
     <template #body>
       <BasicTable

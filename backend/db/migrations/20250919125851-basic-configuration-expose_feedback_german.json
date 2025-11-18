@@ -1,0 +1,438 @@
+{
+  "name": "Exposé feedback configuration (German)",
+  "description": "Bewertungskriterien für Feedbackqualität",
+  "version": "1.0.0",
+  "type": "assessment",
+  "rubrics": [
+    {
+      "name": "Form und sprachliche Qualität",
+      "code": "structure",
+      "description": "Form, Struktur, Sprache und Ton des Feedbacks",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Zusammenfassung vorhanden",
+          "description": "Die prägnante Darstellung spiegelt ein Verständnis der Leistung wider.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Keine Zusammenfassung vorhanden oder spiegelt das Verständnis nicht wider" },
+            { "points": 1, "description": "Einfache Zusammenfassung, zeigt grundlegendes Verständnis" },
+            { "points": 2, "description": "Prägnante und genaue Zusammenfassung, reflektiert das Verständnis klar und schafft Vertrauen" }
+          ]
+        },
+        {
+          "name": "Klarheit (Clarity) bezogen auf die Gesamtstruktur",
+          "description": "Klarheit in Bezug auf die Gesamtstruktur.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 2,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Das Feedback braucht erhebliche Verbesserungen in Klarheit und Verständlichkeit, Kommentare sind unzusammenhängend oder schwer nachvollziehbar" },
+            { "points": 1, "description": "Das Feedback ist weitgehend klar, aber teils fehlen konkrete Verweise auf bestimmte Zeilen, Seiten, Abschnitte oder Abbildungen/Tabellen" },
+            { "points": 2, "description": "Das Feedback ist klar, gut strukturiert und leicht verständlich, mit kohärenten Kommentaren und präzisen Verweisen auf spezifische Stellen im Text" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sprache",
+      "code": "language",
+      "description": "Bewertung der Sprachqualität und des Tons.",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 3,
+      "criteria": [
+        {
+          "name": "Sprache",
+          "description": "Accuracy and correctness of language used",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Viele sprachliche Fehler (z. B. falsches Tempus, falsche Personalpronomen)" },
+            { "points": 1, "description": "Kaum sprachliche Fehler, klare Sätze mit einheitlicher Terminologie" }
+          ]
+        },
+        {
+          "name": "Ton",
+          "description": "Bewertet die Respekt, die Klarheit und die Konstruktivität des Feedbacks.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Der Ton ist unangemessen, klingt wertend oder vorwurfsvoll, Kritik wirkt destruktiv oder persönlich" },
+            { "points": 1, "description": "Der Ton ist insgesamt respektvoll, vermeidet persönliche Angriffe, bleibt aber stellenweise unklar oder weniger freundlich formuliert" },
+            { "points": 2, "description": "Der Ton ist durchgehend ruhig, respektvoll und höflich; Kritik ist konstruktiv, sachlich und richtet sich nur auf den Text, nicht auf die Person" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feed Up (Where am I going?)",
+      "code": "feed_up",
+      "description": "Informationen über Lernziele und Erfolgskriterien",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Lernziele (Learning Goals)",
+          "description": "Misst die Klarheit, die Spezifität und die Anleitung der Lernziele.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 2,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "keine Lernziele, unklar was erreicht werden soll, keine Orientierung" },
+            { "points": 1, "description": "teils unklare Lernziele, allgemein formuliert, bieten nur begrenzte Orientierung" },
+            { "points": 2, "description": "klare Lernziele, spezifisch, herausfordernd, vergleichbar und geben klare Richtung" }
+          ]
+        },
+        {
+          "name": "Erfolgskriterien (Success Criteria)",
+          "description": "Misst die Klarheit und Spezifität der Erfolgskriterien für das Erreichen von Lernzielen.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "keine Erfolgskriterien, Erfolg unklar oder vage formuliert, Ziele nicht definiert" },
+            { "points": 1, "description": "teils unklare Erfolgskriterien, vorhanden aber unpräzise oder allgemein, Orientierung fehlt teilweise" },
+            { "points": 2, "description": "klare Erfolgskriterien, konkrete, messbare Ziele und klare Definition von Erfolg" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feed Back (How am I going?)",
+      "code": "feed_back",
+      "description": "Informationen zum aktuellen Leistungsstand",
+      "calculation": "min",
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Knowledge of result (vorhanden / nicht vorhanden)",
+          "description": "Informationen darüber, ob die Aufgabe gelöst wurde oder nicht.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "keine Information, ob die Aufgabe gelöst wurde oder nicht" },
+            { "points": 1, "description": "Information gegeben, ob die Aufgabe gelöst wurde oder nicht" }
+          ]
+        },
+        {
+          "name": "Knowledge of correct response",
+          "description": "Informationen zur richtigen Antwort oder Lösung",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 2,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Keine Information zur richtigen Antwort" },
+            { "points": 1, "description": "richtige Antwort wird klar mitgeteilt" }
+          ]
+        },
+        {
+          "name": "Knowledge about task constraints",
+          "description": "Informationen zu Regeln, Anforderungen oder Einschränkungen der Aufgabe.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "keine Informationen zu Regeln, Anforderungen oder Einschränkungen der Aufgabe"
+            },
+            {
+              "points": 1,
+              "description": "klare Hinweise zu Regeln, Anforderungen oder Einschränkungen der Aufgabe (z.B. Vorgaben)"
+            }
+          ]
+        },
+        {
+          "name": "Knowledge about concepts",
+          "description": "Informationen zu relevanten Konzepten, Prinzipien oder Zusammenhängen.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "keine Informationen zu konzeptionellem Wissen"
+            },
+            {
+              "points": 1,
+              "description": "grundlegende Informationen zu relevanten Konzepten werden bereitgestellt"
+            }
+          ]
+        },
+        {
+          "name": "Knowledge about mistakes",
+          "description": "Informationen zur Anzahl, Position, Quelle oder Art der Fehler.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            {
+              "points": 0,
+              "description": "keine Information über Fehler"
+            },
+            {
+              "points": 1,
+              "description": "Informationen über die Anzahl, den Ort, die Quelle oder den Typ der Fehler"
+            }
+          ]
+        },
+        {
+          "name": "Self Feedback",
+          "description": "Selbst-Feedback (z. B. Lob oder Anerkennung) ist nicht verfügbar oder nur in Kombination mit Lernstrategien oder Selbstregulation.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Es ist Self-Feedback vorhanden, welches nicht mit Task, Process oder Self Regulation kombiniert wurde " },
+            { "points": 1, "description": "Es ist kein Self-Feedback vorhanden oder falls vorhanden in Kombination mit Task, Process oder Self Regulation" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feed Forward (Where to next?)",
+      "code": "feed_forward",
+      "description": "Hinweise zur Weiterarbeit und Selbstregulation",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 2,
+      "criteria": [
+        {
+          "name": "Knowledge about process/self regulation",
+          "description": "Wissen darüber, wie die Aufgabe zu bearbeiten ist, oder über die Selbstregulation.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Keine Hinweise darauf, wie man an die Aufgabe herangehen könnte, keine erkennbaren Ansätze zur Selbstüberwachung oder Selbstbewertung" },
+            { "points": 1, "description": "Entweder Hinweise auf Strategien zur Bearbeitung der Aufgabe und Fehlererkennung oder Ansätze zur Selbstüberwachung und Selbsteinschätzung" }
+          ]
+        },
+        {
+          "name": "Lernkompetenz (Learning Skills)",
+          "description": "Informationen darüber, wie man Lernfähigkeiten entwickelt oder verbessert.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "keine Informationen, wie Lernfähigkeiten entwickelt oder verbessert werden können" },
+            { "points": 1, "description": "Hinweise zur Verbesserung des Lernziels und dem Umgang mit Herausforderungen" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content Quality",
+      "code": "content_quality",
+      "description": "Korrektheit, Umsetzbarkeit und Argumentation",
+      "calculation": "sum",
+      "minPoints": 0,
+      "maxPoints": 6,
+      "criteria": [
+        {
+          "name": "Korrektheit",
+          "description": "Bewertet die Genauigkeit und Korrektheit des Feedback-Inhalts.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 2,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Der Inhalt weißt erhebliche Mängel bezüglich der Richtigkeit auf" },
+            { "points": 1, "description": "Der Inhalt ist weitesgehend richtig" },
+            { "points": 2, "description": "Der Inhalt ist vollständig richtig" }
+          ]
+        },
+        {
+          "name": "Umsetzbarkeit",
+          "description": "Beurteilt, ob das Feedback klare und spezifische Anweisungen zur Verbesserung liefert.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "keine konkreten Handlungsanweisungen vorhanden, Feedback ist schwer umsetzbar" },
+            { "points": 1, "description": "einige Handlungsanweisungen vorhanden, aber nur teilweise klar oder spezifisch" },
+            { "points": 2, "description": "klares, spezifisches Feedback mit umsetzbaren Anweisungen, z.B. Vergleiche mit bestehenden Methoden, Anwendung auf andere Aufgaben, Definitionen, Erklärungen, Diskussionen, zusätzliche Analysen oder gezielte Vorschläge zum Entfernen von Verwirrendem" }
+          ]
+        },
+        {
+          "name": "Argumentation",
+          "description": "Bewertet die Qualität der Argumentation und der Beweise/Belege, die im Feedback geliefert werden.",
+          "function": "auto_grading",
+          "minPoints": 0,
+          "maxPoints": 2,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Aussagen oder Schlussfolgerungen werden nicht durch Belege oder nachvollziehbare Erklärungen gestützt. Die Argumentation bleibt oberflächlich oder unsystematisch, wodurch der Inhalt wenig überzeugend wirkt." },
+            { "points": 1, "description": "Aussagen werden durch nachvollziehbare Belege, Beispiele oder Erklärungen untermauert. Die Argumentation zeigt einen klaren Bezug zwischen Belegen und Schlussfolgerungen, wodurch die inhaltliche Qualität gestärkt wird" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fehler in Feedback",
+      "code": "errors",
+      "description": "Fehlerarten im Feedback (Abzüge)",
+      "calculation": "max",
+      "defaultPoints": 4,
+      "minPoints": 0,
+      "maxPoints": 4,
+      "criteria": [
+        {
+          "name": "Vernachlässigung",
+          "description": "Beurteilt, ob wichtige Details übersehen wurden.",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "expertLevel": 2,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "alle wichtigen Details wurden berücksichtigt und es werden keine unnötigen Fragen gestellt" },
+            { "points": -1, "description": "wichtige Details wurden übersehen, führt zu unnötigen Fragen oder Kritikpunkten" }
+          ]
+        },
+        {
+          "name": "Vage Kritik",
+          "description": "Bewertet die Spezifität und Klarheit der vorgelegten Kritik.",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Kritik ist spezifisch und benennt klar, was fehlt oder verbessert werden kann" },
+            { "points": -1, "description": "unspezifische Kritik, nennt fehlende Komponenten ohne klar zu benennen, was fehlt" }
+          ]
+        },
+        {
+          "name": "Außerhalb des Umfangs",
+          "description": "Beurteilt, ob Vorschläge im vorgesehenen Rahmen bleiben.",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Vorschläge bleiben im Rahmen der Aufgabenstellung und sind relevant" },
+            { "points": -1, "description": " Vorschläge beziehen sich auf Methoden oder Analysen, die über den vorgesehenen Rahmen hinausgehen" }
+          ]
+        },
+        {
+          "name": "Fehlende Referenz",
+          "description": "Beurteilt, ob Vorschläge durch eine Begründung oder Quellenangaben/Referenzen gestützt werden.",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "alternative Methoden, etc. (falls vorhanden) werden mit Begründung oder Referenzen unterstützt" },
+            { "points": -1, "description": "alternative Methoden, etc. (falls vorhanden)  werden ohne Begründung oder Referenzen vorgeschlagen" }
+          ]
+        },
+        {
+          "name": "Widerspruch",
+          "description": "Beurteilt, ob das Feedback konsistent und widerspruchsfrei ist.",
+          "function": "auto_grading",
+          "minPoints": -1,
+          "maxPoints": 0,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            { "points": 0, "description": "Feedback ist in sich konsistent, keine widersprüchlichen Aussagen" },
+            { "points": -1, "description": "widersprüchliches Feedback, z.B. Kritik und Lob für dieselben Methoden" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Zusätzliche Punkte",
+      "code": "additional",
+      "maxPoints": 1,
+      "minPoints": -1,
+      "calculation": "sum",
+      "description": "Für besonders gute Bewertungen können zusätzliche Punkte vergeben werden, für gravierende Fehler hingegen werden Punkte abgezogen.",
+      "criteria": [
+        {
+          "name": "Zusätzliche Punkte",
+          "description": "Zusätzliche Punkte für sehr gute Bewertungen",
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            {
+              "points": 0,
+              "description": ""
+            },
+            {
+              "points": 1,
+              "description": ""
+            }
+          ]
+        },
+        {
+          "name": "Negative Punkte",
+          "description": "Grobe Fehler in den Rezensionen",
+          "function": "auto_grading",
+          "maxPoints": 0,
+          "minPoints": -1,
+          "expertLevel": 1,
+          "subjective": true,
+          "scoring": [
+            {
+              "points": 0,
+              "description": ""
+            },
+            {
+              "points": -1,
+              "description": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   <BasicModal
     ref="stepperModal"
     name="stepperModal"
-    size="lg"
+    :size="size"
     @hide="$emit('hide')"
     @close-requested="handleCloseRequest"
   >
@@ -111,6 +111,12 @@ export default {
       type: Boolean,
       default: false
     },
+    size: {
+      type: String,
+      required: false,
+      default: 'lg',
+      validator: (value) => ['sm', 'md', 'lg', 'xl'].includes(value)
+    }
   },
   emits: ["stepChange", "submit", 'hide', 'close-requested'],
   data() {

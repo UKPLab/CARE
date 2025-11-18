@@ -3,6 +3,10 @@
 const roleRights = [
   {
     role: "user",
+    userRightName: "frontend.dashboard.home.view",
+  },
+  {
+    role: "user",
     userRightName: "frontend.dashboard.documents.view",
   },
   {
@@ -12,6 +16,10 @@ const roleRights = [
   {
     role: "user",
     userRightName: "frontend.dashboard.projects.view",
+  },
+  {
+    role: "user",
+    userRightName: "frontend.dashboard.studies.view",
   },
   {
     role: "user",
