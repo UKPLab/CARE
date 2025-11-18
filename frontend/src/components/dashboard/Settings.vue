@@ -174,7 +174,7 @@ export default {
   },
   mounted() {
     this.settings = null;
-    this.load();
+    this.load(false);
 
     onBeforeRouteUpdate((to, from, next) => {
       if (this.hasUnsavedChanges) {
@@ -223,14 +223,16 @@ export default {
         }
       });
     },
-    load() {
+    load(showToast = true) {
       this.$socket.emit("settingGetData", null, (res) => {
         if (res.success) {
-          this.eventBus.emit("toast", {
-              title: "Settings Loaded",
-              message: "Settings have been successfully loaded.",
-              variant: "success",
-          });
+          if (showToast) {
+            this.eventBus.emit("toast", {
+                title: "Settings Loaded",
+                message: "Settings have been successfully loaded.",
+                variant: "success",
+            });
+          }
           this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
           this.collapseFirst = this.settings.reduce((acc, setting) => {
             const key = setting.key.split(".")[0];
