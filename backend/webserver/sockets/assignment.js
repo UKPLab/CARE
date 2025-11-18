@@ -420,8 +420,8 @@ class AssignmentSocket extends Socket {
 
         const result = {};
         for (const [key, value] of Object.entries(config)) {
-            if (value && value?.value === null) {
-                if (value.isTemplate) {
+            if (value.isTemplate) {
+                if (value.value === 'template_submission' || value.value === 'template_document') {
                     const resolvedId = context.assignmentType === 'submission' ? context.submissionId : context.documentId;
                     result[key] = { ...value, value: resolvedId };
                     continue;
