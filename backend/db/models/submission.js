@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         static async filterExistingExtIds(extIds) {
             return await Submission.findAll({
                 where: {
-                    extId: { [Op.in]: extIds },
+                    extId: {[Op.in]: extIds},
                     deleted: false,
                 },
                 attributes: ["extId"],
@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Assign group and additional settings to multiple submissions
-         * 
+         *
          * @param {Array<number>} submissionIds - Array of submission IDs to update
          * @param {number} group - The group number to assign
          * @param {Object} additionalSettings - Additional settings to assign
@@ -51,17 +51,17 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async assignGroup(submissionIds, group, additionalSettings, options = {}) {
             const updateData = {};
-            
+
             if (group !== undefined && group !== null) {
                 updateData.group = group;
             }
-            
+
             if (additionalSettings !== undefined && additionalSettings !== null) {
                 updateData.additionalSettings = additionalSettings;
             }
 
             const [affectedCount] = await Submission.update(updateData, {
-                where: { id: { [Op.in]: submissionIds } },
+                where: {id: {[Op.in]: submissionIds}},
                 transaction: options.transaction,
                 individualHooks: true
             });
@@ -71,7 +71,7 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Copy a submission and all its associated documents
-         * 
+         *
          * @param {number} originalSubmissionId - The ID of the submission to copy
          * @param {number} createdByUserId - The ID of the user creating the copy
          * @param {Object} options - Database options including transaction
@@ -96,18 +96,18 @@ module.exports = (sequelize, DataTypes) => {
                     createdByUserId: createdByUserId,
                     projectId: originalSubmission.projectId || null,
                     parentSubmissionId: originalSubmissionId, // Link to parent
-                    extId: originalSubmission.extId || null, 
+                    extId: originalSubmission.extId || null,
                     group: originalSubmission.group,
                     additionalSettings: originalSubmission.additionalSettings || null,
                     validationConfigurationId: originalSubmission.validationConfigurationId || null,
                     deleted: false,
                 },
-                { transaction }
+                {transaction}
             );
 
             // Get all documents associated with the original submission
             const originalDocuments = await sequelize.models.document.findAll({
-                where: { submissionId: originalSubmissionId },
+                where: {submissionId: originalSubmissionId},
                 transaction
             });
 
@@ -116,8 +116,8 @@ module.exports = (sequelize, DataTypes) => {
             for (const originalDoc of originalDocuments) {
                 try {
                     const copiedDoc = await Submission.copyDocument(
-                        originalDoc, 
-                        copiedSubmission.id, 
+                        originalDoc,
+                        copiedSubmission.id,
                         transaction
                     );
                     copiedDocuments.push(copiedDoc);
@@ -137,7 +137,7 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Copy a single document associated with a particular submissionId
-         * 
+         *
          * @param {Object} originalDoc - The original document to copy
          * @param {number} newSubmissionId - The ID of the new submission to associate with
          * @param {Object} transaction - The database transaction
@@ -156,7 +156,7 @@ module.exports = (sequelize, DataTypes) => {
                 projectId: originalDoc.projectId || null,
                 submissionId: newSubmissionId,
                 originalFilename: originalDoc.originalFilename || null
-            }, { transaction });
+            }, {transaction});
 
             await Submission.copyDocumentFiles(originalDoc, copiedDoc, transaction);
 
@@ -165,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Copy document files
-         * 
+         *
          * @param {Object} originalDoc - The original document
          * @param {Object} copiedDoc - The copied document
          * @param {Object} transaction - The database transaction
@@ -181,14 +181,53 @@ module.exports = (sequelize, DataTypes) => {
                 if (docTypeKey) {
                     fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
                 }
-                
+
                 const originalFilePath = path.join(UPLOAD_PATH, `${originalDoc.hash}${fileExtension}`);
                 const copiedFilePath = path.join(UPLOAD_PATH, `${copiedDoc.hash}${fileExtension}`);
-                
+
                 if (fs.existsSync(originalFilePath)) {
                     await fs.promises.copyFile(originalFilePath, copiedFilePath);
                 }
             }
+        }
+
+        /**
+         * Load all documents for a submission and convert them to base64.
+         *
+         * @param {string|number} submissionId - The ID of the submission.
+         * @returns {Promise<object>} An object with document types as keys and base64 file contents as values.
+         * @throws {Error} If no submissionId is provided or no valid files are found.
+         */
+        static async loadSubmissionForNlpRequest(submissionId) {
+
+            const originalDocuments = await sequelize.models.document.findAll({
+                where: {submissionId},
+                raw: true,
+            });
+
+            const submissionFiles = {};
+
+            await Promise.all(
+                originalDocuments.map(async (doc) => {
+                    const base64 = await sequelize.models.document.encodeDocumentFileToBase64(doc);
+                    if (!base64) return;
+
+                    const docTypeKey = Object.entries(sequelize.models.document.docTypes).find(
+                        ([, value]) => value === doc.type
+                    )?.[0];
+
+                    if (!docTypeKey) return;
+
+                    const fileTypeKey = docTypeKey.replace(/^DOC_TYPE_/, '').toLowerCase();
+                    submissionFiles[fileTypeKey] = base64;
+                })
+            );
+
+            if (Object.keys(submissionFiles).length === 0) {
+                throw new Error(`No valid files found for submission ${submissionId}`);
+            }
+
+            return submissionFiles;
         }
     }
 

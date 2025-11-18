@@ -265,12 +265,57 @@ module.exports = class NLPService extends Service {
     }
 
     /**
+     * Handles service replacement logic based on the provided input specification.
+     *
+     * Depending on `inputSpec.type`, this function transforms or replaces
+     * the associated service object and returns the processed result.
+     *
+     * Supported types:
+     *  - "submission": Returns a transformed submission object.
+     *  - "document":   Returns a transformed document object.
+     *
+     * @async
+     * @param {Object} inputSpec - The specification describing the service input.
+     * @param {string} inputSpec.type - The type of service input ("submission", "document", ...).
+     * @returns {Promise<Object>} A promise resolving to the processed output for the given type.
+     */
+    async serviceReplacement(inputSpec) {
+        try {
+            switch (inputSpec.type) {
+                case 'submission':
+                    return await this.server.db.models['submission'].loadSubmissionForNlpRequest(inputSpec.submissionId);
+                case 'document':
+                    return await this.server.db.models['document'].loadDocumentForNlpRequest(inputSpec.documentId);
+            }
+        } catch(e) {
+            this.logger.error(e);
+        }
+    }
+
+
+    /**
      * Shared logic for handling skill requests
      * @param client
      * @param data
      * @param {boolean} setClientId if true, the clientId is not set in data, but taken from the client
      */
     async _handleSkillRequest(client, data, setClientId = false) {
+
+        if ('data' in data) {
+            const entries = Object.entries(data["data"]);
+
+            const processedEntries = await Promise.all(
+                entries.map(async ([key, value]) => {
+                    if (value?.type === "serviceReplacement") {
+                        return [key, await this.serviceReplacement(value.input)];
+                    }
+                    return [key, value];
+                })
+            );
+
+            data["data"] = Object.fromEntries(processedEntries);
+        }
+
         if (this.nlpSocket && this.nlpSocket.connected) {
             if (!(setClientId && "clientId" in data)) {
                 data["clientId"] = client.socket.id;
@@ -293,50 +338,9 @@ module.exports = class NLPService extends Service {
      * @return {Promise<void>}
      */
     async request(client, data) {
-
-        if ('data' in data) {
-            const entries = Object.entries(data["data"]);
-
-            const processedEntries = await Promise.all(
-                entries.map(async ([key, value]) => {
-                    if (value?.type === "serviceReplacement") {
-                        return [key, await this.serviceReplacement(value.input)];
-                    }
-                    return [key, value];
-                })
-            );
-
-            data["data"] = Object.fromEntries(processedEntries);
-        }
-
         await this._handleSkillRequest(client, data, false);
     }
 
-    /**
-     * Handles service replacement logic based on the provided input specification.
-     *
-     * Depending on `inputSpec.type`, this function transforms or replaces
-     * the associated service object and returns the processed result.
-     *
-     * Supported types:
-     *  - "submission": Returns a transformed submission object.
-     *  - "document":   Returns a transformed document object.
-     *
-     * @async
-     * @param {Object} inputSpec - The specification describing the service input.
-     * @param {string} inputSpec.type - The type of service input ("submission", "document", ...).
-     * @returns {Promise<Object>} A promise resolving to the processed output for the given type.
-     */
-    async serviceReplacement(inputSpec) {
-        console.log(inputSpec);
-        switch (inputSpec.type) {
-            case 'submission':
-                // TODO handle submissions
-                return {};
-            case 'document':
-                return {}
-        }
-    }
 
     /**
      * Overwrite method to handle incoming background requests
