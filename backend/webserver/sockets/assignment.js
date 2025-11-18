@@ -394,15 +394,20 @@ class AssignmentSocket extends Socket {
     }
 
     /**
-     * Retrieve all the assignments a course has.
-     * 
-     * @socketEvent assignmentGetInfo
-     * @param {Object} data The data required for getting the relevant assignment info.
-     * @param {Object} data.options The options object containing the API key and URL of the Moodle instance.
-     * @param {number} data.options.courseID The ID of the course to fetch users from.
-     * @param {string} data.options.apiKey The API token for the Moodle instance
-     * @param {string} data.options.apiUrl The URL of the Moodle instance.
-     * @returns {Promise<ArrayLike<T>>} A promise that resolves with an array of assignment objects from Moodle.
+     * Recursively replaces template markers in a configuration object with actual values from the context.
+     *
+     * This method processes configuration objects, arrays, and nested structures, replacing any template
+     * markers (objects with `value === null` and `type === 'template'`) with the appropriate ID based on
+     * the assignment type. For submission assignments, it uses `submissionId`; for document assignments,
+     * it uses `documentId`.
+     *
+     * @param {Object|Array} config The configuration object or array to process. Can contain nested objects and arrays.
+     * @param {Object} context The context object containing assignment information.
+     * @param {string} context.assignmentType The type of assignment ('submission' or 'document').
+     * @param {number|null} context.documentId The document ID to use when assignmentType is 'document'.
+     * @param {number|null} context.submissionId The submission ID to use when assignmentType is 'submission'.
+     * @param {Object} options The options object (currently unused but kept for API consistency).
+     * @returns {Promise<Object|Array>} A promise that resolves with the configuration object with all template values replaced.
      */
     async replaceTemplateValues(config, context, options) {
         if (Array.isArray(config)) {
@@ -415,8 +420,8 @@ class AssignmentSocket extends Socket {
 
         const result = {};
         for (const [key, value] of Object.entries(config)) {
-            if (value && value?.value === null) {
-                if (value.isTemplate) {
+            if (value.isTemplate) {
+                if (value.value === 'template_submission') {
                     const resolvedId = context.assignmentType === 'submission' ? context.submissionId : context.documentId;
                     result[key] = { ...value, value: resolvedId };
                     continue;
@@ -432,6 +437,17 @@ class AssignmentSocket extends Socket {
         return result;
     }
 
+    /**
+     * Retrieve all the assignments a course has.
+     *
+     * @socketEvent assignmentGetInfo
+     * @param {Object} data The data required for getting the relevant assignment info.
+     * @param {Object} data.options The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID The ID of the course to fetch users from.
+     * @param {string} data.options.apiKey The API token for the Moodle instance
+     * @param {string} data.options.apiUrl The URL of the Moodle instance.
+     * @returns {Promise<ArrayLike<T>>} A promise that resolves with an array of assignment objects from Moodle.
+     */
     async getAssignmentInfoFromCourse(data) {
         return await this.server.rpcs["MoodleRPC"].getAssignmentInfoFromCourse(
             {
