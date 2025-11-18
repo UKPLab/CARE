@@ -393,7 +393,22 @@ class AssignmentSocket extends Socket {
 
     }
 
-
+    /**
+     * Recursively replaces template markers in a configuration object with actual values from the context.
+     *
+     * This method processes configuration objects, arrays, and nested structures, replacing any template
+     * markers (objects with `value === null` and `type === 'template'`) with the appropriate ID based on
+     * the assignment type. For submission assignments, it uses `submissionId`; for document assignments,
+     * it uses `documentId`.
+     *
+     * @param {Object|Array} config The configuration object or array to process. Can contain nested objects and arrays.
+     * @param {Object} context The context object containing assignment information.
+     * @param {string} context.assignmentType The type of assignment ('submission' or 'document').
+     * @param {number|null} context.documentId The document ID to use when assignmentType is 'document'.
+     * @param {number|null} context.submissionId The submission ID to use when assignmentType is 'submission'.
+     * @param {Object} options The options object (currently unused but kept for API consistency).
+     * @returns {Promise<Object|Array>} A promise that resolves with the configuration object with all template values replaced.
+     */
     async replaceTemplateValues(config, context, options) {
         if (Array.isArray(config)) {
             return await Promise.all(config.map(item => this.replaceTemplateValues(item, context, options)));

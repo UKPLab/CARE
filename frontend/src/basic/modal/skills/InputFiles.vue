@@ -198,7 +198,7 @@ export default {
     dataExistingFilterOptions() {
       const options = new Set();
       (this.submissionsData || []).forEach((s) => {
-        options.add(String(s.data_existing ? 'Yes' : 'No'));
+        options.add(String(s.data_existing));
       });
       return Array.from(options)
         .sort()
