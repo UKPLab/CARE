@@ -293,7 +293,49 @@ module.exports = class NLPService extends Service {
      * @return {Promise<void>}
      */
     async request(client, data) {
+
+        if ('data' in data) {
+            const entries = Object.entries(data["data"]);
+
+            const processedEntries = await Promise.all(
+                entries.map(async ([key, value]) => {
+                    if (value?.type === "serviceReplacement") {
+                        return [key, await this.serviceReplacement(value.input)];
+                    }
+                    return [key, value];
+                })
+            );
+
+            data["data"] = Object.fromEntries(processedEntries);
+        }
+
         await this._handleSkillRequest(client, data, false);
+    }
+
+    /**
+     * Handles service replacement logic based on the provided input specification.
+     *
+     * Depending on `inputSpec.type`, this function transforms or replaces
+     * the associated service object and returns the processed result.
+     *
+     * Supported types:
+     *  - "submission": Returns a transformed submission object.
+     *  - "document":   Returns a transformed document object.
+     *
+     * @async
+     * @param {Object} inputSpec - The specification describing the service input.
+     * @param {string} inputSpec.type - The type of service input ("submission", "document", ...).
+     * @returns {Promise<Object>} A promise resolving to the processed output for the given type.
+     */
+    async serviceReplacement(inputSpec) {
+        console.log(inputSpec);
+        switch (inputSpec.type) {
+            case 'submission':
+                // TODO handle submissions
+                return {};
+            case 'document':
+                return {}
+        }
     }
 
     /**

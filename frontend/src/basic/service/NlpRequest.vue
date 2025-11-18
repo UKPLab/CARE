@@ -147,17 +147,12 @@ export default {
         return studyStepData[inputSpec.type];
       }
     },
-    async buildPayload(inputSpec) {
-
+    buildPayload(inputSpec) {
       switch (inputSpec.type) {
         case 'submission':
-          return await this.buildSubmission(this.inputData.submission);
-          // TODO add submission document --> should be done in the backend
-          // reduces async operation here and additional complexity
-          // also to reduce same code in backend and frontend
+          return {'type': 'serviceReplacement', 'input': inputSpec}
         case 'document':
-          // TODO add document data --> should be done in the backend
-          break;
+          return {'type': 'serviceReplacement', 'input': inputSpec}
         case 'assessment':
           return this.buildPayloadFromStudyData(inputSpec);
         case 'configuration':
@@ -169,14 +164,13 @@ export default {
         default:
           return null
       }
-
     },
-    async sendRequest() {
+    sendRequest() {
       this.status = 'pending';
 
       const basePayload = {};
       for (const input in this.service.inputs) {
-        basePayload[input] = await this.buildPayload(this.service.inputs[input]);
+        basePayload[input] = this.buildPayload(this.service.inputs[input]);
       }
 
       this.$socket.emit("serviceRequest", {
