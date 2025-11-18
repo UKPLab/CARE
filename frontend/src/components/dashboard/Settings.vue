@@ -6,8 +6,8 @@
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
-              text="User Settings"
-              title="User Settings"
+              text="Change User Settings"
+              title="Change User Settings"
               icon="sliders"
               :disabled="!settings || !settings.length"
               @click="$refs.userSettingsModal.open()"

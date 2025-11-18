@@ -7,7 +7,7 @@
     @submit="handleSubmit"
   >
     <template #title>
-      <span>User Settings</span>
+      <span>Chnage User Settings</span>
     </template>
 
     <!-- Step 1: Select setting and provide value -->
