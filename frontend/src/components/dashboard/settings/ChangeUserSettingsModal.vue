@@ -1,13 +1,13 @@
 <template>
   <StepperModal
-    ref="userSettingsStepper"
+    ref="changeUserSettingsStepper"
     :steps="steps"
     :validation="stepValid"
     submit-text="Apply"
     @submit="handleSubmit"
   >
     <template #title>
-      <span>Chnage User Settings</span>
+      <span>Change User Settings</span>
     </template>
 
     <!-- Step 1: Select setting and provide value -->
@@ -117,10 +117,9 @@
 
 <script>
 /**
- * User Settings Modal Component
+ * Change User Settings Modal Component
  *
- * Provides a multi-step interface to select a setting, select users, and confirm
- * per-user updates using the existing socket action.
+ * Provides a multi-step interface to change a selected setting for a selected users.
  *
  * @author: Akash Gundapuneni
  */
@@ -130,7 +129,7 @@ import BasicTable from "@/basic/Table.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 
 export default {
-  name: "UserSettingsModal",
+  name: "ChangeUserSettingsModal",
   components: {
     StepperModal,
     BasicForm,
@@ -138,10 +137,6 @@ export default {
     EditorModal,
   },
   props: {
-    /**
-     * Full settings list (array of objects with keys: key, value, type, description)
-     * Provided by parent Settings.vue to avoid refetching.
-     */
     settings: {
       type: Array,
       required: true,
@@ -251,10 +246,10 @@ export default {
       // Ensure we have users in store
       this.$socket.emit("userGetByRole", { role: "all" }, () => {});
 
-      this.$refs.userSettingsStepper.open();
+      this.$refs.changeUserSettingsStepper.open();
     },
     close() {
-      this.$refs.userSettingsStepper.close();
+      this.$refs.changeUserSettingsStepper.close();
     },
     toServerString(value, type) {
       if (type === "boolean" || type === "bool") {
@@ -277,7 +272,7 @@ export default {
         return;
       }
 
-      this.$refs.userSettingsStepper.setWaiting(true);
+      this.$refs.changeUserSettingsStepper.setWaiting(true);
       this.$socket.emit(
         "appSettingSet",
         {
@@ -286,7 +281,7 @@ export default {
           userIds,
         },
         (result) => {
-          this.$refs.userSettingsStepper.setWaiting(false);
+          this.$refs.changeUserSettingsStepper.setWaiting(false);
           if (!result || !result.success) {
             this.eventBus.emit("toast", {
               title: "Update failed",

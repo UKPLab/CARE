@@ -10,7 +10,7 @@
               title="Change User Settings"
               icon="sliders"
               :disabled="!settings || !settings.length"
-              @click="$refs.userSettingsModal.open()"
+              @click="$refs.changeUserSettingsModal.open()"
           />
 
           <BasicButton
@@ -75,8 +75,8 @@
       </template>
     </Card>
 
-    <UserSettingsModal
-        ref="userSettingsModal"
+    <ChangeUserSettingsModal
+        ref="changeUserSettingsModal"
         :settings="settings"
     />
 
@@ -147,7 +147,7 @@ import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import {onBeforeRouteUpdate} from 'vue-router'
-import UserSettingsModal from "@/components/dashboard/settings/UserSettingsModal.vue";
+import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
 
 export default {
   name: "DashboardSettings",
@@ -158,7 +158,7 @@ export default {
     SettingItem,
     BasicButton,
     Modal,
-    UserSettingsModal,
+    ChangeUserSettingsModal,
   },
   data() {
     return {
