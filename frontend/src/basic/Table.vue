@@ -18,10 +18,11 @@
       aria-describedby="search-addon1"
     />
   </div>
-  <table
-    :class="tableClass"
-    class="table"
-  >
+  <div class="table-wrapper">
+    <table
+      :class="tableClass"
+      class="table"
+    >
     <thead>
       <tr>
         <th v-if="selectableRows">
@@ -38,7 +39,12 @@
         <th
           v-for="c in columns"
           :key="c.key"
-          :class="'width' in c ? 'col-' + c.width : 'col-auto'"
+          :ref="'header-' + c.key"
+          :class="[
+            'width' in c ? 'col-' + c.width : 'col-auto',
+            getFixedColumnClass(c),
+          ]"
+          :style="getColumnCellStyle(c)"
         >
           {{ c.name }}
           <span
@@ -167,9 +173,12 @@
           v-for="c in columns"
           :key="c"
            :class="[
+          :class="[
             'width' in c ? 'col-' + c.width : 'col-auto',
             { pointer: selectableRows && !r.isDisabled },
+            getFixedColumnClass(c),
           ]"
+          :style="getColumnCellStyle(c)"
         >
           <span v-if="c.key in r">
             <TIcon
@@ -247,7 +256,8 @@
         </td>
       </tr>
     </tbody>
-  </table>
+    </table>
+  </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
     ref="pagination"
@@ -373,6 +383,8 @@ export default {
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
       hasButtons: false, // Use this flag to decide on the visibility of the column header
+      fixedColumnStyles: {},
+      debouncedComputeFixedColumns: null,
     };
   },
   computed: {
@@ -471,6 +483,9 @@ export default {
           .map(([k, v]) => ({ [k]: v }))
       );
     },
+    hasFixedColumns() {
+      return this.columns.some((c) => ["left", "right"].includes(c.fixed));
+    },
   },
   watch: {
     currentData: {
@@ -500,6 +515,13 @@ export default {
       },
       deep: true,
     },
+    hasFixedColumns(newVal) {
+      if (newVal) {
+        this.setupFixedColumns();
+      } else {
+        this.cleanupFixedColumns();
+      }
+    }
   },
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
@@ -526,8 +548,109 @@ export default {
               : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
         }))
     );
+
+    if (this.hasFixedColumns) {
+      this.setupFixedColumns();
+    }
+  },
+  created() {
+    this.debouncedComputeFixedColumns = this.debounce(() => {
+      this.computeFixedColumnStyles();
+    }, 150);
+  },
+  beforeUnmount() {
+    this.cleanupFixedColumns();
   },
   methods: {
+    setupFixedColumns() {
+      this.$nextTick(() => {
+        this.computeFixedColumnStyles();
+        window.addEventListener("resize", this.debouncedComputeFixedColumns);
+      });
+    },
+    cleanupFixedColumns() {
+      if (this.debouncedComputeFixedColumns) {
+        window.removeEventListener("resize", this.debouncedComputeFixedColumns);
+      }
+    },
+    getColumnCellStyle(column) {
+      if (!column || !column.key) {
+        return null;
+      }
+      return this.fixedColumnStyles[column.key] || null;
+    },
+    getFixedColumnClass(column) {
+      if (!column || !column.fixed) {
+        return null;
+      }
+      return {
+        "table-fixed": true,
+        "table-fixed-left": column.fixed === "left",
+        "table-fixed-right": column.fixed === "right",
+      };
+    },
+    computeFixedColumnStyles() {
+      if (!this.hasFixedColumns) {
+        this.fixedColumnStyles = {};
+        this.cleanupFixedColumns();
+        return;
+      }
+
+      const styles = {};
+      let leftOffset = 0;
+      this.columns.forEach((column) => {
+        if (column.fixed === "left") {
+          const width = this.getColumnWidth(column);
+          styles[column.key] = this.buildStickyStyle("left", leftOffset);
+          leftOffset += width;
+        }
+      });
+
+      let rightOffset = 0;
+      [...this.columns].reverse().forEach((column) => {
+        if (column.fixed === "right") {
+          const width = this.getColumnWidth(column);
+          styles[column.key] = this.buildStickyStyle("right", rightOffset);
+          rightOffset += width;
+        }
+      });
+
+      this.fixedColumnStyles = styles;
+    },
+    buildStickyStyle(position, offset) {
+      return {
+        position: "sticky",
+        [position]: `${offset}px`,
+        zIndex: 2,
+        background: "var(--bs-body-bg, #fff)",
+      };
+    },
+    getColumnWidth(column) {
+      const ref = this.$refs[`header-${column.key}`];
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      if (el && el.offsetWidth) {
+        return el.offsetWidth;
+      }
+      if (column.fixedWidth) {
+        return Number(column.fixedWidth);
+      }
+      if (column.widthPx) {
+        return Number(column.widthPx);
+      }
+      if (column.width) {
+        return Number(column.width);
+      }
+      return 150;
+    },
+    debounce(func, wait = 100) {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          func.apply(this, args);
+        }, wait);
+      };
+    },
     getFilteredAndSortedData() {
       let data = this.data.map((d) => d);
 
@@ -754,6 +877,40 @@ export default {
 </script>
 
 <style scoped>
+.table-wrapper {
+  overflow-x: auto;
+  position: relative;
+}
+
+.table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+.table-fixed {
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-fixed-left {
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.table-fixed-right {
+  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.table-fixed.table-fixed-left,
+.table-fixed.table-fixed-right {
+  position: sticky;
+}
+
+.table thead .table-fixed {
+  z-index: 3;
+}
+
 .form-check-input:disabled {
   cursor: not-allowed;
   pointer-events: initial;
