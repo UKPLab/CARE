@@ -12,6 +12,7 @@
     <PDFToolbar
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
+      :is-zooming="isZooming"
       @update:zoom-form-data="zoomFormData = $event"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"

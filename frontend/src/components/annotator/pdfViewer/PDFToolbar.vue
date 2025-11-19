@@ -2,20 +2,23 @@
   <div 
     ref="toolbar"
     class="pdf-toolbar" 
-    :class="{ 'collapsed': !toolbarVisible }"
+    :class="{ 'collapsed': !toolbarVisible, 'loading': isZooming }"
   >  
     <template v-if="toolbarVisible">       
       <TopBarButton
         title="Reset"
         text="Reset"
+        :disabled="isZooming"
         @click="$emit('reset')"
       />      
       <TopBarButton
         icon="plus-lg"
+        :disabled="isZooming"
         @click="$emit('zoom-in')"
       />
       <TopBarButton
         icon="dash-lg"
+        :disabled="isZooming"
         @click="$emit('zoom-out')"
       />      
       <!-- Zoom Percentage Form -->
@@ -67,6 +70,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    isZooming: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset'],
   data() {
@@ -76,6 +83,9 @@ export default {
           key: "zoom",
           type: "select",
           options: [
+            { value: 0.5, name: "50%" },
+            { value: 0.6, name: "60%" },
+            { value: 0.7, name: "70%" },
             { value: 0.8, name: "80%" },
             { value: 0.9, name: "90%" },
             { value: 1.0, name: "100%" },
@@ -83,6 +93,7 @@ export default {
             { value: 1.2, name: "120%" },
             { value: 1.3, name: "130%" },
             { value: 1.4, name: "140%" },
+            { value: 1.5, name: "150%" },
           ],
         },
       ],
@@ -118,6 +129,7 @@ export default {
   gap: 12px;
   padding: 8px 16px;
   min-height: 48px;
+  position: relative;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: flex-end;
@@ -168,6 +180,31 @@ export default {
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn:hover {
   color: #6c757d;
+}
+
+.pdf-toolbar.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(248, 249, 250, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  cursor: wait;
+}
+
+.pdf-toolbar.loading :deep(.btn) {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.pdf-toolbar.loading :deep(.form-select) {
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .zoom-form-wrapper {
