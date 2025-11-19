@@ -2,7 +2,7 @@
   <Modal
     ref="modal"
     :props="$props"
-    :remove-close="!closeable"
+    :remove-close="false"
     :disable-keyboard="!closeable"
     lg
     name="studyFinish"
