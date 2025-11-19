@@ -286,8 +286,14 @@ module.exports = class NLPService extends Service {
                     return await this.server.db.models['submission'].loadSubmissionForNlpRequest(inputSpec.submissionId);
                 case 'document':
                     return await this.server.db.models['document'].loadDocumentForNlpRequest(inputSpec.documentId);
+                case 'configuration':
+                    const config = await this.server.db.models['configuration'].findByPk(inputSpec.configurationId, {raw: true});
+                    if (typeof config.content === 'string') {
+                        return JSON.parse(config.content);
+                    }
+                    return config.content;
             }
-        } catch(e) {
+        } catch (e) {
             this.logger.error(e);
         }
     }
