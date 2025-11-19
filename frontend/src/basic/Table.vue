@@ -23,238 +23,240 @@
       :class="tableClass"
       class="table"
     >
-    <thead>
-      <tr>
-        <th v-if="selectableRows">
-          <div class="form-check">
-            <input
-              v-if="!(options && options.singleSelect)"
-              class="form-check-input"
-              type="checkbox"
-              :checked="isAllRowsSelected"
-              @change="selectAllRows"
-            />
-          </div>
-        </th>
-        <th
-          v-for="c in columns"
-          :key="c.key"
-          :ref="'header-' + c.key"
-          :class="[
-            'width' in c ? 'col-' + c.width : 'col-auto',
-            getFixedColumnClass(c),
-          ]"
-          :style="getColumnCellStyle(c)"
-        >
-          {{ c.name }}
-          <span
-            v-if="c.sortable"
-            title="Sort By"
+      <thead>
+        <tr>
+          <th v-if="selectableRows">
+            <div class="form-check">
+              <input
+                v-if="!(options && options.singleSelect)"
+                class="form-check-input"
+                type="checkbox"
+                :checked="isAllRowsSelected"
+                @change="selectAllRows"
+              />
+            </div>
+          </th>
+          <th
+            v-for="c in columns"
+            :key="c.key"
+            :ref="'header-' + c.key"
+            :class="[
+              'width' in c ? 'col-' + c.width : 'col-auto',
+              getFixedColumnClass(c),
+            ]"
+            :style="getColumnCellStyle(c)"
           >
-            <LoadIcon
-              v-if="c.sortable"
-              :class="{
-                'bg-success': sortColumn === c.key,
-                'bg-opacity-50': sortColumn === c.key,
-                'bg-opacity-10': sortColumn !== c.key,
-                'bg-black': sortColumn !== c.key,
-              }"
-              :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
-              class="me-1"
-              style="cursor: pointer"
-              @click="sort('sortKey' in c ? c.sortKey : c.key)"
-            />
-          </span>
-          <span v-if="filter && c.filter">
+            {{ c.name }}
             <span
-              aria-expanded="true"
-              aria-haspopup="true"
-              data-bs-toggle="dropdown"
-              role="button"
-              style="cursor: pointer"
+              v-if="c.sortable"
+              title="Sort By"
             >
               <LoadIcon
-                :id="'filterDropDown_' + c.key"
-                :color="c.key in sequelizeFilter ? 'blue' : ''"
-                :icon-name="c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'"
+                v-if="c.sortable"
+                :class="{
+                  'bg-success': sortColumn === c.key,
+                  'bg-opacity-50': sortColumn === c.key,
+                  'bg-opacity-10': sortColumn !== c.key,
+                  'bg-black': sortColumn !== c.key,
+                }"
+                :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
+                class="me-1"
+                style="cursor: pointer"
+                @click="sort('sortKey' in c ? c.sortKey : c.key)"
               />
             </span>
-            <template v-if="!c.filter.type">
-              <ul
-                :aria-labelledby="'filterDropDown_' + c.key"
-                class="dropdown-menu p-1"
-                @click.stop=""
+            <span v-if="filter && c.filter">
+              <span
+                aria-expanded="true"
+                aria-haspopup="true"
+                data-bs-toggle="dropdown"
+                role="button"
+                style="cursor: pointer"
               >
-                <li
-                  v-for="f in c.filter"
-                  :key="f.key"
-                  class="form-check"
-                >
-                  <input
-                    :id="'filterDropDown_' + c.key + '_label_' + f.key"
-                    v-model="filter[c.key][f.key]"
-                    class="form-check-input"
-                    type="checkbox"
-                  />
-                  <label
-                    :for="'filterDropDown_' + c.key + '_label_' + f.key"
-                    class="form-check-label"
-                    >{{ f.name }}</label
-                  >
-                </li>
-              </ul>
-            </template>
-            <template v-else-if="c.filter.type === 'numeric'">
-              <div class="dropdown-menu p-2">
-                <select
-                  v-model="filter[c.key].operator"
-                  class="form-select form-select-sm mb-2"
-                >
-                  <option value="gt">&gt;</option>
-                  <option value="lt">&lt;</option>
-                  <option value="gte">&ge;</option>
-                  <option value="lte">&le;</option>
-                  <option value="eq">=</option>
-                </select>
-                <input
-                  v-model="filter[c.key].value"
-                  class="form-control form-control-sm"
-                  type="number"
-                  min="0"
+                <LoadIcon
+                  :id="'filterDropDown_' + c.key"
+                  :color="c.key in sequelizeFilter ? 'blue' : ''"
+                  :icon-name="
+                    c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'
+                  "
                 />
-              </div>
-            </template>
-          </span>
-        </th>
-        <th v-if="hasButtons">Manage</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-        <td
-          :colspan="columns.length"
-          class="text-center"
+              </span>
+              <template v-if="!c.filter.type">
+                <ul
+                  :aria-labelledby="'filterDropDown_' + c.key"
+                  class="dropdown-menu p-1"
+                  @click.stop=""
+                >
+                  <li
+                    v-for="f in c.filter"
+                    :key="f.key"
+                    class="form-check"
+                  >
+                    <input
+                      :id="'filterDropDown_' + c.key + '_label_' + f.key"
+                      v-model="filter[c.key][f.key]"
+                      class="form-check-input"
+                      type="checkbox"
+                    />
+                    <label
+                      :for="'filterDropDown_' + c.key + '_label_' + f.key"
+                      class="form-check-label"
+                      >{{ f.name }}</label
+                    >
+                  </li>
+                </ul>
+              </template>
+              <template v-else-if="c.filter.type === 'numeric'">
+                <div class="dropdown-menu p-2">
+                  <select
+                    v-model="filter[c.key].operator"
+                    class="form-select form-select-sm mb-2"
+                  >
+                    <option value="gt">&gt;</option>
+                    <option value="lt">&lt;</option>
+                    <option value="gte">&ge;</option>
+                    <option value="lte">&le;</option>
+                    <option value="eq">=</option>
+                  </select>
+                  <input
+                    v-model="filter[c.key].value"
+                    class="form-control form-control-sm"
+                    type="number"
+                    min="0"
+                  />
+                </div>
+              </template>
+            </span>
+          </th>
+          <th v-if="hasButtons">Manage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+          <td
+            :colspan="columns.length"
+            class="text-center"
+          >
+            Loading data from server...
+          </td>
+        </tr>
+        <tr v-else-if="!data || data.length === 0">
+          <td
+            :colspan="emptyColspan"
+            class="text-center"
+          >
+            No data
+          </td>
+        </tr>
+        <tr
+          v-for="r in tableData"
+          v-else
+          :key="r"
+          @click="selectRow(r)"
         >
-          Loading data from server...
-        </td>
-      </tr>
-      <tr v-else-if="!data || data.length === 0">
-        <td
-          :colspan="emptyColspan"
-          class="text-center"
-        >
-          No data
-        </td>
-      </tr>
-      <tr
-        v-for="(r, index) in tableData"
-        v-else
-        :key="r"
-        @click="selectRow(r)"
-      >
-        <td v-if="selectableRows">
-          <div
-            class="form-check"
+          <td v-if="selectableRows">
+            <div
+              class="form-check"
+              @click.stop=""
+            >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :class="{
+                  pointer: selectableRows && !r.isDisabled,
+                }"
+                :disabled="r.isDisabled"
+                :checked="currentData.includes(r)"
+                @change="(e) => selectRow(r)"
+              />
+            </div>
+          </td>
+          <td
+            v-for="c in columns"
+            :key="c.key"
+            :class="[
+              'width' in c ? 'col-' + c.width : 'col-auto',
+              { pointer: selectableRows && !r.isDisabled },
+              getFixedColumnClass(c),
+            ]"
+            :style="getColumnCellStyle(c)"
+          >
+            <span v-if="c.key in r">
+              <TIcon
+                v-if="c.type === 'icon'"
+                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
+                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
+                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
+              />
+              <TBadge
+                v-else-if="c.type === 'badge'"
+                :options="c.typeOptions ? c.typeOptions : null"
+                :value="r[c.key]"
+              />
+              <TButton
+                v-else-if="c.type === 'button'"
+                :action="r[c.key].action"
+                :stats="r[c.key].stats"
+                :icon="r[c.key].icon"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
+              />
+              <TToggle
+                v-else-if="c.type === 'toggle'"
+                :action="r[c.key].action"
+                :value="r[c.key].value"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
+              />
+              <span v-else-if="c.type === 'datetime'">
+                {{ new Date(r[c.key]).toLocaleString() }}
+              </span>
+
+              <span v-else-if="c.type === 'icon-selector'">
+                <LoadIcon
+                  v-if="r[c.key].selected"
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  style="color: yellowgreen"
+                />
+                <LoadIcon
+                  v-else
+                  v-tooltip
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  :title="r[c.key].title"
+                  role="button"
+                  @click="actionEmitter({ action: r[c.key].action, params: r })"
+                />
+              </span>
+              <span
+                v-else
+                :class="{
+                  multiline: c.multiline,
+                }"
+                :style="getMultilineStyles(c)"
+              >
+                {{ r[c.key] }}
+              </span>
+            </span>
+            <span v-else> - </span>
+          </td>
+          <td
+            v-if="getFilteredButtons(r).length > 0"
             @click.stop=""
           >
-            <input
-              class="form-check-input"
-              type="checkbox"
-              :class="{
-                pointer: selectableRows && !r.isDisabled,
-              }"
-              :disabled="r.isDisabled"
-              :checked="currentData.includes(r)"
-              @change="(e) => selectRow(r)"
-            />
-          </div>
-        </td>
-        <td
-          v-for="c in columns"
-          :key="c.key"
-          :class="[
-            'width' in c ? 'col-' + c.width : 'col-auto',
-            { pointer: selectableRows && !r.isDisabled },
-            getFixedColumnClass(c),
-          ]"
-          :style="getColumnCellStyle(c)"
-        >
-          <span v-if="c.key in r">
-            <TIcon
-              v-if="c.type === 'icon'"
-              :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
-              :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
-              :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
-            />
-            <TBadge
-              v-else-if="c.type === 'badge'"
-              :options="c.typeOptions ? c.typeOptions : null"
-              :value="r[c.key]"
-            />
-            <TButton
-              v-else-if="c.type === 'button'"
-              :action="r[c.key].action"
-              :stats="r[c.key].stats"
-              :icon="r[c.key].icon"
-              :options="r[c.key].options"
+            <TButtonGroup
+              :buttons="getFilteredButtons(r)"
               :params="r"
-              :title="r[c.key].title"
               @action="actionEmitter"
             />
-            <TToggle
-              v-else-if="c.type === 'toggle'"
-              :action="r[c.key].action"
-              :value="r[c.key].value"
-              :options="r[c.key].options"
-              :params="r"
-              :title="r[c.key].title"
-              @action="actionEmitter"
-            />
-            <span v-else-if="c.type === 'datetime'">
-              {{ new Date(r[c.key]).toLocaleString() }}
-            </span>
-
-            <span v-else-if="c.type === 'icon-selector'">
-              <LoadIcon
-                v-if="r[c.key].selected"
-                :icon-name="r[c.key].icon"
-                :size="16"
-                style="color: yellowgreen"
-              />
-              <LoadIcon
-                v-else
-                v-tooltip
-                :icon-name="r[c.key].icon"
-                :size="16"
-                :title="r[c.key].title"
-                role="button"
-                @click="actionEmitter({ action: r[c.key].action, params: r })"
-              />
-            </span>
-            <span
-              v-else
-              :class="{
-                'multiline': c.multiline,
-              }"
-              :style="getMultilineStyles(c)"
-            >
-              {{ r[c.key] }}
-            </span>
-          </span>
-          <span v-else> - </span>
-        </td>
-        <td
-          v-if="getFilteredButtons(r).length > 0"
-          @click.stop=""
-        >
-          <TButtonGroup
-            :buttons="getFilteredButtons(r)"
-            :params="r"
-            @action="actionEmitter"
-          />
-        </td>
-      </tr>
-    </tbody>
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div>
   <Pagination
