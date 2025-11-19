@@ -3,233 +3,233 @@
 ## [Unreleased] - 2025-11-07
 
 ### Added
-- Queue-based document editing system to prevent race conditions during concurrent edits (#371)
-- Submission workflow for peer review with copying and group assignment (#344)
-- NLP skill application for document preprocessing and analysis (#166)
-- Configurable sidebar with collapsible tabs (Annotations, Configurator, History) and automatic dropdown menu for overflow buttons (#370)
+- Queue-based document editing system to prevent race conditions during concurrent edits
+- Submission workflow for peer review with copying and group assignment
+- NLP skill application for document preprocessing and analysis
+- Configurable sidebar with collapsible tabs (Annotations, Configurator, History) and automatic dropdown menu for overflow buttons
 
 ### Changed
 - Frontend class structure improved for maintainability
 - Preprocessing views enhanced with better progress tracking
-- Document type support extended to include ZIP files for LaTeX submissions (#175)
+- Document type support extended to include ZIP files for LaTeX submissions
 
 ### Fixed
-- Data consistency issues in high-concurrency document editing (#371)
-- NLP modal data loading after closure (#192)
-- Preprocessed data validation logic (#166)
-- Submission import transaction errors (#170)
-- Tagset annotation workflow bugs (#196)
+- Data consistency issues in high-concurrency document editing
+- NLP modal data loading after closure
+- Preprocessed data validation logic
+- Submission import transaction errors 
+- Tagset annotation workflow bugs 
 - Configuration wizard now correctly saves steps when user navigates backward
 
 ### Known Issues
-- Document edit updates require page refresh to display (#371)
-- NLP response loading delay on editor initial load (#192)
+- Document edit updates require page refresh to display 
+- NLP response loading delay on editor initial load 
 
 ---
 
 ## [1.10.0] - 2025-10-01
 
 ### Added
-- Comprehensive documentation covering API design, database schema, and workflow setup for developers (#323)
+- Comprehensive documentation covering API design, database schema, and workflow setup for developers 
 - Socket.io communication schema documentation with implementation examples
 - Database hooks and transaction usage documentation
 - Editor integration guide for real-time collaborative editing features
 - System analytics scheduler for performance monitoring and query optimization
-- Configurable statistics batching to mitigate operation timeouts (#360)
+- Configurable statistics batching to mitigate operation timeouts 
 
 ### Changed
-- Improved date/time display in history (short format for same dates, full datetime for different dates) (#362)
+- Improved date/time display in history (short format for same dates, full datetime for different dates) 
 - Reduced database write amplification through bulk operations
-- Enhanced logging with caller metadata (function name, file path, line number) (#360)
+- Enhanced logging with caller metadata (function name, file path, line number) 
 
 ### Fixed
-- Broker reconnection handling and skill display issues (#356)
-- Duplicate skill display when broker disconnects and reconnects (#356)
-- HTML/MODAL document creation error ("annotations is not defined") (#146)
-- NLP service error event handling for graceful service degradation (#145)
+- Broker reconnection handling and skill display issues 
+- Duplicate skill display when broker disconnects and reconnects 
+- HTML/MODAL document creation error ("annotations is not defined") 
+- NLP service error event handling for graceful service degradation 
 
 ---
 
 ## [1.9.0] - 2025-08-18
 
 ### Added
-- Admin controls for project visibility and user access management (#359)
-- Password reset feature with email verification for account recovery (#366)
+- Admin controls for project visibility and user access management 
+- Password reset feature with email verification for account recovery 
 - NLP skill debugging interface in admin panel for service troubleshooting
-- Broker online status indicator showing real-time service availability (#356)
-- Configuration management table for storing project-specific settings (#363)
-- Order column in document edits database to prevent timestamp collision issues (#327)
-- Queue-based document editing system to serialize concurrent edits safely (#371)
+- Broker online status indicator showing real-time service availability 
+- Configuration management table for storing project-specific settings 
+- Order column in document edits database to prevent timestamp collision issues 
+- Queue-based document editing system to serialize concurrent edits safely 
 - Submission dashboard with import and publishing workflow features
-- NLP preprocessing with skill application for document analysis (#166)
-- Configurable sidebar with Bootstrap tabs for better UI/UX (#370)
+- NLP preprocessing with skill application for document analysis 
+- Configurable sidebar with Bootstrap tabs for better UI/UX 
 
 ### Changed
-- User rights retrieval optimized for application performance (#364)
-- Sidebar redesigned with Bootstrap navigation tabs (#370)
-- Reduced write amplification through statistics batching (#360)
+- User rights retrieval optimized for application performance 
+- Sidebar redesigned with Bootstrap navigation tabs 
+- Reduced write amplification through statistics batching 
 - Frontend class structure reorganized for maintainability
-- Preprocessing views improved with better user feedback (#361)
+- Preprocessing views improved with better user feedback 
 
 ### Fixed
-- Skills display after broker reconnection and service restart (#356)
-- Moodle password field mapping for correct credential synchronization (#329)
-- Submission import transaction handling ("current transaction is aborted") (#170)
-- Guest role sidebar visibility and permission restrictions (#169)
-- Text input selection and deselection behavior (#193)
-- Admin password reset functionality (#188)
+- Skills display after broker reconnection and service restart 
+- Moodle password field mapping for correct credential synchronization 
+- Submission import transaction handling ("current transaction is aborted") 
+- Guest role sidebar visibility and permission restrictions 
+- Text input selection and deselection behavior 
+- Admin password reset functionality 
 
 ### Security
-- Enhanced password reset flow with secure admin bypass for user account management (#366)
+- Enhanced password reset flow with secure admin bypass for user account management
 
 ---
 
 ## [1.8.0] - 2025-02-17
 
 ### Added
-- Comment voting system allowing users to upvote helpful peer feedback (#63, #64)
-- Session review links publishing to Moodle for student access (#310)
-- Review list export functionality for data analysis and reporting (#311)
-- Editor version history with document comparison and restoration capabilities (#309)
-- Dynamic Moodle assignment selection via API for flexible integration (#300)
-- Review workflow with NLP service integration for processing (#305)
-- Workflow configuration storage for managing workflow state (#305)
-- Chart visualization using Chart.js for workflow analysis results (#305)
+- Comment voting system allowing users to upvote helpful peer feedback 
+- Session review links publishing to Moodle for student access 
+- Review list export functionality for data analysis and reporting 
+- Editor version history with document comparison and restoration capabilities 
+- Dynamic Moodle assignment selection via API for flexible integration 
+- Review workflow with NLP service integration for processing 
+- Workflow configuration storage for managing workflow state
+- Chart visualization using Chart.js for workflow analysis results 
 
 ### Changed
-- Username generation switched from Marvel characters to animal names (copyright compliance) (#308)
-- User roles now properly save in admin UI without requiring page reload (#306)
-- User list now searchable with enhanced filtering capabilities (#306)
-- Study workflow wrap-up functionality completed for workflow closure (#298)
-- Project database structure updated with proper relationship definitions (#298)
-- Filter types expanded to include "greater than" and "less than" operators (#306)
+- Username generation switched from Marvel characters to animal names (copyright compliance)
+- User roles now properly save in admin UI without requiring page reload 
+- User list now searchable with enhanced filtering capabilities 
+- Study workflow wrap-up functionality completed for workflow closure 
+- Project database structure updated with proper relationship definitions 
+- Filter types expanded to include "greater than" and "less than" operators 
 
 ### Fixed
-- User role synchronization across all application features (#306)
-- Study workflow display issues in coordinator view (#298)
-- Moodle password field mapping for bulk user import (#329)
-- Stepper component reset after Moodle import completion (#306)
-- Moodle bulk user import error handling with user-friendly feedback (#281)
-- Duplicate email display and conflict resolution (#281)
-- Teacher role assignment during automated imports (#281)
+- User role synchronization across all application features 
+- Study workflow display issues in coordinator view 
+- Moodle password field mapping for bulk user import 
+- Stepper component reset after Moodle import completion 
+- Moodle bulk user import error handling with user-friendly feedback 
+- Duplicate email display and conflict resolution 
+- Teacher role assignment during automated imports 
 
 ---
 
 ## [1.7.0] - 2024-12-10
 
 ### Added
-- Individual study assignment creation modal with step-by-step configuration (#288)
-- Reviewer management interface for editing existing peer review assignments (#288)
-- Anonymized peer review mode (displays "Anonymous" instead of reviewer names) (#288)
-- Moodle review link generation and automatic upload to assignments (#295)
-- Active Sessions dashboard for monitoring real-time study submission progress (#297, #298)
-- Student interface for viewing and starting available assignments (#297, #298)
-- Teaching assistant workflows with individual assignment number control per instructor (#294)
-- Complete study workflow implementation with Moodle integration (#261)
-- Study templates for creating and reusing workflow configurations (#261)
-- Multi-step study coordinator with role-based workflow choices (#261)
+- Individual study assignment creation modal with step-by-step configuration 
+- Reviewer management interface for editing existing peer review assignments 
+- Anonymized peer review mode (displays "Anonymous" instead of reviewer names) 
+- Moodle review link generation and automatic upload to assignments 
+- Active Sessions dashboard for monitoring real-time study submission progress 
+- Student interface for viewing and starting available assignments 
+- Teaching assistant workflows with individual assignment number control per instructor 
+- Complete study workflow implementation with Moodle integration 
+- Study templates for creating and reusing workflow configurations
+- Multi-step study coordinator with role-based workflow choices 
 
 ### Changed
-- Study visibility: users now see only their own created studies (#294)
-- Teacher role permissions expanded for assignment management (#294)
-- All user roles sent from backend instead of hard-coded values (#294)
-- Workflow selection removed from initial dashboard load for performance (#261)
+- Study visibility: users now see only their own created studies 
+- Teacher role permissions expanded for assignment management 
+- All user roles sent from backend instead of hard-coded values 
+- Workflow selection removed from initial dashboard load for performance 
 
 ### Fixed
-- Study workflow navigation issues and step transitions (#298)
-- Mentor access control for viewing other users' study sessions (#294)
-- Moodle duplicate email conflict handling with proper error messages (#300)
-- Active user display during study closure and finalization (#297, #298)
+- Study workflow navigation issues and step transitions 
+- Mentor access control for viewing other users' study sessions
+- Moodle duplicate email conflict handling with proper error messages 
+- Active user display during study closure and finalization 
 
 ### Known Issues
-- Editor documents not automatically updated per workflow steps (#261)
+- Editor documents not automatically updated per workflow steps 
 
 ---
 
 ## [1.6.0] - 2024-10-27
 
 ### Added
-- Moodle LMS API integration for user and submission management across platforms (#269)
-- Bulk user creation from CSV with step-by-step validation dialog (#281)
-- Bulk user import directly from Moodle course enrollment and assignment data (#269, #281)
-- Review Documents dashboard for comprehensive submission file management (#274)
-- Bulk student submission import from Moodle assignments (#274)
-- CARE login credentials automatic upload to Moodle for student onboarding (#274)
-- Bulk peer review assignment creation with 4-step configuration wizard (#288)
-- Copy/paste action tracking in editor for user behavior analysis (#286)
+- Moodle LMS API integration for user and submission management across platforms 
+- Bulk user creation from CSV with step-by-step validation dialog 
+- Bulk user import directly from Moodle course enrollment and assignment data 
+- Review Documents dashboard for comprehensive submission file management 
+- Bulk student submission import from Moodle assignments 
+- CARE login credentials automatic upload to Moodle for student onboarding 
+- Bulk peer review assignment creation with 4-step configuration wizard 
+- Copy/paste action tracking in editor for user behavior analysis 
 
 ### Changed
 - Moodle connection details stored as default settings for easy reuse
 
 ### Fixed
-- Moodle bulk user import error handling with user-friendly feedback (#281)
-- Duplicate email display and conflict resolution on frontend (#281)
-- CSV credential download after successful user import (#281)
-- Teacher role assignment during automated imports (#281)
+- Moodle bulk user import error handling with user-friendly feedback 
+- Duplicate email display and conflict resolution on frontend 
+- CSV credential download after successful user import 
+- Teacher role assignment during automated imports 
 
 ### Known Issues
-- Username generation uses copyrighted character names (scheduled for replacement) (#308)
-- Sensitive data column encryption not yet implemented (#281)
+- Username generation uses copyrighted character names (scheduled for replacement) 
+- Sensitive data column encryption not yet implemented 
 
 ---
 
 ## [1.5.0] - 2024-09-06
 
 ### Added
-- Role-based access control (RBAC) with four user roles (Admin, Teacher, Mentor, Student) and granular permissions (#186)
-- Teacher dashboard for student-mentor matching and management (#186)
-- Rich text editor (Quill.js) with real-time WebSocket collaboration for documents (#256)
-- Remote Procedure Call (RPC) infrastructure for executing resource-intensive code in isolated Docker containers (#270)
-- User interaction logging system for tracking behavior and generating analytics (#258)
-- Consent modal for behavioral data collection opt-in on user first login (#259)
-- Delta persistence to disk for improved editor performance and reduced database load (#256)
-- Search functionality with full-text search support (#204)
-- PDF document search integrated with viewer (#204)
-- Chat interface with message sending/receiving and bot responses (#208, #199)
-- Question answering system integrated into chat using PDF content (#234)
-- Survey/questionnaire administration dashboard (#223)
-- Questionnaire creation with file upload and storage (#300)
-- Questionnaire preview functionality before deployment (#310)
-- Questionnaire distribution and participant response collection (#315)
-- Results export in CSV and JSON formats for data analysis (#240)
+- Role-based access control (RBAC) with four user roles (Admin, Teacher, Mentor, Student) and granular permissions 
+- Teacher dashboard for student-mentor matching and management 
+- Rich text editor (Quill.js) with real-time WebSocket collaboration for documents 
+- Remote Procedure Call (RPC) infrastructure for executing resource-intensive code in isolated Docker containers 
+- User interaction logging system for tracking behavior and generating analytics 
+- Consent modal for behavioral data collection opt-in on user first login 
+- Delta persistence to disk for improved editor performance and reduced database load
+- Search functionality with full-text search support 
+- PDF document search integrated with viewer 
+- Chat interface with message sending/receiving and bot responses 
+- Question answering system integrated into chat using PDF content
+- Survey/questionnaire administration dashboard 
+- Questionnaire creation with file upload and storage 
+- Questionnaire preview functionality before deployment 
+- Questionnaire distribution and participant response collection 
+- Results export in CSV and JSON formats for data analysis 
 
 ### Changed
-- Delta format persistence moved to disk to reduce database load (#256)
+- Delta format persistence moved to disk to reduce database load 
 - Critical destructive actions now require user confirmation
 
 ### Fixed
-- Login redirect now works correctly for direct study links without full reload (#188)
+- Login redirect now works correctly for direct study links without full reload 
 - Admin user statistics table functionality restored
 - Document access without requiring full page reload
 
 ### Known Issues
-- Role changes require explicit page refresh to reflect in UI (#186)
-- Search detection limited to Ctrl+F or Cmd+F keyboard shortcuts (#258)
+- Role changes require explicit page refresh to reflect in UI 
+- Search detection limited to Ctrl+F or Cmd+F keyboard shortcuts 
 
 ### Security
-- Backend validation enforces role-based permissions for all user actions (#186)
-- Behavioral data tracking requires explicit user consent (#259)
+- Backend validation enforces role-based permissions for all user actions 
+- Behavioral data tracking requires explicit user consent
 
 ---
 
 ## [1.4.0] - 2024-03-03
 
 ### Added
-- Chat interface with message sending, receiving, and bot responses (#208, #199)
-- Question answering system integrated into chat (#234)
-- PDF content extraction and analysis for document-based Q&A (#208, #199)
-- Survey/questionnaire administration dashboard for creating and managing surveys (#223)
-- Questionnaire creation with file upload and database storage (#300)
-- Questionnaire preview functionality before distribution (#310)
-- Questionnaire participant distribution and response collection (#315)
-- Results export in CSV and JSON formats (#240)
-- Instructional guide modal for questionnaire workflows (#320)
-- Questionnaire management dashboard with CRUD operations (#275)
-- Full-text search functionality (#204)
-- PDF document search integrated with viewer (#204)
+- Chat interface with message sending, receiving, and bot responses 
+- Question answering system integrated into chat 
+- PDF content extraction and analysis for document-based Q&A 
+- Survey/questionnaire administration dashboard for creating and managing surveys
+- Questionnaire creation with file upload and database storage 
+- Questionnaire preview functionality before distribution
+- Questionnaire participant distribution and response collection 
+- Results export in CSV and JSON formats 
+- Instructional guide modal for questionnaire workflows
+- Questionnaire management dashboard with CRUD operations 
+- Full-text search functionality 
+- PDF document search integrated with viewer 
 
 ### Changed
-- Chat history and PDF context now sent together to backend for improved Q&A accuracy (#208)
+- Chat history and PDF context now sent together to backend for improved Q&A accuracy 
 
 ---
 
@@ -259,7 +259,7 @@
 ## [1.1.0] - 2023-10-27
 
 ### Added
-- Core PDF viewer functionality (#53)
+- Core PDF viewer functionality 
 - Basic sidebar component for content organization
 - Annotation system foundation for document markup
 
@@ -481,7 +481,7 @@
 - — no previous release
 
 ### Known Issues
-- Multiple uploading of the same PDF files synchronizes annotations on all documents despite residing on different URLs (see incident [#32])
+- Multiple uploading of the same PDF files synchronizes annotations on all documents despite residing on different URLs
 - No error handling and loading information in frontend
 - Automatic login in hypothesis breaks after too many logins
 - Database ports cannot be adapted during building; have to remains standard ports
