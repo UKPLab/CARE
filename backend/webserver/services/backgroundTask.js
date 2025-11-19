@@ -268,7 +268,13 @@ module.exports = class BackgroundTaskService extends Service {
                     }
                     break;
                 case "configuration":
-                    nlpInput[paramName] = await this.loadConfiguration(fileId);
+                    nlpInput[paramName] = {
+                        type: "serviceReplacement",
+                        input: {
+                            configurationId: fileId,
+                            type: "configuration"
+                        }
+                    }
                     break;
                 default:
                     this.server.logger.warn(`Unknown type: ${table} for parameter: ${paramName}`);
@@ -276,29 +282,6 @@ module.exports = class BackgroundTaskService extends Service {
         }
 
         return nlpInput;
-    }
-
-    /**
-     * Load a configuration by its id and parse its content
-     * @param {number} configId - The id of the configuration
-     * @returns {object|null} The parsed configuration object or null if not found/error
-     */
-    async loadConfiguration(configId) {
-        try {
-            const config = await this.server.db.models['configuration'].findByPk(configId, {raw: true});
-            if (!config) {
-                this.server.logger.warn(`Configuration ${configId} not found`);
-                return null;
-            }
-
-            if (typeof config.content === 'string') {
-                return JSON.parse(config.content);
-            }
-            return config.content;
-        } catch (err) {
-            this.server.logger.error(`Error loading configuration ${configId}: ${err.message}`, err);
-            return null;
-        }
     }
 
     /**

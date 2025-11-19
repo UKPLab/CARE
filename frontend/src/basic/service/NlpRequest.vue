@@ -138,7 +138,7 @@ export default {
         case 'assessment':
           return this.buildPayloadFromStudyData(inputSpec);
         case 'configuration':
-          return this.$store.getters["table/configuration/get"](inputSpec.configurationId)?.content || {};
+          return {'type': 'serviceReplacement', 'input': inputSpec}
         case 'annotator':
           return this.buildPayloadFromStudyData(inputSpec);
         case 'editor':
