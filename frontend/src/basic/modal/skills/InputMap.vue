@@ -122,7 +122,7 @@ export default {
             value: `config_${entry.id}`,
             name: `<Configuration> ${entry.name}`,
             requiresTableSelection: false,
-            configId: entry.id,
+            configurationId: entry.id,
             table: "configuration",
             type: "configuration",
           }));
