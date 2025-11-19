@@ -171,8 +171,7 @@
         </td>
         <td
           v-for="c in columns"
-          :key="c"
-           :class="[
+          :key="c.key"
           :class="[
             'width' in c ? 'col-' + c.width : 'col-auto',
             { pointer: selectableRows && !r.isDisabled },
