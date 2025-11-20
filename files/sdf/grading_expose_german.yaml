@@ -1,4 +1,4 @@
-name: grading_expose
+name: grading_expose_german
 description: This skill is used to grade the exposé of a student
 version: 0.0.1
 author: Haishuo Fang
@@ -131,14 +131,53 @@ output:
             type: string
             description: The possible concerns of the given judgement
 
+output:
+  data:
+    assessment:
+      type: array
+      required: true
+      items:
+        type: object
+        properties:
+          criterion:
+            type: string
+            description: The name of the criterion
+          score:
+            type: integer
+            description: The score of the criterion
+          justification:
+            type: string
+            description: The justification of the criterion
+    assessment_thinking:
+      type: array
+      required: true
+      items:
+        type: object
+        properties:
+          criterion:
+            type: string
+            description: The name of the criterion
+          thinking:
+            type: string
+            description: The thinking of the criterion
+          possible_concerns:
+            type: string
+            description: The possible concerns of the criterion
   example:
     {"assessment": [
       {
-        "name": "Language quality",
+        "criterion": "Language quality",
         "score": 1,
         "justification": "Example justification",
-        "possible_concerns": "Example possible concerns",
-        "thinking": Example thinking,
         "hallucinated": false
       }
-    ]}
+    ],
+    "assessment_thinking":
+    [
+      {
+        "criterion": "Language quality",
+        "thinking": "Example thinking",
+        "possible_concerns": "Example possible concerns",
+      }
+    ]
+    }
