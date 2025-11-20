@@ -52,7 +52,12 @@ module.exports = (sequelize, DataTypes) => {
             options: {
                 table: "tag_set",
                 value: "id",
-                name: "name"
+                name: "name",
+                filter: [
+                    {
+                        key: "public", value: "true"
+                    }
+                ]
             },
             icon: "list",
             required: true,
