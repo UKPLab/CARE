@@ -132,14 +132,16 @@ export default {
         d => d[this.options.options.id] === this.options.options.value
       );
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
   },
   mounted() {
     this.currentData = (this.modelValue) ? this.modelValue : [];
   },
   methods: {
     add() {
-      this.currentData.push(
-        Object.assign({}, ...this.fields.map(f => ({
+      this.currentData.push(Object.assign({userId: this.userId}, ...this.fields.map(f => ({
           [f.key]: ("default" in f) ? f.default : this.defaults[f.type]
         })))
       );
