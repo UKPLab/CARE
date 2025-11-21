@@ -408,6 +408,11 @@ export default {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
   },
+  beforeUnmount() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  },
   methods: {
     updateStudyData(stepId, data_type, data) {
       if (!this.studyData[stepId]) {
@@ -461,11 +466,13 @@ export default {
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {
-      const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
-      this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
+      if (this.studySession.start){
+        const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
+        this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-      if (this.timeLeft < 0 && !this.studySession.end) {
-        this.finish();
+        if (this.timeLeft < 0 && !this.studySession.end) {
+          this.finish();
+        }
       }
     },
     finalFinish(data) {
