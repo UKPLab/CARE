@@ -18,7 +18,10 @@
       aria-describedby="search-addon1"
     />
   </div>
-  <div class="table-wrapper">
+  <div 
+    class="table-wrapper"
+    :style="tableWrapperStyle"
+  >
     <table
       :class="tableClass"
       class="table"
@@ -362,6 +365,11 @@ export default {
       required: false,
       default: () => [],
     },
+    maxTableHeight: {
+      type: [Number, String],
+      required: false,
+      default: null,
+    },
   },
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
@@ -394,6 +402,15 @@ export default {
       const allFilteredData = this.getFilteredAndSortedData();
       const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
       return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
+    },
+    tableWrapperStyle() {
+      if (!this.maxTableHeight) return null;
+      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
+      if (!maxHeight) return null;
+      return {
+        maxHeight,
+        overflowY: "auto",
+      };
     },
     serverSidePagination() {
       return (
@@ -651,6 +668,21 @@ export default {
       // Default fallback
       return 150;
     },
+    normalizeCssSize(value) {
+      if (!value) return null;
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return `${value}px`;
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        if (/^\d+$/.test(trimmed)) {
+          return `${trimmed}px`;
+        }
+        return trimmed;
+      }
+      return null;
+    },
     debounce(func, wait = 100) {
       let timeout;
       return (...args) => {
@@ -887,8 +919,9 @@ export default {
 
 <style scoped>
 .table-wrapper {
-  overflow-x: auto;
   position: relative;
+  overflow-x: auto;
+  min-height: 80px;
   margin-bottom: 1rem;
 }
 
