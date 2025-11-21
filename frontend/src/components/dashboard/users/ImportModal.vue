@@ -95,6 +95,7 @@
           :columns="columns"
           :data="users"
           :options="tableOptions"
+          :max-table-height="400"
         />
       </div>
     </template>
@@ -551,13 +552,6 @@ export default {
   border: none;
   padding: 5px 10px;
   cursor: pointer;
-}
-
-/* Preview */
-.preview-table-container {
-  height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
 }
 
 .confirm-container,

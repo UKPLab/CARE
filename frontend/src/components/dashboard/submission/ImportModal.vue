@@ -20,14 +20,13 @@
     </template>
     <!-- Submissions Selection Step -->
     <template #step-2>
-      <div class="table-scroll-container">
-        <BasicTable
-          v-model="selectedSubmissions"
-          :data="submissions"
-          :columns="tableColumns"
-          :options="tableOptions"
-        />
-      </div>
+      <BasicTable
+        v-model="selectedSubmissions"
+        :data="submissions"
+        :columns="tableColumns"
+        :options="tableOptions"
+        :max-table-height="400"
+      />
     </template>
     <!-- Config Selection Step -->
     <template #step-3>
@@ -347,12 +346,6 @@ export default {
 .confirm-container,
 .result-container {
   height: 100%;
-}
-
-.table-scroll-container {
-  max-height: 400px;
-  min-height: 80px;
-  overflow-y: auto;
 }
 
 .link-container {
