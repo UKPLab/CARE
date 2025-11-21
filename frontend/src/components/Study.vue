@@ -408,6 +408,11 @@ export default {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
   },
+  beforeUnmount() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  },
   methods: {
     updateStudyData(stepId, data_type, data) {
       if (!this.studyData[stepId]) {
