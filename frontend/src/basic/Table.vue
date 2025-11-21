@@ -37,14 +37,14 @@
             </div>
           </th>
           <th
-            v-for="c in columns"
+            v-for="(c, index) in columns"
             :key="c.key"
             :ref="'header-' + c.key"
             :class="[
               'width' in c ? 'col-' + c.width : 'col-auto',
-              getFixedColumnClass(c),
+              getFixedColumnClass(c, index),
             ]"
-            :style="getColumnCellStyle(c)"
+            :style="getFixedColumnStyle(c)"
           >
             {{ c.name }}
             <span
@@ -172,14 +172,14 @@
             </div>
           </td>
           <td
-            v-for="c in columns"
+            v-for="(c, index) in columns"
             :key="c.key"
             :class="[
               'width' in c ? 'col-' + c.width : 'col-auto',
               { pointer: selectableRows && !r.isDisabled },
-              getFixedColumnClass(c),
+              getFixedColumnClass(c, index),
             ]"
-            :style="getColumnCellStyle(c)"
+            :style="getFixedColumnStyle(c)"
           >
             <span v-if="c.key in r">
               <TIcon
@@ -574,21 +574,29 @@ export default {
         window.removeEventListener("resize", this.debouncedComputeFixedColumns);
       }
     },
-    getColumnCellStyle(column) {
-      if (!column || !column.key) {
-        return null;
-      }
-      return this.fixedColumnStyles[column.key] || null;
+    getFixedColumnStyle(column) {
+      return column?.key ? this.fixedColumnStyles[column.key] : null;
     },
-    getFixedColumnClass(column) {
-      if (!column || !column.fixed) {
-        return null;
-      }
+    getFixedColumnClass(column, index) {
+      if (!column?.fixed) return null;
+
+      const isLastLeft = column.fixed === "left" && this.getLastLeftIndex(index);
+      const isLastRight = column.fixed === "right" && this.getLastRightIndex(index);
+
       return {
         "table-fixed": true,
         "table-fixed-left": column.fixed === "left",
         "table-fixed-right": column.fixed === "right",
+        "table-fixed-shadow": isLastLeft || isLastRight,
       };
+    },
+    getLastLeftIndex(currentIndex) {
+      const lastLeftIndex = this.columns.findLastIndex(col => col.fixed === "left");
+      return lastLeftIndex === currentIndex;
+    },
+    getLastRightIndex(currentIndex) {
+      const index = this.columns.findIndex(col => col.fixed === "right");
+      return currentIndex === index;
     },
     computeFixedColumnStyles() {
       if (!this.hasFixedColumns) {
@@ -599,10 +607,16 @@ export default {
 
       const styles = {};
       let leftOffset = 0;
+
       this.columns.forEach((column) => {
         if (column.fixed === "left") {
           const width = this.getColumnWidth(column);
-          styles[column.key] = this.buildStickyStyle("left", leftOffset);
+          styles[column.key] = {
+            position: "sticky",
+            left: `${leftOffset}px`,
+            zIndex: 2,
+            background: "var(--bs-body-bg, #fff)",
+          };
           leftOffset += width;
         }
       });
@@ -611,36 +625,30 @@ export default {
       [...this.columns].reverse().forEach((column) => {
         if (column.fixed === "right") {
           const width = this.getColumnWidth(column);
-          styles[column.key] = this.buildStickyStyle("right", rightOffset);
+          styles[column.key] = {
+            position: "sticky",
+            right: `${rightOffset}px`,
+            zIndex: 2,
+            background: "var(--bs-body-bg, #fff)",
+          };
           rightOffset += width;
         }
       });
 
       this.fixedColumnStyles = styles;
     },
-    buildStickyStyle(position, offset) {
-      return {
-        position: "sticky",
-        [position]: `${offset}px`,
-        zIndex: 2,
-        background: "var(--bs-body-bg, #fff)",
-      };
-    },
     getColumnWidth(column) {
+      // Check explicit width properties first 
+      if (column.fixedWidth) return Number(column.fixedWidth);
+      if (column.widthPx) return Number(column.widthPx);
+      if (column.width) return Number(column.width);
+
+      // Fall back to measuring DOM
       const ref = this.$refs[`header-${column.key}`];
       const el = Array.isArray(ref) ? ref[0] : ref;
-      if (el && el.offsetWidth) {
-        return el.offsetWidth;
-      }
-      if (column.fixedWidth) {
-        return Number(column.fixedWidth);
-      }
-      if (column.widthPx) {
-        return Number(column.widthPx);
-      }
-      if (column.width) {
-        return Number(column.width);
-      }
+      if (el?.offsetWidth) return el.offsetWidth;
+
+      // Default fallback
       return 150;
     },
     debounce(func, wait = 100) {
@@ -881,31 +889,27 @@ export default {
 .table-wrapper {
   overflow-x: auto;
   position: relative;
+  margin-bottom: 1rem;
 }
 
 .table {
   width: max-content;
   min-width: 100%;
-  table-layout: auto;
   border-spacing: 0;
   border-collapse: separate;
 }
 
 .table-fixed {
+  position: sticky;
   background: var(--bs-body-bg, #fff);
 }
 
-.table-fixed-left {
-  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05);
+.table-fixed-left.table-fixed-shadow {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
-.table-fixed-right {
-  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.05);
-}
-
-.table-fixed.table-fixed-left,
-.table-fixed.table-fixed-right {
-  position: sticky;
+.table-fixed-right.table-fixed-shadow {
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
 .table thead .table-fixed {
