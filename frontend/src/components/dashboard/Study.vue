@@ -399,7 +399,7 @@ export default {
       return this.$store.getters['auth/isAdmin'];
     },
     canViewAllStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.fullAccess");
     },
     canReadPrivateInformation() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");

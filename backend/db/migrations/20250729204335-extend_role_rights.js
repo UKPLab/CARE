@@ -19,6 +19,10 @@ const roleRights = [
   },
   {
     role: "user",
+    userRightName: "frontend.dashboard.studies.view",
+  },
+  {
+    role: "user",
     userRightName: "frontend.dashboard.study_sessions.view",
   },
 ];

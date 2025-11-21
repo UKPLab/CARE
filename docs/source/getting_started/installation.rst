@@ -61,7 +61,27 @@ Install the mailserver
 In the basic configuration, the mailserver uses the localhost host machine as the mail relay.
 
 We test the mail server with a `postfix <https://www.postfix.org/>`_ installation on the host machine.
-Therefore, it is important to allow relaying from the docker network.
+Follow these steps to install postfix (we assume Ubuntu/Debian): 
+
+.. code-block::
+
+    sudo su #set user to root
+    apt update && apt install postfix
+
+The installer will prompt you to select a configuation, we recommend "Internet with Smarthost". 
+When prompted, set the host address and then the relay servers address. 
+
+You can test if the postfix setup worked via the command line (might need to ``apt install mailutils``):
+
+.. code-block:: 
+
+    echo "Testing mailserver setup." | mail -s "Mail Test" ADDRESS@SERVER.com
+
+If the test fails, check ``/var/mail/root`` for the bounced mail response, or ``/var/log/mail.log`` for the hosts mail logs.
+
+Check if the postfix config at ``/etc/postfix/main.cf`` is setup correctly. Configure postfix according to your institution's guidelines.
+
+It is important to allow relaying from the docker network.
 To allow relaying from the docker network, you need to add the following lines to the ``/etc/postfix/main.cf`` file:
 
 .. code-block:: config
@@ -70,8 +90,23 @@ To allow relaying from the docker network, you need to add the following lines t
     mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 172.19.0.0/16
 
 Please adapt the IP range to your docker network (check with ``docker network inspect bridge``).
+(When recreating docker networks, the IP might change.
+ If your projects are the only ones running on the host machine you can use ``172.16.0.0/12`` to allow all possible docker networks)
+
+(Optional): Setup the smtp output mapping so that the containers mails that are being sent by localhost address are sent via your desired email
+    Create a mapping file: ``nano /etc/postfix/smtp_generic``
+
+    Add the line: ``@localhost your@desired-out.address``
+
+    Transform the file to a map: ``postmap /etc/postfix/smtp_generic``
+    
+    Add the following line to ``/etc/postfix/main.cf``: ``smtp_generic_maps = hash:/etc/postfix/smtp_generic``
+
 Then restart postfix with ``sudo systemctl restart postfix``.
-Configure postfix according to your institution's guidelines.
+
+You can test if the setup worked by registering a new account in your CARE instance and see if you get the verification email. 
+The email can be sent again when trying to login without being verified. The Delay for resending the mail can be found in the CARE "Settings". 
+
 
 .. note::
 
@@ -164,6 +199,7 @@ To install nginx and Certbot, run the following commands (adapted from this `Imp
     sudo docker compose up -d
 
 Once the A-record (:ref:`a_record_preparation`) has been registered and propagated, and the script executed, the SSL certificate should now be available and will be renewed periodically.
+
 .. tip::
 
     In the file ``docker-compose.yml`` you can add additional volumes to the service nginx (e.g., ./data/nginx/html:/var/www/html) to make further html files available.

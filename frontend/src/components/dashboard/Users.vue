@@ -33,7 +33,7 @@
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Import via Moodle"
-            text="Import Moodle"
+            text="Import via Moodle"
             icon="box-arrow-in-down"
             @click="$refs.importModal.open('moodle')"
         />

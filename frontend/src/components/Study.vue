@@ -80,9 +80,9 @@
       v-if="studySessionId !== 0"
       class="study-container"
   >
-    <div v-for="step in studySteps" :key="'step_' + step.id">
+    <div v-for="step in orderedStudySteps" :key="'step_' + step.id">
       <div v-show="currentStudyStepId === step.id">
-        <div v-if="studyTrajectory.includes(currentStudyStepId) || readOnly">
+        <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal
@@ -90,10 +90,12 @@
                 :document-id="step.documentId"
                 :config="step.configuration"
                 :show="currentStudyStepId === step.id && !readOnly"
+                :can-load="canLoadStepById[step.id]"
                 @update:data="updateStudyData(step.id, 'data', $event)"
+                @update:ready="loadingReady[step.id] = $event"
             />
           </div>
-          <div>
+          <div v-if="isStepLoaded(step.id)">
 
             <Annotator
                 v-if="step.stepType === 1"
@@ -191,7 +193,8 @@ export default {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
-      currentStudyStep: computed(() => this.currentStep)
+      currentStudyStep: computed(() => this.currentStep),
+      orderedStudySteps: computed(() => this.orderedStudySteps)
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
@@ -221,6 +224,7 @@ export default {
       localStudyStepId: 0,
       studyData: {},
       stepsReady: {},
+      loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
     };
@@ -250,6 +254,46 @@ export default {
       } else {
         return [];
       }
+    },
+    canLoadStepById() {
+      return this.orderedStudySteps.reduce((acc, step, i, steps) => {
+        if (i === 0) {
+          acc[step.id] = true; // first step can always load
+          return acc;
+        }
+
+        const prev = steps[i - 1];
+        const prevLoaded = this.isStepLoaded(prev.id);
+        const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
+
+        const readyMap = this.stepsReady || {};
+        const hasEntry = Object.hasOwn(readyMap, prev.id);
+
+        const prevReady = prevHasAssessment
+            ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
+            : true;                                  // no assessment → always ready
+
+        acc[step.id] = prevLoaded && prevReady;
+        return acc;
+      }, {});
+    },
+    orderedStudySteps() {
+      const steps = this.studySteps || [];
+      if (!steps.length) return [];
+
+      // Map: previousId → step
+      const next = new Map(steps.map(s => [s.studyStepPrevious, s]));
+
+      // find first step
+      let current = steps.find(s => s.studyStepPrevious == null);
+
+      const ordered = [];
+      while (current) {
+        ordered.push(current);
+        current = next.get(current.id); // go to the next in chain
+      }
+
+      return ordered;
     },
     nextStudyStep() {
       if (this.currentStudyStep) {
@@ -325,7 +369,10 @@ export default {
       return false;
     },
     isCurrentStepReady() {
-      return this.stepsReady[this.currentStudyStepId] !== false;
+      if (this.currentStudyStepId in this.stepsReady) {
+        return this.stepsReady[this.currentStudyStepId];
+      }
+      return true;
     },
     readOnlyComputed() {
       if (this.readOnly) {
@@ -361,9 +408,13 @@ export default {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
   },
+  beforeUnmount() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  },
   methods: {
     updateStudyData(stepId, data_type, data) {
-      console.log("Study Data Update:", stepId, data_type, data);
       if (!this.studyData[stepId]) {
         this.studyData[stepId] = {};
       }
@@ -373,6 +424,12 @@ export default {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       this.updateStep(nextStep.id);
+    },
+    isStepLoaded(stepId) {
+      if (stepId in this.loadingReady) {
+        return this.loadingReady[stepId];
+      }
+      return false;
     },
     getStudyData() {
       if (this.studyHash) {
@@ -409,11 +466,13 @@ export default {
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {
-      const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
-      this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
+      if (this.studySession.start){
+        const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
+        this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-      if (this.timeLeft < 0 && !this.studySession.end) {
-        this.finish();
+        if (this.timeLeft < 0 && !this.studySession.end) {
+          this.finish();
+        }
       }
     },
     finalFinish(data) {

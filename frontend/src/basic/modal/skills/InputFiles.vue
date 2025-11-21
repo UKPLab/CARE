@@ -7,11 +7,11 @@
     <div v-if="tableParam" class="mb-3">
       <div v-if="currentTableData.length > 0" class="mt-3">
         <BasicTable
+          :key="tableParam ? tableParam.name : 'no-param'"
+          v-model="selectedFiles"
           :columns="currentTableColumns"
           :data="currentTableData"
           :options="tableOptions"
-          v-model="selectedFiles"
-          :key="tableParam ? tableParam.name : 'no-param'"
         />
       </div>
       
@@ -73,7 +73,7 @@ export default {
         if (mapping && mapping.requiresTableSelection) {
           parameters.push({
             name: paramName,
-            tableType: mapping.tableType,
+            table: mapping.table,
             value: mapping.value,
           });
         }
@@ -90,7 +90,7 @@ export default {
       return files && Array.isArray(files) && files.length > 0;
     },
     currentTableType() {
-      return this.tableParam?.tableType || '';
+      return this.tableParam?.table || '';
     },
     currentTableData() {
       if (!this.tableParam) return [];
@@ -198,7 +198,7 @@ export default {
     dataExistingFilterOptions() {
       const options = new Set();
       (this.submissionsData || []).forEach((s) => {
-        options.add(String(s.data_existing ? 'Yes' : 'No'));
+        options.add(String(s.data_existing));
       });
       return Array.from(options)
         .sort()

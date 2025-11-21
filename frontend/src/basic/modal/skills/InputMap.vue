@@ -2,16 +2,16 @@
   <div v-if="skillName" class="input-map mb-3">
     <h6 class="text-secondary">Input Mapping</h6>
     <div
-      v-for="input in skillInputs"
-      :key="input"
-      class="mb-2"
+        v-for="input in skillInputs"
+        :key="input"
+        class="mb-2"
     >
       <label class="form-label">{{ input }}:</label>
       <FormSelect
-        v-model="inputMappings[input]"
-        :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
-        :value-as-object="true"
-        @update:model-value="updateMapping(input, $event)"
+          v-model="inputMappings[input]"
+          :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
+          :value-as-object="true"
+          @update:model-value="updateMapping(input, $event)"
       />
     </div>
   </div>
@@ -22,15 +22,15 @@
  * Input Map Component for mapping skill inputs to data sources
  * Dynamically generates input fields based on the selected skill's configuration
  * This supports both study-based and non-study-based workflows
- * 
- * @author Manu Sundar Raj Nandyal
+ *
+ * @author Manu Sundar Raj Nandyal, Dennis Zyska
  */
 import FormSelect from "@/basic/form/Select.vue";
 import deepEqual from "deep-equal";
 
 export default {
   name: "InputMap",
-  components: { FormSelect },
+  components: {FormSelect},
   inject: {
     isTemplateMode: {
       type: Boolean,
@@ -68,10 +68,6 @@ export default {
     currentStepperStep: {
       type: Number,
       default: 0,
-    },
-    stepConfig: {
-      type: Object,
-      default: () => ({}),
     },
     selectedSkills: {
       type: Array,
@@ -116,8 +112,38 @@ export default {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
-    configurationEntries() {
+    configurations() {
       return this.$store.getters["table/configuration/getAll"] || [];
+    },
+    configurationSources() {
+      return this.configurations
+          .filter(entry => entry.type === 0 && entry.hideInFrontend === false)
+          .map(entry => ({
+            value: `config_${entry.id}`,
+            name: `<Configuration> ${entry.name}`,
+            requiresTableSelection: false,
+            configurationId: entry.id,
+            table: "configuration",
+            type: "configuration",
+          }));
+    },
+    orderedWorkflowSteps() {
+      const steps = this.workflowSteps || [];
+      if (!steps.length) return [];
+
+      // Map: previousId → step
+      const next = new Map(steps.map(s => [s.workflowStepPrevious, s]));
+
+      // find first step
+      let current = steps.find(s => s.workflowStepPrevious == null);
+
+      const ordered = [];
+      while (current) {
+        ordered.push(current);
+        current = next.get(current.id); // go to the next in chain
+      }
+
+      return ordered;
     },
     skillInputs() {
       if (!this.skillName) return [];
@@ -133,23 +159,25 @@ export default {
       }
       return null;
     },
-    configurationSources() {
-      return this.configurationEntries
-        .filter(entry => entry.type === 0 && entry.hideInFrontend === false)
-        .map(entry => ({
-          value: `config_${entry.id}`,
-          name: `<Configuration> ${entry.name}`,
-          requiresTableSelection: false,
-          configId: entry.id
-        }));
-    },
     applySkillsDataSources() {
       const sources = [...this.configurationSources];
 
       if (!this.tableBasedParameter) {
         sources.unshift(
-          { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
-          { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+            {
+              value: "document",
+              name: "<Documents>",
+              requiresTableSelection: true,
+              type: "document",
+              table: "document"
+            },
+            {
+              value: "submission",
+              name: "<Submissions>",
+              requiresTableSelection: true,
+              type: "submission",
+              table: "submission"
+            }
         );
       }
 
@@ -162,8 +190,20 @@ export default {
 
         if (!this.tableBasedParameter || this.tableBasedParameter === input) {
           sources.unshift(
-            { value: "document", name: "<Documents>", requiresTableSelection: true, tableType: "document" },
-            { value: "submission", name: "<Submissions>", requiresTableSelection: true, tableType: "submission" }
+              {
+                value: "document",
+                name: "<Documents>",
+                requiresTableSelection: true,
+                table: "document",
+                type: "document"
+              },
+              {
+                value: "submission",
+                name: "<Submissions>",
+                requiresTableSelection: true,
+                table: "submission",
+                type: "submission"
+              }
           );
         }
 
@@ -174,13 +214,19 @@ export default {
     availableDataSources() {
       let sources = [];
       if (this.studyBased) {
-        sources = this.getSourcesUpToCurrentStep(this.studyStepId);
+        sources = this.getSourcesUpToCurrentStep(this.workflowStepIndex);
       } else {
         sources = this.applySkillsDataSources;
       }
-      
+
       return sources;
     },
+    workflowStepIndex() {
+      return this.orderedWorkflowSteps.findIndex(
+          s => s.id === this.studyStepId
+      );
+    }
+
   },
   watch: {
     skillName: {
@@ -208,28 +254,19 @@ export default {
           this.inputMappings = {};
           return;
         }
-        
+
         if (typeof newValue === 'object' && Object.keys(newValue).length > 0) {
           // Handle if newValue is an array (old format)
           if (Array.isArray(newValue)) {
             const mappings = {};
             newValue.forEach(item => {
               if (item.input) {
-                mappings[item.input] = {
-                  value: item.dataSource,
-                  name: item.name,
-                  stepId: item.stepId,
-                  // Additional properties (if exists)
-                  requiresTableSelection: item.requiresTableSelection,
-                  tableType: item.tableType,
-                  configId: item.configId,
-                  type: item.type,
-                };
+                mappings[item.input] = {...item};
               }
             });
             this.inputMappings = mappings;
           } else {
-            this.inputMappings = { ...newValue };
+            this.inputMappings = {...newValue};
           }
         }
       },
@@ -243,21 +280,30 @@ export default {
       if (!this.resolvedSourceDocument) return;
       const doc = this.resolvedSourceDocument;
       const docName = doc && doc.name ? doc.name : `Document ${doc.id}`;
-      sources.push({ value: `${doc.id}`, name: `<Document> ${docName}`, stepId: stepIndex });
+      sources.push(
+          {
+            value: `document_${doc.id}`,
+            documentId: doc.id,
+            name: `<Document> ${docName}`,
+            type: "document",
+            table: "document",
+            stepIndex: stepIndex,
+          });
       this.resolvedSubmissionDocs.forEach(d => {
         const name = d && d.name ? d.name : `Document ${d.id}`;
-        sources.push({ value: `${d.id}`, name: `<submission> ${name}`, stepId: stepIndex });
+        sources.push(
+            {
+              value: `submission_${d.id}`,
+              name: `<Submission> ${name}`,
+              stepIndex: stepIndex,
+              type: "submission",
+              table: "submission"
+            });
       });
-    },
-    // Study-based configuration sources (value=id, name as <configuration> name, with stepId)
-    getStudyConfigSources(stepIndex) {
-      return (this.configurationEntries || [])
-        .filter(entry => entry && entry.type === 0 && entry.hideInFrontend === false)
-        .map(entry => ({ value: `${entry.id}`, name: `<configuration> ${entry.name}`, stepId: stepIndex }));
     },
     updateMapping(input, source) {
       this.isUpdatingFromWithin = true;
-      
+
       if (source && source.requiresTableSelection) {
         Object.keys(this.inputMappings).forEach(paramName => {
           if (paramName !== input && this.inputMappings[paramName] && this.inputMappings[paramName].requiresTableSelection) {
@@ -265,102 +311,163 @@ export default {
           }
         });
       }
-      
+
       this.inputMappings = {
         ...this.inputMappings,
         [input]: source
       };
-      
-      this.$emit('update:modelValue', { ...this.inputMappings });
-      
+
+      this.$emit('update:modelValue', {...this.inputMappings});
+
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
       });
     },
-    /**
-     * Construct and get all the available data sources up to the stepId
-     * @param {number} stepId - The ID of the workflow step
-     * @returns {Array<Object>} An array of data source object, consisting of value and name
-     */
-    getSourcesUpToCurrentStep(stepId) {
-      if (!stepId || !this.workflowSteps?.length) return [];
-      
+    getSourcesUpToCurrentStep(currentWorkflowStepIndex) {
+      const stepCollector = this.orderedWorkflowSteps.slice(0, currentWorkflowStepIndex + 1);
       const sources = [];
-      const stepCollector = this.workflowSteps.filter((step) => step.id <= stepId);
 
-      stepCollector.forEach((step, index) => {
-        const stepIndex = index + 1;
+      stepCollector.forEach((step, stepIndex) => {
+
         switch (step.stepType) {
           case 1: {
             if (this.isTemplateMode) {
-              sources.push({ value: null, name: `<Submission>`, stepId: stepIndex, type: "template" });
+              sources.push({
+                value: 'template_submission',
+                name: `<Submission>`,
+                type: 'submission',
+                table: 'submission',
+                stepIndex: stepIndex,
+                isTemplate: true
+              });
             } else {
               // Add specific document/submission sources
-              if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
+              if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
             }
-            // Add configuration sources (study-based format)
-            sources.push(...this.getStudyConfigSources(stepIndex));
+
+            if (stepIndex < currentWorkflowStepIndex) {
+              sources.push(
+                  {
+                    value: "annotator_annotation_step" + stepIndex,
+                    name: `<Annotator> Annotations (Workflow Step ${stepIndex + 1})`,
+                    stepIndex: stepIndex,
+                    key: 'annotations',
+                    type: 'annotator',
+                  },
+                  {
+                    value: "annotator_comments_step" + stepIndex,
+                    name: `<Annotator> Comments (Workflow Step ${stepIndex + 1})`,
+                    stepIndex: stepIndex,
+                    key: 'comments',
+                    type: 'annotator',
+                  }
+              );
+            }
             break;
           }
-          // Editor
-          case 2:
-            sources.push(
-              { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
-              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex },
-              { value: "assessment_output", name: `Assessment Output (Step ${stepIndex-1})`, stepId: stepIndex-1 },
-            );
-            // If this is the current editor step, also expose the resolved doc/submission sources
-            if (step.id === this.studyStepId) this.appendResolvedDocSources(sources, stepIndex);
-            break;
-          // Modal
-          case 3:
-            if (step.id < this.studyStepId || this.currentStepperStep === 1) {
-              sources.push(...this.getSkillSources(stepIndex));
+
+          case 2: // Editor
+            if (stepIndex < currentWorkflowStepIndex) {
+              sources.push(
+                  {
+                    value: "editor_firstVersion_step" + stepIndex,
+                    name: `<Editor> First Version (Workflow Step ${stepIndex + 1})`,
+                    stepIndex: stepIndex,
+                    key: 'firstVersion',
+                    type: 'editor',
+                  },
+                  {
+                    value: "editor_currentVersion_step" + stepIndex,
+                    name: `<Editor> Current Version (Workflow Step ${stepIndex + 1})`,
+                    stepIndex: stepIndex,
+                    key: 'currentVersion',
+                    type: 'editor',
+                  },
+              );
             }
+            // If this is the current editor step, also expose the resolved doc/submission sources
+            if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
+            break;
+          case 3: // Modal
             break;
         }
+        // get assessment from previous steps
+        if (stepIndex < currentWorkflowStepIndex) {
+          // Add Assessment sources
+          sources.push(...this.getAssessmentSources(stepIndex));
+          // Add nlpSkill sources if available
+          sources.push(...this.getSkillSources(stepIndex));
+        }
+
+      });
+
+      // Add configuration sources (study-based format)
+      sources.push(...this.configurationSources);
+
+      return sources;
+    },
+    getAssessmentSources(currentWorkflowStepIndex) {
+      const sources = [];
+
+      const fields = this.orderedWorkflowSteps[currentWorkflowStepIndex]
+          ?.configuration
+          ?.settings
+          ?.fields;
+      if (!Array.isArray(fields) || !fields.length) return sources;
+
+      const configField = fields.find(f => f.key === 'configurationId');
+
+      sources.push({
+        value: `assessment_step${currentWorkflowStepIndex}`,
+        name: `<Assessment> Results (Workflow Step ${currentWorkflowStepIndex + 1})`,
+        type: 'assessment',
+        configurationField: configField.key,
+        stepIndex: currentWorkflowStepIndex,
       });
 
       return sources;
     },
-    /**
-     * Get the output from the nlpSkill
-     * @param {number} stepIndex - The index of the step that indicates which step the user is at in the whole workflow.
-     * @returns {Array<Object>} An array of objects derived from nlpSkill
-     */
-    getSkillSources(stepIndex) {
+    getSkillSources(currentWorkflowStepIndex) {
       const sources = [];
 
-      if (!this.selectedSkills?.length || !this.stepConfig?.services?.length) return sources;
+      // get services from the specific step, like in getAssessmentSources
+      const services =
+          this.orderedWorkflowSteps[currentWorkflowStepIndex]
+              ?.configuration
+              ?.services || [];
 
-      const { services } = this.stepConfig;
-      
+      if (!this.selectedSkills?.length || !services.length) return sources;
+
       const skillMap = new Map();
       this.nlpSkills.forEach(skill => {
         skillMap.set(skill.name, skill);
       });
 
       services.forEach((service) => {
-        this.selectedSkills.forEach(({ skillName }) => {
+        this.selectedSkills.forEach(({skillName}) => {
           if (!skillName) return;
 
           const skill = skillMap.get(skillName);
-          if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
+          const outputData = skill?.config?.output?.data;
+          if (!outputData) return;
 
-          const outputKeys = Object.keys(skill.config.output.data);
-          outputKeys.forEach((outputKey) =>
+          Object.keys(outputData).forEach((outputKey) => {
             sources.push({
-              value: `service_${service.name}_${outputKey}`,
-              name: `${skillName}_${outputKey} (Step ${stepIndex})`,
-              stepId: stepIndex,
-            })
-          );
+              value: `service_${service.name}_${outputKey}_step${currentWorkflowStepIndex}`,
+              name: `<Service ${service.name}> ${skillName}_${outputKey} (Workflow Step ${currentWorkflowStepIndex + 1})`,
+              type: 'service',
+              serviceName: service.name,
+              skillName,
+              outputKey,
+              stepIndex: currentWorkflowStepIndex,
+            });
+          });
         });
       });
 
       return sources;
     },
-  },
+  }
 };
 </script>
 
