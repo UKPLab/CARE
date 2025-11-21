@@ -1,6 +1,7 @@
 <template>
   <Card title="Logs">
     <template #body>
+      <!-- FIXME: Long error message would lead to very wide table. Try to limit the width. -->
       <BasicTable
         :columns="columns"
         :data="data"
