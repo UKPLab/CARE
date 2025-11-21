@@ -461,11 +461,13 @@ export default {
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {
-      const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
-      this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
+      if (this.studySession.start){
+        const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
+        this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-      if (this.timeLeft < 0 && !this.studySession.end) {
-        this.finish();
+        if (this.timeLeft < 0 && !this.studySession.end) {
+          this.finish();
+        }
       }
     },
     finalFinish(data) {
