@@ -180,6 +180,9 @@ export default {
     addText(text) {
       this.$refs.editor.addText(text);
     },
+    isEditorEmpty() {
+      return this.$refs.editor.isEditorEmpty();
+    },
     handleSidebarChange(view) {
       // Update internal state to match sidebar selection
       this.sidebarContent = view;

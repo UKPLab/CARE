@@ -91,6 +91,7 @@
                 :config="step.configuration"
                 :show="currentStudyStepId === step.id && !readOnly"
                 :can-load="canLoadStepById[step.id]"
+                @insert-nlp-response="handleInsertNlpResponse"
                 @update:data="updateStudyData(step.id, 'data', $event)"
                 @update:ready="loadingReady[step.id] = $event"
             />
@@ -119,6 +120,7 @@
             </Annotator>
 
             <Editor
+                ref="editor"
                 v-if="step.stepType === 2"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
@@ -194,7 +196,8 @@ export default {
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
       currentStudyStep: computed(() => this.currentStep),
-      orderedStudySteps: computed(() => this.orderedStudySteps)
+      orderedStudySteps: computed(() => this.orderedStudySteps),
+      pendingNlpInsertion: computed(() => this.pendingNlpInsertion),
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
@@ -227,6 +230,7 @@ export default {
       loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
+      pendingNlpInsertion: null,
     };
   },
   computed: {
@@ -415,6 +419,19 @@ export default {
       }
       this.studyData[stepId][data_type] = data;
     },
+    handleInsertNlpResponse(nlpData) {
+      const responseText = nlpData?.response;
+      if (!responseText) {
+        console.warn("[Study] Missing NLP response text", nlpData);
+        return;
+      }
+
+      this.pendingNlpInsertion = responseText;
+      console.log("[Study] Received NLP response", {
+        responseLength: responseText.length,
+        currentStepType: this.currentStudyStep?.stepType,
+      });
+    },
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
@@ -515,6 +532,7 @@ export default {
       }
     },
     updateStep(step) {
+      //check if the the step type is an editor and if set the dar
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {
