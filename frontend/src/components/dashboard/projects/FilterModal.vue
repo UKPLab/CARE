@@ -1,6 +1,10 @@
 <template>
   <BasicModal ref="filterModal" name="filterModal" title="Filter" size="xl" @hide="hide">
     <template v-if="currentData" #body>
+      <!-- TODO: BasicTable now comes with a :max-table-height property to control its height, 
+       so we may not the .table-scroll-container here. However, since FilterModal is not in use, 
+       so the removal of the class is to be done when this component is in use.
+       -->
       <div class="table-scroll-container">
       <BasicForm
         ref="filterSelectionForm"
