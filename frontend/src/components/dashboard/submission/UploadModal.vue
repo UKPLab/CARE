@@ -9,14 +9,13 @@
       <h5 class="modal-title">Upload Submission</h5>
     </template>
     <template #step-1>
-      <div class="table-scroll-container">
-        <BasicTable
-          v-model="selectedUser"
-          :columns="selectionTable"
-          :options="selectionTableOptions"
-          :data="users"
-        />
-      </div>
+      <BasicTable
+        v-model="selectedUser"
+        :columns="selectionTable"
+        :options="selectionTableOptions"
+        :data="users"
+        :max-table-height="400"
+      />
     </template>
     <template #step-2>
       <div class="p-3">
@@ -205,11 +204,5 @@ export default {
     margin-bottom: 0;
     margin-right: 0.5rem;
   }
-}
-
-.table-scroll-container {
-  max-height: 400px;
-  min-height: 80px;
-  overflow-y: auto;
 }
 </style>
