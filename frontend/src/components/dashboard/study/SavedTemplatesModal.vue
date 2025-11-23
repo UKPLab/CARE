@@ -32,6 +32,7 @@
       />      
     </template>
   </BasicModal>
+  <ConfirmModal ref="deleteConf"/>
 </span>
 </template>
 
@@ -40,6 +41,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 /**
  * Modal to show saved study templates
  * 
@@ -51,7 +53,7 @@ import StudyModal from "@/components/dashboard/coordinator/Study.vue";
  */
 export default {
   name: "SavedTemplatesModal",
-  components: { BasicModal, BasicTable, BasicButton, StudyModal },
+  components: { BasicModal, BasicTable, BasicButton, StudyModal, ConfirmModal },
   data() {
     return {
       tableOptions: {
@@ -156,27 +158,36 @@ export default {
       }
     },
     deleteTemplate(template) {
-        this.$socket.emit("appDataUpdate", {
-          table: "study",
-          data: {
-            id: template.id,
-            deleted: true
-          }
-        }, (result) => {
-          if (result.success) {
-            this.eventBus.emit('toast', {
-              title: "Study template deleted",
-              message: "The study template has been deleted",
-              variant: "success"
+      this.$refs.deleteConf.open(
+        "Delete Template",
+        "Are you sure you want to delete this template?",
+        "",
+        function (val) {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "study",
+              data: {
+                id: template.id,
+                deleted: true
+              }
+            }, (result) => {
+              if (result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Study template deleted",
+                  message: "The study template has been deleted",
+                  variant: "success"
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "Study template deletion failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
             });
-          } else {
-            this.eventBus.emit('toast', {
-              title: "Study template deletion failed",
-              message: result.message,
-              variant: "danger"
-            });
           }
-        });
+        }
+      );
     },
     useTemplate(template) {
       this.close();
