@@ -461,6 +461,10 @@ module.exports = (sequelize, DataTypes) => {
                 if (updatedRowsCount === 0) {
                     throw new Error("Failed to update user: User not found");
                 }
+                // clear the user cache so the updated pwd is loaded immediately
+                if (User.cache){
+                    User.cache.clear();
+                }
             } catch (error) {
                 throw error;
             }
@@ -581,6 +585,6 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     // To debug the cache, pass additional parameter: {debug: true}
-    User.cache = new SequelizeSimpleCache({user: {limit: 50, ttl: false}});
+    User.cache = new SequelizeSimpleCache({user: {limit: 50, ttl: false}}, {debug: true});
     return User.cache.init(User);
 };
