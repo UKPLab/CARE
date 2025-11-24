@@ -22,12 +22,20 @@
         @click="$emit('zoom-out')"
       />      
       <!-- Zoom Percentage Form -->
-      <div >
-        <BasicForm
-          :model-value="zoomFormData"
-          :fields="zoomFields"
-          @update:model-value="$emit('update:zoomFormData', $event)"
+      <div class="zoom-input-wrapper">
+        <input
+          type="number"
+          class="zoom-input"
+          :value="zoomPercentage"
+          @blur="handleZoomInput"
+          @keyup.enter="handleZoomInput"
+          :disabled="isZooming"
+          min="50"
+          max="200"
+          step="1"
+          placeholder="100"
         />
+        <span class="zoom-unit">%</span>
       </div>
     </template>
 
@@ -76,29 +84,6 @@ export default {
     },
   },
   emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset'],
-  data() {
-    return {
-      zoomFields: [
-        {
-          key: "zoom",
-          type: "select",
-          options: [
-            { value: 0.5, name: "50%" },
-            { value: 0.6, name: "60%" },
-            { value: 0.7, name: "70%" },
-            { value: 0.8, name: "80%" },
-            { value: 0.9, name: "90%" },
-            { value: 1.0, name: "100%" },
-            { value: 1.1, name: "110%" },
-            { value: 1.2, name: "120%" },
-            { value: 1.3, name: "130%" },
-            { value: 1.4, name: "140%" },
-            { value: 1.5, name: "150%" },
-          ],
-        },
-      ],
-    };
-  },
   computed: {
     toolbarVisible: {
       get() {
@@ -108,10 +93,20 @@ export default {
         this.$emit('update:model-value', value);
       },
     },
+    zoomPercentage() {
+      return Math.round((this.zoomFormData.zoom || 1) * 100);
+    },
   },
   methods: {
     toggleToolbar() {
       this.toolbarVisible = !this.toolbarVisible;
+    },
+    handleZoomInput(event) {
+      const percentage = parseFloat(event.target.value);
+      if (!isNaN(percentage)) {
+        const zoomValue = percentage / 100;
+        this.$emit('update:zoomFormData', { zoom: zoomValue });
+      }
     },
   },
 };
@@ -207,30 +202,43 @@ export default {
   opacity: 0.6;
 }
 
-.zoom-form-wrapper {
-  min-width: 100px;
+.zoom-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
 }
 
-.zoom-form-wrapper :deep(.form-label) {
-  display: none;
-}
-
-.zoom-form-wrapper :deep(.form-select) {
-  padding: 6px 12px;
+.zoom-input {
+  width: 70px;
+  padding: 6px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   background: white;
   font-size: 0.95em;
-  cursor: pointer;
+  text-align: right;
   transition: border-color 0.2s ease;
 }
 
-.zoom-form-wrapper :deep(.form-select:hover) {
+.zoom-input:hover {
   border-color: #007bff;
 }
 
-.zoom-form-wrapper :deep(.form-select:focus) {
+.zoom-input:focus {
+  outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.zoom-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #e9ecef;
+}
+
+.zoom-unit {
+  font-size: 0.95em;
+  color: #6c757d;
+  font-weight: 500;
 }
 </style>
