@@ -1,0 +1,21 @@
+# Contributors
+
+- Dennis Zyska
+- Nils Dycke
+- Linyin Huang
+- Manu Sundar Raj Nandyal
+- Juliane Bechert
+- Karim Ouf
+- Marina Sakharova
+- Akash Gundapuneni
+- Alexander Bürkle
+- Haishuo Fang
+- Jannik Holmer
+- Mohammad Elwan
+- Timo Imhof
+- Zheyu Zhang
+- Yiwei Wang
+- Iman Sukaiti
+- Carly Gettinger 
+- Niklas Mertsch
+- Paul Schickling
