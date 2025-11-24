@@ -585,6 +585,6 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     // To debug the cache, pass additional parameter: {debug: true}
-    User.cache = new SequelizeSimpleCache({user: {limit: 50, ttl: false}}, {debug: true});
+    User.cache = new SequelizeSimpleCache({user: {limit: 50, ttl: false}});
     return User.cache.init(User);
 };
