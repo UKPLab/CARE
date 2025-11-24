@@ -33,7 +33,7 @@
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Import via Moodle"
-            text="Import Moodle"
+            text="Import via Moodle"
             icon="box-arrow-in-down"
             @click="$refs.importModal.open('moodle')"
         />
@@ -136,8 +136,8 @@ export default {
         },
       },
       columns: [
-        {name: "ID", key: "id", sortable: true},
-        {name: "First Name", key: "firstName"},
+        {name: "ID", key: "id", sortable: true, fixed: "left"},
+        {name: "First Name", key: "firstName", fixed: "left"},
         {name: "Last Name", key: "lastName"},
         {name: "User", key: "userName"},
         {name: "Email", key: "email"},

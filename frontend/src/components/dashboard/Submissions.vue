@@ -153,20 +153,21 @@ export default {
             submissionId: "id",
           },
         },
-        {
-          icon: "check-square",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          title: "Validate Submission",
-          action: "validateSubmission",
-          stats: {
-            documentId: "id",
-          },
-        },
+        // TODO: validateSubmission is not yet implemented.
+        // {
+        //   icon: "check-square",
+        //   options: {
+        //     iconOnly: true,
+        //     specifiers: {
+        //       "btn-outline-secondary": true,
+        //     },
+        //   },
+        //   title: "Validate Submission",
+        //   action: "validateSubmission",
+        //   stats: {
+        //     documentId: "id",
+        //   },
+        // },
         {
           icon: "trash",
           options: {

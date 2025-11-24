@@ -91,6 +91,7 @@
                 :config="step.configuration"
                 :show="currentStudyStepId === step.id && !readOnly"
                 :can-load="canLoadStepById[step.id]"
+                @insert-nlp-response="handleInsertNlpResponse"
                 @update:data="updateStudyData(step.id, 'data', $event)"
                 @update:ready="loadingReady[step.id] = $event"
             />
@@ -119,6 +120,7 @@
             </Annotator>
 
             <Editor
+                ref="editor"
                 v-if="step.stepType === 2"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
@@ -194,7 +196,8 @@ export default {
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
       currentStudyStep: computed(() => this.currentStep),
-      orderedStudySteps: computed(() => this.orderedStudySteps)
+      orderedStudySteps: computed(() => this.orderedStudySteps),
+      pendingNlpInsertion: computed(() => this.pendingNlpInsertion),
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
@@ -227,6 +230,7 @@ export default {
       loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
+      pendingNlpInsertion: null,
     };
   },
   computed: {
@@ -408,12 +412,30 @@ export default {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
   },
+  beforeUnmount() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  },
   methods: {
     updateStudyData(stepId, data_type, data) {
       if (!this.studyData[stepId]) {
         this.studyData[stepId] = {};
       }
       this.studyData[stepId][data_type] = data;
+    },
+    handleInsertNlpResponse(nlpData) {
+      const responseText = nlpData?.response;
+      if (!responseText) {
+        console.warn("[Study] Missing NLP response text", nlpData);
+        return;
+      }
+
+      this.pendingNlpInsertion = responseText;
+      console.log("[Study] Received NLP response", {
+        responseLength: responseText.length,
+        currentStepType: this.currentStudyStep?.stepType,
+      });
     },
     next() {
       const nextStep = this.nextStudyStep;
@@ -461,11 +483,13 @@ export default {
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {
-      const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
-      this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
+      if (this.studySession.start){
+        const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
+        this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-      if (this.timeLeft < 0 && !this.studySession.end) {
-        this.finish();
+        if (this.timeLeft < 0 && !this.studySession.end) {
+          this.finish();
+        }
       }
     },
     finalFinish(data) {
@@ -515,6 +539,7 @@ export default {
       }
     },
     updateStep(step) {
+      //check if the the step type is an editor and if set the dar
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {

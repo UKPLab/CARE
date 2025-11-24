@@ -14,6 +14,21 @@
           @update:model-value="updateMapping(input, $event)"
       />
     </div>
+
+    <h6 class="text-secondary mt-4">Output Mapping</h6>
+    <div
+        v-for="output in skillOutputs"
+        :key="output"
+        class="mb-2"
+    >
+      <label class="form-label">{{ output }}:</label>
+      <FormSelect
+          v-model="outputMappings[output]"
+          :options="{ options: outputDataOptions }"
+          :value-as-object="true"
+          @update:model-value="updateOutputMapping(output, $event)"
+      />
+    </div>
   </div>
 </template>
 
@@ -82,6 +97,7 @@ export default {
   data() {
     return {
       inputMappings: {},
+      outputMappings: {},
       isUpdatingFromWithin: false,
     };
   },
@@ -122,7 +138,7 @@ export default {
             value: `config_${entry.id}`,
             name: `<Configuration> ${entry.name}`,
             requiresTableSelection: false,
-            configId: entry.id,
+            configurationId: entry.id,
             table: "configuration",
             type: "configuration",
           }));
@@ -150,6 +166,12 @@ export default {
       const skill = this.nlpSkills.find((s) => s.name === this.skillName);
       if (!skill) return [];
       return Object.keys(skill.config.input.data || {});
+    },
+    skillOutputs() {
+      if (!this.skillName) return [];
+      const skill = this.nlpSkills.find((s) => s.name === this.skillName);
+      if (!skill) return [];
+      return Object.keys(skill.config.output.data || {});
     },
     tableBasedParameter() {
       for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
@@ -225,8 +247,27 @@ export default {
       return this.orderedWorkflowSteps.findIndex(
           s => s.id === this.studyStepId
       );
-    }
+    },
+    outputDataOptions() {
+      const sources = [
+        {
+          value: 'saveInDocumentData',
+          name: 'Save in Document Data',
+          type: 'documentData',
+        }
+      ];
 
+      // Check if current document is type 2 (editor)
+      const workflow = this.workflowSteps.find(ws => ws.id === this.studyStepId);
+      if (workflow?.stepType === 2) {
+        sources.push({
+          value: 'insertIntoEditor',
+          name: 'Insert into Editor',
+          type: 'editor',
+        });
+      }
+      return sources;
+    }
   },
   watch: {
     skillName: {
@@ -237,6 +278,13 @@ export default {
             mapping[input] = this.inputMappings[input] || null;
           });
           this.inputMappings = mapping;
+        }
+        if (this.skillName && this.skillOutputs.length > 0) {
+          const mapping = {};
+          this.skillOutputs.forEach((output) => {
+            mapping[output] = this.outputMappings[output] || null;
+          });
+          this.outputMappings = mapping;
         }
       },
       immediate: true,
@@ -249,24 +297,24 @@ export default {
           return;
         }
 
-        // If modelValue is empty object or null, reset inputMappings to empty
+        // If modelValue is empty object or null, reset both mappings to empty
         if (!newValue || Object.keys(newValue).length === 0) {
           this.inputMappings = {};
+          this.outputMappings = {};
           return;
         }
 
-        if (typeof newValue === 'object' && Object.keys(newValue).length > 0) {
-          // Handle if newValue is an array (old format)
-          if (Array.isArray(newValue)) {
-            const mappings = {};
-            newValue.forEach(item => {
-              if (item.input) {
-                mappings[item.input] = {...item};
-              }
-            });
-            this.inputMappings = mappings;
+        if (typeof newValue === 'object') {
+          // New format: { ...inputMappings, output: {...outputMappings} }
+          if (newValue.output) {
+            this.outputMappings = {...newValue.output};
+            // Extract input mappings (everything except output key)
+            const {output, ...inputMappings} = newValue;
+            this.inputMappings = {...inputMappings};
           } else {
+            // Legacy format: just input mappings
             this.inputMappings = {...newValue};
+            this.outputMappings = {};
           }
         }
       },
@@ -317,7 +365,27 @@ export default {
         [input]: source
       };
 
-      this.$emit('update:modelValue', {...this.inputMappings});
+      this.$emit('update:modelValue', {
+        ...this.inputMappings,
+        output: {...this.outputMappings}
+      });
+
+      this.$nextTick(() => {
+        this.isUpdatingFromWithin = false;
+      });
+    },
+    updateOutputMapping(output, source) {
+      this.isUpdatingFromWithin = true;
+
+      this.outputMappings = {
+        ...this.outputMappings,
+        [output]: source
+      };
+
+      this.$emit('update:modelValue', {
+        ...this.inputMappings,
+        output: {...this.outputMappings}
+      });
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;

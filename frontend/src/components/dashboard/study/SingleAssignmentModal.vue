@@ -39,24 +39,22 @@
       </div>
     </template>
     <template #step-2>
-      <div class="table-scroll-container">
-        <BasicTable
-            v-model="selectedAssignment"
-            :columns="currentTableColumns"
-            :data="currentTableData"
-            :options="documentTableOptions"
-        />
-      </div>
+      <BasicTable
+        v-model="selectedAssignment"
+        :columns="currentTableColumns"
+        :data="currentTableData"
+        :options="documentTableOptions"
+        :max-table-height="400"
+      />
     </template>
     <template #step-3>
-      <div class="table-scroll-container">
-        <BasicTable
-            v-model="selectedReviewer"
-            :columns="reviewerTableColumns"
-            :data="reviewerTable"
-            :options="reviewerTableOptions"
-        />
-      </div>
+      <BasicTable
+        v-model="selectedReviewer"
+        :columns="reviewerTableColumns"
+        :data="reviewerTable"
+        :options="reviewerTableOptions"
+        :max-table-height="400"
+      />
     </template>
     <template #step-4>
       <div>
@@ -445,11 +443,6 @@ export default {
 </script>
 
 <style scoped>
-.table-scroll-container {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
 input {
   display: block;
   margin-bottom: 10px;

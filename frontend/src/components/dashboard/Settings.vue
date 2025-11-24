@@ -6,6 +6,15 @@
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
+              text="Change User Settings"
+              title="Change User Settings"
+              icon="sliders"
+              :disabled="!settings || !settings.length"
+              @click="$refs.changeUserSettingsModal.open()"
+          />
+
+          <BasicButton
+              class="btn-outline-secondary btn-sm"
               text="Export JSON"
               title="Export JSON"
               icon="download"
@@ -65,6 +74,11 @@
         </div>
       </template>
     </Card>
+
+    <ChangeUserSettingsModal
+        ref="changeUserSettingsModal"
+        :settings="settings"
+    />
 
     <Modal
         ref="settingsUploadModal"
@@ -133,6 +147,7 @@ import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import {onBeforeRouteUpdate} from 'vue-router'
+import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
 
 export default {
   name: "DashboardSettings",
@@ -143,6 +158,7 @@ export default {
     SettingItem,
     BasicButton,
     Modal,
+    ChangeUserSettingsModal,
   },
   data() {
     return {
@@ -174,7 +190,7 @@ export default {
   },
   mounted() {
     this.settings = null;
-    this.load();
+    this.load(false);
 
     onBeforeRouteUpdate((to, from, next) => {
       if (this.hasUnsavedChanges) {
@@ -223,14 +239,16 @@ export default {
         }
       });
     },
-    load() {
+    load(showToast = true) {
       this.$socket.emit("settingGetData", null, (res) => {
         if (res.success) {
-          this.eventBus.emit("toast", {
-              title: "Settings Loaded",
-              message: "Settings have been successfully loaded.",
-              variant: "success",
-          });
+          if (showToast) {
+            this.eventBus.emit("toast", {
+                title: "Settings Loaded",
+                message: "Settings have been successfully loaded.",
+                variant: "success",
+            });
+          }
           this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
           this.collapseFirst = this.settings.reduce((acc, setting) => {
             const key = setting.key.split(".")[0];
