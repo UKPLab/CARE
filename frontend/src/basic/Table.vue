@@ -134,7 +134,7 @@
             </span>
           </th>
           <th
-            v-if="hasButtons"
+            v-if="hasManageButtons"
             ref="manageHeader"
             :class="getManageColumnClass()"
             :style="manageColumnStyle"
@@ -402,7 +402,7 @@ export default {
       paginationShowPages: 3,
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
-      hasButtons: false, // Use this flag to decide on the visibility of the column header
+      hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
       manageColumnStyle: {},
       debouncedComputeFixedColumns: null,
@@ -523,7 +523,7 @@ export default {
     },
     // Determine if manage column should be sticky
     shouldFixManageColumn() {
-      return this.hasButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
     },
     // Cache the indices to avoid repeated searches
     fixedColumnIndices() {
@@ -595,7 +595,7 @@ export default {
         }))
     );
 
-    if (this.hasFixedColumns || this.hasButtons) {
+    if (this.hasFixedColumns || this.hasManageButtons) {
       this.setupFixedColumns();
     }
   },
@@ -973,7 +973,7 @@ export default {
 
       // Update this flag if there are any buttons
       if (filteredButtons.length > 0) {
-        this.hasButtons = true;
+        this.hasManageButtons = true;
       }
 
 
