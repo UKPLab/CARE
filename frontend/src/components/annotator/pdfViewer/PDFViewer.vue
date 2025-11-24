@@ -10,6 +10,7 @@
   >
     <!-- Toolbar -->
     <PDFToolbar
+      id="pdfToolbar"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
       :is-zooming="isZooming"
