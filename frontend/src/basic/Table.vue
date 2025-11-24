@@ -131,7 +131,13 @@
               </template>
             </span>
           </th>
-          <th v-if="hasButtons">Manage</th>
+          <th
+            v-if="hasButtons"
+            :class="getManageColumnClass()"
+            style="right: 0"
+          >
+            Manage
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -250,6 +256,8 @@
           </td>
           <td
             v-if="getFilteredButtons(r).length > 0"
+            :class="getManageColumnClass()"
+            style="right: 0"
             @click.stop=""
           >
             <TButtonGroup
@@ -590,6 +598,11 @@ export default {
       if (this.debouncedComputeFixedColumns) {
         window.removeEventListener("resize", this.debouncedComputeFixedColumns);
       }
+    },
+    getManageColumnClass() {
+      const hasFixedRightColumns = this.columns.find((col) => col.fixed === "right");
+      if (hasFixedRightColumns) return null;
+      return ["table-fixed", "table-fixed-right", "table-fixed-shadow"];
     },
     getFixedColumnStyle(column) {
       return column?.key ? this.fixedColumnStyles[column.key] : null;
