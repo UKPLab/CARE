@@ -279,7 +279,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     editedByMyself() {
-      return (this.comment.text) ? this.comment.draft || this.editMode || this.edit : false;
+      return (this.comment) ? this.comment.draft || this.editMode || this.edit : false;
     },
     childComments() {
       return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId)
