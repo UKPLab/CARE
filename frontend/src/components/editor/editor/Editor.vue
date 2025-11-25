@@ -428,7 +428,6 @@ export default {
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
-        console.log("Delta buffer length:", this.deltaBuffer.length);
         this.debouncedProcessDelta();
 
         this.emitContentForPlaceholders();
