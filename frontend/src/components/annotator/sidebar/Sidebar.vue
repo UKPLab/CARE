@@ -69,7 +69,6 @@
       </button>
     </li>
   </ul>
-<ConfirmModal ref="leavePageConf"/>
 </template>
 
 <script>
@@ -340,21 +339,6 @@ export default {
         }
       });
     },
-    async leave() {
-      if (this.documentComments.filter(c => c.draft).length > 0) {
-        return new Promise((resolve) => {
-          this.$refs.leavePageConf.open(
-            "Unsaved Annotations",
-            "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
-            null,
-            function (val) {
-              return resolve(val);
-            });
-        });
-      } else {
-        return true;
-      }
-    }
   }
 }
 </script>
