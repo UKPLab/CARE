@@ -113,7 +113,7 @@ export default {
       default: true,
     }
   },
-  emits: ["update:data", "update:ready"],
+  emits: ["update:data", "update:ready", "insert-nlp-response"],
   data() {
     return {
       error: false,
@@ -280,6 +280,21 @@ export default {
       for (const [key, value] of Object.entries(data)) {
         updatedData[key] = value;
       }
+
+      // Check for outputs that should be inserted into editor
+      this.nlpServices.forEach(service => {
+        if (service.outputs && typeof service.outputs === 'object') {
+          Object.entries(service.outputs).forEach(([outputKey, outputConfig]) => {
+            const nlpResponseKey = `${service.name}_${service.skill}_${outputKey}`;
+            if (updatedData[nlpResponseKey] && outputConfig?.value === "insertIntoEditor") {
+              this.$emit("insert-nlp-response", {
+                response: updatedData[nlpResponseKey]
+              });
+            }
+          });
+        }
+      });
+      
       this.documentData = updatedData;
     },
     retryNlpRequests() {

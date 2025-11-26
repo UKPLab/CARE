@@ -95,12 +95,14 @@ export default {
           return {
             skillName: service.skill,
             dataInput: service.inputs || {},
+            dataOutput: service.outputs || {},
           };
         }
         // Handle create case
         return {
           skillName: "",
           dataInput: {},
+          dataOutput: {},
         };
       })
     };
@@ -194,29 +196,40 @@ export default {
     },
 
     handleInputMappingUpdate(skillIndex, mappingData) {
-
       // Update the selectedSkills dataInput based on the new mapping
       const updatedSkills = [...this.selectedSkills];
       if (!updatedSkills[skillIndex]) {
-        updatedSkills[skillIndex] = {skillName: '', dataInput: {}};
+        updatedSkills[skillIndex] = {skillName: '', dataInput: {}, dataOutput: {}};
       }
 
-      const dataInput = {};
+      // Extract output mappings (under 'output' key)
+      const dataOutput = {};
+      if (mappingData.output) {
+        Object.entries(mappingData.output).forEach(([output, destination]) => {
+          if (destination && (this.isTemplateMode || destination.value != null)) {
+            dataOutput[output] = {...destination};
+          }
+        });
+      }
 
-      Object.entries(mappingData).forEach(([input, source]) => {
-        if (source && (this.isTemplateMode || source.value != null)) {
-          dataInput[input] = {...source};
+      // Extract input mappings (everything except 'output' key at root level)
+      const dataInput = {};
+      Object.entries(mappingData).forEach(([key, source]) => {
+        if (key !== 'output' && source && (this.isTemplateMode || source.value != null)) {
+          dataInput[key] = {...source};
         }
       });
 
       updatedSkills[skillIndex].dataInput = dataInput;
-      //this.selectedSkills = updatedSkills;
+      updatedSkills[skillIndex].dataOutput = dataOutput;
+      
       // Emit the properly formatted data for the parent
       const updatedFormData = updatedSkills.map((skill, index) => ({
         name: this.modelValue.services[index]?.name || "",
         type: this.modelValue.services[index]?.type || "",
         skill: skill.skillName,
         inputs: skill.dataInput,
+        outputs: skill.dataOutput,
       }));
       this.$emit("update:form-data", updatedFormData);
     },

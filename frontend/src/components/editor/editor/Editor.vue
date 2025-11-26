@@ -76,6 +76,9 @@ export default {
       required: false,
       default: null,
     },
+    pendingNlpInsertion: {
+      default: null,
+    },
   },
   emits: ["update:data"],
   data() {
@@ -261,7 +264,7 @@ export default {
         this.emitContentForPlaceholders();
       }, 500);
     }
-
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
     this.$socket.emit("documentGet",
       {
         documentId: this.documentId,
@@ -282,13 +285,15 @@ export default {
             currentVersion: currentVersion,
           };
           this.$emit("update:data", studyData);
+           if(this.isEditorEmpty() && this.pendingNlpInsertion){
+            this.addText(this.pendingNlpInsertion);
+          }
         } else {
           this.handleDocumentError(res.error);
         }
       }
     );
 
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
 
     this.$socket.emit("documentSubscribe", { documentId: this.documentId });
   },
@@ -325,6 +330,17 @@ export default {
     this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
   },
   methods: {
+    isEditorEmpty() {
+      if (!this.editor || typeof this.editor.getEditor !== "function") {
+        return false;
+      }
+      const quill = this.editor.getEditor();
+      if (!quill) {
+        return false;
+      }
+      const trimmed = quill.getText().trim();
+      return trimmed.length === 0;
+    },
     clearEditor() {
       if (this.editor) {
         const quill = this.editor.getEditor();
