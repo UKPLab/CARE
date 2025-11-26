@@ -561,13 +561,14 @@ export default {
       },
       deep: true,
     },
-    hasFixedColumns(newVal) {
-      if (newVal) {
+    hasManageButtons(newVal) {
+      if(newVal) {
         this.setupFixedColumns();
-      } else {
+      } else if(!this.hasFixedColumns) {
         this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
       }
-    },
+    }
   },
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
