@@ -21,22 +21,11 @@
         :disabled="isZooming"
         @click="$emit('zoom-out')"
       />      
-      <!-- Zoom Percentage Form -->
-      <div class="zoom-input-wrapper">
-        <input
-          type="number"
-          class="zoom-input"
-          :value="zoomPercentage"
-          @blur="handleZoomInput"
-          @keyup.enter="handleZoomInput"
-          :disabled="isZooming"
-          min="50"
-          max="200"
-          step="1"
-          placeholder="100"
-        />
-        <span class="zoom-unit">%</span>
-      </div>
+      <BasicForm
+        :model-value="zoomFormData"
+        :fields="zoomFields"
+        @update:model-value="$emit('update:zoomFormData', $event)"
+      />
     </template>
 
     <!-- Toggle Button (always visible) -->
@@ -84,6 +73,11 @@ export default {
     },
   },
   emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset'],
+  data() {
+    return {
+      baseZoomOptions: this.generateZoomOptions(50, 200, 10),
+    };
+  },
   computed: {
     toolbarVisible: {
       get() {
@@ -96,17 +90,43 @@ export default {
     zoomPercentage() {
       return Math.round((this.zoomFormData.zoom || 1) * 100);
     },
+    zoomFields() {
+      const currentZoom = this.zoomPercentage;
+      let options = [...this.baseZoomOptions];
+      
+      // If current zoom is outside the base range or not in the list, add it temporarily
+      const existingOption = options.find(opt => opt.value === this.zoomFormData.zoom);
+      if (!existingOption) {
+        options.push({
+          value: this.zoomFormData.zoom,
+          name: `${currentZoom}%`
+        });
+        // Sort options by value
+        options.sort((a, b) => a.value - b.value);
+      }
+      
+      return [
+        {
+          key: "zoom",
+          type: "select",
+          options: options,
+        },
+      ];
+    },
   },
   methods: {
     toggleToolbar() {
       this.toolbarVisible = !this.toolbarVisible;
     },
-    handleZoomInput(event) {
-      const percentage = parseFloat(event.target.value);
-      if (!isNaN(percentage)) {
-        const zoomValue = percentage / 100;
-        this.$emit('update:zoomFormData', { zoom: zoomValue });
+    generateZoomOptions(min, max, step) {
+      const options = [];
+      for (let i = min; i <= max; i += step) {
+        options.push({
+          value: i / 100,
+          name: `${i}%`
+        });
       }
+      return options;
     },
   },
 };
@@ -200,45 +220,5 @@ export default {
 .pdf-toolbar.loading :deep(.form-select) {
   pointer-events: none;
   opacity: 0.6;
-}
-
-.zoom-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  position: relative;
-}
-
-.zoom-input {
-  width: 70px;
-  padding: 6px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: white;
-  font-size: 0.95em;
-  text-align: right;
-  transition: border-color 0.2s ease;
-}
-
-.zoom-input:hover {
-  border-color: #007bff;
-}
-
-.zoom-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-}
-
-.zoom-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: #e9ecef;
-}
-
-.zoom-unit {
-  font-size: 0.95em;
-  color: #6c757d;
-  font-weight: 500;
 }
 </style>
