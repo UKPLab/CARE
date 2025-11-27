@@ -17,6 +17,7 @@
       <StudySessionTable
         :study-id="studyId"
         :current-user-only="false"
+        :show-all="true"
         @update="$emit('update')"
         @session-deleted="$emit('session-deleted', $event)"
         @session-opened="$emit('session-opened', $event)"

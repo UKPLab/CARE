@@ -428,7 +428,6 @@ export default {
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
-        console.log("Delta buffer length:", this.deltaBuffer.length);
         this.debouncedProcessDelta();
 
         this.emitContentForPlaceholders();
@@ -475,23 +474,6 @@ export default {
               this.editor.getEditor().updateContents(delta, "api");
               }
             })
-    },
-
-    async leave() {
-      if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
-        return new Promise((resolve) => {
-          this.$refs.leavePageConf.open(
-            "Unsaved Changes",
-            "Are you sure you want to leave? There are unsaved changes, which will be lost.",
-            null,
-            function (val) {
-              return resolve(val);
-            }
-          );
-        });
-      } else {
-        return true;
-      }
     },
     async initializeEditorWithContent(deltas) {
       if (this.editor) {

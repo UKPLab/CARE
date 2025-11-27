@@ -232,9 +232,6 @@ export default {
             }
         );
       }
-    },
-    leave() {
-      return this.$refs.editor.leave();
     }
   },
 };

@@ -119,6 +119,7 @@ export default {
     resetForm() {
       this.$refs.form.modelValue.password = '';
       this.$refs.form.modelValue.confirmPassword = '';
+      this.$refs.form.modelValue.oldPassword = "";
       this.eventBus.emit("resetFormField");
     },
     validatePassword() {
