@@ -60,11 +60,15 @@ jobs:
         run: |
           set -euo pipefail
           
+          # Strip any whitespace/newlines from credentials
+          GITLAB_USER_CLEAN=$(echo "$GITLAB_USER" | tr -d '[:space:]')
+          GITLAB_TOKEN_CLEAN=$(echo "$GITLAB_TOKEN" | tr -d '[:space:]')
+          
           # Remove existing remote to avoid "remote already exists" errors
           git remote remove gitlab || true
           
           # Add remote - URL is quoted to avoid shell word-splitting when token contains special chars
-          git remote add gitlab "https://$GITLAB_USER:$GITLAB_TOKEN@git.ukp.informatik.tu-darmstadt.de/zyska/care.git"
+          git remote add gitlab "https://${GITLAB_USER_CLEAN}:${GITLAB_TOKEN_CLEAN}@git.ukp.informatik.tu-darmstadt.de/zyska/care.git"
           
           # Push current HEAD to the target branch on GitLab, explicitly using HEAD:BRANCH
           # Quote $BRANCH to avoid word-splitting
