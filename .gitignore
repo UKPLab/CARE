@@ -41,3 +41,9 @@ docs/api
 # pycache
 utils/rpcs/moodleAPI/__pycache__
 utils/rpcs/moodleAPI/moodle_api/__pycache__
+
+
+*.pyc 
+email-mappings.py
+gitleaks-clean.sh
+.mailmap
