@@ -43,6 +43,7 @@ Each entry links to its dedicated documentation page:
    editor
    stepmodal
    study
+   apply_skill_preprocessing
 
 -----
 
@@ -137,3 +138,37 @@ By separating session resumption into its own component, CARE cleanly distinguis
 
 - **Starting or creating a new study session** → handled in :doc:`Study <study>`.  
 - **Resuming an existing session** → handled in **StudySession**.  
+
+-----
+
+NLP Skill Preprocessing
+-----------------------
+
+The :doc:`NLP Skill Preprocessing Modal <nlp_preprocessing>` enables batch processing of documents and submissions
+using connected NLP skills. This modal provides a complete workflow for:
+
+- Selecting NLP skills and mapping inputs to data sources
+- Configuring which files to preprocess
+- Specifying where to store results
+- Monitoring real-time progress of background processing tasks
+
+**Architecture:** The modal uses a **two-phase workflow**:
+
+1. **Setup Phase** (``ApplySkillSetupStepper``): Multi-step selection for configuring and selecting the preprocessing task
+2. **Processing Phase** (``ApplySkillProcessStepper``): Real-time progress monitoring with time estimates and to-be-processed file queue
+
+**Key integrations:**
+
+- **BackgroundTaskService** (backend): Orchestrates preprocessing workflow, prepares NLP inputs, manages NLP requests, stores results
+- **NLPService**: Receives prepared input data and returns NLP results
+- **document_data**: Stores the NLP results
+
+**Child Components:**
+
+- ``SkillSelector``: Dropdown to select NLP skills
+- ``InputMap``: Skill parameter mapping interface
+- ``InputFiles``: File(s) selection
+- ``InputGroup``: Base file selection for validation (case: submission)
+- ``InputConfirm``: Configuration review
+
+For detailed architecture and backend integration, see :doc:`nlp_preprocessing`.

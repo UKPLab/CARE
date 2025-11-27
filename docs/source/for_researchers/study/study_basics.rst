@@ -185,3 +185,98 @@ Creating the Study
 .. note::
 
    Participants joining through this link will automatically start a new **Study Session**.
+
+Working with Study Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Study templates allow you to reuse study configurations for future studies, saving time and ensuring consistency.
+
+**Creating Templates:**
+
+You can create a template in two ways:
+
+1. **From an existing study:**
+   
+   - After creating and saving a study, locate it in the studies list
+   - Click on ``Save as template`` to convert the study configuration into a reusable template
+
+2. **Directly from the Saved Templates modal:**
+   
+   - Navigate to ``/dashboard/studies``
+   - Click the ``Saved Templates`` button
+   - In the modal, click ``Create Template``
+   - Define the workflow, settings, and document assignments
+   - Save to create a new template without creating a full study first
+
+**Using Templates:**
+
+- Click ``Saved Templates`` to view all your saved templates
+- Browse available templates with their configuration details (resumable, collaborative, multiple submissions, etc.)
+- Click the ``Use`` button (play icon) on any template to create a new study based on that template
+- The template's workflow and settings will be pre-filled, which you can then customize as needed
+
+**Managing Templates:**
+
+- Templates can be deleted from the Saved Templates modal (requires appropriate permissions)
+- Templates are marked with the ``template`` flag and remain separate from active studies
+
+Creating Assignment-Based Studies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CARE supports creating studies based on specific documents or imported submissions (e.g., from Moodle). This is particularly useful for peer review workflows or grading scenarios where you want to assign specific studies to reviewers.
+
+**Single Assignment**
+
+To create a study with a single assignment:
+
+1. Navigate to ``Studies`` in the Dashboard
+2. Click ``Add Single Assignment``
+3. Select a study template (required)
+4. Choose the assignment type:
+
+   - **Documents**: Select from documents marked as ready for review
+   - **Submissions**: Select from imported submissions (e.g., imported either from Moodle or manual inclusion)
+
+5. Select the specific document or submission
+6. Select one or more reviewers from the user list
+7. Review and confirm the assignment details
+
+**Bulk Assignments**
+
+To create multiple assignments simultaneously:
+
+1. Navigate to ``Studies`` in the Dashboard
+2. Click ``Add Bulk Assignments``
+3. Select a study template (required)
+4. Choose the assignment type **Documents** or **Submissions**
+5. Select multiple files from the table
+
+   - Use filters and search to find specific details in the table
+   - For submissions, you can filter by ``Group ID`` to organize assignments
+6. Select reviewers
+
+   - You can filter to show only users with documents
+   - Filter to show only users from the selected documents/submissions
+7. Configure the reviewer assignment strategy:
+
+   **Role-based selection:**
+   
+   - Define how many reviews each user role should perform per file
+   - Useful for distributing work evenly across teaching assistants, tutors, etc.
+   - The system will automatically assign studies based on role quotas
+
+   **Reviewer-based selection:**
+   
+   - Manually distribute documents among selected reviewers
+   - Specify exactly how many documents each reviewer should handle
+   - Total assignments must match the number of selected documents/submissions
+8. Review the assignment summary showing total reviews to be created
+9. Confirm to create all assignments
+
+.. note::
+
+   When creating bulk assignments with role-based selection, CARE automatically avoids assigning users to review their own documents or submissions.
+
+.. tip::
+
+   For Moodle-integrated workflows, see :doc:`Moodle Usage <../moodle_usage>` for details on importing submissions and publishing feedback back to Moodle.

@@ -109,21 +109,57 @@ To collect assignment submissions:
 
 **Study Creation with Imported Submissions**
 
-To create a study:
+To create a study using either imported submissions or documents:
+
+**Single Assignment**
 
 1. In the Dashboard go to ``Studies > Add Single Assignment``
 2. Choose a template or start from scratch.
 
-   If you don’t have a template yet, you can create one by first building a custom study:
+   If you don't have a template yet, you can create one in two ways:
 
+   **Option 1 - From an existing study:**
+   
    - In the Dashboard, go to ``Studies``
    - Click on ``Add`` to create a new study
    - Define the workflow and settings as needed
    - After saving, your study will appear in the list
    - Click on ``Save as template`` to reuse this setup in future studies
 
-3. Select the specific imported document you want to include in the assignment
-4. Assign reviewers and finalize setup
+   **Option 2 - Directly create a template:**
+   
+   - In the Dashboard, go to ``Studies``
+   - Click on ``Saved Templates``
+   - Click on ``Create Template`` in the modal
+   - Define the workflow and settings directly as a template
+
+3. Choose the assignment type:
+   
+   - **Documents**: Select from documents for the assignment
+   - **Submissions**: Select from imported Moodle or manually added submissions
+4. Select the specific document or submission you want to include in the assignment
+5. Assign reviewers and finalize setup
+
+**Bulk Assignments**
+
+For creating multiple assignments at once:
+
+1. In the Dashboard go to ``Studies > Add Bulk Assignments``
+2. Select a study template (required)
+3. Choose the assignment type: **Documents** or **Submissions**
+4. Select multiple documents or submissions from the table
+5. Choose reviewers from the user list. You can filter reviewers by:  
+
+   - Users with documents
+   - Users from the selected documents/submissions
+6. Configure distribution mode:
+   
+   - **Role-based selection**: Define how many reviews each role should perform per document/submission
+   - **Reviewer-based selection**: Distribute the selected documents/submissions among specific reviewers
+7. Review and confirm the assignment details
+
+.. note::
+   When using submissions, CARE automatically associates the primary document from each submission with the first workflow step.
 
 **Publishing Feedback**
 

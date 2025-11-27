@@ -33,6 +33,7 @@ The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de
    :caption: For Researchers
 
    for_researchers/basics
+   for_researchers/apply_skill_preprocessing
    for_researchers/exporting
    for_researchers/study/study
    for_researchers/editor_usage
