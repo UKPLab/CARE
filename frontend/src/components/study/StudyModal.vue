@@ -342,9 +342,10 @@ export default {
     close() {
       this.$refs.modal.close();
     },
-    start() {
+    startStudy(studyId = null, studySessionId) {
+      
       this.$socket.emit("studySessionStart",
-        {studyId: this.studyId, studySessionId: this.studySessionId}, (response) => {
+        {studyId: studyId, studySessionId: studySessionId}, (response) => {
           if (response.success) {
             this.$emit("start", {studySessionId: response.data.id});
             this.$refs.modal.close();
@@ -362,6 +363,9 @@ export default {
           }
         });
     },
+    start() {
+      this.startStudy(this.studyId, this.studySessionId);
+    },
     sessionAction(data) {
       if (data.action === "finishSession") {
         this.$emit("finish", {studySessionId: data.params.id});
@@ -371,8 +375,7 @@ export default {
         this.$refs.modal.close();
       }
       if (data.action === "startStudySession") {
-        this.$emit("start", {studySessionId: data.params.id});
-        this.$refs.modal.close();
+        this.startStudy(null, data.params.id);
       }
         if (this.acceptStats) {
           this.$socket.emit("stats", {
