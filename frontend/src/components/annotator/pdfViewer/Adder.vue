@@ -559,7 +559,7 @@ export default {
   background-color: white;
   white-space: nowrap;
   width: fit-content;
-  max-width: 5vw;
+  max-width: 150px;
 }
 #adder.is-extended {
   max-width: 250px;
