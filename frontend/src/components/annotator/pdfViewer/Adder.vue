@@ -1,22 +1,51 @@
 <template>
   <div
-      id="adder"
-      :style="{visibility: isVisible ? 'visible':'hidden'}"
-  >
-    <div class="btn-group">
-      <button
-          v-for="t in assignableTags"
+    id="adder"
+    :style="{visibility: isVisible ? 'visible':'hidden'}"
+    :class="{ 'is-extended': isExtended }"
+  > 
+    <div
+      class="menu-search-bar" 
+      v-if="isExtended">
+      <input
+        type="text"
+        v-model="searchTerm"
+        placeholder="Search tags"
+        class="form-control"
+        @mouseup.stop
+      />
+    </div> 
+    <div 
+      class="scrollable-menu-wrapper"
+      ref="adderWrapper"
+      :class="{ 'is-extended': isExtended }"
+    >
+      <div
+        class="btn-group-vertical" 
+        @click.stop
+      >
+        <button
+          v-for="t in filteredTags"
           :key="t.name"
           :class="`btn-${t.colorCode}`"
           :title="t.description"
-          class="btn"
+          class="btn text-truncate"
           data-placement="top"
           data-toggle="tooltip"
           @click="annotate(t)"
-      >
-        {{ t.name }}
-      </button>
+        >
+            {{ t.name }} 
+        </button>
+      </div>
     </div>
+    <button
+      v-if="shouldShowExtender"
+      @click="isExtended=true"
+      class="expand-btn btn "
+      title="Expand Adder"
+    >
+    <i class="bi bi-three-dots"></i>
+    </button>
   </div>
 </template>
 
@@ -26,7 +55,7 @@
  *
  * This components handles the range selector and the button to add new annotations.
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Jannik Holmer
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
@@ -61,25 +90,73 @@ export default {
       fadeOutBox: [],
       isVisible: false,
       selectedRanges: [],
+      previousRanges: [],
       pendingCallback: null,
+      isExtended: false,
+      searchTerm: '',
+      usageHistory: [],
       dragThreshold: 5,
       isDoubleClick: false,
       startX: 0, 
       startY: 0,
+      isOverflowing: false,
     }
   },
   computed: {
+    recencySortingOn() {
+      return this.$store.getters["settings/getValue"]("tags.recencySortingIsOn");
+    },
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
-      if (this.study?.tagSetId) {
-        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
+        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.tagSetId && !e.deleted);
+    },
+    userId() {
+      return this.$store.getters['auth/getUserId'];
+    },
+    savedUsageHistory() {
+      const key = "UH" + this.tagSetId; 
+      const data = this.$store.getters['table/user_environment/getAll'].filter(
+        e => e.userId === this.userId &&
+          e.documentId === this.documentId &&
+          e.studySessionId === this.studySessionId &&
+          e.studyStepId === this.studyStepId &&
+          e.key === key
+      );
+      return data[0] || null;
+    },
+    filteredTags() {
+      let tagList;
+      if(!this.searchTerm.trim()) {
+        tagList = this.assignableTags;
+      }else {
+        const term = this.searchTerm.trim().toLowerCase();
+        tagList = this.assignableTags.filter(tag =>
+          tag.name.toLowerCase().includes(term)
+        );
       }
-      else {
-        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.defaultTagSet && !e.deleted);
-      }
+      
+      // sort tags by recency 
+      if (this.recencySortingOn === true) {
+          tagList.sort((a,b) => {
+          const idxA = this.usageHistory.indexOf(a.name);
+          const idxB = this.usageHistory.indexOf(b.name);
 
+          if (idxA === -1 && idxB === -1){
+            return 0;
+          }
+          if (idxA === -1) {
+            return 1;
+          }
+          if (idxB === -1) {
+            return -1;
+          }
+          return idxA - idxB;
+        });
+      }
+      
+      return tagList;
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
@@ -89,6 +166,16 @@ export default {
         return null;
       }
       return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
+    tagSetId() {
+      if (this.study?.tagSetId) {
+        return this.study.tagSetId;
+      } else {
+        return this.defaultTagSet;
+      }
+    },
+    shouldShowExtender() {
+      return !this.isExtended && this.isOverflowing;
     },
     anonymize() {
       if (!this.study) {
@@ -103,12 +190,63 @@ export default {
     document.body.addEventListener('dblclick', this.doubleClickHandler);
     document.body.addEventListener('mousedown', this.positionTracker);
   },
+  mounted() {
+    // if available, load usage history of Tagset
+    if (this.savedUsageHistory) {
+      const data = JSON.parse(this.savedUsageHistory.value);
+      this.usageHistory = data;
+    }
+
+    // check if the tagsets will make the adder overflow 
+    this.checkOverflow();
+    document.body.addEventListener('resize', this.checkOverflow);
+  },
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
     document.body.removeEventListener('dblclick', this.doubleClickHandler);
     document.body.removeEventListener('mousedown', this.positionTracker);
+    document.body.removeEventListener('resize', this.checkOverflow);
+    
+    if (this.recencySortingOn) {
+      this.saveUsageHistory();
+    }
   },
   methods: {
+    saveUsageHistory() {
+      const key = "UH" + this.tagSetId;
+      const payload = JSON.stringify(this.usageHistory);
+      // save the usage history 
+      if (!this.savedUsageHistory){
+        this.$socket.emit("appDataUpdate", {
+          table: "user_environment",
+          data: {
+            userId: this.userId,
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            key: key,
+            value: payload
+          }
+        });
+      } else {
+        this.$socket.emit("appDataUpdate", {
+          table: "user_environment",
+          data: {
+            id: this.savedUsageHistory.id,
+            value: payload
+          }
+        });
+      }
+    },
+    checkOverflow() {
+      const el = this.$refs.adderWrapper;
+      this.isOverflowing = el.scrollHeight > el.clientHeight;
+    },
+    handleAdderScrolling(event) {
+      const adderContent = this.$refs.adderWrapper;
+      const scrollAmount = event.deltaY;
+      adderContent.scrollLeft += scrollAmount;
+    },
     doubleClickHandler() {
       this.isDoubleClick = true;
     },
@@ -156,6 +294,21 @@ export default {
       }
     },
     async annotate(tag) {
+
+      if (this.recencySortingOn) {
+        // track tag usage history, if tag is in the list, remove it 
+        // then add it to the front, keep the list no longer than 20 
+        const currentIdx = this.usageHistory.indexOf(tag.name)
+        if (currentIdx > -1){
+          this.usageHistory.splice(currentIdx, 1);
+        }
+        this.usageHistory.unshift(tag.name);
+        if (this.usageHistory.length > 20) {
+          this.usageHistory.pop()
+        }
+      }
+      
+
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
 
@@ -224,8 +377,10 @@ export default {
       }
 
       this.selectedRanges = [range];
-
-      this.show(event.clientX, event.clientY);
+      if (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0])) {
+        this.show(event.clientX, event.clientY);
+      }
+      this.previousRanges = [range];
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "onTextSelect",
@@ -240,21 +395,47 @@ export default {
       }
 
     },
+    areRangesEqual(range1, range2) {
+      return (
+        range1.startContainer === range2.startContainer &&
+        range1.startOffset === range2.startOffset &&
+        range1.endContainer === range2.endContainer &&
+        range1.endOffset === range2.endOffset
+      );
+    },
     _onClearSelection() {
       this.isVisible = false;
+      this.isExtended = false;
       this.selectedRanges = [];
     },
     show(x, y) {
-
+      //reset the extended status of the adder and the searchTerm
+      this.isExtended = false;
+      this.searchTerm = '';
+      this.$refs.adderWrapper.scrollTop =0;
       // get size of the box
       const adder = /** @type {Element} */ (document.getElementById("adder"));
+      const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer")).getBoundingClientRect();
+      const pdfToolbarRect = /** @type {Element} */ (document.getElementById("pdfToolbar")).getBoundingClientRect();
       const width = adder.getBoundingClientRect().width;
       const height = adder.getBoundingClientRect().height;
-
+      const bottom = pdfToolbarRect.bottom;
       // calculate position of adder
-      x = x + 10;
-      y = y - (40 + height);
+      // slight offset from event positions up and to the right 
+      x = x;
+      y = y - height;
 
+
+      const relativeX = x - pdfContainerRect.left;
+      // check if adder will overlap to the right
+      if (relativeX + width > pdfContainerRect.width) {
+        x = pdfContainerRect.width - width;
+      }
+      //restrict the adder from being generated too far up
+      // or too far left after repositioning because of overlap 
+      y = Math.max(bottom, y);
+      x = Math.max(0, x);
+      
       // get max z index
       const maxZIndex = Math.max(
           ...Array.from(document.querySelectorAll('body *'), el =>
@@ -280,7 +461,7 @@ export default {
         y + height + additional_size_of_box + 40
       ]
 
-      document.body.addEventListener('mousemove', this.fadeOut);
+      //document.body.addEventListener('mousemove', this.fadeOut);
 
       this.isVisible = true;
     },
@@ -385,5 +566,40 @@ export default {
   left: 0;
   padding: 2px;
   background-color: white;
+  white-space: nowrap;
+  width: fit-content;
+  max-width: 150px;
+}
+#adder.is-extended {
+  max-width: 250px;
+}
+.btn-group-vertical {
+  width: 100%;
+  max-width: inherit;
+}
+.btn {
+  text-align: center;
+  max-width: inherit;
+}
+.scrollable-menu-wrapper {
+  max-height: 150px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-width: inherit;
+  border-radius: 5px;
+}
+.scrollable-menu-wrapper.is-extended {
+  max-height: 250px;
+  max-width: inherit;
+}
+.expand-btn {
+  width: 100%;
+  background-color: lightgrey;
+  border-radius: 5px;
+  padding: 5px;
+  box-shadow: 2px,2px #CCCCCC;
+}
+.menu-search-bar {
+  width: 100%;
 }
 </style>

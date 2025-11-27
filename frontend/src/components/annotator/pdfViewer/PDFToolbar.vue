@@ -144,7 +144,6 @@ export default {
   gap: 12px;
   padding: 8px 16px;
   min-height: 48px;
-  position: relative;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: flex-end;
