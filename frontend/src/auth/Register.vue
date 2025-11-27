@@ -328,6 +328,12 @@ export default {
 </script>
 
 <style scoped>
+form {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .feedback-invalid {
   font-size: 0.75em;
   color: firebrick;
