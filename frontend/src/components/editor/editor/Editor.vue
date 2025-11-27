@@ -348,7 +348,6 @@ export default {
       }
     },
     addText(text) {
-      console.log("Adding text to editor:", text);
       if (!text || !this.editor) {
         return;
       }

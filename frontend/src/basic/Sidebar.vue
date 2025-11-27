@@ -313,7 +313,6 @@ export default {
       return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
     },
     resolvedActiveSlot() {
-      console.log(this.internalActiveSlot);
       return this.internalActiveSlot || this.availableSlots[0] || null;
     },
     isSingleConfig() {

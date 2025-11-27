@@ -277,7 +277,6 @@ export default {
       }
     },
     getFieldValue(index, fieldKey) {
-      console.log("Getting field value for index:", index, "fieldKey:", fieldKey);
       const item = this.currentData[index];
 
       // If there is a parentDocumentId in the current item, use it for select fields

@@ -239,9 +239,7 @@ export default {
     },
     
     togglePin() {
-      console.log("Toggling pin state:", this.isPinned);
       this.isPinned = !this.isPinned;
-      console.log("Pin state changed to:", this.isPinned);
       this.$emit('pin-changed', this.isPinned);
       
       if (!this.isPinned) {
@@ -256,7 +254,6 @@ export default {
     },
     
     onMouseLeave() {
-      console.log("Mouse left info panel");
       this.isHovering = false;
       this.$emit('mouse-leave');
       this.requestClose();
@@ -264,7 +261,6 @@ export default {
     
     requestClose() {
       if (this.isPinned) return;
-      console.log("Requesting close of info panel after delay:", this.closeDelay);
       this.clearCloseTimer();
       this.closeTimer = setTimeout(() => {
         if (!this.isPinned && !this.isHovering) {
