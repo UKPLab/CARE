@@ -29,14 +29,12 @@
           :key="t.name"
           :class="`btn-${t.colorCode}`"
           :title="t.description"
-          class="btn"
+          class="btn text-truncate"
           data-placement="top"
           data-toggle="tooltip"
           @click="annotate(t)"
         >
-          <span>
             {{ t.name }} 
-          </span>
         </button>
       </div>
     </div>
@@ -564,7 +562,7 @@ export default {
   max-width: 5vw;
 }
 #adder.is-extended {
-  max-width: 8vw;
+  max-width: 250px;
 }
 .btn-group-vertical {
   width: 100%;
@@ -572,29 +570,21 @@ export default {
 }
 .btn {
   text-align: center;
-  width: 100%;
-  max-width: inherit;
-}
-.btn span {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
   max-width: inherit;
 }
 .scrollable-menu-wrapper {
-  max-height: 7vw;
+  max-height: 150px;
   overflow-x: hidden;
   overflow-y: auto;
   max-width: inherit;
   border-radius: 5px;
 }
 .scrollable-menu-wrapper.is-extended {
-  max-height: 11vw;
+  max-height: 250px;
   max-width: inherit;
 }
 .expand-btn {
+  width: 100%;
   background-color: lightgrey;
   border-radius: 5px;
   padding: 5px;
