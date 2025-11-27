@@ -461,6 +461,10 @@ module.exports = (sequelize, DataTypes) => {
                 if (updatedRowsCount === 0) {
                     throw new Error("Failed to update user: User not found");
                 }
+                // clear the user cache so the updated pwd is loaded immediately
+                if (User.cache){
+                    User.cache.clear();
+                }
             } catch (error) {
                 throw error;
             }

@@ -570,9 +570,6 @@ export default {
       const highlight = anchor.highlights[0];
       return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
     },
-    async leave() {
-      return await this.$refs.sidebar.leave();
-    },
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();
       let anchor;

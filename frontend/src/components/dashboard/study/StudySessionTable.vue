@@ -37,7 +37,12 @@ export default {
       type: Boolean,
       default: false,
       description: "If true, shows only closed sessions for the current user",
-    }
+    },
+    showAll: {
+      type: Boolean,
+      default: false,
+      description: "If true, shows all sessions",
+    },
   },
   emits: ["update", "session-deleted", "session-opened"],
   data() {
@@ -203,8 +208,13 @@ export default {
     },
     studySessions() {
       if (!this.study) return [];
+      if(this.showAll) {
+        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).map((s) => this.processSession(s));
+      }
 
       if (this.studyClosed && !this.showClosed) return [];
+
+      
 
       // TODO: Need to clarify what this line means.Since there is no function that updates the value of `this.showFinished`,
       // `this.showFinished` will always be true, which means the filter function won't filter anything.

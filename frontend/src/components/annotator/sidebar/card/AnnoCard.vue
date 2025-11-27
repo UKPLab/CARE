@@ -539,8 +539,8 @@ export default {
           }
         });
       }
-      this.$refs.main_comment.save();
-      this.$refs.collab.removeCollab();
+      this.$refs.main_comment?.save();
+      this.$refs.collab?.removeCollab();
     },
     cancel() {
       if (this.annotationId) {

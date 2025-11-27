@@ -28,9 +28,6 @@ import Editor from "@/components/editor/Editor.vue"
 export default {
   name: "DocumentRoute",
   components: {Annotator, Loader, Editor},
-  async beforeRouteLeave(to, from) {
-    return await this.confirmLeave();
-  },
   props: {
     'documentHash': {
       type: String,
@@ -81,15 +78,6 @@ export default {
     }
   },
   methods: {
-    async confirmLeave() {
-      if (this.$refs.annotator) {
-        const result = await this.$refs.annotator.leave()
-        return result;
-      } else if (this.$refs.editor) {
-        const result = await this.$refs.editor.leave()
-        return result;
-      }
-    }
   }
 }
 </script>

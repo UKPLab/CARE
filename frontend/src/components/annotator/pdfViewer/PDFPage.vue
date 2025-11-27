@@ -118,6 +118,7 @@ export default {
       isRendered: false,
       scale: null,
       currentWidth: 0,
+      originalWidth: 0,
       anchor: null,
       devicePixelRatio: window.devicePixelRatio || 1,
       isZooming: false
@@ -218,13 +219,24 @@ export default {
       const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber);
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
       const width = wrapper.getBoundingClientRect().width;
+      this.originalWidth = width; 
       const height = width * 1.4142;
       canvas.height = height;
       canvas.width = width;
       this.currentWidth = width;
     },
+    applyZoomToWrapper() {
+      if (this.originalWidth > 0) {
+        const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+        const width = this.originalWidth * this.zoomValue;
+        wrapper.style.width = width + 'px';
+        wrapper.style.height = (width * 1.4142) + 'px';
+        this.currentWidth = width;
+      }
+    },
     init() {
       if (this.render && !this.isRendered) {
+        this.applyZoomToWrapper();
         this.pdf.getPage(this.pageNumber).then((page) => {
           const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);

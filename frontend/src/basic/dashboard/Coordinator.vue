@@ -155,6 +155,12 @@ export default {
         return f;
       });
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    username() {
+      return this.$store.getters['auth/getUsername'];
+    },
   },
   methods: {
     /**
@@ -279,7 +285,11 @@ export default {
             .map((e) => {
               // Create a copy of the original entry
               const{id, ...copyData} = e;
-
+              copyData.userId = this.userId;
+              if (copyData.creator_name) {
+                copyData.creator_name = this.username;
+              };
+            
               // If this entry has a documentId, fetch the parent document ID
               if (e.documentId) {
                 const document = this.$store.getters["table/document/get"](e.documentId);

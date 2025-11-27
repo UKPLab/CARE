@@ -18,11 +18,13 @@
       aria-describedby="search-addon1"
     />
   </div>
-  <div 
+  <div
+    ref="tableWrapper"
     class="table-wrapper"
     :style="tableWrapperStyle"
   >
     <table
+      ref="tableElement"
       :class="tableClass"
       class="table"
     >
@@ -131,7 +133,14 @@
               </template>
             </span>
           </th>
-          <th v-if="hasButtons">Manage</th>
+          <th
+            v-if="hasManageButtons"
+            ref="manageHeader"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
+          >
+            Manage
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -250,6 +259,8 @@
           </td>
           <td
             v-if="getFilteredButtons(r).length > 0"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
             @click.stop=""
           >
             <TButtonGroup
@@ -391,9 +402,12 @@ export default {
       paginationShowPages: 3,
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
-      hasButtons: false, // Use this flag to decide on the visibility of the column header
+      hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
+      manageColumnStyle: {},
       debouncedComputeFixedColumns: null,
+      hasHorizontalOverflow: false,
+      resizeObserver: null,
     };
   },
   computed: {
@@ -504,6 +518,20 @@ export default {
     hasFixedColumns() {
       return this.columns.some((c) => ["left", "right"].includes(c.fixed));
     },
+    hasRightFixedColumns() {
+      return this.columns.some((c) => c.fixed === "right");
+    },
+    // Determine if manage column should be sticky
+    shouldFixManageColumn() {
+      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+    },
+    // Cache the indices to avoid repeated searches
+    fixedColumnIndices() {
+      return {
+        lastLeft: this.columns.findLastIndex((col) => col.fixed === "left"),
+        firstRight: this.columns.findIndex((col) => col.fixed === "right"),
+      };
+    },
   },
   watch: {
     currentData: {
@@ -533,11 +561,12 @@ export default {
       },
       deep: true,
     },
-    hasFixedColumns(newVal) {
-      if (newVal) {
+    hasManageButtons(newVal) {
+      if(newVal) {
         this.setupFixedColumns();
-      } else {
+      } else if(!this.hasFixedColumns) {
         this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
       }
     }
   },
@@ -567,7 +596,7 @@ export default {
         }))
     );
 
-    if (this.hasFixedColumns) {
+    if (this.hasFixedColumns || this.hasManageButtons) {
       this.setupFixedColumns();
     }
   },
@@ -583,74 +612,118 @@ export default {
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();
-        window.addEventListener("resize", this.debouncedComputeFixedColumns);
+        // Use ResizeObserver for better performance if available
+        if (window.ResizeObserver && this.$refs.tableWrapper) {
+          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
+          this.resizeObserver.observe(this.$refs.tableWrapper);
+        } else {
+          // Fallback to window resize
+          window.addEventListener("resize", this.debouncedComputeFixedColumns);
+        }
       });
     },
     cleanupFixedColumns() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
       if (this.debouncedComputeFixedColumns) {
         window.removeEventListener("resize", this.debouncedComputeFixedColumns);
       }
     },
+    getManageColumnClass() {
+      if (!this.shouldFixManageColumn) return null;
+
+      return {
+        "table-fixed": true,
+        "table-fixed-right": true,
+        "table-fixed-shadow": !this.hasRightFixedColumns,
+      };
+    },
     getFixedColumnStyle(column) {
-      return column?.key ? this.fixedColumnStyles[column.key] : null;
+      if (!column?.key || !column?.fixed) return null;
+      return this.fixedColumnStyles[column.key] || null;
     },
     getFixedColumnClass(column, index) {
       if (!column?.fixed) return null;
 
-      const isLastLeft = column.fixed === "left" && this.getLastLeftIndex(index);
-      const isLastRight = column.fixed === "right" && this.getLastRightIndex(index);
+      const { lastLeft, firstRight } = this.fixedColumnIndices;
+      const isLastLeft = column.fixed === "left" && index === lastLeft;
+      const isFirstRight = column.fixed === "right" && index === firstRight;
 
       return {
         "table-fixed": true,
         "table-fixed-left": column.fixed === "left",
         "table-fixed-right": column.fixed === "right",
-        "table-fixed-shadow": isLastLeft || isLastRight,
+        "table-fixed-shadow": isLastLeft || isFirstRight,
       };
     },
-    getLastLeftIndex(currentIndex) {
-      const lastLeftIndex = this.columns.findLastIndex(col => col.fixed === "left");
-      return lastLeftIndex === currentIndex;
-    },
-    getLastRightIndex(currentIndex) {
-      const index = this.columns.findIndex(col => col.fixed === "right");
-      return currentIndex === index;
+    getManageColumnWidth() {
+      const ref = this.$refs.manageHeader;
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      return el?.offsetWidth || 100; // Default 100px 
     },
     computeFixedColumnStyles() {
-      if (!this.hasFixedColumns) {
+      // Check for horizontal overflow
+      const hasOverflow = this.detectHorizontalOverflow();
+      if (hasOverflow !== this.hasHorizontalOverflow) {
+        this.hasHorizontalOverflow = hasOverflow;
+      }
+
+      // Early return if no fixed columns needed
+      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
         this.fixedColumnStyles = {};
-        this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
         return;
       }
 
       const styles = {};
-      let leftOffset = 0;
+      const baseStyle = {
+        position: "sticky",
+        zIndex: 2,
+        background: "var(--bs-body-bg, #fff)",
+      };
 
+      // Compute left-fixed columns
+      let leftOffset = 0;
       this.columns.forEach((column) => {
         if (column.fixed === "left") {
-          const width = this.getColumnWidth(column);
           styles[column.key] = {
-            position: "sticky",
+            ...baseStyle,
             left: `${leftOffset}px`,
-            zIndex: 2,
-            background: "var(--bs-body-bg, #fff)",
           };
-          leftOffset += width;
+          leftOffset += this.getColumnWidth(column);
         }
       });
 
+      // Compute right-fixed columns
       let rightOffset = 0;
-      [...this.columns].reverse().forEach((column) => {
-        if (column.fixed === "right") {
-          const width = this.getColumnWidth(column);
+
+      // Reserve space for manage column if it should be fixed
+      if (this.shouldFixManageColumn) {
+        rightOffset = this.getManageColumnWidth();
+      }
+
+      // Process right-fixed columns from right to left
+      [...this.columns]
+        .reverse()
+        .filter((c) => c.fixed === "right")
+        .forEach((column) => {
           styles[column.key] = {
-            position: "sticky",
+            ...baseStyle,
             right: `${rightOffset}px`,
-            zIndex: 2,
-            background: "var(--bs-body-bg, #fff)",
           };
-          rightOffset += width;
-        }
-      });
+          rightOffset += this.getColumnWidth(column);
+        });
+
+      // Set manage column style
+      this.manageColumnStyle = this.shouldFixManageColumn
+        ? {
+            ...baseStyle,
+            right: "0px",
+            zIndex: 3, // Higher z-index for manage column
+          }
+        : null;
 
       this.fixedColumnStyles = styles;
     },
@@ -667,6 +740,14 @@ export default {
 
       // Default fallback
       return 150;
+    },
+    detectHorizontalOverflow() {
+      const wrapper = this.$refs.tableWrapper;
+      const table = this.$refs.tableElement;
+
+      if (!wrapper || !table) return false;
+
+      return table.scrollWidth > wrapper.clientWidth;
     },
     normalizeCssSize(value) {
       if (!value) return null;
@@ -893,7 +974,7 @@ export default {
 
       // Update this flag if there are any buttons
       if (filteredButtons.length > 0) {
-        this.hasButtons = true;
+        this.hasManageButtons = true;
       }
 
 
