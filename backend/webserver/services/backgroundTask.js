@@ -250,138 +250,38 @@ module.exports = class BackgroundTaskService extends Service {
 
             switch (table) {
                 case "submission":
-                    nlpInput[paramName] = await this.loadSubmission(fileId);
+                    nlpInput[paramName] = {
+                        type: "serviceReplacement",
+                        input: {
+                            submissionId: fileId,
+                            type: "submission"
+                        }
+                    }
                     break;
                 case "document":
-                    nlpInput[paramName] = await this.loadDocument(fileId);
+                    nlpInput[paramName] = {
+                        type: "serviceReplacement",
+                        input: {
+                            documentId: fileId,
+                            type: "document"
+                        }
+                    }
                     break;
                 case "configuration":
-                    nlpInput[paramName] = await this.loadConfiguration(fileId);
+                    nlpInput[paramName] = {
+                        type: "serviceReplacement",
+                        input: {
+                            configurationId: fileId,
+                            type: "configuration"
+                        }
+                    }
                     break;
                 default:
-                    this.server.logger.warn(`Unknown table type: ${table} for parameter: ${paramName}`);
+                    this.server.logger.warn(`Unknown type: ${table} for parameter: ${paramName}`);
             }
         }
 
         return nlpInput;
-    }
-
-    /**
-     * Load all documents related to a submission and convert to base64
-     * @param {number} submissionId - The id of the submission
-     * @returns {object} An object with document types as keys and base64 file contents as values
-     */
-    async loadSubmission(submissionId) {
-        let docs;
-        try {
-            docs = await this.server.db.models['document'].findAll({
-                where: {submissionId: submissionId},
-                raw: true
-            });
-        } catch (err) {
-            this.server.logger.error(`Error fetching documents for submission ${submissionId}: ${err.message}`, err);
-            return {};
-        }
-
-        const submissionFiles = {};
-
-        await Promise.all(
-            docs.map(async (doc) => {
-                const processedDoc = await this.processDocument(doc);
-                if (processedDoc) {
-                    const docType = doc.type;
-                    const docTypeKey = Object.keys(this.server.db.models['document'].docTypes)
-                        .find(type => this.server.db.models['document'].docTypes[type] === docType);
-
-                    if (docTypeKey) {
-                        const fileTypeKey = docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
-                        submissionFiles[fileTypeKey] = processedDoc;
-                    }
-                }
-            })
-        );
-
-        const hasValidFiles = Object.keys(submissionFiles).length > 0;
-        if (!hasValidFiles) {
-            this.server.logger.error(`No valid files found for submission ${submissionId}`);
-            return {};
-        }
-
-        return submissionFiles;
-    }
-
-    /**
-     * Load and process a single document by its id
-     * @param {number} documentId - The id of the document
-     * @returns {string|null} The base64 encoded file content or null if not found/error
-     */
-    async loadDocument(documentId) {
-        try {
-            const doc = await this.server.db.models['document'].findByPk(documentId, {raw: true});
-            if (!doc) {
-                this.server.logger.warn(`Document ${documentId} not found`);
-                return null;
-            }
-
-            return await this.processDocument(doc);
-        } catch (err) {
-            this.server.logger.error(`Error processing document ${documentId}: ${err.message}`, err);
-            return null;
-        }
-    }
-
-    /**
-     * Load a configuration by its id and parse its content
-     * @param {number} configId - The id of the configuration
-     * @returns {object|null} The parsed configuration object or null if not found/error
-     */
-    async loadConfiguration(configId) {
-        try {
-            const config = await this.server.db.models['configuration'].findByPk(configId, {raw: true});
-            if (!config) {
-                this.server.logger.warn(`Configuration ${configId} not found`);
-                return null;
-            }
-
-            if (typeof config.content === 'string') {
-                return JSON.parse(config.content);
-            }
-            return config.content;
-        } catch (err) {
-            this.server.logger.error(`Error loading configuration ${configId}: ${err.message}`, err);
-            return null;
-        }
-    }
-
-    /**
-     * Process a document to read its file and convert to base64
-     * @param {object} doc - The document object from the database
-     * @returns {string|null} The base64 encoded file content or null if not found/error
-     */
-    async processDocument(doc) {
-        const docType = doc.type;
-        const docTypeKey = Object.keys(this.server.db.models['document'].docTypes)
-            .find(type => this.server.db.models['document'].docTypes[type] === docType);
-
-        let fileExtension = '';
-        if (docTypeKey) {
-            fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
-        }
-
-        const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
-
-        if (fs.existsSync(docFilePath)) {
-            try {
-                const fileBuffer = await fs.promises.readFile(docFilePath);
-                return fileBuffer.toString('base64');
-            } catch (readErr) {
-                this.server.logger.error(`Error reading file for document ${doc.id}: ${readErr.message}`, readErr);
-                return null;
-            }
-        } else {
-            this.server.logger.error(`File not found for document ${doc.id}: ${docFilePath}`);
-            return null;
-        }
     }
 
     /**

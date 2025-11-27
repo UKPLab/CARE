@@ -81,8 +81,4 @@ export default {
 </script>
 
 <style scoped>
-.table-scroll-container {
-  max-height: 400px;
-  overflow-y: auto;
-}
 </style>

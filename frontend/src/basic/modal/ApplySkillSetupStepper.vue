@@ -262,7 +262,7 @@ export default {
           } else {
             mappings[paramName] = {
               table: mapping.table || "configuration",
-              fileIds: [mapping.configId],
+              fileIds: [mapping.configurationId],
             };
           }
         }

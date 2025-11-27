@@ -53,7 +53,7 @@
             :style="{
               display: 'inline-block',
               borderLeft: '4px solid #' + color,
-              height: '20px',
+              height: '38px',
               fontSize: 'small',
               fontStyle: 'italic'
             }"
@@ -120,12 +120,12 @@
             <div class="col">
               <button
                   v-if="numberReplies > 0"
-                  class="btn btn-sm"
+                  class="btn btn-light btn-sm"
                   data-placement="top"
                   data-toggle="tooltip"
                   title="Reply"
                   type="button"
-                  @click="showReplies = !showReplies"
+                  @click="showReplies = !showReplies; maxComments = defaultNumComments"
               >
                 <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
                 <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
@@ -140,7 +140,7 @@
                   :props="$props"
                   icon="reply-fill"
                   title="Reply"
-                  @click="$refs.main_comment.reply();showReplies = true"
+                  @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
               />
               <NLPService
                   v-if="summarizationAvailable && comment.userId === userId && !readOnly"
@@ -187,7 +187,7 @@
             class="d-grid gap-1 my-2"
         >
           <span
-              v-for="c in childComments"
+              v-for="c in displayedComments"
               :key="c.id"
           >
             <Comment
@@ -195,6 +195,30 @@
                 :level="1"
             />
           </span>
+          <div class="btn-group">
+            <button
+            class="btn btn-light btn-sm"
+            v-if="showExtenderButton"
+            @click="maxComments+=5"
+            >
+              Show more
+            </button>
+            <button
+            class="btn btn-light btn-sm"
+            v-if="!showExtenderButton && numChildComments > defaultNumComments"
+            @click="maxComments=defaultNumComments"
+            >
+              Show less
+            </button>
+            <button
+            class="btn btn-light btn-sm"
+            v-if="maxComments > defaultNumComments"
+            @click="maxComments=defaultNumComments; showReplies = !showReplies"
+            >
+              Hide replies
+            </button>
+          </div>
+            
         </div>
       </template>
     </SideCard>
@@ -261,6 +285,7 @@ export default {
       editingTag: false, 
       selectedTagId: null,
       collapsed: false,
+      maxComments: 3,
     }
   },
   watch: {
@@ -306,6 +331,9 @@ export default {
     }
   },
   computed: {
+    defaultNumComments() {
+      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
+    },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
@@ -360,6 +388,18 @@ export default {
             return 0;
           }
       );
+    },
+    numChildComments() {
+      if (this.childComments){
+        return this.childComments.length;
+      }
+      return 0;
+    },
+    displayedComments() {
+      return this.childComments.slice(0, this.maxComments);
+    },
+    showExtenderButton() {
+      return this.numChildComments > this.maxComments;
     },
     comment() {
       return this.$store.getters['table/comment/get'](this.commentId);

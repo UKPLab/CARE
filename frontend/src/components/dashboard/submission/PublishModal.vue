@@ -10,24 +10,22 @@
       <h5 class="modal-title">{{ modalTitle }}</h5>
     </template>
     <template #step-1>
-      <div class="table-scroll-container">
-        <BasicTable
-          v-model="selectedDocuments"
-          :data="documentsTable"
-          :columns="documentTableColumns"
-          :options="tableOptions"
-        />
-      </div>
+      <BasicTable
+        v-model="selectedDocuments"
+        :data="documentsTable"
+        :columns="documentTableColumns"
+        :options="tableOptions"
+        :max-table-height="400"
+      />
     </template>
     <template #step-2>
-      <div class="table-scroll-container">
-        <BasicTable
-          v-model="selectedSessions"
-          :data="sessionsTable"
-          :columns="sessionTableColumns"
-          :options="tableOptions"
-        />
-      </div>
+      <BasicTable
+        v-model="selectedSessions"
+        :data="sessionsTable"
+        :columns="sessionTableColumns"
+        :options="tableOptions"
+        :max-table-height="400"
+      />
     </template>
     <template #step-3>
       <div class="mb-3">
@@ -49,7 +47,7 @@
           <option value="sessions">based on Sessions (links for own sessions)</option>
         </select>
       </div>
-      <div class="mb-3 table-scroll-container">
+      <div class="mb-3">
         <p><b>Links:</b></p>
         <ul v-if="linkCollection === 'studies'">
           <li v-for="doc in formattedStudies" :key="doc">
@@ -84,7 +82,7 @@
       <div class="small" v-if="isSubmissionMode">
         <p>Choose "Download CSV" to export the generated feedback text for each recipient.</p>
       </div>
-      <div v-if="publishMethod==='moodle'" class="table-scroll-container">
+      <div v-if="publishMethod==='moodle'">
         <MoodleOptions
           ref="moodleOptionsForm"
           v-model="moodleOptions"
@@ -534,9 +532,4 @@ export default {
 </script>
 
 <style scoped>
-.table-scroll-container {
-  max-height: 400px;
-  min-height: 80px;
-  overflow-y: auto;
-}
 </style>

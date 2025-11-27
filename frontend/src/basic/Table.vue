@@ -18,236 +18,261 @@
       aria-describedby="search-addon1"
     />
   </div>
-  <table
-    :class="tableClass"
-    class="table"
+  <div
+    ref="tableWrapper"
+    class="table-wrapper"
+    :style="tableWrapperStyle"
   >
-    <thead>
-      <tr>
-        <th v-if="selectableRows">
-          <div class="form-check">
-            <input
-              v-if="!(options && options.singleSelect)"
-              class="form-check-input"
-              type="checkbox"
-              :checked="isAllRowsSelected"
-              @change="selectAllRows"
-            />
-          </div>
-        </th>
-        <th
-          v-for="c in columns"
-          :key="c.key"
-          :class="'width' in c ? 'col-' + c.width : 'col-auto'"
-        >
-          {{ c.name }}
-          <span
-            v-if="c.sortable"
-            title="Sort By"
+    <table
+      ref="tableElement"
+      :class="tableClass"
+      class="table"
+    >
+      <thead>
+        <tr>
+          <th v-if="selectableRows">
+            <div class="form-check">
+              <input
+                v-if="!(options && options.singleSelect)"
+                class="form-check-input"
+                type="checkbox"
+                :checked="isAllRowsSelected"
+                @change="selectAllRows"
+              />
+            </div>
+          </th>
+          <th
+            v-for="(c, index) in columns"
+            :key="c.key"
+            :ref="'header-' + c.key"
+            :class="[
+              'width' in c ? 'col-' + c.width : 'col-auto',
+              getFixedColumnClass(c, index),
+            ]"
+            :style="getFixedColumnStyle(c)"
           >
-            <LoadIcon
-              v-if="c.sortable"
-              :class="{
-                'bg-success': sortColumn === c.key,
-                'bg-opacity-50': sortColumn === c.key,
-                'bg-opacity-10': sortColumn !== c.key,
-                'bg-black': sortColumn !== c.key,
-              }"
-              :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
-              class="me-1"
-              style="cursor: pointer"
-              @click="sort('sortKey' in c ? c.sortKey : c.key)"
-            />
-          </span>
-          <span v-if="filter && c.filter">
+            {{ c.name }}
             <span
-              aria-expanded="true"
-              aria-haspopup="true"
-              data-bs-toggle="dropdown"
-              role="button"
-              style="cursor: pointer"
+              v-if="c.sortable"
+              title="Sort By"
             >
               <LoadIcon
-                :id="'filterDropDown_' + c.key"
-                :color="c.key in sequelizeFilter ? 'blue' : ''"
-                :icon-name="c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'"
+                v-if="c.sortable"
+                :class="{
+                  'bg-success': sortColumn === c.key,
+                  'bg-opacity-50': sortColumn === c.key,
+                  'bg-opacity-10': sortColumn !== c.key,
+                  'bg-black': sortColumn !== c.key,
+                }"
+                :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
+                class="me-1"
+                style="cursor: pointer"
+                @click="sort('sortKey' in c ? c.sortKey : c.key)"
               />
             </span>
-            <template v-if="!c.filter.type">
-              <ul
-                :aria-labelledby="'filterDropDown_' + c.key"
-                class="dropdown-menu p-1"
-                @click.stop=""
+            <span v-if="filter && c.filter">
+              <span
+                aria-expanded="true"
+                aria-haspopup="true"
+                data-bs-toggle="dropdown"
+                role="button"
+                style="cursor: pointer"
               >
-                <li
-                  v-for="f in c.filter"
-                  :key="f.key"
-                  class="form-check"
-                >
-                  <input
-                    :id="'filterDropDown_' + c.key + '_label_' + f.key"
-                    v-model="filter[c.key][f.key]"
-                    class="form-check-input"
-                    type="checkbox"
-                  />
-                  <label
-                    :for="'filterDropDown_' + c.key + '_label_' + f.key"
-                    class="form-check-label"
-                    >{{ f.name }}</label
-                  >
-                </li>
-              </ul>
-            </template>
-            <template v-else-if="c.filter.type === 'numeric'">
-              <div class="dropdown-menu p-2">
-                <select
-                  v-model="filter[c.key].operator"
-                  class="form-select form-select-sm mb-2"
-                >
-                  <option value="gt">&gt;</option>
-                  <option value="lt">&lt;</option>
-                  <option value="gte">&ge;</option>
-                  <option value="lte">&le;</option>
-                  <option value="eq">=</option>
-                </select>
-                <input
-                  v-model="filter[c.key].value"
-                  class="form-control form-control-sm"
-                  type="number"
-                  min="0"
+                <LoadIcon
+                  :id="'filterDropDown_' + c.key"
+                  :color="c.key in sequelizeFilter ? 'blue' : ''"
+                  :icon-name="
+                    c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'
+                  "
                 />
-              </div>
-            </template>
-          </span>
-        </th>
-        <th v-if="hasButtons">Manage</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-        <td
-          :colspan="columns.length"
-          class="text-center"
+              </span>
+              <template v-if="!c.filter.type">
+                <ul
+                  :aria-labelledby="'filterDropDown_' + c.key"
+                  class="dropdown-menu p-1"
+                  @click.stop=""
+                >
+                  <li
+                    v-for="f in c.filter"
+                    :key="f.key"
+                    class="form-check"
+                  >
+                    <input
+                      :id="'filterDropDown_' + c.key + '_label_' + f.key"
+                      v-model="filter[c.key][f.key]"
+                      class="form-check-input"
+                      type="checkbox"
+                    />
+                    <label
+                      :for="'filterDropDown_' + c.key + '_label_' + f.key"
+                      class="form-check-label"
+                      >{{ f.name }}</label
+                    >
+                  </li>
+                </ul>
+              </template>
+              <template v-else-if="c.filter.type === 'numeric'">
+                <div class="dropdown-menu p-2">
+                  <select
+                    v-model="filter[c.key].operator"
+                    class="form-select form-select-sm mb-2"
+                  >
+                    <option value="gt">&gt;</option>
+                    <option value="lt">&lt;</option>
+                    <option value="gte">&ge;</option>
+                    <option value="lte">&le;</option>
+                    <option value="eq">=</option>
+                  </select>
+                  <input
+                    v-model="filter[c.key].value"
+                    class="form-control form-control-sm"
+                    type="number"
+                    min="0"
+                  />
+                </div>
+              </template>
+            </span>
+          </th>
+          <th
+            v-if="hasManageButtons"
+            ref="manageHeader"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
+          >
+            Manage
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+          <td
+            :colspan="columns.length"
+            class="text-center"
+          >
+            Loading data from server...
+          </td>
+        </tr>
+        <tr v-else-if="!data || data.length === 0">
+          <td
+            :colspan="emptyColspan"
+            class="text-center"
+          >
+            No data
+          </td>
+        </tr>
+        <tr
+          v-for="r in tableData"
+          v-else
+          :key="r"
+          @click="selectRow(r)"
         >
-          Loading data from server...
-        </td>
-      </tr>
-      <tr v-else-if="!data || data.length === 0">
-        <td
-          :colspan="emptyColspan"
-          class="text-center"
-        >
-          No data
-        </td>
-      </tr>
-      <tr
-        v-for="(r, index) in tableData"
-        v-else
-        :key="r"
-        @click="selectRow(r)"
-      >
-        <td v-if="selectableRows">
-          <div
-            class="form-check"
+          <td v-if="selectableRows">
+            <div
+              class="form-check"
+              @click.stop=""
+            >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :class="{
+                  pointer: selectableRows && !r.isDisabled,
+                }"
+                :disabled="r.isDisabled"
+                :checked="currentData.includes(r)"
+                @change="(e) => selectRow(r)"
+              />
+            </div>
+          </td>
+          <td
+            v-for="(c, index) in columns"
+            :key="c.key"
+            :class="[
+              'width' in c ? 'col-' + c.width : 'col-auto',
+              { pointer: selectableRows && !r.isDisabled },
+              getFixedColumnClass(c, index),
+            ]"
+            :style="getFixedColumnStyle(c)"
+          >
+            <span v-if="c.key in r">
+              <TIcon
+                v-if="c.type === 'icon'"
+                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
+                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
+                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
+              />
+              <TBadge
+                v-else-if="c.type === 'badge'"
+                :options="c.typeOptions ? c.typeOptions : null"
+                :value="r[c.key]"
+              />
+              <TButton
+                v-else-if="c.type === 'button'"
+                :action="r[c.key].action"
+                :stats="r[c.key].stats"
+                :icon="r[c.key].icon"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
+              />
+              <TToggle
+                v-else-if="c.type === 'toggle'"
+                :action="r[c.key].action"
+                :value="r[c.key].value"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
+              />
+              <span v-else-if="c.type === 'datetime'">
+                {{ new Date(r[c.key]).toLocaleString() }}
+              </span>
+
+              <span v-else-if="c.type === 'icon-selector'">
+                <LoadIcon
+                  v-if="r[c.key].selected"
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  style="color: yellowgreen"
+                />
+                <LoadIcon
+                  v-else
+                  v-tooltip
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  :title="r[c.key].title"
+                  role="button"
+                  @click="actionEmitter({ action: r[c.key].action, params: r })"
+                />
+              </span>
+              <span
+                v-else
+                :class="{
+                  multiline: c.multiline,
+                }"
+                :style="getMultilineStyles(c)"
+              >
+                {{ r[c.key] }}
+              </span>
+            </span>
+            <span v-else> - </span>
+          </td>
+          <td
+            v-if="getFilteredButtons(r).length > 0"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
             @click.stop=""
           >
-            <input
-              class="form-check-input"
-              type="checkbox"
-              :class="{
-                pointer: selectableRows && !r.isDisabled,
-              }"
-              :disabled="r.isDisabled"
-              :checked="currentData.includes(r)"
-              @change="(e) => selectRow(r)"
-            />
-          </div>
-        </td>
-        <td
-          v-for="c in columns"
-          :key="c"
-           :class="[
-            'width' in c ? 'col-' + c.width : 'col-auto',
-            { pointer: selectableRows && !r.isDisabled },
-          ]"
-        >
-          <span v-if="c.key in r">
-            <TIcon
-              v-if="c.type === 'icon'"
-              :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
-              :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
-              :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
-            />
-            <TBadge
-              v-else-if="c.type === 'badge'"
-              :options="c.typeOptions ? c.typeOptions : null"
-              :value="r[c.key]"
-            />
-            <TButton
-              v-else-if="c.type === 'button'"
-              :action="r[c.key].action"
-              :stats="r[c.key].stats"
-              :icon="r[c.key].icon"
-              :options="r[c.key].options"
+            <TButtonGroup
+              :buttons="getFilteredButtons(r)"
               :params="r"
-              :title="r[c.key].title"
               @action="actionEmitter"
             />
-            <TToggle
-              v-else-if="c.type === 'toggle'"
-              :action="r[c.key].action"
-              :value="r[c.key].value"
-              :options="r[c.key].options"
-              :params="r"
-              :title="r[c.key].title"
-              @action="actionEmitter"
-            />
-            <span v-else-if="c.type === 'datetime'">
-              {{ new Date(r[c.key]).toLocaleString() }}
-            </span>
-
-            <span v-else-if="c.type === 'icon-selector'">
-              <LoadIcon
-                v-if="r[c.key].selected"
-                :icon-name="r[c.key].icon"
-                :size="16"
-                style="color: yellowgreen"
-              />
-              <LoadIcon
-                v-else
-                v-tooltip
-                :icon-name="r[c.key].icon"
-                :size="16"
-                :title="r[c.key].title"
-                role="button"
-                @click="actionEmitter({ action: r[c.key].action, params: r })"
-              />
-            </span>
-            <span
-              v-else
-              :class="{
-                'multiline': c.multiline,
-              }"
-              :style="getMultilineStyles(c)"
-            >
-              {{ r[c.key] }}
-            </span>
-          </span>
-          <span v-else> - </span>
-        </td>
-        <td
-          v-if="getFilteredButtons(r).length > 0"
-          @click.stop=""
-        >
-          <TButtonGroup
-            :buttons="getFilteredButtons(r)"
-            :params="r"
-            @action="actionEmitter"
-          />
-        </td>
-      </tr>
-    </tbody>
-  </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
     ref="pagination"
@@ -351,6 +376,11 @@ export default {
       required: false,
       default: () => [],
     },
+    maxTableHeight: {
+      type: [Number, String],
+      required: false,
+      default: null,
+    },
   },
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
@@ -372,7 +402,12 @@ export default {
       paginationShowPages: 3,
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
-      hasButtons: false, // Use this flag to decide on the visibility of the column header
+      hasManageButtons: false, // Use this flag to decide on the visibility of the column header
+      fixedColumnStyles: {},
+      manageColumnStyle: {},
+      debouncedComputeFixedColumns: null,
+      hasHorizontalOverflow: false,
+      resizeObserver: null,
     };
   },
   computed: {
@@ -381,6 +416,15 @@ export default {
       const allFilteredData = this.getFilteredAndSortedData();
       const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
       return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
+    },
+    tableWrapperStyle() {
+      if (!this.maxTableHeight) return null;
+      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
+      if (!maxHeight) return null;
+      return {
+        maxHeight,
+        overflowY: "auto",
+      };
     },
     serverSidePagination() {
       return (
@@ -471,6 +515,23 @@ export default {
           .map(([k, v]) => ({ [k]: v }))
       );
     },
+    hasFixedColumns() {
+      return this.columns.some((c) => ["left", "right"].includes(c.fixed));
+    },
+    hasRightFixedColumns() {
+      return this.columns.some((c) => c.fixed === "right");
+    },
+    // Determine if manage column should be sticky
+    shouldFixManageColumn() {
+      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+    },
+    // Cache the indices to avoid repeated searches
+    fixedColumnIndices() {
+      return {
+        lastLeft: this.columns.findLastIndex((col) => col.fixed === "left"),
+        firstRight: this.columns.findIndex((col) => col.fixed === "right"),
+      };
+    },
   },
   watch: {
     currentData: {
@@ -500,6 +561,14 @@ export default {
       },
       deep: true,
     },
+    hasManageButtons(newVal) {
+      if(newVal) {
+        this.setupFixedColumns();
+      } else if(!this.hasFixedColumns) {
+        this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
+      }
+    }
   },
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
@@ -526,8 +595,184 @@ export default {
               : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
         }))
     );
+
+    if (this.hasFixedColumns || this.hasManageButtons) {
+      this.setupFixedColumns();
+    }
+  },
+  created() {
+    this.debouncedComputeFixedColumns = this.debounce(() => {
+      this.computeFixedColumnStyles();
+    }, 150);
+  },
+  beforeUnmount() {
+    this.cleanupFixedColumns();
   },
   methods: {
+    setupFixedColumns() {
+      this.$nextTick(() => {
+        this.computeFixedColumnStyles();
+        // Use ResizeObserver for better performance if available
+        if (window.ResizeObserver && this.$refs.tableWrapper) {
+          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
+          this.resizeObserver.observe(this.$refs.tableWrapper);
+        } else {
+          // Fallback to window resize
+          window.addEventListener("resize", this.debouncedComputeFixedColumns);
+        }
+      });
+    },
+    cleanupFixedColumns() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
+      if (this.debouncedComputeFixedColumns) {
+        window.removeEventListener("resize", this.debouncedComputeFixedColumns);
+      }
+    },
+    getManageColumnClass() {
+      if (!this.shouldFixManageColumn) return null;
+
+      return {
+        "table-fixed": true,
+        "table-fixed-right": true,
+        "table-fixed-shadow": !this.hasRightFixedColumns,
+      };
+    },
+    getFixedColumnStyle(column) {
+      if (!column?.key || !column?.fixed) return null;
+      return this.fixedColumnStyles[column.key] || null;
+    },
+    getFixedColumnClass(column, index) {
+      if (!column?.fixed) return null;
+
+      const { lastLeft, firstRight } = this.fixedColumnIndices;
+      const isLastLeft = column.fixed === "left" && index === lastLeft;
+      const isFirstRight = column.fixed === "right" && index === firstRight;
+
+      return {
+        "table-fixed": true,
+        "table-fixed-left": column.fixed === "left",
+        "table-fixed-right": column.fixed === "right",
+        "table-fixed-shadow": isLastLeft || isFirstRight,
+      };
+    },
+    getManageColumnWidth() {
+      const ref = this.$refs.manageHeader;
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      return el?.offsetWidth || 100; // Default 100px 
+    },
+    computeFixedColumnStyles() {
+      // Check for horizontal overflow
+      const hasOverflow = this.detectHorizontalOverflow();
+      if (hasOverflow !== this.hasHorizontalOverflow) {
+        this.hasHorizontalOverflow = hasOverflow;
+      }
+
+      // Early return if no fixed columns needed
+      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
+        this.fixedColumnStyles = {};
+        this.manageColumnStyle = {};
+        return;
+      }
+
+      const styles = {};
+      const baseStyle = {
+        position: "sticky",
+        zIndex: 2,
+        background: "var(--bs-body-bg, #fff)",
+      };
+
+      // Compute left-fixed columns
+      let leftOffset = 0;
+      this.columns.forEach((column) => {
+        if (column.fixed === "left") {
+          styles[column.key] = {
+            ...baseStyle,
+            left: `${leftOffset}px`,
+          };
+          leftOffset += this.getColumnWidth(column);
+        }
+      });
+
+      // Compute right-fixed columns
+      let rightOffset = 0;
+
+      // Reserve space for manage column if it should be fixed
+      if (this.shouldFixManageColumn) {
+        rightOffset = this.getManageColumnWidth();
+      }
+
+      // Process right-fixed columns from right to left
+      [...this.columns]
+        .reverse()
+        .filter((c) => c.fixed === "right")
+        .forEach((column) => {
+          styles[column.key] = {
+            ...baseStyle,
+            right: `${rightOffset}px`,
+          };
+          rightOffset += this.getColumnWidth(column);
+        });
+
+      // Set manage column style
+      this.manageColumnStyle = this.shouldFixManageColumn
+        ? {
+            ...baseStyle,
+            right: "0px",
+            zIndex: 3, // Higher z-index for manage column
+          }
+        : null;
+
+      this.fixedColumnStyles = styles;
+    },
+    getColumnWidth(column) {
+      // Check explicit width properties first 
+      if (column.fixedWidth) return Number(column.fixedWidth);
+      if (column.widthPx) return Number(column.widthPx);
+      if (column.width) return Number(column.width);
+
+      // Fall back to measuring DOM
+      const ref = this.$refs[`header-${column.key}`];
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      if (el?.offsetWidth) return el.offsetWidth;
+
+      // Default fallback
+      return 150;
+    },
+    detectHorizontalOverflow() {
+      const wrapper = this.$refs.tableWrapper;
+      const table = this.$refs.tableElement;
+
+      if (!wrapper || !table) return false;
+
+      return table.scrollWidth > wrapper.clientWidth;
+    },
+    normalizeCssSize(value) {
+      if (!value) return null;
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return `${value}px`;
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        if (/^\d+$/.test(trimmed)) {
+          return `${trimmed}px`;
+        }
+        return trimmed;
+      }
+      return null;
+    },
+    debounce(func, wait = 100) {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          func.apply(this, args);
+        }, wait);
+      };
+    },
     getFilteredAndSortedData() {
       let data = this.data.map((d) => d);
 
@@ -729,7 +974,7 @@ export default {
 
       // Update this flag if there are any buttons
       if (filteredButtons.length > 0) {
-        this.hasButtons = true;
+        this.hasManageButtons = true;
       }
 
 
@@ -754,6 +999,37 @@ export default {
 </script>
 
 <style scoped>
+.table-wrapper {
+  position: relative;
+  overflow-x: auto;
+  min-height: 80px;
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: max-content;
+  min-width: 100%;
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+.table-fixed {
+  position: sticky;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-fixed-left.table-fixed-shadow {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.table-fixed-right.table-fixed-shadow {
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.table thead .table-fixed {
+  z-index: 3;
+}
+
 .form-check-input:disabled {
   cursor: not-allowed;
   pointer-events: initial;

@@ -292,8 +292,8 @@ export default {
     },
     columns() {
       let cols = [
-        {name: "ID", key: "id"},
-        {name: "Name", key: "name"},
+        {name: "ID", key: "id", fixed: "left" },
+        {name: "Name", key: "name", fixed: "left" },
         {
           name: "Status",
           key: "state",

@@ -40,13 +40,13 @@
 
         </div>
       </div>
-
-      <div class="table-scroll-container mt-2">
+      <div class="mt-2">
         <BasicTable
-            v-model="selectedSubmissions"
-            :columns="submissionColumns"
-            :options="submissionTableOptions"
-            :data="submissionTable"
+          v-model="selectedSubmissions"
+          :columns="submissionColumns"
+          :options="submissionTableOptions"
+          :data="submissionTable"
+          :max-table-height="400"
         />
       </div>
     </template>
@@ -277,12 +277,6 @@ export default {
 </script>
 
 <style scoped>
-.table-scroll-container {
-  max-height: 400px;
-  min-height: 80px;
-  overflow-y: auto;
-}
-
 .summary-container {
   padding: 1rem;
 }

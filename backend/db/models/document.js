@@ -88,14 +88,69 @@ module.exports = (sequelize, DataTypes) => {
                 const studyId = step.studyId;
 
                 // Delete the study using this documentId and all corresponding sessions and study_steps for the studyId
-                const study = await sequelize.models.study.findByPk(studyId, { transaction });
+                const study = await sequelize.models.study.findByPk(studyId, {transaction});
                 if (study) {
-                    await sequelize.models.study.deleteById(study.id, { transaction });
+                    await sequelize.models.study.deleteById(study.id, {transaction});
                     await await sequelize.models.study.deleteStudySessions(study, options);
                     await await sequelize.models.study.deleteStudySteps(study, options);
                 }
             }
         }
+
+        /**
+         * Load and process a single document by its id.
+         *
+         * @param {number} documentId - The id of the document.
+         * @returns {Promise<string|null>} Base64 encoded file content or null if not found/error.
+         */
+        async loadDocumentForNlpRequest(documentId) {
+
+            try {
+                const doc = await Document.findByPk(documentId, {raw: true});
+
+                if (!doc) {
+                    throw new Error(`Document ${documentId} not found`);
+                }
+
+                return await Document.encodeDocumentFileToBase64(doc);
+            } catch (err) {
+                throw new Error(`Error processing document ${documentId}: ${err.message}`)
+            }
+        }
+
+        /**
+         * Resolve the file path for a document and return its content as base64.
+         *
+         * @param {object} doc - The document record from the database.
+         * @returns {Promise<string>} Base64-encoded file content.
+         * @throws {Error} If the document is invalid, missing, or cannot be read.
+         */
+        static async encodeDocumentFileToBase64(doc) {
+
+            const docTypeKey = Object.entries(Document.docTypes).find(
+                ([, value]) => value === doc.type
+            )?.[0];
+
+            const fileExtension = docTypeKey
+                ? `.${docTypeKey.replace(/^DOC_TYPE_/, '').toLowerCase()}`
+                : '';
+
+            const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
+
+            try {
+                await fs.promises.access(docFilePath, fs.constants.F_OK);
+            } catch {
+                throw new Error(`File not found for document ${doc.id}: ${docFilePath}`);
+            }
+
+            try {
+                const fileBuffer = await fs.promises.readFile(docFilePath);
+                return fileBuffer.toString('base64');
+            } catch (err) {
+                throw new Error(`Error reading document file ${doc.id}: ${err.message}`);
+            }
+        }
+
 
         /**
          * Helper method for defining associations.
@@ -128,37 +183,37 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     Document.init({
-        name: DataTypes.STRING,
-        hash: DataTypes.STRING,
-        userId: DataTypes.INTEGER,
-        public: DataTypes.BOOLEAN,
-        readyForReview: DataTypes.BOOLEAN,
-        uploadedByUserId: DataTypes.INTEGER,
-        updatedAt: DataTypes.DATE,
-        deleted: DataTypes.BOOLEAN,
-        deletedAt: DataTypes.DATE,
-        createdAt: DataTypes.DATE,
-        type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, 2 is for modal, 3 is for configuration, 4 is for zip
-        parentDocumentId: DataTypes.INTEGER,
-        hideInFrontend: DataTypes.BOOLEAN,
-        projectId: DataTypes.INTEGER,
-        submissionId: DataTypes.INTEGER,
-        originalFilename: DataTypes.STRING,
-    }, {
-        sequelize: sequelize,
-        modelName: 'document',
-        tableName: 'document',
-        hooks: {
-            afterUpdate: async (document, options) => {
-                // If the document is deleted, we should also delete the associated db columns
-                if (document.deleted && !document._previousDataValues.deleted) {
-                    // delete associated studies
-                    const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id);
-                    const uniqueStudyIds = [...new Set(study_steps.map(study => study.studyId))];
+            name: DataTypes.STRING,
+            hash: DataTypes.STRING,
+            userId: DataTypes.INTEGER,
+            public: DataTypes.BOOLEAN,
+            readyForReview: DataTypes.BOOLEAN,
+            uploadedByUserId: DataTypes.INTEGER,
+            updatedAt: DataTypes.DATE,
+            deleted: DataTypes.BOOLEAN,
+            deletedAt: DataTypes.DATE,
+            createdAt: DataTypes.DATE,
+            type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, 2 is for modal, 3 is for configuration, 4 is for zip
+            parentDocumentId: DataTypes.INTEGER,
+            hideInFrontend: DataTypes.BOOLEAN,
+            projectId: DataTypes.INTEGER,
+            submissionId: DataTypes.INTEGER,
+            originalFilename: DataTypes.STRING,
+        }, {
+            sequelize: sequelize,
+            modelName: 'document',
+            tableName: 'document',
+            hooks: {
+                afterUpdate: async (document, options) => {
+                    // If the document is deleted, we should also delete the associated db columns
+                    if (document.deleted && !document._previousDataValues.deleted) {
+                        // delete associated studies
+                        const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id);
+                        const uniqueStudyIds = [...new Set(study_steps.map(study => study.studyId))];
 
-                    for (const studyId of uniqueStudyIds) {
-                        await sequelize.models["study"].deleteById(studyId);
-                    }
+                        for (const studyId of uniqueStudyIds) {
+                            await sequelize.models["study"].deleteById(studyId);
+                        }
 
                         // delete associated annotations and comments
                         if (document.type === Document.docTypes.DOC_TYPE_HTML || document.type === Document.docTypes.DOC_TYPE_MODAL) {
@@ -193,12 +248,12 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 },
             },
-        indexes: [
-            {
-            unique: false,
-            fields: ["readyForReview", "userId"]
-            }
-        ]
+            indexes: [
+                {
+                    unique: false,
+                    fields: ["readyForReview", "userId"]
+                }
+            ]
         }
     );
     Document.cache = new SequelizeSimpleCache({document: {limit: 50, ttl: false}});
