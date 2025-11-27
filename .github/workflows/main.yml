@@ -58,5 +58,5 @@ jobs:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
           BRANCH: ${{ github.ref_name }}
         run: |
-           git remote add gitlab https://$GITLAB_USER:$GITLAB_TOKEN@git.ukp.informatik.tu-darmstadt.de/${path_to_gitlab_repo}.git
+           git remote add gitlab https://$GITLAB_USER:$GITLAB_TOKEN@git.ukp.informatik.tu-darmstadt.de/zyska/care.git
            git push gitlab $BRANCH
