@@ -207,32 +207,37 @@ export default {
     document.body.removeEventListener('mousedown', this.positionTracker);
     document.body.removeEventListener('resize', this.checkOverflow);
     
-    const key = "UH" + this.tagSetId;
-    const payload = JSON.stringify(this.usageHistory);
-    // save the usage history 
-    if (!this.savedUsageHistory){
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          userId: this.userId,
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          key: key,
-          value: payload
-        }
-      });
-    } else {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          id: this.savedUsageHistory.id,
-          value: payload
-        }
-      });
+    if (this.recencySortingOn) {
+      this.saveUsageHistory();
     }
   },
   methods: {
+    saveUsageHistory() {
+      const key = "UH" + this.tagSetId;
+      const payload = JSON.stringify(this.usageHistory);
+      // save the usage history 
+      if (!this.savedUsageHistory){
+        this.$socket.emit("appDataUpdate", {
+          table: "user_environment",
+          data: {
+            userId: this.userId,
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            key: key,
+            value: payload
+          }
+        });
+      } else {
+        this.$socket.emit("appDataUpdate", {
+          table: "user_environment",
+          data: {
+            id: this.savedUsageHistory.id,
+            value: payload
+          }
+        });
+      }
+    },
     checkOverflow() {
       const el = this.$refs.adderWrapper;
       this.isOverflowing = el.scrollHeight > el.clientHeight;
@@ -289,16 +294,20 @@ export default {
       }
     },
     async annotate(tag) {
-      // track tag usage history, if tag is in the list, remove it 
-      // then add it to the front, keep the list no longer than 20 
-      const currentIdx = this.usageHistory.indexOf(tag.name)
-      if (currentIdx > -1){
-        this.usageHistory.splice(currentIdx, 1);
+
+      if (this.recencySortingOn) {
+        // track tag usage history, if tag is in the list, remove it 
+        // then add it to the front, keep the list no longer than 20 
+        const currentIdx = this.usageHistory.indexOf(tag.name)
+        if (currentIdx > -1){
+          this.usageHistory.splice(currentIdx, 1);
+        }
+        this.usageHistory.unshift(tag.name);
+        if (this.usageHistory.length > 20) {
+          this.usageHistory.pop()
+        }
       }
-      this.usageHistory.unshift(tag.name);
-      if (this.usageHistory.length > 20) {
-        this.usageHistory.pop()
-      }
+      
 
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
