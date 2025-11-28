@@ -41,6 +41,7 @@
                   @open-info-panel="onChildOpenInfoPanel"
                   @close-info-panel="closeInfoPanel"
                   @toggle-info-panel-pin="onChildToggleInfoPanelPin"
+                  @focus-next-rubric="onFocusNextRubric"
               />
             </div>
           </div>
@@ -561,6 +562,21 @@ export default {
       }).catch((err) => {
         console.error("Failed to save assessment data", err);
       });
+    },
+    onFocusNextRubric(currentGroupIndex) {
+      if (!this.configuration || !this.configuration.rubrics) return;
+
+      const nextIndex = currentGroupIndex + 1;
+      const total = this.configuration.rubrics.length;
+
+      if (nextIndex < total) {
+        // close all & open next rubric
+        const newExpanded = {};
+        newExpanded[nextIndex] = true;
+        this.expandedGroups = newExpanded;
+      } else {
+        this.expandedGroups = {};
+      }
     },
   },
 };
