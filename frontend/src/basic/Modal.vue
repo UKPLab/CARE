@@ -1,19 +1,19 @@
 <template>
   <teleport to="body">
     <div
-      ref="Modal"
-      :data-bs-keyboard="!disableKeyboard"
-      aria-hidden="true"
-      aria-labelledby="ModalLabel"
-      class="modal fade"
-      data-bs-backdrop="static"
-      role="dialog"
-      tabindex="-1"
+        ref="Modal"
+        :data-bs-keyboard="!disableKeyboard"
+        aria-hidden="true"
+        aria-labelledby="ModalLabel"
+        class="modal fade"
+        data-bs-backdrop="static"
+        role="dialog"
+        tabindex="-1"
     >
       <div
-        :class="sizeClass"
-        class="modal-dialog"
-        role="document"
+          :class="sizeClass"
+          class="modal-dialog"
+          role="document"
       >
         <div class="modal-content">
           <div class="modal-header">
@@ -21,32 +21,38 @@
               <slot name="title"/>
             </h5>
             <button
-              v-if="!removeClose"
-              aria-label="Close"
-              class="btn-close"
-              @click="handleCloseClick"
-              type="button"
+                v-if="!removeClose"
+                aria-label="Close"
+                class="btn-close"
+                @click="handleCloseClick"
+                type="button"
             />
           </div>
           <div class="modal-body">
             <div
-              v-if="waiting"
-              class="justify-content-center flex-grow-1 d-flex"
-              role="status"
+                v-if="waiting"
+                class="justify-content-center flex-grow-1 d-flex"
+                role="status"
             >
               <div class="spinner-border m-5">
                 <span class="visually-hidden">Loading...</span>
               </div>
             </div>
             <div
-              v-else-if="progress"
-              class="justify-content-center flex-grow-1 d-flex"
-              role="status"
+                v-else-if="progress"
+                class="justify-content-center flex-grow-1 d-flex"
+                role="status"
             >
               <div class="progress" style="width:100%">
-                <div class="progress-bar" role="progressbar" :style="'width:' + progressPercent + '%'"
-                     :aria-valuenow="progressPercent" aria-valuemin="0"
-                     aria-valuemax="100"> {{ progressPercent }}%
+                <div
+                    class="progress-bar"
+                    role="progressbar"
+                    :style="'width:' + progressPercent + '%'"
+                    :aria-valuenow="progressPercent"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                >
+                  {{ progressPercent }}%
                 </div>
               </div>
             </div>
@@ -55,8 +61,8 @@
             </div>
           </div>
           <div
-            v-show="!waiting && !progress"
-            class="modal-footer"
+              v-show="!waiting && !progress"
+              class="modal-footer"
           >
             <slot name="footer"/>
           </div>
@@ -86,10 +92,10 @@
  *
  */
 import {Modal} from 'bootstrap';
-import {v4 as uuid} from "uuid";
+import {v4 as uuid} from 'uuid';
 
 export default {
-  name: "BasicModal",
+  name: 'BasicModal',
   inject: {
     acceptStats: {
       default: () => false
@@ -97,6 +103,11 @@ export default {
     parentModal: {
       default: () => null
     }
+  },
+  provide() {
+    return {
+      parentModal: this
+    };
   },
   props: {
     size: {
@@ -131,11 +142,6 @@ export default {
     }
   },
   emits: ['show', 'hide', 'close-requested'],
-  provide() {
-    return {
-      parentModal: this
-    };
-  },
   data() {
     return {
       modal: null,
@@ -146,7 +152,8 @@ export default {
       _suspendedByChild: false,
       _closeRequestHandled: false,
       _hideWaiting: false,
-    }
+      isShown: false,
+    };
   },
   computed: {
     sizeClass() {
@@ -172,9 +179,13 @@ export default {
     }
   },
   beforeUnmount() {
-    this.$refs.Modal.removeEventListener('hide.bs.modal', this.hideEvent);
-    this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
-    this.modal.hide();
+    if (this.$refs.Modal) {
+      this.$refs.Modal.removeEventListener('hide.bs.modal', this.hideEvent);
+      this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
+    }
+    if (this.modal) {
+      this.modal.hide();
+    }
   },
   sockets: {
     progressUpdate: function (data) {
@@ -199,20 +210,22 @@ export default {
       this.progress = false;
     },
     hideEvent() {
+      this.isShown = false;
       this.$emit('hide');
       if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "hideModal",
-          data: {"name": this.name, "props": this.props}
+        this.$socket.emit('stats', {
+          action: 'hideModal',
+          data: {name: this.name, props: this.props}
         });
       }
     },
     showEvent() {
+      this.isShown = true;
       this.$emit('show');
       if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "showModal",
-          data: {"name": this.name, "props": this.props}
+        this.$socket.emit('stats', {
+          action: 'showModal',
+          data: {name: this.name, props: this.props}
         });
       }
       if (this._hideWaiting) {
@@ -248,26 +261,24 @@ export default {
       this.hide();
     },
     hide() {
-      const modalElement = this.$refs.Modal;
-      const isShown = modalElement.classList.contains('show');  
-      if (isShown) {
+      if (this.isShown) {
         this.modal.hide();
       } else {
         this._hideWaiting = true;
       }
       this.resumeParentModal();
     },
-    showParentModal(){
+    showParentModal() {
       if (this.parentModal) {
         this.parentModal.show();
       }
     },
-    hideParentModal(){
+    hideParentModal() {
       if (this.parentModal) {
         this.parentModal.hide();
       }
     },
-    suspendParentModal(){
+    suspendParentModal() {
       if (!this.parentModal || this.parentModal._suspendedByChild) return;
       const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
       if (el) {
@@ -275,7 +286,7 @@ export default {
       }
       this.parentModal._suspendedByChild = true;
     },
-    resumeParentModal(){
+    resumeParentModal() {
       if (!this.parentModal || !this.parentModal._suspendedByChild) return;
       const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
       if (el) {
@@ -284,13 +295,14 @@ export default {
       this.parentModal._suspendedByChild = false;
     }
   }
-}
+};
 </script>
 
 <style scoped>
 .shake {
   animation: shake-animation 0.5s ease-in-out;
 }
+
 .nested-suspended {
   visibility: hidden;
   pointer-events: none;
