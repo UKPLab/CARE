@@ -215,7 +215,6 @@ export default {
           data: {"name": this.name, "props": this.props}
         });
       }
-      console.log("[Modal] Modal shown", this._hideWaiting);
       if (this._hideWaiting) {
         this._hideWaiting = false;
         this.hide();
@@ -251,12 +250,9 @@ export default {
     hide() {
       const modalElement = this.$refs.Modal;
       const isShown = modalElement.classList.contains('show');  
-      console.log("[Modal] Hiding modal, isShown:",modalElement.classList, isShown);   
       if (isShown) {
-        console.log("[Modal] Modal is shown, hiding now");
         this.modal.hide();
       } else {
-        console.log("[Modal] Modal already hidden", this._hideWaiting);
         this._hideWaiting = true;
       }
       this.resumeParentModal();
