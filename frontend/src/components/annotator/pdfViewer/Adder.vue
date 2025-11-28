@@ -104,7 +104,7 @@ export default {
   },
   computed: {
     recencySortingOn() {
-      return this.$store.getters["settings/getValue"]("tags.recencySortingIsOn");
+      return this.$store.getters["settings/getValue"]("tags.recencySortingIsOn") === "true";
     },
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
@@ -138,7 +138,7 @@ export default {
       }
       
       // sort tags by recency 
-      if (this.recencySortingOn === true) {
+      if (this.recencySortingOn) {
           tagList.sort((a,b) => {
           const idxA = this.usageHistory.indexOf(a.name);
           const idxB = this.usageHistory.indexOf(b.name);
