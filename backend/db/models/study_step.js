@@ -20,6 +20,12 @@ module.exports = (sequelize, DataTypes) => {
                 right: "frontend.dashboard.studies.fullAccess",
                 columns: StudyStep.getAttributes()
             },
+            {
+                table: "study",
+                by: "id",
+                target: "studyId",
+                columns: this.getAttributes()
+            }
         ];
         static fields = [
             {
