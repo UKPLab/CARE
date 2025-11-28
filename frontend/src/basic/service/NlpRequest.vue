@@ -184,6 +184,15 @@ export default {
         this.timeoutId = null;
       }, this.nlpRequestTimeout);
     },
+    markSkipped() {
+      if (this.timeoutId) {
+        clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+      }
+
+      this.saveResult({skipped: true});
+      this.status = 'skipped';
+    },
     saveResult(result) {
       const entries = Object.keys(result || {}).map(k => ({
         documentId: this.documentId,

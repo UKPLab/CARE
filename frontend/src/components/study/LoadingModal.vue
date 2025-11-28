@@ -26,7 +26,7 @@
               <BasicButton
                   title="Skip NLP Support"
                   class="btn btn-secondary"
-                  @click="close"
+                  @click="skipNlpSupport"
               />
             </div>
           </div>
@@ -336,7 +336,23 @@ export default {
     close() {
       this.$emit("update:ready", true);
       this.$refs.modal.close();
-    }
+    },
+    skipNlpSupport() {
+      Object.entries(this.nlpRequests).forEach(([key, request]) => {
+        if (request.status === 'timeout') {
+          const refName = `nlpRequest[${key}]`;
+          const ref = this.$refs[refName];
+
+          const component = Array.isArray(ref) ? ref[0] : ref;
+
+          if (component && typeof component.markSkipped === 'function') {
+            component.markSkipped();
+          }
+        }
+      });
+
+      this.close();
+    },
   }
 }
 </script>
