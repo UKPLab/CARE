@@ -8,7 +8,7 @@
   >
     <template #title>
       <h5 class="modal-title">
-        Loading Study Step
+        {{ modalTitle }}
       </h5>
     </template>
     <template #body>
@@ -51,6 +51,7 @@
                 :service="service"
                 :document-data="documentData"
                 :study-step-id="studyStepId"
+                :document-id="documentId"
                 @update:state="nlpRequests[service.name] = $event"
                 @update:data="documentDataRefresh"
             />
@@ -189,6 +190,27 @@ export default {
       return Object.values(this.nlpRequests).some(
           req => req.status === 'timeout' || req.status === 'failed'
       );
+    },
+    modalTitle() {
+      if (this.error) {
+        return "Error Loading Study Step";
+      }
+
+      // Still fetching the document data
+      if (!this.documentData) {
+        return "Loading Study Step";
+      }
+
+      if (this.nlpRequestsInProgress) {
+        return "Processing NLP Requests";
+      }
+
+      // NLP services active
+      if (this.nlpRequestsFailed) {
+        return "NLP Requests Failed";
+      }
+
+      return "Study Step Ready";
     }
   },
   watch: {
@@ -294,7 +316,7 @@ export default {
           });
         }
       });
-      
+
       this.documentData = updatedData;
     },
     retryNlpRequests() {
