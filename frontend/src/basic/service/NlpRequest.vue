@@ -18,7 +18,11 @@ export default {
       type: Array,
       required: true,
       default: () => [],
-    }
+    },
+    studySessionId: {
+      type: Number,
+      required: true,
+    },
   },
   props: {
     skill: {
@@ -40,6 +44,10 @@ export default {
     },
     documentData: {
       type: Object,
+      required: true,
+    },
+    documentId: {
+      type: Number,
       required: true,
     },
     service: {
@@ -178,7 +186,7 @@ export default {
     },
     saveResult(result) {
       const entries = Object.keys(result || {}).map(k => ({
-        documentId: this.studyStep?.documentId,
+        documentId: this.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
         key: `${this.skillKey}_${k}`,
