@@ -184,64 +184,57 @@ export default {
     applySkillsDataSources() {
       const sources = [...this.configurationSources];
 
-      if (!this.tableBasedParameter) {
-        sources.unshift(
-            {
-              value: "document",
-              name: "<Documents>",
-              requiresTableSelection: true,
-              type: "document",
-              table: "document"
-            },
-            {
-              value: "submission",
-              name: "<Submissions>",
-              requiresTableSelection: true,
-              type: "submission",
-              table: "submission"
-            }
-        );
-      }
+      // Always add document/submission
+      sources.unshift(
+          {
+            value: "document",
+            name: "<Documents>",
+            requiresTableSelection: true,
+            type: "document",
+            table: "document",
+          },
+          {
+            value: "submission",
+            name: "<Submissions>",
+            requiresTableSelection: true,
+            type: "submission",
+            table: "submission",
+          }
+      );
 
       return sources;
     },
     dataSourcesByInput() {
       const dict = {};
       this.skillInputs.forEach(input => {
-        const sources = [...this.configurationSources];
-
-        if (!this.tableBasedParameter || this.tableBasedParameter === input) {
-          sources.unshift(
-              {
-                value: "document",
-                name: "<Documents>",
-                requiresTableSelection: true,
-                table: "document",
-                type: "document"
-              },
-              {
-                value: "submission",
-                name: "<Submissions>",
-                requiresTableSelection: true,
-                table: "submission",
-                type: "submission"
-              }
-          );
-        }
+        const sources = [
+          {
+            value: "document",
+            name: "<Documents>",
+            requiresTableSelection: true,
+            table: "document",
+            type: "document",
+          },
+          {
+            value: "submission",
+            name: "<Submissions>",
+            requiresTableSelection: true,
+            table: "submission",
+            type: "submission",
+          },
+          ...this.configurationSources,
+        ];
 
         dict[input] = sources;
       });
       return dict;
     },
     availableDataSources() {
-      let sources = [];
       if (this.studyBased) {
-        sources = this.getSourcesUpToCurrentStep(this.workflowStepIndex);
-      } else {
-        sources = this.applySkillsDataSources;
+        return this.getSourcesUpToCurrentStep(this.workflowStepIndex);
       }
-
-      return sources;
+      // non-study-based: just use the skill-based sources
+      return this.applySkillsDataSources;
     },
     workflowStepIndex() {
       return this.orderedWorkflowSteps.findIndex(
@@ -353,8 +346,13 @@ export default {
       this.isUpdatingFromWithin = true;
 
       if (source && source.requiresTableSelection) {
+        // Clear any other inputs that currently use a table-based source
         Object.keys(this.inputMappings).forEach(paramName => {
-          if (paramName !== input && this.inputMappings[paramName] && this.inputMappings[paramName].requiresTableSelection) {
+          if (
+              paramName !== input &&
+              this.inputMappings[paramName] &&
+              this.inputMappings[paramName].requiresTableSelection
+          ) {
             this.inputMappings[paramName] = null;
           }
         });
@@ -362,18 +360,19 @@ export default {
 
       this.inputMappings = {
         ...this.inputMappings,
-        [input]: source
+        [input]: source,
       };
 
-      this.$emit('update:modelValue', {
+      this.$emit("update:modelValue", {
         ...this.inputMappings,
-        output: {...this.outputMappings}
+        output: {...this.outputMappings},
       });
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
       });
     },
+
     updateOutputMapping(output, source) {
       this.isUpdatingFromWithin = true;
 
@@ -536,7 +535,8 @@ export default {
       return sources;
     },
   }
-};
+}
+;
 </script>
 
 <style scoped>
