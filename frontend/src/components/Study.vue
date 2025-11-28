@@ -432,10 +432,6 @@ export default {
       }
 
       this.pendingNlpInsertion = responseText;
-      console.log("[Study] Received NLP response", {
-        responseLength: responseText.length,
-        currentStepType: this.currentStudyStep?.stepType,
-      });
     },
     next() {
       const nextStep = this.nextStudyStep;

@@ -128,13 +128,6 @@ export default {
       },
       deep: true,
     },
-    roleRights: {
-      handler(newRights) {
-        console.log("Role rights updated:", newRights);
-       
-      },
-      deep: true,
-    }, 
   },
   mounted() {
     this.loadAllRights();
@@ -147,7 +140,6 @@ export default {
     loadAllRights() {
       this.$socket.emit("userGetAllRights", {}, (response) => {
         if (response.success) {
-          console.log("All rights loaded:", response.data);  
           this.allRights = response.data;
         } else {
           this.eventBus.emit("toast", {
@@ -155,14 +147,12 @@ export default {
             message: "Failed to load available rights",
             variant: "danger",
           });
-          console.log("Failed to load available rights", response);
         }
       });
     },
     loadRoleRights(roleId) {
       this.$socket.emit("userGetRoleBasedRights", { roleId }, (response) => {
         if (response.success) {
-          console.log("Role rights response for roleId", roleId, ":", response.data);
           
           // Get the selected right names from the role_right_matching response
           const selectedRightNames = response.data.map(item => item.userRightName);
@@ -174,15 +164,12 @@ export default {
           
           // Store the original rights for comparison
           this.originalRoleRights = JSON.parse(JSON.stringify(this.roleRights));
-          
-          console.log("Role rights loaded for roleId", roleId, ":", this.roleRights);
         } else {
           this.eventBus.emit("toast", {
             title: "Error",
             message: "Failed to load role rights",
             variant: "danger",
           });
-          console.log("Failed to load role rights", response);
         }
       });
     },
@@ -216,9 +203,6 @@ export default {
       
       // Rights to remove (in original but not in current selection)
       const deletedRights = originalRightNames.filter(name => !currentRightNames.includes(name));
-      
-      console.log("New rights:", newRights);
-      console.log("Deleted rights:", deletedRights);
       
       this.$socket.emit(
         "userAssignRoleRights",

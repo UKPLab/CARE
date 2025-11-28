@@ -145,6 +145,7 @@ export default {
       progressId: null,
       _suspendedByChild: false,
       _closeRequestHandled: false,
+      _hideWaiting: false,
     }
   },
   computed: {
@@ -164,7 +165,7 @@ export default {
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
     this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
-    this.$refs.Modal.addEventListener('show.bs.modal', this.showEvent);
+    this.$refs.Modal.addEventListener('shown.bs.modal', this.showEvent);
 
     if (this.autoOpen) {
       this.openModal();
@@ -172,7 +173,7 @@ export default {
   },
   beforeUnmount() {
     this.$refs.Modal.removeEventListener('hide.bs.modal', this.hideEvent);
-    this.$refs.Modal.removeEventListener('show.bs.modal', this.showEvent);
+    this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
     this.modal.hide();
   },
   sockets: {
@@ -214,6 +215,11 @@ export default {
           data: {"name": this.name, "props": this.props}
         });
       }
+      console.log("[Modal] Modal shown", this._hideWaiting);
+      if (this._hideWaiting) {
+        this._hideWaiting = false;
+        this.hide();
+      }
     },
     open() {
       this.openModal();
@@ -244,15 +250,14 @@ export default {
     },
     hide() {
       const modalElement = this.$refs.Modal;
-      const isShown = modalElement.classList.contains('show');     
+      const isShown = modalElement.classList.contains('show');  
+      console.log("[Modal] Hiding modal, isShown:",modalElement.classList, isShown);   
       if (isShown) {
+        console.log("[Modal] Modal is shown, hiding now");
         this.modal.hide();
       } else {
-        const onShown = () => {
-          modalElement.removeEventListener('shown.bs.modal', onShown);
-          this.modal.hide();
-        };
-        modalElement.addEventListener('shown.bs.modal', onShown);
+        console.log("[Modal] Modal already hidden", this._hideWaiting);
+        this._hideWaiting = true;
       }
       this.resumeParentModal();
     },
