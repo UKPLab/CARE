@@ -1,20 +1,20 @@
 <template>
   <StepperModal
-    ref="stepperModal"
-    :steps="steps"
-    :validation="validation"
-    submit-text="Assign Roles"
-    @submit="submit"
+      ref="stepperModal"
+      :steps="steps"
+      :validation="validation"
+      submit-text="Assign Rights"
+      @submit="submit"
   >
     <template #title>
-      <h5 class="modal-title">Assign Roles</h5>
+      <h5 class="modal-title">Rights Management</h5>
     </template>
     <template #step="{ index }">
       <div v-if="index === 0">
         <BasicForm
-          ref="roleForm"
-          v-model="formData"
-          :fields="roleFields"
+            ref="roleForm"
+            v-model="formData"
+            :fields="roleFields"
         />
       </div>
       <div v-else-if="index === 1">
@@ -25,10 +25,10 @@
           </small>
         </div>
         <BasicTable
-          :columns="rightsColumns"
-          :data="allRights"
-          v-model="roleRights"
-          :options="rightsTableOptions"
+            :columns="rightsColumns"
+            :data="allRights"
+            v-model="roleRights"
+            :options="rightsTableOptions"
         />
       </div>
     </template>
@@ -39,7 +39,6 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
-import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AssignRolesModal",
@@ -48,7 +47,6 @@ export default {
     StepperModal,
     BasicForm,
     BasicTable,
-    BasicButton,
   },
   emits: ["updateUser"],
   data() {
@@ -60,12 +58,12 @@ export default {
       originalRoleRights: [],
       allRights: [],
       steps: [
-        { title: "Select Role" },
-        { title: "Manage Rights" },
+        {title: "Select Role"},
+        {title: "Manage Rights"},
       ],
       rightsColumns: [
-        { name: "Right Name", key: "name", sortable: true },
-        { name: "Description", key: "description" },
+        {name: "Right Name", key: "name", sortable: true},
+        {name: "Description", key: "description"},
       ],
       rightsTableOptions: {
         striped: true,
@@ -88,11 +86,11 @@ export default {
       if (this.roleRights.length !== this.originalRoleRights.length) {
         return true;
       }
-      
+
       // Sort both arrays by name for comparison
       const currentNames = this.roleRights.map(r => r.name).sort();
       const originalNames = this.originalRoleRights.map(r => r.name).sort();
-      
+
       // Check if arrays are different
       return !currentNames.every((name, index) => name === originalNames[index]);
     },
@@ -151,17 +149,17 @@ export default {
       });
     },
     loadRoleRights(roleId) {
-      this.$socket.emit("userGetRoleBasedRights", { roleId }, (response) => {
+      this.$socket.emit("userGetRoleBasedRights", {roleId}, (response) => {
         if (response.success) {
-          
+
           // Get the selected right names from the role_right_matching response
           const selectedRightNames = response.data.map(item => item.userRightName);
-          
+
           // Filter allRights to only include the ones that are selected for this role
-          this.roleRights = this.allRights.filter(right => 
-            selectedRightNames.includes(right.name)
+          this.roleRights = this.allRights.filter(right =>
+              selectedRightNames.includes(right.name)
           );
-          
+
           // Store the original rights for comparison
           this.originalRoleRights = JSON.parse(JSON.stringify(this.roleRights));
         } else {
@@ -182,13 +180,13 @@ export default {
 
       // Update role rights
       await this.updateRoleRights();
-      
+
       this.eventBus.emit("toast", {
         title: "Role Rights Updated",
         message: "Role rights have been successfully updated",
         variant: "success",
       });
-      
+
       this.$emit("updateUser");
       this.$refs.stepperModal.setWaiting(false);
       this.$refs.stepperModal.close();
@@ -197,30 +195,30 @@ export default {
       // Compare original rights with current selection to find changes
       const originalRightNames = this.originalRoleRights.map(r => r.name);
       const currentRightNames = this.roleRights.map(r => r.name);
-      
+
       // Rights to add (in current selection but not in original)
       const newRights = currentRightNames.filter(name => !originalRightNames.includes(name));
-      
+
       // Rights to remove (in original but not in current selection)
       const deletedRights = originalRightNames.filter(name => !currentRightNames.includes(name));
-      
+
       this.$socket.emit(
-        "userAssignRoleRights",
-        {
-          roleId: this.formData.roleId,
-          newRights: newRights,
-          deletedRights: deletedRights,
-        },
-        (result) => {
-          if (!result.success) {
-            console.error("Failed to assign role rights:", result);
-            this.eventBus.emit("toast", {
-              title: "Error",
-              message: result.message || "Failed to assign role rights",
-              variant: "danger",
-            });
+          "userAssignRoleRights",
+          {
+            roleId: this.formData.roleId,
+            newRights: newRights,
+            deletedRights: deletedRights,
+          },
+          (result) => {
+            if (!result.success) {
+              console.error("Failed to assign role rights:", result);
+              this.eventBus.emit("toast", {
+                title: "Error",
+                message: result.message || "Failed to assign role rights",
+                variant: "danger",
+              });
+            }
           }
-        }
       );
     },
   },
