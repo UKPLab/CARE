@@ -367,6 +367,9 @@ module.exports = class Socket {
      * @returns {Object} array of limitation filters
      */
     handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
+
+
+
          let filteredAccessMap = accessMap
             .flatMap(a => {
                 const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
@@ -375,6 +378,8 @@ module.exports = class Socket {
                     : null;
             })
             .filter(Boolean);
+
+
 
         if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
             // Ensure we always include the 'userId' condition
@@ -425,6 +430,7 @@ module.exports = class Socket {
             }
             allFilter = {[Op.and]: [allFilter, userFilter]}
         } else {
+
             if (accessRights.length > 0) {
                 if (relevantAccessMap.every(item => item.limitation)) {
                     const {filter: limitedFilter, columns} = this.handleLimitations(
@@ -483,42 +489,94 @@ module.exports = class Socket {
     }
 
     /**
-     * Send additional foreign table data to the user if this data is available
-     * @param {string} tableName Name of the table to check foreign table data for
-     * @param {Object} data Data to find used foreign tables in
-     * @param {Object} excludedAttributes Attributes to be excluded and not sent
+     * Recursively send related (foreign + parent) table data for an autoTable.
+     *
+     * @param {string} tableName Name of the starting table
+     * @param {Object[]} data Rows from that table
+     * @param {string[]} excludedAttributes Attributes to be excluded and not sent
+     * @param {Set<string>} visited Internal set of already processed tables (to avoid cycles)
      * @return {Promise<void>}
      */
-    async sendForeignTableData(tableName, data, excludedAttributes) {
-        if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
-            await Promise.all(this.models[tableName].autoTable.foreignTables.map(async (fTable) => {
+    async sendRelatedTablesRecursive(
+        tableName,
+        data,
+        excludedAttributes,
+        visited = new Set()
+    ) {
+
+        if (visited.has(tableName)) {  // avoid infinite loops
+            return;
+        }
+        visited.add(tableName);
+
+        const {autoTable} =  this.models[tableName];
+        const tasks = [];
+
+        // --- FOREIGN TABLES (children) ---
+        if (autoTable.foreignTables && autoTable.foreignTables.length > 0) {
+            const sourceIds = [...new Set(data.map(d => d.id).filter(Boolean))];
+
+            for (const fTable of autoTable.foreignTables) {
+                if (!this.models[fTable.table]) continue;
+                if (sourceIds.length === 0) continue;
+
                 const fdata = await this.models[fTable.table].getAll({
-                    where: {[fTable.by]: {[Op.in]: data.map(d => d.id)}, deleted: false},
+                    where: {[fTable.by]: {[Op.in]: sourceIds}, deleted: false},
                     attributes: {exclude: excludedAttributes},
                 });
-                this.emit(fTable.table + "Refresh", fdata, true);
-            }))
-        }
-    }
 
-    /**
-     * Send additional parent data to the user if this data is available
-     * @param {string} tableName Name of the table to check parent data for
-     * @param {Object} data Data to find used parent tables in
-     * @param {Object} excludedAttributes Attributes to be excluded and not sent
-     * @return {Promise<void>}
-     */
-    async sendParentTableData(tableName, data, excludedAttributes) {
-        if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
-            await Promise.all(this.models[tableName].autoTable.parentTables.map(async (pTable) => {
-                    const pdata = await this.models[pTable.table].getAll({
-                        where: {['id']: {[Op.in]: data.map(d => d[pTable.by])}, deleted: false},
-                        attributes: {exclude: excludedAttributes},
-                    });
-                    this.emit(pTable.table + "Refresh", pdata, true);
-                })
-            )
+                this.emit(fTable.table + "Refresh", fdata, true);
+
+                // recurse into foreign table’s related tables
+                if (fdata.length > 0) {
+                    tasks.push(
+                        this.sendRelatedTablesRecursive(
+                            fTable.table,
+                            fdata,
+                            excludedAttributes,
+                            visited
+                        )
+                    );
+                }
+            }
         }
+
+        // --- PARENT TABLES (parents) ---
+        if (autoTable.parentTables && autoTable.parentTables.length > 0) {
+            for (const pTable of autoTable.parentTables) {
+                if (!this.models[pTable.table]) continue;
+
+                const parentIds = [
+                    ...new Set(
+                        data
+                            .map(d => d[pTable.by])
+                            .filter(id => id !== null && id !== undefined)
+                    ),
+                ];
+                if (parentIds.length === 0) continue;
+
+                const pdata = await this.models[pTable.table].getAll({
+                    where: {id: {[Op.in]: parentIds}, deleted: false},
+                    attributes: {exclude: excludedAttributes},
+                });
+
+                this.emit(pTable.table + "Refresh", pdata, true);
+
+                // recurse into parent table’s related tables
+                if (pdata.length > 0) {
+                    tasks.push(
+                        this.sendRelatedTablesRecursive(
+                            pTable.table,
+                            pdata,
+                            excludedAttributes,
+                            visited
+                        )
+                    );
+                }
+            }
+        }
+
+        await Promise.all(tasks);
     }
 
     /**
@@ -563,8 +621,7 @@ module.exports = class Socket {
         }
 
         // send additional data if needed
-        this.sendForeignTableData(tableName, data, defaultExcludes);
-        this.sendParentTableData(tableName, data, defaultExcludes);
+        await this.sendRelatedTablesRecursive(tableName, data, defaultExcludes);
 
         this.emit(tableName + "Refresh", data, true);
         return data;
