@@ -15,6 +15,25 @@
       @finish="finalFinish({ studySessionId: studySessionId })"
   />
 
+  <Teleport to="#topbarCenterPlaceholder">
+    <div
+        v-show="readOnlyComputed"
+        title="Read-only"
+    >
+      <span
+          :style="{ color: '#800000', fontWeight: 'bold' }"
+      >
+        Read-only
+      </span>
+      <LoadIcon
+          :size="22"
+          :color="'#800000'"
+          icon-name="lock-fill"
+      />
+    </div>
+
+  </Teleport>
+
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
       <TopBarButton
@@ -382,6 +401,9 @@ export default {
       if (this.readOnly) {
         return this.readOnly;
       }
+      if (this.studySession && this.studySession.userId !== this.userId) {
+        return true;
+      }
       if (this.studyClosed || this.timeUp) {
         return true;
       }
@@ -390,7 +412,13 @@ export default {
       }
       return false;
     },
-
+    foreignUnstartedSession() {
+      return (
+          this.studySession &&
+          this.studySession.start === null &&
+          this.studySession.userId !== this.userId
+      );
+    },
   },
   watch: {
     studySession() {
@@ -463,13 +491,27 @@ export default {
               } else {
                 if (
                     this.studySessionId === 0 ||
-                    (this.studySession && this.studySession.start === null && this.studySession.userId === this.userId)
+                    (this.studySession && this.studySession.start === null)
                 ) {
                   this.$refs.studyModal.open();
                 }
               }
             }
         );
+      } else {
+        if (this.foreignUnstartedSession) {
+          this.eventBus.emit("toast", {
+            title: "Access Error!",
+            message: "This study session has not been started yet and belongs to another user.",
+            variant: "danger",
+          });
+          this.$router.push("/");
+        } else if (
+            this.studySessionId === 0 ||
+            (this.studySession && this.studySession.start === null)
+        ) {
+          this.$refs.studyModal.open();
+        }
       }
     },
     start(data) {
@@ -479,7 +521,7 @@ export default {
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {
-      if (this.studySession.start){
+      if (this.studySession.start) {
         const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
         this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 

@@ -1,11 +1,11 @@
 <template>
   <Modal
-    ref="modal"
-    :props="$props"
-    disable-keyboard
-    lg
-    name="studyStart"
-    :remove-close="!studyClosed"
+      ref="modal"
+      :props="$props"
+      disable-keyboard
+      lg
+      name="studyStart"
+      :remove-close="!studyClosed"
   >
     <template #title>
       <span v-if="showSessions">
@@ -17,40 +17,47 @@
     </template>
     <template #body>
       <Loader
-        v-if="studyId === 0"
-        :loading="true"
+          v-if="studyId === 0"
+          :loading="true"
       />
       <span v-else-if="showSessions">
         <BasicTable
-          :columns="sessionTableColumns"
-          :data="studySessions"
-          :options="sessionTableOptions"
-          :buttons="buttons"
-          @action="sessionAction"
+            :columns="sessionTableColumns"
+            :data="studySessions"
+            :options="sessionTableOptions"
+            :buttons="buttons"
+            @action="sessionAction"
         />
       </span>
       <span v-else>
         <div
-          v-if="!started"
-          class="text-xxl-center text-secondary fs-5">
+            v-if="foreignUnstartedSession"
+            class="text-xxl-center text-danger fs-5">
+          This study session has not been started yet and belongs to another user.
+          <br>
+          You cannot start or resume this session.
+        </div>
+        <div
+            v-else-if="!started"
+            class="text-xxl-center text-secondary fs-5">
           The study has not started yet! <br>
           Start: {{ new Date(study.start).toLocaleString() }}</div>
         <div
-          v-else-if="studyClosed"
-          class="text-xxl-center text-danger fs-5">
+            v-else-if="studyClosed"
+            class="text-xxl-center text-danger fs-5">
           This study has finished on
           {{ studyEnd }}</div>
         <div
-          v-else-if="!sessionsAvailable && studySessionId === 0"
-          class="text-xxl-center text-danger fs-5">
+            v-else-if="!sessionsAvailable && studySessionId === 0"
+            class="text-xxl-center text-danger fs-5">
           No more sessions available for this study.
         </div>
         <span v-else>
           <Editor
-            v-if="study.description"
-            v-model="study.description"
-            :read-only="true"
-            class="ql-snow ql-container border"
+              v-if="study.description"
+              v-model="study.description"
+              :read-only="true"
+              class="ql-snow ql-container border"
           />
           <div v-else>
             Click "Start User Study" to start the user study.
@@ -59,20 +66,20 @@
             <hr>
           </div>
           <div
-            v-if="study.timeLimit > 0"
-            class="mt-1"
+              v-if="study.timeLimit > 0"
+              class="mt-1"
           >
             Please note that there is a time limitation of {{ study.timeLimit }} min for this study!
           </div>
           <div
-            v-if="study.collab"
-            class="mt-1"
+              v-if="study.collab"
+              class="mt-1"
           >
             This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneously!
           </div>
           <div
-            v-if="studySessionId === 0 && study.limitSessionsPerUser > 0"
-            class="mt-1"
+              v-if="studySessionId === 0 && study.limitSessionsPerUser > 0"
+              class="mt-1"
           >
             You have <b> {{ study.limitSessionsPerUser - totalNumberOfOpenedSessions }} sessions </b> left for this study.
           </div>
@@ -81,34 +88,34 @@
     </template>
     <template #footer>
       <button
-        class="btn btn-outline-secondary"
-        type="button"
-        @click="$router.push('/dashboard')"
+          class="btn btn-outline-secondary"
+          type="button"
+          @click="$router.push('/dashboard')"
       >
         <span>Return to dashboard</span>
       </button>
       <vr/>
       <div
-        v-if="showSessions"
-        class="btn-group"
+          v-if="showSessions"
+          class="btn-group"
       >
         <button
-          class="btn btn-primary"
-          type="button"
-          @click="showSessions=!showSessions"
+            class="btn btn-primary"
+            type="button"
+            @click="showSessions=!showSessions"
         >
           <span>Back</span>
         </button>
       </div>
       <div
-        v-else
-        class="btn-group"
+          v-else
+          class="btn-group"
       >
         <button
-          v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
-          class="btn btn-secondary"
-          type="button"
-          @click="showSessions=!showSessions"
+            v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
+            class="btn btn-secondary"
+            type="button"
+            @click="showSessions=!showSessions"
         >
           <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
             {{ studySessions.length }}
@@ -117,11 +124,11 @@
           <span>Open Sessions</span>
         </button>
         <button
-          v-if="studyId !== 0"
-          :disabled="!available"
-          class="btn btn-primary"
-          type="button"
-          @click="start"
+            v-if="studyId !== 0 && !foreignUnstartedSession"
+            :disabled="!available"
+            class="btn btn-primary"
+            type="button"
+            @click="start"
         >
           <span v-if="study.collab">Join Study</span>
           <span v-else>Start Study</span>
@@ -146,8 +153,8 @@ import Editor from "@/basic/editor/Editor.vue";
  */
 export default {
   name: "StudyModal",
-  subscribeTable:["study_session"],
-  components: {Loader, BasicTable, Modal, Editor },
+  subscribeTable: ["study_session"],
+  components: {Loader, BasicTable, Modal, Editor},
   props: {
     studyId: {
       type: Number,
@@ -284,17 +291,17 @@ export default {
     studySessions() {
       if (this.studyId) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-          .filter(s => this.study && this.study.multipleSubmit ? (!this.study.closed) : s.end === null)
-          .map(s => {
-            let session = {...s}
-            session.resumable = this.study.resumable;
-            session.startParsed = session.start ? new Date(session.start).toLocaleString() : 'Session has not started yet';
-            session.finished = session.end !== null
-            session.showResumeButton = session.resumable && session.start && !this.studyClosed;
-            session.showStartButton = !session.start && !this.studyClosed;
+            .filter(s => this.study && this.study.multipleSubmit ? (!this.study.closed) : s.end === null)
+            .map(s => {
+              let session = {...s}
+              session.resumable = this.study.resumable;
+              session.startParsed = session.start ? new Date(session.start).toLocaleString() : 'Session has not started yet';
+              session.finished = session.end !== null
+              session.showResumeButton = session.resumable && session.start && !this.studyClosed;
+              session.showStartButton = !session.start && !this.studyClosed;
 
-            return session;
-          });
+              return session;
+            });
       }
       return [];
     },
@@ -303,7 +310,7 @@ export default {
     },
     numberOfOpenedSessionsPerUser() {
       return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
-        .filter(s => s.studyId === this.studyId).length;
+          .filter(s => s.studyId === this.studyId).length;
     },
     started() {
       if (this.study && this.study.start !== null) {
@@ -315,7 +322,10 @@ export default {
       return true;
     },
     available() {
-      return (this.started && !this.studyClosed && this.sessionsAvailable) || (this.studySessionId !== 0 && !this.studyClosed);
+      return (
+          (this.started && !this.studyClosed && this.sessionsAvailable) ||
+          (this.studySessionId !== 0 && !this.studyClosed)
+      ) && !this.foreignUnstartedSession;
     },
     sessionsAvailable() {
       if (this.study) {
@@ -334,6 +344,13 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    foreignUnstartedSession() {
+      return (
+          this.studySession &&
+          this.studySession.start === null &&
+          this.studySession.userId !== this.userId
+      );
+    },
   },
   methods: {
     open() {
@@ -343,25 +360,25 @@ export default {
       this.$refs.modal.close();
     },
     startStudy(studyId = null, studySessionId) {
-      
+
       this.$socket.emit("studySessionStart",
-        {studyId: studyId, studySessionId: studySessionId}, (response) => {
-          if (response.success) {
-            this.$emit("start", {studySessionId: response.data.id});
-            this.$refs.modal.close();
-            this.eventBus.emit('toast', {
-              title: "Study started",
-              message: "Enjoy!",
-              variant: "success"
-            });
-          } else {
-            this.eventBus.emit('toast', {
-              title: "Study cannot be started!",
-              message: response.message,
-              variant: "danger"
-            });
-          }
-        });
+          {studyId: studyId, studySessionId: studySessionId}, (response) => {
+            if (response.success) {
+              this.$emit("start", {studySessionId: response.data.id});
+              this.$refs.modal.close();
+              this.eventBus.emit('toast', {
+                title: "Study started",
+                message: "Enjoy!",
+                variant: "success"
+              });
+            } else {
+              this.eventBus.emit('toast', {
+                title: "Study cannot be started!",
+                message: response.message,
+                variant: "danger"
+              });
+            }
+          });
     },
     start() {
       this.startStudy(this.studyId, this.studySessionId);
@@ -377,15 +394,15 @@ export default {
       if (data.action === "startStudySession") {
         this.startStudy(null, data.params.id);
       }
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "clickStudySessionButton",
-            data: {
-                action: data.action,
-                ...(data.params.id ? { studySessionId: data.params.id } : {}),
-              }
-          });
-        }
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "clickStudySessionButton",
+          data: {
+            action: data.action,
+            ...(data.params.id ? {studySessionId: data.params.id} : {}),
+          }
+        });
+      }
     }
   }
 }
