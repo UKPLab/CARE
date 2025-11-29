@@ -42,6 +42,7 @@
         <span
             class="badge"
             :class="isGroupSaved ? 'bg-success' : 'bg-secondary'"
+            :title="`Rubric: ${groupScore} / ${groupMax} P`"
         >
           {{ groupScore }} P
         </span>
@@ -130,6 +131,11 @@ export default {
       required: false,
       default: false,
     },
+    rubricScores: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
   },
   emits: [
     "toggle-group",
@@ -153,16 +159,23 @@ export default {
       });
     },
     groupScore() {
-      if (!this.rubric || !Array.isArray(this.rubric.criteria)) return 0;
-      return this.rubric.criteria.reduce((sum, c) => {
-        const st = this.assessmentState[c.name];
-        const val =
-            st && typeof st.currentScore === "number"
-                ? st.currentScore
-                : 0;
-        const n = Number(val);
-        return sum + (isNaN(n) ? 0 : n);
-      }, 0);
+      if (!this.rubric) return 0;
+      const code = this.rubric.code || this.rubric.name || "";
+      const info = this.rubricScores[code];
+      if (!info) return 0;
+      return typeof info.score === "number" ? info.score : 0;
+    },
+    groupMin() {
+      if (!this.rubric) return 0;
+      const code = this.rubric.code || this.rubric.name || "";
+      const info = this.rubricScores[code];
+      return info ? info.min : 0;
+    },
+    groupMax() {
+      if (!this.rubric) return 0;
+      const code = this.rubric.code || this.rubric.name || "";
+      const info = this.rubricScores[code];
+      return info ? info.max : 0;
     },
   },
   methods: {

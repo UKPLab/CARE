@@ -8,7 +8,7 @@
               v-if="configuration && configuration.rubrics && configuration.rubrics.length"
               class="badge"
           >
-            {{ totalPoints }} P
+            {{ totalPoints }} / {{ totalMaxPoints }} P
           </span>
           <span v-if="readOnly" class="badge bg-secondary">Read Only</span>
         </div>
@@ -36,6 +36,7 @@
                   :is-expanded="!!expandedGroups[groupIndex]"
                   :assessment-state="assessmentState"
                   :read-only="readOnly"
+                  :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
                   @toggle-group="toggleGroup"
                   @update-criterion-state="onCriterionStateUpdate"
                   @open-info-panel="onChildOpenInfoPanel"
@@ -75,6 +76,7 @@
  */
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
+import {buildScoresFromState, calculateAssessmentScore,} from "@/assets/assessmentScore.js";
 
 export default {
   name: "AssessmentSidebar",
@@ -236,21 +238,23 @@ export default {
     forcedAssessmentEnabled() {
       return this.currentStudyStep?.configuration?.settings?.forcedAssessment;
     },
-    totalPoints() {
-      if (!this.configuration || !this.configuration.rubrics) return 0;
-      let sum = 0;
-      for (const rubric of this.configuration.rubrics) {
-        if (!rubric.criteria) continue;
-        for (const c of rubric.criteria) {
-          const st = this.assessmentState[c.name];
-          const val = st && typeof st.currentScore === "number"
-              ? st.currentScore
-              : 0;
-          const n = Number(val);
-          if (!isNaN(n)) sum += n;
-        }
+    assessmentScores() {
+      if (!this.configuration || !this.configuration.rubrics) return null;
+      const scores = buildScoresFromState(this.assessmentState);
+      const result = calculateAssessmentScore(this.configuration, scores);
+
+      if (result.warnings && result.warnings.length) {
+        console.warn("Assessment score warnings:", result.warnings);
       }
-      return sum;
+
+      return result;
+    },
+    totalPoints() {
+      // achieved points = what the student actually got (clamped & per-rubric logic)
+      return this.assessmentScores ? this.assessmentScores.achieved_points : 0;
+    },
+    totalMaxPoints() {
+      return this.assessmentScores ? this.assessmentScores.total_max_points : 0;
     },
   },
   watch: {

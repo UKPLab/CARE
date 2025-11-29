@@ -527,6 +527,7 @@
       "maxPoints": 1,
       "minPoints": -1,
       "calculation": "sum",
+      "isBonus": true,
       "description": "Allow additional points for very good reviews or deduct points for major mistakes",
       "criteria": [
         {
