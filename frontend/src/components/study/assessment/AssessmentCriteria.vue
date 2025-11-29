@@ -34,7 +34,6 @@
         <span
             class="badge"
             :class="(readOnly || isSaved) ? 'bg-success' : 'bg-secondary'"
-            :title="`isSaved: ${isSaved}`"
         >
           {{ displayScore }} P
         </span>
