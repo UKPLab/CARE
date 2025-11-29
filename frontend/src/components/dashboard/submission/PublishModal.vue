@@ -178,6 +178,7 @@ export default {
       ];
     },
     stepValid() {
+      // TODO: test commit
       return [
         this.selectedDocuments.length > 0,
         this.selectedSessions.length > 0,
