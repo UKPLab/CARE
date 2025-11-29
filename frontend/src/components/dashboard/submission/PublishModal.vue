@@ -7,9 +7,45 @@
     @submit="publishReviewLinks"
   >
     <template #title>
-      <h5 class="modal-title">{{ modalTitle }}</h5>
+      <h5 class="modal-title">Publish Reviews</h5>
     </template>
+    <!-- STEP 1: Mode Selection -->
     <template #step-1>
+      <div class="mb-3">
+        <label class="form-label"><b>Select Review Mode:</b></label>
+        <div class="form-check">
+          <label
+            class="form-check-label"
+          >
+            <input
+              v-model="selectedMode"
+              class="form-check-input"
+              type="radio"
+              name="modeSelection"
+              value="document"
+            />
+            <b>Document-based Reviews</b>
+            <div class="small text-muted">Publish review links based on individual documents</div>
+          </label>
+        </div>
+        <div class="form-check mt-2">
+          <label
+            class="form-check-label"
+          >
+            <input
+              v-model="selectedMode"
+              class="form-check-input"
+              type="radio"
+              name="modeSelection"
+              value="submission"
+            />
+            <b>Submission-based Reviews</b>
+            <div class="small text-muted">Publish review links based on submissions (multiple documents per submission)</div>
+          </label>
+        </div>
+      </div>
+    </template>
+    <template #step-2>
       <BasicTable
         v-model="selectedDocuments"
         :data="documentsTable"
@@ -18,7 +54,7 @@
         :max-table-height="400"
       />
     </template>
-    <template #step-2>
+    <template #step-3>
       <BasicTable
         v-model="selectedSessions"
         :data="sessionsTable"
@@ -27,7 +63,7 @@
         :max-table-height="400"
       />
     </template>
-    <template #step-3>
+    <template #step-4>
       <div class="mb-3">
         <label
           for="text_format"
@@ -35,9 +71,9 @@
           ><b>Text Format:</b></label
         >
         <textarea
+          id="text_format"
           v-model="text_format"
           class="form-control"
-          id="text_format"
           rows="3"
         ></textarea>
         <div class="small">
@@ -56,9 +92,9 @@
           ><b>Link Collection:</b></label
         >
         <select
+          id="publishMethod"
           v-model="linkCollection"
           class="form-select"
-          id="publishMethod"
         >
           <option value="studies">based on Studies (session links for each study)</option>
           <option value="sessions">based on Sessions (links for own sessions)</option>
@@ -108,7 +144,7 @@
         </ul>
       </div>
     </template>
-    <template #step-4>
+    <template #step-5>
       <div class="mb-3">
         <label
           for="publishMethod"
@@ -116,9 +152,9 @@
           ><b>Publishing Method:</b></label
         >
         <select
+          id="publishMethod"
           v-model="publishMethod"
           class="form-select"
-          id="publishMethod"
         >
           <option
             v-for="opt in publishMethodOptions"
@@ -131,8 +167,8 @@
         </select>
       </div>
       <div
-        class="small"
         v-if="isSubmissionMode"
+        class="small"
       >
         <p>Choose "Download CSV" to export the generated feedback text for each recipient.</p>
       </div>
@@ -160,14 +196,6 @@ import { downloadObjectsAs } from "@/assets/utils.js";
 export default {
   name: "ReviewPublishModal",
   components: { MoodleOptions, BasicTable, StepperModal },
-  props: {
-    // mode: 'reviews' (document-based) or 'submission' (submission-based)
-    mode: {
-      type: String,
-      default: "reviews",
-      validator: (v) => ["reviews", "submission"].includes(v),
-    },
-  },
   subscribeTable: [
     {
       table: "document",
@@ -214,29 +242,30 @@ export default {
       text_format: "Reviews:\n~SESSION_LINKS~",
       publishMethod: "csv",
       linkCollection: "studies",
+      selectedMode: "document",
     };
   },
   computed: {
     isSubmissionMode() {
-      return this.mode === "submission";
-    },
-    modalTitle() {
-      return this.isSubmissionMode ? "Publish Submissions" : "Publish Reviews";
+      return this.selectedMode === "submission";
     },
     steps() {
       return [
-        { title: this.isSubmissionMode ? "Submission Selection" : "Document Selection" },
-        { title: "Session Selection" },
+        { title: "Mode" },
+        { title: this.isSubmissionMode ? "Submission" : "Document" },
+        { title: "Session" },
         { title: "Confirmation" },
-        { title: "Publishing Options" },
+        { title: "Publishing" },
       ];
     },
     stepValid() {
       return [
-        this.selectedDocuments.length > 0,
-        this.selectedSessions.length > 0,
+        true, // Step 1: Mode Selection always true
+        this.selectedDocuments.length > 0, // Step 2: Documents/Submissions selected
+        this.selectedSessions.length > 0, // Step 3: Sessions selected
+        true, // Step 4: Confirmation always valid
         // Only require Moodle options if moodle is selected
-        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""),
+        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""), // Step 5: Publishing options
       ];
     },
     usersWithExtId() {
@@ -462,9 +491,15 @@ export default {
     publishMethodOptions() {
       return [
         { value: "csv", label: "Download CSV", disabled: false },
-        { value: "moodle", label: "Moodle", disabled: this.isSubmissionMode },
+        { value: "moodle", label: "Moodle", disabled: false },
         { value: "email", label: "Email", disabled: true },
       ];
+    },
+  },
+  watch: {
+    selectedMode() {
+      this.selectedDocuments = [];
+      this.selectedSessions = [];
     },
   },
   methods: {
@@ -484,6 +519,7 @@ export default {
       this.$refs.reviewStepper.open();
     },
     reset() {
+      this.selectedMode = "document";
       this.selectedDocuments = [];
       this.selectedSessions = [];
     },
@@ -599,4 +635,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.form-check-label {
+  display: block;
+  cursor: pointer;
+}
+</style>

@@ -20,14 +20,6 @@
 
         <BasicButton
             class="btn-secondary btn-sm"
-            text="Publish Submissions"
-            title="Publish Submissions"
-            icon="cloud-upload"
-            @click="$refs.publishSubmissionModal.open()"
-        />
-
-        <BasicButton
-            class="btn-secondary btn-sm"
             text="Manual Import"
             title="Manual Import"
             icon="file-earmark-arrow-up"
@@ -74,7 +66,6 @@
   <ImportModal ref="importModal"/>
   <PublishModal ref="publishModal"/>
   <AssignModal ref="assignModal"/>
-  <PublishModal ref="publishSubmissionModal" mode="submission"/>
   <ApplySkillModal
       ref="applySkillModal"
   />
