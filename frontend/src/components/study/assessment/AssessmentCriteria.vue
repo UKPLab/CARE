@@ -3,7 +3,7 @@
     <div
         class="d-flex justify-content-between align-items-center py-2"
         style="cursor: pointer"
-        @click="toggleCriterion"
+        @click="$emit('toggle')"
     >
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
@@ -175,16 +175,21 @@ export default {
       required: false,
       default: false,
     },
+    isExpanded: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: [
     "update:modelValue",
     "open-info-panel",
     "close-info-panel",
     "toggle-info-panel-pin",
+    "toggle",
+    "saved-and-next",
   ],
   data() {
     return {
-      isExpanded: false,
       localAssessment: "",
     };
   },
@@ -269,9 +274,6 @@ export default {
     },
   },
   methods: {
-    toggleCriterion() {
-      this.isExpanded = !this.isExpanded;
-    },
     startEdit() {
       if (this.readOnly) return;
       this.localAssessment = this.state.assessment || "";
@@ -303,6 +305,7 @@ export default {
         ...this.state,
         isSaved: true,
       };
+      this.$emit("saved-and-next");
     },
     getTextareaRows(text) {
       if (!text) return 3;

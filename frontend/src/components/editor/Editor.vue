@@ -36,25 +36,6 @@
       </BasicSidebar>
     </div>
   </div>
-  <Teleport to="#topbarCenterPlaceholder">
-    <div
-        v-show="readOnlyOverwrite"
-        title="Read-only"
-    >
-      <span
-          :style="{ color: '#800000', fontWeight: 'bold' }"
-      >
-        Read-only
-      </span>
-      <LoadIcon
-          :size="22"
-          :color="'#800000'"
-          icon-name="lock-fill"
-      />
-    </div>
-
-  </Teleport>
-
 </template>
 
 

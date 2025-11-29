@@ -322,7 +322,7 @@ export default {
       // keep the small delay to ensure all state is updated
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log("✅ Alle Requests abgeschlossen!");
+      console.log("Requests done!");
 
       let quill = new Quill(document.createElement('div'));
 
@@ -407,13 +407,6 @@ export default {
       this.wait = false;
       this.$refs.exportStepper.close();
     }
-    /*
-    openFilterModal(i) {
-      console.log(this.$refs);
-      console.log(i);
-      this.$refs['filter_' + i][0].open();
-    }
-    */
   }
 }
 </script>

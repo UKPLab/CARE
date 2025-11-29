@@ -11,10 +11,10 @@
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Assign Roles"
-            text="Assign Roles"
-            icon="person-bounding-box"
-            @click="$refs.assignRolesModal.open()"
+            title="Rights Management"
+            text="Rights Management"
+            icon="shield-lock"
+            @click="$refs.rightsManagementModal.open()"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
@@ -61,8 +61,8 @@
       @update-user="fetchUsers"
   />
   <RightsModal ref="rightsModal" />
-  <AssignRolesModal
-    ref="assignRolesModal"
+  <RightsManagementModal
+    ref="rightsManagementModal"
     @update-user="fetchUsers"
   />
   <PasswordModal ref="passwordModal" />
@@ -84,7 +84,7 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
-import AssignRolesModal from "./users/AssignRolesModal.vue";
+import RightsManagementModal from "./users/RightsManagementModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
@@ -95,7 +95,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 /**
  * Display user list by users' role
  *
- * @author: Linyin Huang
+ * @author: Linyin Huang, Karim Ouf, Dennis Zyska
  */
 export default {
   name: "DashboardUsers",
@@ -106,7 +106,7 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
-    AssignRolesModal,
+    RightsManagementModal,
     BasicButton,
     ImportModal,
     UploadModal,

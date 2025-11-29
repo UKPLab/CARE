@@ -101,7 +101,7 @@
               </li>
             </ul>
           </div>
-          <div class="link-container">
+          <div v-if="importResults?.errors?.length > 0" class="link-container">
             <BasicButton
               class="btn btn-outline-primary"
               title="Download Error CSV"
