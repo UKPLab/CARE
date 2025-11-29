@@ -108,7 +108,7 @@ module.exports = class Socket {
                     }
                     return acc;
                 }, new Map());
-                
+
                 for (const [table, changes] of changesMap) {
                     this.broadcastTable(table, changes);
                 }
@@ -195,7 +195,7 @@ module.exports = class Socket {
 
     /**
      * Adds access information about the user userId in this.userInfo.
-     * @param {number} userId The id of the user to update access for 
+     * @param {number} userId The id of the user to update access for
      * @returns {void}
      */
     async updateUserInfo(userId) {
@@ -353,8 +353,8 @@ module.exports = class Socket {
                     hasAccess: hasAccess,
                     limitation: limitation
                 }
-                })
-            );
+            })
+        );
     }
 
     /**
@@ -367,16 +367,21 @@ module.exports = class Socket {
      * @returns {Object} array of limitation filters
      */
     handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
-        let filteredAccessMap = accessMap.flatMap(a => {
-            const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-            return a.limitation
-                ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                : null;
-        }).filter(Boolean);
+         let filteredAccessMap = accessMap
+            .flatMap(a => {
+                const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
+                return a.limitation
+                    ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
+                    : null;
+            })
+            .filter(Boolean);
+
         if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
-            filteredAccessMap = filteredAccessMap.concat([{userId: userId}]); // Ensure we always include the 'userId' condition
+            // Ensure we always include the 'userId' condition
+            filteredAccessMap = filteredAccessMap.concat([{userId: userId}]);
         }
-        allFilter = {
+
+        const limitedFilter = {
             [Op.and]: [
                 allFilter,
                 {
@@ -384,7 +389,14 @@ module.exports = class Socket {
                 }
             ]
         };
-        return [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+
+        const columns = [...new Set(
+            accessRights
+                .filter(a => a.columns)
+                .flatMap(a => a.columns)
+        )];
+
+        return {filter: limitedFilter, columns};
     }
 
     /**
@@ -402,7 +414,7 @@ module.exports = class Socket {
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
         if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) { // is allowed to see everything
-        // no adaption of the filter or attributes needed
+            // no adaption of the filter or attributes needed
         } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
             // is allowed to see only his data and possible if there is a public attribute
             const userFilter = {};
@@ -414,16 +426,29 @@ module.exports = class Socket {
             allFilter = {[Op.and]: [allFilter, userFilter]}
         } else {
             if (accessRights.length > 0) {
-            // check if all accessRights has limitations?
-            if (relevantAccessMap.every(item => item.limitation)) {
-                allAttributes['include'] = this.handleLimitations(tableName, allFilter, accessRights, relevantAccessMap, userId);
-            } else { // do without limitations
-                allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                if (relevantAccessMap.every(item => item.limitation)) {
+                    const {filter: limitedFilter, columns} = this.handleLimitations(
+                        tableName,
+                        allFilter,
+                        accessRights,
+                        relevantAccessMap,
+                        userId
+                    );
+
+                    allFilter = limitedFilter;
+                    allAttributes['include'] = columns;
+                } else { // do without limitations
+                    allAttributes['include'] = [...new Set(
+                        accessRights
+                            .filter(a => a.columns)
+                            .flatMap(a => a.columns)
+                    )];
+                }
+
+            } else {
+                this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
+                return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
             }
-        } else {
-            this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
-            return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
-        }
         }
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
     }
@@ -504,6 +529,7 @@ module.exports = class Socket {
      * @return {Promise<void>}
      */
     async sendTable(tableName, filter = [], injects = []) {
+
         // check if it is an autoTable or not
         if (!this.models[tableName] || !this.models[tableName].autoTable) {
             this.logger.error("Table " + tableName + " is not an autoTable");
@@ -522,12 +548,15 @@ module.exports = class Socket {
         if (!filtersAndAttributes.accessAllowed) {
             return;
         }
+
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
+
         let data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,
         });
+
         // handle injects
         if (injects && injects.length > 0) {
             data = await this.handleInjections(injects, data);
@@ -553,26 +582,26 @@ module.exports = class Socket {
      */
     async sendForeignKeys(table, data, userId, includeForeignData = true, includeFieldTables = false) {
         const foreignKeys = await this.server.db.sequelize
-                    .getQueryInterface()
-                    .getForeignKeyReferencesForTable(table);
+            .getQueryInterface()
+            .getForeignKeyReferencesForTable(table);
         foreignKeys
             .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
-                .map(async (fk) => {
-                    const uniqueIds = data.map((d) => d[fk.columnName])
-                        .filter(
-                            (value, index, array) => array.indexOf(value) === index
-                        );
-                    if (uniqueIds.length > 0) {
-                        await this.sendTableData(
-                            fk.referencedTableName,
-                            [{key: "id", values: uniqueIds}],
-                            [],
-                            userId,
-                            includeForeignData,
-                            includeFieldTables
-                        );
-                    }
-                });
+            .map(async (fk) => {
+                const uniqueIds = data.map((d) => d[fk.columnName])
+                    .filter(
+                        (value, index, array) => array.indexOf(value) === index
+                    );
+                if (uniqueIds.length > 0) {
+                    await this.sendTableData(
+                        fk.referencedTableName,
+                        [{key: "id", values: uniqueIds}],
+                        [],
+                        userId,
+                        includeForeignData,
+                        includeFieldTables
+                    );
+                }
+            });
     }
 
     /**
@@ -669,7 +698,11 @@ module.exports = class Socket {
         includeFieldTables = false,
     ) {
         try {
-            const accessRights = this.server.db.models[table]['accessMap'].filter(async a => await this.hasAccess(a.right, userId));
+            const accessMap = this.server.db.models[table]['accessMap'];
+            const accessChecks = await Promise.all(
+                accessMap.map(a => this.hasAccess(a.right, userId))
+            );
+            const accessRights = accessMap.filter((a, idx) => accessChecks[idx]);
             if (!this.autoTables.includes(table) && accessRights.length === 0) {
                 this.logger.error("No access rights for autotable: " + table);
                 return;
@@ -712,7 +745,8 @@ module.exports = class Socket {
         }
         if (filter[Op.and]) {
             return filter[Op.and].every(subfilter => this.matchesFilter(entry, subfilter));
-        } if (filter[Op.or]) {
+        }
+        if (filter[Op.or]) {
             return filter[Op.or].some(subfilter => this.matchesFilter(entry, subfilter));
         }
         return Object.entries(filter).every(([key, val]) =>
@@ -723,7 +757,7 @@ module.exports = class Socket {
     /**
      * Broadcasts data to all clients that have permissions to see it
      * @param {string} tableName The name of table
-     * @param {object} data The data to broadcast 
+     * @param {object} data The data to broadcast
      * @returns {Promise<void>}
      */
     async broadcastTable(tableName, data) {
@@ -741,10 +775,10 @@ module.exports = class Socket {
                 continue
             }
             // if socket is admin or table is public, also just send
-             if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) {
+            if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
-            } 
+            }
             let allFilter = {};
             let allAttributes = {};
             const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
@@ -754,7 +788,8 @@ module.exports = class Socket {
             allFilter = filtersAndAttributes.filter;
             const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
             this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
-        };
+        }
+        ;
     }
 }
 ;
