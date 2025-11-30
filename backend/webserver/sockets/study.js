@@ -107,6 +107,8 @@ class StudySocket extends Socket {
             this.socket.emit("progressUpdate", {
                 id: data["progressId"], current: studies.indexOf(study) + 1, total: studies.length,
             });
+            this.emit("studyRefresh", await this.models['study'].getById(study.id));
+
         }
 
 
