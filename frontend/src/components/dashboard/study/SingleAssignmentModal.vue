@@ -129,12 +129,6 @@ export default {
   },
     {
       table: "user",
-      inject: [{
-        table: "study_session",
-        by: "userId",
-        type: "list",
-        as: "studySessions"
-      }]
     },
     {
       table: "study",
@@ -318,7 +312,7 @@ export default {
     reviewerTable() {
       return this.reviewers.map((r) => {
         let newR = {...r};
-        newR.studySessions = r.studySessions.filter((s) => this.isStudyClosed(s.studyId)).length;
+        newR.studySessions = this.userStudySessions(r.id).filter((s) => this.isStudyClosed(s.studyId)).length;
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
         newR.rolesNames = (r.roles || [])
             .map((role) => {
@@ -391,6 +385,11 @@ export default {
     }
   },
   methods: {
+    userStudySessions(userId) {
+      return this.$store.getters["table/study_session/getFiltered"](
+          (s) => s.userId === userId
+      );
+    },
     isStudyClosed(studyId) {
       const study = this.$store.getters["table/study/get"](studyId);
       if (!study) {
