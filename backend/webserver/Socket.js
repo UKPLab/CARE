@@ -616,7 +616,6 @@ module.exports = class Socket {
         });
 
         // handle injects
-        console.log("sendTable injects", injects);
         if (injects && injects.length > 0) {
             data = await this.handleInjections(injects, data);
         }
