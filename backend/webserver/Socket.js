@@ -483,6 +483,21 @@ module.exports = class Socket {
                     d[injection.as] = Number(count.find((c) => c[injection.by] === d.id)?.count) || 0;
                     return d;
                 });
+            } else if (injection.type === "list") {
+                // Fetch all related objects for each entry
+                const relatedObjects = await this.models[injection.table].findAll({
+                    where: {
+                        [injection.by]: {
+                            [Op.in]: data.map((d) => d.id)
+                        },
+                    },
+                    raw: true
+                });
+                // Inject as array of objects
+                data = data.map((d) => {
+                    d[injection.as] = relatedObjects.filter((obj) => obj[injection.by] === d.id);
+                    return d;
+                });
             }
         }
         return data;
@@ -616,6 +631,7 @@ module.exports = class Socket {
         });
 
         // handle injects
+        console.log("sendTable injects", injects);
         if (injects && injects.length > 0) {
             data = await this.handleInjections(injects, data);
         }
