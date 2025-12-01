@@ -797,10 +797,10 @@ class DocumentSocket extends Socket {
                     );
                     documentIds.push(doc.id);
                 }
-
-                await transaction.commit().then(() => {
+                transaction.afterCommit(() => {
                     this.broadcastTransactionChanges(transaction);
                 });
+                await transaction.commit();
 
                 downloadedSubmissions.push({
                     submissionId: submissionEntry.id,

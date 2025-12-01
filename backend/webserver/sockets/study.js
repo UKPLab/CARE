@@ -97,6 +97,9 @@ class StudySocket extends Socket {
             try {
 
                 await this.models['study'].updateById(study.id, {closed: true}, {transaction: transaction});
+                transaction.afterCommit(() => {
+                    this.broadcastTransactionChanges(transaction);
+                });
                 await transaction.commit();
             } catch (e) {
                 this.logger.error(e);
@@ -107,6 +110,7 @@ class StudySocket extends Socket {
             this.socket.emit("progressUpdate", {
                 id: data["progressId"], current: studies.indexOf(study) + 1, total: studies.length,
             });
+
         }
 
 

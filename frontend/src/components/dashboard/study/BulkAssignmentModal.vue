@@ -201,12 +201,6 @@ export default {
     }],
   }, {
     table: "user",
-    include: [{
-      table: "study_session",
-      by: "userId",
-      type: "count",
-      as: "studySessions"
-    }]
   }, {
     table: "study",
     filter: [{
@@ -380,6 +374,7 @@ export default {
     reviewerTable() {
       return this.reviewer.map((r) => {
         let newR = {...r};
+        newR.studySessions = this.userStudySessions(r.id).filter((s) => this.isStudyClosed(s.studyId)).length;
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
         newR.rolesNames = (r.roles || [])
             .map((role) => {
@@ -577,6 +572,18 @@ export default {
     }
   },
   methods: {
+    userStudySessions(userId) {
+      return this.$store.getters["table/study_session/getFiltered"](
+          (s) => s.userId === userId
+      );
+    },
+    isStudyClosed(studyId) {
+      const study = this.$store.getters["table/study/get"](studyId);
+      if (!study) {
+        return false;
+      }
+      return study.closed === null ? true : false;
+    },
     getPrimaryDocumentId(submissionId) {
       const docs = this.$store.getters["table/document/getFiltered"](
           (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
