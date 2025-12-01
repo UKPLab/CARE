@@ -339,7 +339,16 @@ class UserSocket extends Socket {
             });
             return userRight;
     }
-
+    /***
+     * Get rights associated with a role
+     * 
+     * @socketEvent userGetRoleBasedRights
+     * @param {Object} data The data object containing the role identifier.
+     * @param {number} data.roleId the role ID
+     * @param {Object} options Sequelize transaction options.
+     * @returns {Promise<*>} A promise that resolves with the rights associated with the role.
+     * @throws {Error} Throws an error if the user does not have administrator privileges.
+     */   
     async getRoleRights(data, options) {
         if(!(await this.isAdmin())){
             throw new Error("no permission to get role rights");
@@ -351,6 +360,16 @@ class UserSocket extends Socket {
 
         return rights;
     }
+
+    /***
+     * Get all available rights in the system
+     * 
+     * @socketEvent userGetAllRights
+     * @param {Object} data The data object.
+     * @param {Object} options Sequelize transaction options.
+     * @returns {Promise<*>} A promise that resolves with all available rights in the system.
+     * @throws {Error} Throws an error if the user does not have administrator privileges.
+     */ 
     async getAllRights(data, options) {
         if(!(await this.isAdmin())){
             throw new Error("no permission to get all rights");
@@ -362,6 +381,19 @@ class UserSocket extends Socket {
 
         return rights;
     }
+
+    /***
+     * Assign rights to a role
+     *  
+     * @socketEvent userAssignRoleRights
+     * @param {Object} data The data object containing the role identifier and rights to assign.
+     * @param {number} data.roleId the role ID
+     * @param {string[]} data.newRights an array of right names to add
+     * @param {string[]} data.deletedRights an array of right names to remove
+     * @param {Object} options Sequelize transaction options.
+     * @returns {Promise<*>} A promise that resolves with an object containing the newly added and deleted rights.
+     * @throws {Error} Throws an error if the user does not have administrator privileges.
+     */
     async assignRoleRights(data, options) {
         if(!(await this.isAdmin())){
             throw new Error("no permission to assign role rights");
@@ -390,8 +422,7 @@ class UserSocket extends Socket {
             await this.models["role_right_matching"].bulkCreate(newRoleRights, {
                 transaction: options.transaction,
             });
-        }
-               
+        }             
         return { newRights, deletedRights };
     }
 
