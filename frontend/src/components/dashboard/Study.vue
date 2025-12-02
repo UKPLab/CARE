@@ -4,6 +4,14 @@
       <template #headerElements>
         <div class="btn-group gap-2">
           <BasicButton
+              v-if="isAdmin"
+              class="btn-secondary btn-sm"
+              title="Overview"
+              text="Overview"
+              icon="clipboard"
+              @click="this.$refs.overviewModal.open()"
+          />
+          <BasicButton
               class="btn-secondary btn-sm"
               title="Saved Templates"
               text="Saved Templates"
@@ -61,6 +69,7 @@
     <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
     <SingleAssignmentModal ref="singleAssignmentModal"/>
     <InformationModal ref="informationModal"/>
+    <OverViewModal ref="overviewModal"/>
     <SavedTemplatesModal ref="savedTemplatesModal"/>
   </span>
 </template>
@@ -77,6 +86,7 @@ import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
+import OverViewModal from "./study/OverViewModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -96,7 +106,8 @@ export default {
     BulkAssignmentsModal,
     SingleAssignmentModal,
     InformationModal,
-    SavedTemplatesModal
+    SavedTemplatesModal,
+    OverViewModal
   },
   inject: {
     acceptStats: {
