@@ -203,13 +203,16 @@ class Validator {
                         return true;
                     });
 
+                    // Remove the zip folder name and get the remaining file string
+                    const zipFileNames = filteredEntries.map((entry) => entry.split("/").slice(1).join("/")).filter((entry) => entry.length > 0);
+
                     // Track which entries are matched by required patterns
                     const matchedEntries = new Set();
 
                     // Validate each required include file
                     for (const includeFile of requiredIncludes) {
-                        const matches = zipEntries.filter((entry) => new RegExp(includeFile.pattern).test(entry));
-
+                        const matches = zipFileNames.filter((entry) => new RegExp(includeFile.pattern).test(entry));
+                        
                         if (includeFile.required && matches.length === 0) {
                             return resolve({
                                 success: false,
@@ -230,20 +233,18 @@ class Validator {
 
                     // Check for additional files if allowAdditionalFiles is specified
                     if (allowAdditionalFiles && allowAdditionalFiles.length > 0) {
-                        const unmatchedEntries = zipEntries.filter((entry) => !matchedEntries.has(entry));
-
+                        const unmatchedEntries = zipFileNames.filter((entry) => !matchedEntries.has(entry));
                         for (const entry of unmatchedEntries) {
-                            // Check if there are files in the subdirectories, such as images/logo.png
-                            if (entry.includes("/")) {
+                            const pathParts = entry.split("/").filter((part) => part.length > 0);
+                            if (pathParts.length > 1) {
                                 return resolve({
                                     success: false,
                                     message: `Files must be at root level in ZIP ${zipFile.fileName}. Found file in subdirectory: ${entry}`,
                                 });
                             }
 
-                            // Extract file extension
+                            // Extract file extension and validate
                             const extension = entry.split(".").pop()?.toLowerCase();
-
                             if (!extension || !allowAdditionalFiles.includes(extension)) {
                                 return resolve({
                                     success: false,
