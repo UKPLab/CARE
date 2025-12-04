@@ -133,7 +133,7 @@ class Validator {
      * @returns {Promise<Object>} Validation result
      */
     async validateRequiredFile(fileConfig, tempFiles) {
-        const { pattern, required, description, includeFiles } = fileConfig;
+        const { pattern, required, description, includeFiles, allowAdditionalFiles } = fileConfig;
         // Find matching files based on pattern
         const matchingFiles = tempFiles.filter((file) => new RegExp(pattern).test(file.fileName));
 
@@ -148,7 +148,7 @@ class Validator {
         // For archive files, validate contents
         if (includeFiles && matchingFiles.length > 0) {
             for (const archiveFile of matchingFiles) {
-                const archiveContentResult = await this.validateZipFileContents(archiveFile, includeFiles);
+                const archiveContentResult = await this.validateZipFileContents(archiveFile, includeFiles, allowAdditionalFiles);
                 if (!archiveContentResult.success) {
                     return archiveContentResult;
                 }
@@ -162,9 +162,10 @@ class Validator {
      * Validate ZIP file contents
      * @param {Object} zipFile - ZIP file object with content
      * @param {Array} requiredIncludes - Required files that should be in ZIP
+     * @param {Array} allowAdditionalFiles - Allowed file extensions for additional files
      * @returns {Promise<Object>} Validation result
      */
-    async validateZipFileContents(zipFile, requiredIncludes) {
+    async validateZipFileContents(zipFile, requiredIncludes, allowAdditionalFiles = []) {
         return new Promise((resolve, reject) => {
             // Create a buffer from the file content
             const buffer = Buffer.from(zipFile.content);
@@ -186,6 +187,9 @@ class Validator {
                 });
 
                 zipfile.on("end", () => {
+                    // Track which entries are matched by required patterns
+                    const matchedEntries = new Set();
+
                     // Validate each required include file
                     for (const includeFile of requiredIncludes) {
                         const matches = zipEntries.filter((entry) => new RegExp(includeFile.pattern).test(entry));
@@ -202,6 +206,36 @@ class Validator {
                                 success: false,
                                 message: `Too many matches for ${includeFile.description || includeFile.pattern} in ${zipFile.fileName}: found ${matches.length}, max ${includeFile.maxMatches}`,
                             });
+                        }
+
+                        // Mark these entries as matched
+                        matches.forEach((match) => matchedEntries.add(match));
+                    }
+
+                    // Check for additional files if allowAdditionalFiles is specified
+                    if (allowAdditionalFiles && allowAdditionalFiles.length > 0) {
+                        const unmatchedEntries = zipEntries.filter((entry) => !matchedEntries.has(entry));
+
+                        for (const entry of unmatchedEntries) {
+                            // Check if there are files in the subdirectories, such as images/logo.png
+                            if (entry.includes("/")) {
+                                return resolve({
+                                    success: false,
+                                    message: `Files must be at root level in ZIP ${zipFile.fileName}. Found file in subdirectory: ${entry}`,
+                                });
+                            }
+
+                            // Extract file extension
+                            const extension = entry.split(".").pop()?.toLowerCase();
+
+                            if (!extension || !allowAdditionalFiles.includes(extension)) {
+                                return resolve({
+                                    success: false,
+                                    message: `Disallowed file found in ZIP ${
+                                        zipFile.fileName
+                                    }: ${entry}. Allowed additional file types: ${allowAdditionalFiles.join(", ")}`,
+                                });
+                            }
                         }
                     }
 
