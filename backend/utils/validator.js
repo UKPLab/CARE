@@ -187,6 +187,22 @@ class Validator {
                 });
 
                 zipfile.on("end", () => {
+                    // Filter out system metadata files before validation
+                    const filteredEntries = zipEntries.filter((entry) => {
+                        const fileName = entry.split("/").pop() || entry;
+                        const systemFiles = ["Thumbs.db", "desktop.ini", "Desktop.ini", "ehthumbs.db", "ehthumbs_vista.db"];
+                        if (
+                            fileName.startsWith(".") || // Hidden files like .DS_Store
+                            fileName.startsWith("._") || // macOS resource forks
+                            entry.includes("__MACOSX/") || // macOS metadata directory
+                            systemFiles.includes(fileName)
+                        ) {
+                            return false;
+                        }
+
+                        return true;
+                    });
+
                     // Track which entries are matched by required patterns
                     const matchedEntries = new Set();
 
