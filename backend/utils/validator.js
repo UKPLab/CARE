@@ -204,7 +204,17 @@ class Validator {
                     });
 
                     // Remove the zip folder name and get the remaining file string
-                    const zipFileNames = filteredEntries.map((entry) => entry.split("/").slice(1).join("/")).filter((entry) => entry.length > 0);
+                    const zipFileNames = filteredEntries
+                        .map((entry) => {
+                            const parts = entry.split("/");
+                            // If it has more than 1 part and first part matches a common pattern
+                            // or if all entries start with same folder, remove first part
+                            if (parts.length > 1 && parts[parts.length - 1]) {
+                                return parts.slice(1).join("/");
+                            }
+                            return entry;
+                        })
+                        .filter((entry) => entry.length > 0 && !entry.endsWith("/"));
 
                     // Track which entries are matched by required patterns
                     const matchedEntries = new Set();
