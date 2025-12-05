@@ -780,7 +780,7 @@
         {
           "name": "Zusätzliche Punkte",
           "description": "Zusätzliche Punkte für besonders gute Leistungen, die nicht in anderen Kriterien erwähnt sind",
-          "function": "auto_grading",
+          "function": "manual_grading",
           "maxPoints": 2,
           "minPoints": 0,
           "expertLevel": 1,
@@ -803,7 +803,7 @@
         {
           "name": "Negative Punkte",
           "description": "Große Fehler in der Abgabe",
-          "function": "auto_grading",
+          "function": "manual_grading",
           "maxPoints": 0,
           "minPoints": -2,
           "expertLevel": 1,
