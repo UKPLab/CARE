@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
   Workflow.init({
       name: DataTypes.STRING,
       description: DataTypes.TEXT,
+      readOnlyComponents: DataTypes.ARRAY(DataTypes.STRING),
       deleted: DataTypes.BOOLEAN,
       deletedAt: DataTypes.DATE,
       createdAt: DataTypes.DATE,
