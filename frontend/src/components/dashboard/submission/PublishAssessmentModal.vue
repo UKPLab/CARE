@@ -473,6 +473,40 @@ export default {
     },
   },
   methods: {
+    /**
+     * Detect if a study step uses AI workflow by checking for services with skills.
+     * Any service with a skill property indicates AI workflow.
+     */
+    getNlpServiceForStudyStep(studyStep) {
+      if (!studyStep || !studyStep.configuration) return null;
+      const cfg = studyStep.configuration;
+      if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
+
+      // Find any service with a skill (name and type can be anything)
+      const svc = cfg.services.find((s) => s.skill) || cfg.services[0];
+
+      return svc || null;
+    },
+    /**
+     * Generate assessment key candidate for AI workflow.
+     * Uses format: ${svc.name}_${svc.skill}_assessment
+     */
+    getAssessmentKeyCandidates(studyStep) {
+      const svc = this.getNlpServiceForStudyStep(studyStep);
+      if (!svc || !svc.skill || !svc.name) return [];
+
+      return [`${svc.name}_${svc.skill}_assessment`];
+    },
+    /**
+     * Get assessment data key for a study step.
+     * Returns AI key if AI workflow detected, otherwise "assessment_result".
+     * No fallback - if AI keys exist, only use those.
+     */
+    getAssessmentDataKeys(studyStep) {
+      const aiKeys = this.getAssessmentKeyCandidates(studyStep);
+      // If AI workflow detected, only use AI keys (no fallback)
+      return aiKeys.length > 0 ? aiKeys : ["assessment_result"];
+    },
     getUserRoles(userId) {
       const roleMatchings = this.userRoleMatchings.filter(
         (urm) => urm.userId === userId && !urm.deleted
@@ -536,18 +570,30 @@ export default {
         });
 
         // fetch document_data for this session and study step
+        // Try both AI workflow keys and non-AI key (assessment_result)
         const documentDataArray = this.$store.getters["table/document_data/getByKey"](
           "studySessionId",
           session.sessionId
         );
-        const documentDataItem = Array.isArray(documentDataArray)
-          ? documentDataArray.find((dd) => 
-              matchingStudyStep && 
-              dd?.studyStepId === matchingStudyStep.id && 
-              dd?.key === "assessment_result"
-            )
-          : null;
-        const assessmentRaw = documentDataItem?.value || {};
+        
+        let documentDataItem = null;
+        let assessmentRaw = {};
+        
+        if (matchingStudyStep && Array.isArray(documentDataArray)) {
+          // Get all possible assessment keys (AI or non-AI)
+          const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
+          
+          // Try to find data using any of the possible keys
+          for (const key of assessmentKeys) {
+            documentDataItem = documentDataArray.find(
+              (dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key
+            );
+            if (documentDataItem) {
+              assessmentRaw = documentDataItem.value || {};
+              break; // Found data, stop searching
+            }
+          }
+        }
 
         const scoreState =
           typeof assessmentRaw === "string"
