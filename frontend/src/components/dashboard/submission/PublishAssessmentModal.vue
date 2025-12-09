@@ -15,7 +15,7 @@
       <div class="mb-3">
         <label class="form-label"><b>Select Workflow:</b></label>
         <p class="small text-muted mb-3">
-          Select a workflow to filter related studies for assessment export.
+          Select a workflow to filter related sessions for assessment export.
         </p>
         <BasicTable
           v-model="selectedWorkflows"
@@ -44,36 +44,15 @@
       </div>
     </template>
 
-    <!-- STEP 3: Study Selection -->
+    <!-- STEP 3: Session Selection -->
     <template #step-3>
-      <div class="mb-3">
-        <label class="form-label"><b>Select Studies:</b></label>
-        <p class="small text-muted mb-3">
-          Studies filtered by selected workflow and configuration. Select the studies you want to export.
-        </p>
-        <div v-if="filteredStudiesTable.length === 0" class="alert alert-warning">
-          No studies found matching the selected workflow and configuration.
-        </div>
-        <BasicTable
-          v-else
-          v-model="selectedStudies"
-          :data="filteredStudiesTable"
-          :columns="studyTableColumns"
-          :options="multiSelectTableOptions"
-          :max-table-height="350"
-        />
-      </div>
-    </template>
-
-    <!-- STEP 4: Session Selection -->
-    <template #step-4>
       <div class="mb-3">
         <label class="form-label"><b>Select Sessions:</b></label>
         <p class="small text-muted mb-3">
           Select which study sessions to include in the assessment export.
         </p>
         <div v-if="sessionsTable.length === 0" class="alert alert-warning">
-          No sessions found for the selected studies.
+          No sessions found matching the selected workflow and configuration.
         </div>
         <BasicTable
           v-else
@@ -86,8 +65,8 @@
       </div>
     </template>
 
-    <!-- STEP 5: Confirmation -->
-    <template #step-5>
+    <!-- STEP 4: Confirmation -->
+    <template #step-4>
       <div class="mb-3">
         <label
           for="linkCollection"
@@ -145,8 +124,8 @@
       </div>
     </template>
 
-    <!-- STEP 6: Publishing Options -->
-    <template #step-6>
+    <!-- STEP 5: Publishing Options -->
+    <template #step-5>
       <div class="mb-3">
         <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
         <select
@@ -171,6 +150,8 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import { calculateAssessmentScore, buildScoresFromState } from "@/assets/assessmentScore.js";
+import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
  * Modal for publishing assessment data with CSV export
@@ -181,13 +162,13 @@ export default {
   components: { BasicTable, StepperModal },
   subscribeTable: [
     { table: "workflow" },
-    { table: "workflow_step" },
     { table: "configuration", filter: [{ key: "type", value: 0 }] },
     { table: "study" },
     { table: "study_step" },
     { table: "study_session" },
     { table: "submission" },
     { table: "document" },
+    { table: "document_data" },
     { table: "user" },
     { table: "user_role" },
     { table: "user_role_matching" },
@@ -196,7 +177,6 @@ export default {
     return {
       selectedWorkflows: [],
       selectedConfigurations: [],
-      selectedStudies: [],
       selectedSessions: [],
       publishMethod: "csv",
       linkCollection: "studies",
@@ -207,7 +187,6 @@ export default {
       return [
         { title: "Workflow" },
         { title: "Configuration" },
-        { title: "Study" },
         { title: "Session" },
         { title: "Confirmation" },
         { title: "Publishing" },
@@ -217,7 +196,6 @@ export default {
       return [
         this.selectedWorkflows.length > 0,
         this.selectedConfigurations.length > 0,
-        this.selectedStudies.length > 0,
         this.selectedSessions.length > 0,
         true,
         true,
@@ -316,29 +294,39 @@ export default {
       ];
     },
     
-    // Selected values for display
-    selectedWorkflowName() {
-      if (this.selectedWorkflows.length === 0) return "None";
-      return this.selectedWorkflows[0].name || `Workflow ${this.selectedWorkflows[0].id}`;
-    },
-    selectedConfigurationName() {
-      if (this.selectedConfigurations.length === 0) return "None";
-      return this.selectedConfigurations[0].name || "Unknown";
-    },
     selectedWorkflowId() {
       return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].id : null;
     },
     selectedConfigurationId() {
       return this.selectedConfigurations.length > 0 ? this.selectedConfigurations[0].id : null;
     },
+    selectedConfigurationContent() {
+      if (!this.selectedConfigurationId) return null;
+      const config = this.$store.getters["table/configuration/get"](this.selectedConfigurationId);
+      return config?.content || null;
+    },
+    criteriaNames() {
+      const cfg = this.selectedConfigurationContent;
+      if (!cfg || !Array.isArray(cfg.rubrics)) return [];
+      const names = [];
+      cfg.rubrics.forEach((rubric) => {
+        (rubric?.criteria || []).forEach((crit) => {
+          if (crit?.name && !names.includes(crit.name)) {
+            names.push(crit.name);
+          }
+        });
+      });
+      return names;
+    },
 
-    // Filtered studies based on workflow and configuration selection
-    filteredStudiesTable() {
+    // Sessions filtered by workflow and configuration
+    sessionsTable() {
       if (!this.selectedWorkflowId || !this.selectedConfigurationId) {
         return [];
       }
 
-      return this.studies
+      // First, get all studies that match the workflow and configuration
+      const matchingStudyIds = this.studies
         .filter((study) => {
           // Check if study has matching workflow
           if (study.workflowId !== this.selectedWorkflowId) {
@@ -357,58 +345,44 @@ export default {
 
           return hasMatchingConfig;
         })
-        .map((study) => {
-          const sessionsCount = this.studySessions.filter(
-            (s) => s.studyId === study.id
-          ).length;
-          
-          return {
-            ...study,
-            id: study.id,
-            name: study.name,
-            sessionsCount,
-            closedAt: study.end ? new Date(study.end).toLocaleDateString() : "-",
-          };
-        });
-    },
-    studyTableColumns() {
-      return [
-        { name: "ID", key: "id" },
-        { name: "Name", key: "name" },
-        { name: "Sessions", key: "sessionsCount" },
-        { name: "Closed At", key: "closedAt" },
-      ];
-    },
+        .map((study) => study.id);
 
-    // Sessions based on selected studies
-    sessionsTable() {
-      const selectedStudyIds = this.selectedStudies.map((s) => s.id);
-      
-      if (selectedStudyIds.length === 0) {
+      if (matchingStudyIds.length === 0) {
         return [];
       }
 
       return this.studySessions
-        .filter((session) => selectedStudyIds.includes(session.studyId))
+        .filter((session) => matchingStudyIds.includes(session.studyId))
         .map((session) => {
           const study = this.studies.find((s) => s.id === session.studyId);
           const user = this.users.find((u) => u.id === session.userId);
           
-          // Find related document and submission
+          // Find related document and submission (prefer document with submissionId)
           const studyStepsForSession = this.studySteps.filter(
             (step) => step.studyId === session.studyId
           );
           const documentIds = studyStepsForSession.map((step) => step.documentId).filter(Boolean);
-          const document = documentIds.length > 0 
-            ? this.documents.find((d) => documentIds.includes(d.id)) 
-            : null;
-          const submission = document?.submissionId 
-            ? this.submissions.find((s) => s.id === document.submissionId) 
-            : null;
+          let document = null;
+          if (documentIds.length) {
+            document =
+              this.documents.find((d) => documentIds.includes(d.id) && d.submissionId) ||
+              this.documents.find((d) => documentIds.includes(d.id)) ||
+              null;
+          }
+          // Resolve parent document if needed
+          if (document && !document.submissionId && document.parentDocumentId) {
+            const parentDoc = this.documents.find((d) => d.id === document.parentDocumentId);
+            if (parentDoc) {
+              document = parentDoc;
+            }
+          }
+          const submission =
+            document?.submissionId &&
+            this.submissions.find((s) => s.id === document.submissionId);
 
           // Get owner info
-          const owner = submission 
-            ? this.users.find((u) => u.id === submission.userId) 
+          const owner = submission
+            ? this.users.find((u) => u.id === submission.userId)
             : null;
 
           return {
@@ -422,8 +396,9 @@ export default {
             ownerFirstName: owner?.firstName || "-",
             ownerLastName: owner?.lastName || "-",
             ownerUserName: owner?.userName || "-",
+            ownerExtId: owner?.extId || "",
             submissionId: submission?.id || null,
-            submissionExtId: submission?.extId || "-",
+            submissionExtId: submission?.extId || "",
             link: window.location.origin + "/review/" + session.hash,
             start: session.start,
             end: session.end,
@@ -475,7 +450,7 @@ export default {
     },
     publishMethodOptions() {
       return [
-        { value: "csv", label: "Download CSV", disabled: true },
+        { value: "csv", label: "Download CSV", disabled: false },
         { value: "moodle", label: "Moodle", disabled: true },
         { value: "email", label: "Email", disabled: true },
       ];
@@ -485,16 +460,10 @@ export default {
     selectedWorkflows() {
       // Reset downstream selections when workflow changes
       this.selectedConfigurations = [];
-      this.selectedStudies = [];
       this.selectedSessions = [];
     },
     selectedConfigurations() {
-      // Reset downstream selections when configuration changes
-      this.selectedStudies = [];
-      this.selectedSessions = [];
-    },
-    selectedStudies() {
-      // Reset sessions when studies change
+      // Reset sessions when configuration changes
       this.selectedSessions = [];
     },
   },
@@ -517,19 +486,114 @@ export default {
     reset() {
       this.selectedWorkflows = [];
       this.selectedConfigurations = [];
-      this.selectedStudies = [];
       this.selectedSessions = [];
       this.publishMethod = "csv";
       this.linkCollection = "studies";
     },
     handleSubmit() {
-      // CSV download is disabled for now
+      if (this.publishMethod === "csv") {
+        this.downloadCSV();
+        return;
+      }
       this.eventBus.emit("toast", {
         title: "Coming Soon",
-        message: "CSV download functionality will be available in a future update.",
+        message: "This publishing method will be available in a future update.",
         variant: "info",
       });
       this.$refs.assessmentStepper.close();
+    },
+    /**
+     * Build CSV rows for selected sessions using assessmentScore utilities.
+     * Each session becomes one row; criteria columns are derived from configuration.
+     */
+    downloadCSV() {
+      const configContent = this.selectedConfigurationContent;
+      if (!configContent) {
+        this.eventBus.emit("toast", {
+          title: "Configuration missing",
+          message: "Selected configuration content could not be loaded.",
+          variant: "danger",
+        });
+        return;
+      }
+
+      const rows = [];
+      const criteriaList = this.criteriaNames;
+
+      this.selectedSessions.forEach((session) => {
+        // locate study step matching selected configuration
+        const studyStepsForStudy = this.studySteps.filter(
+          (step) => step.studyId === session.studyId
+        );
+        const matchingStudyStep = studyStepsForStudy.find((step) => {
+          const cfgId = step.configuration?.settings?.configurationId;
+          return cfgId === this.selectedConfigurationId;
+        });
+
+        // fetch document_data for this session and study step
+        const documentDataArray = this.$store.getters["table/document_data/getByKey"](
+          "studySessionId",
+          session.sessionId
+        );
+        const documentDataItem = Array.isArray(documentDataArray)
+          ? documentDataArray.find((dd) => matchingStudyStep && dd?.studyStepId === matchingStudyStep.id)
+          : null;
+        const assessmentRaw = documentDataItem?.data?.assessment_result || {};
+
+        const scoreState =
+          typeof assessmentRaw === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(assessmentRaw);
+                } catch (e) {
+                  return {};
+                }
+              })()
+            : assessmentRaw || {};
+
+        const scores = buildScoresFromState(scoreState);
+        const assessment = calculateAssessmentScore(configContent, scores);
+
+        const reviewer = this.users.find((u) => u.id === session.userId);
+        const submission = session.submissionId
+          ? this.submissions.find((s) => s.id === session.submissionId)
+          : null;
+        const ownerUser = submission ? this.users.find((u) => u.id === submission.userId) : null;
+
+        const row = {
+          "User ExtId": ownerUser?.extId || session.ownerExtId || "",
+          "User First Name": ownerUser?.firstName || session.ownerFirstName || "",
+          "User Last Name": ownerUser?.lastName || session.ownerLastName || "",
+          "User Name": ownerUser?.userName || session.ownerUserName || "",
+          "Submission ID": session.submissionId || "",
+          "Submission ExtId": submission?.extId || "",
+          "Reviewer First Name": reviewer?.firstName || "",
+          "Reviewer Last Name": reviewer?.lastName || "",
+          "Reviewer User Name": reviewer?.userName || "",
+          "Reviewer Roles": reviewer ? this.getUserRoles(reviewer.id) : "",
+          Links: session.link || "",
+          "Total Points": assessment.achieved_points ?? 0,
+        };
+
+        // dynamic criteria columns
+        criteriaList.forEach((criterionName) => {
+          row[criterionName] = scores[criterionName] ?? 0;
+        });
+
+        rows.push(row);
+      });
+
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const configName = this.selectedConfigurationName.replace(/[^a-zA-Z0-9]/g, "_");
+      const fileBaseName = `assessment_${configName}_${timestamp}`;
+      downloadObjectsAs(rows, fileBaseName, "csv");
+
+      this.$refs.assessmentStepper.close();
+      this.eventBus.emit("toast", {
+        title: "CSV Export",
+        message: "Assessment data CSV successfully generated and exported",
+        variant: "success",
+      });
     },
   },
 };
