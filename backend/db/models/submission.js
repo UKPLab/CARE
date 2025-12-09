@@ -250,6 +250,19 @@ module.exports = (sequelize, DataTypes) => {
             sequelize,
             modelName: "submission",
             tableName: "submission",
+            hooks: {
+                afterUpdate: async (submission, options) => {
+                    // If the document is deleted, we should also delete the associated db columns
+                    if (submission.deleted && !submission._previousDataValues.deleted) {
+                        // delete associated studies
+                        const documents = await sequelize.models.document.getAllByKey("submissionId", submission.id);
+
+                        for (const document of documents) {
+                            await sequelize.models["document"].deleteById(document.id);
+                        }
+                    }
+                }
+            },
         }
     );
 
