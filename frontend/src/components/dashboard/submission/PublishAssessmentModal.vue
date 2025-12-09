@@ -305,6 +305,11 @@ export default {
       const config = this.$store.getters["table/configuration/get"](this.selectedConfigurationId);
       return config?.content || null;
     },
+    selectedConfigurationName() {
+      if (!this.selectedConfigurationId) return "unknown";
+      const config = this.$store.getters["table/configuration/get"](this.selectedConfigurationId);
+      return config?.name || "unknown";
+    },
     criteriaNames() {
       const cfg = this.selectedConfigurationContent;
       if (!cfg || !Array.isArray(cfg.rubrics)) return [];
