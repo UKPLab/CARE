@@ -541,9 +541,13 @@ export default {
           session.sessionId
         );
         const documentDataItem = Array.isArray(documentDataArray)
-          ? documentDataArray.find((dd) => matchingStudyStep && dd?.studyStepId === matchingStudyStep.id)
+          ? documentDataArray.find((dd) => 
+              matchingStudyStep && 
+              dd?.studyStepId === matchingStudyStep.id && 
+              dd?.key === "assessment_result"
+            )
           : null;
-        const assessmentRaw = documentDataItem?.data?.assessment_result || {};
+        const assessmentRaw = documentDataItem?.value || {};
 
         const scoreState =
           typeof assessmentRaw === "string"
