@@ -595,7 +595,6 @@ export default {
           }
         }
 
-        // document_data.value is already JSON; just ensure we have an object
         const scoreState = assessmentRaw || {};
 
         const scores = buildScoresFromState(scoreState);
