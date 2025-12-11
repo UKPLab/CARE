@@ -500,7 +500,6 @@ export default {
     /**
      * Get assessment data key for a study step.
      * Returns AI key if AI workflow detected, otherwise "assessment_result".
-     * No fallback - if AI keys exist, only use those.
      */
     getAssessmentDataKeys(studyStep) {
       const aiKeys = this.getAssessmentKeyCandidates(studyStep);
@@ -534,12 +533,6 @@ export default {
         this.downloadCSV();
         return;
       }
-      this.eventBus.emit("toast", {
-        title: "Coming Soon",
-        message: "This publishing method will be available in a future update.",
-        variant: "info",
-      });
-      this.$refs.assessmentStepper.close();
     },
     /**
      * Build CSV rows for selected sessions using assessmentScore utilities.
