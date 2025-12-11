@@ -595,16 +595,8 @@ export default {
           }
         }
 
-        const scoreState =
-          typeof assessmentRaw === "string"
-            ? (() => {
-                try {
-                  return JSON.parse(assessmentRaw);
-                } catch (e) {
-                  return {};
-                }
-              })()
-            : assessmentRaw || {};
+        // document_data.value is already JSON; just ensure we have an object
+        const scoreState = assessmentRaw || {};
 
         const scores = buildScoresFromState(scoreState);
         const assessment = calculateAssessmentScore(configContent, scores);
