@@ -10,25 +10,8 @@
       <h5 class="modal-title">Publish Assessment</h5>
     </template>
 
-    <!-- STEP 1: Workflow Selection -->
+    <!-- STEP 1: Configuration Selection -->
     <template #step-1>
-      <div class="mb-3">
-        <label class="form-label"><b>Select Workflow:</b></label>
-        <p class="small text-muted mb-3">
-          Select a workflow to filter related sessions for assessment export.
-        </p>
-        <BasicTable
-          v-model="selectedWorkflows"
-          :data="workflowsTable"
-          :columns="workflowTableColumns"
-          :options="singleSelectTableOptions"
-          :max-table-height="350"
-        />
-      </div>
-    </template>
-
-    <!-- STEP 2: Configuration Selection -->
-    <template #step-2>
       <div class="mb-3">
         <label class="form-label"><b>Select Assessment Configuration:</b></label>
         <p class="small text-muted mb-3">
@@ -38,6 +21,24 @@
           v-model="selectedConfigurations"
           :data="configurationsTable"
           :columns="configurationTableColumns"
+          :options="singleSelectTableOptions"
+          :max-table-height="350"
+        />
+      </div>
+    </template>
+
+    <!-- STEP 2: Workflow Selection -->
+    <template #step-2>
+      <div class="mb-3">
+        <label class="form-label"><b>Select Workflow:</b></label>
+        <p class="small text-muted mb-3">
+          Workflows that contain the selected configuration. The “Step(s)” column
+          shows where the configuration appears inside the workflow.
+        </p>
+        <BasicTable
+          v-model="selectedWorkflows"
+          :data="workflowsTable"
+          :columns="workflowTableColumns"
           :options="singleSelectTableOptions"
           :max-table-height="350"
         />
@@ -162,6 +163,7 @@ export default {
   components: { BasicTable, StepperModal },
   subscribeTable: [
     { table: "workflow" },
+    { table: "workflow_step" },
     { table: "configuration", filter: [{ key: "type", value: 0 }] },
     { table: "study" },
     { table: "study_step" },
@@ -185,8 +187,8 @@ export default {
   computed: {
     steps() {
       return [
-        { title: "Workflow" },
         { title: "Configuration" },
+        { title: "Workflow" },
         { title: "Session" },
         { title: "Confirmation" },
         { title: "Publishing" },
@@ -194,8 +196,8 @@ export default {
     },
     stepValid() {
       return [
-        this.selectedWorkflows.length > 0,
         this.selectedConfigurations.length > 0,
+        this.selectedWorkflows.length > 0,
         this.selectedSessions.length > 0,
         true,
         true,
@@ -230,6 +232,9 @@ export default {
     workflows() {
       return this.$store.getters["table/workflow/getAll"] || [];
     },
+    workflowSteps() {
+      return this.$store.getters["table/workflow_step/getAll"]?.filter((s) => !s.deleted) || [];
+    },
     configurations() {
       return this.$store.getters["table/configuration/getFiltered"](
         (c) => c.type === 0 && !c.deleted
@@ -261,20 +266,97 @@ export default {
     userRoleMatchings() {
       return this.$store.getters["table/user_role_matching/getAll"] || [];
     },
+    orderedWorkflowStepsByWorkflow() {
+      const grouped = this.workflowSteps.reduce((acc, step) => {
+        if (!step) return acc;
+        if (!acc[step.workflowId]) acc[step.workflowId] = [];
+        acc[step.workflowId].push(step);
+        return acc;
+      }, {});
+
+      const ordered = {};
+
+      Object.keys(grouped).forEach((workflowId) => {
+        const steps = grouped[workflowId];
+        const nextMap = new Map(steps.map((s) => [s.workflowStepPrevious, s]));
+        const sequence = [];
+        const seen = new Set();
+
+        let current = steps.find((s) => s.workflowStepPrevious === null);
+        while (current && !seen.has(current.id)) {
+          sequence.push(current);
+          seen.add(current.id);
+          current = nextMap.get(current.id);
+        }
+
+        // Append remaining steps (sorted) to avoid gaps in malformed chains
+        const remaining = steps.filter((s) => !seen.has(s.id)).sort((a, b) => a.id - b.id);
+        ordered[workflowId] = sequence.concat(remaining);
+      });
+
+      return ordered;
+    },
 
     // Table data
     workflowsTable() {
-      return this.workflows.map((w) => ({
-        ...w,
-        id: w.id,
-        name: w.name || `Workflow ${w.id}`,
-        description: w.description || "-",
-      }));
+      const configId = this.selectedConfigurationId;
+      if (!configId) {
+        return [];
+      }
+
+      const workflowIdsInStudies = [
+        ...new Set(this.studies.map((s) => s.workflowId).filter((id) => id !== null && id !== undefined)),
+      ];
+
+      return workflowIdsInStudies
+        .map((workflowId) => {
+          const workflow = this.workflows.find((w) => w.id === workflowId && !w.deleted);
+          if (!workflow) return null;
+
+          const studiesUsingWorkflow = this.studies.filter((s) => s.workflowId === workflowId);
+          if (studiesUsingWorkflow.length === 0) return null;
+
+          // Find study steps (actual instantiated steps) that use this configuration within these studies
+          const studyIds = new Set(studiesUsingWorkflow.map((s) => s.id));
+          const studyStepsForWorkflow = this.studySteps.filter((step) => {
+            if (!step || step.deleted) return false;
+            if (!studyIds.has(step.studyId)) return false;
+            return this.getConfigurationIdFromConfig(step.configuration) === configId;
+          });
+
+          if (studyStepsForWorkflow.length === 0) return null;
+
+          // Map to workflow step IDs and resolve their order/step numbers
+          const orderedSteps = this.orderedWorkflowStepsByWorkflow[workflowId] || [];
+          const workflowStepIdToNumber = orderedSteps.reduce((acc, step, idx) => {
+            acc[step.id] = idx + 1;
+            return acc;
+          }, {});
+
+          const stepNumbers = Array.from(
+            new Set(
+              studyStepsForWorkflow
+                .map((s) => workflowStepIdToNumber[s.workflowStepId])
+                .filter((num) => !!num)
+            )
+          ).sort((a, b) => a - b);
+
+          return {
+            ...workflow,
+            id: workflow.id,
+            name: workflow.name || `Workflow ${workflow.id}`,
+            description: workflow.description || "-",
+            stepNumbers: stepNumbers.join(", "),
+            studiesUsingWorkflow: studiesUsingWorkflow.length,
+          };
+        })
+        .filter((entry) => entry !== null);
     },
     workflowTableColumns() {
       return [
         { name: "ID", key: "id" },
         { name: "Name", key: "name" },
+        { name: "Step(s)", key: "stepNumbers" },
         { name: "Description", key: "description" },
       ];
     },
@@ -338,17 +420,7 @@ export default {
             return false;
           }
 
-          // Check if any study step has the selected configuration
-          const studyStepsForStudy = this.studySteps.filter(
-            (step) => step.studyId === study.id
-          );
-          
-          const hasMatchingConfig = studyStepsForStudy.some((step) => {
-            const configId = step.configuration?.settings?.configurationId;
-            return configId === this.selectedConfigurationId;
-          });
-
-          return hasMatchingConfig;
+          return !!this.getMatchingStudyStepForStudy(study.id);
         })
         .map((study) => study.id);
 
@@ -462,13 +534,13 @@ export default {
     },
   },
   watch: {
-    selectedWorkflows() {
-      // Reset downstream selections when workflow changes
-      this.selectedConfigurations = [];
+    selectedConfigurations() {
+      // Reset downstream selections when configuration changes
+      this.selectedWorkflows = [];
       this.selectedSessions = [];
     },
-    selectedConfigurations() {
-      // Reset sessions when configuration changes
+    selectedWorkflows() {
+      // Reset sessions when workflow changes
       this.selectedSessions = [];
     },
   },
@@ -477,6 +549,14 @@ export default {
      * Detect if a study step uses AI workflow by checking for services with skills.
      * Any service with a skill property indicates AI workflow.
      */
+    getConfigurationIdFromConfig(cfg) {
+      if (!cfg) return null;
+      return (
+        cfg?.settings?.configurationId ||
+        cfg?.configurationId ||
+        null
+      );
+    },
     getNlpServiceForStudyStep(studyStep) {
       if (!studyStep || !studyStep.configuration) return null;
       const cfg = studyStep.configuration;
@@ -505,6 +585,35 @@ export default {
       const aiKeys = this.getAssessmentKeyCandidates(studyStep);
       // If AI workflow detected, only use AI keys (no fallback)
       return aiKeys.length > 0 ? aiKeys : ["assessment_result"];
+    },
+    /**
+     * Find the study step for a study that matches the selected configuration.
+     * Prefers the earliest occurrence in the workflow order.
+     */
+    getMatchingStudyStepForStudy(studyId) {
+      if (!this.selectedConfigurationId) return null;
+
+      const stepsForStudy = this.studySteps.filter(
+        (step) =>
+          step &&
+          !step.deleted &&
+          step.studyId === studyId &&
+          this.getConfigurationIdFromConfig(step.configuration) === this.selectedConfigurationId
+      );
+      if (stepsForStudy.length === 0) return null;
+
+      const study = this.studies.find((s) => s.id === studyId);
+      const workflowId = study?.workflowId;
+      const orderedWorkflowSteps = workflowId
+        ? this.orderedWorkflowStepsByWorkflow[workflowId] || []
+        : [];
+
+      const orderedMatch =
+        orderedWorkflowSteps
+          .map((ws) => stepsForStudy.find((step) => step.workflowStepId === ws.id))
+          .find((step) => !!step) || null;
+
+      return orderedMatch || stepsForStudy[0];
     },
     getUserRoles(userId) {
       const roleMatchings = this.userRoleMatchings.filter(
@@ -553,14 +662,8 @@ export default {
       const criteriaList = this.criteriaNames;
 
       this.selectedSessions.forEach((session) => {
-        // locate study step matching selected configuration
-        const studyStepsForStudy = this.studySteps.filter(
-          (step) => step.studyId === session.studyId
-        );
-        const matchingStudyStep = studyStepsForStudy.find((step) => {
-          const cfgId = step.configuration?.settings?.configurationId;
-          return cfgId === this.selectedConfigurationId;
-        });
+        // locate study step matching selected configuration (earliest occurrence in workflow)
+        const matchingStudyStep = this.getMatchingStudyStepForStudy(session.studyId);
 
         // fetch document_data for this session and study step
         // Try both AI workflow keys and non-AI key (assessment_result)
