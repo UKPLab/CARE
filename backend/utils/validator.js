@@ -133,7 +133,7 @@ class Validator {
      * @returns {Promise<Object>} Validation result
      */
     async validateRequiredFile(fileConfig, tempFiles) {
-        const { pattern, required, description, includeFiles } = fileConfig;
+        const { pattern, required, description, includeFiles, allowAdditionalFiles } = fileConfig;
         // Find matching files based on pattern
         const matchingFiles = tempFiles.filter((file) => new RegExp(pattern).test(file.fileName));
 
@@ -148,7 +148,7 @@ class Validator {
         // For archive files, validate contents
         if (includeFiles && matchingFiles.length > 0) {
             for (const archiveFile of matchingFiles) {
-                const archiveContentResult = await this.validateZipFileContents(archiveFile, includeFiles);
+                const archiveContentResult = await this.validateZipFileContents(archiveFile, includeFiles, allowAdditionalFiles);
                 if (!archiveContentResult.success) {
                     return archiveContentResult;
                 }
@@ -162,9 +162,10 @@ class Validator {
      * Validate ZIP file contents
      * @param {Object} zipFile - ZIP file object with content
      * @param {Array} requiredIncludes - Required files that should be in ZIP
+     * @param {Array} allowAdditionalFiles - Allowed file extensions for additional files
      * @returns {Promise<Object>} Validation result
      */
-    async validateZipFileContents(zipFile, requiredIncludes) {
+    async validateZipFileContents(zipFile, requiredIncludes, allowAdditionalFiles = []) {
         return new Promise((resolve, reject) => {
             // Create a buffer from the file content
             const buffer = Buffer.from(zipFile.content);
@@ -186,10 +187,42 @@ class Validator {
                 });
 
                 zipfile.on("end", () => {
+                    // Filter out system metadata files before validation
+                    const filteredEntries = zipEntries.filter((entry) => {
+                        const fileName = entry.split("/").pop() || entry;
+                        const systemFiles = ["Thumbs.db", "desktop.ini", "Desktop.ini", "ehthumbs.db", "ehthumbs_vista.db"];
+                        if (
+                            fileName.startsWith(".") || // Hidden files like .DS_Store
+                            fileName.startsWith("._") || // macOS resource forks
+                            entry.includes("__MACOSX/") || // macOS metadata directory
+                            systemFiles.includes(fileName)
+                        ) {
+                            return false;
+                        }
+
+                        return true;
+                    });
+
+                    // Remove the zip folder name and get the remaining file string
+                    const zipFileNames = filteredEntries
+                        .map((entry) => {
+                            const parts = entry.split("/");
+                            // If it has more than 1 part and first part matches a common pattern
+                            // or if all entries start with same folder, remove first part
+                            if (parts.length > 1 && parts[parts.length - 1]) {
+                                return parts.slice(1).join("/");
+                            }
+                            return entry;
+                        })
+                        .filter((entry) => entry.length > 0 && !entry.endsWith("/"));
+
+                    // Track which entries are matched by required patterns
+                    const matchedEntries = new Set();
+
                     // Validate each required include file
                     for (const includeFile of requiredIncludes) {
-                        const matches = zipEntries.filter((entry) => new RegExp(includeFile.pattern).test(entry));
-
+                        const matches = zipFileNames.filter((entry) => new RegExp(includeFile.pattern).test(entry));
+                        
                         if (includeFile.required && matches.length === 0) {
                             return resolve({
                                 success: false,
@@ -202,6 +235,34 @@ class Validator {
                                 success: false,
                                 message: `Too many matches for ${includeFile.description || includeFile.pattern} in ${zipFile.fileName}: found ${matches.length}, max ${includeFile.maxMatches}`,
                             });
+                        }
+
+                        // Mark these entries as matched
+                        matches.forEach((match) => matchedEntries.add(match));
+                    }
+
+                    // Check for additional files if allowAdditionalFiles is specified
+                    if (allowAdditionalFiles && allowAdditionalFiles.length > 0) {
+                        const unmatchedEntries = zipFileNames.filter((entry) => !matchedEntries.has(entry));
+                        for (const entry of unmatchedEntries) {
+                            const pathParts = entry.split("/").filter((part) => part.length > 0);
+                            if (pathParts.length > 1) {
+                                return resolve({
+                                    success: false,
+                                    message: `Files must be at root level in ZIP ${zipFile.fileName}. Found file in subdirectory: ${entry}`,
+                                });
+                            }
+
+                            // Extract file extension and validate
+                            const extension = entry.split(".").pop()?.toLowerCase();
+                            if (!extension || !allowAdditionalFiles.includes(extension)) {
+                                return resolve({
+                                    success: false,
+                                    message: `Disallowed file found in ZIP ${
+                                        zipFile.fileName
+                                    }: ${entry}. Allowed additional file types: ${allowAdditionalFiles.join(", ")}`,
+                                });
+                            }
                         }
                     }
 

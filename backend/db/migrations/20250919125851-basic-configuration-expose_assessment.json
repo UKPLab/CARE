@@ -781,7 +781,7 @@
         {
           "name": "Additional points",
           "description": "Additional points for very good submissions not mentioned in other criteria",
-          "function": "auto_grading",
+          "function": "manual_grading",
           "maxPoints": 2,
           "minPoints": 0,
           "expertLevel": 1,
@@ -804,7 +804,7 @@
         {
           "name": "Negative points",
           "description": "Major mistakes in the submissions",
-          "function": "auto_grading",
+          "function": "manual_grading",
           "maxPoints": 0,
           "minPoints": -2,
           "expertLevel": 1,

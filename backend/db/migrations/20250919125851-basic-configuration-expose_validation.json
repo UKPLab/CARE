@@ -17,6 +17,7 @@
         "description": "Raw Latex Files for the Exposé",
         "pattern": ".*\\.zip$",
         "required": true,
+        "allowAdditionalFiles": ["jpeg", "jpg", "png", "pdf", "bst", "cls"],
         "includeFiles": [
           {
             "name": "expose",

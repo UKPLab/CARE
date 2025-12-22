@@ -89,7 +89,7 @@ import BasicForm from "@/basic/Form.vue";
 export default {
   name: "AssignModal",
   components: {BasicForm, BasicTable, StepperModal},
-  subscribeTable: ["submission", "user", "document"],
+  subscribeTable: ["submission", "user", "document", "document_data"],
   data() {
     return {
       selectedSubmissions: [],
@@ -158,11 +158,15 @@ export default {
     submissionTable() {
       return this.submissions.map((s) => {
         const user = this.$store.getters["table/user/get"](s.userId);
+        const documents = this.$store.getters["table/document/getByKey"]('submissionId', s.id);
+        const docIds = documents.map(d => d.id);
+        const dataExists = docIds.some(docId => this.$store.getters["table/document_data/getByKey"]('documentId', docId).length > 0);
         return {
           id: s.id,
           firstName: user.firstName,
           lastName: user.lastName,
           group: s.group ?? "-",
+          data_existing: dataExists ? "Yes" : "No",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
           additionalSettings: s.additionalSettings
               ? {icon: "gear-fill", color: "blue", title: s.additionalSettings}
@@ -175,6 +179,7 @@ export default {
         {name: "First Name", key: "firstName", sortable: true},
         {name: "Last Name", key: "lastName", sortable: true},
         {name: "Group", key: "group", sortable: true, filter: this.groupFilterOptions},
+        {name: "Data Existing", key: "data_existing", sortable: true, filter: this.dataExistingFilterOptions},
         {name: "Created At", key: "createdAt", sortable: true},
         {name: "Additional Settings", key: "additionalSettings", type: "icon", sortable: false},
       ];
@@ -205,6 +210,15 @@ export default {
       }
 
       return options;
+    },
+    dataExistingFilterOptions() {
+      const options = new Set();
+      (this.submissionTable || []).forEach((s) => {
+        options.add(String(s.data_existing));
+      });
+      return Array.from(options)
+          .sort()
+          .map((val) => ({key: val, name: val}));
     },
     stepValid() {
       return [
