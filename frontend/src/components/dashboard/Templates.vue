@@ -20,6 +20,7 @@
       </template>
     </Card>
     <TemplateModal ref="templateModal" />
+    <ConfirmModal ref="deleteConf" />
   </template>
   
   <script>
@@ -27,6 +28,7 @@
   import BasicTable from "@/basic/Table.vue";
   import BasicButton from "@/basic/Button.vue";
   import TemplateModal from "./templates/TemplateModal.vue";
+  import ConfirmModal from "@/basic/modal/ConfirmModal.vue"; 
   /**
    * Templates dashboard component
    *
@@ -42,6 +44,7 @@
       BasicTable,
       BasicButton,
       TemplateModal,
+      ConfirmModal,
     },
     data() {
       return {
@@ -117,22 +120,31 @@
         }
       },
       deleteTemplate(template) {
-        this.$socket.emit("appDataUpdate", {
-          table: "template",
-          data: {
-            id: template.id,
-            deleted: true,
-          },
-        }, (result) => {
-          if (!result.success) {
-            this.eventBus.emit("toast", {
-              title: "Template delete failed",
-              message: result.message,
-              variant: "danger",
-            });
+        this.$refs.deleteConf.open(
+          "Delete Template",
+          `Are you sure you want to delete "${template.name}"?`,
+          null,
+          (confirmed) => {
+            if (confirmed) {
+              this.$socket.emit("appDataUpdate", {
+                table: "template",
+                data: {
+                  id: template.id,
+                  deleted: true,
+                },
+              }, (result) => {
+                if (!result.success) {
+                  this.eventBus.emit("toast", {
+                    title: "Template delete failed",
+                    message: result.message,
+                    variant: "danger",
+                  });
+                }
+              });
+            }
           }
-        });
-      },
+        );
+     },
     },
   };
   </script>
