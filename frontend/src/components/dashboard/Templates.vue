@@ -27,7 +27,6 @@
   import BasicTable from "@/basic/Table.vue";
   import BasicButton from "@/basic/Button.vue";
   import TemplateModal from "./templates/TemplateModal.vue";
-
   /**
    * Templates dashboard component
    *
@@ -78,7 +77,7 @@
             options: {
               iconOnly: true,
               specifiers: {
-                "btn-outline-primary": true,
+                "btn-outline-secondary": true,
               },
             },
             title: "Edit template",
@@ -89,7 +88,7 @@
             options: {
               iconOnly: true,
               specifiers: {
-                "btn-outline-danger": true,
+                "btn-outline-secondary": true,
               },
             },
             title: "Delete template",
