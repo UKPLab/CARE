@@ -55,14 +55,15 @@ class TemplateSocket extends Socket {
     if (!data.id) throw new Error("Template ID is required");
     if (data.type !== undefined) throw new Error("Template type cannot be changed");
     
+    const updateData = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.content !== undefined) updateData.content = data.content;
+    if (data.hidden !== undefined) updateData.hidden = data.hidden;
+
     return await this.models["template"].updateById(
         data.id,
-        {
-            name: data.name,
-            description: data.description,
-            content: data.content,
-            hidden: data.hidden,
-        },
+        updateData,
         { transaction: options.transaction }
     );
   }
