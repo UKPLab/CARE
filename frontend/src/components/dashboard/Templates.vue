@@ -87,6 +87,30 @@
             action: "edit",
           },
           {
+           icon: "eye-slash",
+           options: {
+             iconOnly: true,
+             specifiers: {
+               "btn-outline-secondary": true,
+             },
+           },
+           filter: [{ key: "hidden", value: true }],
+           title: "Show template",
+           action: "toggleHidden",
+          },
+          {
+            icon: "eye",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            filter: [{ key: "hidden", value: false }],
+            title: "Hide template",
+            action: "toggleHidden",
+          },
+          {
             icon: "trash",
             options: {
               iconOnly: true,
@@ -117,7 +141,31 @@
           case "delete":
             this.deleteTemplate(data.params);
             break;
+          case "toggleHidden":
+            this.toggleHidden(data.params);
+            break;
+
         }
+      },
+      toggleHidden(template) {
+        this.$socket.emit("templateUpdate", {
+          id: template.id,
+          hidden: !template.hidden,
+        }, (result) => {
+          if (result.success) {
+            this.eventBus.emit("toast", {
+              title: !template.hidden ? "Template hidden" : "Template shown",
+              message: "",
+              variant: "success",
+            });
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Template update failed",
+              message: result.message,
+              variant: "danger",
+            });
+          }
+        });
       },
       deleteTemplate(template) {
         this.$refs.deleteConf.open(
