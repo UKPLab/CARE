@@ -72,18 +72,18 @@
         <label
           for="linkCollection"
           class="form-label"
-        ><b>Link Collection:</b></label>
+        ><b>Hash Collection:</b></label>
         <select
           id="linkCollection"
           v-model="linkCollection"
           class="form-select"
         >
-          <option value="studies">based on Studies (session links for each study)</option>
-          <option value="sessions">based on Sessions (links for own sessions)</option>
+          <option value="studies">based on Studies (session hashes for each study)</option>
+          <option value="sessions">based on Sessions (hashes for own sessions)</option>
         </select>
       </div>
       <div class="mb-3">
-        <p><b>Links:</b></p>
+        <p><b>Hashes:</b></p>
         <ul v-if="linkCollection === 'studies'">
           <li
             v-for="study in formattedStudies"
@@ -98,7 +98,7 @@
                 {{ session.firstName }} {{ session.lastName }} (<a
                   :href="session.link"
                   target="_blank"
-                >{{ session.link }}</a>)
+                >{{ session.hash }}</a>)
               </li>
             </ul>
           </li>
@@ -117,7 +117,7 @@
                 {{ s.studyName }} (<a
                   :href="s.link"
                   target="_blank"
-                >{{ s.link }}</a>)
+                >{{ s.hash }}</a>)
               </li>
             </ul>
           </li>
@@ -713,7 +713,7 @@ export default {
           "Reviewer Last Name": reviewer?.lastName || "",
           "Reviewer User Name": reviewer?.userName || "",
           "Reviewer Roles": reviewer ? this.getUserRoles(reviewer.id) : "",
-          Links: session.link || "",
+          "Hash": session.hash || "",
           "Total Points": assessment.achieved_points ?? 0,
         };
 
