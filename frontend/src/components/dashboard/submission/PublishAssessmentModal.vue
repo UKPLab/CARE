@@ -233,7 +233,7 @@ export default {
       return this.$store.getters["table/workflow/getAll"] || [];
     },
     workflowSteps() {
-      return this.$store.getters["table/workflow_step/getAll"]?.filter((s) => !s.deleted) || [];
+      return this.$store.getters["table/workflow_step/getAll"] || [];
     },
     configurations() {
       return this.$store.getters["table/configuration/getFiltered"](
