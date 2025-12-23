@@ -229,6 +229,9 @@ export default {
       };
     },
     // Data sources
+    projectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
     workflows() {
       return this.$store.getters["table/workflow/getAll"] || [];
     },
@@ -242,7 +245,7 @@ export default {
     },
     studies() {
       return this.$store.getters["table/study/getFiltered"](
-        (s) => s.closed && !s.template
+        (s) => s.closed && !s.template && s.projectId === this.projectId
       ) || [];
     },
     studySteps() {
@@ -255,7 +258,9 @@ export default {
       return this.$store.getters["table/submission/getAll"] || [];
     },
     documents() {
-      return this.$store.getters["table/document/getAll"] || [];
+      return this.$store.getters["table/document/getFiltered"](
+        (d) => d.projectId === this.projectId
+      ) || [];
     },
     users() {
       return this.$store.getters["table/user/getAll"] || [];
