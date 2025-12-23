@@ -387,15 +387,15 @@ export default {
     selectedConfigurationId() {
       return this.selectedConfigurations.length > 0 ? this.selectedConfigurations[0].id : null;
     },
-    selectedConfigurationContent() {
+    selectedConfiguration() {
       if (!this.selectedConfigurationId) return null;
-      const config = this.$store.getters["table/configuration/get"](this.selectedConfigurationId);
-      return config?.content || null;
+      return this.$store.getters["table/configuration/get"](this.selectedConfigurationId);
+    },
+    selectedConfigurationContent() {
+      return this.selectedConfiguration?.content || null;
     },
     selectedConfigurationName() {
-      if (!this.selectedConfigurationId) return "unknown";
-      const config = this.$store.getters["table/configuration/get"](this.selectedConfigurationId);
-      return config?.name || "unknown";
+      return this.selectedConfiguration?.name || "unknown";
     },
     criteriaNames() {
       const cfg = this.selectedConfigurationContent;
