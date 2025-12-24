@@ -217,11 +217,8 @@ module.exports = (sequelize, DataTypes) => {
 
                         // delete associated document_data
                         const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id);
-                        const uniqueDocumentDataIds = [
-                            ...new Set(documentDataRows.map((documentData) => documentData.id)),
-                        ];
-                        for (const documentDataId of uniqueDocumentDataIds) {
-                            await sequelize.models["document_data"].deleteById(documentDataId);
+                        for (const documentDataRow of documentDataRows) {
+                            await sequelize.models["document_data"].deleteById(documentDataRow.id);
                         }
 
                         // delete associated annotations and comments
