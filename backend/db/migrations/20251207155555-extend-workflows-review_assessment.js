@@ -3,13 +3,28 @@
 const workflows = [
   {
     name: "Review Grading Workflow ",
-    description: "Review Grading Workflow with Assessment: Review a submiited study session",
-    readOnlyComponents: ["annotater", "Editor", "document", "assessment"],
+    description: "Review Grading Workflow with Assessment: Review a submitted study session",
+    readOnlyComponents: ["annotator", "editor"],
     steps: [
       {
         stepType: 1,
         allowBackward: false,
         workflowStepDocument: null,
+        configuration: {
+          settings: {
+            fields: [
+              {
+                key: "showDefaultAnnotations",
+                label: "Show Default Annotations",
+                type: "switch",
+                required: false,
+                default: true,
+                help: "If enabled, default annotations will be shown to the reviewer."
+              }
+            ],
+          },
+          placeholders: false
+        }
       },
       { 
         stepType: 2, 
@@ -59,6 +74,7 @@ module.exports = {
           workflows.map(w => ({
               name: w.name,
               description: w.description,
+              readOnlyComponents: w.readOnlyComponents,
               createdAt: new Date(),
               updatedAt: new Date()
           })),
