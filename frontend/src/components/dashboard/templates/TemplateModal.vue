@@ -16,6 +16,8 @@
    * 
    * Handles creating and editing templates using BasicCoordinator
    * which auto-generates the form from the template model fields.
+   * Content field is excluded from the form (removed from model fields)
+   * as it's edited in the dedicated editor page.
    * 
    * @author Mohammad Elwan
    */
@@ -25,26 +27,12 @@
     data() {
       return {
         isEdit: false,
-        originalTemplate: null,
       };
     },
-    computed: {
-      readOnlyFields() {
-        return this.isEdit ? ["type"] : [];
-      },
-    },
-    methods: {      
+    methods: {
       open(templateId = null, defaultValues = {}) {
-        const id = templateId ? Number(templateId) : 0;        
-        this.isEdit = id > 0;  // Edit mode if we have a valid ID; otherwise create mode
-
-        if (this.isEdit) {
-          this.originalTemplate = defaultValues && defaultValues.id 
-            ? { ...defaultValues }
-            : this.$store.getters["table/template/get"](id);
-        } else {
-          this.originalTemplate = null;
-        }
+        const id = templateId ? Number(templateId) : 0;
+        this.isEdit = id > 0;
         
         this.$nextTick(() => {
           this.$refs.coordinator.open(id, defaultValues);
@@ -55,58 +43,32 @@
         const isEdit = this.isEdit;
         const payload = { ...data };
 
+        // Remove content field - content editing happens in editor, not modal
+        delete payload.content;
+
         if (
           !isEdit &&
           (payload.type === "" ||
             payload.type === null ||
             payload.type === undefined)
         ) {
-          this.eventBus.emit("toast", {
+            this.eventBus.emit("toast", {
             title: "Type required",
             message: "Please choose a template type",
-            variant: "danger",
-          });
-          this.$refs.coordinator.waiting = false;
-          return;
-        }
-
-        if (isEdit && this.originalTemplate && payload.type !== undefined) {
-          const originalType = this.originalTemplate.type;
-          const newType = payload.type;
-          
-          if (Number(originalType) !== Number(newType)) {
-            this.eventBus.emit("toast", {
-              title: "Type cannot be changed",
-              message: "Template type is immutable and cannot be modified after creation.",
               variant: "danger",
             });
             this.$refs.coordinator.waiting = false;
             return;
           }
-        }
 
-        if (typeof payload.content === "string") {
-          try {
-            payload.content = JSON.parse(payload.content);
-          } catch (e) {
-            this.eventBus.emit("toast", {
-              title: "Invalid JSON",
-              message: "Content must be valid JSON: " + e.message,
-              variant: "danger",
-            });
-            this.$refs.coordinator.waiting = false;
-            return;
-          }
-        }
-
-        if (isEdit) {
-          delete payload.type;
-        } else {
+        if (!isEdit) {
           delete payload.id;
+          // Set minimal content for new templates (will be edited in editor)
+          payload.content = {ops: [{insert: '\n'}]};
         }
-
+  
         const eventName = isEdit ? "templateUpdate" : "templateAdd";
-
+        
         this.$socket.emit(eventName, payload, (result) => {
           if (result.success) {
             this.$refs.coordinator.waiting = false;
@@ -116,6 +78,11 @@
               variant: "success",
             });
             this.$refs.coordinator.close();
+            
+            // Route to editor after creation
+            if (!isEdit && result.data && result.data.id) {
+              this.$router.push(`/template/${result.data.id}`);
+            }
           } else {
             this.$refs.coordinator.waiting = false;
             this.eventBus.emit("toast", {
