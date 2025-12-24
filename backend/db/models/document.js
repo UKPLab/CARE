@@ -215,6 +215,15 @@ module.exports = (sequelize, DataTypes) => {
                             await sequelize.models["study"].deleteById(studyId);
                         }
 
+                        // delete associated document_data
+                        const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id);
+                        const uniqueDocumentDataIds = [
+                            ...new Set(documentDataRows.map((documentData) => documentData.id)),
+                        ];
+                        for (const documentDataId of uniqueDocumentDataIds) {
+                            await sequelize.models["document_data"].deleteById(documentDataId);
+                        }
+
                         // delete associated annotations and comments
                         if (document.type === Document.docTypes.DOC_TYPE_HTML || document.type === Document.docTypes.DOC_TYPE_MODAL) {
                             // get document edits
