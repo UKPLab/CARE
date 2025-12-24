@@ -50,12 +50,6 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 ],
             },
-            {
-                key: "content",
-                label: "Content",
-                type: "json",
-                required: true,
-            }
         ];
         static associate(models) {
             // no associations for now
