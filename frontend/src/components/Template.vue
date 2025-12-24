@@ -1,0 +1,90 @@
+<template>
+    <Loader
+      v-if="templateId === 0"
+      :loading="true"
+      class="pageLoader"
+    />
+    <span v-else>
+      <Editor ref="editor" :template-id="templateId"/>
+    </span>
+  </template>
+  
+  <script>
+  /**
+   * Template editor view
+   *
+   * Loads a template and allows the user to edit its content using the Quill editor.
+   * Only admins can access this view.
+   *
+   * @author Mohammad Elwan
+   */
+  
+  import Loader from "@/basic/Loading.vue";
+  import Editor from "@/components/editor/Editor.vue"
+  
+  export default {
+    name: "TemplateRoute",
+    components: {Loader, Editor},
+    props: {
+      'templateId': {
+        type: [String, Number],
+        required: true
+      },
+    },
+    data() {
+      return {
+        templateIdNum: 0
+      }
+    },
+    computed: {
+      template() {
+        return this.$store.getters["table/template/get"](this.templateIdNum);
+      },
+    },
+    watch: {
+      templateId: {
+        immediate: true,
+        handler(newVal) {
+          if (newVal) {
+            this.templateIdNum = Number(newVal);
+          } else {
+            this.templateIdNum = 0;
+          }
+        }
+      },
+      template(newVal) {
+        if (newVal) {
+          this.templateIdNum = newVal.id;
+        } else {
+          this.templateIdNum = 0;
+        }
+      },
+    },
+    mounted() {
+      this.templateIdNum = Number(this.templateId);
+    },
+    sockets: {
+      templateError: function (data) {
+        if (data.templateId === this.templateIdNum) {
+          this.eventBus.emit('toast', {
+            title: "Template Error",
+            message: data.message,
+            variant: "danger"
+          });
+          this.$router.push("/dashboard/templates");
+        }
+      }
+    },
+    methods: {
+    }
+  }
+  </script>
+  
+  <style scoped>
+  .pageLoader {
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%)
+  }
+  </style>
