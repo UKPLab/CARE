@@ -160,34 +160,31 @@ export default {
         });
         return;
       }
-
+      const singleSubmission = {
+        userId: this.selectedUser[0].id,
+        group: this.formData.group,
+        validationConfigurationId: this.selectedValidatorId,
+        files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
+      };
       this.$refs.uploadStepper.setWaiting(true);
-      this.$socket.emit(
-        "documentUploadSingleSubmission",
-        {
-          userId: this.selectedUser[0].id,
-          group: this.formData.group,
-          validationConfigurationId: this.selectedValidatorId,
-          files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
-        },
-        (res) => {
-          if (res.success) {
-            this.eventBus.emit("toast", {
-              title: "Uploaded file",
-              message: "File successfully uploaded!",
-              variant: "success",
-            });
-            this.$refs.uploadStepper.close();
-          } else {
-            this.eventBus.emit("toast", {
-              title: "Failed to upload the file",
-              message: res.message,
-              variant: "danger",
-            });
-            this.$refs.uploadStepper.setWaiting(false);
-          }
+      this.$socket.emit("documentUploadSingleSubmission", singleSubmission, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "Uploaded file",
+            message: "File successfully uploaded!",
+            variant: "success",
+          });
+          this.$refs.uploadStepper.close();
+        } else {
+          this.files = null;
+          this.eventBus.emit("toast", {
+            title: "Failed to upload the file",
+            message: res.message,
+            variant: "danger",
+          });
+          this.$refs.uploadStepper.setWaiting(false);
         }
-      );
+      });
     },
   },
 };
