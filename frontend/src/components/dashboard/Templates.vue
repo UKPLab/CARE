@@ -70,7 +70,7 @@
         return this.$store.getters["table/template/getAll"].map(t => ({
           ...t,
           typeName: this.typeName(t.type),
-        })          
+        })
       );
       },
       buttons() {
@@ -85,6 +85,17 @@
             },
             title: "Edit template",
             action: "edit",
+          },
+          {
+            icon: "box-arrow-in-right",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            title: "Edit content",
+            action: "editContent",
           },
           {
            icon: "eye-slash",
@@ -137,6 +148,9 @@
         switch (data.action) {
           case "edit":
             this.$refs.templateModal.open(data.params.id, data.params);
+            break;
+          case "editContent":
+            this.$router.push(`/template/${data.params.id}`);
             break;
           case "delete":
             this.deleteTemplate(data.params);
@@ -192,7 +206,7 @@
             }
           }
         );
-     },
+      },
     },
   };
   </script>
