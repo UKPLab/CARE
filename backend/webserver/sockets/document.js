@@ -512,6 +512,13 @@ class DocumentSocket extends Socket {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
+                
+                // Check if showDefaultAnnotations is enabled in study step configuration
+                let showDefaultAnnotations = false;
+                if (data.studyStepId) {
+                    const studyStep = await this.models['study_step'].getById(data.studyStepId);
+                    showDefaultAnnotations = studyStep?.configuration?.settings?.showDefaultAnnotations ?? true;
+                }
 
                 if (study.collab) {
 
@@ -519,51 +526,76 @@ class DocumentSocket extends Socket {
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                     this.emit("study_sessionRefresh", studySessions);
 
-                    // send annotations
-                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
-                        {
-                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                            raw: true
-                        })
-                    ));
-                    this.emit("annotationRefresh", annotations.flat(1));
-
-                    // send comments
-                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
-                        {
-                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                            raw: true
-                        })
-                    ));
-                    this.emit("commentRefresh", comments.flat(1));
-
-                    // send comment votes (get votes for all comments)
-                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.flat(1).map(c => c.id));
-                    this.emit("comment_voteRefresh", commentVotes);
-
-                    const tagIds = new Set(annotations.flat(1).map(a => a.tagId));
-                    this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
-
-                } else {
-                    const annotations = await this.models['annotation'].findAll(
-                        {
-                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                            raw: true
-                        });
+                    // send annotations - if showDefaultAnnotations is true, get all by documentId
+                    let annotations;
+                    if (showDefaultAnnotations) {
+                        annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
+                    } else {
+                        annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
+                            {
+                                where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                raw: true
+                            })
+                        ));
+                        annotations = annotations.flat(1);
+                    }
                     this.emit("annotationRefresh", annotations);
 
-                    const comments = await this.models['comment'].findAll(
-                        {
-                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                            raw: true
-                        });
+                    // send comments - if showDefaultAnnotations is true, get all by documentId
+                    let comments;
+                    if (showDefaultAnnotations) {
+                        comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
+                    } else {
+                        comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
+                            {
+                                where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                raw: true
+                            })
+                        ));
+                        comments = comments.flat(1);
+                    }
                     this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
-                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id));
+                    const commentIds = Array.isArray(comments) ? comments.map(c => c.id) : [];
+                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', commentIds);
                     this.emit("comment_voteRefresh", commentVotes);
 
-                    const tagIds = new Set(annotations.flat(1).map(a => a.tagId));
+                    const tagIds = new Set(Array.isArray(annotations) ? annotations.map(a => a.tagId) : []);
+                    this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
+
+                } else {
+                    // Non-collab study - check showDefaultAnnotations
+                    let annotations;
+                    if (showDefaultAnnotations) {
+                        annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
+                    } else {
+                        annotations = await this.models['annotation'].findAll(
+                            {
+                                where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                                raw: true
+                            });
+                    }
+                    this.emit("annotationRefresh", annotations);
+
+                    let comments;
+                    if (showDefaultAnnotations) {
+                        comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
+                    } else {
+                        comments = await this.models['comment'].findAll(
+                            {
+                                where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                                raw: true
+                            });
+                    }
+                    this.emit("commentRefresh", comments);
+
+                    // send comment votes (get votes for all comments)
+                    const commentIds = Array.isArray(comments) ? comments.map(c => c.id) : [];
+                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', commentIds);
+                    this.emit("comment_voteRefresh", commentVotes);
+
+                    const tagIds = new Set(Array.isArray(annotations) ? annotations.map(a => a.tagId) : []);
                     this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
 
                 }
@@ -1191,6 +1223,9 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
+
+        // this.duplicateDocumentWithData("71", {studySessionId: "10", studyStepId: "24"})
+        // this.duplicateDocumentWithData("40", {studySessionId: "10", studyStepId: "23"})
     }
 };
 
