@@ -901,7 +901,7 @@ export default {
     },
     getPrimaryDocumentId(submissionId) {
       const docs = this.$store.getters["table/document/getFiltered"](
-          (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
+          (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted && d.documentType === 0
       );
       return docs && docs.length !== 0 ? docs[0].id : null;
     },
