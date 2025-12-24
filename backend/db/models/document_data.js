@@ -1,5 +1,6 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
+const {Op} = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
     class DocumentData extends MetaModel {
@@ -38,7 +39,45 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
-
+        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, overrides = {}, transaction) {
+            
+            // Build where clause: find entries with documentId and either:
+            // 1. Both studySessionId and studyStepId are null, OR
+            // 2. Both studySessionId and studyStepId have specific values (from overrides)
+            const whereClause = {
+                documentId: originalDocumentId,
+                [Op.or]: [
+                    {
+                        studySessionId: null,
+                        studyStepId: null
+                    }
+                ]
+            };
+            
+            // Add condition for specific studySessionId and studyStepId if provided in overrides
+            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
+                whereClause[Op.or].push({
+                    studySessionId: overrides.studySessionId,
+                    studyStepId: overrides.studyStepId
+                });
+            }
+            
+            // Fetch all document data for the original document
+            const originalDataEntries = await this.findAll({
+                where: whereClause,
+                raw: true,
+                transaction
+            });
+            // Create new data entries for the duplicated document
+            if (originalDataEntries.length > 0) {
+                const newDataEntries = originalDataEntries.map(entry => ({
+                    ...entry,
+                    documentId: duplicateDocumentId, // Set to the new duplicated document ID
+                    updatedAt: new Date()
+                }));
+                await this.bulkCreate(newDataEntries, {transaction});
+            }
+        }
     }
 
     DocumentData.init(

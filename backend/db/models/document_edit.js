@@ -1,6 +1,7 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
 const {dbToDelta, deltaToDb} = require("editor-delta-conversion");
+const {Op} = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
     class DocumentEdit extends MetaModel {
@@ -52,6 +53,69 @@ module.exports = (sequelize, DataTypes) => {
 
                 await this.bulkCreate(newEdits, {transaction: transaction});
             }
+        }
+
+        /**
+         * Duplicate document edits from original document to duplicated document
+         * 
+         * @param {number} originalDocumentId - The ID of the original document
+         * @param {Object} duplicatedDoc - The duplicated document object
+         * @param {Object} overrides - Optional properties to override (e.g., { studySessionId, studyStepId })
+         * @param {Object} transaction - The database transaction
+         * @returns {Promise<Array>} Array of duplicated document edits
+         */
+        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, overrides = {}, transaction) {
+            
+            // Build where clause similar to annotations
+            const whereClause = {
+                documentId: originalDocumentId,
+                deleted: false,
+                [Op.or]: [
+                    {
+                        studySessionId: null,
+                        studyStepId: null
+                    }
+                ]
+            };
+            
+            // Add condition for specific studySessionId and studyStepId if provided
+            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
+                whereClause[Op.or].push({
+                    studySessionId: overrides.studySessionId,
+                    studyStepId: overrides.studyStepId
+                });
+            }
+            
+            // Fetch all edits for the original document
+            const originalEdits = await this.findAll({
+                where: whereClause,
+                raw: true,
+                transaction
+            });
+            
+            const duplicatedEdits = [];
+            
+            // Create new edits for the duplicated document
+            for (const originalEdit of originalEdits) {
+                // Create base edit data
+                const baseData = {
+                    userId: originalEdit.userId,
+                    documentId: duplicatedDocumentId,
+                    draft: originalEdit.draft,
+                    offset: originalEdit.offset,
+                    operationType: originalEdit.operationType,
+                    span: originalEdit.span,
+                    text: originalEdit.text,
+                    attributes: originalEdit.attributes,
+                    deleted: false,
+                    order: originalEdit.order
+                };
+                
+                const duplicatedEdit = await this.add(baseData, {transaction});
+                duplicatedEdits.push(duplicatedEdit);
+            }
+            
+            return duplicatedEdits;
         }
     }
 

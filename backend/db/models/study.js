@@ -247,7 +247,7 @@ module.exports = (sequelize, DataTypes) => {
                     allowBackward: workflowStep.allowBackward,
                     studyStepDocument: null,
                     configuration: customConfig
-                }, { transaction: options.transaction, context: study });
+                }, { transaction: options.transaction, context: study, doNotDuplicate: options.doNotDuplicate });
 
                 const studyStep = await sequelize.models.study_step.findByPk(plainStudyStep.id, {
                     transaction: options.transaction

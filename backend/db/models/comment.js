@@ -1,6 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
-
+const {Op} = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
     class Comment extends MetaModel {
         static autoTable = true;
@@ -32,6 +32,123 @@ module.exports = (sequelize, DataTypes) => {
             }));
         }
 
+        /**
+         * Duplicate comments from original annotation to duplicated annotation
+         * Recursively duplicates child comments as well
+         * 
+         * @param {number} originalAnnotationId - The ID of the original annotation
+         * @param {Object} duplicatedAnnotation - The duplicated annotation object
+         * @param {Object} overrides - Optional properties to override (e.g., { studySessionId, studyStepId })
+         * @param {Object} transaction - The database transaction
+         * @returns {Promise<Array>} Array of duplicated comments
+         */
+        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, overrides = {}, transaction) {
+            
+            // Build where clause for root comments (no parent)
+            const whereClause = {
+                annotationId: originalAnnotationId,
+                parentCommentId: null,
+                [Op.or]: [
+                    {
+                        studySessionId: null,
+                        studyStepId: null
+                    }
+                ]
+            };
+            
+            // Add condition for specific studySessionId and studyStepId if provided
+            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
+                whereClause[Op.or].push({
+                    studySessionId: overrides.studySessionId,
+                    studyStepId: overrides.studyStepId
+                });
+            }
+            
+            // Fetch all root comments for the original annotation
+            const originalComments = await this.findAll({
+                where: whereClause,
+                raw: true,
+                transaction
+            });
+            
+            const duplicatedComments = [];
+            const commentIdMap = new Map(); // Map original comment IDs to duplicated comment IDs
+            
+            // Duplicate root comments and their children recursively
+            for (const originalComment of originalComments) {
+                const duplicated = await this.duplicateCommentWithChildren(
+                    originalComment,
+                    duplicatedAnnotation,
+                    null,
+                    overrides,
+                    transaction,
+                    commentIdMap
+                );
+                duplicatedComments.push(...duplicated);
+            }
+            
+            return duplicatedComments;
+        }
+
+        /**
+         * Recursively duplicate a comment and all its children
+         * 
+         * @param {Object} originalComment - The original comment object
+         * @param {Object} duplicatedAnnotation - The duplicated annotation object
+         * @param {number|null} newParentCommentId - The ID of the parent comment in the duplicated tree
+         * @param {Object} overrides - Optional properties to override
+         * @param {Object} transaction - The database transaction
+         * @param {Map} commentIdMap - Map to track original to duplicated comment IDs
+         * @returns {Promise<Array>} Array of duplicated comments
+         */
+        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, overrides, transaction, commentIdMap) {
+            // Create base comment data
+            const baseData = {
+                userId: originalComment.userId,
+                text: originalComment.text,
+                draft: originalComment.draft,
+                documentId: duplicatedAnnotation.documentId,
+                annotationId: duplicatedAnnotation.id,
+                parentCommentId: newParentCommentId,
+                tags: originalComment.tags,
+                anonymous: originalComment.anonymous,
+                deleted: false
+            };
+                      
+            const duplicatedComment = await this.add(baseData, {transaction});
+            commentIdMap.set(originalComment.id, duplicatedComment.id);
+            
+            const allDuplicated = [duplicatedComment];
+            
+            // Duplicate comment votes for this comment
+            await sequelize.models.comment_vote.duplicateCommentVotes(
+                originalComment.id,
+                duplicatedComment.id,
+                transaction
+            );
+            
+            // Find and duplicate child comments
+            const childComments = await this.getAllByKey(
+                "parentCommentId",
+                originalComment.id,
+                {transaction},
+                true
+            );
+            
+            for (const childComment of childComments) {
+                const duplicatedChildren = await this.duplicateCommentWithChildren(
+                    childComment,
+                    duplicatedAnnotation,
+                    duplicatedComment.id,
+                    overrides,
+                    transaction,
+                    commentIdMap
+                );
+                allDuplicated.push(...duplicatedChildren);
+            }
+            
+            return allDuplicated;
+        }
 
         /**
          * Helper method for defining associations.
