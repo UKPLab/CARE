@@ -10,7 +10,7 @@
           >
             {{ totalPoints }} / {{ totalMaxPoints }} P
           </span>
-          <span v-if="readOnly" class="badge bg-secondary">Read Only</span>
+          <span v-if="computedReadOnly" class="badge bg-secondary">Read Only</span>
         </div>
       </div>
 
@@ -35,7 +35,7 @@
                   :group-index="groupIndex"
                   :is-expanded="!!expandedGroups[groupIndex]"
                   :assessment-state="assessmentState"
-                  :read-only="readOnly"
+                  :read-only="computedReadOnly"
                   :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
                   @toggle-group="toggleGroup"
                   @update-criterion-state="onCriterionStateUpdate"
@@ -110,6 +110,11 @@ export default {
       type: Array,
       required: true,
     },
+    study: {
+      type: Object,
+      required: false,
+      default: null 
+    },
   },
   props: {
     config: {
@@ -139,6 +144,14 @@ export default {
     };
   },
   computed: {
+    computedReadOnly() {
+      return this.readOnly || this.workflow?.readOnlyComponents?.includes('assessment') || false;
+    },
+    workflow() {
+      return this.study?.workflowId 
+        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
+        : null;
+    },
     configurationId() {
       return this.config.settings?.configurationId || null;
     },

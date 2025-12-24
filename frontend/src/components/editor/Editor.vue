@@ -55,6 +55,7 @@ import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
 
 export default {
   name: "EditorView",
@@ -65,12 +66,14 @@ export default {
     LoadIcon,
     BasicSidebar,
     Editor,
+    ReadOnlyIndicator,
   },
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
       readOnly: computed(() => this.readOnlyOverwrite),
+      componentReadOnly: computed(() => this.componentReadOnly),
     }
   },
   inject: {
@@ -83,6 +86,11 @@ export default {
       type: Number,
       required: false,
       default: null,
+    },
+    study: {
+      type: Object,
+      required: false,
+      default: null
     },
   },
   props: {
@@ -123,6 +131,14 @@ export default {
   computed: {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
+    },
+    workflow() {
+      return this.study?.workflowId 
+        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
+        : null;
+    },
+    componentReadOnly() {
+      return this.workflow?.readOnlyComponents?.includes('editor') || false;
     },
     defaultActiveSidebar() {
       // Determine the default active sidebar based on available tabs

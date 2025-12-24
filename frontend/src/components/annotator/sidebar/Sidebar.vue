@@ -46,7 +46,7 @@
       />
     </li>
 
-    <li v-if="!readOnly" id="addPageNote">
+    <li v-if="!computedReadOnly" id="addPageNote">
       <button
         class="btn btn-light"
         type="button"
@@ -110,12 +110,22 @@ export default {
     acceptStats: {
       default: () => false
     },
+    showDefaultAnnotations: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   props: {
     show: {
       type: Boolean,
       required: false,
       default: true,
+    },
+    computedReadOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     edits: {
       type: Array,
@@ -181,6 +191,11 @@ export default {
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
+            // When showDefaultAnnotations is true, show all comments for the document
+            if (this.showDefaultAnnotations) {
+              return true;
+            }
+            // Otherwise, only show comments for current session and step
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);

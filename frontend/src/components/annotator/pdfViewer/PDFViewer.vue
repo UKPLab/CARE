@@ -19,6 +19,11 @@
       @zoom-out="zoomOut"
       @reset="resetZoom"
     />
+      <!-- Read-Only Watermark -->
+    <ReadOnlyIndicator
+      v-if="readOnly || componentReadOnly"
+      position-type="sticky"
+    />
 
     <PDFPage
       v-for="page in pdf.pageCount"
@@ -29,7 +34,7 @@
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readOnly"/>
+    <Adder v-if="!readOnly && !componentReadOnly"/>
   </div>
 </template>
 
@@ -44,6 +49,7 @@ import {computed} from "vue";
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
+import ReadOnlyIndicator from "../../common/ReadOnlyIndicator.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -59,7 +65,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "PDFViewer",
-  components: {BasicLoading, PDFPage, Adder, PDFToolbar},
+  components: {BasicLoading, PDFPage, Adder, PDFToolbar, ReadOnlyIndicator},
+  props: {
+    componentReadOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
   inject: {
     documentId: {
       type: Number,
@@ -87,6 +100,7 @@ export default {
   provide() {
     return {
       pdf: computed(() => this.pdf),
+      readOnly: computed(() => this.readOnly || this.componentReadOnly),
     }
   },
   emits: ['copy'],

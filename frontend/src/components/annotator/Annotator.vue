@@ -16,6 +16,7 @@
           <PDFViewer
               ref="pdfViewer"
               class="rounded border border-1 shadow-sm"
+              :componentReadOnly="computedReadOnly"
               style="margin:auto"
               @copy="onCopy"
           />
@@ -36,6 +37,7 @@
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar ref="sidebar"
+                                  :computed-read-only="computedReadOnly"
                                    @new-anno-card="changeSideBarView"
                                    @scroll-to-comment="scrollToComment"
                 />
@@ -105,6 +107,7 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import ReadOnlyIndicator from "../common/ReadOnlyIndicator.vue";
 
 export default {
   name: "AnnotatorView",
@@ -115,12 +118,14 @@ export default {
     AnnotationSidebar,
     Loader,
     TopBarButton,
-    BasicSidebar
+    BasicSidebar,
+    ReadOnlyIndicator
   },
   provide() {
     return {
       documentId: computed(() => this.documentId),
-      studyStepId: computed(() => this.studyStepId)
+      studyStepId: computed(() => this.studyStepId),
+      showDefaultAnnotations: computed(() => this.showDefaultAnnotations),
     }
   },
   inject: {
@@ -133,6 +138,16 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    currentStudyStep:{
+      type: Object,
+      required: false,
+      default: null
+    },
+    study: {
+      type: Object,
+      required: false,
+      default: null
     },
     acceptStats: {
       type: Boolean,
@@ -202,6 +217,17 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    workflow() {
+      return this.study?.workflowId 
+        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
+        : null;
+    },
+    computedReadOnly() {
+      return this.readOnly || this.workflow?.readOnlyComponents?.includes('annotator') || false;
+    },
+    showDefaultAnnotations(){
+      return this.currentStudyStep?.configuration?.settings?.showDefaultAnnotations ?? false;
+    },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
       const data = this.$store.getters['table/user_environment/getAll'].filter(
@@ -263,9 +289,9 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return annotations.filter(annotation =>
+        return !this.showDefaultAnnotations ? annotations.filter(annotation =>
             annotation.studySessionId === this.studySessionId
-        );
+        ) : annotations;
       }
     },
     comments() {
@@ -277,9 +303,9 @@ export default {
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return comments.filter(comment =>
+        return !this.showDefaultAnnotations ? comments.filter(comment =>
             comment.studySessionId === this.studySessionId
-        );
+        ) : comments;
       }
     },
     sidebarButtons() {

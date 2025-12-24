@@ -153,6 +153,7 @@
                   <template #content>
                     <Assessment
                         :config="step.configuration"
+                        :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -216,13 +217,14 @@ export default {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
+      study: computed(() => this.study),
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
       pendingNlpInsertion: computed(() => this.pendingNlpInsertion),
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
-  subscribeTable: ["study_step", "study_session"],
+  subscribeTable: ["study_step", "study_session", "workflow", "annotation"],
   props: {
     studyHash: {
       type: String,

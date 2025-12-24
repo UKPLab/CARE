@@ -11,8 +11,12 @@
           id="viewerContainer"
           ref="viewer"
           class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll;"
+          style="overflow-y: scroll; position: relative;"
         >
+          <!-- Read-Only Indicator (floating icon) -->
+          <ReadOnlyIndicator
+            v-if="componentReadOnly || readOnly"
+          />
           <div
             :id="`editor-container-${studyStepId}`"
             @paste="onPaste"
@@ -38,11 +42,15 @@ import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
+import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
 
 const Delta = Quill.import('delta');
 
 export default {
   name: "EditorView",
+  components: {
+    ReadOnlyIndicator,
+  },
   fetch_data: ["document_edit"],
   subscribeTable: ["document_data"],
   inject: {
@@ -57,6 +65,11 @@ export default {
       default: null
     },
     readOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    componentReadOnly: {
       type: Boolean,
       required: false,
       default: false,
@@ -98,6 +111,9 @@ export default {
     user() {
       return this.$store.getters["auth/getUser"];
     },
+    finalReadOnly() {
+      return this.readOnly || this.componentReadOnly;
+    },
     allEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
         (e) => e.documentId === this.documentId
@@ -132,7 +148,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
     toolbarVisible() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
+      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.finalReadOnly;
     },
     editorOptions() {
       const toolsMap = {
@@ -211,7 +227,7 @@ export default {
         this.processEdits(appliedEdits);
     },
     
-    readOnly: {
+    finalReadOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
         if (newReadOnly) {
@@ -243,7 +259,7 @@ export default {
         });
       }
 
-      this.editor.getEditor().enable(!this.readOnly);
+      this.editor.getEditor().enable(!this.finalReadOnly);
       this.editor.getEditor().on('text-change', this.handleTextChange);
       // Store event handler references for cleanup
       this.selectEditHandler = (data) => {
