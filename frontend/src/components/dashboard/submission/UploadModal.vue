@@ -176,6 +176,7 @@ export default {
           });
           this.$refs.uploadStepper.close();
         } else {
+          // Reset the files variable as the user will reupload the files without closing the modal, which leads to wrong files.
           this.files = null;
           this.eventBus.emit("toast", {
             title: "Failed to upload the file",
