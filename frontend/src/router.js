@@ -52,6 +52,12 @@ const routes = [
         meta: {requireAuth: true}
     },
     {
+        path: "/template/:templateId",
+        component: () => import('@/components/Template.vue'),
+        props: true,
+        meta: {requireAuth: true}
+    },
+    {
         path: "/review/:studySessionHash", // Review link
         component: () => import('@/components/StudySession.vue'),
         props: true,
