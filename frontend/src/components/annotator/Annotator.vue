@@ -24,6 +24,7 @@
         <BasicSidebar
             ref="basicSidebar"
             v-if="!sidebarDisabled"
+            :isShown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -149,6 +150,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     review: {
       type: Boolean,

@@ -119,6 +119,7 @@
 
             <Annotator
                 v-if="step.stepType === 1"
+                :isShown="currentStudyStepId === step.id"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
                 @error="error"
@@ -142,6 +143,7 @@
                 ref="editor"
                 v-if="step.stepType === 2"
                 :document-id="step.documentId"
+                :isShown="currentStudyStepId === step.id"
                 :study-step-id="step.id"
                 :without-history="true"
                 @update:data="updateStudyData(step.id, 'editor', $event)"

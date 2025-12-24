@@ -5,8 +5,9 @@
         <Editor ref="editor" @update:data="$emit('update:data', $event)"/>
       </div>
       <BasicSidebar
-          v-if="!sidebarDisabled && defaultActiveSidebar && studySessionId === null"
+          v-if="!sidebarDisabled"
           ref="sidebar"
+          :isShown="isShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
@@ -94,6 +95,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     studyStepId: {
       type: Number,
