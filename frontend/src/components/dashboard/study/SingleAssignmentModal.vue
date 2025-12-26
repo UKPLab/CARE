@@ -733,10 +733,22 @@ export default {
       return study.closed === null ? true : false;
     },
     getPrimaryDocumentId(submissionId) {
+      const submission = this.$store.getters["table/submission/get"](submissionId);
+      const configuration = this.$store.getters["table/configuration/get"](submission.validationConfigurationId);
       const docs = this.$store.getters["table/document/getFiltered"](
-          (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
+          (d) => d.submissionId === submissionId && !d.deleted && d.type === 0
       );
-      return docs && docs.length !== 0 ? docs[0].id : null;
+      
+      if (!docs || docs.length === 0) return null;
+      
+      // If configuration specifies a primary document key, try to use it
+      if (configuration && configuration.primaryDocument) {
+        const primaryDoc = docs.find(d => d.id === configuration.primaryDocument);
+        if (primaryDoc) return primaryDoc.id;
+      }
+      
+      // Otherwise, return the first PDF document
+      return docs[0].id;
     },
     open() {
       this.reset();
@@ -770,7 +782,6 @@ export default {
       } else {
         assignmentData.documents = this.workflowStepsAssignments;
       }
-      console.log(assignmentData);
       this.$socket.emit("assignmentCreateSingle", assignmentData, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
