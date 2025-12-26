@@ -322,7 +322,7 @@ export default {
       }
 
       // NLP Toggle Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.active && this.nlpEnabled : this.nlpEnabled) {
+      if (this.studySessionId && this.studySessionId !== 0 ? this.nlpEnabled : this.nlpEnabled) {
         buttons.push({
           id: 'toggle-nlp',
           icon: 'robot',
@@ -333,7 +333,7 @@ export default {
       }
 
       // Download Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.active : true) {
+      if (this.studySessionId && this.studySessionId !== 0) {
         const canDownload = this.annotations.length + this.comments.length > 0 &&
             !this.downloading &&
             (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
