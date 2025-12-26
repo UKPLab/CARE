@@ -394,7 +394,7 @@ export default {
       }
     },
     documentsTable() {
-      return this.documents.map((d) => {
+      return this.documents.filter((d) => d.type !== 4).map((d) => {
         let newD = {...d};
         newD.type = d.type === 0 ? "PDF" : "HTML";
         const user = this.$store.getters["table/user/get"](d.userId)
