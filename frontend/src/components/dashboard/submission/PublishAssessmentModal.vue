@@ -573,23 +573,16 @@ export default {
       return svc || null;
     },
     /**
-     * Generate assessment key candidate for AI workflow.
-     * Uses format: ${svc.name}_${svc.skill}_assessment
-     */
-    getAssessmentKeyCandidates(studyStep) {
-      const svc = this.getNlpServiceForStudyStep(studyStep);
-      if (!svc || !svc.skill || !svc.name) return [];
-
-      return [`${svc.name}_${svc.skill}_assessment`];
-    },
-    /**
      * Get assessment data key for a study step.
-     * Returns AI key if AI workflow detected, otherwise "assessment_result".
+     * Returns AI key if AI workflow detected (format: ${svc.name}_${svc.skill}_assessment),
+     * otherwise "assessment_result".
      */
     getAssessmentDataKeys(studyStep) {
-      const aiKeys = this.getAssessmentKeyCandidates(studyStep);
-      // If AI workflow detected, only use AI keys (no fallback)
-      return aiKeys.length > 0 ? aiKeys : ["assessment_result"];
+      const svc = this.getNlpServiceForStudyStep(studyStep);
+      if (svc && svc.skill && svc.name) {
+        return [`${svc.name}_${svc.skill}_assessment`];
+      }
+      return ["assessment_result"];
     },
     /**
      * Find the study step for a study that matches the selected configuration.
