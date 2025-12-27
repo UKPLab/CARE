@@ -552,7 +552,7 @@ export default {
           return;
         }
         // Correct offset since we have a fixed top
-        offset -= 106; // see css class padding-top
+        offset -= 123; // see css class padding-top
         // nb. We only compute the scroll offset once at the start of scrolling.
         // This is important as the highlight may be removed from the document during
         // the scroll due to a page transitioning from rendered <-> un-rendered.
