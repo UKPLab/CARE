@@ -118,7 +118,10 @@ export default {
     },
     success(id) {
       if (!this.isTemplateMode) {
-        this.studyId = id;
+        const OldStudy = this.$store.getters['table/study/get'](this.studyId);
+        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === OldStudy.id);
+        const validNewStudy = newStudies.find(s => new Date(s.createdAt) > new Date(OldStudy.createdAt));
+        this.studyId = validNewStudy ? validNewStudy.id : id;
         this.isSuccess = true;
       }
     },
