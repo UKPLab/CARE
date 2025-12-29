@@ -138,9 +138,11 @@
     methods: {
       typeName(type) {
         switch (type) {
-          case 1: return "Email";
-          case 2: return "Study";
-          case 3: return "Document";
+          case 1: return "Email - General";
+          case 2: return "Email - Study Session";
+          case 3: return "Email - Assignment";
+          case 4: return "Document - General";
+          case 5: return "Document - Study";
           default: return "Choose Type"
         }
       },

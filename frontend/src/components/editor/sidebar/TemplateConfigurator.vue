@@ -69,25 +69,48 @@
       return {
         // Placeholder definitions for each template type
         placeholderConfigs: {
-          1: { // Email
+          1: { // Email - General
             placeholders: [
-              { id: "name", text: "~name~", label: "Recipient Name", description: "Insert recipient's name", icon: "bi bi-person" },
-              { id: "email", text: "~email~", label: "Email Address", description: "Insert email address", icon: "bi bi-envelope" },
-              { id: "subject", text: "~subject~", label: "Subject", description: "Insert email subject", icon: "bi bi-tag" },
+              { id: "username", text: "~username~", label: "Username", description: "User's username", icon: "bi bi-person" },
+              { id: "firstName", text: "~firstName~", label: "First Name", description: "User's first name", icon: "bi bi-person" },
+              { id: "lastName", text: "~lastName~", label: "Last Name", description: "User's last name", icon: "bi bi-person" },
             ],
           },
-          2: { // Study (Modal)
+          2: { // Email - Study Session
             placeholders: [
-              { id: "text", text: "~text~", label: "Text placeholder", description: "Add text content blocks", icon: "bi bi-type" },
-              { id: "chart", text: "~chart~", label: "Single chart", description: "Visualize data with a chart", icon: "bi bi-bar-chart" },
-              { id: "comparison", text: "~comparison~", label: "Comparison chart", description: "Compare multiple data sets", icon: "bi bi-bar-chart-steps" },
+              { id: "username", text: "~username~", label: "Username", description: "Study session participant's username", icon: "bi bi-person" },
+              { id: "firstName", text: "~firstName~", label: "First Name", description: "Study session participant's first name", icon: "bi bi-person" },
+              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Study session participant's last name", icon: "bi bi-person" },
+              { id: "creatorUsername", text: "~creatorUsername~", label: "Creator Username", description: "Study creator's username", icon: "bi bi-person-badge" },
+              { id: "creatorFirstName", text: "~creatorFirstName~", label: "Creator First Name", description: "Study creator's first name", icon: "bi bi-person-badge" },
+              { id: "creatorLastName", text: "~creatorLastName~", label: "Creator Last Name", description: "Study creator's last name", icon: "bi bi-person-badge" },
+              { id: "link", text: "~link~", label: "Study Link", description: "Link to read-only study session view", icon: "bi bi-link-45deg" },
             ],
           },
-          3: { // Document
+          3: { // Email - Assignment
             placeholders: [
-              { id: "title", text: "~title~", label: "Document Title", description: "Insert document title", icon: "bi bi-file-text" },
-              { id: "author", text: "~author~", label: "Author Name", description: "Insert author name", icon: "bi bi-person" },
-              { id: "date", text: "~date~", label: "Date", description: "Insert current date", icon: "bi bi-calendar" },
+              { id: "username", text: "~username~", label: "Username", description: "Assigned user's username", icon: "bi bi-person" },
+              { id: "firstName", text: "~firstName~", label: "First Name", description: "Assigned user's first name", icon: "bi bi-person" },
+              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Assigned user's last name", icon: "bi bi-person" },
+              { id: "assignmentType", text: "~assignmentType~", label: "Assignment Type", description: "Document or Submission", icon: "bi bi-file-text" },
+              { id: "assignmentName", text: "~assignmentName~", label: "Assignment Name", description: "Name of the document/submission", icon: "bi bi-file-text" },
+            ],
+          },
+          4: { // Document - General
+            placeholders: [
+              { id: "username", text: "~username~", label: "Username", description: "User's username", icon: "bi bi-person" },
+              { id: "firstName", text: "~firstName~", label: "First Name", description: "User's first name", icon: "bi bi-person" },
+              { id: "lastName", text: "~lastName~", label: "Last Name", description: "User's last name", icon: "bi bi-person" },
+            ],
+          },
+          5: { // Document - Study
+            placeholders: [
+              { id: "username", text: "~username~", label: "Username", description: "Study session participant's username", icon: "bi bi-person" },
+              { id: "firstName", text: "~firstName~", label: "First Name", description: "Study session participant's first name", icon: "bi bi-person" },
+              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Study session participant's last name", icon: "bi bi-person" },
+              { id: "creatorUsername", text: "~creatorUsername~", label: "Creator Username", description: "Study creator's username", icon: "bi bi-person-badge" },
+              { id: "creatorFirstName", text: "~creatorFirstName~", label: "Creator First Name", description: "Study creator's first name", icon: "bi bi-person-badge" },
+              { id: "creatorLastName", text: "~creatorLastName~", label: "Creator Last Name", description: "Study creator's last name", icon: "bi bi-person-badge" },
             ],
           },
         },
@@ -104,7 +127,7 @@
       },
       templateTypeName() {
         if (!this.templateType) return "Unknown";
-        const types = { 1: "Email", 2: "Study", 3: "Document" };
+        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study" };
         return types[this.templateType] || "Unknown";
       },
       availablePlaceholders() {
@@ -130,6 +153,35 @@
         }
       };
       this.eventBus.on("editorContentUpdated", this.editorContentHandler);
+
+      if (this.templateId && this.templateId > 0) {
+        this.$socket.emit("templatePlaceholderGetAll", { templateId: this.templateId }, (result) => {
+          if (result.success){
+            if (result.data && result.data.length > 0) {
+
+              const fetchedPlaceholders = result.data.map(ph => ({
+                id: ph.placeholderKey,
+                text: `~${ph.placeholderKey}~`,
+                label: ph.placeholderLabel,
+                description: ph.placeholderLabel,
+                icon: this.getPlaceholderIcon(ph.placeholderType),
+              }));
+              
+              if (this.templateType && this.placeholderConfigs[this.templateType]) {
+                this.placeholderConfigs[this.templateType].placeholders = fetchedPlaceholders;
+                this.initializePlaceholderCounts();
+              }
+            } 
+          } else {
+              this.eventBus.emit("toast", {
+                title: "Failed to load placeholders",
+                message: result.message || "Unknown error",
+                variant: "danger",
+              });
+            }
+        });
+      }
+
     },
     unmounted() {
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
@@ -189,6 +241,15 @@
           templateId: this.templateId,
           text: placeholder.text,
         });
+      },
+      getPlaceholderIcon(placeholderType) {
+        const iconMap = {
+          "user": "bi bi-person",
+          "study_creator": "bi bi-person-badge",
+          "link": "bi bi-link-45deg",
+          "assignment": "bi bi-file-text",
+        };
+        return iconMap[placeholderType] || "bi bi-tag";
       },
     },
   };
