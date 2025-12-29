@@ -2,6 +2,7 @@
 const Socket = require("../Socket");
 const Delta = require("quill-delta");
 const {dbToDelta} = require("editor-delta-conversion");
+const {resolveTemplate, resolveTemplateToDelta} = require("../../utils/templateResolver");
 
 /**
  * Handle templates through websocket
@@ -15,6 +16,7 @@ class TemplateSocket extends Socket {
   /**
    * Create a template
    *
+   * @socketEvent templateAdd
    * @param {Object} data                  The data object containing the template info
    * @param {string} data.name             Template name (required)
    * @param {string} data.description      Template description (required)
@@ -38,7 +40,25 @@ class TemplateSocket extends Socket {
       hidden: data.hidden ?? false,
       userId: this.userId,
     };
-    return await this.models["template"].add(payload, { transaction: options.transaction });
+
+    const template = await this.models["template"].add(payload, { transaction: options.transaction });
+    
+    // Create placeholder mappings if provided
+    if (data.placeholders && Array.isArray(data.placeholders) && data.placeholders.length > 0) {
+      const placeholderPromises = data.placeholders.map(placeholder => {
+        return this.models["template_placeholder_mapping"].add({
+          templateId: template.id,
+          placeholderKey: placeholder.placeholderKey || placeholder.key,
+          placeholderLabel: placeholder.placeholderLabel || placeholder.label,
+          placeholderType: placeholder.placeholderType || placeholder.type,
+          required: placeholder.required ?? false,
+        }, { transaction: options.transaction });
+      });
+      
+      await Promise.all(placeholderPromises);
+    }
+    
+    return template;
   }
 
    /**
@@ -114,6 +134,7 @@ class TemplateSocket extends Socket {
   /**
    * Update a template
    *
+   * @socketEvent templateUpdate
    * @param {Object} data                  The data object containing the template update
    * @param {number} data.id               Template ID to update (required)
    * @param {string} [data.name]           New name
@@ -141,11 +162,174 @@ class TemplateSocket extends Socket {
         { transaction: options.transaction }
     );
   }
+
+
+  /**
+   * Add a placeholder to a template
+   *
+   * @socketEvent templatePlaceholderAdd
+   * @param {Object} data                   The data object
+   * @param {number} data.templateId        Template ID (required)
+   * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
+   * @param {string} data.placeholderLabel  Placeholder label (required, e.g., "Username")
+   * @param {string} data.placeholderType   Placeholder type (required, e.g., "user")
+   * @param {boolean} [data.required=false] Whether placeholder is required
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async addPlaceholder(data, options) {
+    if (!(await this.isAdmin())) throw new Error("Access denied");
+    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
+      throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");
+    }
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    const payload = {
+      templateId: data.templateId,
+      placeholderKey: data.placeholderKey,
+      placeholderLabel: data.placeholderLabel,
+      placeholderType: data.placeholderType,
+      required: data.required ?? false,
+    };
+
+    return await this.models["template_placeholder_mapping"].add(
+      payload,
+      { transaction: options.transaction }
+    );
+  }
+
+  /**
+   * Update a placeholder's metadata
+   *
+   * @socketEvent templatePlaceholderUpdate
+   * @param {Object} data                    The data object
+   * @param {number} data.id                 Placeholder mapping ID (required)
+   * @param {string} [data.placeholderLabel] New placeholder label
+   * @param {string} [data.placeholderType]  New placeholder type
+   * @param {boolean} [data.required]        New required flag
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async updatePlaceholder(data, options) {
+    if (!(await this.isAdmin())) throw new Error("Access denied");
+    if (!data.id) throw new Error("Placeholder ID is required");
+
+    const updateData = {};
+    if (data.placeholderLabel !== undefined) updateData.placeholderLabel = data.placeholderLabel;
+    if (data.placeholderType !== undefined) updateData.placeholderType = data.placeholderType;
+    if (data.required !== undefined) updateData.required = data.required;
+
+    if (Object.keys(updateData).length === 0) {
+      throw new Error("No fields to update");
+    }
+
+    return await this.models["template_placeholder_mapping"].updateById(
+      data.id,
+      updateData,
+      { transaction: options.transaction }
+    );
+  }
+
+
+  /**
+   * Get all placeholders for a template
+   *
+   * @socketEvent templatePlaceholderGetAll
+   * @param {Object} data                  The data object
+   * @param {number} data.templateId       Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Array>}
+   */
+  async getAllPlaceholders(data, options) {
+    if (!(await this.isAdmin())) throw new Error("Access denied");
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    return await this.models["template_placeholder_mapping"].getAllByKey(
+      "templateId",
+      data.templateId,
+      { transaction: options.transaction }
+    );
+  }
+
+
+  /**
+   * Resolve template placeholders with context data
+   *
+   * Resolves all placeholders in a template using the provided context data.
+   * Returns resolved content as HTML string or Quill Delta object.
+   *
+   * @socketEvent templateResolve
+   * @param {Object} data                            The data object
+   * @param {number} data.templateId                 Template ID (required)
+   * @param {Object} data.context                    Context object for placeholder resolution (required)
+   * @param {number} [data.context.userId]           User/participant ID
+   * @param {number} [data.context.creatorId]        Study creator ID
+   * @param {number} [data.context.studyId]          Study ID (for anonymization check)
+   * @param {number} [data.context.studySessionId]   Study session ID
+   * @param {string} [data.context.studySessionHash] Study session hash (for link)
+   * @param {string} [data.context.baseUrl]          Base URL for generating links
+   * @param {string} [data.context.assignmentType]   Assignment type
+   * @param {string} [data.context.assignmentName]   Assignment name
+   * @param {boolean} [data.context.anonymize]       Override anonymization
+   * @param {string} [data.format="html"]            Return format: "html" or "delta"
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<string|Object>} 
+   */
+  async resolveTemplatePlaceholders(data, options) {
+    if (!(await this.isAdmin())) throw new Error("Access denied");
+    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.context || typeof data.context !== 'object') {
+      throw new Error("Context object is required");
+    }
+
+    // Get baseUrl from settings if not provided in context
+    if (!data.context.baseUrl) {
+      const baseUrl = await this.models["setting"].get("system.baseUrl", options);
+      data.context.baseUrl = baseUrl || "localhost:3000";
+    }
+
+    const format = data.format || "html";
+
+    if (format === "delta") {
+      return await resolveTemplateToDelta(
+        data.templateId,
+        data.context,
+        this.models,
+        options
+      );
+    } else {
+      return await resolveTemplate(
+        data.templateId,
+        data.context,
+        this.models,
+        options
+      );
+    }
+  }
+
   init() {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
     this.createSocket("templateUpdate", this.updateTemplate, {}, true);
     this.createSocket("templateGetContent", this.getContent, {}, false);
     this.createSocket("templateEditContent", this.editContent, {}, true);
+    this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
+    this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
+    this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
+    this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
   }
 }
 
