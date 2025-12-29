@@ -281,6 +281,7 @@
     :items-per-page-list="itemsPerPageList"
     :pages="pages"
     :show-pages="paginationShowPages"
+    :total-items="total"
     @update-items-per-page="paginationItemsPerPageChange"
     @update-page="paginationPageChange"
   />
