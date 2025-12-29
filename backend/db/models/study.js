@@ -351,6 +351,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "projectId",
                 as: "project"
             });
+            // Association with study template mappings
+            Study.hasMany(models["study_template_mapping"], {
+                foreignKey: "studyId",
+                as: "templateMappings"
+            });
         }
 
     }
