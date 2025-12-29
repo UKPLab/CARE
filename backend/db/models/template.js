@@ -35,24 +35,40 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Type",
                 type: "select",
                 required: true,
-                options:[
+                options: [
                     {
-                        name: "Choose type", value: null, disabled: true
+                        name: "Choose type", 
+                        value: null, 
+                        disabled: true
                     },
                     {
-                        name: "Email", value: 1
+                        name: "Email - General", 
+                        value: 1
                     },
                     {
-                        name: "Study", value: 2
+                        name: "Email - Study Session", 
+                        value: 2
                     },
                     {
-                        name: "Document", value: 3
+                        name: "Email - Assignment", 
+                        value: 3
+                    },
+                    {
+                        name: "Document - General", 
+                        value: 4
+                    },
+                    {
+                        name: "Document - Study", 
+                        value: 5
                     }
                 ],
             },
         ];
         static associate(models) {
-            // no associations for now
+            Template.hasMany(models["template_placeholder_mapping"], {
+                foreignKey: "templateId",
+                as: "placeholders"
+            });
         }
     }
     Template.init(
