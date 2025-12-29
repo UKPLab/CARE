@@ -168,7 +168,6 @@ export default {
       type: Number,
       required: false,
       default: 10
-    }
     },
     totalItems: {
       type: Number,
@@ -181,8 +180,9 @@ export default {
     return {
       page: 1,
       itemsPerPageSelect: 10,
-      itemsPerPageListSelect: []
-    }
+      itemsPerPageListSelect: [],
+    };
+  },
   computed: {
     rangeText() {
       if (this.totalItems === 0) {
