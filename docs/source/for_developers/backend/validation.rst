@@ -12,7 +12,7 @@ and its practical use cases.
 General Procedure
 -----------------
 
-1. The user selects a validation schema (validation configuration ID) on the frontend.
+1. The user selects a validation schema on the frontend.
 2. Files are uploaded or fetched from Moodle.
 3. On the backend, ``validator.js`` loads the configuration and validates files
    according to the selected schema.
@@ -30,18 +30,18 @@ Key Components
 
 The validation flow consists of three key components:
 
-- **Configuration Schema**: A JSON schema stored in the Configuration table that defines validation rules.
-- **Validator**: Implemented in ``backend/utils/validator.js``. Handles download and validation logic.
+- **Validation Schema**: A JSON schema stored in the Configuration table that defines validation rules.
+- **Validator**: A utility class implemented in ``backend/utils/validator.js``. Handles file download and validation logic.
 - **Frontend**: Users select a validation schema via the validator selector
-  (see the ``ValidatorSelector`` component in the dashboard submission flow).
+  (see the ``ValidatorSelector`` component used in the dashboard submission flow).
 
 .. note::
 
-   Default configuration schemas are stored in the database via migrations.
+   Default validation schemas are stored in the database via migrations.
    Example: ``backend/db/migrations/20250919125851-basic-configuration-expose_validation.json``.
 
 
-Configuration Schema
+Validation Schema
 --------------------
 
 Validation configurations are JSON objects containing metadata and validation
@@ -50,8 +50,8 @@ rules.
 **Top-level attributes**
 
 - ``version``: Schema version  
-- ``name``: Configuration name  
-- ``description``: Description of this configuration schema  
+- ``name``: Schema name  
+- ``description``: Description of this schema  
 - ``type``: Must be set to ``validation``  
 
 **Rules object**
@@ -60,7 +60,7 @@ rules.
   at the root level.
 - ``requiredFiles``: A list of required file definitions.
 
-**Each ``requiredFiles`` entry supports**
+**Each** ``requiredFiles`` **entry supports**
 
 - ``pattern``: Regex pattern matched against the filename  
 - ``description``: Description of the file’s purpose  
@@ -68,14 +68,13 @@ rules.
 - ``includeFiles`` *(optional)*: Validation rules for ZIP archive contents  
 - ``allowAdditionalFiles`` *(optional)*: List of allowed file extensions inside ZIP archives  
 
-**ZIP validation rules inside ``includeFiles``**
+**ZIP validation rules inside** ``includeFiles``
 
 - ``pattern``: Regex pattern for ZIP entries  
 - ``description``: Description of the expected file  
 - ``required``: Whether the file must be present  
 - ``maxMatches``: Maximum number of allowed matches  
 
-// TODO: Need to rewrite this.
 The validator automatically filters out system files (such as ``.DS_Store`` and
 ``__MACOSX/``) and enforces root-level file placement. If a ZIP contains a single
 top-level folder, this folder is automatically stripped during validation.
@@ -96,7 +95,7 @@ Basic Usage (PDF only)
 
 .. code-block:: javascript
 
-   const Validator = require("../../utils/validator.js");
+   const Validator = require("../../utils/validator.js"); // path shown is for reference only
    const validator = new Validator(server, models);
    const result = await validator.validateSubmissionFiles(files, configId);
    if (!result.success) throw new Error(result.message);
@@ -147,11 +146,10 @@ Error Handling Patterns
 - In batch imports, collect errors per submission while processing the rest.
 - Wrap validation and database operations in a transaction and roll back on failure.
 
-// TODO: Need to rewrite this.
 .. note::
 
    The validator does not exhaustively check all errors.  
-   It stops and reports the first encountered error.
+   It stops at the first error encountered and reports it.
 
 
 See Also
