@@ -217,13 +217,9 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    workflow() {
-      return this.study?.workflowId 
-        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
-        : null;
-    },
     computedReadOnly() {
-      return this.readOnly || this.workflow?.readOnlyComponents?.includes('annotator') || false;
+
+      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
     showDefaultAnnotations(){
       return this.currentStudyStep?.configuration?.settings?.showDefaultAnnotations ?? false;

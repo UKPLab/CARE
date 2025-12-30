@@ -4,7 +4,6 @@ const workflows = [
   {
     name: "Review Grading Workflow ",
     description: "Review Grading Workflow with Assessment: Review a submitted study session",
-    readOnlyComponents: ["annotator", "editor"],
     steps: [
       {
         stepType: 1,
@@ -23,6 +22,7 @@ const workflows = [
               }
             ],
           },
+          readOnlyComponents: ["annotator"],
           placeholders: false
         }
       },
@@ -59,6 +59,7 @@ const workflows = [
               }
             ],
           },
+          readOnlyComponents: ["editor"],
           placeholders: false
         }
       },
@@ -74,7 +75,6 @@ module.exports = {
           workflows.map(w => ({
               name: w.name,
               description: w.description,
-              readOnlyComponents: w.readOnlyComponents,
               createdAt: new Date(),
               updatedAt: new Date()
           })),

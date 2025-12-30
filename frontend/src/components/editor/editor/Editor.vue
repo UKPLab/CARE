@@ -15,7 +15,7 @@
         >
           <!-- Read-Only Indicator (floating icon) -->
           <ReadOnlyIndicator
-            v-if="componentReadOnly || readOnly"
+            v-if="finalReadOnly"
           />
           <div
             :id="`editor-container-${studyStepId}`"
@@ -230,12 +230,14 @@ export default {
     finalReadOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
-        if (newReadOnly) {
-          this.editor.getEditor().getModule("toolbar").container.style = "display:none"
-        } else {
-          this.editor.getEditor().getModule("toolbar").container.style = "display:block"
+        const toolbar = this.editor.getEditor().getModule("toolbar");
+        if (toolbar && toolbar.container) {
+          if (newReadOnly) {
+            toolbar.container.style = "display:none"
+          } else {
+            toolbar.container.style = "display:block"
+          }
         }
-
       }
     },
   },

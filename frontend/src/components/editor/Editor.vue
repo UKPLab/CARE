@@ -92,6 +92,11 @@ export default {
       required: false,
       default: null
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
   },
   props: {
     documentId: {
@@ -132,13 +137,8 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    workflow() {
-      return this.study?.workflowId 
-        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
-        : null;
-    },
     componentReadOnly() {
-      return this.workflow?.readOnlyComponents?.includes('editor') || false;
+      return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
     },
     defaultActiveSidebar() {
       // Determine the default active sidebar based on available tabs
