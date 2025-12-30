@@ -25,6 +25,15 @@ module.exports = (sequelize, DataTypes) => {
       Workflow.hasMany(models["study"], {
         foreignKey: "workflowId",
         as: "studies"
+      }); 
+      // Self-referencing association for workflow versioning
+      Workflow.belongsTo(models["workflow"], {
+        foreignKey: "parentWorkflowId",
+        as: "parentWorkflow"
+      });
+      Workflow.hasMany(models["workflow"], {
+        foreignKey: "parentWorkflowId",
+        as: "childWorkflows"
       });
     }
   }
@@ -35,8 +44,20 @@ module.exports = (sequelize, DataTypes) => {
       deleted: DataTypes.BOOLEAN,
       deletedAt: DataTypes.DATE,
       createdAt: DataTypes.DATE,
-      updatedAt: DataTypes.DATE
-    }, {
+      updatedAt: DataTypes.DATE,
+      parentWorkflowId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'workflow',
+          key: 'id'
+        }
+      },
+      hideInFrontend: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      }
+      }, {
       sequelize,
       modelName: 'workflow',
       tableName: 'workflow'
