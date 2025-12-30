@@ -69,7 +69,7 @@
 
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
-          :disabled="!isCurrentStepReady"
+          :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
           class="btn btn-outline-primary ms-3"
           title="Next"
           @click="next()"
