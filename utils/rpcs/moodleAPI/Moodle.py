@@ -57,25 +57,26 @@ class Moodle:
         
         return users
     
-    def get_assignment_ids_from_course(self, course_id):
+    def get_assignment_info_from_course(self, course_id):
         """
-        Retrieves the assignment IDs and names from a given course.
+        Retrieves the assignment IDs, names, and max grades from a given course.
 
         Args:
             course_id (int): The ID of the course.
 
         Returns:
-            list: A list of tuples containing assignment IDs and names.
+            list: A list of tuples containing (cmid, name, max_grade) for each assignment.
         """
         course_assignments = moodle_api.call('mod_assign_get_assignments', courseids=[course_id])
         
-        assign_ids_with_names = []
+        assignment_info = []
         
         for assignment in course_assignments['courses'][0]['assignments']:
             # Use course‑module id so front‑end passes the value publish() expects
-            assign_ids_with_names.append((assignment['cmid'], assignment['name']))
+            max_grade = assignment.get('grade', 100)  # Default to 100 if not present
+            assignment_info.append((assignment['cmid'], assignment['name'], max_grade))
             
-        return assign_ids_with_names
+        return assignment_info
 
     def get_id_mappings_for_users(self, assignment_id):
         """
