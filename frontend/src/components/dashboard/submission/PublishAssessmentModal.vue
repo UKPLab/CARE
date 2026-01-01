@@ -723,6 +723,9 @@ export default {
     getReviewerUserForSession(session) {
       return this.users.find((u) => u.id === session.userId) || null;
     },
+    /**
+     * Uploads the selected sessions' grades to a specific assignment in Moodle.
+     */
     uploadGrades() {
       if (!this.validateConfiguration()) return;
 
@@ -736,16 +739,26 @@ export default {
         };
       });
 
-      this.$socket.emit(
-        "submissionPublishGrades",
-        {
+      this.$refs.assessmentStepper.setWaiting(true);
+      this.$socket.emit("submissionPublishGrades", {
           options: this.moodleOptions,
           grades: grades,
-        },
-        (res) => {
-          // TODO: 
-          console.log(res);
-          
+        }, (res) => {
+          this.$refs.assessmentStepper.setWaiting(false);
+          if (res.success) {
+            this.$refs.assessmentStepper.close();
+            this.eventBus.emit("toast", {
+              title: "Grades published",
+              message: "The selected sessions' grades have been published to the assignment",
+              variant: "success",
+            });
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to publish grades",
+              message: res.message,
+              variant: "danger",
+            });
+          }
         }
       );
     },

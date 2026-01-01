@@ -49,7 +49,16 @@ class SubmissionSocket extends Socket {
         }
     }
 
-    // TODO: Add method description
+    /**
+     * Publishes grades for an assignment to Moodle.
+     *
+     * @param {Object} data - The data required for uploading assignment grade.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {Array<Object>} data.grades - An array of objects containing the grade data.
+     * @returns {Promise<Object>} - A promise that resolves when the grades have been uploaded.
+     * @throws {Error} If the user does not have admin permission.
+     * @see MoodleRPC#publishAssignmentGrade
+     */
     async publishGrades(data) {
         if (!(await this.isAdmin())) {
             throw new Error("You do not have permission to upload grades");
