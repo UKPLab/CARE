@@ -735,7 +735,7 @@ export default {
 
         return {
           extId: ownerUser?.extId || session.ownerExtId || "",
-          grade: this.convertAssessmentScore(assessment, this.selectedAssignmentMaxGrade),
+          grade: this.convertAssessmentScore(assessment),
         };
       });
 
@@ -762,14 +762,21 @@ export default {
         }
       );
     },
-    convertAssessmentScore(assessment, maxGrade = null, minGrade = 0) {
-      const assignmentMaxGrade = maxGrade !== null ? maxGrade : 100;
+    /**
+     * Converts an assessment score from one scale to another.
+     */
+    convertAssessmentScore(assessment) {
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade ?? 100; // Default max grade set to 100
       const { total_max_points, total_min_points, achieved_points } = assessment;
-      const range1 = total_max_points - total_min_points;
-      const range2 = assignmentMaxGrade - minGrade;
-      const factor = range2 / range1;
-      const converted = achieved_points * factor;
-      return converted;
+      
+      const sourcePointsRange = total_max_points - total_min_points;
+      const targetGradeRange = assignmentMaxGrade - 0;
+
+      const conversionFactor = targetGradeRange / sourcePointsRange;
+      const convertedGrade = achieved_points * conversionFactor;
+      
+      // Round to 2 decimal places 
+      return Math.round(convertedGrade * 100) / 100;
     },
     /**
      * Build CSV rows for selected sessions using assessmentScore utilities.
