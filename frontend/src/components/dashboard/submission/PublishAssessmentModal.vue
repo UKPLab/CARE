@@ -144,6 +144,14 @@
           </option>
         </select>
       </div>
+      <div v-if="publishMethod === 'moodle'">
+        <MoodleOptions
+          ref="moodleOptionsForm"
+          v-model="moodleOptions"
+          with-assignment-id
+          @select-assignment="selectAssignment"
+        />
+      </div>
     </template>
   </StepperModal>
 </template>
@@ -151,6 +159,7 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "@/assets/assessmentScore.js";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
@@ -160,7 +169,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "PublishAssessmentModal",
-  components: { BasicTable, StepperModal },
+  components: { BasicTable, StepperModal, MoodleOptions },
   subscribeTable: [
     { table: "workflow" },
     { table: "workflow_step" },
@@ -182,6 +191,7 @@ export default {
       selectedSessions: [],
       publishMethod: "csv",
       linkCollection: "studies",
+      selectedAssignmentMaxGrade: null, // Store max grade for selected assignment
     };
   },
   computed: {
@@ -533,7 +543,7 @@ export default {
     publishMethodOptions() {
       return [
         { value: "csv", label: "Download CSV", disabled: false },
-        { value: "moodle", label: "Moodle", disabled: true },
+        { value: "moodle", label: "Moodle", disabled: false },
         { value: "email", label: "Email", disabled: true },
       ];
     },
@@ -634,18 +644,25 @@ export default {
       this.selectedSessions = [];
       this.publishMethod = "csv";
       this.linkCollection = "studies";
+      this.selectedAssignmentMaxGrade = null;
+    },
+    selectAssignment({ maxGrade }) {
+      this.selectedAssignmentMaxGrade = maxGrade;
     },
     handleSubmit() {
       if (this.publishMethod === "csv") {
         this.downloadCSV();
         return;
       }
+      if (this.publishMethod === "moodle") {
+        this.uploadGrades();
+        return;
+      }
     },
     /**
-     * Build CSV rows for selected sessions using assessmentScore utilities.
-     * Each session becomes one row; criteria columns are derived from configuration.
+     * Validates that configuration content is available.
      */
-    downloadCSV() {
+    validateConfiguration() {
       const configContent = this.selectedConfigurationContent;
       if (!configContent) {
         this.eventBus.emit("toast", {
@@ -653,52 +670,107 @@ export default {
           message: "Selected configuration content could not be loaded.",
           variant: "danger",
         });
-        return;
+        return false;
       }
+      return true;
+    },
+    /**
+     * Retrieves assessment data for a given session.
+     * Returns an object with scores and assessment calculation.
+     */
+    getAssessmentDataForSession(session) {
+      // locate study step matching selected configuration (earliest occurrence in workflow)
+      const matchingStudyStep = this.getMatchingStudyStepForStudy(session.studyId);
+      // fetch document_data for this session and study step
+      // Try both AI workflow keys and non-AI key (assessment_result)
+      const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
 
-      const rows = [];
-      const criteriaList = this.criteriaNames;
+      let assessmentRaw = {};
 
-      this.selectedSessions.forEach((session) => {
-        // locate study step matching selected configuration (earliest occurrence in workflow)
-        const matchingStudyStep = this.getMatchingStudyStepForStudy(session.studyId);
+      if (matchingStudyStep && Array.isArray(documentDataArray)) {
+        // Get all possible assessment keys (AI or non-AI)
+        const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
 
-        // fetch document_data for this session and study step
-        // Try both AI workflow keys and non-AI key (assessment_result)
-        const documentDataArray = this.$store.getters["table/document_data/getByKey"](
-          "studySessionId",
-          session.sessionId
-        );
-        
-        let documentDataItem = null;
-        let assessmentRaw = {};
-        
-        if (matchingStudyStep && Array.isArray(documentDataArray)) {
-          // Get all possible assessment keys (AI or non-AI)
-          const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
-          
-          // Try to find data using any of the possible keys
-          for (const key of assessmentKeys) {
-            documentDataItem = documentDataArray.find(
-              (dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key
-            );
-            if (documentDataItem) {
-              assessmentRaw = documentDataItem.value || {};
-              break; // Found data, stop searching
-            }
+        // Try to find data using any of the possible keys
+        for (const key of assessmentKeys) {
+          const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key);
+          if (documentDataItem) {
+            assessmentRaw = documentDataItem.value || {};
+            break; // Found data, stop searching
           }
         }
+      }
 
-        const scoreState = assessmentRaw || {};
+      const scoreState = assessmentRaw || {};
+      const scores = buildScoresFromState(scoreState);
+      const configContent = this.selectedConfigurationContent;
+      const assessment = calculateAssessmentScore(configContent, scores);
 
-        const scores = buildScoresFromState(scoreState);
-        const assessment = calculateAssessmentScore(configContent, scores);
+      return { scores, assessment };
+    },
+    /**
+     * Gets the owner user for a given session.
+     * Returns the user object or null if not found.
+     */
+    getOwnerUserForSession(session) {
+      const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
+      return submission ? this.users.find((u) => u.id === submission.userId) : null;
+    },
+    /**
+     * Gets the reviewer user for a given session.
+     * Returns the user object or null if not found.
+     */
+    getReviewerUserForSession(session) {
+      return this.users.find((u) => u.id === session.userId) || null;
+    },
+    uploadGrades() {
+      if (!this.validateConfiguration()) return;
 
-        const reviewer = this.users.find((u) => u.id === session.userId);
-        const submission = session.submissionId
-          ? this.submissions.find((s) => s.id === session.submissionId)
-          : null;
-        const ownerUser = submission ? this.users.find((u) => u.id === submission.userId) : null;
+      const grades = this.selectedSessions.map((session) => {
+        const { assessment } = this.getAssessmentDataForSession(session);
+        const ownerUser = this.getOwnerUserForSession(session);
+
+        return {
+          extId: ownerUser?.extId || session.ownerExtId || "",
+          grade: this.convertAssessmentScore(assessment, this.selectedAssignmentMaxGrade),
+        };
+      });
+
+      this.$socket.emit(
+        "submissionPublishGrades",
+        {
+          options: this.moodleOptions,
+          grades: grades,
+        },
+        (res) => {
+          // TODO: 
+          console.log(res);
+          
+        }
+      );
+    },
+    convertAssessmentScore(assessment, maxGrade = null, minGrade = 0) {
+      const assignmentMaxGrade = maxGrade !== null ? maxGrade : 100;
+      const { total_max_points, total_min_points, achieved_points } = assessment;
+      const range1 = total_max_points - total_min_points;
+      const range2 = assignmentMaxGrade - minGrade;
+      const factor = range2 / range1;
+      const converted = achieved_points * factor;
+      return converted;
+    },
+    /**
+     * Build CSV rows for selected sessions using assessmentScore utilities.
+     * Each session becomes one row; criteria columns are derived from configuration.
+     */
+    downloadCSV() {
+      if (!this.validateConfiguration()) return;
+
+      const criteriaList = this.criteriaNames;
+      const rows = this.selectedSessions.map((session) => {
+        const { scores, assessment } = this.getAssessmentDataForSession(session);
+        const reviewer = this.getReviewerUserForSession(session);
+        const ownerUser = this.getOwnerUserForSession(session);
+        const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
 
         const row = {
           "User ExtId": ownerUser?.extId || session.ownerExtId || "",
@@ -715,12 +787,12 @@ export default {
           "Total Points": assessment.achieved_points ?? 0,
         };
 
-        // dynamic criteria columns
+        // Add dynamic criteria columns
         criteriaList.forEach((criterionName) => {
           row[criterionName] = scores[criterionName] ?? 0;
         });
 
-        rows.push(row);
+        return row;
       });
 
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");

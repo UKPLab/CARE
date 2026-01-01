@@ -149,4 +149,22 @@ module.exports = class MoodleRPC extends RPC {
     async publishAssignmentTextFeedback(data) {
         return await this.request("publishAssignmentTextFeedback", data);
     }
+
+    /**
+     * Publishes grades for an assignment to Moodle.
+     *
+     * @param {Object} data - The data required for uploading assignment grade.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID - The ID of the course containing the specific assignment.
+     * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
+     * @param {Array<Object>} data.grades - An array of objects containing the grade data.
+     * @param {number} data.grades.extId - The ID of the user.
+     * @param {number} data.grades.grade - The grade of the assignment.
+     * @returns {Promise<Object>} - A promise that resolves when the grades have been uploaded.
+     */
+    async publishAssignmentGrade(data) {
+        return await this.request("publishAssignmentGrade", data);
+    }
 }

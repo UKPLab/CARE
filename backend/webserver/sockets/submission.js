@@ -49,8 +49,20 @@ class SubmissionSocket extends Socket {
         }
     }
 
+    // TODO: Add method description
+    async publishGrades(data) {
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to upload grades");
+        }
+        return await this.server.rpcs["MoodleRPC"].publishAssignmentGrade({
+            options: data.options,
+            grades: data.grades,
+        });
+    }
+
     init() {
         this.createSocket("submissionAssignGroup", this.assignGroupToSubmissions, {}, true);
+        this.createSocket("submissionPublishGrades", this.publishGrades, {}, false);
     }
 }
 
