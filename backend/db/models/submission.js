@@ -190,6 +190,7 @@ module.exports = (sequelize, DataTypes) => {
             createdByUserId: DataTypes.INTEGER,
             projectId: DataTypes.INTEGER,
             parentSubmissionId: DataTypes.INTEGER,
+            previousSubmissionId: DataTypes.INTEGER,
             extId: DataTypes.INTEGER,
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,
