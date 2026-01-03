@@ -803,12 +803,15 @@ class DocumentSocket extends Socket {
                     throw new Error(validationResult.message || "Validation failed");
                 }
 
+                const previousSubmission = await this.models["submission"].getPreviousSubmission(submission.userId, submission.projectId);
                 // 3. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
+                        previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                        projectId: submission.projectId,
                         group: data.group,
                         validationConfigurationId: data.validationConfigurationId,
                     },

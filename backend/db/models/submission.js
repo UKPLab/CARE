@@ -68,6 +68,19 @@ module.exports = (sequelize, DataTypes) => {
 
             return affectedCount;
         }
+        static async getPreviousSubmission(userId, projectId) {
+            const submission = await Submission.findOne({
+                where: {
+                    userId,
+                    projectId,
+                    deleted: false,
+                },
+                order: [['createdAt', 'DESC']],
+                raw: true,
+            });
+
+            return submission ? submission : null;
+        }
 
         /**
          * Copy a submission and all its associated documents
