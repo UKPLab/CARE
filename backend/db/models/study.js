@@ -173,6 +173,66 @@ module.exports = (sequelize, DataTypes) => {
                 type: "datetime",
                 size: 6,
                 default: null,
+            }, {
+                key: "documentTemplateId",
+                label: "Document Template (optional):",
+                type: "select",
+                options: {
+                    table: "template",
+                    name: "name",
+                    value: "id",
+                    filter: [
+                        {
+                            key: "type", value: 5
+                        },
+                        {
+                            key: "deleted", value: false
+                        }
+                    ]
+                },
+                icon: "file-text",
+                required: false,
+                help: "Select a template to pre-fill study documents (Type 5: Document - Study)."
+            }, {
+                key: "emailTemplateStartId",
+                label: "Email Template - Session Start (optional):",
+                type: "select",
+                options: {
+                    table: "template",
+                    name: "name",
+                    value: "id",
+                    filter: [
+                        {
+                            key: "type", value: 2
+                        },
+                        {
+                            key: "deleted", value: false
+                        }
+                    ]
+                },
+                icon: "envelope",
+                required: false,
+                help: "Select a template for emails sent when study sessions start (Type 2: Email - Study Session)."
+            }, {
+                key: "emailTemplateFinishId",
+                label: "Email Template - Session Finish (optional):",
+                type: "select",
+                options: {
+                    table: "template",
+                    name: "name",
+                    value: "id",
+                    filter: [
+                        {
+                            key: "type", value: 2
+                        },
+                        {
+                            key: "deleted", value: false
+                        }
+                    ]
+                },
+                icon: "envelope",
+                required: false,
+                help: "Select a template for emails sent when study sessions finish (Type 2: Email - Study Session)."
             },];
 
         /**
@@ -238,6 +298,13 @@ module.exports = (sequelize, DataTypes) => {
                 const workflowStep = workflowSteps[i];
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
                 const customConfig = stepDocument?.configuration || {};
+                
+                // Create context object that includes study and documentTemplateId from options.context
+                const studyContext = {
+                    ...study.dataValues || study,
+                    documentTemplateId: options.context.documentTemplateId || null
+                };
+                
                 const plainStudyStep = await sequelize.models.study_step.add({
                     studyId: study.id,
                     stepType: workflowStep.stepType,
@@ -247,7 +314,7 @@ module.exports = (sequelize, DataTypes) => {
                     allowBackward: workflowStep.allowBackward,
                     studyStepDocument: null,
                     configuration: customConfig
-                }, { transaction: options.transaction, context: study });
+                }, { transaction: options.transaction, context: studyContext });
 
                 const studyStep = await sequelize.models.study_step.findByPk(plainStudyStep.id, {
                     transaction: options.transaction
@@ -406,7 +473,42 @@ module.exports = (sequelize, DataTypes) => {
                     throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
                 }
 
+                // Extract template IDs from context (these are not stored in study table)
+                const documentTemplateId = options.context.documentTemplateId || null;
+                const emailTemplateStartId = options.context.emailTemplateStartId || null;
+                const emailTemplateFinishId = options.context.emailTemplateFinishId || null;
+
+                // Pass documentTemplateId to createStudySteps via context
+                if (documentTemplateId) {
+                    options.context.documentTemplateId = documentTemplateId;
+                }
+
                 await Study.createStudySteps(study, options);
+
+                // Create study_template_mapping entries for document and email templates
+                if (documentTemplateId) {
+                    await sequelize.models.study_template_mapping.add({
+                        studyId: study.id,
+                        templateType: 'documentStudy',
+                        templateId: documentTemplateId
+                    }, {transaction: options.transaction});
+                }
+
+                if (emailTemplateStartId) {
+                    await sequelize.models.study_template_mapping.add({
+                        studyId: study.id,
+                        templateType: 'emailStart',
+                        templateId: emailTemplateStartId
+                    }, {transaction: options.transaction});
+                }
+
+                if (emailTemplateFinishId) {
+                    await sequelize.models.study_template_mapping.add({
+                        studyId: study.id,
+                        templateType: 'emailFinish',
+                        templateId: emailTemplateFinishId
+                    }, {transaction: options.transaction});
+                }
             }, 
             beforeUpdate: async (study, options) => {
                 // If this is a study update (not a close operation) and we have stepDocuments

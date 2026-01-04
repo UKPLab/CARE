@@ -2,6 +2,8 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
+const fsSync = require("fs");
+const {resolveTemplateToDelta} = require("../../utils/templateResolver");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
@@ -114,6 +116,8 @@ module.exports = (sequelize, DataTypes) => {
                         hideInFrontend: true
                     }, {transaction: options.transaction});
 
+                    let documentCopied = false;
+
                     if (data.workflowStepId) {
                         const workflowStep = await sequelize.models.workflow_step.getById(data.workflowStepId, {transaction: options.transaction});
 
@@ -170,10 +174,14 @@ module.exports = (sequelize, DataTypes) => {
                                     await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
                                 }
 
-
+                                documentCopied = true;
                             }
                         }
                     }
+
+                    // Note: Template resolution is deferred until participant accesses the document
+                    // This allows participant placeholders to resolve correctly with participant data
+                    // Template ID is stored in study_template_mapping and resolved in document.getDocument()
 
                     data.documentId = newDocument.id;
 
