@@ -23,6 +23,22 @@
           <label class="form-label mt-3">Name of the document:</label>
           <input class="form-control" name="file" type="text" v-model="name"
                  @keyup.enter="create"/>
+          <label class="form-label mt-3">Template (optional):</label>
+          <select
+            v-model="templateId"
+            class="form-select form-select-sm"
+            name="templateId"
+          >
+            <option value="">None (create empty document)</option>
+            <option 
+              v-for="template in documentTemplates" 
+              :key="template.id" 
+              :value="template.id"
+            >
+              {{ template.name }}
+            </option>
+          </select>
+          <small class="text-muted">Select a template to pre-fill the document content (Type 4: Document - General)</small>
         </div>
       </div>
     </template>
@@ -58,17 +74,28 @@ export default {
     return {
       name: "",
       documentType: 1, // Default for General HTML document type
+      templateId: "", // Optional template ID
     };
   },
   computed: {
     selectedProjectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
+    documentTemplates() {
+      // Filter templates by Type 4 (Document - General) and not deleted
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => t.type === 4 && !t.deleted)
+        .map(t => ({
+          id: t.id,
+          name: t.name
+        }));
+    }
   },
   methods: {
     open() {
       this.name = "";
       this.documentType = 1; // Reset to default type
+      this.templateId = ""; // Reset template selection
       this.$refs.createModal.openModal();
     },
     create() {
@@ -83,11 +110,18 @@ export default {
 
       this.$refs.createModal.waiting = true;
 
-      this.$socket.emit("documentCreate", {
+      const createData = {
         type: this.documentType, 
         name: this.name,
         projectId: this.selectedProjectId,
-      }, (res) => {
+      };
+
+      // Add templateId only if selected
+      if (this.templateId && this.templateId !== "") {
+        createData.templateId = parseInt(this.templateId);
+      }
+
+      this.$socket.emit("documentCreate", createData, (res) => {
         if (res.success) {
           this.$refs.createModal.close();
           this.eventBus.emit("toast", {

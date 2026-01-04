@@ -32,6 +32,18 @@
                                  class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
                                  type="checkbox">
                         </div>
+                        <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
+                          <select v-model="setting.value" class="form-select">
+                            <option value="">None (use default email)</option>
+                            <option 
+                              v-for="template in emailTemplates" 
+                              :key="template.id" 
+                              :value="String(template.id)"
+                            >
+                              {{ template.name }} (ID: {{ template.id }})
+                            </option>
+                          </select>
+                        </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
                       </p>
                     </div>
@@ -63,9 +75,24 @@ export default {
       collapsed: true
     };
   },
+  computed: {
+    emailTemplates() {
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => t.type === 1 && !t.deleted)
+        .map(t => ({
+          id: t.id,
+          name: t.name
+        }));
+    }
+  },
   methods: {
     toggleCollapse() {
       this.collapsed = !this.collapsed;
+    },
+    isEmailTemplateSetting(setting) {
+      return setting.key && 
+             setting.key.startsWith("email.template.") && 
+             (setting.type === "number" || setting.type === "integer");
     }
   }
 };
