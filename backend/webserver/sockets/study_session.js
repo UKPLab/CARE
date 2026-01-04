@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const {resolveTemplate} = require("../../utils/templateResolver");
 
 /**
  * Handle all study sessions through websocket
@@ -40,19 +41,144 @@ class StudySessionSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves with the newly created or updated study session object from the database.
      */
     async startStudySession(data, options) {
+        let session;
         if (data.studySessionId && data.studySessionId !== 0) {
             // we just start the session
-            return await this.models["study_session"].updateById(data.studySessionId,
+            session = await this.models["study_session"].updateById(data.studySessionId,
                 {start: Date.now()},
                 {transaction: options.transaction}
             );
         } else if (data.studyId) {
             // we create a new session
-            return await this.models["study_session"].add({
+            session = await this.models["study_session"].add({
                 studyId: data.studyId, userId: this.userId, start: Date.now()
             }, {transaction: options.transaction});
         }
 
+        // Send session start email if template is configured
+        if (session) {
+            options.transaction.afterCommit(async () => {
+                try {
+                    await this.sendSessionStartEmail(session);
+                } catch (error) {
+                    this.server.logger.error(`Failed to send session start email:`, error);
+                }
+            });
+        }
+
+        return session;
+    }
+
+    /**
+     * Send session start email using configured template
+     * @param {Object} studySession - Study session object
+     * @returns {Promise<void>}
+     */
+    async sendSessionStartEmail(studySession) {
+        // Get study and check for email template
+        const study = await this.models['study'].getById(studySession.studyId);
+        if (!study) return;
+
+        // Query for emailStart template mapping
+        const templateMapping = await this.models['study_template_mapping'].findOne({
+            where: {
+                studyId: study.id,
+                templateType: 'emailStart',
+                deleted: false
+            },
+            raw: true
+        });
+
+        if (!templateMapping || !templateMapping.templateId) {
+            return; // No template configured
+        }
+
+        // Get user email
+        const user = await this.models['user'].getById(studySession.userId);
+        if (!user || !user.email) {
+            this.server.logger.warn(`Cannot send session start email: user ${studySession.userId} has no email`);
+            return;
+        }
+
+        // Get baseUrl from settings
+        const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+
+        // Resolve template
+        const resolvedHtml = await resolveTemplate(
+            templateMapping.templateId,
+            {
+                userId: studySession.userId,
+                creatorId: study.userId,
+                studyId: study.id,
+                studySessionId: studySession.id,
+                studySessionHash: studySession.hash,
+                baseUrl: baseUrl
+            },
+            this.models
+        );
+
+        // Send email
+        await this.server.sendMail(
+            user.email,
+            "CARE - Study Session Started",
+            resolvedHtml
+        );
+    }
+
+    /**
+     * Send session finish email using configured template
+     * @param {Object} studySession - Study session object
+     * @returns {Promise<void>}
+     */
+    async sendSessionFinishEmail(studySession) {
+        // Get study and check for email template
+        const study = await this.models['study'].getById(studySession.studyId);
+        if (!study) return;
+
+        // Query for emailFinish template mapping
+        const templateMapping = await this.models['study_template_mapping'].findOne({
+            where: {
+                studyId: study.id,
+                templateType: 'emailFinish',
+                deleted: false
+            },
+            raw: true
+        });
+
+        if (!templateMapping || !templateMapping.templateId) {
+            return; // No template configured
+        }
+
+        // Get user email
+        const user = await this.models['user'].getById(studySession.userId);
+        if (!user || !user.email) {
+            this.server.logger.warn(`Cannot send session finish email: user ${studySession.userId} has no email`);
+            return;
+        }
+
+        // Get baseUrl from settings
+        const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+
+        // Resolve template
+        const resolvedHtml = await resolveTemplate(
+            templateMapping.templateId,
+            {
+                userId: studySession.userId,
+                creatorId: study.userId,
+                studyId: study.id,
+                studySessionId: studySession.id,
+                studySessionHash: studySession.hash,
+                baseUrl: baseUrl
+            },
+            this.models
+        );
+
+        // Send email
+        await this.server.sendMail(
+            user.email,
+            "CARE - Study Session Completed",
+            resolvedHtml
+        );
     }
 
     /**

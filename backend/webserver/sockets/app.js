@@ -43,6 +43,26 @@ class AppSocket extends Socket {
     }
 
     /**
+     * Helper to trigger session finish email if end date was just set
+     * @param {Object} studySession - Study session object
+     * @param {Object} transaction - Sequelize transaction
+     */
+    async triggerSessionFinishEmail(studySession, transaction) {
+        if (!studySession || !transaction) return;
+        
+        transaction.afterCommit(async () => {
+            try {
+                const studySessionSocket = this.getSocket("StudySessionSocket");
+                if (studySessionSocket) {
+                    await studySessionSocket.sendSessionFinishEmail(studySession);
+                }
+            } catch (error) {
+                this.server.logger.error(`Failed to send session finish email:`, error);
+            }
+        });
+    }
+
+    /**
      * A generic and powerful method to create or update records in a specified database table.
      * 
      * It determines whether to create a new record or update an existing one based on the presence of an `id` in the `data.data` payload.
@@ -67,11 +87,30 @@ class AppSocket extends Socket {
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
+            // NOTE: Table-specific logic for study_session finish email
+            // This exception exists because:
+            // 1. Frontend uses appDataUpdate to finish sessions (sets end field)
+            // 2. Model hooks cannot access server/socket handlers (no this.getSocket() or this.server)
+            // 3. We need to trigger email via StudySessionSocket.sendSessionFinishEmail()
+            // 4. This follows the pattern: studySessionStart has dedicated handler, finish uses generic appDataUpdate
+            // Check if study session is being finished (end date set) - get previous value before update
+            let previousEnd = null;
+            if (data.table === "study_session" && "end" in data.data) {
+                const previousSession = await this.models[data.table].getById(data.data.id, {transaction: transaction});
+                previousEnd = previousSession?.end || null;
+            }
+            
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
                 {context: data.data, transaction: transaction}
             );
+            
+            // Send session finish email if study session end date was just set
+            if (data.table === "study_session" && !previousEnd && newEntry.end) {
+                await this.triggerSessionFinishEmail(newEntry, transaction);
+            }
+            
             return newEntry.id;
         }
 
@@ -102,6 +141,14 @@ class AppSocket extends Socket {
             }
         }
 
+        // NOTE: Table-specific logic for study_session finish email (see comment above for explanation)
+        // Check if study session is being finished (end date set) - get previous value before update
+        let previousEnd = null;
+        if (data.table === "study_session" && "end" in data.data && data.data.id && data.data.id !== 0) {
+            const previousSession = await this.models[data.table].getById(data.data.id, {transaction: transaction});
+            previousEnd = previousSession?.end || null;
+        }
+
         // update data
         if (!("id" in data.data) || data.data.id === 0) {
             if (!("userId" in data.data)) {
@@ -118,6 +165,11 @@ class AppSocket extends Socket {
 
         if (!newEntry) {
             throw new Error("Failed to update data");
+        }
+
+        // Send session finish email if study session end date was just set
+        if (data.table === "study_session" && !previousEnd && newEntry.end) {
+            await this.triggerSessionFinishEmail(newEntry, transaction);
         }
 
         // check if table has a field with table options
