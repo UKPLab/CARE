@@ -9,6 +9,7 @@ const {enqueueDocumentTask} = require("../../utils/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
 const {Op} = require('sequelize');
+const {resolveTemplateToDelta} = require("../../utils/templateResolver");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -285,6 +286,7 @@ class DocumentSocket extends Socket {
      * @param {Object} data The data for the new document.
      * @param {string} data.name The name of the new document.
      * @param {number} data.type The type identifier for the document (e.g., HTML, MODAL).
+     * @param {number} [data.templateId] Optional template ID to pre-fill document content (Type 4: Document - General).
      * @param {Object} options The options object containing the transaction.
      * @returns {Promise<Object>} A promise that resolves with the newly created document's database record.
      */
@@ -295,6 +297,36 @@ class DocumentSocket extends Socket {
             userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
+
+        // If templateId provided and document is HTML/MODAL type, resolve template and write content
+        if (data.templateId && (doc.type === docTypes.DOC_TYPE_HTML || doc.type === docTypes.DOC_TYPE_MODAL)) {
+            try {
+                // Get baseUrl from settings for template resolution
+                const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+                
+                // Resolve template to Delta
+                const resolvedDelta = await resolveTemplateToDelta(
+                    data.templateId,
+                    {
+                        userId: this.userId,
+                        baseUrl: baseUrl
+                    },
+                    this.models,
+                    options
+                );
+
+                // Overwrite the empty delta file with resolved content
+                const deltaFilePath = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
+                fs.writeFileSync(deltaFilePath, JSON.stringify(resolvedDelta, null, 2));
+
+                // Note: For Type 4 documents, the resolved template content is written to the delta file.
+                // No document_edit entry is needed - the delta file IS the base content.
+                // User edits will be stored as draft:true edits and composed on top of this delta file.
+            } catch (error) {
+                this.server.logger.error(`Failed to resolve template for document creation:`, error);
+                // Continue with empty document if template resolution fails
+            }
+        } 
 
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
@@ -902,7 +934,7 @@ class DocumentSocket extends Socket {
             throw new Error("You do not have access to this document");
         }
 
-        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
 
             if (!fs.existsSync(deltaFilePath)) {
@@ -937,6 +969,80 @@ class DocumentSocket extends Socket {
                     delta = delta.compose(dbToDelta(edits));
                     return {document: document, deltas: delta};
                 } else {
+                    // Check if this is a study document that needs template resolution for this participant
+                    if (data['studySessionId'] && data['studyStepId']) {
+                        // Find the study step to get the study
+                        const studyStep = await this.models['study_step'].getById(data['studyStepId']);
+                        if (studyStep && studyStep.studyId && studyStep.documentId === document.id) {
+                            // Check if study has a document template
+                            const templateMapping = await this.models['study_template_mapping'].findOne({
+                                where: {
+                                    studyId: studyStep.studyId,
+                                    templateType: 'documentStudy',
+                                    deleted: false
+                                },
+                                raw: true
+                            });
+
+                            if (templateMapping && templateMapping.templateId) {
+                                // Check if this is the first access (no edits for this session/step yet)
+                                const existingEdits = await this.models['document_edit'].findAll({
+                                    where: {
+                                        documentId: document.id,
+                                        studySessionId: data['studySessionId'],
+                                        studyStepId: data['studyStepId']
+                                    },
+                                    raw: true
+                                });
+
+                                // If no edits exist for this session/step, resolve template with participant context
+                                if (existingEdits.length === 0) {
+                                    try {
+                                        // Get study and session for context
+                                        const study = await this.models['study'].getById(studyStep.studyId);
+                                        const studySession = await this.models['study_session'].getById(data['studySessionId']);
+                                        
+                                        if (study && studySession) {
+                                            // Get baseUrl from settings
+                                            const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+                                            
+                                            // Resolve template with participant context
+                                            const resolvedDelta = await resolveTemplateToDelta(
+                                                templateMapping.templateId,
+                                                {
+                                                    userId: studySession.userId,  // Participant
+                                                    creatorId: study.userId,      // Study creator
+                                                    studyId: study.id,
+                                                    baseUrl: baseUrl
+                                                },
+                                                this.models,
+                                                options || {}
+                                            );
+
+                                            // Create initial document_edit entry for this participant
+                                            const initialEdit = {
+                                                documentId: document.id,
+                                                userId: studySession.userId,
+                                                studySessionId: data['studySessionId'],
+                                                studyStepId: data['studyStepId'],
+                                                draft: false,
+                                                offset: 0,
+                                                operationType: 0,
+                                                span: resolvedDelta.ops.reduce((span, op) => span + (op.insert ? op.insert.length : 0), 0),
+                                                text: resolvedDelta.ops.map(op => op.insert).join(''),
+                                                attributes: null,
+                                            };
+
+                                            await this.models['document_edit'].add(initialEdit, options.transaction ? {transaction: options.transaction} : {});
+                                        }
+                                    } catch (error) {
+                                        this.server.logger.error(`Failed to resolve template for participant document access:`, error);
+                                        // Continue with empty document if template resolution fails
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     // Get the edits for the base document
                     const edits = await this.models['document_edit'].findAll({
@@ -946,11 +1052,19 @@ class DocumentSocket extends Socket {
                         order: [['createdAt', 'ASC']]
                     });
 
+                    // For study documents, include:
+                    // 1. Base edits (studySessionId === null) - regardless of draft status
+                    // 2. Session-specific edits (studySessionId === data['studySessionId']) - include all (both draft and non-draft)
+                    //    Non-draft edits are initial template content, draft edits are user edits
+                    const filteredEdits = edits.filter(edit => 
+                        edit.studySessionId === data['studySessionId'] || edit.studySessionId === null
+                    );
+
+                    const composedDelta = delta.compose(dbToDelta(filteredEdits));
+
                     return {
                         document: document,
-                        deltas: delta.compose(dbToDelta(edits
-                            .filter(edit => edit.draft &&
-                                (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
+                        deltas: composedDelta,
                         firstVersion: delta.compose(dbToDelta(edits
                             .filter(edit =>
                                 (edit.studySessionId === data['studySessionId'] &&
