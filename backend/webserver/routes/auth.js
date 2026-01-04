@@ -8,6 +8,8 @@
  */
 const passport = require('passport');
 const { generateToken, decodeToken } = require('../../utils/auth');
+const { resolveTemplate } = require('../../utils/templateResolver');
+
 
 /**
  * Route for user management
@@ -74,6 +76,61 @@ module.exports = function (server) {
         }
         
         return { allowed: true };
+    }
+
+    /**
+     * Helper function to get email content from template or fallback to hardcoded text
+     * @param {string} settingKey - Setting key for template ID (e.g., "email.template.passwordReset")
+     * @param {string} fallbackSubject - Fallback email subject
+     * @param {string} fallbackBody - Fallback email body (plain text)
+     * @param {Object} context - Context object for template resolution
+     * @param {number} context.userId - User ID for placeholder resolution
+     * @param {string} context.link - Link for placeholder resolution
+     * @returns {Promise<{subject: string, body: string}>} Email subject and body
+     */
+    async function getEmailContent(settingKey, fallbackSubject, fallbackBody, context) {
+        try {
+            const templateIdStr = await server.db.models['setting'].get(settingKey);
+            
+            // If no template configured or empty, use fallback
+            if (!templateIdStr || templateIdStr === "" || templateIdStr === "0") {
+                return {
+                    subject: fallbackSubject,
+                    body: fallbackBody
+                };
+            }
+            
+            const templateId = parseInt(templateIdStr);
+            if (isNaN(templateId) || templateId <= 0) {
+                return {
+                    subject: fallbackSubject,
+                    body: fallbackBody
+                };
+            }
+            
+            // Resolve template
+            const baseUrl = context.baseUrl || await getBaseUrl();
+            const resolvedHtml = await resolveTemplate(
+                templateId,
+                {
+                    userId: context.userId,
+                    baseUrl: baseUrl
+                },
+                server.db.models
+            );
+            
+            return {
+                subject: fallbackSubject, // Keep same subject for now (could be from template later)
+                body: resolvedHtml
+            };
+        } catch (error) {
+            server.logger.error(`Failed to resolve template for ${settingKey}:`, error);
+            // Fallback to hardcoded text on error
+            return {
+                subject: fallbackSubject,
+                body: fallbackBody
+            };
+        }
     }
 
     /**
@@ -229,8 +286,9 @@ module.exports = function (server) {
                 );
                 const baseUrl = await getBaseUrl();
                 const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
-                await server.sendMail(
-                    data.email, 
+                
+                const emailContent = await getEmailContent(
+                    "email.template.registration",
                     "Welcome to CARE - Please verify your email address", 
                     `Welcome to CARE, ${data.userName}! You've successfully registered a new account.
 
@@ -240,7 +298,18 @@ ${verificationLink}
 This link will expire in ${tokenExpiry} hours. If you didn't create a CARE account, you can safely ignore this email.
 
 Thanks,
-The CARE Team`
+The CARE Team`,
+                    {
+                        userId: newUser.id,
+                        baseUrl: baseUrl,
+                        link: verificationLink
+                    }
+                );
+                
+                await server.sendMail(
+                    data.email,
+                    emailContent.subject,
+                    emailContent.body
                 );
                 await transaction.commit();
                 res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true}); // TODO: Adjust link as needed   
@@ -294,7 +363,11 @@ The CARE Team`
             // Send email with the full encoded token
             const baseUrl = await getBaseUrl();
             const resetLink = `http://${baseUrl}/reset-password?token=${resetToken}`;
-            await server.sendMail(user.email, "CARE Password Reset Request", `Hello ${user.userName},
+            
+            const emailContent = await getEmailContent(
+                "email.template.passwordReset",
+                "CARE Password Reset Request",
+                `Hello ${user.userName},
 
 We received a request to reset the password for your CARE account.
 
@@ -304,7 +377,15 @@ ${resetLink}
 This link will expire in ${tokenExpiry} hours. If you didn't request a password reset, you can safely ignore this email and your account will remain secure.
 
 Thanks,
-The CARE Team`);
+The CARE Team`,
+                {
+                    userId: user.id,
+                    baseUrl: baseUrl,
+                    link: resetLink
+                }
+            );
+            
+            await server.sendMail(user.email, emailContent.subject, emailContent.body);
             return res.status(200).json({message: "A password reset link has been sent."});
         } catch (err) {
             server.logger.error("Failed to find user:", err);
@@ -492,8 +573,9 @@ The CARE Team`);
             // Send verification email
             const baseUrl = await getBaseUrl();
             const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
-            await server.sendMail(
-                email,
+            
+            const emailContent = await getEmailContent(
+                "email.template.verification",
                 "CARE - Please verify your email address",
                 `Welcome back to CARE, ${user.userName}!
 
@@ -503,7 +585,18 @@ ${verificationLink}
 This link will expire in ${tokenExpiry} hours. If you didn't request this verification email, you can safely ignore this email.
 
 Thanks,
-The CARE Team`
+The CARE Team`,
+                {
+                    userId: user.id,
+                    baseUrl: baseUrl,
+                    link: verificationLink
+                }
+            );
+            
+            await server.sendMail(
+                email,
+                emailContent.subject,
+                emailContent.body
             );
             
             return res.status(200).json({message: "Verification email has been sent."});
