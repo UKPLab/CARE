@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
+const {resolveTemplate} = require("../../utils/templateResolver");
 
 /**
  * Handle user through websocket
@@ -70,10 +71,25 @@ class AssignmentSocket extends Socket {
             stepDocuments: stepDocuments
         }
 
+        // Extract assignment email template ID if provided
+        const assignmentEmailTemplateId = data.emailTemplateId || null;
+
         const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
 
+        // Store assignment email template mapping if provided
+        if (assignmentEmailTemplateId) {
+            await this.models['study_template_mapping'].add({
+                studyId: study.id,
+                templateType: 'emailAssignment',
+                templateId: assignmentEmailTemplateId
+            }, {transaction: options.transaction});
+        }
+
         await this.addReviewer({
-            studyId: study.id, reviewer: data["reviewer"]
+            studyId: study.id, 
+            reviewer: data["reviewer"],
+            assignmentType: data.assignmentType || 'document',
+            assignmentName: study.name
         }, options);
 
     }
@@ -107,11 +123,27 @@ class AssignmentSocket extends Socket {
             }
         }
 
-        await Promise.all(data['reviewer'].map(reviewer => {
+        const createdSessions = await Promise.all(data['reviewer'].map(reviewer => {
             return this.models["study_session"].add({
                 studyId: data['studyId'], userId: reviewer['id'],
             }, {transaction: options.transaction});
         }));
+
+        // Send assignment notification emails if template is configured
+        if (createdSessions.length > 0) {
+            options.transaction.afterCommit(async () => {
+                try {
+                    for (const session of createdSessions) {
+                        await this.sendAssignmentEmail(session, {
+                            assignmentType: data.assignmentType || 'document',
+                            assignmentName: data.assignmentName || currentStudy.name
+                        });
+                    }
+                } catch (error) {
+                    this.server.logger.error(`Failed to send assignment emails:`, error);
+                }
+            });
+        }
 
     }
 
@@ -295,6 +327,7 @@ class AssignmentSocket extends Socket {
                     documents: assignment["document"],
                     // Pass through optional properties if they exist
                     ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                    ...(data.emailTemplateId && { emailTemplateId: data.emailTemplateId }),
                 };
                 await this.createAssignment(assignmentData, options);
             }
@@ -380,6 +413,7 @@ class AssignmentSocket extends Socket {
                         documents: assignment["document"],
                         // Pass through optional properties if they exist
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                        ...(data.emailTemplateId && { emailTemplateId: data.emailTemplateId }),
                     };
                     await this.createAssignment(assignmentData, options);
                 }
@@ -436,6 +470,67 @@ class AssignmentSocket extends Socket {
         }
 
         return result;
+    }
+
+    /**
+     * Send assignment notification email using configured template
+     * @param {Object} studySession - Study session object
+     * @param {Object} assignmentContext - Assignment context data
+     * @param {string} assignmentContext.assignmentType - Type of assignment ('document' or 'submission')
+     * @param {string} assignmentContext.assignmentName - Name of the assignment
+     * @returns {Promise<void>}
+     */
+    async sendAssignmentEmail(studySession, assignmentContext = {}) {
+        // Get study and check for assignment email template
+        const study = await this.models['study'].getById(studySession.studyId);
+        if (!study) return;
+
+        // Query for emailAssignment template mapping
+        const templateMapping = await this.models['study_template_mapping'].findOne({
+            where: {
+                studyId: study.id,
+                templateType: 'emailAssignment',
+                deleted: false
+            },
+            raw: true
+        });
+
+        if (!templateMapping || !templateMapping.templateId) {
+            return; // No template configured
+        }
+
+        // Get user email
+        const user = await this.models['user'].getById(studySession.userId);
+        if (!user || !user.email) {
+            this.server.logger.warn(`Cannot send assignment email: user ${studySession.userId} has no email`);
+            return;
+        }
+
+        // Get baseUrl from settings
+        const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+
+        // Resolve template
+        const resolvedHtml = await resolveTemplate(
+            templateMapping.templateId,
+            {
+                userId: studySession.userId,
+                creatorId: study.userId,
+                studyId: study.id,
+                studySessionId: studySession.id,
+                studySessionHash: studySession.hash,
+                baseUrl: baseUrl,
+                assignmentType: assignmentContext.assignmentType || 'document',
+                assignmentName: assignmentContext.assignmentName || study.name
+            },
+            this.models
+        );
+
+        // Send email
+        await this.server.sendMail(
+            user.email,
+            "CARE - New Assignment",
+            resolvedHtml
+        );
     }
 
     /**
