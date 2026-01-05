@@ -343,6 +343,18 @@ class DocumentSocket extends Socket {
     async sendByHash(data, options) {
         const documentHash = data.documentHash;
         const document = await this.models['document'].getByHash(documentHash);
+
+        // Check if document exists (i.e., if it can be found on the file system or marked as deleted)
+        if (!document) {
+            this.logger.error("Document not found with hash: " + documentHash);
+            this.emit("documentError",{
+                documentHash: documentHash,
+                errorCode: "DOCUMENT_NOT_FOUND",
+                message: "The document does not exist or has been deleted."
+            });
+            throw new Error("The document does not exist or has been deleted.");
+        }
+
         if (await this.checkDocumentAccess(document.id)) {
             this.emit("documentRefresh", document);
         } else {
@@ -499,12 +511,20 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once all relevant data has been fetched and emitted to the client.
      */
     async getData(data, options) {
-        if (!data.documentId || !await this.checkDocumentAccess(data.documentId)) {
-            throw new Error("No access to document");
+        if (!data.documentId) {
+            throw new Error("Document ID is required.");
+        }
+        
+        // Check if document exists before access check
+        const document = await this.models['document'].getById(data.documentId);
+        if (!document) {
+            throw new Error("The document does not exist or has been deleted.");
+        }
+        
+        if (!await this.checkDocumentAccess(data.documentId)) {
+            throw new Error("You do not have access to this document.");
         }
 
-
-        const document = await this.models['document'].getById(data['documentId']);
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
             await this.getDocument({...data, "history": true}, options);
         } else {
@@ -897,6 +917,11 @@ class DocumentSocket extends Socket {
      */
     async getDocument(data, options) {
         const document = await this.models['document'].getById(data['documentId']);
+
+        // Check if document exists in database
+        if (!document) {
+            throw new Error("The document does not exist or has been deleted.");
+        }
 
         if (!(await this.checkDocumentAccess(document.id))) {
             throw new Error("You do not have access to this document");
