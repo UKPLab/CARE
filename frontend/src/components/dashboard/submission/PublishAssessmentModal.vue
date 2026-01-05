@@ -770,10 +770,12 @@ export default {
       const { total_max_points, total_min_points, achieved_points } = assessment;
       
       const sourcePointsRange = total_max_points - total_min_points;
+      // Assume assignment min grade is 0, as point-based grading on Moodle is always 0.
       const targetGradeRange = assignmentMaxGrade - 0;
 
+      const normalizedPoints = achieved_points - total_min_points;
       const conversionFactor = targetGradeRange / sourcePointsRange;
-      const convertedGrade = achieved_points * conversionFactor;
+      const convertedGrade = normalizedPoints * conversionFactor;
       
       // Round to 2 decimal places 
       return Math.round(convertedGrade * 100) / 100;
