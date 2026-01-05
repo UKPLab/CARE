@@ -52,7 +52,6 @@ export default {
     return {
       documentId: 0,
       documentError: null,
-      hasError: false,
     }
   },
   computed: {
@@ -74,7 +73,6 @@ export default {
       if (!res.success) {
         this.documentId = res.documentId;
         this.setDocumentError(res.message, res.errorCode);
-        // this.showErrorAndRedirect(res.message);
       }
     });
   },
@@ -82,26 +80,10 @@ export default {
     documentError: function (data) {
       if (data.documentHash === this.documentHash) {
         this.setDocumentError(data.message, data.errorCode);
-        // this.showErrorAndRedirect(data.message);
       }
     }
   },
   methods: {
-    /**
-     * Show toast error and redirect to dashboard
-     */
-    showErrorAndRedirect(message) {
-      this.hasError = true;
-
-      this.eventBus.emit('toast', {
-        title: "Document Error",
-        message: message || "The document could not be loaded.",
-        variant: "danger"
-      });
-
-      // this.$router.push("/");
-    },
-
     /**
      * Set document error state with user-friendly title and message
      */

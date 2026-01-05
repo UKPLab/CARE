@@ -112,6 +112,7 @@ class DocumentSocket extends Socket {
                 throw error;
             }
         }
+        return document;
     }
 
     /**
@@ -961,10 +962,6 @@ class DocumentSocket extends Socket {
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
             
-            // TODO the following check is redundant due to validateDocument, consider removing            
-            if (!fs.existsSync(deltaFilePath)) {
-                throw new Error("Document not found");
-            }
             let delta = await this.loadDocument(deltaFilePath);
 
             if (data.history) {
