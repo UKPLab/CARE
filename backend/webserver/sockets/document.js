@@ -63,6 +63,58 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Validate document existence and access
+     * Unified check for: 1) database record exists  2) user has access  3) file exists on disk
+     * 
+     * @param {number|string} identifier - documentId or documentHash
+     * @param {string} identifierType - 'id' or 'hash'
+     * @param {boolean} checkFile - whether to check file existence (default: true)
+     * @returns {Promise<Object>} - validated document object
+     * @throws {Error} - if validation fails, error includes errorCode property
+     */
+
+    async validateDocument(identifier, identifierType = 'id', checkFile = true) {
+        let document;
+
+        if (identifierType === 'hash') {
+            document = await this.models['document'].getByHash(identifier);
+        } else {
+            document = await this.models['document'].getById(identifier);
+        }
+
+        // Check if document exists in database (deleted or never existed)
+        if (!document) {
+            const error = new Error("The document does not exist or has been deleted.");
+            error.errorCode = "DOCUMENT_NOT_FOUND";
+            throw error;
+        }
+
+        // Check user access permission
+        if (!(await this.checkDocumentAccess(document.id))) {
+            const error = new Error("You do not have access to this document.");
+            error.errorCode = "ACCESS_DENIED";
+            throw error;
+        }
+
+        // Check if file exists on disk (optional, skip for metadata-only operations)
+        if (checkFile) {
+            let filePath;
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || 
+                document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
+                filePath = `${UPLOAD_PATH}/${document.hash}.delta`;
+            } else if (document.type === this.models['document'].docTypes.DOC_TYPE_PDF) {
+                filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
+            }
+            const filename = filePath.split("/").pop();
+            if (filePath && !fs.existsSync(filePath)) {
+                const error = new Error(`The document file ${filename} is missing from the server.`);
+                error.errorCode = "FILE_MISSING";
+                throw error;
+            }
+        }
+    }
+
+    /**
      * Uploads the given data object as a document.
      *
      * Stores the given pdf file in the files path and creates an entry in the database.
@@ -344,22 +396,17 @@ class DocumentSocket extends Socket {
         const documentHash = data.documentHash;
         const document = await this.models['document'].getByHash(documentHash);
 
-        // Check if document exists (i.e., if it can be found on the file system or marked as deleted)
-        if (!document) {
-            this.logger.error("Document not found with hash: " + documentHash);
+        try {
+            const document = await this.validateDocument(documentHash, 'hash', true);
+            this.emit("documentRefresh", document);
+        } catch (error) {
+            this.logger.error(`Error validating document with hash ${documentHash}: ${error.message}`);
             this.emit("documentError",{
                 documentHash: documentHash,
-                errorCode: "DOCUMENT_NOT_FOUND",
-                message: "The document does not exist or has been deleted."
+                errorCode: error.errorCode || "UNKNOWN_ERROR",
+                message: error.message
             });
-            throw new Error("The document does not exist or has been deleted.");
-        }
-
-        if (await this.checkDocumentAccess(document.id)) {
-            this.emit("documentRefresh", document);
-        } else {
-            this.logger.error("Document access error with documentId: " + document.id);
-            this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
+            throw error;
         }
     }
 
@@ -515,15 +562,7 @@ class DocumentSocket extends Socket {
             throw new Error("Document ID is required.");
         }
         
-        // Check if document exists before access check
-        const document = await this.models['document'].getById(data.documentId);
-        if (!document) {
-            throw new Error("The document does not exist or has been deleted.");
-        }
-        
-        if (!await this.checkDocumentAccess(data.documentId)) {
-            throw new Error("You do not have access to this document.");
-        }
+        const document = await this.validateDocument(data.documentId, 'id', false);
 
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
             await this.getDocument({...data, "history": true}, options);
@@ -916,20 +955,13 @@ class DocumentSocket extends Socket {
      *  If the document's PDF file (.pdf) for a PDF document is missing from the filesystem.
      */
     async getDocument(data, options) {
-        const document = await this.models['document'].getById(data['documentId']);
-
-        // Check if document exists in database
-        if (!document) {
-            throw new Error("The document does not exist or has been deleted.");
-        }
-
-        if (!(await this.checkDocumentAccess(document.id))) {
-            throw new Error("You do not have access to this document");
-        }
+        // Unified validation (checks db record, access, and file existence)
+        const document = await this.validateDocument(data['documentId'], 'id', true);
 
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
-
+            
+            // TODO the following check is redundant due to validateDocument, consider removing            
             if (!fs.existsSync(deltaFilePath)) {
                 throw new Error("Document not found");
             }
