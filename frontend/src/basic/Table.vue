@@ -273,6 +273,12 @@
       </tbody>
     </table>
   </div>
+  <div
+    v-if="selectableRows"
+    class="text-end text-muted small mb-2"
+  >
+    {{ selectedCount }} of {{ totalSelectableCount }} selected
+  </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
     ref="pagination"
@@ -532,6 +538,14 @@ export default {
         lastLeft: this.columns.findLastIndex((col) => col.fixed === "left"),
         firstRight: this.columns.findIndex((col) => col.fixed === "right"),
       };
+    },
+    selectedCount() {
+      return this.currentData.length;
+    },
+    totalSelectableCount() {
+      if (!this.selectableRows) return 0;
+      const allFilteredData = this.getFilteredAndSortedData();
+      return allFilteredData.filter((r) => !r.isDisabled).length;
     },
   },
   watch: {
