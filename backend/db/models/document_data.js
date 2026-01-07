@@ -67,15 +67,26 @@ module.exports = (sequelize, DataTypes) => {
                 where: whereClause,
                 raw: true,
                 transaction
-            });
+            });            
             // Create new data entries for the duplicated document
             if (originalDataEntries.length > 0) {
-                const newDataEntries = originalDataEntries.map(entry => ({
-                    ...entry,
-                    documentId: duplicateDocumentId, // Set to the new duplicated document ID
-                    updatedAt: new Date()
-                }));
-                await this.bulkCreate(newDataEntries, {transaction});
+                for (const entry of originalDataEntries) {
+                    // Prepare the create data with the new document ID
+                    const { id, createdAt, updatedAt, deletedAt, studySessionId, studyStepId, ...entryWithoutMeta } = entry;
+                    const createData = {
+                        ...entryWithoutMeta,
+                        studySessionId: null,
+                        studyStepId: null,
+                        documentId: duplicateDocumentId, // Set to the new duplicated document ID
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    };
+                    
+                    // Create a new entry for the duplicated document
+                    await this.create(createData, {
+                        transaction
+                    });
+                }
             }
         }
     }
