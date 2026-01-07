@@ -13,6 +13,30 @@ const workflows = [
           settings: {
             fields: [
               {
+                key: "configurationId",
+                label: "Assessment Configuration File:",
+                type: "select",
+                required: true,
+                options: {
+                  table: "configuration",
+                  name: "name",
+                  value: "id",
+                  filter: [
+                    { key: "type", value: 0 },
+                    { key: "deleted", value: false }
+                  ]
+                },
+                help: "Select the configuration file for assessment sidebar."
+              },
+              {
+                key: "forcedAssessment",
+                label: "Forced Assessment",
+                type: "switch",
+                required: false,
+                default: false,
+                help: "If enabled, users must save a score and justification for every criterion before they can proceed."
+              },
+              {
                 key: "showDefaultAnnotations",
                 label: "Show Default Annotations",
                 type: "switch",
@@ -22,7 +46,7 @@ const workflows = [
               }
             ],
           },
-          readOnlyComponents: ["annotator"],
+          readOnlyComponents: ["annotator", "assessment"],
           placeholders: false
         }
       },

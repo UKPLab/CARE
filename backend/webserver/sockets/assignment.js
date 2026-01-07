@@ -532,8 +532,73 @@ class AssignmentSocket extends Socket {
         const duplicatedDocuments = [];
         for (const studySession of data.selectedAssignments) {
             const currentDocuments = [];
+            let previousSubmissionId = null;
             for (const [sourceWorkflowStepId, targetWorkflowStepId] of Object.entries(data.workflowMapping)) {
-                
+                if( targetWorkflowStepId === 'previousSubmission'){
+                    // Get the original submission first
+                    if(previousSubmissionId === null){
+                        throw new Error("First step selected does not map to a submission.");
+                    }    
+                    let originalSubmission = await this.models['submission'].findOne(
+                        { where: { id: previousSubmissionId } }, 
+                        { transaction: options.transaction }
+                    );
+                    
+                    // Follow the parent chain to find the root submission
+                    while(originalSubmission?.parentSubmissionId !== null && originalSubmission?.parentSubmissionId !== undefined){
+                        originalSubmission = await this.models['submission'].findOne(
+                            { where: { id: originalSubmission.parentSubmissionId } }, 
+                            { transaction: options.transaction }
+                        );
+                    }
+                    
+                    // Now find the submission that has previousSubmissionId pointing to this root
+                    const latestSubmission = await this.models['submission'].findOne(
+                        { where: { previousSubmissionId: originalSubmission?.id } }, 
+                        { transaction: options.transaction }
+                    );
+                    //get document based on validation file for now getting pdf
+                    if(!latestSubmission){
+                        throw new Error("The latest version of the chosen submission could not be found.");
+                    }
+                    const document = await this.models['document'].findOne(
+                        { where: { submissionId: latestSubmission.id, type: 0} },
+                        { transaction: options.transaction }
+                    );
+                    
+                    // Get document_data with key 'assessment_result' for this study session
+                    const assessmentData = await this.models['document_data'].findOne(
+                        { 
+                            where: { 
+                                studySessionId: studySession.id,
+                                key: 'assessment_result'
+                            }
+                        },
+                        { transaction: options.transaction }
+                    );
+                    
+                    // If assessment_result exists, copy it to previous_assessment_result
+                    if (assessmentData) {
+                        await this.models['document_data'].create(
+                            {
+                                userId: assessmentData.userId,
+                                documentId: document.id,
+                                studySessionId: null,
+                                studyStepId: null,
+                                key: 'previous_assessment_result',
+                                value: assessmentData.value,
+                            },
+                            { transaction: options.transaction }
+                        );
+                    }
+                    
+                    currentDocuments.push({
+                        documentId: document.id,
+                        workflowStepId: Number(sourceWorkflowStepId),
+                        submissionId: document?.submissionId || null, 
+                    });
+                }
+                else {
                 const sourceStudyStep = await this.models['study_step'].findOne(
                     { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
                     { transaction: options.transaction }
@@ -545,6 +610,7 @@ class AssignmentSocket extends Socket {
                 );
                 
                 let duplicatedDocument;
+previousSubmissionId = originalDocument.submissionId;
                 
                 // Check if document has a submissionId
                 if (originalDocument.submissionId) {
@@ -581,6 +647,7 @@ class AssignmentSocket extends Socket {
                     workflowStepId: Number(sourceWorkflowStepId),
                     submissionId: duplicatedDocument?.submissionId || null, 
                 });
+}
             }
             duplicatedDocuments.push(currentDocuments);
         }

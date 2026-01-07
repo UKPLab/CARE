@@ -63,7 +63,7 @@
             </label>
             <FormSelect
                 v-model="workflowMapping[workflowStep.id]"
-                :options="getTargetStepOptions(workflowStep.stepType)"
+                :options="getTargetStepOptions(workflowStep.stepType, workflowStep.id)"
             />
           </div>
         </div>
@@ -651,7 +651,7 @@ export default {
         default: return 'Unknown';
       }
     },
-    getTargetStepOptions(stepType) {
+    getTargetStepOptions(stepType, currentStepId) {
       // First, order the target workflow steps based on workflowStepPrevious
       const orderedSteps = [];
       const stepPositionMap = new Map(); // Maps step.id to its position (1-based)
@@ -670,13 +670,33 @@ export default {
       }
       
       // Filter by stepType and create options with correct step numbers
+      const options = orderedSteps
+        .filter(step => step.stepType === stepType)
+        .map((step) => ({
+          name: `Step ${stepPositionMap.get(step.id)}: ${this.getStepTypeName(step.stepType)}`,
+          value: step.id,
+        }));
+      
+      // Add "Previous Submission Document" placeholder only if:
+      // 1. Current step is Annotator (type 1), AND
+      // 2. Previous step in SOURCE workflow is also Annotator (type 1)
+      if (stepType === 1 && currentStepId) {
+        const currentSourceStep = this.workflowSteps.find(s => s.id === currentStepId);
+        if (currentSourceStep && currentSourceStep.workflowStepPrevious) {
+          const previousSourceStep = this.workflowSteps.find(
+            s => s.id === currentSourceStep.workflowStepPrevious
+          );
+          if (previousSourceStep && previousSourceStep.stepType === 1) {
+            options.unshift({
+              name: '<Document> Revised Document',
+              value: 'previousSubmission',
+            });
+          }
+        }
+      }
+      
       return {
-        options: orderedSteps
-          .filter(step => step.stepType === stepType)
-          .map((step) => ({
-            name: `Step ${stepPositionMap.get(step.id)}: ${this.getStepTypeName(step.stepType)}`,
-            value: step.id,
-          }))
+        options: options
       };
     },
     getStudyStepIndex(studyId, studyStepIdMax) {

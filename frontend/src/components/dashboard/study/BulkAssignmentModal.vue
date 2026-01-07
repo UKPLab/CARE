@@ -64,7 +64,7 @@
             </label>
             <FormSelect
                 v-model="workflowMapping[templateStep.id]"
-                :options="{ options: getTargetStepOptions(templateStep.stepType) }"
+                :options="{ options: getTargetStepOptions(templateStep.stepType, templateStep.id) }"
             />
           </div>
         </div>
@@ -879,6 +879,26 @@ export default {
           name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
           value: step.id,
         }));
+      
+      // Add "Previous Submission Document" placeholder only if:
+      // 1. Current step is Annotator (type 1), AND
+      // 2. Previous step in SOURCE workflow is also Annotator (type 1)
+      if (stepType === 1 && currentStepId) {
+        const currentSourceStep = this.workflowSteps.find(s => s.id === currentStepId);
+        if (currentSourceStep && currentSourceStep.workflowStepPrevious) {
+          const previousSourceStep = this.workflowSteps.find(
+            s => s.id === currentSourceStep.workflowStepPrevious
+          );
+          if (previousSourceStep && previousSourceStep.stepType === 1) {
+            options.unshift({
+              name: '<Document> Revised Document',
+              value: 'previousSubmission',
+            });
+          }
+        }
+      }
+      
+      return options;
     },
     userStudySessions(userId) {
       return this.$store.getters["table/study_session/getFiltered"](
