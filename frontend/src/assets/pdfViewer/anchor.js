@@ -3,9 +3,10 @@ import {createPlaceholder} from "../anchoring/placeholder";
 import {matchQuote} from "../anchoring/match-quote";
 
 export class Anchoring {
-    constructor(pdf, pageNumber) {
+    constructor(pdf, pageNumber, documentId) {
         this.pdf = pdf;
         this.pageNumber = pageNumber;
+        this.documentId = documentId;
         this.quotePositionCache = new Map();
     }
 
@@ -13,8 +14,7 @@ export class Anchoring {
     async anchorByPosition(pageIndex, start, end) {
 
         if (this.pdf.renderingDone.get(pageIndex + 1)) {
-            const root = document.getElementById('text-layer-' + (pageIndex + 1));
-
+            const root = document.getElementById('text-layer-' + (pageIndex + 1) + '-' + this.documentId);
             const startPos = new TextPosition(root, start);
             const endPos = new TextPosition(root, end);
             return new TextRange(startPos, endPos).toRange();
@@ -22,7 +22,7 @@ export class Anchoring {
 
         // The page has not been rendered yet. Create a placeholder element and
         // anchor to that instead.
-        const placeholder = createPlaceholder(document.getElementById('page-container-' + (pageIndex + 1)));
+        const placeholder = createPlaceholder(document.getElementById('page-container-' + (pageIndex + 1) + '-' + this.documentId));
         const range = document.createRange();
         range.setStartBefore(placeholder);
         range.setEndAfter(placeholder);
@@ -30,7 +30,7 @@ export class Anchoring {
     }
 
     async PDFanchor(selectors) {
-        const root = document.getElementById('page-container-' + this.pageNumber);
+        const root = document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId);
 
         const quote = /** @type {TextQuoteSelector|undefined} */ (
             selectors.find(s => s.type === 'TextQuoteSelector')
