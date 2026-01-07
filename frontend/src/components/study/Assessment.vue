@@ -145,12 +145,7 @@ export default {
   },
   computed: {
     computedReadOnly() {
-      return this.readOnly || this.workflow?.readOnlyComponents?.includes('assessment') || false;
-    },
-    workflow() {
-      return this.study?.workflowId 
-        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
-        : null;
+      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('assessment') || false;
     },
     configurationId() {
       return this.config.settings?.configurationId || null;
@@ -401,8 +396,16 @@ export default {
       }
     },
     loadSavedAssessmentData() {
-      // 1. Manual data from document_data[assessment_result]
-      const raw = this.documentData[this.assessmentDataKey];
+      // 1. Manual data from document_data[assessment_result] or previous_assessment_result as fallback
+      let raw = this.documentData[this.assessmentDataKey];
+      let isLoadedFromPrevious = false;
+      
+      // If assessment_result is not available, try previous_assessment_result
+      if (!raw) {
+        raw = this.documentData['previous_assessment_result'];
+        isLoadedFromPrevious = true; // Mark that data came from previous assessment
+      }
+
       let manualData = {};
 
       if (raw) {
@@ -447,10 +450,11 @@ export default {
 
           if (manualData[name]) {
             // User-saved data wins
+            // If loaded from previous_assessment_result, mark as not saved
             state[name] = {
               ...this.defaultCriterionState(),
               ...manualData[name],
-              isSaved: manualData[name].isSaved === true,
+              isSaved: isLoadedFromPrevious ? false : (manualData[name].isSaved === true),
             };
           } else if (preprocessedByName[name]) {
             // AI-preprocessed data: show it but mark as NOT saved
