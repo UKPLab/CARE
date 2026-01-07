@@ -69,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
             return affectedCount;
         }
         static async getPreviousSubmission(userId, projectId) {
-            const submission = await Submission.findOne({
+            let submission = await Submission.findOne({
                 where: {
                     userId,
                     projectId,
@@ -78,6 +78,16 @@ module.exports = (sequelize, DataTypes) => {
                 order: [['createdAt', 'DESC']],
                 raw: true,
             });
+
+            while(submission && submission.parentSubmissionId) {
+                submission = await Submission.findOne({
+                    where: {
+                        id: submission.parentSubmissionId,
+                        deleted: false,
+                    },
+                    raw: true,
+                });
+            }
 
             return submission ? submission : null;
         }
