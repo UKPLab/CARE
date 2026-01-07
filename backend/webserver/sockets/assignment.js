@@ -66,7 +66,7 @@ class AssignmentSocket extends Socket {
                     contextData,
                     options
                 );
-                
+
                 stepDocuments.push({
                     id: step.workflowStepId,
                     documentId: stepDocumentId,
@@ -243,7 +243,7 @@ class AssignmentSocket extends Socket {
                             for (const otherUser of userQueue) {
                                 // if it is the same user, skip
                                 if (otherUser.id === user.id) {
-                                    continue;
+                                        continue;
                                 }
                                 // get all assignments for the other user
                                 const otherAssignments = roleSelection[roleId]['assignments'][otherUser.id];
@@ -406,6 +406,47 @@ class AssignmentSocket extends Socket {
                     const assignmentData = {
                         assignment: assignment,
                         reviewer: [data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId))],
+                        template: data.template,
+                        documents: assignment["document"],
+                        // Pass through optional properties if they exist
+                        ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                    };
+                    await this.createAssignment(assignmentData, options);
+                }
+            }
+
+            return finalAssignments;
+
+        } else if (data.mode === "session_user") {
+            // Session user-based assignment: assign each study session to its original user
+            const finalAssignments = {};
+
+            for (const assignment of shuffledAssignments) {
+                const reviewerId = assignment.userId;
+                
+                // Check if the reviewer exists in selectedReviewer
+                const reviewer = data.selectedReviewer.find((r) => r.id === reviewerId);
+                if (!reviewer) {
+                    throw new Error(`Study session owner (User ID: ${reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.`);
+                }
+
+                // Initialize array for this reviewer if not exists
+                if (!finalAssignments[reviewerId]) {
+                    finalAssignments[reviewerId] = [];
+                }
+
+                finalAssignments[reviewerId].push(assignment.id);
+            }
+
+            // Create the final assignments
+            for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
+                for (const assignmentId of assignmentIds) {
+                    const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
+                    const reviewer = data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId));
+                    
+                    const assignmentData = {
+                        assignment: assignment,
+                        reviewer: [reviewer],
                         template: data.template,
                         documents: assignment["document"],
                         // Pass through optional properties if they exist
@@ -599,55 +640,55 @@ class AssignmentSocket extends Socket {
                     });
                 }
                 else {
-                const sourceStudyStep = await this.models['study_step'].findOne(
-                    { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
-                    { transaction: options.transaction }
-                );
-                
-                const originalDocument = await this.models['document'].getById(
-                    sourceStudyStep.documentId, 
-                    { transaction: options.transaction }
-                );
-                
-                let duplicatedDocument;
-previousSubmissionId = originalDocument.submissionId;
-                
-                // Check if document has a submissionId
-                if (originalDocument.submissionId) {
-                    // Copy the submission with all its documents, passing overrides for context
-                    const copyResult = await this.models['submission'].copySubmission(
-                        originalDocument.submissionId,
-                        this.userId,
-                        { hideInFrontend: true }, // Submission overrides
-                        {
-                            studySessionId: studySession.id,
-                            studyStepId: sourceStudyStep.id,
-                        }, // Document overrides
+                    const sourceStudyStep = await this.models['study_step'].findOne(
+                        { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
                         { transaction: options.transaction }
                     );
                     
-                    // Use the document mapping to find the correct duplicated document
-                    duplicatedDocument = copyResult.copiedDocuments.find(doc => 
-                       doc.parentDocumentId === originalDocument.id
-                    );
-                } else {
-                    // No submission - duplicate document directly
-                    duplicatedDocument = await this.models['document'].duplicateDocument(
-                        originalDocument.id,
-                        {
-                            studySessionId: studySession.id,
-                            studyStepId: sourceStudyStep.id,
-                        },
+                    const originalDocument = await this.models['document'].getById(
+                        sourceStudyStep.documentId, 
                         { transaction: options.transaction }
                     );
-                }  
+                    
+                    let duplicatedDocument;
+                    previousSubmissionId = originalDocument.submissionId;
 
-                currentDocuments.push({
-                    documentId: duplicatedDocument.id,
-                    workflowStepId: Number(sourceWorkflowStepId),
-                    submissionId: duplicatedDocument?.submissionId || null, 
-                });
-}
+                    // Check if document has a submissionId
+                    if (originalDocument.submissionId) {
+                        // Copy the submission with all its documents, passing overrides for context
+                        const copyResult = await this.models['submission'].copySubmission(
+                            originalDocument.submissionId,
+                            this.userId,
+                            { hideInFrontend: true }, // Submission overrides
+                            {
+                                studySessionId: studySession.id,
+                                studyStepId: sourceStudyStep.id,
+                            }, // Document overrides
+                            { transaction: options.transaction }
+                        );
+                        
+                        // Use the document mapping to find the correct duplicated document
+                        duplicatedDocument = copyResult.copiedDocuments.find(doc => 
+                        doc.parentDocumentId === originalDocument.id
+                        );
+                    } else {
+                        // No submission - duplicate document directly
+                        duplicatedDocument = await this.models['document'].duplicateDocument(
+                            originalDocument.id,
+                            {
+                                studySessionId: studySession.id,
+                                studyStepId: sourceStudyStep.id,
+                            },
+                            { transaction: options.transaction }
+                        );
+                    }  
+
+                    currentDocuments.push({
+                        documentId: duplicatedDocument.id,
+                        workflowStepId: Number(sourceWorkflowStepId),
+                        submissionId: duplicatedDocument?.submissionId || null, 
+                    });
+                }
             }
             duplicatedDocuments.push(currentDocuments);
         }

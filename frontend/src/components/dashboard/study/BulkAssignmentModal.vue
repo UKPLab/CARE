@@ -224,11 +224,26 @@
         <p>
           Are you sure you want to create the assignment with the following details?
         </p>
-        <p class="text-danger">
-          <strong>Warning:</strong> The assignment process will make sure that a reviewer not reviews their own document.
+        <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
+          <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
           <br>
           This could lead to a failure in the assignment process, <br>
-          so make sure that the values are set correct for a successful assignment.
+          so make sure that the values are set correctly for a successful assignment.
+        </p>
+        <p v-else class="text-warning">
+          <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+          <br>
+          <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
+            The following reviewers do not have matching study sessions:
+            <ul>
+              <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
+                {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+              </li>
+            </ul>
+          </span>
+          <span v-else>
+            All selected reviewers have matching study sessions.
+          </span>
         </p>
 
         <div class="container">
@@ -290,11 +305,26 @@
       <p>
         Are you sure you want to create the assignment with the following details?
       </p>
-      <p class="text-danger">
-        <strong>Warning:</strong> The assignment process will make sure that a reviewer not reviews their own document.
+      <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
+        <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
         <br>
         This could lead to a failure in the assignment process, <br>
-        so make sure that the values are set correct for a successful assignment.
+        so make sure that the values are set correctly for a successful assignment.
+      </p>
+      <p v-else class="text-warning">
+        <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+        <br>
+        <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
+          The following reviewers do not have matching study sessions:
+          <ul>
+            <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
+              {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+            </li>
+          </ul>
+        </span>
+        <span v-else>
+          All selected reviewers have matching study sessions.
+        </span>
       </p>
 
       <div class="container">
@@ -435,7 +465,7 @@ export default {
           this.selectedAssignments.length > 0,
           this.selectedReviewer.length > 0,
           this.selectionValid,
-          true
+          this.unmatchedReviewersForSessions.length === 0
         ];
       }
       return [
@@ -457,6 +487,9 @@ export default {
         return this.remainingAssignments === 0;
       } else if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'role') {
         return Object.values(this.roleSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0) > 0;
+      } else if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'session_user') {
+        // For session_user mode, no additional validation needed
+        return true;
       }
       return false;
     },
@@ -763,6 +796,17 @@ export default {
         }
       })
     },
+    unmatchedReviewersForSessions() {
+      if (this.assignmentType !== 'study_session' || this.reviewerSelectionMode.mode !== 'session_user') {
+        return [];
+      }
+      
+      const selectedSessionUserIds = new Set(this.selectedAssignments.map(session => session.userId));
+      
+      return this.selectedReviewer.filter(reviewer => {
+        return !selectedSessionUserIds.has(reviewer.id);
+      });
+    },
     templateSelectionFields() {
       return [
         {
@@ -787,18 +831,28 @@ export default {
       };
     },
     reviewerSelectionModeFields() {
+      const baseOptions = [
+        {
+          name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
+          value: "role"
+        },
+        {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
+      ];
+
+      // Add session_user option only for study_session assignment type
+      if (this.assignmentType === 'study_session') {
+        baseOptions.push({
+          name: "Session user-based selection (assign each study session to its original user)",
+          value: "session_user"
+        });
+      }
+
       return [
         {
           key: "mode",
           label: "Reviewer Selection Mode",
           type: "select",
-          options: [
-            {
-              name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
-              value: "role"
-            },
-            {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
-          ],
+          options: baseOptions,
           required: true,
         },
       ]
@@ -854,7 +908,7 @@ export default {
         default: return 'Unknown';
       }
     }, 
-    getTargetStepOptions(stepType) {
+    getTargetStepOptions(stepType, currentStepId) {
       // First, order the target workflow steps based on workflowStepPrevious
       const orderedSteps = [];
       const stepPositionMap = new Map(); // Maps step.id to its position (1-based)
@@ -873,7 +927,7 @@ export default {
       }
       
       // Filter by stepType and create options with correct step numbers
-      return orderedSteps
+      const options = orderedSteps
         .filter(step => step.stepType === stepType)
         .map((step) => ({
           name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
