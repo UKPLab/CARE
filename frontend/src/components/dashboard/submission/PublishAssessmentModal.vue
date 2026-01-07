@@ -151,6 +151,55 @@
           with-assignment-id
           @select-assignment="selectAssignment"
         />
+        <div
+          v-if="selectedSessions.length > 0 && selectedConfigurationContent"
+          class="mt-4"
+        >
+          <label class="form-label"><b>Moodle Grade Publishing Overview:</b></label>
+          <div class="card">
+            <div class="card-body">
+              <div class="row mb-2">
+                <div class="col-6">
+                  <strong>Number of grades to publish:</strong>
+                </div>
+                <div class="col-6">
+                  {{ gradeInformation.numberOfGrades }}
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-6">
+                  <strong>Assessment scale (current scores):</strong>
+                </div>
+                <div class="col-6">
+                  from {{ gradeInformation.totalMinPoints }} to
+                  {{ gradeInformation.totalMaxPoints }} points
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-6">
+                  <strong>Moodle grade scale (target):</strong>
+                </div>
+                <div class="col-6">
+                  from 0 to {{ gradeInformation.maxGradeFromMoodle }} points
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <strong>Conversion factor:</strong>
+                </div>
+                <div class="col-6">
+                  1 assessment point = {{ gradeInformation.conversionFactor }} Moodle points
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="small text-muted mt-2">
+            <em>
+              Note: All selected assessment scores will be converted linearly from the
+              assessment scale to the Moodle grade scale using the factor shown above.
+            </em>
+          </p>
+        </div>
       </div>
     </template>
   </StepperModal>
@@ -191,7 +240,7 @@ export default {
       selectedSessions: [],
       publishMethod: "csv",
       linkCollection: "studies",
-      selectedAssignmentMaxGrade: null, // Store max grade for selected assignment
+      selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
     };
   },
   computed: {
@@ -547,6 +596,45 @@ export default {
         { value: "email", label: "Email", disabled: true },
       ];
     },
+    // Grade information computed properties
+    gradeInformation() {
+      const numberOfGrades = this.selectedSessions.length || 0;
+
+      if (!this.selectedConfigurationContent || numberOfGrades === 0) {
+        return {
+          numberOfGrades,
+          totalMaxPoints: 0,
+          totalMinPoints: 0,
+          maxGradeFromMoodle: this.selectedAssignmentMaxGrade || 0,
+          conversionFactor: 0,
+        };
+      }
+
+      // Use assessment definition from the first selected session (same config for all)
+      const firstSession = this.selectedSessions[0];
+      const { assessment } = this.getAssessmentDataForSession(firstSession);
+
+      const totalMaxPoints = assessment.total_max_points ?? 0;
+      const totalMinPoints = assessment.total_min_points ?? 0;
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+
+      let conversionFactor = 0;
+      const sourcePointsRange = totalMaxPoints - totalMinPoints;
+      const targetGradeRange = assignmentMaxGrade - 0;
+
+      if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
+        conversionFactor = targetGradeRange / sourcePointsRange;
+        conversionFactor = Math.round(conversionFactor * 1000) / 1000; // 3 decimal places
+      }
+
+      return {
+        numberOfGrades,
+        totalMaxPoints,
+        totalMinPoints,
+        maxGradeFromMoodle: assignmentMaxGrade,
+        conversionFactor,
+      };
+    },
   },
   watch: {
     selectedConfigurations() {
@@ -644,10 +732,10 @@ export default {
       this.selectedSessions = [];
       this.publishMethod = "csv";
       this.linkCollection = "studies";
-      this.selectedAssignmentMaxGrade = null;
+      this.selectedAssignmentMaxGrade = 0;
     },
     selectAssignment({ maxGrade }) {
-      this.selectedAssignmentMaxGrade = maxGrade;
+      this.selectedAssignmentMaxGrade = maxGrade ?? 0;
     },
     handleSubmit() {
       if (this.publishMethod === "csv") {
