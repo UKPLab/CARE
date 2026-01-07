@@ -617,15 +617,7 @@ export default {
       const totalMaxPoints = assessment.total_max_points ?? 0;
       const totalMinPoints = assessment.total_min_points ?? 0;
       const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
-
-      let conversionFactor = 0;
-      const sourcePointsRange = totalMaxPoints - totalMinPoints;
-      const targetGradeRange = assignmentMaxGrade - 0;
-
-      if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
-        conversionFactor = targetGradeRange / sourcePointsRange;
-        conversionFactor = Math.round(conversionFactor * 1000) / 1000; // 3 decimal places
-      }
+      const conversionFactor = this.getConversionFactorFromAssessment(assessment);
 
       return {
         numberOfGrades,
@@ -648,6 +640,27 @@ export default {
     },
   },
   methods: {
+    /**
+     * Calculates the linear conversion factor between assessment points and Moodle grade.
+     * Uses the same logic for both the overview display and the actual grade publishing.
+     */
+    getConversionFactorFromAssessment(assessment) {
+      const totalMaxPoints = assessment.total_max_points ?? 0;
+      const totalMinPoints = assessment.total_min_points ?? 0;
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+
+      const sourcePointsRange = totalMaxPoints - totalMinPoints;
+      const targetGradeRange = assignmentMaxGrade - 0;
+
+      if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
+        let factor = targetGradeRange / sourcePointsRange;
+        // Keep 3 decimal places for display and internal use
+        factor = Math.round(factor * 1000) / 1000;
+        return factor;
+      }
+
+      return 0;
+    },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
      * Any service with a skill property indicates AI workflow.
@@ -852,20 +865,17 @@ export default {
     },
     /**
      * Converts an assessment score from one scale to another.
+     * Uses the same conversionFactor that is shown in the overview:
+     *   convertedGrade = normalizedPoints * conversionFactor
+     * and then rounds the result to 2 decimal places.
      */
     convertAssessmentScore(assessment) {
-      const assignmentMaxGrade = this.selectedAssignmentMaxGrade ?? 100; // Default max grade set to 100
-      const { total_max_points, total_min_points, achieved_points } = assessment;
-      
-      const sourcePointsRange = total_max_points - total_min_points;
-      // Assume assignment min grade is 0, as point-based grading on Moodle is always 0.
-      const targetGradeRange = assignmentMaxGrade - 0;
+      const { total_min_points, achieved_points } = assessment;
 
-      const normalizedPoints = achieved_points - total_min_points;
-      const conversionFactor = targetGradeRange / sourcePointsRange;
+      const conversionFactor = this.getConversionFactorFromAssessment(assessment);
+      const normalizedPoints = achieved_points - (total_min_points ?? 0);
       const convertedGrade = normalizedPoints * conversionFactor;
-      
-      // Round to 2 decimal places 
+      // Round final grade to 2 decimal places
       return Math.round(convertedGrade * 100) / 100;
     },
     /**
