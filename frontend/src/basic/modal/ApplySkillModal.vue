@@ -34,6 +34,8 @@ export default {
       currentStep: 1,
       isAutoOpened: false,
       isWaitingForData: false,
+      lastProcessedCount: 0,
+      hadError: false,
     };
   },
   computed: {
@@ -79,8 +81,26 @@ export default {
           this.isWaitingForData = false;
           this.autoOpenProcessStepper();
         }
+        // Track completion: processing just finished
+        if (!newVal && oldVal && this.isAutoOpened) {
+          this.showCompletionSummary();
+        }
       },
       immediate: true
+    },
+    preprocess: {
+      handler(newVal) {
+        // Track progress for completion summary
+        if (newVal?.currentSubmissionsCount) {
+          const remaining = Object.keys(newVal.requests || {}).length;
+          this.lastProcessedCount = newVal.currentSubmissionsCount - remaining;
+        }
+        // Track errors from errors array
+        if (newVal?.errors && newVal.errors.length > 0) {
+          this.hadError = true;
+        }
+      },
+      deep: true
     }
   },
   mounted() {
@@ -111,7 +131,6 @@ export default {
       }
     },
     close() {
-      this.stopPolling();
       this.isAutoOpened = false;
       this.isWaitingForData = false;
 
@@ -193,6 +212,34 @@ export default {
     openProcessStepperIfActive() {
       if (this.isProcessingActive && !this.isAutoOpened) {
         this.autoOpenProcessStepper();
+      }
+    },
+
+    showCompletionSummary() {
+      const processed = this.lastProcessedCount;
+      const hadError = this.hadError;
+      
+      // Reset tracking state
+      this.isAutoOpened = false;
+      this.lastProcessedCount = 0;
+      this.hadError = false;
+
+      if (hadError) {
+        this.eventBus.emit("toast", {
+          title: "Preprocessing Completed with Errors",
+          message: `Processed ${processed} item(s). Some requests encountered errors.`,
+          variant: "warning",
+          autohide: true,
+          delay: 8000
+        });
+      } else {
+        this.eventBus.emit("toast", {
+          title: "Preprocessing Complete",
+          message: `Successfully processed ${processed} item(s).`,
+          variant: "success",
+          autohide: true,
+          delay: 5000
+        });
       }
     },
   },

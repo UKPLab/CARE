@@ -206,9 +206,24 @@ export default {
     },
   },
   mounted() {
+    // Get initial state
     this.$socket.emit("serviceCommand", {
       service: "BackgroundTaskService",
       command: "getBackgroundTask",
+      data: {}
+    });
+    // Subscribe to real-time updates
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "subscribeBackgroundTaskUpdates",
+      data: {}
+    });
+  },
+  unmounted() {
+    // Unsubscribe from updates
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "unsubscribeBackgroundTaskUpdates",
       data: {}
     });
   },

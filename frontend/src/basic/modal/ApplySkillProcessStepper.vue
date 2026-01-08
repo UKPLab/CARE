@@ -43,6 +43,35 @@
           Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
         </div>
 
+        <!-- Warnings and Errors Display -->
+        <div v-if="hasErrors" class="mt-3">
+          <h6 :class="hasOnlyWarnings ? 'text-warning' : 'text-danger'">
+            {{ hasOnlyWarnings ? 'Warnings' : 'Errors Encountered' }}
+          </h6>
+          <div 
+            v-for="(error, index) in errorsList" 
+            :key="index" 
+            :class="['alert', 'py-2', 'mb-2', error.type === 'warning' ? 'alert-warning' : 'alert-danger']"
+            role="alert"
+          >
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong>{{ error.type === 'warning' ? '⚠️ Warning:' : '❌ Error:' }}</strong> 
+                {{ error.message }}
+              </div>
+              <small class="text-muted ms-2">
+                {{ formatTimestamp(error.timestamp) }}
+              </small>
+            </div>
+            <small v-if="error.submissionId" class="text-muted">
+              Submission ID: {{ error.submissionId }}
+            </small>
+            <small v-else-if="error.documentId" class="text-muted">
+              Document ID: {{ error.documentId }}
+            </small>
+          </div>
+        </div>
+
         <h6 class="mt-4">Submissions in Queue</h6>
         <div v-if="remainingSubmissions.length === 0" class="text-muted fst-italic">
           No submissions in queue. Processing the last request...
@@ -162,7 +191,7 @@ export default {
       const remainingIds = new Set(
         Object.entries(this.preprocess.requests)
           .filter(([requestId]) => requestId !== currentRequestId)
-          .map(([_, request]) => request.submissionId || request.documentId)
+          .map(([, request]) => request.submissionId || request.documentId)
           .filter(id => id != null)
       );
       
@@ -201,6 +230,17 @@ export default {
       }
       const timeInSeconds = stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
       return timeInSeconds ? this.formatDurationSeconds(timeInSeconds) : "Calculating...";
+    },
+    hasErrors() {
+      const errors = this.preprocess?.errors;
+      return errors && errors.length > 0;
+    },
+    errorsList() {
+      return this.preprocess?.errors || [];
+    },
+    hasOnlyWarnings() {
+      const errors = this.preprocess?.errors || [];
+      return errors.length > 0 && errors.every(e => e.type === 'warning');
     },
   },
   watch: {
@@ -246,6 +286,11 @@ export default {
       if (!startMs) return "0s";
       const diffSeconds = Math.max(0, Math.floor((this.now - startMs) / 1000));
       return this.formatDurationSeconds(diffSeconds);
+    },
+    formatTimestamp(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString();
     },
     startElapsedTimer() {
       if (this.elapsedTimer) return;

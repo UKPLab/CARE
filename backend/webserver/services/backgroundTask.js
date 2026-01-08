@@ -40,6 +40,8 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async command(client, command, data) {
         switch (command) {
+            case "getBackgroundTask":
+                return await this.getBackgroundTask(client);
             case "startPreprocessing":
                 return await this.startPreprocessing(client, data);
             case "cancelPreprocessing":
@@ -61,6 +63,15 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async getBackgroundTask(client) {
         this.send(client, "backgroundTaskUpdate", this.backgroundTask);
+    }
+
+    /**
+     * Clean up subscription when client disconnects
+     * @param {object} client - The client that disconnected
+     */
+    async disconnectClient(client) {
+        this.subscriptionClients = this.subscriptionClients.filter(c => c !== client);
+        await super.disconnectClient(client);
     }
 
     /**
@@ -153,7 +164,8 @@ module.exports = class BackgroundTaskService extends Service {
             requests: {},
             currentSubmissionsCount: 0,
             currentRequestId: null,
-            batchStartTime: Date.now()
+            batchStartTime: Date.now(),
+            errors: []  // Track all errors that occurred
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
@@ -304,32 +316,85 @@ module.exports = class BackgroundTaskService extends Service {
     }
 
     /**
-     * Wait for NLP result until a result is received or preprocessing is cancelled
-     * If a result is not received, it continues to wait indefinitely until cancelled
+     * Wait for NLP result until a result is received, preprocessing is cancelled, or timeout
      * @param {string} requestId - The request id to wait for
      * @param {number} intervalMs - Polling interval in milliseconds (default: 200ms)
+     * @param {number} timeoutMs - Timeout in milliseconds (default: 5 minutes)
+     * @param {number} warningMs - Warning timeout in milliseconds (default: 2 minutes)
      * @returns {Promise<object|null>} The NLP result or null if cancelled/timeout
      */
-    async waitForNlpResult(requestId, intervalMs = 200) {
-        const start = Date.now(); // TODO: This can be used to show the start time of the request
+    async waitForNlpResult(requestId, intervalMs = 200, timeoutMs = 300000, warningMs = 120000) {
+        const start = Date.now();
+        const currentRequest = this.backgroundTask.preprocess?.requests[requestId];
+        let warningShown = false;
+        
         return await new Promise((resolve, reject) => {
+            // Warning timeout - notify user request is taking long
+            const warningTimeout = setTimeout(() => {
+                if (this.backgroundTask.preprocess && !warningShown) {
+                    warningShown = true;
+                    // Add warning to errors array (but don't stop processing)
+                    this.backgroundTask.preprocess.errors.push({
+                        message: `Request is taking longer than expected (over ${Math.round(warningMs / 60000)} minutes). Still waiting...`,
+                        requestId: requestId,
+                        submissionId: currentRequest?.submissionId,
+                        documentId: currentRequest?.documentId,
+                        timestamp: Date.now(),
+                        type: 'warning'
+                    });
+                    this.sendAll("backgroundTaskUpdate", this.backgroundTask);
+                }
+            }, warningMs);
+            
+            // Hard timeout - skip this request after timeout
+            const hardTimeout = setTimeout(() => {
+                if (this.backgroundTask.preprocess) {
+                    this.backgroundTask.preprocess.nlpError = {
+                        error: { message: `NLP request timed out after ${Math.round(timeoutMs / 60000)} minutes. The NLP service may be unavailable or overloaded.` }
+                    };
+                    // Add timeout error to errors array
+                    this.backgroundTask.preprocess.errors.push({
+                        message: `Request timed out after ${Math.round(timeoutMs / 60000)} minutes. NLP service may be unavailable.`,
+                        requestId: requestId,
+                        submissionId: currentRequest?.submissionId,
+                        documentId: currentRequest?.documentId,
+                        timestamp: Date.now(),
+                        type: 'error'
+                    });
+                    this.sendAll("backgroundTaskUpdate", this.backgroundTask);
+                }
+            }, timeoutMs);
+            
             const interval = setInterval(() => {
+                // Check for cancellation
                 if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
                     clearInterval(interval);
+                    clearTimeout(warningTimeout);
+                    clearTimeout(hardTimeout);
                     resolve(null);
                     return;
                 }
+                
+                // Check for result
                 const result = this.backgroundTask?.preprocess?.nlpResult;
                 if (result && result.id === requestId) {
                     clearInterval(interval);
+                    clearTimeout(warningTimeout);
+                    clearTimeout(hardTimeout);
                     delete this.backgroundTask.preprocess.nlpResult;
                     resolve(result);
+                    return;
                 }
+                
+                // Check for error
                 const error = this.backgroundTask?.preprocess?.nlpError;
                 if (error) {
                     clearInterval(interval);
+                    clearTimeout(warningTimeout);
+                    clearTimeout(hardTimeout);
                     delete this.backgroundTask.preprocess.nlpError;
                     reject(error.error?.message);
+                    return;
                 }
 
             }, intervalMs);
@@ -461,7 +526,22 @@ module.exports = class BackgroundTaskService extends Service {
     async setError(data) {
         if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests && !this.backgroundTask.preprocess.cancelled) {
             if (data) {
+                // Set current error for waitForNlpResult to catch
                 this.backgroundTask.preprocess.nlpError = {...data};
+                
+                // Also add to persistent errors array with context
+                const currentRequestId = this.backgroundTask.preprocess.currentRequestId;
+                const currentRequest = currentRequestId ? this.backgroundTask.preprocess.requests[currentRequestId] : null;
+                
+                this.backgroundTask.preprocess.errors.push({
+                    message: data.error?.message || 'Unknown error',
+                    requestId: currentRequestId,
+                    submissionId: currentRequest?.submissionId,
+                    documentId: currentRequest?.documentId,
+                    timestamp: Date.now()
+                });
+                
+                this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             } else {
                 this.logger.error("setResult command received without result data.");
             }
