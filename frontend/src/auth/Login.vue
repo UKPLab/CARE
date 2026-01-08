@@ -127,6 +127,9 @@
         <div class="text-center text-secondary">
           {{ copyright }}
         </div>
+        <div class="text-center text-secondary">
+          App Version: {{ version }}
+        </div>
       </div>
     </div>
   </form>
@@ -151,6 +154,7 @@ import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { APP_VERSION } from '@/version.js';
 
 export default {
   name: "AuthLogin",
@@ -165,7 +169,8 @@ export default {
         username: "",
         password: ""
       },
-      validity: null
+      validity: null,
+      version: APP_VERSION,
     }
   },
   computed: {

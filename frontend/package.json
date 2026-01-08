@@ -8,7 +8,7 @@
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
-    "frontend-build": "vite build",
+    "frontend-build": "node version-writer.js && vite build",
     "frontend-lint": "eslint --ext .js,.vue src"
   },
   "dependencies": {
