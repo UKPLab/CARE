@@ -310,17 +310,17 @@ export default {
       switch (step) {
         case 1:
           this.$refs.importStepper?.setWaiting(true);
-          this.handleStepZero();
+          this.prepareUserImport();
           break;
         case 2:
           this.$refs.importStepper?.setWaiting(false);
           break;
         case 3:
-          this.handleStepTwo();
+          this.executeUserImport();
           break;
       }
     },
-    handleStepZero() {
+    prepareUserImport() {
       if (this.importType === "moodle") {
         if (!this.$refs.moodleOptionsForm?.validate()) return;
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
@@ -340,7 +340,7 @@ export default {
         this.checkDuplicateUsers();
       }
     },
-    handleStepTwo() {
+    executeUserImport() {
       const userData = {
         users: this.selectedUsers,
         // Moodle's role names are subject to change
