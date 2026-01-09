@@ -1176,32 +1176,6 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
-    /**
-     * Duplicate a document with all its associated data
-     * 
-     * @param {number} documentId - The ID of the document to duplicate
-     * @param {Object} overrides - Optional overrides (e.g., { submissionId, studySessionId, studyStepId })
-     * @param {Object} transaction - Database transaction
-     * @returns {Promise<Object>} The duplicated document and related data counts
-     */
-    async duplicateDocumentWithData(documentId, overrides = {}, transaction) {
-        
-        const originalDoc = await this.models['document'].getById(documentId, {transaction});
-        if (!originalDoc) {
-            throw new Error(`Document ${documentId} not found`);
-        }
-        
-        // Duplicate the document
-        const duplicatedDoc = await this.models['document'].duplicateDocument(
-            documentId,
-            overrides,
-            {transaction}
-        );
-        return {
-            duplicatedDocument: duplicatedDoc,
-        };
-    }
-
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
@@ -1223,9 +1197,6 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
-
-        // this.duplicateDocumentWithData("71", {studySessionId: "10", studyStepId: "24"})
-        // this.duplicateDocumentWithData("40", {studySessionId: "10", studyStepId: "23"})
     }
 };
 

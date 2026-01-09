@@ -39,35 +39,73 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
-        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, overrides = {}, transaction) {
+        /**
+         * Duplicate document data from one document to another with flexible filtering
+         * 
+         * By default, copies ALL document data. Pass includes to filter what gets copied.
+         * 
+         * @param {number} originalDocumentId - The ID of the original document
+         * @param {number} duplicateDocumentId - The ID of the duplicated document
+         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         *   - If not provided or empty, copies ALL document data (default)
+         *   - Single object: copies entries matching that condition
+         *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
+         * @param {Object} transaction - Sequelize transaction object
+         * @returns {Promise<void>}
+         * 
+         * @example
+         * // Copy all data (default)
+         * await duplicateDocumentData(1, 2, null, transaction);
+         * 
+         * @example
+         * // Copy only entries where both studySessionId and studyStepId are null
+         * await duplicateDocumentData(1, 2, { studySessionId: null, studyStepId: null }, transaction);
+         * 
+         * @example
+         * // Copy entries with specific studySessionId (regardless of studyStepId)
+         * await duplicateDocumentData(1, 2, { studySessionId: 45 }, transaction);
+         * 
+         * @example
+         * // Copy entries matching multiple conditions (OR logic)
+         * await duplicateDocumentData(1, 2, [
+         *   { studySessionId: null, studyStepId: null },
+         *   { studySessionId: 45, studyStepId: 12 },
+         *   { studySessionId: 46 }
+         * ], transaction);
+         */
+        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, includes = null, transaction) {
             
-            // Build where clause: find entries with documentId and either:
-            // 1. Both studySessionId and studyStepId are null, OR
-            // 2. Both studySessionId and studyStepId have specific values (from overrides)
+            // Build where clause: start with documentId
             const whereClause = {
                 documentId: originalDocumentId,
-                [Op.or]: [
-                    {
-                        studySessionId: null,
-                        studyStepId: null
-                    }
-                ]
+                deleted: false
             };
             
-            // Add condition for specific studySessionId and studyStepId if provided in overrides
-            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
-                whereClause[Op.or].push({
-                    studySessionId: overrides.studySessionId,
-                    studyStepId: overrides.studyStepId
-                });
+            // If includes provided, apply them with OR logic
+            if (includes) {
+                const conditions = Array.isArray(includes) ? includes : [includes];
+                
+                // Filter out any empty objects
+                const validConditions = conditions.filter(cond => 
+                    cond && Object.keys(cond).length > 0
+                );
+                
+                // Always include default null condition + provided conditions
+                if (validConditions.length > 0) {
+                    whereClause[Op.or] = [
+                        { studySessionId: null, studyStepId: null },
+                        ...validConditions
+                    ];
+                }
             }
+            // If no includes, copy ALL data (no additional filtering)
             
-            // Fetch all document data for the original document
+            // Fetch all document data matching the criteria
             const originalDataEntries = await this.findAll({
                 where: whereClause,
                 raw: true,
                 transaction
-            });
+            });       
             // Create new data entries for the duplicated document
             if (originalDataEntries.length > 0) {
                 const newDataEntries = originalDataEntries.map(entry => ({

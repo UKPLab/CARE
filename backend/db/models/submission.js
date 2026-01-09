@@ -76,10 +76,11 @@ module.exports = (sequelize, DataTypes) => {
          * @param {number} createdByUserId - The ID of the user creating the copy
          * @param {Object} submissionOverrides - Overrides for the submission (e.g., hideInFrontend)
          * @param {Object} documentOverrides - Overrides for documents (e.g., studySessionId, studyStepId)
+         * @param {Object} includes - Additional includes for document duplication (eg: {studySessionId: 1}) in case we require cenrtain extra files
          * @param {Object} options - Database options including transaction
          * @returns {Promise<Object>} Object containing copied submission and documents
          */
-        static async copySubmission(originalSubmissionId, createdByUserId, submissionOverrides = {}, documentOverrides = {}, options = {}) {
+        static async copySubmission(originalSubmissionId, createdByUserId, submissionOverrides = {}, documentOverrides = {}, includes= {}, options = {}) {
             const transaction = options.transaction;
 
             // Get the original submission
@@ -121,13 +122,14 @@ module.exports = (sequelize, DataTypes) => {
                 try {
                     // Merge submissionId with document overrides (studySessionId, studyStepId, etc.)
                     const mergedDocumentOverrides = {
+                        ...documentOverrides,
                         submissionId: copiedSubmission.id,
-                        ...documentOverrides
                     };
                     
                     const copiedDoc = await sequelize.models.document.duplicateDocument(
                         originalDoc.id,
                         mergedDocumentOverrides,
+                        includes,
                         {transaction}
                     );
                     copiedDocuments.push(copiedDoc);

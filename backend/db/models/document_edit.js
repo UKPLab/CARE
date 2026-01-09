@@ -56,37 +56,61 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Duplicate document edits from original document to duplicated document
+         * Duplicate document edits from original document to duplicated document with flexible filtering
+         * 
+         * By default, copies ALL edits. Pass includes to filter what gets copied.
          * 
          * @param {number} originalDocumentId - The ID of the original document
-         * @param {Object} duplicatedDoc - The duplicated document object
-         * @param {Object} overrides - Optional properties to override (e.g., { studySessionId, studyStepId })
+         * @param {number} duplicatedDocumentId - The ID of the duplicated document
+         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         *   - If not provided or empty, copies ALL edits (default)
+         *   - Single object: copies entries matching that condition
+         *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
          * @param {Object} transaction - The database transaction
          * @returns {Promise<Array>} Array of duplicated document edits
+         * 
+         * @example
+         * // Copy all edits (default)
+         * await duplicateEditsByDocument(1, 2, null, transaction);
+         * 
+         * @example
+         * // Copy only null entries
+         * await duplicateEditsByDocument(1, 2, { studySessionId: null, studyStepId: null }, transaction);
+         * 
+         * @example
+         * // Copy multiple conditions
+         * await duplicateEditsByDocument(1, 2, [
+         *   { studySessionId: null, studyStepId: null },
+         *   { studySessionId: 45, studyStepId: 12 }
+         * ], transaction);
          */
-        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, overrides = {}, transaction) {
-            
-            // Build where clause similar to annotations
+        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, includes = null, transaction) {
+            // Build where clause: start with documentId and deleted=false
             const whereClause = {
                 documentId: originalDocumentId,
-                deleted: false,
-                [Op.or]: [
-                    {
-                        studySessionId: null,
-                        studyStepId: null
-                    }
-                ]
+                deleted: false
             };
             
-            // Add condition for specific studySessionId and studyStepId if provided
-            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
-                whereClause[Op.or].push({
-                    studySessionId: overrides.studySessionId,
-                    studyStepId: overrides.studyStepId
-                });
+            // If includes provided, apply them with OR logic
+            if (includes) {
+                const conditions = Array.isArray(includes) ? includes : [includes];
+                
+                // Filter out any empty objects
+                const validConditions = conditions.filter(cond => 
+                    cond && Object.keys(cond).length > 0
+                );
+                
+                // Always include default null condition + provided conditions
+                if (validConditions.length > 0) {
+                    whereClause[Op.or] = [
+                        { studySessionId: null, studyStepId: null },
+                        ...validConditions
+                    ];
+                }
             }
+            // If no includes, copy ALL edits (no additional filtering)
             
-            // Fetch all edits for the original document
+            // Fetch all edits matching the criteria
             const originalEdits = await this.findAll({
                 where: whereClause,
                 raw: true,

@@ -21,43 +21,69 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Duplicate annotations from original document to duplicated document
+         * Duplicate annotations from original document to duplicated document with flexible filtering
          * Also duplicates all associated comments for each annotation
          * 
+         * By default, copies ALL annotations. Pass includes to filter what gets copied.
+         * 
          * @param {number} originalDocumentId - The ID of the original document
-         * @param {Object} duplicatedDoc - The duplicated document object
-         * @param {Object} overrides - Optional properties to override (e.g., { studySessionId, studyStepId })
+         * @param {number} duplicatedDocumentId - The ID of the duplicated document
+         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         *   - If not provided or empty, copies ALL annotations (default)
+         *   - Single object: copies entries matching that condition
+         *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
          * @param {Object} transaction - The database transaction
          * @returns {Promise<Array>} Array of duplicated annotations with their comments
+         * 
+         * @example
+         * // Copy all annotations (default)
+         * await duplicateAnnotations(1, 2, null, transaction);
+         * 
+         * @example
+         * // Copy only null entries
+         * await duplicateAnnotations(1, 2, { studySessionId: null, studyStepId: null }, transaction);
+         * 
+         * @example
+         * // Copy multiple conditions
+         * await duplicateAnnotations(1, 2, [
+         *   { studySessionId: null, studyStepId: null },
+         *   { studySessionId: 45, studyStepId: 12 }
+         * ], transaction);
          */
-        static async duplicateAnnotations(originalDocumentId, duplicatedDocumentId, overrides = {}, transaction) {
-
-            
-            // Build where clause similar to document_data
+        static async duplicateAnnotations(originalDocumentId, duplicatedDocumentId, includes = null, transaction) {
+            // Build where clause: start with documentId
             const whereClause = {
                 documentId: originalDocumentId,
-                [Op.or]: [
-                    {
-                        studySessionId: null,
-                        studyStepId: null
-                    }
-                ]
+                deleted: false
             };
             
-            // Add condition for specific studySessionId and studyStepId if provided
-            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
-                whereClause[Op.or].push({
-                    studySessionId: overrides.studySessionId,
-                    studyStepId: overrides.studyStepId
-                });
+            // If includes provided, apply them with OR logic
+            if (includes) {
+                const conditions = Array.isArray(includes) ? includes : [includes];
+                
+                // Filter out any empty objects
+                const validConditions = conditions.filter(cond => 
+                    cond && Object.keys(cond).length > 0
+                );
+                
+                // Always include default null condition + provided conditions
+                if (validConditions.length > 0) {
+                    whereClause[Op.or] = [
+                        { studySessionId: null, studyStepId: null },
+                        ...validConditions
+                    ];
+                }
             }
+            // If no includes, copy ALL annotations (no additional filtering)
             
-            // Fetch all annotations for the original document
+            // Fetch all annotations matching the criteria
+            console.log("Where Clause for Annotations:", whereClause);
             const originalAnnotations = await this.findAll({
                 where: whereClause,
                 raw: true,
                 transaction
             });
+            console.log(`Found ${originalAnnotations} annotations to duplicate.`);
             
             const duplicatedAnnotations = [];
             
@@ -81,7 +107,7 @@ module.exports = (sequelize, DataTypes) => {
                 await sequelize.models.comment.duplicateComments(
                     originalAnnotation.id,
                     duplicatedAnnotation,
-                    overrides,
+                    includes,
                     transaction
                 );
                 
