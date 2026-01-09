@@ -43,20 +43,18 @@
           Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
         </div>
 
-        <!-- Warnings and Errors Display -->
+        <!-- Errors Display -->
         <div v-if="hasErrors" class="mt-3">
-          <h6 :class="hasOnlyWarnings ? 'text-warning' : 'text-danger'">
-            {{ hasOnlyWarnings ? 'Warnings' : 'Errors Encountered' }}
-          </h6>
+          <h6 class="text-danger">Errors Encountered</h6>
           <div 
             v-for="(error, index) in errorsList" 
             :key="index" 
-            :class="['alert', 'py-2', 'mb-2', error.type === 'warning' ? 'alert-warning' : 'alert-danger']"
+            class="alert alert-danger py-2 mb-2"
             role="alert"
           >
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <strong>{{ error.type === 'warning' ? '⚠️ Warning:' : '❌ Error:' }}</strong> 
+                <strong>❌ Error:</strong> 
                 {{ error.message }}
               </div>
               <small class="text-muted ms-2">
@@ -237,10 +235,6 @@ export default {
     },
     errorsList() {
       return this.preprocess?.errors || [];
-    },
-    hasOnlyWarnings() {
-      const errors = this.preprocess?.errors || [];
-      return errors.length > 0 && errors.every(e => e.type === 'warning');
     },
   },
   watch: {

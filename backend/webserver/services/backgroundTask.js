@@ -323,29 +323,11 @@ module.exports = class BackgroundTaskService extends Service {
      * @param {number} warningMs - Warning timeout in milliseconds (default: 2 minutes)
      * @returns {Promise<object|null>} The NLP result or null if cancelled/timeout
      */
-    async waitForNlpResult(requestId, intervalMs = 200, timeoutMs = 300000, warningMs = 120000) {
+    async waitForNlpResult(requestId, intervalMs = 200, timeoutMs = 3000) {
         const start = Date.now();
         const currentRequest = this.backgroundTask.preprocess?.requests[requestId];
-        let warningShown = false;
         
         return await new Promise((resolve, reject) => {
-            // Warning timeout - notify user request is taking long
-            const warningTimeout = setTimeout(() => {
-                if (this.backgroundTask.preprocess && !warningShown) {
-                    warningShown = true;
-                    // Add warning to errors array (but don't stop processing)
-                    this.backgroundTask.preprocess.errors.push({
-                        message: `Request is taking longer than expected (over ${Math.round(warningMs / 60000)} minutes). Still waiting...`,
-                        requestId: requestId,
-                        submissionId: currentRequest?.submissionId,
-                        documentId: currentRequest?.documentId,
-                        timestamp: Date.now(),
-                        type: 'warning'
-                    });
-                    this.sendAll("backgroundTaskUpdate", this.backgroundTask);
-                }
-            }, warningMs);
-            
             // Hard timeout - skip this request after timeout
             const hardTimeout = setTimeout(() => {
                 if (this.backgroundTask.preprocess) {
@@ -358,8 +340,7 @@ module.exports = class BackgroundTaskService extends Service {
                         requestId: requestId,
                         submissionId: currentRequest?.submissionId,
                         documentId: currentRequest?.documentId,
-                        timestamp: Date.now(),
-                        type: 'error'
+                        timestamp: Date.now()
                     });
                     this.sendAll("backgroundTaskUpdate", this.backgroundTask);
                 }
@@ -369,7 +350,6 @@ module.exports = class BackgroundTaskService extends Service {
                 // Check for cancellation
                 if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
                     clearInterval(interval);
-                    clearTimeout(warningTimeout);
                     clearTimeout(hardTimeout);
                     resolve(null);
                     return;
@@ -379,7 +359,6 @@ module.exports = class BackgroundTaskService extends Service {
                 const result = this.backgroundTask?.preprocess?.nlpResult;
                 if (result && result.id === requestId) {
                     clearInterval(interval);
-                    clearTimeout(warningTimeout);
                     clearTimeout(hardTimeout);
                     delete this.backgroundTask.preprocess.nlpResult;
                     resolve(result);
@@ -390,7 +369,6 @@ module.exports = class BackgroundTaskService extends Service {
                 const error = this.backgroundTask?.preprocess?.nlpError;
                 if (error) {
                     clearInterval(interval);
-                    clearTimeout(warningTimeout);
                     clearTimeout(hardTimeout);
                     delete this.backgroundTask.preprocess.nlpError;
                     reject(error.error?.message);
