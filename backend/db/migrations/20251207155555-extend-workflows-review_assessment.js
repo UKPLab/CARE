@@ -13,8 +13,8 @@ const workflows = [
           settings: {
             fields: [
               {
-                key: "showDefaultAnnotations",
-                label: "Show Default Annotations",
+                key: "showAllDocumentAnnotations",
+                label: "Show All Document Annotations",
                 type: "switch",
                 required: false,
                 default: true,

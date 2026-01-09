@@ -110,7 +110,7 @@ export default {
     acceptStats: {
       default: () => false
     },
-    showDefaultAnnotations: {
+    showAllDocumentAnnotations: {
       type: Boolean,
       required: false,
       default: false,
@@ -191,8 +191,8 @@ export default {
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
-            // When showDefaultAnnotations is true, show all comments for the document
-            if (this.showDefaultAnnotations) {
+            // When showAllDocumentAnnotations is true, show all comments for the document
+            if (this.showAllDocumentAnnotations) {
               return true;
             }
             // Otherwise, only show comments for current session and step

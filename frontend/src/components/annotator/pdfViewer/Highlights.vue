@@ -34,7 +34,7 @@ export default {
       required: false,
       default: null,
     },
-    showDefaultAnnotations: {
+    showAllDocumentAnnotations: {
       type: Boolean,
       required: false,
       default: false,
@@ -179,8 +179,8 @@ export default {
     },
     filterBySessionAndSettings(anno) {
       if (this.studySessionId && this.studyStepId) {
-        // When showDefaultAnnotations is true, show all annotations for the document
-        if (this.showDefaultAnnotations) {
+        // When showAllDocumentAnnotations is true, show all annotations for the document
+        if (this.showAllDocumentAnnotations) {
           return true;
         }
         // Otherwise, only show annotations for current session and step

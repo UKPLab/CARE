@@ -125,7 +125,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
-      showDefaultAnnotations: computed(() => this.showDefaultAnnotations),
+      showAllDocumentAnnotations: computed(() => this.showAllDocumentAnnotations),
     }
   },
   inject: {
@@ -221,8 +221,8 @@ export default {
 
       return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
-    showDefaultAnnotations(){
-      return this.currentStudyStep?.configuration?.settings?.showDefaultAnnotations ?? false;
+    showAllDocumentAnnotations(){
+      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
@@ -285,7 +285,7 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return !this.showDefaultAnnotations ? annotations.filter(annotation =>
+        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
             annotation.studySessionId === this.studySessionId
         ) : annotations;
       }
@@ -299,7 +299,7 @@ export default {
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return !this.showDefaultAnnotations ? comments.filter(comment =>
+        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
             comment.studySessionId === this.studySessionId
         ) : comments;
       }
