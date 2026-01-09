@@ -194,7 +194,6 @@ module.exports = (sequelize, DataTypes) => {
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,
             validationConfigurationId: DataTypes.INTEGER,
-            hideInFrontend: DataTypes.BOOLEAN,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,

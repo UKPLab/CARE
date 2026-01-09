@@ -527,6 +527,19 @@ class AssignmentSocket extends Socket {
         );
     }
 
+    /**
+     * Duplicates documents for study sessions based on the provided data.
+     *  * For each selected assignment (study session), documents are duplicated according to the workflow mapping.
+     * * If the original document is part of a submission, the entire submission is copied with overrides for context.
+     * * If the original document is standalone, it is duplicated directly with the necessary overrides.
+     * @param {Object} data The data for duplicating documents.
+     * @param {Array} data.selectedAssignments An array of selected assignment objects (study sessions).
+     * @param {Object} data.workflowMapping An object mapping source workflow step IDs to target workflow step IDs.
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @returns {Promise<Array>} A promise that resolves with an array of arrays, each containing duplicated document objects for the corresponding study session.
+     * @throws {Error} Throws an error if the underlying duplication methods fail.
+     */
+    
     async duplicate(data, options) {
 
         const duplicatedDocuments = [];
@@ -552,7 +565,7 @@ class AssignmentSocket extends Socket {
                     const copyResult = await this.models['submission'].copySubmission(
                         originalDocument.submissionId,
                         this.userId,
-                        { hideInFrontend: true }, // Submission overrides
+                        {}, // Submission overrides
                         {
                             studySessionId: studySession.id,
                             studyStepId: sourceStudyStep.id,
