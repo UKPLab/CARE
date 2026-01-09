@@ -145,15 +145,7 @@ export default {
   },
   computed: {
     computedReadOnly() {
-      return this.readOnly || this.workflow?.readOnlyComponents?.includes('assessment') || false;
-    },
-    workflow() {
-      return this.study?.workflowId 
-        ? this.$store.getters["table/workflow/get"](this.study.workflowId) 
-        : null;
-    },
-    configurationId() {
-      return this.config.settings?.configurationId || null;
+      return this.readOnly || this.currentStudyStep?.configuration?.settings?.readOnlyComponents?.includes('assessment') || false;
     },
     configuration() {
       if (!this.configurationId) return null;

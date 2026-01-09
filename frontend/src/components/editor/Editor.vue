@@ -87,11 +87,6 @@ export default {
       required: false,
       default: null,
     },
-    study: {
-      type: Object,
-      required: false,
-      default: null
-    },
     currentStudyStep: {
       type: Object,
       required: false,

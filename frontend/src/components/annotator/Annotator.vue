@@ -144,11 +144,6 @@ export default {
       required: false,
       default: null
     },
-    study: {
-      type: Object,
-      required: false,
-      default: null
-    },
     acceptStats: {
       type: Boolean,
       required: false,
@@ -218,7 +213,6 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     computedReadOnly() {
-
       return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
     showAllDocumentAnnotations(){
