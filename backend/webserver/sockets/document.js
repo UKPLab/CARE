@@ -528,31 +528,33 @@ class DocumentSocket extends Socket {
 
                     // send annotations - if showAllDocumentAnnotations is true, get all by documentId
                     let annotations;
-                    if (showAllDocumentAnnotations) {
-                        annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
-                            {
-                                where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                                raw: true
-                            })
-                        ));
-                        annotations = annotations.flat(1);
+                   
+                    annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
+                        {
+                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                            raw: true
+                        })
+                    ));
+                    annotations = annotations.flat(1);
+                    if(showAllDocumentAnnotations) {
+                        annotations.push(...await this.models['annotation'].findAll({where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}));
                     }
+                
                     this.emit("annotationRefresh", annotations);
 
                     // send comments - if showAllDocumentAnnotations is true, get all by documentId
                     let comments;
+                    comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
+                        {
+                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                            raw: true
+                        })
+                    ));
+                    comments = comments.flat(1);
                     if (showAllDocumentAnnotations) {
-                        comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
-                            {
-                                where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                                raw: true
-                            })
+                        comments.push(...await this.models['comment'].findAll(
+                            {where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}
                         ));
-                        comments = comments.flat(1);
                     }
                     this.emit("commentRefresh", comments);
 
@@ -567,20 +569,24 @@ class DocumentSocket extends Socket {
                 } else {
                     // Non-collab study - check showAllDocumentAnnotations
                     let annotations;
-                    if (showAllDocumentAnnotations) {
-                        annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        annotations = await this.models['annotation'].findAll(
-                            {
-                                where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                                raw: true
-                            });
+                    annotations = await this.models['annotation'].findAll(
+                        {
+                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            raw: true
+                        });
+                    annotations.push
+                    if(showAllDocumentAnnotations) {
+                        annotations.pushAll(...await this.models['annotation'].findAll({where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}));
                     }
+
+
                     this.emit("annotationRefresh", annotations);
 
                     let comments;
                     if (showAllDocumentAnnotations) {
-                        comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
+                        comments = await this.models['comment'].findAll(
+                            {where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}
+                        );
                     } else {
                         comments = await this.models['comment'].findAll(
                             {
