@@ -180,7 +180,7 @@ export default {
     filterBySessionAndSettings(anno) {
       if (this.studySessionId && this.studyStepId) {
         // When showAllDocumentAnnotations is true, show all annotations for the document
-        if (this.showAllDocumentAnnotations) {
+        if (this.showAllDocumentAnnotations && anno.studySessionId === null && anno.studyStepId === null) {
           return true;
         }
         // Otherwise, only show annotations for current session and step

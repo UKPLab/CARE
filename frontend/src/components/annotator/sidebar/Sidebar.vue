@@ -192,7 +192,7 @@ export default {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
             // When showAllDocumentAnnotations is true, show all comments for the document
-            if (this.showAllDocumentAnnotations) {
+            if (this.showAllDocumentAnnotations && comment.studySessionId === null && comment.studyStepId === null) {
               return true;
             }
             // Otherwise, only show comments for current session and step

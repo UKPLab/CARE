@@ -287,7 +287,9 @@ export default {
       } else {
         return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
             annotation.studySessionId === this.studySessionId
-        ) : annotations;
+        ) : annotations.filter(annotation =>
+            annotation.studySessionId === null && annotation.studyStepId === null
+        );
       }
     },
     comments() {
@@ -301,7 +303,9 @@ export default {
       } else {
         return !this.showAllDocumentAnnotations ? comments.filter(comment =>
             comment.studySessionId === this.studySessionId
-        ) : comments;
+        ) : comments.filter(comment =>
+            comment.studySessionId === null && comment.studyStepId === null
+        );
       }
     },
     sidebarButtons() {
