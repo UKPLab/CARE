@@ -21,7 +21,6 @@
         </slot>
       </span>
       <span v-else>
-        <slot name="before-form" :data="data" />
         <BasicForm
           ref="form"
           v-model="data"
@@ -90,7 +89,6 @@ import { sorter } from "@/assets/utils.js";
  * @slot success: Use slot to overwrite success message
  * @slot success-footer: Use slot to overwrite footer for if success
  * @slot footer: Use slot to overwrite footer for the modal
- * @slot before-form: Use slot to add custom content before the form (receives form data as prop)
  * @emits submit: Submit event with the new data content
  *
  * @author: Dennis Zyska, Linyin Huang

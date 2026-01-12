@@ -98,19 +98,12 @@
           },
           4: { // Document - General
             placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "User's username", icon: "bi bi-person" },
-              { id: "firstName", text: "~firstName~", label: "First Name", description: "User's first name", icon: "bi bi-person" },
-              { id: "lastName", text: "~lastName~", label: "Last Name", description: "User's last name", icon: "bi bi-person" },
+              { id: "description", text: "~description~", label: "Description", description: "Description placeholder (to be handled later)", icon: "bi bi-file-text" },
             ],
           },
           5: { // Document - Study
             placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "Study session participant's username", icon: "bi bi-person" },
-              { id: "firstName", text: "~firstName~", label: "First Name", description: "Study session participant's first name", icon: "bi bi-person" },
-              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Study session participant's last name", icon: "bi bi-person" },
-              { id: "creatorUsername", text: "~creatorUsername~", label: "Creator Username", description: "Study creator's username", icon: "bi bi-person-badge" },
-              { id: "creatorFirstName", text: "~creatorFirstName~", label: "Creator First Name", description: "Study creator's first name", icon: "bi bi-person-badge" },
-              { id: "creatorLastName", text: "~creatorLastName~", label: "Creator Last Name", description: "Study creator's last name", icon: "bi bi-person-badge" },
+              { id: "description", text: "~description~", label: "Description", description: "Description placeholder (to be handled later)", icon: "bi bi-file-text" },
             ],
           },
         },

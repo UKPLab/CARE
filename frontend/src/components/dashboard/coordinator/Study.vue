@@ -12,19 +12,6 @@
     <template #title>
       {{ modalTitle }}
     </template>
-    <template #before-form="{ data }">
-      <div
-        v-if="!isTemplateMode && showPrivacyWarning(data)"
-        class="alert alert-warning mb-3"
-      >
-        <strong><i class="bi bi-exclamation-triangle me-2"></i>Privacy Notice:</strong>
-        <p class="mb-0 mt-2">
-          You have selected email or document templates that may use participant names (username, first name, last name).
-          If your study is not set to anonymize participants, these names will be visible in emails and documents.
-          Consider enabling "Should the comments be anonymized?" to protect participant privacy.
-        </p>
-      </div>
-    </template>
     <template #success>
       <div v-if="isTemplateMode">
         Template has been successfully created.
@@ -88,28 +75,6 @@ export default {
     },
   },
   methods: {
-    /**
-     * Check if privacy warning should be shown
-     * Shows warning if templates are selected and anonymize is false
-     * @param {Object} data - Study form data
-     * @returns {boolean} True if warning should be shown
-     */
-    showPrivacyWarning(data) {
-      if (!data) return false;
-      
-      // Check if anonymize is false (or not set, defaults to false)
-      const anonymize = data.anonymize === true;
-      if (anonymize) return false; // No warning if anonymization is enabled
-      
-      // Check if any study-related templates are selected
-      // Type 2: Email - Study Session (emailTemplateStartId, emailTemplateFinishId)
-      // Type 5: Document - Study (documentTemplateId)
-      const hasEmailTemplate = (data.emailTemplateStartId && data.emailTemplateStartId !== 0) ||
-                                (data.emailTemplateFinishId && data.emailTemplateFinishId !== 0);
-      const hasDocumentTemplate = data.documentTemplateId && data.documentTemplateId !== 0;
-      
-      return hasEmailTemplate || hasDocumentTemplate;
-    },
     open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
       if (documentId !== null) {
         this.documentId = documentId;
