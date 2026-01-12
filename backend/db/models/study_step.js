@@ -179,9 +179,25 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // Note: Template resolution is deferred until participant accesses the document
-                    // This allows participant placeholders to resolve correctly with participant data
-                    // Template ID is stored in study_template_mapping and resolved in document.getDocument()
+                    // Resolve Type 5 template at study creation time
+                    if (!documentCopied && options.context && options.context.documentTemplateId) {
+                        try {
+                            const baseUrl = await sequelize.models.setting.get("system.baseUrl") || "localhost:3000";
+                            
+                            const resolvedDelta = await resolveTemplateToDelta(
+                                options.context.documentTemplateId,
+                                {
+                                    baseUrl: baseUrl
+                                },
+                                sequelize.models,
+                                options
+                            );
+                            const deltaFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
+                            fsSync.writeFileSync(deltaFilePath, JSON.stringify(resolvedDelta, null, 2));
+                        } catch (error) {
+                            console.error(`Failed to resolve template for study document creation:`, error);
+                        }
+                    }
 
                     data.documentId = newDocument.id;
 
