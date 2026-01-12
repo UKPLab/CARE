@@ -16,7 +16,6 @@
           <PDFViewer
               ref="pdfViewer"
               class="rounded border border-1 shadow-sm"
-              :componentReadOnly="computedReadOnly"
               style="margin:auto"
               @copy="onCopy"
           />
@@ -37,7 +36,6 @@
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar ref="sidebar"
-                                  :computed-read-only="computedReadOnly"
                                    @new-anno-card="changeSideBarView"
                                    @scroll-to-comment="scrollToComment"
                 />
@@ -211,9 +209,6 @@ export default {
   computed: {
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
-    computedReadOnly() {
-      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
     showAllDocumentAnnotations(){
       return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;

@@ -29,7 +29,7 @@
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
   <ul v-if="showAnnotations" id="anno-list" class="list-group">
-    <li v-if="computedReadOnly" class="readonly-notice">
+    <li v-if="componentReadOnly" class="readonly-notice">
       <div class="card border-secondary mb-2">
         <div class="card-body text-center py-2">
           <LoadIcon
@@ -60,7 +60,7 @@
       />
     </li>
 
-    <li v-if="!computedReadOnly" id="addPageNote">
+    <li v-if="!componentReadOnly" id="addPageNote">
       <button
         class="btn btn-light"
         type="button"
@@ -123,6 +123,11 @@ export default {
       required: false,
       default: false,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
     acceptStats: {
       default: () => false
     },
@@ -137,11 +142,6 @@ export default {
       type: Boolean,
       required: false,
       default: true,
-    },
-    computedReadOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
     },
     edits: {
       type: Array,
@@ -162,6 +162,12 @@ export default {
     };
   },
   computed: {
+    componentReadOnly() {
+      if(!this.readOnly) {
+        return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+      }
+      return this.readOnly;
+    },
     showEdits() {
       return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
     },

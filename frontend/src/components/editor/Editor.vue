@@ -73,7 +73,6 @@ export default {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
       readOnly: computed(() => this.readOnlyOverwrite),
-      componentReadOnly: computed(() => this.componentReadOnly),
     }
   },
   inject: {
@@ -131,9 +130,6 @@ export default {
   computed: {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
-    },
-    componentReadOnly() {
-      return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
     },
     defaultActiveSidebar() {
       // Determine the default active sidebar based on available tabs

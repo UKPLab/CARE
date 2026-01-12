@@ -61,13 +61,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export default {
   name: "PDFViewer",
   components: {BasicLoading, PDFPage, Adder, PDFToolbar, ReadOnlyIndicator},
-  props: {
-    componentReadOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-  },
   inject: {
     documentId: {
       type: Number,
@@ -83,6 +76,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
     readOnly: {
       type: Boolean,
       required: false,
@@ -95,7 +93,7 @@ export default {
   provide() {
     return {
       pdf: computed(() => this.pdf),
-      readOnly: computed(() => this.readOnly || this.componentReadOnly),
+      readOnly: computed(() => this.readOnly),
     }
   },
   emits: ['copy'],
@@ -124,6 +122,12 @@ export default {
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+    componentReadOnly() {
+      if(!this.readOnly) {
+        return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+      }
+      return this.readOnly;
     },
   },
   watch: {

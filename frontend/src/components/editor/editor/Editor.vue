@@ -69,11 +69,6 @@ export default {
       required: false,
       default: false,
     },
-    componentReadOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
     studyData: {
       type: Array,
       required: false,
@@ -91,6 +86,11 @@ export default {
     },
     pendingNlpInsertion: {
       default: null,
+    },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
     },
   },
   emits: ["update:data"],
@@ -110,6 +110,9 @@ export default {
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
+    },
+    componentReadOnly() {
+      return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
     },
     finalReadOnly() {
       return this.readOnly || this.componentReadOnly;
