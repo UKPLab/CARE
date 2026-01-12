@@ -51,6 +51,7 @@
         <label class="form-label"><b>Select Sessions:</b></label>
         <p class="small text-muted mb-3">
           Select which study sessions to include in the assessment export.
+          Please note only <strong>closed study sessions</strong> are displayed here.
         </p>
         <div v-if="sessionsTable.length === 0" class="alert alert-warning">
           No sessions found matching the selected workflow and configuration.
@@ -522,7 +523,11 @@ export default {
       if (matchingStudyIds.length === 0) return [];
 
       return this.studySessions
-        .filter((session) => matchingStudyIds.includes(session.studyId))
+        .filter((session) => {
+          const study = this.studies.find((s) => s.id === session.studyId);
+          // The study that the session belongs to needs to be closed and matches the workflow and configuration
+          return this.isStudyClosed(study) && matchingStudyIds.includes(session.studyId)
+        })
         .map((session) => {
           const study = this.studies.find((s) => s.id === session.studyId);
           const user = this.users.find((u) => u.id === session.userId);
