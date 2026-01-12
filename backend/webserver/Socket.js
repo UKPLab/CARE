@@ -418,13 +418,25 @@ module.exports = class Socket {
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
-        if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) { // is allowed to see everything
+        // Special handling for templates: even admins should see filtered results (own + published from others)
+        const isTemplateTable = tableName === "template";
+        if ((await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) && !isTemplateTable) { // is allowed to see everything (except templates)
             // no adaption of the filter or attributes needed
         } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
-            // is allowed to see only his data and possible if there is a public attribute
+            // is allowed to see only his data and possible if there is a public or published attribute
             const userFilter = {};
             if ("public" in this.models[tableName].getAttributes()) {
                 userFilter[Op.or] = [{userId: userId}, {public: true}];
+            } else if ("published" in this.models[tableName].getAttributes()) {
+                // For templates: use model's getUserFilter method if available (safer, model-specific logic)
+                // Otherwise, apply generic published filtering
+                if (tableName === "template" && typeof this.models[tableName].getUserFilter === "function") {
+                    const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+                    Object.assign(userFilter, this.models[tableName].getUserFilter(userId, isAdmin));
+                } else {
+                    // Generic published filtering for other models
+                    userFilter[Op.or] = [{userId: userId}, {published: true}];
+                }
             } else {
                 userFilter['userId'] = userId;
             }
