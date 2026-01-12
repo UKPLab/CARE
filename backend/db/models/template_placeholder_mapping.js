@@ -4,7 +4,7 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
   /**
    * Template Placeholder Mapping model
-   * Stores placeholder definitions for templates
+   * Stores placeholder definitions for template types
    */
   class TemplatePlaceholderMapping extends MetaModel {
     static autoTable = true;
@@ -15,16 +15,13 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      TemplatePlaceholderMapping.belongsTo(models["template"], {
-        foreignKey: "templateId",
-        as: "template",
-      });
+      // No association
     }
   }
 
   TemplatePlaceholderMapping.init(
     {
-      templateId: DataTypes.INTEGER,
+      templateType: DataTypes.INTEGER,
       placeholderKey: DataTypes.STRING,
       placeholderLabel: DataTypes.STRING,
       placeholderType: DataTypes.STRING,
