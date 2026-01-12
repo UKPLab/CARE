@@ -74,6 +74,8 @@
       );
       },
       buttons() {
+        // Template-specific button filtering: buttons with multiple filters use AND logic
+        // Single filter buttons can use default OR logic (though they'll work the same either way)
         return [
           {
             icon: "pencil",
@@ -83,6 +85,7 @@
                 "btn-outline-secondary": true,
               },
             },
+            filter: [{ key: "userId", value: this.userId }],
             title: "Edit template",
             action: "edit",
           },
@@ -94,20 +97,9 @@
                 "btn-outline-secondary": true,
               },
             },
+            filter: [{ key: "userId", value: this.userId }],
             title: "Edit content",
             action: "editContent",
-          },
-          {
-           icon: "eye-slash",
-           options: {
-             iconOnly: true,
-             specifiers: {
-               "btn-outline-secondary": true,
-             },
-           },
-           filter: [{ key: "hidden", value: true }],
-           title: "Show template",
-           action: "toggleHidden",
           },
           {
             icon: "eye",
@@ -117,9 +109,46 @@
                 "btn-outline-secondary": true,
               },
             },
-            filter: [{ key: "hidden", value: false }],
-            title: "Hide template",
-            action: "toggleHidden",
+            filter: [
+              { key: "published", value: true },
+              { key: "userId", value: this.userId, type: "not" }
+            ],
+            filterMode: "and", // All filters must match: published=true AND userId != current user
+            title: "View content (read-only)",
+            action: "viewContent",
+          },
+          {
+           icon: "cloud-arrow-up",
+           options: {
+             iconOnly: true,
+             specifiers: {
+               "btn-outline-secondary": true,
+             },
+           },
+           filter: [
+             { key: "published", value: false },
+             { key: "userId", value: this.userId }
+           ],
+           filterMode: "and", // All filters must match: published=false AND userId=current user
+           title: "Publish template",
+           action: "togglePublished",
+          },
+          {
+            icon: "check-circle",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+                disabled: true,
+              },
+            },
+            filter: [
+              { key: "published", value: true },
+              { key: "userId", value: this.userId }
+            ],
+            filterMode: "and", // All filters must match: published=true AND userId=current user
+            title: "Published (cannot be unpublished)",
+            action: null,
           },
           {
             icon: "trash",
@@ -129,10 +158,14 @@
                 "btn-outline-secondary": true,
               },
             },
+            filter: [{ key: "userId", value: this.userId }],
             title: "Delete template",
             action: "delete",
           },
         ];
+      },
+      userId() {
+        return this.$store.getters["auth/getUserId"];
       },
     },
     methods: {
@@ -154,24 +187,35 @@
           case "editContent":
             this.$router.push(`/template/${data.params.id}`);
             break;
+          case "viewContent":
+            this.$router.push(`/template/${data.params.id}`);
+            break;
           case "delete":
             this.deleteTemplate(data.params);
             break;
-          case "toggleHidden":
-            this.toggleHidden(data.params);
+          case "togglePublished":
+            this.togglePublished(data.params);
             break;
-
         }
       },
-      toggleHidden(template) {
+      togglePublished(template) {
+        if (template.published) {
+          this.eventBus.emit("toast", {
+            title: "Already published",
+            message: "This template is already published and cannot be published again",
+            variant: "warning",
+          });
+          return;
+        }
+        
         this.$socket.emit("templateUpdate", {
           id: template.id,
-          hidden: !template.hidden,
+          published: true,
         }, (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: !template.hidden ? "Template hidden" : "Template shown",
-              message: "",
+              title: "Template published",
+              message: "The template is now visible to all users",
               variant: "success",
             });
           } else {
