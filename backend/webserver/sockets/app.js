@@ -87,6 +87,35 @@ class AppSocket extends Socket {
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
+            // NOTE: Table-specific logic for template deletion protection
+            // Prevent deletion of email templates (types 1, 2, 3) that are in use by studies
+            // Also prevent deletion of templates that don't belong to the user
+            if (data.table === "template" && data.data.deleted === true) {
+                const template = await this.models["template"].getById(data.data.id, {transaction: transaction});
+                if (!template) {
+                    throw new Error("Template not found");
+                }
+                
+                // Check ownership: users (including admins) can only delete their own templates
+                if (template.userId !== this.userId) {
+                    throw new Error("You can only delete templates that you own");
+                }
+                
+                if (template && [1, 2, 3].includes(template.type)) {
+                    // Check if template is in use by any studies
+                    const usageCount = await this.models["study_template_mapping"].count({
+                        where: {
+                            templateId: template.id,
+                            deleted: false
+                        },
+                        transaction: transaction
+                    });
+                    if (usageCount > 0) {
+                        throw new Error(`Template is in use by ${usageCount} study/studies and cannot be deleted. Please remove the template from all studies before deleting.`);
+                    }
+                }
+            }
+            
             // NOTE: Table-specific logic for study_session finish email
             // This exception exists because:
             // 1. Frontend uses appDataUpdate to finish sessions (sets end field)
@@ -137,6 +166,35 @@ class AppSocket extends Socket {
                 // only if default is set and we are not updating an existing entry
                 if (field.default !== null && !("id" in data.data)) {
                     data.data[field.key] = field.default;
+                }
+            }
+        }
+
+        // NOTE: Table-specific logic for template deletion protection
+        // Prevent deletion of email templates (types 1, 2, 3) that are in use by studies
+        // Also prevent deletion of templates that don't belong to the user
+        if (data.table === "template" && data.data.deleted === true && data.data.id && data.data.id !== 0) {
+            const template = await this.models["template"].getById(data.data.id, {transaction: transaction});
+            if (!template) {
+                throw new Error("Template not found");
+            }
+            
+            // Check ownership: users (including admins) can only delete their own templates
+            if (template.userId !== this.userId) {
+                throw new Error("You can only delete templates that you own");
+            }
+            
+            if (template && [1, 2, 3].includes(template.type)) {
+                // Check if template is in use by any studies
+                const usageCount = await this.models["study_template_mapping"].count({
+                    where: {
+                        templateId: template.id,
+                        deleted: false
+                    },
+                    transaction: transaction
+                });
+                if (usageCount > 0) {
+                    throw new Error(`Template is in use by ${usageCount} study/studies and cannot be deleted. Please remove the template from all studies before deleting.`);
                 }
             }
         }
