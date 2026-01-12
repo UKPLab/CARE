@@ -315,7 +315,9 @@ export default {
       return this.$store.getters["table/study_session/getAll"] || [];
     },
     submissions() {
-      return this.$store.getters["table/submission/getAll"] || [];
+      return this.$store.getters["table/submission/getFiltered"](
+        (s) => s.projectId === this.projectId
+      ) || [];
     },
     documents() {
       return this.$store.getters["table/document/getFiltered"](
