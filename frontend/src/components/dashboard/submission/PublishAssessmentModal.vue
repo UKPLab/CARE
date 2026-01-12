@@ -304,7 +304,7 @@ export default {
     },
     studies() {
       return this.$store.getters["table/study/getFiltered"](
-        (s) => s.closed && !s.template && s.projectId === this.projectId
+        (s) => !s.template && s.projectId === this.projectId
       ) || [];
     },
     studySteps() {
