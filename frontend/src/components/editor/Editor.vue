@@ -165,9 +165,24 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
+    template() {
+      if (this.templateId && this.templateId > 0) {
+        return this.$store.getters["table/template/get"](this.templateId);
+      }
+      return null;
+    },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
+      }
+      // For templates: check if viewing published template from another user (read-only)
+      if (this.templateId && this.template) {
+        const currentUserId = this.$store.getters["auth/getUser"]?.id;
+        const isOwner = this.template.userId === currentUserId;
+        const isPublishedFromOthers = this.template.published === true && !isOwner;
+        if (isPublishedFromOthers) {
+          return true; // Published templates from others are read-only
+        }
       }
       return this.readOnly;
     },
