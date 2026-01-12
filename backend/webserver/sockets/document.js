@@ -526,36 +526,42 @@ class DocumentSocket extends Socket {
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                     this.emit("study_sessionRefresh", studySessions);
 
-                    // send annotations - if showAllDocumentAnnotations is true, get all by documentId
+                    // send annotations - if showAllDocumentAnnotations is true, include document annotations in OR condition
                     let annotations;
                    
-                    annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
-                        {
-                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                    annotations = await Promise.all(studySessions.map(async s => {
+                        const whereCondition = showAllDocumentAnnotations ? {
+                            [Op.or]: [
+                                {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                            ]
+                        } : {'studySessionId': s.id, 'studyStepId': data.studyStepId};
+                        
+                        return await this.models['annotation'].findAll({
+                            where: whereCondition,
                             raw: true
-                        })
-                    ));
+                        });
+                    }));
                     annotations = annotations.flat(1);
-                    if(showAllDocumentAnnotations) {
-                        annotations.push(...await this.models['annotation'].findAll({where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}));
-                    }
                 
                     this.emit("annotationRefresh", annotations);
 
-                    // send comments - if showAllDocumentAnnotations is true, get all by documentId
+                    // send comments - if showAllDocumentAnnotations is true, include document comments in OR condition
                     let comments;
-                    comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
-                        {
-                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                    comments = await Promise.all(studySessions.map(async s => {
+                        const whereCondition = showAllDocumentAnnotations ? {
+                            [Op.or]: [
+                                {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                            ]
+                        } : {'studySessionId': s.id, 'studyStepId': data.studyStepId};
+                        
+                        return await this.models['comment'].findAll({
+                            where: whereCondition,
                             raw: true
-                        })
-                    ));
+                        });
+                    }));
                     comments = comments.flat(1);
-                    if (showAllDocumentAnnotations) {
-                        comments.push(...await this.models['comment'].findAll(
-                            {where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}
-                        ));
-                    }
                     this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
@@ -569,31 +575,32 @@ class DocumentSocket extends Socket {
                 } else {
                     // Non-collab study - check showAllDocumentAnnotations
                     let annotations;
-                    annotations = await this.models['annotation'].findAll(
-                        {
-                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                            raw: true
-                        });
-                    annotations.push
-                    if(showAllDocumentAnnotations) {
-                        annotations.pushAll(...await this.models['annotation'].findAll({where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}));
-                    }
-
+                    const annotationWhereCondition = showAllDocumentAnnotations ? {
+                        [Op.or]: [
+                            {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                        ]
+                    } : {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId};
+                    
+                    annotations = await this.models['annotation'].findAll({
+                        where: annotationWhereCondition,
+                        raw: true
+                    });
 
                     this.emit("annotationRefresh", annotations);
 
                     let comments;
-                    if (showAllDocumentAnnotations) {
-                        comments = await this.models['comment'].findAll(
-                            {where: {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}, raw: true}
-                        );
-                    } else {
-                        comments = await this.models['comment'].findAll(
-                            {
-                                where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                                raw: true
-                            });
-                    }
+                    const commentWhereCondition = showAllDocumentAnnotations ? {
+                        [Op.or]: [
+                            {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                        ]
+                    } : {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId};
+                    
+                    comments = await this.models['comment'].findAll({
+                        where: commentWhereCondition,
+                        raw: true
+                    });
                     this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
