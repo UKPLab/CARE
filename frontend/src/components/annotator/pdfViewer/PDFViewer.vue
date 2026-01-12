@@ -19,11 +19,6 @@
       @zoom-out="zoomOut"
       @reset="resetZoom"
     />
-      <!-- Read-Only Watermark -->
-    <ReadOnlyIndicator
-      v-if="readOnly || componentReadOnly"
-      position-type="sticky"
-    />
 
     <PDFPage
       v-for="page in pdf.pageCount"
