@@ -419,8 +419,15 @@ export default {
           // Count sessions for these studies
           const sessionsForThisStep = this.studySessions.filter((session) => studyIdsForThisStep.has(session.studyId));
 
-          const openSessions = sessionsForThisStep.filter((s) => !s.end).length;
-          const closedSessions = sessionsForThisStep.filter((s) => s.end).length;
+          // Determine if sessions are closed based on whether their study is closed
+          const openSessions = sessionsForThisStep.filter((session) => {
+            const study = this.studies.find((s) => s.id === session.studyId);
+            return !this.isStudyClosed(study);
+          }).length;
+          const closedSessions = sessionsForThisStep.filter((session) => {
+            const study = this.studies.find((s) => s.id === session.studyId);
+            return this.isStudyClosed(study);
+          }).length;
 
           result.push({
             id: result.length + 1,
@@ -682,6 +689,19 @@ export default {
       }
 
       return 0;
+    },
+    // TODO: The isStudyClosed methods across the repo do not share the same logic. 
+    // Do we need to unify the logic for this method?
+    isStudyClosed(study) {
+      if (study) {
+        if (study.closed) {
+          return true;
+        }
+        if (!study.multipleSubmit && study.end && new Date(study.end) < Date.now()) {
+          return true;
+        }
+      }
+      return false;
     },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
