@@ -114,9 +114,11 @@ module.exports = function (server) {
                 templateId,
                 {
                     userId: context.userId,
-                    baseUrl: baseUrl
+                    baseUrl: baseUrl,
+                    link: context.link // Pass link for verification/password reset emails
                 },
-                server.db.models
+                server.db.models,
+                context.options || {} // Pass transaction if provided
             );
             
             return {
@@ -302,7 +304,8 @@ The CARE Team`,
                     {
                         userId: newUser.id,
                         baseUrl: baseUrl,
-                        link: verificationLink
+                        link: verificationLink,
+                        options: { transaction: transaction } // Pass transaction for template resolution
                     }
                 );
                 
