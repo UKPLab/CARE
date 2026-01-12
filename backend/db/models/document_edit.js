@@ -58,11 +58,11 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Duplicate document edits from original document to duplicated document with flexible filtering
          * 
-         * By default, copies ALL edits. Pass includes to filter what gets copied.
+         * By default, copies ALL edits. Pass filters to filter what gets copied.
          * 
          * @param {number} originalDocumentId - The ID of the original document
          * @param {number} duplicatedDocumentId - The ID of the duplicated document
-         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         * @param {Object|Object[]} [filters] - Optional where clause condition(s) to filter which entries to copy.
          *   - If not provided or empty, copies ALL edits (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
@@ -84,16 +84,16 @@ module.exports = (sequelize, DataTypes) => {
          *   { studySessionId: 45, studyStepId: 12 }
          * ], transaction);
          */
-        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, includes = null, transaction) {
+        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, filters = null, transaction) {
             // Build where clause: start with documentId and deleted=false
             const whereClause = {
                 documentId: originalDocumentId,
                 deleted: false
             };
             
-            // If includes provided, apply them with OR logic
-            if (includes) {
-                const conditions = Array.isArray(includes) ? includes : [includes];
+            // If filters provided, apply them with OR logic
+            if (filters) {
+                const conditions = Array.isArray(filters) ? filters : [filters];
                 
                 // Filter out any empty objects
                 const validConditions = conditions.filter(cond => 
@@ -108,7 +108,7 @@ module.exports = (sequelize, DataTypes) => {
                     ];
                 }
             }
-            // If no includes, copy ALL edits (no additional filtering)
+            // If no filters, copy ALL edits (no additional filtering)
             
             // Fetch all edits matching the criteria
             const originalEdits = await this.findAll({

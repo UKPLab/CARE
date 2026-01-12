@@ -24,11 +24,11 @@ module.exports = (sequelize, DataTypes) => {
          * Duplicate annotations from original document to duplicated document with flexible filtering
          * Also duplicates all associated comments for each annotation
          * 
-         * By default, copies ALL annotations. Pass includes to filter what gets copied.
+         * By default, copies ALL annotations. Pass filters to filter what gets copied.
          * 
          * @param {number} originalDocumentId - The ID of the original document
          * @param {number} duplicatedDocumentId - The ID of the duplicated document
-         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         * @param {Object|Object[]} [filters] - Optional where clause condition(s) to filter which entries to copy.
          *   - If not provided or empty, copies ALL annotations (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
@@ -50,16 +50,16 @@ module.exports = (sequelize, DataTypes) => {
          *   { studySessionId: 45, studyStepId: 12 }
          * ], transaction);
          */
-        static async duplicateAnnotations(originalDocumentId, duplicatedDocumentId, includes = null, transaction) {
+        static async duplicateAnnotations(originalDocumentId, duplicatedDocumentId, filters = null, transaction) {
             // Build where clause: start with documentId
             const whereClause = {
                 documentId: originalDocumentId,
                 deleted: false
             };
             
-            // If includes provided, apply them with OR logic
-            if (includes) {
-                const conditions = Array.isArray(includes) ? includes : [includes];
+            // If filters provided, apply them with OR logic
+            if (filters) {
+                const conditions = Array.isArray(filters) ? filters : [filters];
                 
                 // Filter out any empty objects
                 const validConditions = conditions.filter(cond => 
@@ -74,16 +74,14 @@ module.exports = (sequelize, DataTypes) => {
                     ];
                 }
             }
-            // If no includes, copy ALL annotations (no additional filtering)
+            // If no filters, copy ALL annotations (no additional filtering)
             
             // Fetch all annotations matching the criteria
-            console.log("Where Clause for Annotations:", whereClause);
             const originalAnnotations = await this.findAll({
                 where: whereClause,
                 raw: true,
                 transaction
             });
-            console.log(`Found ${originalAnnotations} annotations to duplicate.`);
             
             const duplicatedAnnotations = [];
             
@@ -107,7 +105,7 @@ module.exports = (sequelize, DataTypes) => {
                 await sequelize.models.comment.duplicateComments(
                     originalAnnotation.id,
                     duplicatedAnnotation,
-                    includes,
+                    filters,
                     transaction
                 );
                 

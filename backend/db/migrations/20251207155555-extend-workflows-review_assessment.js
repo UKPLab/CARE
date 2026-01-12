@@ -2,8 +2,8 @@
 
 const workflows = [
   {
-    name: "Review Grading Workflow ",
-    description: "Review Grading Workflow with Assessment: Review a submitted study session",
+    name: "Review Assessment Workflow",
+    description: "Review Assessment Workflow: Review a submitted study session",
     steps: [
       {
         stepType: 1,

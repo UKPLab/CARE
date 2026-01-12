@@ -42,11 +42,11 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Duplicate document data from one document to another with flexible filtering
          * 
-         * By default, copies ALL document data. Pass includes to filter what gets copied.
+         * By default, copies ALL document data. Pass filters to filter what gets copied.
          * 
          * @param {number} originalDocumentId - The ID of the original document
          * @param {number} duplicateDocumentId - The ID of the duplicated document
-         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         * @param {Object|Object[]} [filters] - Optional where clause condition(s) to filter which entries to copy.
          *   - If not provided or empty, copies ALL document data (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
@@ -73,7 +73,7 @@ module.exports = (sequelize, DataTypes) => {
          *   { studySessionId: 46 }
          * ], transaction);
          */
-        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, includes = null, transaction) {
+        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, filters = null, transaction) {
             
             // Build where clause: start with documentId
             const whereClause = {
@@ -81,9 +81,9 @@ module.exports = (sequelize, DataTypes) => {
                 deleted: false
             };
             
-            // If includes provided, apply them with OR logic
-            if (includes) {
-                const conditions = Array.isArray(includes) ? includes : [includes];
+            // If filters provided, apply them with OR logic
+            if (filters) {
+                const conditions = Array.isArray(filters) ? filters : [filters];
                 
                 // Filter out any empty objects
                 const validConditions = conditions.filter(cond => 
@@ -98,7 +98,7 @@ module.exports = (sequelize, DataTypes) => {
                     ];
                 }
             }
-            // If no includes, copy ALL data (no additional filtering)
+            // If no filters, copy ALL data (no additional filtering)
             
             // Fetch all document data matching the criteria
             const originalDataEntries = await this.findAll({

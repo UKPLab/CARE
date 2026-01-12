@@ -36,11 +36,11 @@ module.exports = (sequelize, DataTypes) => {
          * Duplicate comments from original annotation to duplicated annotation with flexible filtering
          * Recursively duplicates child comments as well
          * 
-         * By default, copies ALL comments. Pass includes to filter what gets copied.
+         * By default, copies ALL comments. Pass filters to filter what gets copied.
          * 
          * @param {number} originalAnnotationId - The ID of the original annotation
          * @param {Object} duplicatedAnnotation - The duplicated annotation object
-         * @param {Object|Object[]} [includes] - Optional where clause condition(s) to filter which entries to copy.
+         * @param {Object|Object[]} [filters] - Optional where clause condition(s) to filter which entries to copy.
          *   - If not provided or empty, copies ALL comments (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
@@ -62,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
          *   { studySessionId: 45, studyStepId: 12 }
          * ], transaction);
          */
-        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, includes = null, transaction) {
+        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, filters = null, transaction) {
             
             // Build where clause for root comments (no parent)
             const whereClause = {
@@ -71,9 +71,9 @@ module.exports = (sequelize, DataTypes) => {
                 deleted: false
             };
             
-            // If includes provided, apply them with OR logic
-            if (includes) {
-                const conditions = Array.isArray(includes) ? includes : [includes];
+            // If filters provided, apply them with OR logic
+            if (filters) {
+                const conditions = Array.isArray(filters) ? filters : [filters];
                 
                 // Filter out any empty objects
                 const validConditions = conditions.filter(cond => 
@@ -88,7 +88,7 @@ module.exports = (sequelize, DataTypes) => {
                     ];
                 }
             }
-            // If no includes, copy ALL comments (no additional filtering)
+            // If no filters, copy ALL comments (no additional filtering)
             
             // Fetch all root comments for the original annotation
             const originalComments = await this.findAll({
@@ -106,7 +106,7 @@ module.exports = (sequelize, DataTypes) => {
                     originalComment,
                     duplicatedAnnotation,
                     null,
-                    includes,
+                    filters,
                     transaction,
                     commentIdMap
                 );
@@ -122,12 +122,12 @@ module.exports = (sequelize, DataTypes) => {
          * @param {Object} originalComment - The original comment object
          * @param {Object} duplicatedAnnotation - The duplicated annotation object
          * @param {number|null} newParentCommentId - The ID of the parent comment in the duplicated tree
-         * @param {Object|Object[]} includes - Optional where clause conditions for filtering
+         * @param {Object|Object[]} filters - Optional where clause conditions for filtering
          * @param {Object} transaction - The database transaction
          * @param {Map} commentIdMap - Map to track original to duplicated comment IDs
          * @returns {Promise<Array>} Array of duplicated comments
          */
-        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, includes, transaction, commentIdMap) {
+        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, filters, transaction, commentIdMap) {
             // Create base comment data
             const baseData = {
                 userId: originalComment.userId,
@@ -166,7 +166,7 @@ module.exports = (sequelize, DataTypes) => {
                     childComment,
                     duplicatedAnnotation,
                     duplicatedComment.id,
-                    includes,
+                    filters,
                     transaction,
                     commentIdMap
                 );
