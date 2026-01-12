@@ -69,7 +69,6 @@ module.exports = (sequelize, DataTypes) => {
                 // Always include default null condition + provided conditions
                 if (validConditions.length > 0) {
                     whereClause[Op.or] = [
-                        { studySessionId: null, studyStepId: null },
                         ...validConditions
                     ];
                 }

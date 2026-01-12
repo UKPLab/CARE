@@ -567,10 +567,16 @@ class AssignmentSocket extends Socket {
                         this.userId,
                         {}, // Submission overrides
                         {}, // Document overrides
-                        {
-                            studySessionId: studySession.id,
-                            studyStepId: sourceStudyStep.id,
-                        }, // Includes
+                        [
+                            {
+                                studySessionId: null,
+                                studyStepId: null,
+                            },
+                            {
+                                studySessionId: studySession.id,
+                                studyStepId: sourceStudyStep.id,
+                            }
+                        ],
                         { transaction: options.transaction }
                     );
                     
@@ -582,11 +588,17 @@ class AssignmentSocket extends Socket {
                     // No submission - duplicate document directly
                     duplicatedDocument = await this.models['document'].duplicateDocument(
                         originalDocument.id,
-                        {},
-                        {
-                            studySessionId: studySession.id,
-                            studyStepId: sourceStudyStep.id,
-                        },
+                        {},       
+                        [
+                            {
+                                studySessionId: null,
+                                studyStepId: null,
+                            },
+                            {
+                                studySessionId: studySession.id,
+                                studyStepId: sourceStudyStep.id,
+                            }
+                        ],
                         { transaction: options.transaction }
                     );
                 }  
