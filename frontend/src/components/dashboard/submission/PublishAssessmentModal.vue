@@ -372,56 +372,85 @@ export default {
         ...new Set(this.studies.map((s) => s.workflowId).filter((id) => id !== null && id !== undefined)),
       ];
 
-      return workflowIdsInStudies
-        .map((workflowId) => {
-          const workflow = this.workflows.find((w) => w.id === workflowId && !w.deleted);
-          if (!workflow) return null;
+      const result = [];
 
-          const studiesUsingWorkflow = this.studies.filter((s) => s.workflowId === workflowId);
-          if (studiesUsingWorkflow.length === 0) return null;
+      workflowIdsInStudies.forEach((workflowId) => {
+        const workflow = this.workflows.find((w) => w.id === workflowId && !w.deleted);
+        if (!workflow) return null;
 
-          // Find study steps (actual instantiated steps) that use this configuration within these studies
-          const studyIds = new Set(studiesUsingWorkflow.map((s) => s.id));
-          const studyStepsForWorkflow = this.studySteps.filter((step) => {
-            if (!step || step.deleted) return false;
-            if (!studyIds.has(step.studyId)) return false;
-            return this.getConfigurationIdFromConfig(step.configuration) === configId;
-          });
+        const studiesUsingWorkflow = this.studies.filter((s) => s.workflowId === workflowId);
+        if (studiesUsingWorkflow.length === 0) return null;
 
-          if (studyStepsForWorkflow.length === 0) return null;
+        // Find study steps (actual instantiated steps) that use this configuration within these studies
+        const studyIds = new Set(studiesUsingWorkflow.map((s) => s.id));
+        const studyStepsForWorkflow = this.studySteps.filter((step) => {
+          if (!step || step.deleted) return false;
+          if (!studyIds.has(step.studyId)) return false;
+          return this.getConfigurationIdFromConfig(step.configuration) === configId;
+        });
 
-          // Map to workflow step IDs and resolve their order/step numbers
-          const orderedSteps = this.orderedWorkflowStepsByWorkflow[workflowId] || [];
-          const workflowStepIdToNumber = orderedSteps.reduce((acc, step, idx) => {
-            acc[step.id] = idx + 1;
-            return acc;
-          }, {});
+        if (studyStepsForWorkflow.length === 0) return null;
 
-          const stepNumbers = Array.from(
-            new Set(
-              studyStepsForWorkflow
-                .map((s) => workflowStepIdToNumber[s.workflowStepId])
-                .filter((num) => !!num)
-            )
-          ).sort((a, b) => a - b);
+        // Map to workflow step IDs and resolve their order/step numbers
+        const orderedSteps = this.orderedWorkflowStepsByWorkflow[workflowId] || [];
+        const workflowStepIdToNumber = orderedSteps.reduce((acc, step, idx) => {
+          acc[step.id] = idx + 1;
+          return acc;
+        }, {});
 
-          return {
-            ...workflow,
-            id: workflow.id,
-            name: workflow.name || `Workflow ${workflow.id}`,
+        const stepNumberGroups = {};
+        studyStepsForWorkflow.forEach((studyStep) => {
+          const stepNum = workflowStepIdToNumber[studyStep.workflowStepId];
+          if (stepNum) {
+            if (!stepNumberGroups[stepNum]) {
+              stepNumberGroups[stepNum] = [];
+            }
+            stepNumberGroups[stepNum].push(studyStep);
+          }
+        });
+        // Create a separate row for each step number
+        Object.keys(stepNumberGroups).forEach((stepNum) => {
+          const studyStepsInThisStep = stepNumberGroups[stepNum];
+
+          // Get all study IDs that have this step
+          const studyIdsForThisStep = new Set(studyStepsInThisStep.map((s) => s.studyId));
+
+          // Count sessions for these studies
+          const sessionsForThisStep = this.studySessions.filter((session) => studyIdsForThisStep.has(session.studyId));
+
+          const openSessions = sessionsForThisStep.filter((s) => !s.end).length;
+          const closedSessions = sessionsForThisStep.filter((s) => s.end).length;
+
+          result.push({
+            id: result.length + 1,
+            workflowId: workflow.id,
+            workflowName: workflow.name || `Workflow ${workflow.id}`,
+            stepNumber: parseInt(stepNum),
             description: workflow.description || "-",
-            stepNumbers: stepNumbers.join(", "),
-            studiesUsingWorkflow: studiesUsingWorkflow.length,
-          };
-        })
-        .filter((entry) => entry !== null);
+            openSessions: openSessions,
+            closedSessions: closedSessions,
+            totalSessions: openSessions + closedSessions,
+            studySteps: studyStepsInThisStep,
+          });
+        });
+      });
+
+      return result.sort((a, b) => {
+        if (a.workflowName !== b.workflowName) {
+          return a.workflowName.localeCompare(b.workflowName);
+        }
+        return a.stepNumber - b.stepNumber;
+      });
     },
     workflowTableColumns() {
       return [
         { name: "ID", key: "id" },
-        { name: "Name", key: "name" },
-        { name: "Step(s)", key: "stepNumbers" },
-        { name: "Description", key: "description" },
+        { name: "Workflow ID", key: "workflowId" },
+        { name: "Workflow Name", key: "workflowName" },
+        { name: "Step", key: "stepNumber" },
+        { name: "Open Sessions", key: "openSessions" },
+        { name: "Closed Sessions", key: "closedSessions" },
+        { name: "Total Sessions", key: "totalSessions" },
       ];
     },
     configurationsTable() {
