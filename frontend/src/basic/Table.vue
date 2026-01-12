@@ -964,12 +964,27 @@ export default {
     getFilteredButtons(row) {
       const filteredButtons = this.buttons.filter((b) => {
         if (!b.filter || !b.filter.length) return true;
-        return b.filter.some((f) => {
-          if (f.type === "not") {
-            return row[f.key] !== f.value;
-          }
-          return row[f.key] === f.value;
-        });
+        
+        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
+        const filterMode = b.filterMode || "or";
+        
+        if (filterMode === "and") {
+          // AND logic: all filters must match
+          return b.filter.every((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        } else {
+          // OR logic (default): at least one filter must match
+          return b.filter.some((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        }
       });
 
       // Update this flag if there are any buttons
