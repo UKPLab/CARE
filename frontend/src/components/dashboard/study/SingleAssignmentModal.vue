@@ -37,6 +37,13 @@
             :options="assignmentTypeFields"
         />
       </div>
+      <div class="mt-3">
+        <label class="form-label"><strong>Assignment Email Template (optional):</strong></label>
+        <FormSelect
+            v-model="emailTemplateSelection"
+            :options="emailTemplateOptions"
+        />
+      </div>
     </template>
     <template #step-2>
       <BasicTable
@@ -139,6 +146,9 @@ export default {
     },
     "submission",
     {
+      table: "template",
+    },
+    {
       table: "configuration",
       filter: [{key: "type", value: 1}]
     }],
@@ -149,6 +159,7 @@ export default {
       assignmentTypeSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
+      emailTemplateSelection: null,
     };
   },
   computed: {
@@ -207,6 +218,21 @@ export default {
         options: [
           {value: 'document', name: 'Documents'},
           {value: 'submission', name: 'Submissions'}
+        ]
+      };
+    },
+    emailTemplates() {
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => t.type === 3 && !t.deleted);
+    },
+    emailTemplateOptions() {
+      return {
+        options: [
+          {value: null, name: 'None (no email will be sent)'},
+          ...this.emailTemplates.map(t => ({
+            value: t.id,
+            name: t.name
+          }))
         ]
       };
     },
@@ -414,6 +440,7 @@ export default {
       this.baseFileSelections = {};
       this.inputGroupValid = false;
       this.validationConfigurationNames = {};
+      this.emailTemplateSelection = null;
     },
     createAssignment() {
       this.$refs.assignmentStepper.setWaiting(true);
@@ -424,6 +451,7 @@ export default {
         reviewer: this.selectedReviewer,
         assignment: this.selectedAssignment[0],
         documents: this.workflowStepsAssignments,
+        emailTemplateId: this.emailTemplateSelection || null,
       };
 
       this.$socket.emit("assignmentCreate", assignmentData, (res) => {

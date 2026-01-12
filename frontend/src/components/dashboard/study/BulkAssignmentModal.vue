@@ -37,6 +37,13 @@
             :options="assignmentTypeFields"
         />
       </div>
+      <div class="mt-3">
+        <label class="form-label"><strong>Assignment Email Template (optional):</strong></label>
+        <FormSelect
+            v-model="emailTemplateSelection"
+            :options="emailTemplateOptions"
+        />
+      </div>
     </template>
 
     <template #step-2>
@@ -208,7 +215,10 @@ export default {
       value: true
     }]
   },
-    "submission"
+    "submission",
+    {
+      table: "template",
+    }
   ],
   components: {StepperModal, BasicTable, BasicForm, FormSelect},
   data() {
@@ -222,6 +232,7 @@ export default {
       reviewerSelection: {},
       filterHasDocuments: false,
       filterSelectedDocuments: false,
+      emailTemplateSelection: null,
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -515,6 +526,21 @@ export default {
         ]
       };
     },
+    emailTemplates() {
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => t.type === 3 && !t.deleted);
+    },
+    emailTemplateOptions() {
+      return {
+        options: [
+          {value: null, name: 'None (no email will be sent)'},
+          ...this.emailTemplates.map(t => ({
+            value: t.id,
+            name: t.name
+          }))
+        ]
+      };
+    },
     reviewerSelectionModeFields() {
       return [
         {
@@ -600,6 +626,7 @@ export default {
       this.selectedReviewer = [];
       this.selectedAssignments = [];
       this.assignmentTypeSelection = {};
+      this.emailTemplateSelection = null;
     },
     createAssignments() {
       this.$refs.assignmentStepper.setWaiting(true);
@@ -613,6 +640,7 @@ export default {
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
         assignmentType: this.assignmentType,
+        emailTemplateId: this.emailTemplateSelection || null,
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
