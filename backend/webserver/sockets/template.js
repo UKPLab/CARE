@@ -77,7 +77,7 @@ class TemplateSocket extends Socket {
     // Allow viewing:
     // - Own templates (always, for all users including admins)
     // - Published templates from others (view-only, for all users including admins)
-    // Admins follow the same rules as regular users
+    // - Admins follow the same rules as regular users
     const isOwner = template.userId === this.userId;
     const isPublishedFromOthers = template.published === true && !isOwner;
     
@@ -85,8 +85,7 @@ class TemplateSocket extends Socket {
       throw new Error("You can only view templates that you own or published templates from others");
     }
     
-    // Note: readOnly is determined in the frontend based on template data from Vuex store
-    // (same pattern as documents - backend just returns the data)
+
     let delta = new Delta();
     if (template.content && template.content.ops) {
       delta = new Delta(template.content.ops);
@@ -128,8 +127,6 @@ class TemplateSocket extends Socket {
     }
     
     // Prevent editing published templates from others (view-only)
-    // Note: This check is redundant since we already check ownership above,
-    // but kept for clarity and consistency
     if (template.published === true && template.userId !== this.userId) {
       throw new Error("Published templates from other users are view-only and cannot be edited");
     }
@@ -177,8 +174,6 @@ class TemplateSocket extends Socket {
     }
     
     // Prevent editing published templates from others (view-only)
-    // Note: This check is redundant since we already check ownership above,
-    // but kept for clarity and consistency
     if (currentTemplate.published === true && currentTemplate.userId !== this.userId) {
       throw new Error("Published templates from other users are view-only and cannot be edited");
     }
@@ -293,7 +288,6 @@ class TemplateSocket extends Socket {
     }
     
     // Check access: users (including admins) can view placeholders for their own templates or published templates from others
-    // Admins follow the same rules as regular users
     const isOwner = template.userId === this.userId;
     const isPublishedFromOthers = template.published === true && !isOwner;
     
@@ -301,7 +295,6 @@ class TemplateSocket extends Socket {
       throw new Error("Access denied: You can only view placeholders for templates that you own or published templates from others");
     }
 
-    // Get placeholders by template type (all templates of same type share placeholders)
     return await this.models["template_placeholder_mapping"].getAllByKey(
       "templateType",
       template.type,

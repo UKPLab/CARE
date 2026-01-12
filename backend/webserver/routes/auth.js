@@ -115,10 +115,10 @@ module.exports = function (server) {
                 {
                     userId: context.userId,
                     baseUrl: baseUrl,
-                    link: context.link // Pass link for verification/password reset emails
+                    link: context.link 
                 },
                 server.db.models,
-                context.options || {} // Pass transaction if provided
+                context.options || {} 
             );
             
             return {
@@ -305,7 +305,7 @@ The CARE Team`,
                         userId: newUser.id,
                         baseUrl: baseUrl,
                         link: verificationLink,
-                        options: { transaction: transaction } // Pass transaction for template resolution
+                        options: { transaction: transaction } 
                     }
                 );
                 

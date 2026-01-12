@@ -175,13 +175,12 @@ export default {
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
-      // For templates: check if viewing published template from another user (read-only)
       if (this.templateId && this.template) {
         const currentUserId = this.$store.getters["auth/getUser"]?.id;
         const isOwner = this.template.userId === currentUserId;
         const isPublishedFromOthers = this.template.published === true && !isOwner;
         if (isPublishedFromOthers) {
-          return true; // Published templates from others are read-only
+          return true; 
         }
       }
       return this.readOnly;

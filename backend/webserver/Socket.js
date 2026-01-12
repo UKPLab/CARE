@@ -428,13 +428,10 @@ module.exports = class Socket {
             if ("public" in this.models[tableName].getAttributes()) {
                 userFilter[Op.or] = [{userId: userId}, {public: true}];
             } else if ("published" in this.models[tableName].getAttributes()) {
-                // For templates: use model's getUserFilter method if available (safer, model-specific logic)
-                // Otherwise, apply generic published filtering
                 if (tableName === "template" && typeof this.models[tableName].getUserFilter === "function") {
                     const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
                     Object.assign(userFilter, this.models[tableName].getUserFilter(userId, isAdmin));
                 } else {
-                    // Generic published filtering for other models
                     userFilter[Op.or] = [{userId: userId}, {published: true}];
                 }
             } else {

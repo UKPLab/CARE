@@ -87,7 +87,7 @@ class AppSocket extends Socket {
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
-            // NOTE: Table-specific logic for template deletion protection
+            // NOTE: Template deletion protection
             // Prevent deletion of email templates (types 1, 2, 3) that are in use by studies
             // Also prevent deletion of templates that don't belong to the user
             if (data.table === "template" && data.data.deleted === true) {
@@ -170,7 +170,7 @@ class AppSocket extends Socket {
             }
         }
 
-        // NOTE: Table-specific logic for template deletion protection
+        // NOTE: Template deletion protection
         // Prevent deletion of email templates (types 1, 2, 3) that are in use by studies
         // Also prevent deletion of templates that don't belong to the user
         if (data.table === "template" && data.data.deleted === true && data.data.id && data.data.id !== 0) {
