@@ -393,14 +393,15 @@ export default {
 
         // Map to workflow step IDs and resolve their order/step numbers
         const orderedSteps = this.orderedWorkflowStepsByWorkflow[workflowId] || [];
-        const workflowStepIdToNumber = orderedSteps.reduce((acc, step, idx) => {
+        const workflowStepIdToStepNumber = orderedSteps.reduce((acc, step, idx) => {
           acc[step.id] = idx + 1;
           return acc;
         }, {});
 
         const stepNumberGroups = {};
         studyStepsForWorkflow.forEach((studyStep) => {
-          const stepNum = workflowStepIdToNumber[studyStep.workflowStepId];
+          const stepNum = workflowStepIdToStepNumber[studyStep.workflowStepId];
+
           if (stepNum) {
             if (!stepNumberGroups[stepNum]) {
               stepNumberGroups[stepNum] = [];
