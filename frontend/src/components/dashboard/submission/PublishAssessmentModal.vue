@@ -32,8 +32,8 @@
       <div class="mb-3">
         <label class="form-label"><b>Select Workflow:</b></label>
         <p class="small text-muted mb-3">
-          Workflows that contain the selected configuration. The “Step(s)” column
-          shows where the configuration appears inside the workflow.
+          Select a specific workflow step that uses the selected configuration.
+          You can see how many sessions (open/closed) are available for each step.
         </p>
         <BasicTable
           v-model="selectedWorkflows"
@@ -470,7 +470,10 @@ export default {
     },
     
     selectedWorkflowId() {
-      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].id : null;
+      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].workflowId : null;
+    },
+    selectedStepNumber() {
+      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].stepNumber : null;
     },
     selectedConfigurationId() {
       return this.selectedConfigurations.length > 0 ? this.selectedConfigurations[0].id : null;
@@ -501,25 +504,14 @@ export default {
 
     // Sessions filtered by workflow and configuration
     sessionsTable() {
-      if (!this.selectedWorkflowId || !this.selectedConfigurationId) {
-        return [];
-      }
+      if (!this.selectedWorkflowId || !this.selectedConfigurationId || !this.selectedStepNumber) return [];
 
+      const selectedEntry = this.selectedWorkflows[0];
+      if(!selectedEntry || !selectedEntry.studySteps) return [];
       // First, get all studies that match the workflow and configuration
-      const matchingStudyIds = this.studies
-        .filter((study) => {
-          // Check if study has matching workflow
-          if (study.workflowId !== this.selectedWorkflowId) {
-            return false;
-          }
+      const matchingStudyIds = [...new Set(selectedEntry.studySteps.map(s => s.studyId))];
 
-          return !!this.getMatchingStudyStepForStudy(study.id);
-        })
-        .map((study) => study.id);
-
-      if (matchingStudyIds.length === 0) {
-        return [];
-      }
+      if (matchingStudyIds.length === 0) return [];
 
       return this.studySessions
         .filter((session) => matchingStudyIds.includes(session.studyId))
@@ -725,6 +717,10 @@ export default {
       return ["assessment_result"];
     },
     /**
+     * @deprecated Since the user can select a specific step directly, 
+     * this method is no longer in use and can be removed 
+     * after the testing of the assessment publishing feature.
+     * 
      * Find the study step for a study that matches the selected configuration.
      * Prefers the earliest occurrence in the workflow order.
      */
@@ -809,8 +805,20 @@ export default {
      * Returns an object with scores and assessment calculation.
      */
     getAssessmentDataForSession(session) {
-      // locate study step matching selected configuration (earliest occurrence in workflow)
-      const matchingStudyStep = this.getMatchingStudyStepForStudy(session.studyId);
+      // Get the specific study step for the selected step number
+      const selectedEntry = this.selectedWorkflows[0];
+      if (!selectedEntry || !selectedEntry.studySteps) {
+        return { scores: {}, assessment: {} };
+      }
+
+      // Find the study step for this session's study that matches the selected step
+      const matchingStudyStep = selectedEntry.studySteps.find(
+        step => step.studyId === session.studyId
+      );
+
+      if (!matchingStudyStep) {
+        return { scores: {}, assessment: {} };
+      }
       // fetch document_data for this session and study step
       // Try both AI workflow keys and non-AI key (assessment_result)
       const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
