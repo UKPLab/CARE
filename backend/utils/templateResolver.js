@@ -72,8 +72,11 @@ async function buildReplacementMap(context, models, options = {}) {
         }
     }
     
-    // Study session link placeholder
-    if (context.studySessionHash) {
+    // Link placeholder - check direct link first, then study session
+    if (context.link) {
+        // Direct link from context (e.g., verification link, password reset link)
+        replacements["~link~"] = context.link;
+    } else if (context.studySessionHash) {
         const baseUrl = context.baseUrl || "localhost:3000";
         replacements["~link~"] = `http://${baseUrl}/review/${context.studySessionHash}`;
     } else if (context.studySessionId) {
