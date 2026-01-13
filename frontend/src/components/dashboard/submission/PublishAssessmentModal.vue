@@ -727,18 +727,11 @@ export default {
 
       return 0;
     },
-    // TODO: The isStudyClosed methods across the repo do not share the same logic. 
-    // Do we need to unify the logic for this method?
     isStudyClosed(study) {
-      if (study) {
-        if (study.closed) {
-          return true;
-        }
-        if (!study.multipleSubmit && study.end && new Date(study.end) < Date.now()) {
-          return true;
-        }
+      if (!study) {
+        return false;
       }
-      return false;
+      return study.closed === null ? true : false;
     },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
