@@ -162,6 +162,7 @@ module.exports = class MoodleRPC extends RPC {
      * @param {Array<Object>} data.grades - An array of objects containing the grade data.
      * @param {number} data.grades.extId - The ID of the user.
      * @param {number} data.grades.grade - The grade of the assignment.
+     * @param {string} [data.grades.text] - Optional feedback text.
      * @returns {Promise<Object>} - A promise that resolves when the grades have been uploaded.
      */
     async publishAssignmentGrade(data) {

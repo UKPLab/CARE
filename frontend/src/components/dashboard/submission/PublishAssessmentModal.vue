@@ -146,6 +146,25 @@
         </select>
       </div>
       <div v-if="publishMethod === 'moodle'">
+        <div class="mb-3">
+          <div class="form-check">
+            <input
+              id="reviewUrl"
+              v-model="isReviewUrlIncluded"
+              class="form-check-input"
+              type="checkbox"
+            >
+            <label
+              class="form-check-label"
+              for="reviewUrl"
+            >
+              <b>Include review URL in Moodle feedback</b>
+            </label>
+            <p class="small text-muted mt-1">
+              If checked, the review URL will be included as feedback text in Moodle for each published grade.
+            </p>
+          </div>
+        </div>
         <MoodleOptions
           ref="moodleOptionsForm"
           v-model="moodleOptions"
@@ -252,6 +271,7 @@ export default {
       publishMethod: "csv",
       linkCollection: "studies",
       selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
+      isReviewUrlIncluded: false, // Option to include review URL in Moodle feedback
     };
   },
   computed: {
@@ -810,6 +830,7 @@ export default {
       this.linkCollection = "studies";
       this.selectedAssignmentMaxGrade = 0;
       this.moodleOptions = {};
+      this.isReviewUrlIncluded = false;
     },
     selectAssignment({ maxGrade }) {
       this.selectedAssignmentMaxGrade = maxGrade ?? 0;
@@ -910,10 +931,17 @@ export default {
         const { assessment } = this.getAssessmentDataForSession(session);
         const ownerUser = this.getOwnerUserForSession(session);
 
-        return {
+        const gradeEntry = {
           extId: ownerUser?.extId || session.ownerExtId || "",
           grade: this.convertAssessmentScore(assessment),
         };
+
+        // Optionally include review URL as feedback text
+        if (this.isReviewUrlIncluded && session.link) {
+          gradeEntry.text = session.link;
+        }
+
+        return gradeEntry;
       });
 
       this.$refs.assessmentStepper.setWaiting(true);

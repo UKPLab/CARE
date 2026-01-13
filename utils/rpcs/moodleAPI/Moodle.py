@@ -272,19 +272,30 @@ class Moodle:
                 Each entry must contain:
                 - 'extId' (int): The user's external ID
                 - 'grade' (int/float): The grade value to upload
+                Optionally contains:
+                - 'text' (str): Feedback text to include (e.g., review URL)
         
         Example:
+            # Grade only:
             grade_data = [
                 {'extId': 1, 'grade': 85},
                 {'extId': 2, 'grade': 90}
             ]
+            # Grade with feedback:
+            grade_data = [
+                {'extId': 1, 'grade': 85, 'text': 'https://example.com/review/abc123'},
+                {'extId': 2, 'grade': 90, 'text': 'https://example.com/review/def456'}
+            ]
             publish_assignment_grade(assignment_id=123, course_id=456, grade_data=grade_data)
         """
+        # Check if any entry has feedback text, if so use 'text' as feedback_text_key
+        feedback_text_key = 'text' if any('text' in entry for entry in grade_data) else None
+        
         self._publish_assignment_submissions(
             assignment_id=assignment_id,
             course_id=course_id,
             submission_data=grade_data,
-            feedback_text_key=None
+            feedback_text_key=feedback_text_key
         )
                 
     def get_submission_infos_from_assignment(self, course_id, assignment_cmid):
