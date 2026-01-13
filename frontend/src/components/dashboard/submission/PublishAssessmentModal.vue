@@ -181,7 +181,12 @@
                   <strong>Moodle grade scale (target):</strong>
                 </div>
                 <div class="col-6">
-                  from 0 to {{ gradeInformation.maxGradeFromMoodle }} points
+                  <template v-if="moodleOptions?.assignmentID">
+                    from 0 to {{ gradeInformation.maxGradeFromMoodle }} points
+                  </template>
+                  <template v-else>
+                    select an assignment to view this information
+                  </template>
                 </div>
               </div>
               <div class="row">
@@ -189,7 +194,12 @@
                   <strong>Conversion factor:</strong>
                 </div>
                 <div class="col-6">
-                  1 assessment point = {{ gradeInformation.conversionFactor }} Moodle points
+                  <template v-if="moodleOptions?.assignmentID">
+                    1 assessment point = {{ gradeInformation.conversionFactor }} Moodle points
+                  </template>
+                  <template v-else>
+                    select an assignment to view this information
+                  </template>
                 </div>
               </div>
             </div>
@@ -799,6 +809,7 @@ export default {
       this.publishMethod = "csv";
       this.linkCollection = "studies";
       this.selectedAssignmentMaxGrade = 0;
+      this.moodleOptions = {};
     },
     selectAssignment({ maxGrade }) {
       this.selectedAssignmentMaxGrade = maxGrade ?? 0;
