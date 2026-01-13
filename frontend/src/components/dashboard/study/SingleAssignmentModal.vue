@@ -446,7 +446,7 @@ export default {
         .map(session => {
           const study = this.$store.getters["table/study/get"](session.studyId);
           const user = this.$store.getters["table/user/get"](session.userId);
-          
+          const submission = this.getSubmission(session.studyId);
           return {
             id: session.id,
             studyId: session.studyId,
@@ -454,6 +454,7 @@ export default {
             firstName: user ? user.firstName : 'Unknown',
             lastName: user ? user.lastName : 'Unknown',
             workflowType: this.getWorkflowType(study.workflowId),
+            submissionGroup: submission && submission.group ? submission.group : 'N/A',
             status: session.end === null ? "Running" : "Finished",
             createdAt: new Date(session.createdAt).toLocaleString(),
           };
@@ -466,6 +467,7 @@ export default {
         { name: "Last Name", key: "lastName", sortable: true },
         { name: "Workflow Type", key: "workflowType", sortable: true },
         { name: "Created At", key: "createdAt", sortable: true },
+        { name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
         {
           name: "Status",
           key: "status",
@@ -644,6 +646,30 @@ export default {
     }
   },
   methods: {
+    getSubmission(studyId) {  
+      const studySteps = this.$store.getters["table/study_step/getFiltered"](
+        (s) => s.studyId === studyId
+      ) || []; 
+      for (const step of studySteps) {
+        if (step.stepType === 1 && step.documentId !== null) {
+          let document = this.$store.getters["table/document/get"](step.documentId);
+          
+          while(document && document.parentDocumentId !== null) {
+            document = this.$store.getters["table/document/get"](document.parentDocumentId);
+          }
+          
+          if (document && document.submissionId) {
+            const submission = this.$store.getters["table/submission/get"](document.submissionId);
+            if (submission) {
+              return submission;
+            }
+          }
+        }
+      }
+      
+      return null;
+    }, 
+
     getStepTypeName(stepType) {
       switch (stepType) {
         case 1: return 'Annotator';
