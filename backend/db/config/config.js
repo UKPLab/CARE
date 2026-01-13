@@ -11,6 +11,9 @@ module.exports = {
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',
+        dialectOptions: {
+            idle_in_transaction_session_timeout: 60000 // 60s
+        },
     },
     test: {
         username: 'postgres',
@@ -19,6 +22,9 @@ module.exports = {
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',
+        dialectOptions: {
+            idle_in_transaction_session_timeout: 60000 // 60s
+        },
         logging: false
     },
     production: {
@@ -28,6 +34,9 @@ module.exports = {
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',
+        dialectOptions: {
+            idle_in_transaction_session_timeout: 60000 // 60s
+        },
         logging: false
     },
 };
