@@ -1,4 +1,19 @@
 <template>
+  <Teleport to="#topbarCenterPlaceholder">
+    <div
+      v-show="templateId && readOnlyOverwrite"
+      title="Read-only"
+    >
+      <span :style="{ color: '#800000', fontWeight: 'bold' }">
+        Read-only
+      </span>
+      <LoadIcon
+        :size="22"
+        :color="'#800000'"
+        icon-name="lock-fill"
+      />
+    </div>
+  </Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
@@ -30,7 +45,7 @@
             </template>
           </SidebarTemplate>
         </template>
-        <template v-if="templateId" #templateConfigurator>
+        <template v-if="templateId && template && !readOnlyOverwrite" #templateConfigurator>
           <SidebarTemplate icon="gear-fill" title="Placeholders">
             <template #content>
               <TemplateConfigurator/>
@@ -67,6 +82,7 @@ import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurat
 
 export default {
   name: "EditorView",
+  subscribeTable: ["template"],
   components: {
     SidebarTemplate,
     SidebarConfigurator,
@@ -141,7 +157,8 @@ export default {
       if (this.document && this.document.type === 2) {
         return 'configurator';
       }
-      if (this.templateId) {
+      // Only show template configurator if template is loaded and not read-only
+      if (this.templateId && this.template && !this.readOnlyOverwrite) {
         return 'templateConfigurator';
       }
       return null;
@@ -175,7 +192,11 @@ export default {
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
-      if (this.templateId && this.template) {
+      if (this.templateId) {
+        // If template is not loaded yet, default to read-only (safer)
+        if (!this.template) {
+          return true;
+        }
         const currentUserId = this.$store.getters["auth/getUser"]?.id;
         const isOwner = this.template.userId === currentUserId;
         const isPublishedFromOthers = this.template.published === true && !isOwner;
