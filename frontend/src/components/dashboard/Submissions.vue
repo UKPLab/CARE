@@ -183,12 +183,14 @@ export default {
     isProcessingActive() {
       const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
       const preprocess = bgTask.preprocess || {};
-      return (
-          preprocess &&
+      // Show "View Processing" both when requests are pending OR when completed but not yet confirmed
+      const hasActiveRequests = (
           preprocess.requests &&
           typeof preprocess.requests === 'object' &&
           Object.keys(preprocess.requests).length > 0
       );
+      const isCompletedAwaitingConfirmation = preprocess.completed === true;
+      return hasActiveRequests || isCompletedAwaitingConfirmation;
     },
     submissionTable() {
       return this.submissions.map((s) => {
