@@ -68,43 +68,37 @@
     data() {
       return {
         // Placeholder definitions for each template type
+        // Email templates (1, 2, 3) are admin-only
+        // Document templates (4, 5) have no placeholders
         placeholderConfigs: {
-          1: { // Email - General
+          1: { // Email - General (admin only)
             placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "User's username", icon: "bi bi-person" },
-              { id: "firstName", text: "~firstName~", label: "First Name", description: "User's first name", icon: "bi bi-person" },
-              { id: "lastName", text: "~lastName~", label: "Last Name", description: "User's last name", icon: "bi bi-person" },
+              { id: "username", text: "~username~", label: "Username", description: "Recipient's login username", icon: "bi bi-person" },
+              { id: "firstName", text: "~firstName~", label: "First Name", description: "Recipient's first name as registered", icon: "bi bi-person" },
+              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Recipient's last name as registered", icon: "bi bi-person" },
+              { id: "link", text: "~link~", label: "Link", description: "Action link (e.g., verification or password reset URL)", icon: "bi bi-link-45deg" },
             ],
           },
-          2: { // Email - Study Session
+          2: { // Email - Study Session (admin only)
             placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "Study session participant's username", icon: "bi bi-person" },
-              { id: "firstName", text: "~firstName~", label: "First Name", description: "Study session participant's first name", icon: "bi bi-person" },
-              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Study session participant's last name", icon: "bi bi-person" },
-              { id: "creatorUsername", text: "~creatorUsername~", label: "Creator Username", description: "Study creator's username", icon: "bi bi-person-badge" },
-              { id: "creatorFirstName", text: "~creatorFirstName~", label: "Creator First Name", description: "Study creator's first name", icon: "bi bi-person-badge" },
-              { id: "creatorLastName", text: "~creatorLastName~", label: "Creator Last Name", description: "Study creator's last name", icon: "bi bi-person-badge" },
-              { id: "link", text: "~link~", label: "Study Link", description: "Link to read-only study session view", icon: "bi bi-link-45deg" },
+              { id: "username", text: "~username~", label: "Participant Username", description: "Study participant's login username", icon: "bi bi-person" },
+              { id: "creatorUsername", text: "~creatorUsername~", label: "Creator Username", description: "Study creator's login username", icon: "bi bi-person-badge" },
+              { id: "link", text: "~link~", label: "Session Link", description: "Link to the read-only study session view", icon: "bi bi-link-45deg" },
             ],
           },
-          3: { // Email - Assignment
+          3: { // Email - Assignment (admin only)
             placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "Assigned user's username", icon: "bi bi-person" },
-              { id: "firstName", text: "~firstName~", label: "First Name", description: "Assigned user's first name", icon: "bi bi-person" },
-              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Assigned user's last name", icon: "bi bi-person" },
-              { id: "assignmentType", text: "~assignmentType~", label: "Assignment Type", description: "Document or Submission", icon: "bi bi-file-text" },
-              { id: "assignmentName", text: "~assignmentName~", label: "Assignment Name", description: "Name of the document/submission", icon: "bi bi-file-text" },
+              { id: "username", text: "~username~", label: "Username", description: "Assigned participant's login username", icon: "bi bi-person" },
+              { id: "assignmentType", text: "~assignmentType~", label: "Assignment Type", description: "Type of assignment: 'document' or 'submission'", icon: "bi bi-file-text" },
+              { id: "assignmentName", text: "~assignmentName~", label: "Assignment Name", description: "Name of the assigned document or submission", icon: "bi bi-file-text" },
+              { id: "link", text: "~link~", label: "Assignment Link", description: "Direct link to access the assignment", icon: "bi bi-link-45deg" },
             ],
           },
-          4: { // Document - General
-            placeholders: [
-              { id: "description", text: "~description~", label: "Description", description: "Description placeholder (to be handled later)", icon: "bi bi-file-text" },
-            ],
+          4: { // Document - General - NO placeholders
+            placeholders: [],
           },
-          5: { // Document - Study
-            placeholders: [
-              { id: "description", text: "~description~", label: "Description", description: "Description placeholder (to be handled later)", icon: "bi bi-file-text" },
-            ],
+          5: { // Document - Study - NO placeholders
+            placeholders: [],
           },
         },
         placeholderCounts: {},

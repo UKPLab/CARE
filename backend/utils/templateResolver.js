@@ -61,14 +61,12 @@ async function buildReplacementMap(context, models, options = {}) {
         }
     }
     
-    // Study creator placeholders
+    // Study creator placeholders (username only - no first/last names for privacy)
     if (context.creatorId) {
         const creator = await models["user"].getById(context.creatorId, options);
         if (creator) {
             const anonymize = context.anonymize || false;
             replacements["~creatorUsername~"] = anonymize ? "Anonymous" : (creator.userName || "");
-            replacements["~creatorFirstName~"] = anonymize ? "Anonymous" : (creator.firstName || "");
-            replacements["~creatorLastName~"] = anonymize ? "" : (creator.lastName || "");
         }
     }
     
