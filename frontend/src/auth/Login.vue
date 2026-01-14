@@ -127,7 +127,7 @@
         <div class="text-center text-secondary">
           {{ copyright }}
         </div>
-        <div class="text-center text-secondary">
+        <div v-if="showVersion" class="text-center text-secondary">
           App Version: {{ version }}
         </div>
       </div>
@@ -170,6 +170,7 @@ export default {
       },
       validity: null,
       version: APP_VERSION,
+      showVersion: (process.env.NODE_ENV !== 'production'),
     }
   },
   computed: {
