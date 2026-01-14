@@ -45,7 +45,7 @@
             </template>
           </SidebarTemplate>
         </template>
-        <template v-if="templateId && template && !readOnlyOverwrite" #templateConfigurator>
+        <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
           <SidebarTemplate icon="gear-fill" title="Placeholders">
             <template #content>
               <TemplateConfigurator/>
@@ -157,8 +157,9 @@ export default {
       if (this.document && this.document.type === 2) {
         return 'configurator';
       }
-      // Only show template configurator if template is loaded and not read-only
-      if (this.templateId && this.template && !this.readOnlyOverwrite) {
+      // Only show template configurator if template is loaded, not read-only, and has placeholders
+      // Document templates (types 4, 5) have no placeholders, so no sidebar needed
+      if (this.templateId && this.template && !this.readOnlyOverwrite && this.hasPlaceholders) {
         return 'templateConfigurator';
       }
       return null;
@@ -187,6 +188,12 @@ export default {
         return this.$store.getters["table/template/get"](this.templateId);
       }
       return null;
+    },
+    hasPlaceholders() {
+      // Only email templates (types 1, 2, 3) have placeholders
+      // Document templates (types 4, 5) have no placeholders
+      if (!this.template) return false;
+      return [1, 2, 3].includes(this.template.type);
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {
