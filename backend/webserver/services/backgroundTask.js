@@ -316,63 +316,32 @@ module.exports = class BackgroundTaskService extends Service {
     }
 
     /**
-     * Wait for NLP result until a result is received, preprocessing is cancelled, or timeout
+     * Wait for NLP result until a result is received or preprocessing is cancelled
+     * If a result is not received, it continues to wait indefinitely until cancelled
      * @param {string} requestId - The request id to wait for
      * @param {number} intervalMs - Polling interval in milliseconds (default: 200ms)
-     * @param {number} timeoutMs - Timeout in milliseconds (default: 5 minutes)
-     * @param {number} warningMs - Warning timeout in milliseconds (default: 2 minutes)
      * @returns {Promise<object|null>} The NLP result or null if cancelled/timeout
      */
-    async waitForNlpResult(requestId, intervalMs = 200, timeoutMs = 3000) {
-        const start = Date.now();
-        const currentRequest = this.backgroundTask.preprocess?.requests[requestId];
-        
+    async waitForNlpResult(requestId, intervalMs = 200) {
+        const start = Date.now(); // TODO: This can be used to show the start time of the request
         return await new Promise((resolve, reject) => {
-            // Hard timeout - skip this request after timeout
-            const hardTimeout = setTimeout(() => {
-                if (this.backgroundTask.preprocess) {
-                    this.backgroundTask.preprocess.nlpError = {
-                        error: { message: `NLP request timed out after ${Math.round(timeoutMs / 60000)} minutes. The NLP service may be unavailable or overloaded.` }
-                    };
-                    // Add timeout error to errors array
-                    this.backgroundTask.preprocess.errors.push({
-                        message: `Request timed out after ${Math.round(timeoutMs / 60000)} minutes. NLP service may be unavailable.`,
-                        requestId: requestId,
-                        submissionId: currentRequest?.submissionId,
-                        documentId: currentRequest?.documentId,
-                        timestamp: Date.now()
-                    });
-                    this.sendAll("backgroundTaskUpdate", this.backgroundTask);
-                }
-            }, timeoutMs);
-            
             const interval = setInterval(() => {
-                // Check for cancellation
                 if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.cancelled) {
                     clearInterval(interval);
-                    clearTimeout(hardTimeout);
                     resolve(null);
                     return;
                 }
-                
-                // Check for result
                 const result = this.backgroundTask?.preprocess?.nlpResult;
                 if (result && result.id === requestId) {
                     clearInterval(interval);
-                    clearTimeout(hardTimeout);
                     delete this.backgroundTask.preprocess.nlpResult;
                     resolve(result);
-                    return;
                 }
-                
-                // Check for error
                 const error = this.backgroundTask?.preprocess?.nlpError;
                 if (error) {
                     clearInterval(interval);
-                    clearTimeout(hardTimeout);
                     delete this.backgroundTask.preprocess.nlpError;
                     reject(error.error?.message);
-                    return;
                 }
 
             }, intervalMs);
