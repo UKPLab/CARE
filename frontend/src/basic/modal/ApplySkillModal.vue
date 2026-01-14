@@ -1,7 +1,7 @@
 <template>
   <div>
     <ApplySkillSetupStepper
-        v-if="!isProcessingActive"
+        v-if="!showProcessStepper"
         ref="applySkillSetupStepper"
         @start-preprocessing="startPreprocessing"
     />
@@ -16,6 +16,7 @@
         :show-close="true"
         cancel-next-text="Cancel Preprocess"
         @cancel="cancelProcessing"
+        @confirm="confirmCompletion"
     />
   </div>
 </template>
@@ -34,8 +35,6 @@ export default {
       currentStep: 1,
       isAutoOpened: false,
       isWaitingForData: false,
-      lastProcessedCount: 0,
-      hadError: false,
     };
   },
   computed: {
@@ -73,6 +72,12 @@ export default {
           Object.keys(this.preprocess.requests).length > 0
       );
     },
+    isCompleted() {
+      return this.preprocess && this.preprocess.completed === true;
+    },
+    showProcessStepper() {
+      return this.isProcessingActive || this.isCompleted;
+    },
   },
   watch: {
     isProcessingActive: {
@@ -81,27 +86,9 @@ export default {
           this.isWaitingForData = false;
           this.autoOpenProcessStepper();
         }
-        // Track completion: processing just finished
-        if (!newVal && oldVal && this.isAutoOpened) {
-          this.showCompletionSummary();
-        }
       },
       immediate: true
     },
-    preprocess: {
-      handler(newVal) {
-        // Track progress for completion summary
-        if (newVal?.currentSubmissionsCount) {
-          const remaining = Object.keys(newVal.requests || {}).length;
-          this.lastProcessedCount = newVal.currentSubmissionsCount - remaining;
-        }
-        // Track errors from errors array
-        if (newVal?.errors && newVal.errors.length > 0) {
-          this.hadError = true;
-        }
-      },
-      deep: true
-    }
   },
   mounted() {
     this.$socket.emit("serviceCommand", {
@@ -119,12 +106,12 @@ export default {
   },
   methods: {
     async open() {
-      if (!this.isProcessingActive) {
+      if (!this.showProcessStepper) {
         this.$refs.applySkillSetupStepper.open();
       } else {
         this.eventBus.emit("toast", {
-          title: "Preprocessing In Progress",
-          message: "Preprocessing is currently running. Showing progress...",
+          title: this.isCompleted ? "Preprocessing Complete" : "Preprocessing In Progress",
+          message: this.isCompleted ? "Review the results below." : "Preprocessing is currently running. Showing progress...",
           variant: "info",
         });
         this.$refs.processStepper.open();
@@ -134,7 +121,7 @@ export default {
       this.isAutoOpened = false;
       this.isWaitingForData = false;
 
-      if (!this.isProcessingActive) {
+      if (!this.showProcessStepper) {
         this.$refs.applySkillSetupStepper.close();
       } else {
         this.$refs.processStepper.close();
@@ -215,32 +202,23 @@ export default {
       }
     },
 
-    showCompletionSummary() {
-      const processed = this.lastProcessedCount;
-      const hadError = this.hadError;
-      
-      // Reset tracking state
-      this.isAutoOpened = false;
-      this.lastProcessedCount = 0;
-      this.hadError = false;
-
-      if (hadError) {
-        this.eventBus.emit("toast", {
-          title: "Preprocessing Completed with Errors",
-          message: `Processed ${processed} item(s). Some requests encountered errors.`,
-          variant: "warning",
-          autohide: true,
-          delay: 8000
-        });
-      } else {
-        this.eventBus.emit("toast", {
-          title: "Preprocessing Complete",
-          message: `Successfully processed ${processed} item(s).`,
-          variant: "success",
-          autohide: true,
-          delay: 5000
-        });
-      }
+    confirmCompletion() {
+      this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "confirmCompletion",
+        data: {}
+      }, (res) => {
+        if (res.success) {
+          this.isAutoOpened = false;
+          this.$refs.processStepper.close();
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Confirmation Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
   },
 };

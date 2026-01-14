@@ -17,6 +17,7 @@ module.exports = class BackgroundTaskService extends Service {
                 "getBackgroundTask",
                 "startPreprocessing",
                 "cancelPreprocessing",
+                "confirmCompletion",
                 "setResult",
                 "subscribeBackgroundTaskUpdates",
                 "unsubscribeBackgroundTaskUpdates"
@@ -46,6 +47,8 @@ module.exports = class BackgroundTaskService extends Service {
                 return await this.startPreprocessing(client, data);
             case "cancelPreprocessing":
                 return await this.cancelPreprocessing(client);
+            case "confirmCompletion":
+                return await this.confirmCompletion(client);
             case "subscribeBackgroundTaskUpdates":
                 this.subscriptionClients.push(client);
                 return;
@@ -145,7 +148,12 @@ module.exports = class BackgroundTaskService extends Service {
 
         if (!Object.keys(this.backgroundTask.preprocess.requests).length) {
             this.backgroundTask.preprocess.currentRequestId = null;
-            delete this.backgroundTask.preprocess;
+            // Only set completed if not cancelled - cancelled processes should clear state immediately
+            if (!this.backgroundTask.preprocess.cancelled) {
+                this.backgroundTask.preprocess.completed = true;
+            } else {
+                delete this.backgroundTask.preprocess;
+            }
         }
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
 
@@ -161,6 +169,7 @@ module.exports = class BackgroundTaskService extends Service {
 
         this.backgroundTask.preprocess = {
             cancelled: false,
+            completed: false,
             requests: {},
             currentSubmissionsCount: 0,
             currentRequestId: null,
@@ -449,6 +458,27 @@ module.exports = class BackgroundTaskService extends Service {
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
 
         return "Preprocessing cancelled successfully.";
+    }
+
+    /**
+     * Confirm completion by clearing the preprocess state after admin reviews results
+     * @param {object} client - The client requesting confirmation
+     * @returns {string} Success message
+     * @throws {Error} When user lacks admin rights or no completed preprocessing
+     */
+    async confirmCompletion(client) {
+        const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
+        if (!documentSocket || !(await documentSocket.isAdmin())) {
+            throw new Error("Cannot confirm completion: missing admin rights");
+        }
+        if (!this.backgroundTask.preprocess || !this.backgroundTask.preprocess.completed) {
+            throw new Error("Cannot confirm completion: no completed preprocessing to confirm");
+        }
+
+        delete this.backgroundTask.preprocess;
+        this.sendAll("backgroundTaskUpdate", this.backgroundTask);
+
+        return "Preprocessing completion confirmed.";
     }
 
     /**

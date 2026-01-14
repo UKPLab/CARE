@@ -4,11 +4,10 @@
     :steps="processingSteps"
     :validation="[true, true]"
     :current-step="currentStep"
-    :show-footer="false"
-    :next-text="currentStep === 1 ? cancelNextText : 'Next'"
+    :next-text="isCompleted ? 'Confirm' : cancelNextText"
     submit-text="Confirm"
     :show-close="showClose"
-    @submit="$emit('cancel')"
+    @submit="handleSubmit"
   >
     <template #title>
       <h5 class="modal-title text-primary">{{ title }}</h5>
@@ -54,7 +53,7 @@
           >
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <strong>❌ Error:</strong> 
+                <strong>Error:</strong> 
                 {{ error.message }}
               </div>
               <small class="text-muted ms-2">
@@ -125,7 +124,7 @@ export default {
       default: "Cancel Preprocess" 
     },
   },
-  emits: ["cancel"],
+  emits: ["cancel", "confirm"],
   data() {
     return {
       now: Date.now(),
@@ -142,6 +141,12 @@ export default {
   },
   computed: {
     processingSteps() {
+      // When completed, only show 1 step so the button becomes "Confirm" (submitText)
+      if (this.isCompleted) {
+        return [
+          { title: 'Processing Complete' }
+        ];
+      }
       return [
         { title: 'Processing Progress' },
         { title: 'Confirm Cancellation' }
@@ -155,17 +160,20 @@ export default {
         Object.keys(this.preprocess.requests).length > 0
       );
     },
+    isCompleted() {
+      return this.preprocess && this.preprocess.completed === true;
+    },
     totalCount() {
       return this.preprocess?.currentSubmissionsCount || 0;
     },
     processedCount() {
-      if (!this.isProcessingActive) return 0;
+      if (!this.isProcessingActive && !this.isCompleted) return 0;
       const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess.requests).length;
+      const remaining = Object.keys(this.preprocess?.requests || {}).length;
       return total - remaining;
     },
     progressPercent() {
-      if (!this.isProcessingActive) return 0;
+      if (!this.isProcessingActive && !this.isCompleted) return 0;
       const total = this.totalCount;
       if (!total) return 0;
       const processed = this.processedCount;
@@ -260,6 +268,13 @@ export default {
     },
     close() {
       this.$refs.stepper.close();
+    },
+    handleSubmit() {
+      if (this.isCompleted) {
+        this.$emit('confirm');
+      } else {
+        this.$emit('cancel');
+      }
     },
     formatDurationSeconds(totalSeconds) {
       const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
