@@ -23,11 +23,12 @@ module.exports = (sequelize, DataTypes) => {
                 // Admins: own templates (all types) OR published templates from others
                 return {[Op.or]: [{userId: userId}, {published: true}]};
             } else {
-                // Non-admins: own templates (excluding Type 1) OR published templates from others (excluding Type 1)
+                // Non-admins: own templates (types 4, 5 only) OR published templates from others (types 4, 5 only)
+                // Email templates (types 1, 2, 3) are admin-only
                 return {
                     [Op.or]: [
-                        {[Op.and]: [{userId: userId}, {type: {[Op.ne]: 1}}]},
-                        {[Op.and]: [{published: true}, {type: {[Op.ne]: 1}}]}
+                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5]}}]},
+                        {[Op.and]: [{published: true}, {type: {[Op.in]: [4, 5]}}]}
                     ]
                 };
             }
@@ -36,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Override getAutoTable to apply custom filtering for templates:
          * - All users (including admins): own templates OR published templates from others
-         * - Non-admins: exclude Type 1 (Email - General) templates
+         * - Non-admins: exclude email templates (types 1, 2, 3) - admin-only
          */
         static async getAutoTable(filterList = [], userId = null, attributes = null) {
             const {Op} = require("sequelize");

@@ -32,9 +32,10 @@ class TemplateSocket extends Socket {
         throw new Error("Missing required fields: name, description, type, content");
     }
     
-    // Non-admins can only create types 2, 3, 4, 5 (not type 1)
-    if (!(await this.isAdmin()) && data.type === 1) {
-      throw new Error("Access denied: Only administrators can create Type 1 (Email - General) templates");
+    // Non-admins can only create types 4, 5 (document templates)
+    // Email templates (types 1, 2, 3) are admin-only
+    if (!(await this.isAdmin()) && [1, 2, 3].includes(data.type)) {
+      throw new Error("Access denied: Only administrators can create email templates (types 1, 2, 3)");
     }
     
     const payload = {

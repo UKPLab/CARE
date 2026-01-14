@@ -29,14 +29,39 @@
         isEdit: false,
       };
     },
+    computed: {
+      isAdmin() {
+        return this.$store.getters["auth/isAdmin"];
+      },
+    },
     methods: {
       open(templateId = null, defaultValues = {}) {
         const id = templateId ? Number(templateId) : 0;
         this.isEdit = id > 0;
         
+        // Filter type options for non-admins BEFORE opening
+        // Non-admins can only create document templates (types 4, 5)
+        if (!this.isEdit && !this.isAdmin) {
+          this.filterTypeOptionsInStore();
+        }
+        
         this.$nextTick(() => {
           this.$refs.coordinator.open(id, defaultValues);
         });
+      },
+      
+      filterTypeOptionsInStore() {
+        // Filter type field options directly in the store-derived fields
+        // This ensures options are filtered before the modal opens
+        const fields = this.$store.getters["table/template/getFields"];
+        if (fields) {
+          const typeField = fields.find(f => f.key === 'type');
+          if (typeField && typeField.options) {
+            typeField.options = typeField.options.filter(opt => 
+              opt.value === null || [4, 5].includes(opt.value)
+            );
+          }
+        }
       },
       
       update(data) {
