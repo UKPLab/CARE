@@ -101,6 +101,11 @@ class AppSocket extends Socket {
                     throw new Error("You can only delete templates that you own");
                 }
                 
+                // Prevent deletion of published email templates (types 1, 2, 3)
+                if (template.published && [1, 2, 3].includes(template.type)) {
+                    throw new Error("Published email templates cannot be deleted");
+                }
+                
                 if (template && [1, 2, 3].includes(template.type)) {
                     // Check if template is in use by any studies
                     const usageCount = await this.models["study_template_mapping"].count({
@@ -171,7 +176,8 @@ class AppSocket extends Socket {
         }
 
         // NOTE: Template deletion protection
-        // Prevent deletion of email templates (types 1, 2, 3) that are in use by studies
+        // Prevent deletion of email templates (types 1, 2, 3) that are in use
+        // Prevent deletion of published email templates
         // Also prevent deletion of templates that don't belong to the user
         if (data.table === "template" && data.data.deleted === true && data.data.id && data.data.id !== 0) {
             const template = await this.models["template"].getById(data.data.id, {transaction: transaction});
@@ -182,6 +188,11 @@ class AppSocket extends Socket {
             // Check ownership: users (including admins) can only delete their own templates
             if (template.userId !== this.userId) {
                 throw new Error("You can only delete templates that you own");
+            }
+            
+            // Prevent deletion of published email templates (types 1, 2, 3)
+            if (template.published && [1, 2, 3].includes(template.type)) {
+                throw new Error("Published email templates cannot be deleted");
             }
             
             if (template && [1, 2, 3].includes(template.type)) {

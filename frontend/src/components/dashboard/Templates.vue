@@ -73,8 +73,9 @@
         return this.$store.getters["table/template/getAll"].map(t => ({
           ...t,
           typeName: this.typeName(t.type),
-        })
-      );
+          // Published email templates (types 1, 2, 3) cannot be deleted
+          canDelete: !(t.published && [1, 2, 3].includes(t.type)),
+        }));
       },
       buttons() {
         // Template-specific button filtering: buttons with multiple filters use AND logic
@@ -161,7 +162,13 @@
                 "btn-outline-secondary": true,
               },
             },
-            filter: [{ key: "userId", value: this.userId }],
+            // Show only for own templates that can be deleted
+            // Published email templates (types 1, 2, 3) cannot be deleted
+            filter: [
+              { key: "userId", value: this.userId },
+              { key: "canDelete", value: true }
+            ],
+            filterMode: "and",
             title: "Delete template",
             action: "delete",
           },
