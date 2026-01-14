@@ -20,6 +20,7 @@
       </template>
     </Card>
     <TemplateModal ref="templateModal" />
+    <PublishModal ref="publishModal" />
     <ConfirmModal ref="deleteConf" />
   </template>
   
@@ -28,6 +29,7 @@
   import BasicTable from "@/basic/Table.vue";
   import BasicButton from "@/basic/Button.vue";
   import TemplateModal from "./templates/TemplateModal.vue";
+  import PublishModal from "./templates/PublishModal.vue";
   import ConfirmModal from "@/basic/modal/ConfirmModal.vue"; 
   /**
    * Templates dashboard component
@@ -44,6 +46,7 @@
       BasicTable,
       BasicButton,
       TemplateModal,
+      PublishModal,
       ConfirmModal,
     },
     data() {
@@ -194,38 +197,9 @@
             this.deleteTemplate(data.params);
             break;
           case "togglePublished":
-            this.togglePublished(data.params);
+            this.$refs.publishModal.open(data.params.id);
             break;
         }
-      },
-      togglePublished(template) {
-        if (template.published) {
-          this.eventBus.emit("toast", {
-            title: "Already published",
-            message: "This template is already published and cannot be published again",
-            variant: "warning",
-          });
-          return;
-        }
-        
-        this.$socket.emit("templateUpdate", {
-          id: template.id,
-          published: true,
-        }, (result) => {
-          if (result.success) {
-            this.eventBus.emit("toast", {
-              title: "Template published",
-              message: "The template is now visible to all users",
-              variant: "success",
-            });
-          } else {
-            this.eventBus.emit("toast", {
-              title: "Template update failed",
-              message: result.message,
-              variant: "danger",
-            });
-          }
-        });
       },
       deleteTemplate(template) {
         this.$refs.deleteConf.open(
