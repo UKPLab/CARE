@@ -21,32 +21,53 @@ class SubmissionSocket extends Socket {
      * @throws {Error} If the operation fails
      */
     async assignGroupToSubmissions(data, options = {}) {
-        const { group, isCopied, submissionIds, additionalSettings } = data;
+        const {group, isCopied, submissionIds, additionalSettings} = data;
         const transaction = options.transaction;
         if (isCopied) {
             // Copy submissions after group assignment (copies will inherit the group)
             const copiedResults = [];
             for (const submissionId of submissionIds) {
                 try {
-                    const copyResult = await this.models["submission"].copySubmission(submissionId, this.userId, { transaction });
+                    const copyResult = await this.models["submission"].copySubmission(submissionId, this.userId, {transaction});
                     copiedResults.push(copyResult);
                 } catch (error) {
                     throw new Error(`Failed to copy submission with ${submissionId}: ${error.message}`);
                 }
             }
             const copiedSubmissionIds = copiedResults.map(({copiedSubmission}) => copiedSubmission.id);
-            await this.models["submission"].assignGroup(copiedSubmissionIds, group, additionalSettings, { transaction });
+            await this.models["submission"].assignGroup(copiedSubmissionIds, group, additionalSettings, {transaction});
             return {
                 success: true,
                 copiedSubmissions: copiedResults,
             };
         } else {
-            await this.models["submission"].assignGroup(submissionIds, group, additionalSettings, { transaction });
+            await this.models["submission"].assignGroup(submissionIds, group, additionalSettings, {transaction});
             return {
                 success: true,
                 submissionsUpdated: submissionIds.length,
             };
         }
+    }
+
+    /**
+     * Update a submission document
+     *
+     * @param {Object} data - The data object containing submission parameters
+     * @param {number} data.id - The ID of the submission to be updated
+     * @param {Object} options - Database options including transaction
+     * @returns {Promise<void>} A promise that resolves when the update is complete
+     * @throws {Error} If the user is not allowed to update the document
+     */
+    async updateSubmission(data, options) {
+        const submission = await this.models['submission'].getById(data['id']);
+        if (!(await this.checkUserAccess(submission.userId))) {
+            throw new Error("You are not allowed to update this submission.");
+        }
+
+        const newSubmission = await this.models['submission'].updateById(submission.id, data);
+        options.transaction.afterCommit(async () => {
+            this.emit("submissionRefresh", await this.updateCreatorName(newSubmission));
+        });
     }
 
     /**
@@ -71,6 +92,7 @@ class SubmissionSocket extends Socket {
 
     init() {
         this.createSocket("submissionAssignGroup", this.assignGroupToSubmissions, {}, true);
+        this.createSocket("submissionUpdate", this.updateSubmission, {}, true);
         this.createSocket("submissionPublishGrades", this.publishGrades, {}, false);
     }
 }

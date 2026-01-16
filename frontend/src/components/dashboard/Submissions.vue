@@ -179,10 +179,10 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Delete document...",
-          action: "deleteDoc",
+          title: "Delete submission",
+          action: "deleteSubmission",
           stats: {
-            documentId: "id",
+            submissionId: "id",
           },
         },
       ],
@@ -230,36 +230,28 @@ export default {
         case "downloadSubmission":
           this.downloadSubmission(data.params.id);
           break;
-        case "deleteDoc":
-          this.deleteDoc(data.params);
+        case "deleteSubmission":
+          this.deleteSubmission(data.params);
           break;
       }
     },
-    async deleteDoc(row) {
-      const studies = this.$store.getters["table/study/getFiltered"]((e) => e.documentId === row.id);
-      let warning;
-      if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"}
-         running on this document. Deleting it will delete the ${studies.length !== 1 ? "studies" : "study"}!`;
-      } else {
-        warning = "";
-      }
-
-      this.$refs.deleteConf.open("Delete Document", "Are you sure you want to delete the document?", warning, (val) => {
+    async deleteSubmission(row) {
+      let warning = "";
+      this.$refs.deleteConf.open("Delete Submission", "Are you sure you want to delete the submission?", warning, (val) => {
         if (val) {
-          this.$socket.emit("documentUpdate", {
+          this.$socket.emit("submissionUpdate", {
             id: row.id,
             deleted: true,
           }, (res) => {
             if (res.success) {
               this.eventBus.emit("toast", {
-                title: "Document deleted",
-                message: "The document has been deleted",
+                title: "Submission deleted",
+                message: "The submission has been deleted",
                 variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Failed to delete document",
+                title: "Failed to delete submission",
                 message: res.message,
                 variant: "danger",
               });
