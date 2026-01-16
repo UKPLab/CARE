@@ -54,11 +54,12 @@ class TemplateSocket extends Socket {
     return template;
   }
 
-   /**
+  /**
    * Get template content (deltas) for editor
    *
    * Fetches the template and returns its content as Quill Delta format for the editor to load.
-   * All users can access template content for their own templates or published templates from others.
+   * - For owners: returns stable content composed with draft edits (like documents)
+   * - For non-owners: returns only stable content (no drafts)
    *
    * @socketEvent templateGetContent
    * @param {Object} data                  The data object
@@ -85,27 +86,44 @@ class TemplateSocket extends Socket {
     if (!isOwner && !isPublishedFromOthers) {
       throw new Error("You can only view templates that you own or published templates from others");
     }
-    
-
+    // Start with stable content from template.content
     let delta = new Delta();
     if (template.content && template.content.ops) {
       delta = new Delta(template.content.ops);
-    } else if (template.content){
-      delta = new Delta();
     }
-    return {template: template, deltas: delta};
+
+    // If owner, compose with draft edits (like documents do)
+    if (isOwner) {
+      const draftEdits = await this.models["template_edit"].findAll({
+        where: { templateId: data.templateId, draft: true, deleted: false },
+        order: [
+          ["createdAt", "ASC"],
+          ["order", "ASC"],
+        ],
+        raw: true,
+      });
+
+      if (draftEdits.length > 0) {
+        const draftDelta = new Delta(dbToDelta(draftEdits));
+        delta = delta.compose(draftDelta);
+      }
+    }
+    // Non-owner (read-only): delta stays as-is (stable content only)
+
+    return { template: template, deltas: delta };
   }
 
   /**
-   * Save template content edits (deltas)
+   * Save template content edits (deltas) to template_edit table
    *
-   * Saves content edits to the template. Composes new edits with existing content
-   * (similar to document editing). Users can only edit content of their own templates.
+   * Saves content edits as draft edits in template_edit table (like document_edit).
+   * Drafts are merged into template.content when the editor is closed.
+   * Users can only edit content of their own templates.
    *
    * @socketEvent templateEditContent
    * @param {Object} data                  The data object
    * @param {number} data.templateId       Template ID (required)
-   * @param {Array<Object>} data.ops        Delta operations in database format (from deltaToDb)
+   * @param {Array<Object>} data.ops       Delta operations in database format (from deltaToDb)
    * @param {Object} options
    * @param {Object} options.transaction
    * @returns {Promise<Object>}
@@ -126,23 +144,21 @@ class TemplateSocket extends Socket {
     if (template.userId !== this.userId) {
       throw new Error("You can only edit content of templates that you own");
     }
-    
-    // Prevent editing published templates from others (view-only)
-    if (template.published === true && template.userId !== this.userId) {
-      throw new Error("Published templates from other users are view-only and cannot be edited");
-    }
-    const newDelta = dbToDelta(data.ops);
-    let existingDelta = new Delta();
-    if (template.content && template.content.ops) {
-      existingDelta = new Delta(template.content.ops);
-    }
-    const composedDelta = existingDelta.compose(newDelta);
 
-    return await this.models["template"].updateById(
-      data.templateId,
-      { content: {ops: composedDelta.ops} },
-      { transaction: options.transaction }
-    );
+    // Save edits to template_edit table with draft:true (like document_edit)
+    const bulkEdits = data.ops.map((op, idx) => ({
+      userId: this.userId,
+      templateId: data.templateId,
+      draft: true,
+      order: idx + 1,
+      ...op,
+    }));
+
+    await this.models["template_edit"].bulkCreate(bulkEdits, {
+      transaction: options.transaction,
+    });
+
+    return { success: true };
   }
 
 
@@ -360,11 +376,93 @@ class TemplateSocket extends Socket {
     }
   }
 
+  /**
+   * Save template by merging draft edits into content
+   *
+   * Merges all draft edits (draft=true) from template_edit into template.content,
+   * then marks them as draft=false. This is called when the editor is closed.
+   * (Like saveDocument in document.js)
+   *
+   * @param {number} templateId            Template ID to save
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<void>}
+   */
+  async saveTemplate(templateId, options = {}) {
+    const template = await this.models["template"].getById(templateId);
+    if (!template) {
+      this.logger.error(`Template not found.`);
+      return;
+    }
+
+    // Get all draft edits
+    const edits = await this.models["template_edit"].findAll({
+      where: { templateId: templateId, draft: true, deleted: false },
+      order: [
+        ["createdAt", "ASC"],
+        ["order", "ASC"],
+      ],
+      raw: true,
+    });
+
+    if (edits.length === 0) return;
+
+    // Compose with existing content
+    let baseContent = template.content?.ops
+      ? new Delta(template.content.ops)
+      : new Delta();
+    const editsDelta = new Delta(dbToDelta(edits));
+    const mergedDelta = baseContent.compose(editsDelta);
+
+    await this.models["template"].updateById(
+      templateId,
+      { content: { ops: mergedDelta.ops } },
+      { transaction: options.transaction }
+    );
+
+    // Mark edits as draft:false
+    await this.models["template_edit"].update(
+      { draft: false },
+      {
+        where: { id: edits.map((e) => e.id) },
+        transaction: options.transaction,
+      }
+    );
+
+    this.logger.info(`Template saved successfully.`);
+  }
+
+  /**
+   * Close template and save if owner
+   *
+   * Called when the template editor is closed. Triggers saveTemplate to merge
+   * draft edits into stable content. Only the owner can trigger save on close.
+   * (Like closeDocument in document.js)
+   *
+   * @socketEvent templateClose
+   * @param {Object} data                  The data object
+   * @param {number} data.templateId       Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<void>}
+   */
+  async closeTemplate(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) return;
+
+    if (template.userId === this.userId) {
+      await this.saveTemplate(data.templateId, options);
+    }
+  }
+
   init() {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
     this.createSocket("templateUpdate", this.updateTemplate, {}, true);
     this.createSocket("templateGetContent", this.getContent, {}, false);
     this.createSocket("templateEditContent", this.editContent, {}, true);
+    this.createSocket("templateClose", this.closeTemplate, {}, true);
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
