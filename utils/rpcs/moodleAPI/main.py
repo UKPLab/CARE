@@ -116,12 +116,25 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
     
+    @sio.on("publishAssignmentGrade")
+    def publishAssignmentGrade(sid, data):
+        try:
+            logger.info(f"Received call: {data} from {sid}")
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            api.publish_assignment_grade(course_id=data['options']['courseID'], assignment_id=data['options']['assignmentID'], grade_data=data['grades'])
+            response = {"success": True, "data": "Grades uploaded successfully."}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"success": False, "message": "error: " + str(e)}
+            return response
+    
     @sio.on("getAssignmentInfoFromCourse")
     def getAssignmentInfoFromCourse(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
             api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
-            assignments = api.get_assignment_ids_from_course(data['options']['courseID'])
+            assignments = api.get_assignment_info_from_course(data['options']['courseID'])
             response = {"success": True, "data": assignments}
             return response
         except Exception as e:

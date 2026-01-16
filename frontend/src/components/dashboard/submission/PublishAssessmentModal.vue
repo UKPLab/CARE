@@ -32,8 +32,8 @@
       <div class="mb-3">
         <label class="form-label"><b>Select Workflow:</b></label>
         <p class="small text-muted mb-3">
-          Workflows that contain the selected configuration. The “Step(s)” column
-          shows where the configuration appears inside the workflow.
+          Select a specific workflow step that uses the selected configuration.
+          You can see how many sessions (open/closed) are available for each step.
         </p>
         <BasicTable
           v-model="selectedWorkflows"
@@ -51,6 +51,7 @@
         <label class="form-label"><b>Select Sessions:</b></label>
         <p class="small text-muted mb-3">
           Select which study sessions to include in the assessment export.
+          Please note only <strong>closed study sessions</strong> are displayed here.
         </p>
         <div v-if="sessionsTable.length === 0" class="alert alert-warning">
           No sessions found matching the selected workflow and configuration.
@@ -144,6 +145,92 @@
           </option>
         </select>
       </div>
+      <div v-if="publishMethod === 'moodle'">
+        <div class="mb-3">
+          <div class="form-check">
+            <input
+              id="reviewUrl"
+              v-model="isReviewUrlIncluded"
+              class="form-check-input"
+              type="checkbox"
+            >
+            <label
+              class="form-check-label"
+              for="reviewUrl"
+            >
+              <b>Include review URL in Moodle feedback</b>
+            </label>
+            <p class="small text-muted mt-1">
+              If checked, the review URL will be included as feedback text in Moodle for each published grade.
+            </p>
+          </div>
+        </div>
+        <MoodleOptions
+          ref="moodleOptionsForm"
+          v-model="moodleOptions"
+          with-assignment-id
+          @select-assignment="selectAssignment"
+        />
+        <div
+          v-if="selectedSessions.length > 0 && selectedConfigurationContent"
+          class="mt-4"
+        >
+          <label class="form-label"><b>Moodle Grade Publishing Overview:</b></label>
+          <div class="card">
+            <div class="card-body">
+              <div class="row mb-2">
+                <div class="col-6">
+                  <strong>Number of grades to publish:</strong>
+                </div>
+                <div class="col-6">
+                  {{ gradeInformation.numberOfGrades }}
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-6">
+                  <strong>Assessment scale (current scores):</strong>
+                </div>
+                <div class="col-6">
+                  from {{ gradeInformation.totalMinPoints }} to
+                  {{ gradeInformation.totalMaxPoints }} points
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-6">
+                  <strong>Moodle grade scale (target):</strong>
+                </div>
+                <div class="col-6">
+                  <template v-if="moodleOptions?.assignmentID">
+                    from 0 to {{ gradeInformation.maxGradeFromMoodle }} points
+                  </template>
+                  <template v-else>
+                    select an assignment to view this information
+                  </template>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <strong>Conversion factor:</strong>
+                </div>
+                <div class="col-6">
+                  <template v-if="moodleOptions?.assignmentID">
+                    1 assessment point = {{ gradeInformation.conversionFactor }} Moodle points
+                  </template>
+                  <template v-else>
+                    select an assignment to view this information
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="small text-muted mt-2">
+            <em>
+              Note: All selected assessment scores will be converted linearly from the
+              assessment scale to the Moodle grade scale using the factor shown above.
+            </em>
+          </p>
+        </div>
+      </div>
     </template>
   </StepperModal>
 </template>
@@ -151,6 +238,7 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "@/assets/assessmentScore.js";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
@@ -160,7 +248,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "PublishAssessmentModal",
-  components: { BasicTable, StepperModal },
+  components: { BasicTable, StepperModal, MoodleOptions },
   subscribeTable: [
     { table: "workflow" },
     { table: "workflow_step" },
@@ -182,6 +270,8 @@ export default {
       selectedSessions: [],
       publishMethod: "csv",
       linkCollection: "studies",
+      selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
+      isReviewUrlIncluded: false, // Option to include review URL in Moodle feedback
     };
   },
   computed: {
@@ -245,7 +335,7 @@ export default {
     },
     studies() {
       return this.$store.getters["table/study/getFiltered"](
-        (s) => s.closed && !s.template && s.projectId === this.projectId
+        (s) => !s.template && s.projectId === this.projectId
       ) || [];
     },
     studySteps() {
@@ -255,7 +345,9 @@ export default {
       return this.$store.getters["table/study_session/getAll"] || [];
     },
     submissions() {
-      return this.$store.getters["table/submission/getAll"] || [];
+      return this.$store.getters["table/submission/getFiltered"](
+        (s) => s.projectId === this.projectId
+      ) || [];
     },
     documents() {
       return this.$store.getters["table/document/getFiltered"](
@@ -313,56 +405,93 @@ export default {
         ...new Set(this.studies.map((s) => s.workflowId).filter((id) => id !== null && id !== undefined)),
       ];
 
-      return workflowIdsInStudies
-        .map((workflowId) => {
-          const workflow = this.workflows.find((w) => w.id === workflowId && !w.deleted);
-          if (!workflow) return null;
+      const result = [];
 
-          const studiesUsingWorkflow = this.studies.filter((s) => s.workflowId === workflowId);
-          if (studiesUsingWorkflow.length === 0) return null;
+      workflowIdsInStudies.forEach((workflowId) => {
+        const workflow = this.workflows.find((w) => w.id === workflowId && !w.deleted);
+        if (!workflow) return null;
 
-          // Find study steps (actual instantiated steps) that use this configuration within these studies
-          const studyIds = new Set(studiesUsingWorkflow.map((s) => s.id));
-          const studyStepsForWorkflow = this.studySteps.filter((step) => {
-            if (!step || step.deleted) return false;
-            if (!studyIds.has(step.studyId)) return false;
-            return this.getConfigurationIdFromConfig(step.configuration) === configId;
-          });
+        const studiesUsingWorkflow = this.studies.filter((s) => s.workflowId === workflowId);
+        if (studiesUsingWorkflow.length === 0) return null;
 
-          if (studyStepsForWorkflow.length === 0) return null;
+        // Find study steps (actual instantiated steps) that use this configuration within these studies
+        const studyIds = new Set(studiesUsingWorkflow.map((s) => s.id));
+        const studyStepsForWorkflow = this.studySteps.filter((step) => {
+          if (!step || step.deleted) return false;
+          if (!studyIds.has(step.studyId)) return false;
+          return this.getConfigurationIdFromConfig(step.configuration) === configId;
+        });
 
-          // Map to workflow step IDs and resolve their order/step numbers
-          const orderedSteps = this.orderedWorkflowStepsByWorkflow[workflowId] || [];
-          const workflowStepIdToNumber = orderedSteps.reduce((acc, step, idx) => {
-            acc[step.id] = idx + 1;
-            return acc;
-          }, {});
+        if (studyStepsForWorkflow.length === 0) return null;
 
-          const stepNumbers = Array.from(
-            new Set(
-              studyStepsForWorkflow
-                .map((s) => workflowStepIdToNumber[s.workflowStepId])
-                .filter((num) => !!num)
-            )
-          ).sort((a, b) => a - b);
+        // Map to workflow step IDs and resolve their order/step numbers
+        const orderedSteps = this.orderedWorkflowStepsByWorkflow[workflowId] || [];
+        const workflowStepIdToStepNumber = orderedSteps.reduce((acc, step, idx) => {
+          acc[step.id] = idx + 1;
+          return acc;
+        }, {});
 
-          return {
-            ...workflow,
-            id: workflow.id,
-            name: workflow.name || `Workflow ${workflow.id}`,
+        const stepNumberGroups = {};
+        studyStepsForWorkflow.forEach((studyStep) => {
+          const stepNum = workflowStepIdToStepNumber[studyStep.workflowStepId];
+
+          if (stepNum) {
+            if (!stepNumberGroups[stepNum]) {
+              stepNumberGroups[stepNum] = [];
+            }
+            stepNumberGroups[stepNum].push(studyStep);
+          }
+        });
+        // Create a separate row for each step number
+        Object.keys(stepNumberGroups).forEach((stepNum) => {
+          const studyStepsInThisStep = stepNumberGroups[stepNum];
+
+          // Get all study IDs that have this step
+          const studyIdsForThisStep = new Set(studyStepsInThisStep.map((s) => s.studyId));
+
+          // Count sessions for these studies
+          const sessionsForThisStep = this.studySessions.filter((session) => studyIdsForThisStep.has(session.studyId));
+
+          // Determine if sessions are closed based on whether their study is closed
+          const openSessions = sessionsForThisStep.filter((session) => {
+            const study = this.studies.find((s) => s.id === session.studyId);
+            return !this.isStudyClosed(study);
+          }).length;
+          const closedSessions = sessionsForThisStep.filter((session) => {
+            const study = this.studies.find((s) => s.id === session.studyId);
+            return this.isStudyClosed(study);
+          }).length;
+
+          result.push({
+            id: result.length + 1,
+            workflowId: workflow.id,
+            workflowName: workflow.name || `Workflow ${workflow.id}`,
+            stepNumber: parseInt(stepNum),
             description: workflow.description || "-",
-            stepNumbers: stepNumbers.join(", "),
-            studiesUsingWorkflow: studiesUsingWorkflow.length,
-          };
-        })
-        .filter((entry) => entry !== null);
+            openSessions: openSessions,
+            closedSessions: closedSessions,
+            totalSessions: openSessions + closedSessions,
+            studySteps: studyStepsInThisStep,
+          });
+        });
+      });
+
+      return result.sort((a, b) => {
+        if (a.workflowName !== b.workflowName) {
+          return a.workflowName.localeCompare(b.workflowName);
+        }
+        return a.stepNumber - b.stepNumber;
+      });
     },
     workflowTableColumns() {
       return [
         { name: "ID", key: "id" },
-        { name: "Name", key: "name" },
-        { name: "Step(s)", key: "stepNumbers" },
-        { name: "Description", key: "description" },
+        { name: "Workflow ID", key: "workflowId" },
+        { name: "Workflow Name", key: "workflowName" },
+        { name: "Step", key: "stepNumber" },
+        { name: "Open Sessions", key: "openSessions" },
+        { name: "Closed Sessions", key: "closedSessions" },
+        { name: "Total Sessions", key: "totalSessions" },
       ];
     },
     configurationsTable() {
@@ -382,7 +511,10 @@ export default {
     },
     
     selectedWorkflowId() {
-      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].id : null;
+      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].workflowId : null;
+    },
+    selectedStepNumber() {
+      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].stepNumber : null;
     },
     selectedConfigurationId() {
       return this.selectedConfigurations.length > 0 ? this.selectedConfigurations[0].id : null;
@@ -413,28 +545,21 @@ export default {
 
     // Sessions filtered by workflow and configuration
     sessionsTable() {
-      if (!this.selectedWorkflowId || !this.selectedConfigurationId) {
-        return [];
-      }
+      if (!this.selectedWorkflowId || !this.selectedConfigurationId || !this.selectedStepNumber) return [];
 
+      const selectedEntry = this.selectedWorkflows[0];
+      if(!selectedEntry || !selectedEntry.studySteps) return [];
       // First, get all studies that match the workflow and configuration
-      const matchingStudyIds = this.studies
-        .filter((study) => {
-          // Check if study has matching workflow
-          if (study.workflowId !== this.selectedWorkflowId) {
-            return false;
-          }
+      const matchingStudyIds = [...new Set(selectedEntry.studySteps.map(s => s.studyId))];
 
-          return !!this.getMatchingStudyStepForStudy(study.id);
-        })
-        .map((study) => study.id);
-
-      if (matchingStudyIds.length === 0) {
-        return [];
-      }
+      if (matchingStudyIds.length === 0) return [];
 
       return this.studySessions
-        .filter((session) => matchingStudyIds.includes(session.studyId))
+        .filter((session) => {
+          const study = this.studies.find((s) => s.id === session.studyId);
+          // The study that the session belongs to needs to be closed and matches the workflow and configuration
+          return this.isStudyClosed(study) && matchingStudyIds.includes(session.studyId)
+        })
         .map((session) => {
           const study = this.studies.find((s) => s.id === session.studyId);
           const user = this.users.find((u) => u.id === session.userId);
@@ -533,9 +658,40 @@ export default {
     publishMethodOptions() {
       return [
         { value: "csv", label: "Download CSV", disabled: false },
-        { value: "moodle", label: "Moodle", disabled: true },
+        { value: "moodle", label: "Moodle", disabled: false },
         { value: "email", label: "Email", disabled: true },
       ];
+    },
+    // Grade information computed properties
+    gradeInformation() {
+      const numberOfGrades = this.selectedSessions.length || 0;
+
+      if (!this.selectedConfigurationContent || numberOfGrades === 0) {
+        return {
+          numberOfGrades,
+          totalMaxPoints: 0,
+          totalMinPoints: 0,
+          maxGradeFromMoodle: this.selectedAssignmentMaxGrade || 0,
+          conversionFactor: 0,
+        };
+      }
+
+      // Use assessment definition from the first selected session (same config for all)
+      const firstSession = this.selectedSessions[0];
+      const { assessment } = this.getAssessmentDataForSession(firstSession);
+
+      const totalMaxPoints = assessment.total_max_points ?? 0;
+      const totalMinPoints = assessment.total_min_points ?? 0;
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+      const conversionFactor = this.getConversionFactorFromAssessment(assessment);
+
+      return {
+        numberOfGrades,
+        totalMaxPoints,
+        totalMinPoints,
+        maxGradeFromMoodle: assignmentMaxGrade,
+        conversionFactor,
+      };
     },
   },
   watch: {
@@ -550,6 +706,33 @@ export default {
     },
   },
   methods: {
+    /**
+     * Calculates the linear conversion factor between assessment points and Moodle grade.
+     * Uses the same logic for both the overview display and the actual grade publishing.
+     */
+    getConversionFactorFromAssessment(assessment) {
+      const totalMaxPoints = assessment.total_max_points ?? 0;
+      const totalMinPoints = assessment.total_min_points ?? 0;
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+
+      const sourcePointsRange = totalMaxPoints - totalMinPoints;
+      const targetGradeRange = assignmentMaxGrade - 0;
+
+      if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
+        let factor = targetGradeRange / sourcePointsRange;
+        // Keep 3 decimal places for display and internal use
+        factor = Math.round(factor * 1000) / 1000;
+        return factor;
+      }
+
+      return 0;
+    },
+    isStudyClosed(study) {
+      if (!study) {
+        return false;
+      }
+      return study.closed === null ? true : false;
+    },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
      * Any service with a skill property indicates AI workflow.
@@ -585,6 +768,10 @@ export default {
       return ["assessment_result"];
     },
     /**
+     * @deprecated Since the user can select a specific step directly, 
+     * this method is no longer in use and can be removed 
+     * after the testing of the assessment publishing feature.
+     * 
      * Find the study step for a study that matches the selected configuration.
      * Prefers the earliest occurrence in the workflow order.
      */
@@ -634,18 +821,27 @@ export default {
       this.selectedSessions = [];
       this.publishMethod = "csv";
       this.linkCollection = "studies";
+      this.selectedAssignmentMaxGrade = 0;
+      this.moodleOptions = {};
+      this.isReviewUrlIncluded = false;
+    },
+    selectAssignment({ maxGrade }) {
+      this.selectedAssignmentMaxGrade = maxGrade ?? 0;
     },
     handleSubmit() {
       if (this.publishMethod === "csv") {
         this.downloadCSV();
         return;
       }
+      if (this.publishMethod === "moodle") {
+        this.uploadGrades();
+        return;
+      }
     },
     /**
-     * Build CSV rows for selected sessions using assessmentScore utilities.
-     * Each session becomes one row; criteria columns are derived from configuration.
+     * Validates that configuration content is available.
      */
-    downloadCSV() {
+    validateConfiguration() {
       const configContent = this.selectedConfigurationContent;
       if (!configContent) {
         this.eventBus.emit("toast", {
@@ -653,52 +849,145 @@ export default {
           message: "Selected configuration content could not be loaded.",
           variant: "danger",
         });
-        return;
+        return false;
+      }
+      return true;
+    },
+    /**
+     * Retrieves assessment data for a given session.
+     * Returns an object with scores and assessment calculation.
+     */
+    getAssessmentDataForSession(session) {
+      // Get the specific study step for the selected step number
+      const selectedEntry = this.selectedWorkflows[0];
+      if (!selectedEntry || !selectedEntry.studySteps) {
+        return { scores: {}, assessment: {} };
       }
 
-      const rows = [];
-      const criteriaList = this.criteriaNames;
+      // Find the study step for this session's study that matches the selected step
+      const matchingStudyStep = selectedEntry.studySteps.find(
+        step => step.studyId === session.studyId
+      );
 
-      this.selectedSessions.forEach((session) => {
-        // locate study step matching selected configuration (earliest occurrence in workflow)
-        const matchingStudyStep = this.getMatchingStudyStepForStudy(session.studyId);
+      if (!matchingStudyStep) {
+        return { scores: {}, assessment: {} };
+      }
+      // fetch document_data for this session and study step
+      // Try both AI workflow keys and non-AI key (assessment_result)
+      const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
 
-        // fetch document_data for this session and study step
-        // Try both AI workflow keys and non-AI key (assessment_result)
-        const documentDataArray = this.$store.getters["table/document_data/getByKey"](
-          "studySessionId",
-          session.sessionId
-        );
-        
-        let documentDataItem = null;
-        let assessmentRaw = {};
-        
-        if (matchingStudyStep && Array.isArray(documentDataArray)) {
-          // Get all possible assessment keys (AI or non-AI)
-          const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
-          
-          // Try to find data using any of the possible keys
-          for (const key of assessmentKeys) {
-            documentDataItem = documentDataArray.find(
-              (dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key
-            );
-            if (documentDataItem) {
-              assessmentRaw = documentDataItem.value || {};
-              break; // Found data, stop searching
-            }
+      let assessmentRaw = {};
+
+      if (matchingStudyStep && Array.isArray(documentDataArray)) {
+        // Get all possible assessment keys (AI or non-AI)
+        const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
+
+        // Try to find data using any of the possible keys
+        for (const key of assessmentKeys) {
+          const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key);
+          if (documentDataItem) {
+            assessmentRaw = documentDataItem.value || {};
+            break; // Found data, stop searching
           }
         }
+      }
 
-        const scoreState = assessmentRaw || {};
+      const scoreState = assessmentRaw || {};
+      const scores = buildScoresFromState(scoreState);
+      const configContent = this.selectedConfigurationContent;
+      const assessment = calculateAssessmentScore(configContent, scores);
 
-        const scores = buildScoresFromState(scoreState);
-        const assessment = calculateAssessmentScore(configContent, scores);
+      return { scores, assessment };
+    },
+    /**
+     * Gets the owner user for a given session.
+     * Returns the user object or null if not found.
+     */
+    getOwnerUserForSession(session) {
+      const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
+      return submission ? this.users.find((u) => u.id === submission.userId) : null;
+    },
+    /**
+     * Gets the reviewer user for a given session.
+     * Returns the user object or null if not found.
+     */
+    getReviewerUserForSession(session) {
+      return this.users.find((u) => u.id === session.userId) || null;
+    },
+    /**
+     * Uploads the selected sessions' grades to a specific assignment in Moodle.
+     */
+    uploadGrades() {
+      if (!this.validateConfiguration()) return;
 
-        const reviewer = this.users.find((u) => u.id === session.userId);
-        const submission = session.submissionId
-          ? this.submissions.find((s) => s.id === session.submissionId)
-          : null;
-        const ownerUser = submission ? this.users.find((u) => u.id === submission.userId) : null;
+      const grades = this.selectedSessions.map((session) => {
+        const { assessment } = this.getAssessmentDataForSession(session);
+        const ownerUser = this.getOwnerUserForSession(session);
+
+        const gradeEntry = {
+          extId: ownerUser?.extId || session.ownerExtId || "",
+          grade: this.convertAssessmentScore(assessment),
+        };
+
+        // Optionally include review URL as feedback text
+        if (this.isReviewUrlIncluded && session.link) {
+          gradeEntry.text = session.link;
+        }
+
+        return gradeEntry;
+      });
+
+      this.$refs.assessmentStepper.setWaiting(true);
+      this.$socket.emit("submissionPublishGrades", {
+          options: this.moodleOptions,
+          grades: grades,
+        }, (res) => {
+          this.$refs.assessmentStepper.setWaiting(false);
+          if (res.success) {
+            this.$refs.assessmentStepper.close();
+            this.eventBus.emit("toast", {
+              title: "Grades published",
+              message: "The selected sessions' grades have been published to the assignment",
+              variant: "success",
+            });
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to publish grades",
+              message: res.message,
+              variant: "danger",
+            });
+          }
+        }
+      );
+    },
+    /**
+     * Converts an assessment score from one scale to another.
+     * Uses the same conversionFactor that is shown in the overview:
+     *   convertedGrade = normalizedPoints * conversionFactor
+     * and then rounds the result to 2 decimal places.
+     */
+    convertAssessmentScore(assessment) {
+      const { total_min_points, achieved_points } = assessment;
+
+      const conversionFactor = this.getConversionFactorFromAssessment(assessment);
+      const normalizedPoints = achieved_points - (total_min_points ?? 0);
+      const convertedGrade = normalizedPoints * conversionFactor;
+      // Round final grade to 2 decimal places
+      return Math.round(convertedGrade * 100) / 100;
+    },
+    /**
+     * Build CSV rows for selected sessions using assessmentScore utilities.
+     * Each session becomes one row; criteria columns are derived from configuration.
+     */
+    downloadCSV() {
+      if (!this.validateConfiguration()) return;
+
+      const criteriaList = this.criteriaNames;
+      const rows = this.selectedSessions.map((session) => {
+        const { scores, assessment } = this.getAssessmentDataForSession(session);
+        const reviewer = this.getReviewerUserForSession(session);
+        const ownerUser = this.getOwnerUserForSession(session);
+        const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
 
         const row = {
           "User ExtId": ownerUser?.extId || session.ownerExtId || "",
@@ -715,12 +1004,12 @@ export default {
           "Total Points": assessment.achieved_points ?? 0,
         };
 
-        // dynamic criteria columns
+        // Add dynamic criteria columns
         criteriaList.forEach((criterionName) => {
           row[criterionName] = scores[criterionName] ?? 0;
         });
 
-        rows.push(row);
+        return row;
       });
 
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
