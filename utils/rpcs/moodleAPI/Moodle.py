@@ -57,25 +57,26 @@ class Moodle:
         
         return users
     
-    def get_assignment_ids_from_course(self, course_id):
+    def get_assignment_info_from_course(self, course_id):
         """
-        Retrieves the assignment IDs and names from a given course.
+        Retrieves the assignment IDs, names, and max grades from a given course.
 
         Args:
             course_id (int): The ID of the course.
 
         Returns:
-            list: A list of tuples containing assignment IDs and names.
+            list: A list of tuples containing (cmid, name, max_grade) for each assignment.
         """
         course_assignments = moodle_api.call('mod_assign_get_assignments', courseids=[course_id])
         
-        assign_ids_with_names = []
+        assignment_info = []
         
         for assignment in course_assignments['courses'][0]['assignments']:
             # Use course‑module id so front‑end passes the value publish() expects
-            assign_ids_with_names.append((assignment['cmid'], assignment['name']))
+            max_grade = assignment.get('grade', 100)  # Default to 100 if not present
+            assignment_info.append((assignment['cmid'], assignment['name'], max_grade))
             
-        return assign_ids_with_names
+        return assignment_info
 
     def get_id_mappings_for_users(self, assignment_id):
         """
@@ -161,36 +162,141 @@ class Moodle:
         
         return users
 
+    def _publish_assignment_submissions(self, assignment_id, course_id, submission_data, default_grade=None, feedback_text_key=None):
+        """
+        Private method that publishes assignment submissions (grades and/or feedback) to Moodle.
         
+        This is a unified method that handles both grade-only and feedback-only submissions,
+        or combinations of both.
+        
+        Args:
+            assignment_id (int): The course module ID of the assignment to upload data for.
+            course_id (int): The ID of the course containing the assignment.
+            submission_data (list of dict): A list of dictionaries containing submission data.
+                Each entry must contain a user ID field.
+                Optionally contains 'grade' and/or feedback text (specified by feedback_text_key).
+            default_grade (int, optional): Default grade value to use if 'grade' is not in entry.
+                If None and 'grade' not in entry, raises KeyError. Defaults to None.
+            feedback_text_key (str, optional): The key name in each entry that contains feedback text.
+                If None, uses empty string for feedback. Defaults to None.
+        
+        Example:
+            # For feedback-only submissions:
+            submission_data = [
+                {'extId': 1, 'text': 'Feedback for user 1'},
+                {'extId': 2, 'text': 'Feedback for user 2'}
+            ]
+            _publish_assignment_submissions(123, 456, submission_data, 
+                                          default_grade=100, 
+                                          feedback_text_key='text')
+            
+            # For grade-only submissions:
+            submission_data = [
+                {'extId': 1, 'grade': 85},
+                {'extId': 2, 'grade': 90}
+            ]
+            _publish_assignment_submissions(123, 456, submission_data,
+                                          feedback_text_key=None)
+        """
+        mapped_assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_id)
+        
+        for entry in submission_data:
+            # Extract external user ID
+            user_id = entry['extId']
+            
+            # Determine grade value
+            if 'grade' in entry:
+                grade = entry['grade']
+            elif default_grade is not None:
+                grade = default_grade
+            else:
+                raise KeyError(f"Entry missing 'grade' field and no default_grade provided: {entry}")
+            
+            # Determine feedback text
+            if feedback_text_key and feedback_text_key in entry:
+                feedback_text = entry[feedback_text_key]
+            else:
+                feedback_text = ""
+            
+            # Build parameters for Moodle API call
+            parameters = {
+                'assignmentid': mapped_assignment_id,
+                'userid': user_id,
+                'grade': grade,
+                'attemptnumber': 1,
+                'addattempt': 1,
+                'workflowstate': 'Graded',
+                'applytoall': 0,
+                'plugindata[assignfeedbackcomments_editor][text]': feedback_text,
+                'plugindata[assignfeedbackcomments_editor][format]': 0,
+                'plugindata[files_filemanager]': 0
+            }
+            
+            moodle_api.call('mod_assign_save_grade', **parameters)
+    
     def publish_assignment_text_feedback(self, assignment_id, course_id, feedback_data):
         """
         This method uploads feedback data to a specific assignment in a Moodle course.
+        
         Args:
             assignment_id (int): The ID of the assignment to upload data for.
             course_id (int): The ID of the course containing the assignment.
             feedback_data (list of dict): A list of dictionaries containing users' feedback data.
+                Each entry must contain:
+                - 'extId' (int): The user's external ID
+                - 'text' (str): The feedback text to upload
+        
         Example:
-            login_data = [
+            feedback_data = [
                 {'extId': 1, 'text': 'Feedback for user 1'},
                 {'extId': 2, 'text': 'Feedback for user 2'}
             ]
             publish_assignment_text_feedback(assignment_id=123, course_id=456, feedback_data=feedback_data)
         """
-        assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_id)
+        self._publish_assignment_submissions(
+            assignment_id=assignment_id,
+            course_id=course_id,
+            submission_data=feedback_data,
+            default_grade=100,
+            feedback_text_key='text'
+        )
+    
+    def publish_assignment_grade(self, assignment_id, course_id, grade_data):
+        """
+        This method uploads grade data to a specific assignment in a Moodle course.
         
-        for entry in feedback_data:
-            parameters = {}
-            parameters['assignmentid'] = assignment_id
-            parameters['userid'] = entry['extId']
-            parameters['grade'] = 100
-            parameters['attemptnumber'] = 1
-            parameters['addattempt'] = 1
-            parameters['workflowstate'] = 'Graded'
-            parameters['applytoall'] = 0
-            parameters['plugindata[assignfeedbackcomments_editor][text]'] = entry['text']
-            parameters['plugindata[assignfeedbackcomments_editor][format]'] = 0
-            parameters['plugindata[files_filemanager]'] = 0
-            moodle_api.call('mod_assign_save_grade', **parameters)
+        Args:
+            assignment_id (int): The ID of the assignment to upload data for.
+            course_id (int): The ID of the course containing the assignment.
+            grade_data (list of dict): A list of dictionaries containing users' grade data.
+                Each entry must contain:
+                - 'extId' (int): The user's external ID
+                - 'grade' (int/float): The grade value to upload
+                Optionally contains:
+                - 'text' (str): Feedback text to include (e.g., review URL)
+        
+        Example:
+            # Grade only:
+            grade_data = [
+                {'extId': 1, 'grade': 85},
+                {'extId': 2, 'grade': 90}
+            ]
+            # Grade with feedback:
+            grade_data = [
+                {'extId': 1, 'grade': 85, 'text': 'https://example.com/review/abc123'},
+                {'extId': 2, 'grade': 90, 'text': 'https://example.com/review/def456'}
+            ]
+            publish_assignment_grade(assignment_id=123, course_id=456, grade_data=grade_data)
+        """
+        # Check if any entry has feedback text, if so use 'text' as feedback_text_key
+        feedback_text_key = 'text' if any('text' in entry for entry in grade_data) else None
+        
+        self._publish_assignment_submissions(
+            assignment_id=assignment_id,
+            course_id=course_id,
+            submission_data=grade_data,
+            feedback_text_key=feedback_text_key
+        )
                 
     def get_submission_infos_from_assignment(self, course_id, assignment_cmid):
         """
