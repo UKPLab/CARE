@@ -31,7 +31,9 @@
           </router-link>
         </span>
       </div>
-
+      <div v-if="isAdmin" class="text-center text-secondary">
+          App Version: {{ version }}
+        </div>
       <div
         class="collapse-sidebar-container list-group-item-action list-group-item list-group-item-custom"
         title="Toggle sidebar"
@@ -65,6 +67,11 @@ export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
   components: {LoadIcon, Loading},
+  data() {
+    return {
+      version: APP_VERSION,
+    }
+  },
   computed: {
     sidebarElements() {
       const groups = this.$store.getters['table/nav_element/getAll']
