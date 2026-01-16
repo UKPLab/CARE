@@ -179,7 +179,7 @@ export default {
   },
   computed: {
     submissions() {
-      return this.$store.getters["table/submission/getAll"];
+      return this.$store.getters["table/submission/getAll"].filter((s) => s.parentSubmissionId === null);
     },
     isProcessingActive() {
       const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
