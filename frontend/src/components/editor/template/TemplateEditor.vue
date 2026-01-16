@@ -203,6 +203,14 @@
     },
     unmounted() {
       this.eventBus.off("editorInsertText", this.insertTextHandler);
+
+      // Save template on close (like documents do)
+      // This triggers merging of draft edits into stable content
+      this.$socket.emit("templateClose", { templateId: this.templateId }, (res) => {
+        if (!res.success) {
+          console.error("Template close error:", res.message);
+        }
+      });
     },
     methods: {
       isEditorEmpty() {
