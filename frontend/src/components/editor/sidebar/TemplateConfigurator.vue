@@ -81,9 +81,8 @@
           },
           2: { // Email - Study Session (admin only)
             placeholders: [
-              { id: "username", text: "~username~", label: "Participant Username", description: "Study participant's login username", icon: "bi bi-person" },
-              { id: "creatorUsername", text: "~creatorUsername~", label: "Creator Username", description: "Study creator's login username", icon: "bi bi-person-badge" },
-              { id: "link", text: "~link~", label: "Session Link", description: "Link to the read-only study session view", icon: "bi bi-link-45deg" },
+              { id: "username", text: "~username~", label: "Recipient username", description: "The person receiving this email (submission owner).", icon: "bi bi-person" },
+              { id: "link", text: "~link~", label: "Review link", description: "The URL to open the review (read-only). Used for session start and finish.", icon: "bi bi-link-45deg" },
             ],
           },
           3: { // Email - Assignment (admin only)
@@ -150,7 +149,7 @@
                 id: ph.placeholderKey,
                 text: `~${ph.placeholderKey}~`,
                 label: ph.placeholderLabel,
-                description: ph.placeholderLabel,
+                description: ph.placeholderDescription || ph.placeholderLabel,
                 icon: this.getPlaceholderIcon(ph.placeholderType),
               }));
               
