@@ -130,6 +130,12 @@ export default {
         baseOptions = this.$store.getters["table/" + this.options.options.table + "/getAll"];
       }
 
+      if ((this.options.options?.prependNone || this.options.prependNone) && this.options.options?.table) {
+        const valueKey = this.options.options.value || 'id';
+        const nameKey = this.options.options.name || 'name';
+        baseOptions = [{ [valueKey]: null, [nameKey]: 'None' }, ...baseOptions];
+      }
+
       // Filter according to additional Options and add to baseOptions
       if (this.options.options.additionalOptions) {
         const mappingFilter = this.options.options.filter.find((filter) => filter.type === "parentData");
