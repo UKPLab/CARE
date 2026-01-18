@@ -1,5 +1,5 @@
 const Socket = require("../Socket.js");
-const {resolveTemplate} = require("../../utils/templateResolver");
+const {getEmailContent} = require("../../utils/emailHelper");
 
 /**
  * Handle all study sessions through websocket
@@ -70,115 +70,106 @@ class StudySessionSocket extends Socket {
     }
 
     /**
-     * Send session start email using configured template
+     * Send session start email using configured template or fallback
      * @param {Object} studySession - Study session object
      * @returns {Promise<void>}
      */
     async sendSessionStartEmail(studySession) {
-        // Get study and check for email template
         const study = await this.models['study'].getById(studySession.studyId);
         if (!study) return;
 
-        // Query for emailStart template mapping
-        const templateMapping = await this.models['study_template_mapping'].findOne({
-            where: {
-                studyId: study.id,
-                templateType: 'emailStart',
-                deleted: false
-            },
-            raw: true
-        });
-
-        if (!templateMapping || !templateMapping.templateId) {
-            return; // No template configured
+        if (!study.enableEmailNotifications) {
+            return;
         }
 
-        // Get user email
-        const user = await this.models['user'].getById(studySession.userId);
+        // Get submission owner email (study.userId)
+        const user = await this.models['user'].getById(study.userId);
         if (!user || !user.email) {
-            this.server.logger.warn(`Cannot send session start email: user ${studySession.userId} has no email`);
+            this.server.logger.warn(`Cannot send session start email: user ${study.userId} has no email`);
             return;
         }
 
         // Get baseUrl from settings
         const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
 
-        // Resolve template
-        const resolvedHtml = await resolveTemplate(
-            templateMapping.templateId,
+        // Get email content from template or fallback
+        const emailContent = await getEmailContent(
+            "email.template.sessionStart",
+            "CARE - Review Session Started",
+            `Hello,
+
+A review session has started for your submission.
+
+You will be notified when the review is complete.
+
+Best regards,
+The CARE Team`,
             {
-                userId: studySession.userId,
+                userId: study.userId,
                 creatorId: study.userId,
                 studyId: study.id,
                 studySessionId: studySession.id,
                 studySessionHash: studySession.hash,
                 baseUrl: baseUrl
             },
-            this.models
+            this.models,
+            this.logger
         );
 
         // Send email
-        await this.server.sendMail(
-            user.email,
-            "CARE - Study Session Started",
-            resolvedHtml
-        );
+        await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
     }
 
     /**
-     * Send session finish email using configured template
+     * Send session finish email using configured template or fallback
      * @param {Object} studySession - Study session object
      * @returns {Promise<void>}
      */
     async sendSessionFinishEmail(studySession) {
-        // Get study and check for email template
         const study = await this.models['study'].getById(studySession.studyId);
         if (!study) return;
 
-        // Query for emailFinish template mapping
-        const templateMapping = await this.models['study_template_mapping'].findOne({
-            where: {
-                studyId: study.id,
-                templateType: 'emailFinish',
-                deleted: false
-            },
-            raw: true
-        });
-
-        if (!templateMapping || !templateMapping.templateId) {
-            return; // No template configured
+        if (!study.enableEmailNotifications) {
+            return;
         }
 
-        // Get user email
-        const user = await this.models['user'].getById(studySession.userId);
+        // Get submission owner email (study.userId)
+        const user = await this.models['user'].getById(study.userId);
         if (!user || !user.email) {
-            this.server.logger.warn(`Cannot send session finish email: user ${studySession.userId} has no email`);
+            this.server.logger.warn(`Cannot send session finish email: user ${study.userId} has no email`);
             return;
         }
 
         // Get baseUrl from settings
         const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+        const reviewLink = `http://${baseUrl}/review/${studySession.hash}`;
 
-        // Resolve template
-        const resolvedHtml = await resolveTemplate(
-            templateMapping.templateId,
+        // Get email content from template or fallback
+        const emailContent = await getEmailContent(
+            "email.template.sessionFinish",
+            "CARE - Review Session Completed",
+            `Hello,
+
+A review session has been completed for your submission.
+
+You can view the review here: ${reviewLink}
+
+Best regards,
+The CARE Team`,
             {
-                userId: studySession.userId,
+                userId: study.userId,
                 creatorId: study.userId,
                 studyId: study.id,
                 studySessionId: studySession.id,
                 studySessionHash: studySession.hash,
                 baseUrl: baseUrl
             },
-            this.models
+            this.models,
+            this.logger
         );
 
         // Send email
-        await this.server.sendMail(
-            user.email,
-            "CARE - Study Session Completed",
-            resolvedHtml
-        );
+        await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
     }
 
     /**
