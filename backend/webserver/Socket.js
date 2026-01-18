@@ -840,8 +840,13 @@ module.exports = class Socket {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
-            // if socket is admin or table is public, also just send
-            if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) {
+            const isTemplateTable = tableName === "template" && 
+                                    typeof this.models[tableName].getUserFilter === "function";
+            const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+            const isPublicTable = this.models[tableName].publicTable;
+            
+            // For template table, apply filtering
+            if (!isTemplateTable && (isAdmin || isPublicTable)) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
