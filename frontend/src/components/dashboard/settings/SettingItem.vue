@@ -36,7 +36,7 @@
                           <select v-model="setting.value" class="form-select">
                             <option value="">None (use default email)</option>
                             <option 
-                              v-for="template in emailTemplates" 
+                              v-for="template in getFilteredEmailTemplates(setting)" 
                               :key="template.id" 
                               :value="String(template.id)"
                             >
@@ -76,13 +76,23 @@ export default {
     };
   },
   computed: {
+    user() {
+      return this.$store.getters["auth/getUser"];
+    },
     emailTemplates() {
-      return this.$store.getters["table/template/getAll"]
-        .filter(t => t.type === 1 && !t.deleted)
-        .map(t => ({
-          id: t.id,
-          name: t.name
-        }));
+      const allTemplates = this.$store.getters["table/template/getAll"]
+        .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3));
+      
+      // Show personal templates (userId matches) OR published templates
+      const visibleTemplates = allTemplates.filter(t => 
+        t.userId === this.user?.id || t.published === true
+      );
+      
+      return visibleTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        type: t.type
+      }));
     }
   },
   methods: {
@@ -93,6 +103,26 @@ export default {
       return setting.key && 
              setting.key.startsWith("email.template.") && 
              (setting.type === "number" || setting.type === "integer");
+    },
+    getFilteredEmailTemplates(setting) {
+      // Determine template type based on setting key
+      let requiredType = null;
+      if (setting.key === "email.template.passwordReset" || 
+          setting.key === "email.template.verification" || 
+          setting.key === "email.template.registration") {
+        requiredType = 1; // Email - General
+      } else if (setting.key === "email.template.sessionStart" || 
+                 setting.key === "email.template.sessionFinish" || 
+                 setting.key === "email.template.studyClosed") {
+        requiredType = 2; // Email - Study Session
+      } else if (setting.key === "email.template.assignment") {
+        requiredType = 3; // Email - Assignment
+      }
+      
+      // Filter by type if determined
+      return requiredType !== null 
+        ? this.emailTemplates.filter(t => t.type === requiredType)
+        : this.emailTemplates;
     }
   }
 };
