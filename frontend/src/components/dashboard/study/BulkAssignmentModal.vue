@@ -38,11 +38,17 @@
         />
       </div>
       <div class="mt-3">
-        <label class="form-label"><strong>Assignment Email Template (optional):</strong></label>
-        <FormSelect
-            v-model="emailTemplateSelection"
-            :options="emailTemplateOptions"
-        />
+        <div class="form-check">
+          <input
+            type="checkbox"
+            v-model="enableEmailNotification"
+            class="form-check-input"
+            id="emailNotifyCheck"
+          />
+          <label class="form-check-label" for="emailNotifyCheck">
+            <strong>Send email notification to reviewer</strong>
+          </label>
+        </div>
       </div>
     </template>
 
@@ -232,7 +238,7 @@ export default {
       reviewerSelection: {},
       filterHasDocuments: false,
       filterSelectedDocuments: false,
-      emailTemplateSelection: null,
+      enableEmailNotification: false,
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -640,7 +646,7 @@ export default {
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
         assignmentType: this.assignmentType,
-        emailTemplateId: this.emailTemplateSelection || null,
+        enableEmailNotification: this.enableEmailNotification,
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {

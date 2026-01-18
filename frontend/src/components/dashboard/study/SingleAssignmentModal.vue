@@ -38,11 +38,17 @@
         />
       </div>
       <div class="mt-3">
-        <label class="form-label"><strong>Assignment Email Template (optional):</strong></label>
-        <FormSelect
-            v-model="emailTemplateSelection"
-            :options="emailTemplateOptions"
-        />
+        <div class="form-check">
+          <input
+            type="checkbox"
+            v-model="enableEmailNotification"
+            class="form-check-input"
+            id="emailNotifyCheck"
+          />
+          <label class="form-check-label" for="emailNotifyCheck">
+            <strong>Send email notification to reviewer</strong>
+          </label>
+        </div>
       </div>
     </template>
     <template #step-2>
@@ -159,7 +165,7 @@ export default {
       assignmentTypeSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
-      emailTemplateSelection: null,
+      enableEmailNotification: false,
     };
   },
   computed: {
@@ -440,7 +446,7 @@ export default {
       this.baseFileSelections = {};
       this.inputGroupValid = false;
       this.validationConfigurationNames = {};
-      this.emailTemplateSelection = null;
+      this.enableEmailNotification = false;
     },
     createAssignment() {
       this.$refs.assignmentStepper.setWaiting(true);
@@ -451,7 +457,7 @@ export default {
         reviewer: this.selectedReviewer,
         assignment: this.selectedAssignment[0],
         documents: this.workflowStepsAssignments,
-        emailTemplateId: this.emailTemplateSelection || null,
+        enableEmailNotification: this.enableEmailNotification,
       };
 
       this.$socket.emit("assignmentCreate", assignmentData, (res) => {
