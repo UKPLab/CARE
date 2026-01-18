@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       templateType: DataTypes.INTEGER,
       placeholderKey: DataTypes.STRING,
       placeholderLabel: DataTypes.STRING,
+      placeholderDescription: DataTypes.TEXT,
       placeholderType: DataTypes.STRING,
       required: DataTypes.BOOLEAN,
       deleted: DataTypes.BOOLEAN,
