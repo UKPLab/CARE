@@ -188,51 +188,18 @@ module.exports = (sequelize, DataTypes) => {
                         {
                             key: "deleted", value: false
                         }
-                    ]
+                    ],
+                    prependNone: true
                 },
                 icon: "file-text",
                 required: false,
                 help: "Select a template to pre-fill study documents (Type 5: Document - Study)."
             }, {
-                key: "emailTemplateStartId",
-                label: "Email Template - Session Start (optional):",
-                type: "select",
-                options: {
-                    table: "template",
-                    name: "name",
-                    value: "id",
-                    filter: [
-                        {
-                            key: "type", value: 2
-                        },
-                        {
-                            key: "deleted", value: false
-                        }
-                    ]
-                },
-                icon: "envelope",
-                required: false,
-                help: "Select a template for emails sent when study sessions start (Type 2: Email - Study Session)."
-            }, {
-                key: "emailTemplateFinishId",
-                label: "Email Template - Session Finish (optional):",
-                type: "select",
-                options: {
-                    table: "template",
-                    name: "name",
-                    value: "id",
-                    filter: [
-                        {
-                            key: "type", value: 2
-                        },
-                        {
-                            key: "deleted", value: false
-                        }
-                    ]
-                },
-                icon: "envelope",
-                required: false,
-                help: "Select a template for emails sent when study sessions finish (Type 2: Email - Study Session)."
+                key: "enableEmailNotifications",
+                label: "Enable Email Notifications",
+                type: "switch",
+                default: false,
+                help: "When enabled, emails will be sent for session start/finish using admin-configured templates. If no templates are configured, default hardcoded emails will be sent."
             },];
 
         /**
@@ -452,6 +419,7 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: DataTypes.DATE,
         projectId: DataTypes.INTEGER,
         anonymize: DataTypes.BOOLEAN,
+        enableEmailNotifications: DataTypes.BOOLEAN,
         parentStudyId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -475,8 +443,6 @@ module.exports = (sequelize, DataTypes) => {
 
                 // Extract template IDs from context (these are not stored in study table)
                 const documentTemplateId = options.context.documentTemplateId || null;
-                const emailTemplateStartId = options.context.emailTemplateStartId || null;
-                const emailTemplateFinishId = options.context.emailTemplateFinishId || null;
 
                 // Pass documentTemplateId to createStudySteps via context
                 if (documentTemplateId) {
@@ -485,28 +451,13 @@ module.exports = (sequelize, DataTypes) => {
 
                 await Study.createStudySteps(study, options);
 
-                // Create study_template_mapping entries for document and email templates
+                // Create study_template_mapping entry for document template
+                // Email templates are now handled via settings (enableEmailNotifications checkbox)
                 if (documentTemplateId) {
                     await sequelize.models.study_template_mapping.add({
                         studyId: study.id,
                         templateType: 'documentStudy',
                         templateId: documentTemplateId
-                    }, {transaction: options.transaction});
-                }
-
-                if (emailTemplateStartId) {
-                    await sequelize.models.study_template_mapping.add({
-                        studyId: study.id,
-                        templateType: 'emailStart',
-                        templateId: emailTemplateStartId
-                    }, {transaction: options.transaction});
-                }
-
-                if (emailTemplateFinishId) {
-                    await sequelize.models.study_template_mapping.add({
-                        studyId: study.id,
-                        templateType: 'emailFinish',
-                        templateId: emailTemplateFinishId
                     }, {transaction: options.transaction});
                 }
             }, 
