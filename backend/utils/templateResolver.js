@@ -38,62 +38,75 @@ function textToDelta(text) {
     return new Delta().insert(text);
 }
 
+/** Placeholders allowed per template type (from template_placeholder_mapping). Type 4, 5: none. */
+const PLACEHOLDERS_BY_TYPE = {
+    1: ["username", "firstName", "lastName", "link"],
+    2: ["username", "link"],
+    3: ["username", "assignmentType", "assignmentName", "link"],
+    4: [],
+    5: [],
+};
+
 /**
- * Build replacement map from context data
- * 
- * @param {Object} context - Context object containing user, study, assignment data
- * @param {Object} models - Database models for fetching additional data
- * @param {Object} options - Options object
- * @param {Object} options.transaction - Database transaction
+ * Build replacement map from context data. When context.templateType is set,
+ * only adds placeholders allowed for that type. Otherwise keeps previous behaviour.
+ *
+ * @param {Object} context - Context object (userId, creatorId, studyId, studySessionId, studySessionHash, baseUrl, link, assignmentType, assignmentName, templateType)
+ * @param {Object} models - Database models
+ * @param {Object} options - Options (e.g. transaction)
  * @returns {Promise<Object>} Replacement map with placeholder keys and values
  */
 async function buildReplacementMap(context, models, options = {}) {
     const replacements = {};
-    
-    // User placeholders (participant/user)
-    if (context.userId) {
+    const templateType = context.templateType;
+    const allowed = templateType != null ? (PLACEHOLDERS_BY_TYPE[templateType] || []) : null;
+
+    const allow = (key) => allowed === null || allowed.includes(key);
+
+    // User placeholders
+    if (context.userId && (allow("username") || allow("firstName") || allow("lastName"))) {
         const user = await models["user"].getById(context.userId, options);
         if (user) {
             const anonymize = context.anonymize || false;
-            replacements["~username~"] = anonymize ? "Anonymous" : (user.userName || "");
-            replacements["~firstName~"] = anonymize ? "Anonymous" : (user.firstName || "");
-            replacements["~lastName~"] = anonymize ? "" : (user.lastName || "");
+            if (allow("username")) replacements["~username~"] = anonymize ? "Anonymous" : (user.userName || "");
+            if (allow("firstName")) replacements["~firstName~"] = anonymize ? "Anonymous" : (user.firstName || "");
+            if (allow("lastName")) replacements["~lastName~"] = anonymize ? "" : (user.lastName || "");
         }
     }
-    
-    // Study creator placeholders (username only - no first/last names for privacy)
-    if (context.creatorId) {
+
+    // Study creator: only when not type-aware
+    if (allowed === null && context.creatorId) {
         const creator = await models["user"].getById(context.creatorId, options);
         if (creator) {
             const anonymize = context.anonymize || false;
             replacements["~creatorUsername~"] = anonymize ? "Anonymous" : (creator.userName || "");
         }
     }
-    
-    // Link placeholder - check direct link first, then study session
-    if (context.link) {
-        // Direct link from context (e.g., verification link, password reset link)
-        replacements["~link~"] = context.link;
-    } else if (context.studySessionHash) {
-        const baseUrl = context.baseUrl || "localhost:3000";
-        replacements["~link~"] = `http://${baseUrl}/review/${context.studySessionHash}`;
-    } else if (context.studySessionId) {
-        // If we have session ID but not hash, try to get hash
-        const session = await models["study_session"].getById(context.studySessionId, options);
-        if (session && session.hash) {
+
+    // Link
+    if (allow("link")) {
+        if (context.link) {
+            replacements["~link~"] = context.link;
+        } else if (context.studySessionHash) {
             const baseUrl = context.baseUrl || "localhost:3000";
-            replacements["~link~"] = `http://${baseUrl}/review/${session.hash}`;
+            replacements["~link~"] = `http://${baseUrl}/review/${context.studySessionHash}`;
+        } else if (context.studySessionId) {
+            const session = await models["study_session"].getById(context.studySessionId, options);
+            if (session && session.hash) {
+                const baseUrl = context.baseUrl || "localhost:3000";
+                replacements["~link~"] = `http://${baseUrl}/review/${session.hash}`;
+            }
         }
     }
-    
-    // Assignment placeholders
-    if (context.assignmentType) {
+
+    // Assignment
+    if (allow("assignmentType") && context.assignmentType) {
         replacements["~assignmentType~"] = context.assignmentType;
     }
-    if (context.assignmentName) {
+    if (allow("assignmentName") && context.assignmentName) {
         replacements["~assignmentName~"] = context.assignmentName;
     }
-    
+
     return replacements;
 }
 
@@ -153,7 +166,9 @@ async function resolveTemplate(templateId, context, models, options = {}) {
     if (context.studyId && context.anonymize === undefined) {
         context.anonymize = await shouldAnonymize(context.studyId, models, options);
     }
-    
+
+    context.templateType = template.type;
+
     // Build replacement map
     const replacements = await buildReplacementMap(context, models, options);
     
@@ -213,7 +228,9 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
     if (context.studyId && context.anonymize === undefined) {
         context.anonymize = await shouldAnonymize(context.studyId, models, options);
     }
-    
+
+    context.templateType = template.type;
+
     // Build replacement map
     const replacements = await buildReplacementMap(context, models, options);
     
