@@ -1,7 +1,7 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
-const {resolveTemplate} = require("../../utils/templateResolver");
+const {getEmailContent} = require("../../utils/emailHelper");
 
 /**
  * Handle user through websocket
@@ -71,25 +71,18 @@ class AssignmentSocket extends Socket {
             stepDocuments: stepDocuments
         }
 
-        // Extract assignment email template ID if provided
-        const assignmentEmailTemplateId = data.emailTemplateId || null;
+        // Check if email notifications are enabled
+        const enableEmailNotification = data.enableEmailNotification || false;
 
         const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
 
-        // Store assignment email template mapping if provided
-        if (assignmentEmailTemplateId) {
-            await this.models['study_template_mapping'].add({
-                studyId: study.id,
-                templateType: 'emailAssignment',
-                templateId: assignmentEmailTemplateId
-            }, {transaction: options.transaction});
-        }
 
         await this.addReviewer({
             studyId: study.id, 
             reviewer: data["reviewer"],
             assignmentType: data.assignmentType || 'document',
-            assignmentName: study.name
+            assignmentName: study.name,
+            enableEmailNotification: enableEmailNotification
         }, options);
 
     }
@@ -129,8 +122,8 @@ class AssignmentSocket extends Socket {
             }, {transaction: options.transaction});
         }));
 
-        // Send assignment notification emails if template is configured
-        if (createdSessions.length > 0) {
+        // Send assignment notification emails if enabled
+        if (data.enableEmailNotification && createdSessions.length > 0) {
             options.transaction.afterCommit(async () => {
                 try {
                     for (const session of createdSessions) {
@@ -481,25 +474,10 @@ class AssignmentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendAssignmentEmail(studySession, assignmentContext = {}) {
-        // Get study and check for assignment email template
         const study = await this.models['study'].getById(studySession.studyId);
         if (!study) return;
 
-        // Query for emailAssignment template mapping
-        const templateMapping = await this.models['study_template_mapping'].findOne({
-            where: {
-                studyId: study.id,
-                templateType: 'emailAssignment',
-                deleted: false
-            },
-            raw: true
-        });
-
-        if (!templateMapping || !templateMapping.templateId) {
-            return; // No template configured
-        }
-
-        // Get user email
+        // Get reviewer email
         const user = await this.models['user'].getById(studySession.userId);
         if (!user || !user.email) {
             this.server.logger.warn(`Cannot send assignment email: user ${studySession.userId} has no email`);
@@ -508,10 +486,20 @@ class AssignmentSocket extends Socket {
 
         // Get baseUrl from settings
         const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+        const assignmentLink = `http://${baseUrl}/session/${studySession.hash}`;
 
-        // Resolve template
-        const resolvedHtml = await resolveTemplate(
-            templateMapping.templateId,
+        // Get email content from template or fallback. Set context.link so ~link~ resolves to /session/ for the reviewer.
+        const emailContent = await getEmailContent(
+            "email.template.assignment",
+            "CARE - New Review Assignment",
+            `Hello,
+
+You have been assigned a new review task: ${assignmentContext.assignmentName || study.name}
+
+Click here to start: ${assignmentLink}
+
+Best regards,
+The CARE Team`,
             {
                 userId: studySession.userId,
                 creatorId: study.userId,
@@ -519,17 +507,19 @@ class AssignmentSocket extends Socket {
                 studySessionId: studySession.id,
                 studySessionHash: studySession.hash,
                 baseUrl: baseUrl,
+                link: assignmentLink,
                 assignmentType: assignmentContext.assignmentType || 'document',
                 assignmentName: assignmentContext.assignmentName || study.name
             },
-            this.models
+            this.models,
+            this.logger
         );
 
         // Send email
         await this.server.sendMail(
             user.email,
-            "CARE - New Assignment",
-            resolvedHtml
+            emailContent.subject,
+            emailContent.body
         );
     }
 
