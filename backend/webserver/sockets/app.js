@@ -63,6 +63,28 @@ class AppSocket extends Socket {
     }
 
     /**
+     * Helper to trigger study closed email when a study is closed via appDataUpdate.
+     * Single close (Dashboard "Close Study" button) uses appDataUpdate; bulk close uses studyCloseBulk and calls sendStudyClosedEmails directly.
+     * @param {Object} study - Study object (after update)
+     * @param {Object} transaction - Sequelize transaction
+     */
+    async triggerStudyClosedEmail(study, transaction) {
+        if (!study || !transaction) return;
+
+        transaction.afterCommit(async () => {
+            try {
+                const studySocket = this.getSocket("StudySocket");
+                if (studySocket) {
+                    const updatedStudy = await this.models["study"].getById(study.id);
+                    await studySocket.sendStudyClosedEmails(updatedStudy);
+                }
+            } catch (error) {
+                this.server.logger.error("Failed to send study closed email:", error);
+            }
+        });
+    }
+
+    /**
      * A generic and powerful method to create or update records in a specified database table.
      * 
      * It determines whether to create a new record or update an existing one based on the presence of an `id` in the `data.data` payload.
@@ -133,6 +155,13 @@ class AppSocket extends Socket {
                 const previousSession = await this.models[data.table].getById(data.data.id, {transaction: transaction});
                 previousEnd = previousSession?.end || null;
             }
+
+            // Check if study is being closed - get previous value before update
+            let previousClosed = null;
+            if (data.table === "study" && "closed" in data.data) {
+                const previousStudy = await this.models[data.table].getById(data.data.id, {transaction: transaction});
+                previousClosed = previousStudy?.closed ?? null;
+            }
             
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
@@ -143,6 +172,11 @@ class AppSocket extends Socket {
             // Send session finish email if study session end date was just set
             if (data.table === "study_session" && !previousEnd && newEntry.end) {
                 await this.triggerSessionFinishEmail(newEntry, transaction);
+            }
+
+            // Send study closed email if study was just closed (single close via appDataUpdate)
+            if (data.table === "study" && !previousClosed && newEntry.closed) {
+                await this.triggerStudyClosedEmail(newEntry, transaction);
             }
             
             return newEntry.id;

@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const {getEmailContent} = require("../../utils/emailHelper");
 
 /**
  * Handle all studies through websocket
@@ -72,6 +73,53 @@ class StudySocket extends Socket {
     }
 
     /**
+     * Send study closed email to the study owner only.
+     * Same recipient as session start and session finish.
+     * @param {Object} study - Study object
+     * @returns {Promise<void>}
+     */
+    async sendStudyClosedEmails(study) {
+        const enableEmailNotifications = study.enableEmailNotifications || false;
+        if (!enableEmailNotifications) {
+            return;
+        }
+
+        const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+        const userId = study.userId;
+
+        try {
+            const user = await this.models['user'].getById(userId);
+            if (!user || !user.email) {
+                this.logger.warn(`Cannot send study closed email: user ${userId} has no email`);
+                return;
+            }
+
+            const emailContent = await getEmailContent(
+                "email.template.studyClosed",
+                "CARE - Study Closed",
+                `Hello,
+
+The study "${study.name}" has been closed.
+
+Best regards,
+The CARE Team`,
+                {
+                    userId: userId,
+                    creatorId: study.userId,
+                    studyId: study.id,
+                    baseUrl: baseUrl
+                },
+                this.models,
+                this.logger
+            );
+
+            await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
+        } catch (error) {
+            this.logger.error(`Failed to send study closed email to user ${userId}:`, error);
+        }
+    }
+
+    /**
      * Closes all studies associated with a given project ID in a loop.
      * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
      * 
@@ -97,8 +145,15 @@ class StudySocket extends Socket {
             try {
 
                 await this.models['study'].updateById(study.id, {closed: true}, {transaction: transaction});
-                transaction.afterCommit(() => {
+                transaction.afterCommit(async () => {
                     this.broadcastTransactionChanges(transaction);
+                    // Send study closed emails after transaction commits
+                    try {
+                        const updatedStudy = await this.models['study'].getById(study.id);
+                        await this.sendStudyClosedEmails(updatedStudy);
+                    } catch (error) {
+                        this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
+                    }
                 });
                 await transaction.commit();
             } catch (e) {
