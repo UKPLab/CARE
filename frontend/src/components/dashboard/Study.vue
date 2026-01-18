@@ -332,6 +332,15 @@ export default {
         {name: "Session Limit", key: "limitSessions", sortable: true},
         {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
         {
+          name: "Email Notifications",
+          key: "enableEmailNotifications",
+          type: "badge",
+          typeOptions: {
+            keyMapping: { true: "Yes", false: "No" },
+            classMapping: { true: "bg-success", false: "bg-danger" }
+          }
+        },
+        {
           name: "Resumable",
           key: "resumable",
           type: "badge",
