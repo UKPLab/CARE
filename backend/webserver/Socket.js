@@ -1,7 +1,7 @@
 const {inject} = require("../utils/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
-
+const {EWMAMonitor} = require("../utils/EWMAMonitor")
 /**
  * Defines as new Socket class
  *
@@ -38,6 +38,8 @@ module.exports = class Socket {
 
         // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
+
+        this.transactionMonitor = new EWMAMonitor(30);
     }
 
     /**
@@ -59,8 +61,10 @@ module.exports = class Socket {
     createSocket(eventName, func, options = {}, transaction = false) {
         this.socket.on(eventName, async (data, callback) => {
             let t = undefined;
+            let startTime = undefined; //time tracking for transactions
             try {
                 if (transaction) {
+                    startTime = performance.now(); //tack start time 
                     t = await this.server.db.sequelize.transaction();
                     options.transaction = t;
 
@@ -72,6 +76,17 @@ module.exports = class Socket {
                 const result = await func.bind(this)(data, options);
                 if (t) {
                     await t.commit();
+                    const duration = performance.now() - startTime; 
+                    const {mean, stdDev} = this.transactionMonitor.getStats();
+                    // only check after some warmup for the moving average
+                    if (this.transactionMonitor.sampleCount > 30) {
+                        // 2 standard deviations (95.4% confidence interval)
+                        const threshold = mean + (2 * stdDev);
+                        if (duration > threshold) {
+                            this.logger.debug(`Transaction ${eventName} succeeded in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
+                        }
+                    }
+                    this.transactionMonitor.update(duration);
                 }
                 if (callback) {
                     callback({success: true, data: result});
@@ -81,6 +96,17 @@ module.exports = class Socket {
                 this.logger.error(err.message);
                 if (t) {
                     await t.rollback();
+                   const duration = performance.now() - startTime; 
+                    const {mean, stdDev} = this.transactionMonitor.getStats();
+                    // only check after some warmup for the moving average
+                    if (this.transactionMonitor.sampleCount > 30) {
+                        // 2 standard deviations (95.4% confidence interval)
+                        const threshold = mean + (2 * stdDev);
+                        if (duration > threshold) {
+                            this.logger.debug(`Transaction ${eventName} failed and rolled back in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
+                        }
+                    }
+                    this.transactionMonitor.update(duration);
                 }
                 if (callback) {
                     callback({success: false, message: err.message});
