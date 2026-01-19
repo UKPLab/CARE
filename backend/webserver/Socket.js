@@ -80,11 +80,10 @@ module.exports = class Socket {
                 }
             } catch (err) {
 
-                try {
-                    if (t) await t.rollback();
-                } catch (e) {
-                    this.logger.error(e);
-                }
+                // TODO: add try - catch block, but as app is not crashing anymore,
+                //  the app is stuck in some cases, need second fallback
+                if (t) await t.rollback();
+
                 console.log(err);
                 this.logger.error(err.message);
 
