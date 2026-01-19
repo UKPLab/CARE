@@ -155,6 +155,12 @@ module.exports = function (server) {
 
         const data = req.body;
 
+        // Check if self-registration is enabled
+        const isSelfRegistrationEnabled = await server.db.models["setting"].get("app.register.enabled");
+        if (!isSelfRegistrationEnabled) {
+            return res.status(403).json({message: "Self-registration is currently disabled. Please contact an administrator to create an account."});
+        }
+
         // check if name is defined if it is required
         if ((await server.db.models['setting'].get("app.register.requestName")) === "true") {
             if (!data.firstName) {

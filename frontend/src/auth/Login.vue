@@ -20,8 +20,9 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             Login
             <a
-                class="btn btn-sm btn-primary"
-                @click="toRegister"
+              v-if="showRegisterButton"
+              class="btn btn-sm btn-primary"
+              @click="toRegister"
             >Register</a>
           </div>
 
@@ -196,6 +197,9 @@ export default {
     showForgotPassword() {
       return window.config['app.login.forgotPassword'] === 'true';
     },
+    showRegisterButton() {
+      return window.config['app.register.enabled'] === 'true';
+    },
     validUsername() {
       return this.formData.username !== "";
     },
@@ -214,6 +218,7 @@ export default {
     // Use nextTick to ensure the component is fully mounted and eventBus is available
     this.$nextTick(() => {
       this.handleQueryParams();
+      this.checkSelfRegistration();
     });
   },
   methods: {
@@ -222,6 +227,17 @@ export default {
         this.verifyEmail(this.$route.query.token);
       }
       this.$router.replace({ name: this.$route.name });
+    },
+    checkSelfRegistration() {
+      if (this.$route.query.registrationDisabled === "true") {
+        this.eventBus.emit("toast", {
+          message: "Self-registration is currently disabled. Please contact an administrator to create an account.",
+          title: "Registration Disabled",
+          variant: "warning"
+        });
+        // Clean up query parameter
+        this.$router.replace({ name: "login", query: { redirectedFrom: this.$route.query.redirectedFrom } });
+      }
     },
     checkVal(key) {
       this.validity[key] = true;
