@@ -53,23 +53,25 @@ module.exports = class Socket {
      * @param {string} eventName The name of the event
      * @param {Function} func  The function to execute (need parameter data and options)
      * @param {Object} options Additional options for the function
-     * @param {boolean} transaction If the function should be executed in a transaction for db operations
+     * @param {boolean} useTransaction If the function should be executed in a transaction for db operations
      * @returns {void}
      */
-    createSocket(eventName, func, options = {}, transaction = false) {
+    createSocket(eventName, func, options = {}, useTransaction = false) {
         this.socket.on(eventName, async (data, callback) => {
-            let t = undefined;
+            let t;
+            const perCallOptions = {...options};
+
             try {
-                if (transaction) {
+                if (useTransaction) {
                     t = await this.server.db.sequelize.transaction();
-                    options.transaction = t;
+                    perCallOptions.transaction = t;
 
                     t.afterCommit(() => {
                         this.broadcastTransactionChanges(t);
                     });
                 }
 
-                const result = await func.bind(this)(data, options);
+                const result = await func.call(this, data, perCallOptions);
                 if (t) {
                     await t.commit();
                 }
@@ -77,11 +79,15 @@ module.exports = class Socket {
                     callback({success: true, data: result});
                 }
             } catch (err) {
+
+                try {
+                    if (t) await t.rollback();
+                } catch (e) {
+                    this.logger.error(e);
+                }
                 console.log(err);
                 this.logger.error(err.message);
-                if (t) {
-                    await t.rollback();
-                }
+
                 if (callback) {
                     callback({success: false, message: err.message});
                 }
@@ -369,8 +375,7 @@ module.exports = class Socket {
     handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
 
 
-
-         let filteredAccessMap = accessMap
+        let filteredAccessMap = accessMap
             .flatMap(a => {
                 const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
                 return a.limitation
@@ -378,7 +383,6 @@ module.exports = class Socket {
                     : null;
             })
             .filter(Boolean);
-
 
 
         if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
@@ -509,7 +513,7 @@ module.exports = class Socket {
         }
         visited.add(tableName);
 
-        const {autoTable} =  this.models[tableName];
+        const {autoTable} = this.models[tableName];
         const tasks = [];
 
         // --- FOREIGN TABLES (children) ---
