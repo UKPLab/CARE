@@ -14,6 +14,12 @@ module.exports = {
         dialectOptions: {
             idle_in_transaction_session_timeout: 60000 // 60s
         },
+        pool: {
+            max: 45, // default 5
+            min: 0, // default 0
+            acquire: 60000, //default 60000
+            idle: 10000 //default 10000
+        }
     },
     test: {
         username: 'postgres',
@@ -24,6 +30,12 @@ module.exports = {
         dialect: 'postgres',
         dialectOptions: {
             idle_in_transaction_session_timeout: 60000 // 60s
+        },
+        pool: {
+            max: 45, // default 5
+            min: 0, // default 0
+            acquire: 60000, //default 60000
+            idle: 10000 //default 10000
         },
         logging: false
     },
@@ -36,6 +48,12 @@ module.exports = {
         dialect: 'postgres',
         dialectOptions: {
             idle_in_transaction_session_timeout: 60000 // 60s
+        },
+        pool: {
+            max: 45, // default 5
+            min: 0, // default 0
+            acquire: 60000, //default 60000
+            idle: 10000 //default 10000
         },
         logging: false
     },
