@@ -58,11 +58,13 @@
         <div v-else class="assessment-edit-form">
           <div class="mb-3">
             <textarea
+                ref="assessmentTextarea"
                 v-model="localAssessment"
                 class="form-control assessment-textarea"
                 placeholder="Edit the justification..."
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
+                @input="autoResizeTextarea"
             ></textarea>
           </div>
         </div>
@@ -280,6 +282,9 @@ export default {
         ...this.state,
         isEditing: true,
       };
+      this.$nextTick(() => {
+        this.autoResizeTextarea();
+      });
     },
     saveEdit() {
       if (this.readOnly) return;
@@ -310,6 +315,13 @@ export default {
       if (!text) return 3;
       const lines = text.split("\n").length;
       return Math.min(Math.max(lines, 3), 10);
+    },
+    autoResizeTextarea() {
+      const textarea = this.$refs.assessmentTextarea;
+      if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+      }
     },
   },
 };
@@ -360,6 +372,7 @@ export default {
   border-radius: 6px;
   font-size: 0.9rem;
   resize: vertical;
+  overflow: hidden;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 

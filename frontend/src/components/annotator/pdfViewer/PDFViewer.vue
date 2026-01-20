@@ -29,7 +29,7 @@
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readOnly"/>
+    <Adder v-if="!readOnly && !componentReadOnly"/>
   </div>
 </template>
 
@@ -44,6 +44,7 @@ import {computed} from "vue";
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
+import ReadOnlyIndicator from "../../common/ReadOnlyIndicator.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -59,7 +60,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "PDFViewer",
-  components: {BasicLoading, PDFPage, Adder, PDFToolbar},
+  components: {BasicLoading, PDFPage, Adder, PDFToolbar, ReadOnlyIndicator},
   inject: {
     documentId: {
       type: Number,
@@ -75,6 +76,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
     readOnly: {
       type: Boolean,
       required: false,
@@ -87,6 +93,7 @@ export default {
   provide() {
     return {
       pdf: computed(() => this.pdf),
+      readOnly: computed(() => this.readOnly),
     }
   },
   emits: ['copy'],
@@ -115,6 +122,12 @@ export default {
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+    componentReadOnly() {
+      if(!this.readOnly) {
+        return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+      }
+      return this.readOnly;
     },
   },
   watch: {

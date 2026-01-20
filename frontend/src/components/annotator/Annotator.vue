@@ -24,6 +24,7 @@
         <BasicSidebar
             ref="basicSidebar"
             v-if="!sidebarDisabled"
+            :isShown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -104,6 +105,7 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import ReadOnlyIndicator from "../common/ReadOnlyIndicator.vue";
 
 export default {
   name: "AnnotatorView",
@@ -114,12 +116,14 @@ export default {
     AnnotationSidebar,
     Loader,
     TopBarButton,
-    BasicSidebar
+    BasicSidebar,
+    ReadOnlyIndicator
   },
   provide() {
     return {
       documentId: computed(() => this.documentId),
-      studyStepId: computed(() => this.studyStepId)
+      studyStepId: computed(() => this.studyStepId),
+      showAllDocumentAnnotations: computed(() => this.showAllDocumentAnnotations),
     }
   },
   inject: {
@@ -132,6 +136,11 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    currentStudyStep:{
+      type: Object,
+      required: false,
+      default: null
     },
     acceptStats: {
       type: Boolean,
@@ -149,6 +158,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     review: {
       type: Boolean,
@@ -195,6 +209,9 @@ export default {
   computed: {
     userId() {
       return this.$store.getters["auth/getUserId"];
+    },
+    showAllDocumentAnnotations(){
+      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
@@ -257,8 +274,10 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return annotations.filter(annotation =>
+        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
             annotation.studySessionId === this.studySessionId
+        ) : annotations.filter(annotation =>
+            annotation.studySessionId === null && annotation.studyStepId === null
         );
       }
     },
@@ -271,8 +290,10 @@ export default {
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return comments.filter(comment =>
+        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
             comment.studySessionId === this.studySessionId
+        ) : comments.filter(comment =>
+            comment.studySessionId === null && comment.studyStepId === null
         );
       }
     },
@@ -290,7 +311,7 @@ export default {
       }
 
       // NLP Toggle Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.active && this.nlpEnabled : this.nlpEnabled) {
+      if (this.studySessionId && this.studySessionId !== 0 ? this.nlpEnabled : this.nlpEnabled) {
         buttons.push({
           id: 'toggle-nlp',
           icon: 'robot',
@@ -301,7 +322,7 @@ export default {
       }
 
       // Download Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.active : true) {
+      if (this.studySessionId && this.studySessionId !== 0) {
         const canDownload = this.annotations.length + this.comments.length > 0 &&
             !this.downloading &&
             (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
@@ -520,7 +541,7 @@ export default {
           return;
         }
         // Correct offset since we have a fixed top
-        offset -= 106; // see css class padding-top
+        offset -= 123; // see css class padding-top
         // nb. We only compute the scroll offset once at the start of scrolling.
         // This is important as the highlight may be removed from the document during
         // the scroll due to a page transitioning from rendered <-> un-rendered.
