@@ -74,10 +74,13 @@ module.exports = (sequelize, DataTypes) => {
          *
          * @param {number} originalSubmissionId - The ID of the submission to copy
          * @param {number} createdByUserId - The ID of the user creating the copy
+         * @param {Object} submissionOverrides - Overrides for the submission (e.g., hideInFrontend)
+         * @param {Object} documentOverrides - Overrides for documents (e.g., studySessionId, studyStepId)
+         * @param {Object} includes - Additional includes for document duplication (eg: {studySessionId: 1}) in case we require cenrtain extra files
          * @param {Object} options - Database options including transaction
          * @returns {Promise<Object>} Object containing copied submission and documents
          */
-        static async copySubmission(originalSubmissionId, createdByUserId, options = {}) {
+        static async copySubmission(originalSubmissionId, createdByUserId, submissionOverrides = {}, documentOverrides = {}, includes= {}, options = {}) {
             const transaction = options.transaction;
 
             // Get the original submission
@@ -89,7 +92,7 @@ module.exports = (sequelize, DataTypes) => {
                 throw new Error(`Submission with id ${originalSubmissionId} not found`);
             }
 
-            // Create the copied submission with parentSubmissionId
+            // Create the copied submission with parentSubmissionId and apply submission overrides
             const copiedSubmission = await Submission.add(
                 {
                     userId: originalSubmission.userId,
@@ -101,6 +104,7 @@ module.exports = (sequelize, DataTypes) => {
                     additionalSettings: originalSubmission.additionalSettings || null,
                     validationConfigurationId: originalSubmission.validationConfigurationId || null,
                     deleted: false,
+                    ...submissionOverrides, // Apply submission-specific overrides (e.g., hideInFrontend)
                 },
                 {transaction}
             );
@@ -111,19 +115,27 @@ module.exports = (sequelize, DataTypes) => {
                 transaction
             });
 
-            // Copy every associated document
+            // Copy every associated document and track mapping
             const copiedDocuments = [];
+            
             for (const originalDoc of originalDocuments) {
                 try {
-                    const copiedDoc = await Submission.copyDocument(
-                        originalDoc,
-                        copiedSubmission.id,
-                        transaction
+                    // Merge submissionId with document overrides (studySessionId, studyStepId, etc.)
+                    const mergedDocumentOverrides = {
+                        ...documentOverrides,
+                        submissionId: copiedSubmission.id,
+                    };
+                    
+                    const copiedDoc = await sequelize.models.document.duplicateDocument(
+                        originalDoc.id,
+                        mergedDocumentOverrides,
+                        includes,
+                        {transaction}
                     );
                     copiedDocuments.push(copiedDoc);
                 } catch (error) {
                     throw new Error(
-                        `Failed to copy document with id ${originalDoc.id}): ${error.message}`
+                        `Failed to copy document with id ${originalDoc.id}: ${error.message}`
                     );
                 }
             }
@@ -134,63 +146,6 @@ module.exports = (sequelize, DataTypes) => {
                 originalSubmissionId,
             };
         }
-
-        /**
-         * Copy a single document associated with a particular submissionId
-         *
-         * @param {Object} originalDoc - The original document to copy
-         * @param {number} newSubmissionId - The ID of the new submission to associate with
-         * @param {Object} transaction - The database transaction
-         * @returns {Promise<Object>} The copied document
-         */
-        static async copyDocument(originalDoc, newSubmissionId, transaction) {
-            const copiedDoc = await sequelize.models.document.add({
-                name: `${originalDoc.name}_copy`,
-                userId: originalDoc.userId,
-                readyForReview: originalDoc.readyForReview || false,
-                public: originalDoc.public || false,
-                type: originalDoc.type,
-                parentDocumentId: originalDoc.id, // Link to original document
-                uploadedByUserId: originalDoc.uploadedByUserId || null,
-                hideInFrontend: originalDoc.hideInFrontend || false,
-                projectId: originalDoc.projectId || null,
-                submissionId: newSubmissionId,
-                originalFilename: originalDoc.originalFilename || null
-            }, {transaction});
-
-            await Submission.copyDocumentFiles(originalDoc, copiedDoc, transaction);
-
-            return copiedDoc;
-        }
-
-        /**
-         * Copy document files
-         *
-         * @param {Object} originalDoc - The original document
-         * @param {Object} copiedDoc - The copied document
-         * @param {Object} transaction - The database transaction
-         */
-        static async copyDocumentFiles(originalDoc, copiedDoc, transaction) {
-            const docTypes = sequelize.models.document.docTypes;
-            if ([docTypes.DOC_TYPE_PDF, docTypes.DOC_TYPE_ZIP].includes(originalDoc.type)) {
-                const docType = originalDoc.type;
-                const docTypeKey = Object.keys(docTypes)
-                    .find(type => docTypes[type] === docType);
-
-                let fileExtension = '';
-                if (docTypeKey) {
-                    fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
-                }
-
-                const originalFilePath = path.join(UPLOAD_PATH, `${originalDoc.hash}${fileExtension}`);
-                const copiedFilePath = path.join(UPLOAD_PATH, `${copiedDoc.hash}${fileExtension}`);
-
-                if (fs.existsSync(originalFilePath)) {
-                    await fs.promises.copyFile(originalFilePath, copiedFilePath);
-                }
-            }
-        }
-
         /**
          * Load all documents for a submission and convert them to base64.
          *
@@ -250,6 +205,19 @@ module.exports = (sequelize, DataTypes) => {
             sequelize,
             modelName: "submission",
             tableName: "submission",
+            hooks: {
+                afterUpdate: async (submission, options) => {
+                    // If the document is deleted, we should also delete the associated db columns
+                    if (submission.deleted && !submission._previousDataValues.deleted) {
+                        // delete associated studies
+                        const documents = await sequelize.models.document.getAllByKey("submissionId", submission.id);
+
+                        for (const document of documents) {
+                            await sequelize.models["document"].deleteById(document.id);
+                        }
+                    }
+                }
+            },
         }
     );
 

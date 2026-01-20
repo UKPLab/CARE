@@ -73,6 +73,93 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Duplicate a document and optionally associate it with a new submission
+         *
+         * @param {number} documentId - The ID of the document to duplicate
+         * @param {Object} overrides - Optional properties to override (e.g., { submissionId: 123 })
+         * @param {Object} filters - Optional filters for extra associations (e.g., { studySessionId: 45 }) duplicate filters data that include studySessionId
+         * @param {Object} options - Database options including transaction
+         * @returns {Promise<Object>} The duplicated document
+         */
+        static async duplicateDocument(documentId, overrides = {}, filters = {}, options = {}) {
+            const transaction = options.transaction;
+            
+            const originalDoc = await Document.findByPk(documentId, {transaction});
+            if (!originalDoc) {
+                throw new Error(`Document with id ${documentId} not found`);
+            }
+
+            // Create base document data
+            const baseData = {
+                name: `${originalDoc.name}_copy`,
+                userId: originalDoc.userId,
+                readyForReview: originalDoc.readyForReview || false,
+                public: originalDoc.public || false,
+                type: originalDoc.type,
+                parentDocumentId: originalDoc.id,
+                uploadedByUserId: originalDoc.uploadedByUserId || null,
+                hideInFrontend: originalDoc.hideInFrontend || false,
+                projectId: originalDoc.projectId || null,
+                originalFilename: originalDoc.originalFilename || null
+            };
+
+            // Apply overrides using Object.assign
+            const duplicateData = Object.assign(baseData, overrides);
+
+            const duplicatedDoc = await this.add(duplicateData, options);
+
+           
+
+            // Copy document files based on type
+            await this.duplicateDocumentFiles(originalDoc, duplicatedDoc, transaction);
+
+            await sequelize.models.document_data.duplicateDocumentData(originalDoc.id, duplicatedDoc.id, filters, transaction);
+
+            if (originalDoc.type === Document.docTypes.DOC_TYPE_PDF) {
+                await sequelize.models.annotation.duplicateAnnotations(originalDoc.id, duplicatedDoc.id, filters, transaction);
+            }
+            else if(originalDoc.type === Document.docTypes.DOC_TYPE_HTML || originalDoc.type === Document.docTypes.DOC_TYPE_MODAL){
+                await sequelize.models.document_edit.duplicateEditsByDocument(originalDoc.id, duplicatedDoc.id, filters, transaction);
+            }
+            return duplicatedDoc;
+        }
+
+        /**
+         * Copy document files from original to duplicated document
+         *
+         * @param {Object} originalDoc - The original document
+         * @param {Object} duplicatedDoc - The duplicated document
+         * @param {Object} transaction - The database transaction
+         */
+        static async duplicateDocumentFiles(originalDoc, duplicatedDoc, transaction) {
+            if ([Document.docTypes.DOC_TYPE_PDF, Document.docTypes.DOC_TYPE_ZIP].includes(originalDoc.type)) {
+                const docType = originalDoc.type;
+                const docTypeKey = Object.keys(Document.docTypes)
+                    .find(type => Document.docTypes[type] === docType);
+
+                let fileExtension = '';
+                if (docTypeKey) {
+                    fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
+                }
+
+                const originalFilePath = path.join(UPLOAD_PATH, `${originalDoc.hash}${fileExtension}`);
+                const duplicatedFilePath = path.join(UPLOAD_PATH, `${duplicatedDoc.hash}${fileExtension}`);
+
+                if (fs.existsSync(originalFilePath)) {
+                    await fs.promises.copyFile(originalFilePath, duplicatedFilePath);
+                }
+            } else if (originalDoc.type === Document.docTypes.DOC_TYPE_HTML || originalDoc.type === Document.docTypes.DOC_TYPE_MODAL) {
+                // Copy delta file for HTML/MODAL documents
+                const originalDeltaPath = path.join(UPLOAD_PATH, `${originalDoc.hash}.delta`);
+                const duplicatedDeltaPath = path.join(UPLOAD_PATH, `${duplicatedDoc.hash}.delta`);
+
+                if (fs.existsSync(originalDeltaPath)) {
+                    await fs.promises.copyFile(originalDeltaPath, duplicatedDeltaPath);
+                }
+            }
+        }
+
+        /**
          * Cascade delete study steps and sessions for a document.
          * Deletes all study steps with the given documentId and related study sessions.
          * @param {number} documentId
@@ -213,6 +300,12 @@ module.exports = (sequelize, DataTypes) => {
 
                         for (const studyId of uniqueStudyIds) {
                             await sequelize.models["study"].deleteById(studyId);
+                        }
+
+                        // delete associated document_data
+                        const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id);
+                        for (const documentDataRow of documentDataRows) {
+                            await sequelize.models["document_data"].deleteById(documentDataRow.id);
                         }
 
                         // delete associated annotations and comments

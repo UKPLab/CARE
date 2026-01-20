@@ -69,7 +69,7 @@
 
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
-          :disabled="!isCurrentStepReady"
+          :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
           class="btn btn-outline-primary ms-3"
           title="Next"
           @click="next()"
@@ -119,6 +119,7 @@
 
             <Annotator
                 v-if="step.stepType === 1"
+                :isShown="currentStudyStepId === step.id"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
                 @error="error"
@@ -142,6 +143,7 @@
                 ref="editor"
                 v-if="step.stepType === 2"
                 :document-id="step.documentId"
+                :isShown="currentStudyStepId === step.id"
                 :study-step-id="step.id"
                 :without-history="true"
                 @update:data="updateStudyData(step.id, 'editor', $event)"
@@ -151,6 +153,7 @@
                   <template #content>
                     <Assessment
                         :config="step.configuration"
+                        :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -220,7 +223,7 @@ export default {
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
-  subscribeTable: ["study_step", "study_session"],
+  subscribeTable: ["study_step", "study_session", "workflow", "annotation"],
   props: {
     studyHash: {
       type: String,

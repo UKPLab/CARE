@@ -26,11 +26,12 @@ export default defineComponent({
       },
     },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "select-assignment"],
   data() {
     return {
       moodleOptions: {},
       assignments: [],
+      assignmentMaxGrades: {}, // Map of assignmentID -> maxGrade
     };
   },
   computed: {
@@ -137,6 +138,15 @@ export default defineComponent({
         if (!deepEqual(this.moodleOptions, this.modelValue)) {
           this.$emit("update:modelValue", this.moodleOptions);
         }
+        
+        // Emit max grade when assignment is selected
+        if (this.moodleOptions.assignmentID && this.assignmentMaxGrades[this.moodleOptions.assignmentID] !== undefined) {
+          this.$emit("select-assignment", {
+            assignmentID: this.moodleOptions.assignmentID,
+            maxGrade: this.assignmentMaxGrades[this.moodleOptions.assignmentID]
+          });
+        }
+
         if (this.withAssignmentId) {
           if (!this.moodleOptions.courseID || !this.moodleOptions.apiKey || !this.moodleOptions.apiUrl) {
             this.assignments = [];
@@ -175,6 +185,13 @@ export default defineComponent({
         },
         (res) => {
           this.assignments = res.success ? res["data"] : [];
+          // Store max grades map when fetching assignments
+          this.assignmentMaxGrades = {};
+          this.assignments.forEach(([id, , maxGrade]) => {
+            if (maxGrade !== undefined) {
+              this.assignmentMaxGrades[id] = maxGrade;
+            }
+          });
         }
       );
     },

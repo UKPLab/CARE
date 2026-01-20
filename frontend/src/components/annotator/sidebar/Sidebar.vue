@@ -29,6 +29,20 @@
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
   <ul v-if="showAnnotations" id="anno-list" class="list-group">
+    <li v-if="componentReadOnly" class="readonly-notice">
+      <div class="card border-secondary mb-2">
+        <div class="card-body text-center py-2">
+          <LoadIcon
+            icon-name="lock-fill"
+            :size="20"
+            color="#6c757d"
+            class="mb-1"
+          />
+          <h6 class="card-title mb-0">Read-Only Mode</h6>
+          <p class="card-text text-muted small mb-0">Annotations are view-only</p>
+        </div>
+      </div>
+    </li>
     <li
       v-for="comment in documentComments"
       :id="'comment-' + comment.id"
@@ -46,7 +60,7 @@
       />
     </li>
 
-    <li v-if="!readOnly" id="addPageNote">
+    <li v-if="!componentReadOnly" id="addPageNote">
       <button
         class="btn btn-light"
         type="button"
@@ -75,6 +89,8 @@
 import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import LoadIcon from "@/basic/Icon.vue";
+
 import {scrollElement} from "@/assets/anchoring/scroll";
 
 /** Sidebar component of the Annotator
@@ -86,7 +102,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {SideCard, AnnoCard, ConfirmModal},
+  components: {SideCard, AnnoCard, ConfirmModal, LoadIcon},
   inject: {
     documentId: {
       type: Number,
@@ -107,8 +123,18 @@ export default {
       required: false,
       default: false,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
     acceptStats: {
       default: () => false
+    },
+    showAllDocumentAnnotations: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   props: {
@@ -136,6 +162,12 @@ export default {
     };
   },
   computed: {
+    componentReadOnly() {
+      if(!this.readOnly) {
+        return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+      }
+      return this.readOnly;
+    },
     showEdits() {
       return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
     },
@@ -181,6 +213,11 @@ export default {
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
+            // When showAllDocumentAnnotations is true, show all comments for the document
+            if (this.showAllDocumentAnnotations && comment.studySessionId === null && comment.studyStepId === null) {
+              return true;
+            }
+            // Otherwise, only show comments for current session and step
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);
@@ -367,6 +404,30 @@ export default {
   color: #575757;
 }
 
+.readonly-notice {
+  padding: 4px;
+  list-style: none;
+}
+
+.readonly-notice .card {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.readonly-notice .card-body {
+  padding: 8px 12px;
+}
+
+.readonly-notice .card-title {
+  color: #495057;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.readonly-notice .card-text {
+  font-size: 0.75rem;
+}
 
 .edits-section {
   padding: 10px;
