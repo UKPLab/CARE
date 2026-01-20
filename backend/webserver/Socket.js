@@ -88,6 +88,10 @@ module.exports = class Socket {
                             this.logger.debug(`Transaction ${eventName} succeeded in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
                         }
                     }
+                    //regularly log the average transaction time 
+                    if (this.transactionMonitor.sampleCount % 100 == 0) {
+                        this.logger.debug(`Average Transaction finish time: ${mean.toFixed(2)}ms with standard Deviation: ${stdDev.toFixed(2)}ms at ${this.transactionMonitor.sampleCount} total Transactions`);
+                    }
                     this.transactionMonitor.update(duration);
                 }
                 if (callback) {
@@ -99,7 +103,7 @@ module.exports = class Socket {
                 //  the app is stuck in some cases, need second fallback
                 if (t) {
                     await t.rollback();
-                   const duration = performance.now() - startTime; 
+                    const duration = performance.now() - startTime; 
                     const {mean, stdDev} = this.transactionMonitor.getStats();
                     // only check after some warmup for the moving average
                     if (this.transactionMonitor.sampleCount > 30) {
@@ -109,12 +113,16 @@ module.exports = class Socket {
                             this.logger.debug(`Transaction ${eventName} failed and rolled back in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
                         }
                     }
+                    //regularly log the average transaction time 
+                    if (this.transactionMonitor.sampleCount % 100 == 0) {
+                        this.logger.debug(`Average Transaction finish time: ${mean} with standard Deviation: ${stdDev} at ${this.transactionMonitor.sampleCount} total Transactions`);
+                    }
                     this.transactionMonitor.update(duration);
                 }
 
                 console.log(err);
                 this.logger.error(err.message);
-                
+
                 if (callback) {
                     callback({success: false, message: err.message});
                 }
