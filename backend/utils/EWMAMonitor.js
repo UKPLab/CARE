@@ -8,7 +8,7 @@ class EWMAMonitor {
         this.sampleCount = 0;
     }
 
-    update(duration) {
+    update(duration, logger = null) {
         if (!this.initialized) {
             this.mean = duration;
             this.initialized = true;
@@ -27,6 +27,9 @@ class EWMAMonitor {
         this.variance = (1 - this.alpha) * (this.variance + this.alpha * Math.pow(diff, 2));
         
         this.sampleCount++;
+        if (logger && this.sampleCount % 50 === 0){
+            logger.debug(`Average Transaction finish time: ${this.mean.toFixed(2)}ms with standard Deviation: ${Math.sqrt(this.variance).toFixed(2)}ms at ${this.sampleCount} total Transactions`);
+        }
     }
 
     getStats() {

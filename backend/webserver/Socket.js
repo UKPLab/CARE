@@ -88,21 +88,20 @@ module.exports = class Socket {
                             this.logger.debug(`Transaction ${eventName} succeeded in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
                         }
                     }
-                    //regularly log the average transaction time 
-                    if (this.transactionMonitor.sampleCount % 100 == 0) {
-                        this.logger.debug(`Average Transaction finish time: ${mean.toFixed(2)}ms with standard Deviation: ${stdDev.toFixed(2)}ms at ${this.transactionMonitor.sampleCount} total Transactions`);
-                    }
-                    this.transactionMonitor.update(duration);
+                    this.transactionMonitor.update(duration, this.logger);
                 }
                 if (callback) {
                     callback({success: true, data: result});
                 }
             } catch (err) {
-
-                // TODO: add try - catch block, but as app is not crashing anymore,
-                //  the app is stuck in some cases, need second fallback
                 if (t) {
-                    await t.rollback();
+                    try {
+                        await t.rollback();
+                    } catch (rollbackError) {
+                        this.logger.error(`Rollback of Transaction in Event: ${eventName} failed`);
+                        this.logger.error(rollbackError.message);
+                    }
+                    
                     const duration = performance.now() - startTime; 
                     const {mean, stdDev} = this.transactionMonitor.getStats();
                     // only check after some warmup for the moving average
@@ -113,11 +112,7 @@ module.exports = class Socket {
                             this.logger.debug(`Transaction ${eventName} failed and rolled back in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
                         }
                     }
-                    //regularly log the average transaction time 
-                    if (this.transactionMonitor.sampleCount % 100 == 0) {
-                        this.logger.debug(`Average Transaction finish time: ${mean} with standard Deviation: ${stdDev} at ${this.transactionMonitor.sampleCount} total Transactions`);
-                    }
-                    this.transactionMonitor.update(duration);
+                    this.transactionMonitor.update(duration, this.logger);
                 }
 
                 console.log(err);
