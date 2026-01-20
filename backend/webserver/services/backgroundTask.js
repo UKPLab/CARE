@@ -103,7 +103,7 @@ module.exports = class BackgroundTaskService extends Service {
             throw new Error("You do not have permission to preprocess submissions");
         }
 
-        this.initializePreprocessingState();
+        await this.initializePreprocessingState();
 
         await this.prepareProcessingItems(preprocessingData);
 
@@ -163,9 +163,11 @@ module.exports = class BackgroundTaskService extends Service {
     /**
      * Initialize the preprocessing state and notify clients
      */
-    initializePreprocessingState() {
+    async initializePreprocessingState() {
         this.requestIds = [];
         this.preprocessItems = [];
+
+        const nlpTimeout = await this.server.db.models['setting'].get("service.nlp.timeout");
 
         this.backgroundTask.preprocess = {
             cancelled: false,
@@ -175,6 +177,7 @@ module.exports = class BackgroundTaskService extends Service {
             currentRequestId: null,
             batchStartTime: Date.now(),
             errors: []  // Track all errors that occurred
+            nlpTimeout
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }

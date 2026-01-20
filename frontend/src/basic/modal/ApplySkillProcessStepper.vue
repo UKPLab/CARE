@@ -34,6 +34,10 @@
 
         <div class="mt-2 text-muted">
           Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
+          <span v-if="isTimeoutExceeded" class="text-warning ms-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Taking longer than expected
+          </span>
         </div>
         <div class="mt-2 text-muted">
           Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
@@ -188,6 +192,17 @@ export default {
     currentRequestElapsedTime() {
       const start = this.activeRequestStartTime;
       return this.formatElapsedSince(start);
+    },
+    currentRequestElapsedMs() {
+      const start = this.activeRequestStartTime;
+      if (!start) return 0;
+      return Math.max(0, this.now - start);
+    },
+    nlpTimeout() {
+      return this.preprocess?.nlpTimeout;
+    },
+    isTimeoutExceeded() {
+      return this.currentRequestElapsedMs > this.nlpTimeout;
     },
     remainingSubmissions() {
       if (!this.isProcessingActive) return [];
