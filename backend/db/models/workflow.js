@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
         };
     static publicTable = true;
 
+    static async deleteWorkflowSteps(workflowId, options) {
+      await sequelize.models.workflow_step.getAllByKey("workflowId", workflowId);
+      for (const step of await WorkflowStep) {
+        await models["workflow_step"].deleteById(step.id, { transaction: options.transaction });
+      }
+    }
+
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -60,7 +67,16 @@ module.exports = (sequelize, DataTypes) => {
       }, {
       sequelize,
       modelName: 'workflow',
-      tableName: 'workflow'
+      tableName: 'workflow',
+      hooks: {
+        afterUpdate: async (workflow, options) => {
+
+          if(workflow.deleted) {
+            // Cascade delete workflow steps
+            await Workflow.deleteWorkflowSteps(workflow.id, options);
+          }
+        }
+      }
     }
   );
 
