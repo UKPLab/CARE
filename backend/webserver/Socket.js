@@ -62,6 +62,7 @@ module.exports = class Socket {
         this.socket.on(eventName, async (data, callback) => {
             let t;
             const perCallOptions = {...options};
+            let finished = false;
             try {
                 if (useTransaction) {
                     this.transactionMonitor.start(); //Start Transaction Time Tracking 
@@ -77,6 +78,7 @@ module.exports = class Socket {
                 if (t) {
                     await t.commit();
                     this.transactionMonitor.finish(eventName, true); //transaction successful 
+                    finished = true;
                 }
                 if (callback) {
                     callback({success: true, data: result});
@@ -90,6 +92,7 @@ module.exports = class Socket {
                         this.logger.error(rollbackError.message);
                     }
                     this.transactionMonitor.finish(eventName, false); //transaction failed 
+                    finished = true; 
                 }
 
                 console.log(err);
@@ -97,6 +100,15 @@ module.exports = class Socket {
 
                 if (callback) {
                     callback({success: false, message: err.message});
+                }
+            }
+            finally {
+                if (t && !finished){
+                    try {
+                        await t.rollback();
+                    } catch(err){
+                        this.logger.error(`Transaction rollback in finally has failed for event: ${eventName}`);
+                    }
                 }
             }
         });
