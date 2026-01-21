@@ -6,6 +6,12 @@ third-party platforms, before they are stored in the database. This validation
 process prevents broken or incomplete submissions and enforces
 project-specific format requirements (e.g., "PDF + LaTeX ZIP" for exposés).
 
+.. note::
+
+   A *submission* refers to the set of one or more files that are uploaded or imported together 
+   for a specific assignment and it can only be accepted if a validation schema is defined 
+   and the validation check succeeds.
+
 This documentation describes the key components of the validation mechanism
 and its practical use cases.
 
@@ -31,6 +37,7 @@ Key Components
 The validation flow consists of three key components:
 
 - **Validation Schema**: A JSON schema stored in the Configuration table that defines validation rules.
+  For details on creating and configuring validation schemas, see :doc:`../../for_researchers/validation_schemas`.
 - **Validator**: A utility class implemented in ``backend/utils/validator.js``. Handles file download and validation logic.
 - **Frontend**: Users select a validation schema via the validator selector
   (see the ``ValidatorSelector`` component used in the dashboard submission flow).
@@ -41,101 +48,64 @@ The validation flow consists of three key components:
    Example: ``backend/db/migrations/20250919125851-basic-configuration-expose_validation.json``.
 
 
-Validation Schema
---------------------
+Validator Class
+-------------------
 
-Validation configurations are JSON objects containing metadata and validation
-rules.
+The ``Validator`` class provides methods for validating submission files against
+validation schemas. It handles file downloads from Moodle, file categorization,
+and validation logic.
 
-**Top-level attributes**
+**Constructor**
 
-- ``version``: Schema version  
-- ``name``: Schema name  
-- ``description``: Description of this schema  
-- ``type``: Must be set to ``validation``  
+.. code-block:: javascript
 
-**Rules object**
+   const Validator = require("../../utils/validator.js");
+   const validator = new Validator(server, models);
 
-- ``additionalFilesAreAllowed``: Boolean indicating if unspecified files are accepted
-  at the root level.
-- ``requiredFiles``: A list of required file definitions.
+**Key Methods**
 
-**Each** ``requiredFiles`` **entry supports**
+- ``downloadFilesToTemp(files, options)``: Downloads files from Moodle to temporary location
+- ``validateSubmissionFiles(files, configId)``: Validates files against a schema
+- ``categorizeFiles(files)``: Categorizes files by type (PDFs, ZIPs, others)
 
-- ``pattern``: Regex pattern matched against the filename  
-- ``description``: Description of the file’s purpose  
-- ``required``: Indicates whether the file must be present  
-- ``includeFiles`` *(optional)*: Validation rules for ZIP archive contents  
-- ``allowAdditionalFiles`` *(optional)*: List of allowed file extensions inside ZIP archives  
-
-**ZIP validation rules inside** ``includeFiles``
-
-- ``pattern``: Regex pattern for ZIP entries  
-- ``description``: Description of the expected file  
-- ``required``: Whether the file must be present  
-- ``maxMatches``: Maximum number of allowed matches  
-
-The validator automatically filters out system files (such as ``.DS_Store`` and
-``__MACOSX/``) and enforces root-level file placement. If a ZIP contains a single
-top-level folder, this folder is automatically stripped during validation.
-
-Usage Examples
+Usage Example
 --------------
 
-Basic Usage (PDF only)
-~~~~~~~~~~~~~~~~~~~~~~
+This example shows how the validator is used in practice as part of 
+the submission import flow (e.g. in ``DocumentSocket``) .
 
-**Goal:** Ensure a required PDF is present with no additional files.
+**Goal:** Download submissions (optionally from Moodle), validate them against a
+validation schema, and either create the submission or abort with an error.
 
 **Steps:**
 
 1. Instantiate the validator with ``server`` and ``models``.
-2. Call ``validateSubmissionFiles(files, validationConfigurationId)``.
-3. If ``success`` is true, proceed to save the submission.
+2. (Optional) Download files to a temporary location (e.g. from Moodle).
+3. Validate the temporary files using ``validateSubmissionFiles``.
+4. On success, create the submission and related documents inside a transaction.
+5. On failure, abort the transaction and report the error to the user.
 
 .. code-block:: javascript
 
+   //  1) Instantiate the validator.
    const Validator = require("../../utils/validator.js"); // path shown is for reference only
    const validator = new Validator(server, models);
-   const result = await validator.validateSubmissionFiles(files, configId);
-   if (!result.success) throw new Error(result.message);
 
+   async function handleSubmission(submissionFiles, moodleOptions, configId, transaction) {
+       // 2) (Optional) Download submissions from Moodle
+       const tempFiles = submissionFiles
+           ? await validator.downloadFilesToTemp(submissionFiles, moodleOptions)
+           : files; // use already-uploaded files
 
-Advanced Usage (ZIP with LaTeX)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       // 3) Validate files against the configured validation schema
+       const result = await validator.validateSubmissionFiles(tempFiles, configId);
+       if (!result.success) {
+           // 5) Abort on failure
+           throw new Error(result.message);
+       }
 
-**Goal:** Require one PDF and one ZIP archive containing LaTeX sources.
-
-**Configuration example:**  
-``backend/db/migrations/20250919125851-basic-configuration-expose_validation.json``
-
-**Validation behavior:**
-
-- **PDF**: Required  
-- **ZIP archive**: Required and must contain:
-  
-  - ``Expose.tex``
-  - ``ExposeBibliography.bib``
-  - ``tudathesis.cfg``
-
-- **Additional ZIP files**: Limited to specific extensions (e.g., ``jpg``, ``png``, ``pdf``, ``bst``, ``cls``)
-
-
-Integration with DocumentSocket
--------------------------------
-
-The validator integrates into methods such as
-``downloadMoodleSubmissions()`` and ``uploadSingleSubmission()`` found in
-``DocumentSocket``.
-
-**Validation flow:**
-
-1. Download submissions from Moodle (if applicable).  
-2. Validate files using ``validateSubmissionFiles``.  
-3. **On success**: Create the submission and associated documents within a database transaction.  
-4. **On failure**: Roll back the transaction and report the error to the user.  
-   Progress updates are sent to the client throughout the process.
-
+       // 4) Proceed with creating the submission
+   }
 
 Error Handling Patterns
 -----------------------
@@ -157,5 +127,5 @@ See Also
 
 - ``backend/utils/validator.js`` (implementation)
 - ``backend/webserver/sockets/document.js`` (integration)
-- ``backend/db/migrations/20250919125851-basic-configuration-expose_validation.json`` (example schema)
+- :doc:`../../for_researchers/validation_schemas` (creating and configuring validation schemas)
 - Frontend validator selector (dashboard submission flow)
