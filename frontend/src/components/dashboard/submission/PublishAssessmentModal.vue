@@ -875,22 +875,8 @@ export default {
       // fetch document_data for this session and study step
       // Try both AI workflow keys and non-AI key (assessment_result)
       const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
-
-      let assessmentRaw = {};
-
-      if (matchingStudyStep && Array.isArray(documentDataArray)) {
-        // Get all possible assessment keys (AI or non-AI)
-        const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
-
-        // Try to find data using any of the possible keys
-        for (const key of assessmentKeys) {
-          const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key);
-          if (documentDataItem) {
-            assessmentRaw = documentDataItem.value || {};
-            break; // Found data, stop searching
-          }
-        }
-      }
+      const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === "assessment_result");
+      const assessmentRaw = documentDataItem.value || {};
 
       const scoreState = assessmentRaw || {};
       const scores = buildScoresFromState(scoreState);
