@@ -731,7 +731,7 @@ export default {
       if (!study) {
         return false;
       }
-      return study.closed === null ? true : false;
+      return study.closed !== null ? true : false;
     },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
