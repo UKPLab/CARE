@@ -76,7 +76,7 @@ module.exports = class Socket {
                 const result = await func.call(this, data, perCallOptions);
                 if (t) {
                     await t.commit();
-                    this.transactionMonitor.finish(true); //transaction successful 
+                    this.transactionMonitor.finish(eventName, true); //transaction successful 
                 }
                 if (callback) {
                     callback({success: true, data: result});
@@ -89,7 +89,7 @@ module.exports = class Socket {
                         this.logger.error(`Rollback of Transaction in Event: ${eventName} failed`);
                         this.logger.error(rollbackError.message);
                     }
-                    this.transactionMonitor.finish(false); //transaction failed 
+                    this.transactionMonitor.finish(eventName, false); //transaction failed 
                 }
 
                 console.log(err);

@@ -12,7 +12,7 @@ class EWMAMonitor {
     start(){
         this.startTime = performance.now();
     }
-    finish(success = false){
+    finish(eventName, success = false){
         if (!this.startTime){
             throw new Error("Start Time does not exist. Have you started the Transaction Monitoring?");
         }
