@@ -125,7 +125,7 @@ module.exports = (sequelize, DataTypes) => {
                 studyStepId: null,
             }));
 
-            return await this.bulkCreate(bulkData, {transaction});
+            return await this.bulkCreate(bulkData, {timestamps: false, transaction});
 
         }
     }
