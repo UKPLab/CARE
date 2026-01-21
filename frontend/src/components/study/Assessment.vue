@@ -145,7 +145,7 @@ export default {
   },
   computed: {
     computedReadOnly() {
-      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('assessment') || false;
+      return this.readOnly || this.currentStudyStep?.configuration?.settings?.readOnlyComponents?.includes('assessment') || false;
     },
     configurationId() {
       return this.config.settings?.configurationId || null;

@@ -33,36 +33,61 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Duplicate comments from original annotation to duplicated annotation
+         * Duplicate comments from original annotation to duplicated annotation with flexible filtering
          * Recursively duplicates child comments as well
+         * 
+         * By default, copies ALL comments. Pass filters to filter what gets copied.
          * 
          * @param {number} originalAnnotationId - The ID of the original annotation
          * @param {Object} duplicatedAnnotation - The duplicated annotation object
-         * @param {Object} overrides - Optional properties to override (e.g., { studySessionId, studyStepId })
+         * @param {Object|Object[]} [filters] - Optional where clause condition(s) to filter which entries to copy.
+         *   - If not provided or empty, copies ALL comments (default)
+         *   - Single object: copies entries matching that condition
+         *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
          * @param {Object} transaction - The database transaction
          * @returns {Promise<Array>} Array of duplicated comments
+         * 
+         * @example
+         * // Copy all comments (default)
+         * await duplicateComments(1, dupAnnotation, null, transaction);
+         * 
+         * @example
+         * // Copy only null entries
+         * await duplicateComments(1, dupAnnotation, { studySessionId: null, studyStepId: null }, transaction);
+         * 
+         * @example
+         * // Copy multiple conditions
+         * await duplicateComments(1, dupAnnotation, [
+         *   { studySessionId: null, studyStepId: null },
+         *   { studySessionId: 45, studyStepId: 12 }
+         * ], transaction);
          */
-        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, overrides = {}, transaction) {
+        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, filters = null, transaction) {
             
             // Build where clause for root comments (no parent)
             const whereClause = {
                 annotationId: originalAnnotationId,
                 parentCommentId: null,
-                [Op.or]: [
-                    {
-                        studySessionId: null,
-                        studyStepId: null
-                    }
-                ]
+                deleted: false
             };
             
-            // Add condition for specific studySessionId and studyStepId if provided
-            if (overrides.studySessionId !== undefined && overrides.studyStepId !== undefined) {
-                whereClause[Op.or].push({
-                    studySessionId: overrides.studySessionId,
-                    studyStepId: overrides.studyStepId
-                });
+            // If filters provided, apply them with OR logic
+            if (filters) {
+                const conditions = Array.isArray(filters) ? filters : [filters];
+                
+                // Filter out any empty objects
+                const validConditions = conditions.filter(cond => 
+                    cond && Object.keys(cond).length > 0
+                );
+                
+                // Always include default null condition + provided conditions
+                if (validConditions.length > 0) {
+                    whereClause[Op.or] = [
+                        ...validConditions
+                    ];
+                }
             }
+            // If no filters, copy ALL comments (no additional filtering)
             
             // Fetch all root comments for the original annotation
             const originalComments = await this.findAll({
@@ -80,7 +105,7 @@ module.exports = (sequelize, DataTypes) => {
                     originalComment,
                     duplicatedAnnotation,
                     null,
-                    overrides,
+                    filters,
                     transaction,
                     commentIdMap
                 );
@@ -96,12 +121,12 @@ module.exports = (sequelize, DataTypes) => {
          * @param {Object} originalComment - The original comment object
          * @param {Object} duplicatedAnnotation - The duplicated annotation object
          * @param {number|null} newParentCommentId - The ID of the parent comment in the duplicated tree
-         * @param {Object} overrides - Optional properties to override
+         * @param {Object|Object[]} filters - Optional where clause conditions for filtering
          * @param {Object} transaction - The database transaction
          * @param {Map} commentIdMap - Map to track original to duplicated comment IDs
          * @returns {Promise<Array>} Array of duplicated comments
          */
-        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, overrides, transaction, commentIdMap) {
+        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, filters, transaction, commentIdMap) {
             // Create base comment data
             const baseData = {
                 userId: originalComment.userId,
@@ -140,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
                     childComment,
                     duplicatedAnnotation,
                     duplicatedComment.id,
-                    overrides,
+                    filters,
                     transaction,
                     commentIdMap
                 );

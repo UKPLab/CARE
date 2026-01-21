@@ -217,7 +217,6 @@ export default {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
       studyData: computed(() => this.studyData),
-      study: computed(() => this.study),
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
       pendingNlpInsertion: computed(() => this.pendingNlpInsertion),

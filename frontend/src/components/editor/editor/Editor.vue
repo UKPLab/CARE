@@ -13,10 +13,14 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll; position: relative;"
         >
-          <!-- Read-Only Indicator (floating icon) -->
-          <ReadOnlyIndicator
-            v-if="finalReadOnly"
-          />
+          <!-- Read-Only Toolbar Bar -->
+          <div
+            v-if="!toolbarVisible && finalReadOnly"
+            class="readonly-toolbar-bar"
+          >
+            <LoadIcon icon-name="lock-fill" :size="16" />
+            <span class="readonly-toolbar-text">Read-Only Mode</span>
+          </div>
           <div
             :id="`editor-container-${studyStepId}`"
             @paste="onPaste"
@@ -43,6 +47,7 @@ import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
 import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 const Delta = Quill.import('delta');
 
@@ -50,6 +55,7 @@ export default {
   name: "EditorView",
   components: {
     ReadOnlyIndicator,
+    LoadIcon,
   },
   fetch_data: ["document_edit"],
   subscribeTable: ["document_data"],
@@ -65,11 +71,6 @@ export default {
       default: null
     },
     readOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    componentReadOnly: {
       type: Boolean,
       required: false,
       default: false,
@@ -92,6 +93,11 @@ export default {
     pendingNlpInsertion: {
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
   },
   emits: ["update:data"],
   data() {
@@ -110,6 +116,9 @@ export default {
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
+    },
+    componentReadOnly() {
+      return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
     },
     finalReadOnly() {
       return this.readOnly || this.componentReadOnly;
@@ -527,5 +536,20 @@ export default {
 </script>
 
 <style scoped>
+.readonly-toolbar-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f3f3f3;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 0px;
+  color: #666;
+  font-size: 14px;
+}
 
+.readonly-toolbar-text {
+  font-weight: 500;
+}
 </style>

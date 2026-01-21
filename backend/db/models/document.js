@@ -77,10 +77,11 @@ module.exports = (sequelize, DataTypes) => {
          *
          * @param {number} documentId - The ID of the document to duplicate
          * @param {Object} overrides - Optional properties to override (e.g., { submissionId: 123 })
+         * @param {Object} filters - Optional filters for extra associations (e.g., { studySessionId: 45 }) duplicate filters data that include studySessionId
          * @param {Object} options - Database options including transaction
          * @returns {Promise<Object>} The duplicated document
          */
-        static async duplicateDocument(documentId, overrides = {}, options = {}) {
+        static async duplicateDocument(documentId, overrides = {}, filters = {}, options = {}) {
             const transaction = options.transaction;
             
             const originalDoc = await Document.findByPk(documentId, {transaction});
@@ -112,13 +113,13 @@ module.exports = (sequelize, DataTypes) => {
             // Copy document files based on type
             await this.duplicateDocumentFiles(originalDoc, duplicatedDoc, transaction);
 
-            await sequelize.models.document_data.duplicateDocumentData(originalDoc.id, duplicatedDoc.id, overrides, transaction);
+            await sequelize.models.document_data.duplicateDocumentData(originalDoc.id, duplicatedDoc.id, filters, transaction);
 
             if (originalDoc.type === Document.docTypes.DOC_TYPE_PDF) {
-                await sequelize.models.annotation.duplicateAnnotations(originalDoc.id, duplicatedDoc.id, overrides, transaction);
+                await sequelize.models.annotation.duplicateAnnotations(originalDoc.id, duplicatedDoc.id, filters, transaction);
             }
-            else{
-                await sequelize.models.document_edit.duplicateEditsByDocument(originalDoc.id, duplicatedDoc.id, overrides, transaction);
+            else if(originalDoc.type === Document.docTypes.DOC_TYPE_HTML || originalDoc.type === Document.docTypes.DOC_TYPE_MODAL){
+                await sequelize.models.document_edit.duplicateEditsByDocument(originalDoc.id, duplicatedDoc.id, filters, transaction);
             }
             return duplicatedDoc;
         }

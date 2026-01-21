@@ -16,7 +16,6 @@
           <PDFViewer
               ref="pdfViewer"
               class="rounded border border-1 shadow-sm"
-              :componentReadOnly="computedReadOnly"
               style="margin:auto"
               @copy="onCopy"
           />
@@ -37,7 +36,6 @@
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar ref="sidebar"
-                                  :computed-read-only="computedReadOnly"
                                    @new-anno-card="changeSideBarView"
                                    @scroll-to-comment="scrollToComment"
                 />
@@ -125,7 +123,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
-      showDefaultAnnotations: computed(() => this.showDefaultAnnotations),
+      showAllDocumentAnnotations: computed(() => this.showAllDocumentAnnotations),
     }
   },
   inject: {
@@ -140,11 +138,6 @@ export default {
       default: false
     },
     currentStudyStep:{
-      type: Object,
-      required: false,
-      default: null
-    },
-    study: {
       type: Object,
       required: false,
       default: null
@@ -284,9 +277,11 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return !this.showDefaultAnnotations ? annotations.filter(annotation =>
+        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
             annotation.studySessionId === this.studySessionId
-        ) : annotations;
+        ) : annotations.filter(annotation =>
+            annotation.studySessionId === null && annotation.studyStepId === null
+        );
       }
     },
     comments() {
@@ -298,9 +293,11 @@ export default {
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return !this.showDefaultAnnotations ? comments.filter(comment =>
+        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
             comment.studySessionId === this.studySessionId
-        ) : comments;
+        ) : comments.filter(comment =>
+            comment.studySessionId === null && comment.studyStepId === null
+        );
       }
     },
     sidebarButtons() {

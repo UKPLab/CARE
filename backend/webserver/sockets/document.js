@@ -513,11 +513,11 @@ class DocumentSocket extends Socket {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
                 
-                // Check if showDefaultAnnotations is enabled in study step configuration
-                let showDefaultAnnotations = false;
+                // Check if showAllDocumentAnnotations is enabled in study step configuration
+                let showAllDocumentAnnotations = false;
                 if (data.studyStepId) {
                     const studyStep = await this.models['study_step'].getById(data.studyStepId);
-                    showDefaultAnnotations = studyStep?.configuration?.settings?.showDefaultAnnotations ?? true;
+                    showAllDocumentAnnotations = studyStep?.configuration?.settings?.showAllDocumentAnnotations ?? true;
                 }
 
                 if (study.collab) {
@@ -526,34 +526,42 @@ class DocumentSocket extends Socket {
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                     this.emit("study_sessionRefresh", studySessions);
 
-                    // send annotations - if showDefaultAnnotations is true, get all by documentId
+                    // send annotations - if showAllDocumentAnnotations is true, include document annotations in OR condition
                     let annotations;
-                    if (showDefaultAnnotations) {
-                        annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
-                            {
-                                where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                                raw: true
-                            })
-                        ));
-                        annotations = annotations.flat(1);
-                    }
+                   
+                    annotations = await Promise.all(studySessions.map(async s => {
+                        const whereCondition = showAllDocumentAnnotations ? {
+                            [Op.or]: [
+                                {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                            ]
+                        } : {'studySessionId': s.id, 'studyStepId': data.studyStepId};
+                        
+                        return await this.models['annotation'].findAll({
+                            where: whereCondition,
+                            raw: true
+                        });
+                    }));
+                    annotations = annotations.flat(1);
+                
                     this.emit("annotationRefresh", annotations);
 
-                    // send comments - if showDefaultAnnotations is true, get all by documentId
+                    // send comments - if showAllDocumentAnnotations is true, include document comments in OR condition
                     let comments;
-                    if (showDefaultAnnotations) {
-                        comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
-                            {
-                                where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                                raw: true
-                            })
-                        ));
-                        comments = comments.flat(1);
-                    }
+                    comments = await Promise.all(studySessions.map(async s => {
+                        const whereCondition = showAllDocumentAnnotations ? {
+                            [Op.or]: [
+                                {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                            ]
+                        } : {'studySessionId': s.id, 'studyStepId': data.studyStepId};
+                        
+                        return await this.models['comment'].findAll({
+                            where: whereCondition,
+                            raw: true
+                        });
+                    }));
+                    comments = comments.flat(1);
                     this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
@@ -565,29 +573,34 @@ class DocumentSocket extends Socket {
                     this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
 
                 } else {
-                    // Non-collab study - check showDefaultAnnotations
+                    // Non-collab study - check showAllDocumentAnnotations
                     let annotations;
-                    if (showDefaultAnnotations) {
-                        annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        annotations = await this.models['annotation'].findAll(
-                            {
-                                where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                                raw: true
-                            });
-                    }
+                    const annotationWhereCondition = showAllDocumentAnnotations ? {
+                        [Op.or]: [
+                            {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                        ]
+                    } : {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId};
+                    
+                    annotations = await this.models['annotation'].findAll({
+                        where: annotationWhereCondition,
+                        raw: true
+                    });
+
                     this.emit("annotationRefresh", annotations);
 
                     let comments;
-                    if (showDefaultAnnotations) {
-                        comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                    } else {
-                        comments = await this.models['comment'].findAll(
-                            {
-                                where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
-                                raw: true
-                            });
-                    }
+                    const commentWhereCondition = showAllDocumentAnnotations ? {
+                        [Op.or]: [
+                            {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                        ]
+                    } : {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId};
+                    
+                    comments = await this.models['comment'].findAll({
+                        where: commentWhereCondition,
+                        raw: true
+                    });
                     this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
@@ -1179,32 +1192,6 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
-    /**
-     * Duplicate a document with all its associated data
-     * 
-     * @param {number} documentId - The ID of the document to duplicate
-     * @param {Object} overrides - Optional overrides (e.g., { submissionId, studySessionId, studyStepId })
-     * @param {Object} transaction - Database transaction
-     * @returns {Promise<Object>} The duplicated document and related data counts
-     */
-    async duplicateDocumentWithData(documentId, overrides = {}, transaction) {
-        
-        const originalDoc = await this.models['document'].getById(documentId, {transaction});
-        if (!originalDoc) {
-            throw new Error(`Document ${documentId} not found`);
-        }
-        
-        // Duplicate the document
-        const duplicatedDoc = await this.models['document'].duplicateDocument(
-            documentId,
-            overrides,
-            {transaction}
-        );
-        return {
-            duplicatedDocument: duplicatedDoc,
-        };
-    }
-
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
@@ -1226,9 +1213,6 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
-
-        // this.duplicateDocumentWithData("71", {studySessionId: "10", studyStepId: "24"})
-        // this.duplicateDocumentWithData("40", {studySessionId: "10", studyStepId: "23"})
     }
 };
 
