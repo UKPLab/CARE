@@ -1,7 +1,7 @@
 const {inject} = require("../utils/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
-
+const {EWMAMonitor} = require("../utils/EWMAMonitor")
 /**
  * Defines as new Socket class
  *
@@ -38,6 +38,8 @@ module.exports = class Socket {
 
         // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
+
+        this.transactionMonitor = new EWMAMonitor(30, this.logger);
     }
 
     /**
@@ -60,9 +62,10 @@ module.exports = class Socket {
         this.socket.on(eventName, async (data, callback) => {
             let t;
             const perCallOptions = {...options};
-
+            let finished = false;
             try {
                 if (useTransaction) {
+                    this.transactionMonitor.start(); //Start Transaction Time Tracking 
                     t = await this.server.db.sequelize.transaction();
                     perCallOptions.transaction = t;
 
@@ -74,21 +77,38 @@ module.exports = class Socket {
                 const result = await func.call(this, data, perCallOptions);
                 if (t) {
                     await t.commit();
+                    this.transactionMonitor.finish(eventName, true); //transaction successful 
+                    finished = true;
                 }
                 if (callback) {
                     callback({success: true, data: result});
                 }
             } catch (err) {
-
-                // TODO: add try - catch block, but as app is not crashing anymore,
-                //  the app is stuck in some cases, need second fallback
-                if (t) await t.rollback();
+                if (t) {
+                    try {
+                        await t.rollback();
+                    } catch (rollbackError) {
+                        this.logger.error(`Rollback of Transaction in Event: ${eventName} failed`);
+                        this.logger.error(rollbackError.message);
+                    }
+                    this.transactionMonitor.finish(eventName, false); //transaction failed 
+                    finished = true; 
+                }
 
                 console.log(err);
                 this.logger.error(err.message);
 
                 if (callback) {
                     callback({success: false, message: err.message});
+                }
+            }
+            finally {
+                if (t && !finished){
+                    try {
+                        await t.rollback();
+                    } catch(err){
+                        this.logger.error(`Transaction rollback in finally has failed for event: ${eventName}`);
+                    }
                 }
             }
         });
