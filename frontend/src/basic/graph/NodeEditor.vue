@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import BasicCoordinator from "@/basic/Coordinator.vue";
+import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 
 /**
  * Basic Node Editor
@@ -43,8 +43,7 @@ export default {
     success(id) {
       this.currentNodeId = id;
       this.isSuccess = true;
-      console.log("Node edit successful for node ID:", id, "with data:", this.$refs.coordinator.data);
-      this.$emit('update:node', id, this.$refs.coordinator.data);
+      this.$emit('update:node', id);
     },
     close() {
       this.$refs.coordinator.close();

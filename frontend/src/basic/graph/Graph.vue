@@ -3,37 +3,19 @@
     <template #element>
       <div class="card border-1 text-start rounded-0 w-100">
         <span class="text-start p-1 card-header">
-          <span class="dropdown">
             <button
               id="addNodeList"
               type="button"
-              class="btn btn-sm border-0 dropdown-toggle"
-              data-bs-toggle="dropdown"
+              class="btn btn-sm border-0"
               aria-expanded="false"
               :disabled="!activateAddNode"
-            >
+              @click="addNode(selectedNodes[0])">
               <BasicIcon
                 icon-name="node-plus"
                 :size="20"
                 :color="activateAddNode ? 'blue': ''"
                 class="mx-1"/>
             </button>
-            <ul
-              class="dropdown-menu"
-              :class="activateAddNode ? 'hide': ''"
-              aria-labelledby="addNodeList">
-              <li
-                v-for="d in Object.keys(options['nodes'])"
-                :key="d">
-                  <a
-                    class="dropdown-item"
-                    href="#"
-                    @click="addNode(d)">
-                    {{ options['nodes'][d]['label'] }}
-                  </a>
-                </li>
-              </ul>
-          </span>
           <button
             type="button"
             class="btn btn-sm border-0"
@@ -43,7 +25,7 @@
               :size="20"
               :color="activateRemoveNode ? 'blue': ''"
               class="mx-1"
-              @click="removeNode()"/>
+              @click="removeNode(selectedNodes[0])"/>
           </button>
           <button
             type="button"
@@ -115,10 +97,10 @@ export default {
     }
   },
   props: {
-    workflowId: {
-      type: Number,
+    nodeContextMap: {
+      type: Array,
       required: false,
-      default: 0,
+      default: () => ([]),
     },
     options: {
       type: Object,
@@ -137,7 +119,7 @@ export default {
       default: false,
     }
   },
-  emits: ["update:modelValue"],
+  emits: ["update:Node", "delete:Node"],
   data() {
     return {
       selectedNodes: [],
@@ -187,15 +169,9 @@ export default {
     },
   },
   watch: {
-    currentData: {
-      handler() {
-        console.log("Current data changed:", this.currentData);
-        this.$emit("update:modelValue", this.currentData);
-      },
-      deep: true
-    },
     modelValue: {
       handler() {
+        console.log("Graph modelValue changed:", this.modelValue);
         this.setCurrentData(this.modelValue);
       },
       deep: true
@@ -226,9 +202,9 @@ export default {
      * @param direction - TB or LR
      */
     layout(direction) {
-      if (Object.keys(this.currentData['nodes']).length <= 1 || Object.keys(this.currentData['edges']).length === 0) {
-        return
-      }
+      // if (Object.keys(this.currentData['nodes']).length <= 1 || Object.keys(this.currentData['edges']).length === 0) {
+      //   return
+      // }
 
 
       // convert graph
@@ -247,18 +223,23 @@ export default {
       // Add nodes to the graph. The first argument is the node id. The second is
       // metadata about the node. In this case we're going to add labels to each of
       // our nodes.
-      Object.entries(this.currentData['nodes']).forEach(([nodeId, node]) => {
-        g.setNode(nodeId, {label: node.name, width: nodeSize, height: nodeSize})
-      })
+      console.log("Adding nodes to dagre graph:", this.currentData['nodes']);
+      Object.entries(this.currentData['nodes'])
+        .filter(([nodeId, node]) => node && !node.deleted)
+        .forEach(([nodeId, node]) => {
+          g.setNode(nodeId, {label: node.name, width: nodeSize, height: nodeSize})
+        })
 
       // Add edges to the graph.
+      console.log("Adding edges to dagre graph:",  g.nodes());
       Object.values(this.currentData['edges']).forEach(edge => {
         g.setEdge(edge.source, edge.target)
       })
 
       dagre.layout(g)
-
+      console.log("Dagre layout computed:", g);
       g.nodes().forEach((nodeId) => {
+        if( g.node(nodeId) === undefined) return;
         // update node position
         const x = g.node(nodeId).x
         const y = g.node(nodeId).y
@@ -275,70 +256,62 @@ export default {
         this.layout(direction);
       });
     },
-    addNode(nodeType) {
-      console.log("add node", nodeType);
-      this.$refs.nodeEditor.open(0, { workflowId: this.workflowId, type: nodeType, workflowStepPrevious: this.selectedNodes[0] });
+    addNode(node) {
+      const selectedNode = node ? this.currentData['nodes'][node] : null;
+      const nodeData = selectedNode?.data || selectedNode || {};
+      console.log("Node data for context extraction:", nodeData);
+      const extracted = {};
+      const mappings = Array.isArray(this.nodeContextMap) ? this.nodeContextMap : [];
+      mappings.forEach((mapping) => {
+        const key = mapping?.key;
+        const value = mapping?.value;
+        if (!key) return;
+        if( typeof value !== 'string'){ //what if string and a precalculated value?
+          extracted[key] = value;
+          return;
+        }
+        if (nodeData[value] !== undefined) {
+
+          console.log("Extracted context for new node:", nodeData[value]);
+          extracted[key] = nodeData[value];
+        }
+      });
+      console.log("Extracted context for new node:", extracted);
+      this.$refs.nodeEditor.open(0, extracted);
     },
     editNode(id) {
       this.mainModal?.hide();
       this.currentEditingNodeId = id;
       const node = this.currentData['nodes'][id];
-      this.currentNodeTable = this.getTableForNode(node.type);
       this.$refs.nodeEditor.open(node.id, node.data);
     },
-    updateNode(id, data) {
+    updateNode(id) {
+      console.log("Node update received for node ID:", id);
       this.mainModal?.show();
-      
-      // Create a new nodes object to trigger reactivity
-      const updatedNodes = { ...this.currentData['nodes'] };
-      
-      if (updatedNodes[id]) {
-        // Update existing node with new data
-        updatedNodes[id] = {
-          ...updatedNodes[id],
-          data: data,
-          name: data.name || updatedNodes[id].name // Update name if provided
-        };
-        this.currentData = {
-          ...this.currentData,
-          nodes: updatedNodes
-        };
-      } else {
-        // Add new node
-        updatedNodes[id] = {
-          id: id,
-          type: data.type,
-          data: data,
-          name: data.name
-        };
-        const newEdgeId = `edge_${id}_${data.workflowStepPrevious}`;
-        const edges = { ...this.currentData['edges'] };
-        edges[newEdgeId] = {
-          source: data.workflowStepPrevious,
-          target: id,
-          saved: true,
-        };
-        this.currentData = {
-        ...this.currentData,
-        nodes: updatedNodes,
-        edges: edges
-      };
-      }   
-      this.updateLayout('LR');
+      this.$emit("update:Node", id);
     },
     deleteSubNodes(nodeId) {
+      const node = Number(nodeId)
       Object.entries(this.currentData['edges']).forEach(([edgeId, edge]) => {
-        if (edge.target === nodeId) {
-          delete this.currentData['edges'][edgeId];
+        console.log("Checking edge for deletion:", edge);
+        console.log("Current nodeId for deletion:", nodeId);
+        if (edge.target === node) {
+          console.log("Deleting sub-node:(target)", edge.target , " via edge:", nodeId);
+          delete this.currentData['edges'][edgeId];      
         }
-        if (edge.source === nodeId) {
+        if (edge.source === node) {  
+          console.log("Deleting sub-node:(source)", edge.source , " via edge:", nodeId);   
           this.deleteSubNodes(edge.target);
+          delete this.currentData['edges'][edgeId];
         }
       });
       // remove node
-      delete this.currentData['nodes'][nodeId];
+      delete this.currentData['nodes'][nodeId]
+      if (this.currentData['layouts']?.nodes) {
+        delete this.currentData['layouts']['nodes'][nodeId];
+      }
     },
-    removeNode() {
+    removeNode(nodeId) {
       // warning that all subsequent nodes are also removed!
       this.mainModal?.hide();
       this.$refs['confirmDeletion'].open(
@@ -347,11 +320,9 @@ export default {
         "All subsequent nodes will also be removed!",
         (res) => {
           if (res) {
-            console.log(this.selectedNodes[0]);
-            this.deleteSubNodes(this.selectedNodes[0]);
-
+            this.deleteSubNodes(nodeId);
             this.selectedNodes = [];
-            this.updateLayout('LR');
+            this.$emit("delete:Node", nodeId, this.currentData);
           }
           this.mainModal?.show();
         }

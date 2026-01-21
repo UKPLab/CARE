@@ -34,7 +34,7 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/Card.vue";
+import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
@@ -51,7 +51,7 @@ import WorkflowEditModal from "./workflows/WorkflowEditModal.vue";
  * @author Karim Ouf
  */
 export default {
-  name: "DashboardWorkflows",
+  name: "Workflows",
   subscribeTable: ["workflow", "workflow_step"],
   components: {
     Card,

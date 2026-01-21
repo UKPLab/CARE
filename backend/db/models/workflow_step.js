@@ -58,13 +58,6 @@ module.exports = (sequelize, DataTypes) => {
             required: false,
             help: "Reference to another workflow step for document handling."
         }, {
-            key: "description",
-            label: "Description of the workflow step:",
-            help: "This text will describe what this step does in the workflow!",
-            type: "textarea",
-            required: false,
-            default: ""
-        }, {
             key: "configuration",
             label: "Configuration:",
             placeholder: "Enter JSON configuration for this step",
