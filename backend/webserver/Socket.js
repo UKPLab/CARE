@@ -39,7 +39,7 @@ module.exports = class Socket {
         // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
 
-        this.transactionMonitor = new EWMAMonitor(30);
+        this.transactionMonitor = new EWMAMonitor(30, this.logger);
     }
 
     /**
@@ -62,11 +62,9 @@ module.exports = class Socket {
         this.socket.on(eventName, async (data, callback) => {
             let t;
             const perCallOptions = {...options};
-
-            let startTime = undefined; //time tracking for transactions
             try {
                 if (useTransaction) {
-                    startTime = performance.now(); //tack start time 
+                    this.transactionMonitor.start(); //Start Transaction Time Tracking 
                     t = await this.server.db.sequelize.transaction();
                     perCallOptions.transaction = t;
 
@@ -78,17 +76,7 @@ module.exports = class Socket {
                 const result = await func.call(this, data, perCallOptions);
                 if (t) {
                     await t.commit();
-                    const duration = performance.now() - startTime; 
-                    const {mean, stdDev} = this.transactionMonitor.getStats();
-                    // only check after some warmup for the moving average
-                    if (this.transactionMonitor.sampleCount > 30) {
-                        // 2 standard deviations (95.4% confidence interval)
-                        const threshold = mean + (2 * stdDev);
-                        if (duration > threshold) {
-                            this.logger.debug(`Transaction ${eventName} succeeded in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
-                        }
-                    }
-                    this.transactionMonitor.update(duration, this.logger);
+                    this.transactionMonitor.finish(true); //transaction successful 
                 }
                 if (callback) {
                     callback({success: true, data: result});
@@ -101,18 +89,7 @@ module.exports = class Socket {
                         this.logger.error(`Rollback of Transaction in Event: ${eventName} failed`);
                         this.logger.error(rollbackError.message);
                     }
-                    
-                    const duration = performance.now() - startTime; 
-                    const {mean, stdDev} = this.transactionMonitor.getStats();
-                    // only check after some warmup for the moving average
-                    if (this.transactionMonitor.sampleCount > 30) {
-                        // 2 standard deviations (95.4% confidence interval)
-                        const threshold = mean + (2 * stdDev);
-                        if (duration > threshold) {
-                            this.logger.debug(`Transaction ${eventName} failed and rolled back in: ${duration.toFixed(2)}ms which is  slower than expected: < ${threshold.toFixed(2)}ms `);
-                        }
-                    }
-                    this.transactionMonitor.update(duration, this.logger);
+                    this.transactionMonitor.finish(false); //transaction failed 
                 }
 
                 console.log(err);
