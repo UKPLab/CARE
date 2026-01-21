@@ -721,7 +721,7 @@ export default {
       if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
         let factor = targetGradeRange / sourcePointsRange;
         // Keep 3 decimal places for display and internal use
-        factor = Math.round(factor * 1000) / 1000;
+        factor = Math.round(factor * 1000000) / 1000000;
         return factor;
       }
 
