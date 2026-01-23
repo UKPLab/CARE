@@ -19,25 +19,6 @@ Prepare external GPU Provider
 
 - Use :ref:`gpu-provider-setup` setup guide
 
-Prepare the broker
-~~~~~~~~~~~~~~~~~~
-
-Install broker locally
-
-::
-
-  cd /home/deployer
-  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git my_broker
-  git checkout <your-branch-name> # needs to be added on the server
-  cd my_broker
-  nano .env
-  make docker
-
-.env::
-
-  PROJECT_NAME=my_broker
-  BROKER_PORT=4858
-
 Prepare the CARE Instance
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -330,7 +311,21 @@ From https://docs.docker.com/engine/install/debian/#install-using-the-repository
   sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   sudo docker run hello-world
 
-**Install BrokerIO** ::
+**Install BrokerIO** 
+
+**Using PyPI**: ::
+
+  pip install brokerio
+
+And run it using: ::
+
+  brokerio broker start --db_url "http://localhost:8529" --redis_url "redis://localhost:6379" --port 4852
+
+For more info run: ::
+
+  brokerio --help
+
+**Or manually install it yourself**::
 
   sudo apt install git
   git clone https://github.com/UKPLab/CARE_broker.git /srv/brokerio

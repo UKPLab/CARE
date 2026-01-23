@@ -20,6 +20,14 @@
 
         <BasicButton
             class="btn-secondary btn-sm"
+            text="Publish Assessment"
+            title="Publish Assessment"
+            icon="clipboard-data"
+            @click="$refs.publishAssessmentModal.open()"
+        />
+
+        <BasicButton
+            class="btn-secondary btn-sm"
             text="Manual Import"
             title="Manual Import"
             icon="file-earmark-arrow-up"
@@ -65,6 +73,7 @@
   <ConfirmModal ref="deleteConf"/>
   <ImportModal ref="importModal"/>
   <PublishModal ref="publishModal"/>
+  <PublishAssessmentModal ref="publishAssessmentModal"/>
   <AssignModal ref="assignModal"/>
   <ApplySkillModal
       ref="applySkillModal"
@@ -78,6 +87,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./submission/UploadModal.vue";
 import ImportModal from "./submission/ImportModal.vue";
 import PublishModal from "./submission/PublishModal.vue";
+import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 import AssignModal from "./submission/AssignModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
@@ -104,6 +114,7 @@ export default {
     ImportModal,
     ConfirmModal,
     PublishModal,
+    PublishAssessmentModal,
     AssignModal,
     Card,
     BasicTable,
@@ -119,6 +130,7 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true,
       },
       tableColumns: [
         {name: "ID", key: "id"},
@@ -167,10 +179,10 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Delete document...",
-          action: "deleteDoc",
+          title: "Delete submission",
+          action: "deleteSubmission",
           stats: {
-            documentId: "id",
+            submissionId: "id",
           },
         },
       ],
@@ -218,36 +230,28 @@ export default {
         case "downloadSubmission":
           this.downloadSubmission(data.params.id);
           break;
-        case "deleteDoc":
-          this.deleteDoc(data.params);
+        case "deleteSubmission":
+          this.deleteSubmission(data.params);
           break;
       }
     },
-    async deleteDoc(row) {
-      const studies = this.$store.getters["table/study/getFiltered"]((e) => e.documentId === row.id);
-      let warning;
-      if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"}
-         running on this document. Deleting it will delete the ${studies.length !== 1 ? "studies" : "study"}!`;
-      } else {
-        warning = "";
-      }
-
-      this.$refs.deleteConf.open("Delete Document", "Are you sure you want to delete the document?", warning, (val) => {
+    async deleteSubmission(row) {
+      let warning = "";
+      this.$refs.deleteConf.open("Delete Submission", "Are you sure you want to delete the submission?", warning, (val) => {
         if (val) {
-          this.$socket.emit("documentUpdate", {
+          this.$socket.emit("submissionUpdate", {
             id: row.id,
             deleted: true,
           }, (res) => {
             if (res.success) {
               this.eventBus.emit("toast", {
-                title: "Document deleted",
-                message: "The document has been deleted",
+                title: "Submission deleted",
+                message: "The submission has been deleted",
                 variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Failed to delete document",
+                title: "Failed to delete submission",
                 message: res.message,
                 variant: "danger",
               });

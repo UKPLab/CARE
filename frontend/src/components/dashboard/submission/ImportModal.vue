@@ -231,6 +231,7 @@ export default {
           submissionId: submission.submissionId,
           exists: submission.exists,
           userId: user?.id,
+          userExtId: user?.extId,
           firstName: user?.firstName,
           lastName: user?.lastName,
           fileCount: files.length,
@@ -256,13 +257,8 @@ export default {
     },
     downloadFileAsCSV() {
       const filename = `submissions_${Date.now()}`;
-      const users = this.importResults.errors.map((err) => ({
-        userId: err.userId,
-        firstName: err.firstName,
-        lastName: err.lastName,
-        message: err.message,
-      }));
-      downloadObjectsAs(users, filename, "csv");
+      const {errors} = this.importResults;
+      downloadObjectsAs(errors, filename, "csv");
     },
     handleStepChange(step) {
       switch (step) {
@@ -299,6 +295,7 @@ export default {
             submissionId: s.submissionId,
             projectId: this.currentProject,
             userId: s.userId,
+            userExtId: s.userExtId,
             firstName: s.firstName,
             lastName: s.lastName,
             files: s.files,
@@ -313,8 +310,10 @@ export default {
           if (res.success) {
             const { downloadedSubmissions = [], downloadedErrors = [] } = res["data"] || {};
             this.importedSubmissions = downloadedSubmissions;
-            // Process import results for display
-            this.processImportResults({ downloadedSubmissions, downloadedErrors });
+            this.importResults = {
+              successCount: downloadedSubmissions.length,
+              errors: downloadedErrors,
+            };
           } else {
             this.eventBus.emit("toast", {
               title: "Failed to import submission from Moodle",
@@ -324,17 +323,6 @@ export default {
           }
         }
       );
-    },
-    processImportResults({ downloadedSubmissions = [], downloadedErrors = [] } = {}) {
-      this.importResults = {
-        successCount: downloadedSubmissions.length,
-        errors: downloadedErrors.map((e) => ({
-          userId: e.userId,
-          firstName: e.firstName,
-          lastName: e.lastName,
-          message: e.message,
-        })),
-      };
     },
   },
 };

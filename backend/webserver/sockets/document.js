@@ -859,6 +859,7 @@ class DocumentSocket extends Socket {
                 await transaction.rollback();
                 downloadedErrors.push({
                     userId: submission.userId,
+                    userExtId: submission.userExtId,
                     firstName: submission.firstName,
                     lastName: submission.lastName,
                     message: err.message,

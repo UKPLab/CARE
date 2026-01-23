@@ -74,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
          * ], transaction);
          */
         static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, filters = null, transaction) {
-            
+
             // Build where clause: start with documentId
             const whereClause = {
                 documentId: originalDocumentId,
@@ -107,23 +107,17 @@ module.exports = (sequelize, DataTypes) => {
             });       
             // Create new data entries for the duplicated document
             if (originalDataEntries.length > 0) {
-                for (const entry of originalDataEntries) {
-                    // Prepare the create data with the new document ID
-                    const { id, createdAt, updatedAt, deletedAt, studySessionId, studyStepId, ...entryWithoutMeta } = entry;
-                    const createData = {
-                        ...entryWithoutMeta,
-                        studySessionId: null,
-                        studyStepId: null,
-                        documentId: duplicateDocumentId, // Set to the new duplicated document ID
-                        createdAt: new Date(),
-                        updatedAt: new Date()
-                    };
-                    
-                    // Create a new entry for the duplicated document
-                    await this.create(createData, {
-                        transaction
-                    });
-                }
+                const newDataEntries = originalDataEntries.map(entry => ({
+                    ...entry,
+                    documentId: duplicateDocumentId, // Set to the new duplicated document ID
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    studySessionId: null,
+                    studyStepId: null,
+                    id: undefined,
+                    deletedAt: undefined,
+                }));
+                await this.bulkCreate(newDataEntries, {transaction});
             }
         }
     }
