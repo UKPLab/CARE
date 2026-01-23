@@ -83,7 +83,7 @@ class DocumentSocket extends Socket {
         }
 
         // Check if document exists in database (deleted or never existed)
-        if (!document) {
+        if (!document || document.deleted) {
             const error = new Error("The document does not exist or has been deleted.");
             error.errorCode = "DOCUMENT_NOT_FOUND";
             throw error;
@@ -563,7 +563,7 @@ class DocumentSocket extends Socket {
             throw new Error("Document ID is required.");
         }
         
-        const document = await this.validateDocument(data.documentId, 'id', false);
+        const document = await this.validateDocument(data.documentId, 'id', true);
 
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
             await this.getDocument({...data, "history": true}, options);
@@ -1091,6 +1091,8 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
      */
     async getDocumentData(data, options) {
+        const docuemt = await this.validateDocument(data.documentId, 'id', true);
+
         const whereClause = {
             documentId: data.documentId,
             deleted: false,

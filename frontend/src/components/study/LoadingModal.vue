@@ -31,8 +31,15 @@
             </div>
           </div>
         </div>
-        <div v-else-if="error">
-          <p class="text-danger">An error occurred while loading the study step. Please try again later.</p>
+        <div v-else-if="error" class="d-flex flex-column align-items-center">
+          <p class="text-danger text-center mb-3">{{ errorMessage }}</p>
+          <div class="d-flex gap-2">
+            <BasicButton
+                title="Return to Dashboard"
+                class="btn btn-primary"
+                @click="returnToDashboard"
+            />
+          </div>
         </div>
         <div v-else class="d-flex align-items-center">
           <div class="spinner-border" role="status">
@@ -118,6 +125,7 @@ export default {
   data() {
     return {
       error: false,
+      errorMessage:'',
       rotatingIndex: 0,
       documentData: null,
       nlpRequests: {},
@@ -276,6 +284,9 @@ export default {
               }
             } else {
               this.error = true;
+              this.errorMessage = this.getErrorMessage(response);
+
+              this.stopRotatingMessages();
             }
           }
       );
@@ -353,6 +364,24 @@ export default {
 
       this.close();
     },
+
+    getErrorMessage(response) {
+      const errorMessages = {
+        'DOCUMENT_NOT_FOUND': 'The document has been deleted or does not exist.',
+        'ACCESS_DENIED': 'You do not have permission to access this document.',
+        'FILE_MISSING': 'The document file is missing from the server.',
+        'UNKNOWN_ERROR': 'An unexpected error occurred.'
+      };
+      
+      const errorCode = response.errorCode || 'UNKNOWN_ERROR';
+      return errorMessages[errorCode] || response.message || 'An error occurred while loading the study step.';
+    },
+
+    returnToDashboard() {
+      this.close();
+      this.$router.push('/dashboard');
+    },
+
   }
 }
 </script>

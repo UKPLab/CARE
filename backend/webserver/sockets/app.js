@@ -289,12 +289,58 @@ class AppSocket extends Socket {
      * @throws {Error} Throws error if results is empty (no record found or operation fails)
      */
     async sendDataByHash(data, options) {
+        const record = await this.models[data.table].getByHash(data.hash);
+
+        if (!record) {
+            // Record doesn't exist or was deleted
+            const error = new Error("The requested resource does not exist or has been deleted.");
+            error.errorCode = "NOT_FOUND";
+
+            // Emit specific error event for study/session tables
+            if (data.table === "study") {
+                this.socket.emit("studyError", {
+                    errorCode: "NOT_FOUND",
+                    message: error.message,
+                    studyHash: data.hash
+                });
+            } else if (data.table === "study_session") {
+                this.socket.emit("studySessionError", {
+                    errorCode: "NOT_FOUND",
+                    message: error.message,
+                    studySessionHash: data.hash
+                });
+            }
+
+            throw error;
+        }
+
+        // Now check permissions by attempting to send via filtered sendTable
         const result = await this.sendTable(data.table, mergeFilter([[{
             key: "hash",
             value: data.hash
         }]], this.models[data.table].getAttributes()));
+
         if (result.length === 0) {
-            throw new Error("You don't have rights to access this data");
+            // Record exists but user doesn't have permission
+            const error = new Error("You don't have permission to access this resource.");
+            error.errorCode = "ACCESS_DENIED";
+
+            // Emit specific error event for study/session tables
+            if (data.table === "study") {
+                this.socket.emit("studyError", {
+                    errorCode: "ACCESS_DENIED",
+                    message: error.message,
+                    studyHash: data.hash
+                });
+            } else if (data.table === "study_session") {
+                this.socket.emit("studySessionError", {
+                    errorCode: "ACCESS_DENIED",
+                    message: error.message,
+                    studySessionHash: data.hash
+                });
+            }
+
+            throw error;
         }
     }
 
