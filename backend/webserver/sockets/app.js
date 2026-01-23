@@ -322,7 +322,7 @@ class AppSocket extends Socket {
 
         if (result.length === 0) {
             // Record exists but user doesn't have permission
-            const error = new Error("You don't have permission to access this resource.");
+            const error = new Error("You don't have rights to access this data.");
             error.errorCode = "ACCESS_DENIED";
 
             // Emit specific error event for study/session tables
