@@ -95,6 +95,18 @@ export default {
     buttons() {
       return [
         {
+          title: "copy Workflow",
+          action: "copyWorkflow",
+          stats: { workflowId: "id" },
+          icon: "files",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
           title: "Edit Workflow",
           action: "editWorkflow",
           stats: { workflowId: "id" },
@@ -145,6 +157,9 @@ export default {
           break;
         case "deleteWorkflow":
           this.deleteWorkflow(data.params);
+          break;
+        case "copyWorkflow":
+          this.$refs.workflowCreateModal.copy(data.params.id);
           break;
       }
     },
