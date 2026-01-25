@@ -168,12 +168,15 @@ export default {
      * @param id
      * @param defaultValues Override default values
      * @param copy If the entry should be copied
+     * @param dataOverrides Additional data to override after fetching
      */
-    open(id = 0, defaultValues = {}, copy = false) {
+    open(id = 0, defaultValues = {}, copy = false, dataOverrides = {}) {
       if (this.fields) {
         this.reset();
         this.overrideDefaultValues = defaultValues;
         this.data = this.getData(id, copy);
+        // Apply data overrides after fetching data
+        this.data = { ...this.data, ...dataOverrides };
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
