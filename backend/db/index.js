@@ -11,10 +11,17 @@ const path = require('path');
 const Sequelize = require('sequelize');
 const {DataTypes} = require("sequelize");
 const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/config/config.js')[env];
-const GlobalChangeTrackingPlugin = require('./plugins');
+const loadedConfig = require(__dirname + '/config/config.js')[env];
+const {GlobalChangeTrackingPlugin, TimeoutTrackerPlugin} = require('./plugins');
 const db = {};
-
+// add in global hook for tracking timed out transactions
+const config = {
+  ...loadedConfig,
+  hooks: {
+    ...(loadedConfig.hooks || {}), // Preserve existing hooks if we should ever add any in the config
+    afterInit: TimeoutTrackerPlugin,
+  }
+};
 let sequelize;
 if (config.use_env_variable) {
     sequelize = new Sequelize(process.env[config.use_env_variable], config);

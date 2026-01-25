@@ -721,7 +721,7 @@ export default {
       if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
         let factor = targetGradeRange / sourcePointsRange;
         // Keep 3 decimal places for display and internal use
-        factor = Math.round(factor * 1000) / 1000;
+        factor = Math.round(factor * 1000000) / 1000000;
         return factor;
       }
 
@@ -731,7 +731,7 @@ export default {
       if (!study) {
         return false;
       }
-      return study.closed === null ? true : false;
+      return study.closed !== null ? true : false;
     },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
@@ -875,22 +875,8 @@ export default {
       // fetch document_data for this session and study step
       // Try both AI workflow keys and non-AI key (assessment_result)
       const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
-
-      let assessmentRaw = {};
-
-      if (matchingStudyStep && Array.isArray(documentDataArray)) {
-        // Get all possible assessment keys (AI or non-AI)
-        const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
-
-        // Try to find data using any of the possible keys
-        for (const key of assessmentKeys) {
-          const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key);
-          if (documentDataItem) {
-            assessmentRaw = documentDataItem.value || {};
-            break; // Found data, stop searching
-          }
-        }
-      }
+      const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === "assessment_result");
+      const assessmentRaw = documentDataItem.value || {};
 
       const scoreState = assessmentRaw || {};
       const scores = buildScoresFromState(scoreState);

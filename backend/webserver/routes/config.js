@@ -18,6 +18,7 @@ module.exports = function (server) {
     server.app.get('/config.js', async (req, res) => {
         const config = {
             "app.config.copyright": await server.db.models['setting'].get("app.config.copyright"),
+            "app.register.enabled": await server.db.models['setting'].get("app.register.enabled"),
             "app.register.requestName": await server.db.models['setting'].get("app.register.requestName"),
             "app.register.requestStats": await server.db.models['setting'].get("app.register.requestStats"),
             "app.register.terms": await server.db.models['setting'].get("app.register.terms"),
