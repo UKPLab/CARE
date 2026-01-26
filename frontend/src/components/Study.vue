@@ -1,6 +1,20 @@
 <template>
+    <!-- Error state -->
+  <div v-if="studyError" class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
+    <div class="error-card text-center p-5 bg-white rounded shadow">
+      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+      <h2 class="mt-4 text-danger">{{ studyError.title }}</h2>
+      <p class="text-muted mb-4">{{ studyError.message }}</p>
+      <div class="d-flex gap-3 justify-content-center">
+        <router-link to="/" class="btn btn-primary">
+          <i class="bi bi-house me-2"></i>Go to Dashboard
+        </router-link>
+      </div>
+    </div>
+  </div>
+
   <StudyModal
-      v-if="studySessionId === 0 || (studySession && studySession.start === null)"
+      v-else-if="studySessionId === 0 || (studySession && studySession.start === null)"
       ref="studyModal"
       :study-id="studyId"
       :study-closed="studyClosed"
@@ -9,6 +23,7 @@
       @start="start"
   />
   <FinishModal
+      v-if="!studyError"
       ref="studyFinishModal"
       :study-session-id="studySessionId"
       :show-time-up="timeUp"
@@ -96,7 +111,7 @@
   </Teleport>
 
   <div
-      v-if="studySessionId !== 0"
+      v-if="studySessionId !== 0 && !studyError"
       class="study-container"
   >
     <div v-for="step in orderedStudySteps" :key="'step_' + step.id">
@@ -113,6 +128,7 @@
                 @insert-nlp-response="handleInsertNlpResponse"
                 @update:data="updateStudyData(step.id, 'data', $event)"
                 @update:ready="loadingReady[step.id] = $event"
+                @error="handleLoadingError"
             />
           </div>
           <div v-if="isStepLoaded(step.id)">
@@ -250,7 +266,28 @@ export default {
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
       pendingNlpInsertion: null,
+      studyError: null,
     };
+  },
+  sockets: {
+    studyError: function (data) {
+      if (data.studyHash === this.studyHash) {
+        this.setStudyError(data.message, data.errorCode);
+      }
+    },
+    documentError: function (data) {
+      // Handle document errors that occur during study steps
+      if (data.errorCode === 'FILE_MISSING' || data.errorCode === 'DOCUMENT_NOT_FOUND') {
+        // Check if this error is for a document in the current study
+        const isStudyDocument = this.studySteps.some(step => {
+          const doc = this.$store.getters['table/document/get'](step.documentId);
+          return doc && doc.hash === data.documentHash;
+        });
+        if (isStudyDocument) {
+          this.setStudyError(data.message, data.errorCode);
+        }
+      }
+    }
   },
   computed: {
     currentStep() {
@@ -446,6 +483,34 @@ export default {
     }
   },
   methods: {
+    setStudyError(message, errorCode) {
+      const errorMap = {
+        'NOT_FOUND': {
+          title: 'Study Not Found',
+          message: 'This study no longer exists or has been removed.'
+        },
+        'ACCESS_DENIED': {
+          title: 'Access Denied',
+          message: 'You don\'t have permission to access this study.'
+        },
+        'FILE_MISSING': {
+          title: 'Files Not Available',
+          message: 'Required files are missing. Please contact the study administrator.'
+        },
+        'DOCUMENT_NOT_FOUND': {
+          title: 'Document Not Found',
+          message: 'The study document no longer exists or has been removed.'
+        }
+      };
+      if (errorCode && errorMap[errorCode]) {
+        this.studyError = errorMap[errorCode];
+      } else {
+        this.studyError = {
+          title: 'Unknown Error',
+          message: 'An unexpected error occurred.'
+        }
+      }
+    },
     updateStudyData(stepId, data_type, data) {
       if (!this.studyData[stepId]) {
         this.studyData[stepId] = {};
@@ -460,6 +525,9 @@ export default {
       }
 
       this.pendingNlpInsertion = responseText;
+    },
+    handleLoadingError(errorData) {
+      this.setStudyError(errorData.message, errorData.errorCode);
     },
     next() {
       const nextStep = this.nextStudyStep;
@@ -631,4 +699,14 @@ export default {
 .ms-3 {
   margin-left: 1rem;
 }
+
+.study-error-page {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+.error-card {
+  max-width: 500px;
+  border: 1px solid #e0e0e0;
+}
+
 </style>
