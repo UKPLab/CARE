@@ -107,6 +107,15 @@ module.exports = (sequelize, DataTypes) => {
                     ? sequelize.models.document.docTypes.DOC_TYPE_HTML
                     : sequelize.models.document.docTypes.DOC_TYPE_MODAL;
 
+                // Check if documentId is a template selection (format: "template:123")
+                if (typeof data.documentId === 'string' && data.documentId.startsWith('template:')) {
+                    const stepTemplateId = parseInt(data.documentId.replace('template:', ''));
+                    data.documentId = null;
+                    if (options.context) {
+                        options.context.documentTemplateId = stepTemplateId;
+                    }
+                }
+
                 if (data.documentId === null) { // Create a new document
 
                     const newDocument = await sequelize.models.document.add({
@@ -179,7 +188,7 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // Resolve Type 5 template at study creation time
+                    // Resolve Type 5 template at study creation time (per-step template selection)
                     if (!documentCopied && options.context && options.context.documentTemplateId) {
                         try {
                             const baseUrl = await sequelize.models.setting.get("system.baseUrl") || "localhost:3000";
