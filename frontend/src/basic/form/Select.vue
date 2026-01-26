@@ -166,6 +166,29 @@ export default {
         baseOptions = [{ id: null, name: '<Document>' }, ...baseOptions];
       }
 
+      // Add document templates (Type 5) to document dropdown for Editor steps in study creation
+      if (
+        this.options.options.table === 'document' &&
+        this.parentValue?.stepType === 2 && 
+        this.formData?.workflowId 
+      ) {
+        const documentTemplates = this.$store.getters["table/template/getAll"]
+          .filter(t => t.type === 5 && !t.deleted) // Type 5 = Document Template
+          .map(t => {
+            const valueKey = this.options.options.value || 'id';
+            const nameKey = this.options.options.name || 'name';
+            return {
+              [valueKey]: `template:${t.id}`,
+              [nameKey]: `${t.name} (document template)`,
+              id: `template:${t.id}`,
+              name: `${t.name} (document template)`,
+              value: `template:${t.id}`
+            };
+          });
+        
+        baseOptions = [...baseOptions, ...documentTemplates];
+      }
+
       return baseOptions;
     },
   },
