@@ -129,6 +129,10 @@ The CARE Team`,
         const study = await this.models['study'].getById(studySession.studyId);
         if (!study) return;
 
+        if (study.closed) {
+            return;
+        }
+
         if (!study.enableEmailNotifications) {
             return;
         }

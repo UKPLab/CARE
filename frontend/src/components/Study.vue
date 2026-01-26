@@ -559,6 +559,15 @@ export default {
       this.$refs.studyFinishModal.close();
     },
     finish() {
+      // Prevent finishing if study is closed
+      if (this.studyClosed) {
+        this.eventBus.emit("toast", {
+          title: "Cannot finish session",
+          message: "The study has been closed. Sessions are automatically terminated when a study is closed.",
+          variant: "warning",
+        });
+        return;
+      }
       this.$refs.studyFinishModal.open();
     },
     handleModalClose(event) {
