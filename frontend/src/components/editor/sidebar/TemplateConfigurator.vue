@@ -67,38 +67,15 @@
     },
     data() {
       return {
-        // Placeholder definitions for each template type
-        // Email templates (1, 2, 3) are admin-only
-        // Document templates (4, 5) have no placeholders
+        // Placeholder definitions are fetched from backend (single source of truth)
+        // Initialize with empty arrays - will be populated from database
         placeholderConfigs: {
-          1: { // Email - General (admin only)
-            placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "Recipient's login username", icon: "bi bi-person" },
-              { id: "firstName", text: "~firstName~", label: "First Name", description: "Recipient's first name as registered", icon: "bi bi-person" },
-              { id: "lastName", text: "~lastName~", label: "Last Name", description: "Recipient's last name as registered", icon: "bi bi-person" },
-              { id: "link", text: "~link~", label: "Link", description: "Action link (e.g., verification or password reset URL)", icon: "bi bi-link-45deg" },
-            ],
-          },
-          2: { // Email - Study Session (admin only)
-            placeholders: [
-              { id: "username", text: "~username~", label: "Recipient username", description: "The person receiving this email (submission owner).", icon: "bi bi-person" },
-              { id: "link", text: "~link~", label: "Review link", description: "The URL to open the review (read-only). Used for session start and finish.", icon: "bi bi-link-45deg" },
-            ],
-          },
-          3: { // Email - Assignment (admin only)
-            placeholders: [
-              { id: "username", text: "~username~", label: "Username", description: "Assigned participant's login username", icon: "bi bi-person" },
-              { id: "assignmentType", text: "~assignmentType~", label: "Assignment Type", description: "Type of assignment: 'document' or 'submission'", icon: "bi bi-file-text" },
-              { id: "assignmentName", text: "~assignmentName~", label: "Assignment Name", description: "Name of the assigned document or submission", icon: "bi bi-file-text" },
-              { id: "link", text: "~link~", label: "Assignment Link", description: "Direct link to access the assignment", icon: "bi bi-link-45deg" },
-            ],
-          },
-          4: { // Document - General - NO placeholders
-            placeholders: [],
-          },
-          5: { // Document - Study - NO placeholders
-            placeholders: [],
-          },
+          1: { placeholders: [] }, // Email - General
+          2: { placeholders: [] }, // Email - Study Session
+          3: { placeholders: [] }, // Email - Assignment
+          4: { placeholders: [] }, // Document - General (no placeholders)
+          5: { placeholders: [] }, // Document - Study (no placeholders)
+          6: { placeholders: [] }, // Email - Study Close
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
@@ -113,7 +90,7 @@
       },
       templateTypeName() {
         if (!this.templateType) return "Unknown";
-        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study" };
+        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close" };
         return types[this.templateType] || "Unknown";
       },
       availablePlaceholders() {
@@ -143,28 +120,26 @@
       if (this.templateId && this.templateId > 0) {
         this.$socket.emit("templatePlaceholderGetAll", { templateId: this.templateId }, (result) => {
           if (result.success){
-            if (result.data && result.data.length > 0) {
-
-              const fetchedPlaceholders = result.data.map(ph => ({
-                id: ph.placeholderKey,
-                text: `~${ph.placeholderKey}~`,
-                label: ph.placeholderLabel,
-                description: ph.placeholderDescription || ph.placeholderLabel,
-                icon: this.getPlaceholderIcon(ph.placeholderType),
-              }));
-              
-              if (this.templateType && this.placeholderConfigs[this.templateType]) {
-                this.placeholderConfigs[this.templateType].placeholders = fetchedPlaceholders;
-                this.initializePlaceholderCounts();
-              }
-            } 
-          } else {
-              this.eventBus.emit("toast", {
-                title: "Failed to load placeholders",
-                message: result.message || "Unknown error",
-                variant: "danger",
-              });
+            // Always update placeholders from backend (even if empty array for document types)
+            const fetchedPlaceholders = (result.data || []).map(ph => ({
+              id: ph.placeholderKey,
+              text: `~${ph.placeholderKey}~`,
+              label: ph.placeholderLabel,
+              description: ph.placeholderDescription || ph.placeholderLabel,
+              icon: this.getPlaceholderIcon(ph.placeholderType),
+            }));
+            
+            if (this.templateType && this.placeholderConfigs[this.templateType]) {
+              this.placeholderConfigs[this.templateType].placeholders = fetchedPlaceholders;
+              this.initializePlaceholderCounts();
             }
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to load placeholders",
+              message: result.message || "Unknown error",
+              variant: "danger",
+            });
+          }
         });
       }
 
