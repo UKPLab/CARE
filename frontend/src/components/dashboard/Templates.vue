@@ -73,8 +73,8 @@
         return this.$store.getters["table/template/getAll"].map(t => ({
           ...t,
           typeName: this.typeName(t.type),
-          // Published email templates (types 1, 2, 3) cannot be deleted
-          canDelete: !(t.published && [1, 2, 3].includes(t.type)),
+          // Published email templates (types 1, 2, 3, 6) cannot be deleted
+          canDelete: !(t.published && [1, 2, 3, 6].includes(t.type)),
         }));
       },
       buttons() {
@@ -163,7 +163,7 @@
               },
             },
             // Show only for own templates that can be deleted
-            // Published email templates (types 1, 2, 3) cannot be deleted
+            // Published email templates (types 1, 2, 3, 6) cannot be deleted
             filter: [
               { key: "userId", value: this.userId },
               { key: "canDelete", value: true }
@@ -186,6 +186,7 @@
           case 3: return "Email - Assignment";
           case 4: return "Document - General";
           case 5: return "Document - Study";
+          case 6: return "Email - Study Close";
           default: return "Choose Type"
         }
       },

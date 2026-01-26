@@ -33,9 +33,9 @@ class TemplateSocket extends Socket {
     }
     
     // Non-admins can only create types 4, 5 (document templates)
-    // Email templates (types 1, 2, 3) are admin-only
-    if (!(await this.isAdmin()) && [1, 2, 3].includes(data.type)) {
-      throw new Error("Access denied: Only administrators can create email templates (types 1, 2, 3)");
+    // Email templates (types 1, 2, 3, 6) are admin-only
+    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(data.type)) {
+      throw new Error("Access denied: Only administrators can create email templates (types 1, 2, 3, 6)");
     }
     
     const payload = {
@@ -231,8 +231,8 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
-    if (!data.templateType || ![1, 2, 3, 4, 5].includes(data.templateType)) {
-      throw new Error("Template type is required and must be 1-5");
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6].includes(data.templateType)) {
+      throw new Error("Template type is required and must be 1-6");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
       throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");

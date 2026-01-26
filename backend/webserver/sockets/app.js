@@ -110,7 +110,7 @@ class AppSocket extends Socket {
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
             // NOTE: Template deletion protection
-            // Prevent deletion of email templates (types 1, 2, 3) that are in use by studies
+            // Prevent deletion of email templates (types 1, 2, 3, 6) that are in use by studies
             // Also prevent deletion of templates that don't belong to the user
             if (data.table === "template" && data.data.deleted === true) {
                 const template = await this.models["template"].getById(data.data.id, {transaction: transaction});
@@ -123,12 +123,12 @@ class AppSocket extends Socket {
                     throw new Error("You can only delete templates that you own");
                 }
                 
-                // Prevent deletion of published email templates (types 1, 2, 3)
-                if (template.published && [1, 2, 3].includes(template.type)) {
+                // Prevent deletion of published email templates (types 1, 2, 3, 6)
+                if (template.published && [1, 2, 3, 6].includes(template.type)) {
                     throw new Error("Published email templates cannot be deleted");
                 }
                 
-                if (template && [1, 2, 3].includes(template.type)) {
+                if (template && [1, 2, 3, 6].includes(template.type)) {
                     // Check if template is in use by any studies
                     const usageCount = await this.models["study_template_mapping"].count({
                         where: {
@@ -154,6 +154,13 @@ class AppSocket extends Socket {
             if (data.table === "study_session" && "end" in data.data) {
                 const previousSession = await this.models[data.table].getById(data.data.id, {transaction: transaction});
                 previousEnd = previousSession?.end || null;
+                
+                if (!previousEnd && data.data.end) {
+                    const study = await this.models["study"].getById(previousSession.studyId, {transaction: transaction});
+                    if (study && study.closed) {
+                        throw new Error("Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed.");
+                    }
+                }
             }
 
             // Check if study is being closed - get previous value before update
