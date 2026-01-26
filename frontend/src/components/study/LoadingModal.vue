@@ -31,16 +31,6 @@
             </div>
           </div>
         </div>
-        <div v-else-if="error" class="d-flex flex-column align-items-center">
-          <p class="text-danger text-center mb-3">{{ errorMessage }}</p>
-          <div class="d-flex gap-2">
-            <BasicButton
-                title="Return to Dashboard"
-                class="btn btn-primary"
-                @click="returnToDashboard"
-            />
-          </div>
-        </div>
         <div v-else class="d-flex align-items-center">
           <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -286,7 +276,17 @@ export default {
               this.error = true;
               this.errorMessage = this.getErrorMessage(response);
 
-              this.stopRotatingMessages();
+              this.$nextTick(() => {
+                if (this.$refs.modal) {
+                  this.close();
+                }
+              });
+              
+              this.$emit('error', {
+                errorCode: response.errorCode || 'FILE_MISSING',
+                message: response.message || 'An error occurred while loading the study step.'
+              });
+
             }
           }
       );
