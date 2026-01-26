@@ -73,49 +73,71 @@ class StudySocket extends Socket {
     }
 
     /**
-     * Send study closed email to the study owner only.
-     * Same recipient as session start and session finish.
+     * Send study closed email to users with open/unfinished sessions.
+     * Uses enableStudyCloseEmails checkbox and Type 6 templates.
      * @param {Object} study - Study object
      * @returns {Promise<void>}
      */
     async sendStudyClosedEmails(study) {
-        const enableEmailNotifications = study.enableEmailNotifications || false;
-        if (!enableEmailNotifications) {
+        const enableStudyCloseEmails = study.enableStudyCloseEmails || false;
+        if (!enableStudyCloseEmails) {
             return;
         }
 
         const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
-        const userId = study.userId;
 
         try {
-            const user = await this.models['user'].getById(userId);
-            if (!user || !user.email) {
-                this.logger.warn(`Cannot send study closed email: user ${userId} has no email`);
+            const openSessions = await this.models["study_session"].getAllByKey(
+                "studyId",
+                study.id,
+            );
+            
+            const unfinishedSessions = openSessions.filter(
+                (s) => s.end === null && !s.deleted,
+            );
+
+            if (unfinishedSessions.length === 0) {
+                this.logger.info(`No open sessions found for study ${study.id}, skipping study close emails`);
                 return;
             }
 
-            const emailContent = await getEmailContent(
-                "email.template.studyClosed",
-                "CARE - Study Closed",
-                `Hello,
+            const userIds = [...new Set(unfinishedSessions.map(s => s.userId))];
+
+            for (const sessionOwnerId of userIds) {
+                try {
+                    const user = await this.models['user'].getById(sessionOwnerId);
+                    if (!user || !user.email) {
+                        this.logger.warn(`Cannot send study closed email: user ${sessionOwnerId} has no email`);
+                        continue;
+                    }
+
+                    const emailContent = await getEmailContent(
+                        "email.template.studyClosed",
+                        "CARE - Study Closed",
+                        `Hello,
 
 The study "${study.name}" has been closed.
 
 Best regards,
 The CARE Team`,
-                {
-                    userId: userId,
-                    creatorId: study.userId,
-                    studyId: study.id,
-                    baseUrl: baseUrl
-                },
-                this.models,
-                this.logger
-            );
+                        {
+                            userId: sessionOwnerId,
+                            studyId: study.id,
+                            studyName: study.name,
+                            baseUrl: baseUrl,
+                            templateType: 6
+                        },
+                        this.models,
+                        this.logger
+                    );
 
-            await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
+                    await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
+                } catch (error) {
+                    this.logger.error(`Failed to send study closed email to user ${sessionOwnerId}:`, error);
+                }
+            }
         } catch (error) {
-            this.logger.error(`Failed to send study closed email to user ${userId}:`, error);
+            this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
         }
     }
 

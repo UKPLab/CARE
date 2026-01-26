@@ -45,6 +45,7 @@ const PLACEHOLDERS_BY_TYPE = {
     3: ["username", "assignmentType", "assignmentName", "link"],
     4: [],
     5: [],
+    6: ["username", "studyName"],
 };
 
 /**
@@ -105,6 +106,11 @@ async function buildReplacementMap(context, models, options = {}) {
     }
     if (allow("assignmentName") && context.assignmentName) {
         replacements["~assignmentName~"] = context.assignmentName;
+    }
+
+    // Study name
+    if (allow("studyName") && context.studyName) {
+        replacements["~studyName~"] = context.studyName;
     }
 
     return replacements;

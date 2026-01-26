@@ -81,7 +81,7 @@ export default {
     },
     emailTemplates() {
       const allTemplates = this.$store.getters["table/template/getAll"]
-        .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3));
+        .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3 || t.type === 6));
       
       // Show personal templates (userId matches) OR published templates
       const visibleTemplates = allTemplates.filter(t => 
@@ -112,11 +112,12 @@ export default {
           setting.key === "email.template.registration") {
         requiredType = 1; // Email - General
       } else if (setting.key === "email.template.sessionStart" || 
-                 setting.key === "email.template.sessionFinish" || 
-                 setting.key === "email.template.studyClosed") {
+                 setting.key === "email.template.sessionFinish") {
         requiredType = 2; // Email - Study Session
       } else if (setting.key === "email.template.assignment") {
         requiredType = 3; // Email - Assignment
+      } else if (setting.key === "email.template.studyClosed") {
+        requiredType = 6; // Email - Study Close
       }
       
       // Filter by type if determined

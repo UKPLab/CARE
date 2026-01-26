@@ -341,6 +341,15 @@ export default {
           }
         },
         {
+          name: "Study Close Emails",
+          key: "enableStudyCloseEmails",
+          type: "badge",
+          typeOptions: {
+            keyMapping: { true: "Yes", false: "No" },
+            classMapping: { true: "bg-success", false: "bg-danger" }
+          }
+        },
+        {
           name: "Resumable",
           key: "resumable",
           type: "badge",
