@@ -4,8 +4,9 @@
 
 /**
  * Add enableEmailNotifications column to study table.
- * When true, session start, session finish, and study-closed emails are sent
+ * When true, session start and session finish emails are sent
  * using templates configured in settings (or fallback content).
+ * Note: Study-closed emails use a separate setting (enableStudyCloseEmails).
  */
 module.exports = {
   async up(queryInterface, Sequelize) {
