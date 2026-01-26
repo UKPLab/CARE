@@ -174,32 +174,17 @@ module.exports = (sequelize, DataTypes) => {
                 size: 6,
                 default: null,
             }, {
-                key: "documentTemplateId",
-                label: "Document Template (optional):",
-                type: "select",
-                options: {
-                    table: "template",
-                    name: "name",
-                    value: "id",
-                    filter: [
-                        {
-                            key: "type", value: 5
-                        },
-                        {
-                            key: "deleted", value: false
-                        }
-                    ],
-                    prependNone: true
-                },
-                icon: "file-text",
-                required: false,
-                help: "Select a template to pre-fill study documents (Type 5: Document - Study)."
-            }, {
                 key: "enableEmailNotifications",
                 label: "Enable Email Notifications",
                 type: "switch",
                 default: false,
                 help: "When enabled, emails will be sent for session start/finish using admin-configured templates. If no templates are configured, default hardcoded emails will be sent."
+            }, {
+                key: "enableStudyCloseEmails",
+                label: "Enable Study Close Email Notifications",
+                type: "switch",
+                default: false,
+                help: "When enabled, emails will be sent to users with open sessions when the study is closed, using admin-configured templates."
             },];
 
         /**
@@ -266,10 +251,9 @@ module.exports = (sequelize, DataTypes) => {
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
                 const customConfig = stepDocument?.configuration || {};
                 
-                // Create context object that includes study and documentTemplateId from options.context
+                // Create context object that includes study data
                 const studyContext = {
-                    ...study.dataValues || study,
-                    documentTemplateId: options.context.documentTemplateId || null
+                    ...study.dataValues || study
                 };
                 
                 const plainStudyStep = await sequelize.models.study_step.add({
@@ -420,6 +404,7 @@ module.exports = (sequelize, DataTypes) => {
         projectId: DataTypes.INTEGER,
         anonymize: DataTypes.BOOLEAN,
         enableEmailNotifications: DataTypes.BOOLEAN,
+        enableStudyCloseEmails: DataTypes.BOOLEAN,
         parentStudyId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -441,25 +426,7 @@ module.exports = (sequelize, DataTypes) => {
                     throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
                 }
 
-                // Extract template IDs from context (these are not stored in study table)
-                const documentTemplateId = options.context.documentTemplateId || null;
-
-                // Pass documentTemplateId to createStudySteps via context
-                if (documentTemplateId) {
-                    options.context.documentTemplateId = documentTemplateId;
-                }
-
                 await Study.createStudySteps(study, options);
-
-                // Create study_template_mapping entry for document template
-                // Email templates are now handled via settings (enableEmailNotifications checkbox)
-                if (documentTemplateId) {
-                    await sequelize.models.study_template_mapping.add({
-                        studyId: study.id,
-                        templateType: 'documentStudy',
-                        templateId: documentTemplateId
-                    }, {transaction: options.transaction});
-                }
             }, 
             beforeUpdate: async (study, options) => {
                 // If this is a study update (not a close operation) and we have stepDocuments
