@@ -506,8 +506,8 @@ export default {
         this.studyError = errorMap[errorCode];
       } else {
         this.studyError = {
-          title: 'Unknown Error',
-          message: 'An unexpected error occurred.'
+          title: 'Access Error!',
+          message: message,
         }
       }
     },
@@ -550,12 +550,7 @@ export default {
             },
             (response) => {
               if (!response.success) {
-                this.eventBus.emit("toast", {
-                  title: "Access Error!",
-                  message: response.message,
-                  variant: "danger",
-                });
-                this.$router.push("/");
+                this.setStudyError(response.message, null);
               } else {
                 if (
                     this.studySessionId === 0 ||
