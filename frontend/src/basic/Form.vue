@@ -5,7 +5,7 @@
       class="row g-3"
     >
       <div
-        v-for="field in fields"
+        v-for="field in regularFields"
         :key="field.key"
         :class="'size' in field ? 'col-md-' + field.size : 'col-12'"
       >
@@ -86,6 +86,96 @@
           />
         </span>
       </div>
+      
+      <!-- Collapsible Section -->
+      <div v-if="advancedFields.length > 0" class="col-12">
+        <Collapsible title="Advanced Settings" :collapsed="true">
+          <div class="row g-3">
+            <div
+              v-for="field in advancedFields"
+              :key="field.key"
+              :class="'size' in field ? 'col-md-' + field.size : 'col-12'"
+            >
+              <FormSwitch
+                v-if="field.type === 'switch'"
+                :ref="'ref_' + field.key"
+                v-model="currentData[field.key]"
+                :options="field"
+              />
+              <span v-else>
+                <FormSlider
+                  v-if="field.type === 'slider'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <DatetimePicker
+                  v-else-if="field.type === 'datetime'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormSelect
+                  v-else-if="field.type === 'select'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormCheckbox
+                  v-else-if="field.type === 'checkbox'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormEditor
+                  v-else-if="field.type === 'editor' || field.type === 'html'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormTextarea
+                  v-else-if="field.type === 'textarea'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormTable
+                  v-else-if="field.type === 'table'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormChoice
+                  v-else-if="field.type === 'choice'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                  @update:config-status="handleConfigStatusChange"
+                />
+                <FormPassword
+                  v-else-if="field.type === 'password'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+                <FormFile
+                  v-else-if="field.type === 'file'"
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                  @file-change="(file) => $emit('file-change', file)"
+                />
+                <FormDefault
+                  v-else
+                  :ref="'ref_' + field.key"
+                  v-model="currentData[field.key]"
+                  :options="field"
+                />
+              </span>
+            </div>
+          </div>
+        </Collapsible>
+      </div>
     </div>
   </form>
 </template>
@@ -105,6 +195,7 @@ import FormChoice from "@/basic/form/Choice.vue";
 import deepEqual from "deep-equal";
 import {computed} from "vue";
 import FormFile from "@/basic/form/File.vue";
+import Collapsible from "@/basic/form/Collapsible.vue";
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -125,7 +216,8 @@ export default {
     FormTextarea,
     FormEditor,
     FormTable,
-    FormChoice
+    FormChoice,
+    Collapsible
   },
   provide() {
     return {
@@ -156,6 +248,12 @@ export default {
         }
         return acc;
       }, {});
+    },
+    regularFields() {
+      return this.fields.filter(field => !field.advanced);
+    },
+    advancedFields() {
+      return this.fields.filter(field => field.advanced === true);
     },
   },
   watch: {
