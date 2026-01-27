@@ -123,7 +123,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
-      showAllDocumentAnnotations: computed(() => this.showAllDocumentAnnotations),
+      showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
   },
   inject: {
@@ -213,8 +213,8 @@ export default {
     computedReadOnly() {
       return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
-    showDefaultAnnotations(){
-      return this.currentStudyStep?.configuration?.settings?.showDefaultAnnotations ?? false;
+    showDefaultAllAnnotations(){
+      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
