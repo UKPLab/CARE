@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal" name="workflowEditModal" size="xl" remove-close>
+  <BasicModal ref="modal" name="workflowEditModal" size="xl">
     <template #title>
       Edit Workflow: {{ selectedWorkflow?.name }}
     </template>
@@ -16,7 +16,17 @@
             { key: 'workflowId', value: workflowId },
             { key: 'workflowStepPrevious', value: 'id' }
           ]"
-          @update:Node="onUpdateWorkflowGraphNode" @delete:Node="onDeleteWorkflowGraphNode" />
+          @update:node="updateWorkflowStep" 
+          @delete:node="deleteWorkflowStep"
+          @add:nodeAfter="addWorkflowStepAfter"
+          @add:nodePrevious="addWorkflowStepPrevious">
+          <template #nodeEditor>
+            <WorkflowStepEditor 
+              ref="nodeEditor"
+              @update:node="success"
+            />
+          </template>
+        </Graph>
 
         <div v-else class="text-center py-4">
           <div class="spinner-border" role="status">
@@ -45,7 +55,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Graph from "@/basic/graph/Graph.vue";
-import deepEqual from "deep-equal";
+import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
 
 export default {
   name: "WorkflowEditModal",
@@ -54,6 +64,7 @@ export default {
     BasicModal,
     BasicButton,
     Graph,
+    WorkflowStepEditor,
   },
   data() {
     return {
@@ -107,11 +118,9 @@ export default {
         (step) => step.workflowId === this.workflowId && !step.deleted
       );
 
-      console.log("Loaded workflow steps:", workflowSteps);
       // Convert workflow steps to the format expected by the Graph component
       const nodes = {};
       const edges = {};
-      const layouts = { nodes: {} };
 
       // Create a map for quick lookup
       const stepMap = new Map();
@@ -123,11 +132,12 @@ export default {
       const sortedSteps = this.sortWorkflowSteps(workflowSteps);
 
       // Create nodes with proper positioning using sorted steps
-      sortedSteps.forEach((step, index) => {
+      for (let index = 0; index < sortedSteps.length; index++) {
+        const step = sortedSteps[index];
         nodes[step.id] = {
           name: step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`,
-          type: this.getStepTypeString(step.stepType),
-          saved: true,
+          next: sortedSteps[index + 1] || null,
+          previous: sortedSteps[index - 1] || null,
           data: {
             id: step.id,
             name: step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`,
@@ -140,41 +150,31 @@ export default {
             workflowId: this.workflowId
           }
         };
-
-        // Position nodes in a linear horizontal layout
-        layouts.nodes[step.id] = {
-          x: index * 200 + 100,
-          y: 200
-        };
-      });
-
+      }
       // Create edges based on workflowStepPrevious relationships
-      workflowSteps.forEach(step => {
+      sortedSteps.forEach((step, index) => {
         if (step.workflowStepPrevious && stepMap.has(step.workflowStepPrevious)) {
+          // Create backward edge if allowed
           if (step.allowBackward) {
-            const edgeId = `edge_${step.id}_${step.workflowStepPrevious}`;
-            edges[edgeId] = {
+            const backwardEdgeId = `edge_back_${index}`;
+            edges[backwardEdgeId] = {
               source: step.id,
               target: step.workflowStepPrevious,
-              saved: true,
             };
           }
-          const edgeId = `edge_${step.workflowStepPrevious}_${step.id}`;
-          edges[edgeId] = {
+          // Always create forward edge
+          const forwardEdgeId = `edge_${index}`;
+          edges[forwardEdgeId] = {
             source: step.workflowStepPrevious,
             target: step.id,
-            saved: true
           };
         }
 
       });
-      console.log("Constructed workflow graph data:", { nodes, edges, layouts });
       this.workflowGraphData = {
         nodes,
         edges,
-        layouts
       };
-
       // Store original data for comparison
       this.originalGraphData = JSON.parse(JSON.stringify(this.workflowGraphData));
       this.hasUnsavedChanges = false;
@@ -215,7 +215,6 @@ export default {
 
       if (!firstStep) {
         // If no first step found, return original array
-        console.warn("No first step found (workflowStepPrevious = null)");
         return steps;
       }
 
@@ -244,60 +243,45 @@ export default {
       return sorted;
     },
 
-    onUpdateWorkflowGraphNode(id) {
-      // \ a new nodes object to trigger reactivity
-      console.log("[WorkflowEditModal] onWorkflowGraphUpdate called for node ID:", id);
-      const updatedNodes = { ...this.workflowGraphData.nodes };
-      const workflowData = this.$store.getters["table/workflow_step/get"](id);
-      if (updatedNodes[id]) {
-        // Update existing node with new data
-        updatedNodes[id] = {
-          ...updatedNodes[id],
-          data: workflowData,
-          name: workflowData.name || updatedNodes[id].name // Update name if provided
-        };
-        console.log("workflowData:", workflowData);
-        if (workflowData.allowBackward) {
-          const edgeId = `edge_${id}_${workflowData.workflowStepPrevious}`;
-          this.workflowGraphData.edges[edgeId] = {
-            source: id,
-            target: workflowData.workflowStepPrevious,
-          };
-        } else {
-          const edgeId = `edge_${id}_${workflowData.workflowStepPrevious}`;
-          delete this.workflowGraphData.edges[edgeId];
-        }
-
-        this.workflowGraphData = {
-          ...this.workflowGraphData,
-          nodes: updatedNodes,
-          edges: { ...this.workflowGraphData.edges }
-        };
-      } else {
-        // Add new node
-        updatedNodes[id] = {
-          id: id,
-          type: workflowData.stepType,
-          data: workflowData,
-          name: workflowData.name
-        };
-        const newEdgeId = `edge_${id}_${workflowData.workflowStepPrevious}`;
-        const edges = { ...this.workflowGraphData.edges };
-        edges[newEdgeId] = {
-          source: workflowData.workflowStepPrevious,
-          target: id,
-        };
-        this.workflowGraphData = {
-          ...this.workflowGraphData,
-          nodes: updatedNodes,
-          edges: edges
-        };
+    addWorkflowStepAfter(node) {
+      const selectedNode = this.workflowGraphData.nodes[node];
+      if(!selectedNode) {
+        this.$refs.nodeEditor.open(0, {
+          workflowId: this.workflowId,
+          workflowStepPrevious: null,
+        });
+        return;
       }
-      console.log(this.$refs.workflowGraph);
-      this.$refs.workflowGraph.updateLayout('LR');
-      console.log("[WorkflowEditModal] Updated workflowGraphData:", this.workflowGraphData);
+      const nextNode = selectedNode.next;
+      this.$refs.nodeEditor.open(0, {
+          workflowId: this.workflowId,
+          workflowStepPrevious: node,
+        }, nextNode);
     },
-    onDeleteWorkflowGraphNode(id, nodes) {
+
+    addWorkflowStepPrevious(node) {
+      const selectedNode = this.workflowGraphData.nodes[node];
+      if(!selectedNode) {
+        this.$refs.nodeEditor.open(0, {
+          workflowId: this.workflowId,
+          workflowStepPrevious: null,
+        });
+        return;
+      }
+      const prevNode = selectedNode.previous; 
+      this.$refs.nodeEditor.open(0, {
+          workflowId: this.workflowId,
+          workflowStepPrevious: prevNode ? prevNode.id : null,
+        }, selectedNode.data);
+    },
+    success(id){
+      this.loadWorkflow();
+    },
+    updateWorkflowStep(id) {
+      this.$refs.nodeEditor.open(id);
+    },
+
+    deleteWorkflowStep(id, nodes) {
       this.workflowGraphData = nodes;
       this.$socket.emit("appDataUpdate", {
         table: "workflow_step",
@@ -306,7 +290,6 @@ export default {
           deleted: true
         }
       }, (result) => {
-        console.log("[WorkflowEditModal] Save result:", result, id);
         if (!result.success) {
           this.eventBus.emit("toast", {
             title: "Save Failed",
@@ -315,139 +298,6 @@ export default {
           });
         }
       });
-      console.log(this.$refs.workflowGraph);
-      this.$refs.workflowGraph.updateLayout('LR');
-    },
-
-    areGraphDataEqual(data1, data2) {
-      if (!data1 || !data2) return false;
-      const res = deepEqual(data1.nodes, data2.nodes) &&
-        deepEqual(data1.edges, data2.edges);
-      console.log("[WorkflowEditModal] Comparing graph data equality:", res);
-      return res;
-    },
-
-    saveChanges() {
-      if (this.workflowGraphData) {
-        this.saveWorkflowChanges(this.workflowGraphData);
-      }
-    },
-
-    async saveWorkflowChanges(graphData) {
-      if (!this.workflowId) return;
-
-      console.log("[WorkflowEditModal] saveWorkflowChanges start", {
-        workflowId: this.workflowId,
-        nodeCount: graphData?.nodes ? Object.keys(graphData.nodes).length : 0,
-        edgeCount: graphData?.edges ? Object.keys(graphData.edges).length : 0,
-      });
-
-      this.isLoading = true;
-
-      try {
-        const buildPreviousStepMap = (edges) => {
-          const map = new Map();
-          Object.values(edges || {}).forEach(edge => {
-            map.set(Number(edge.target), Number(edge.source));
-          });
-          return map;
-        };
-
-        const buildNodePayloads = (data) => {
-          const prevMap = buildPreviousStepMap(data?.edges || {});
-          const payloads = new Map();
-          Object.entries(data?.nodes || {}).forEach(([nodeId, node]) => {
-            payloads.set(Number(nodeId), {
-              id: Number(nodeId),
-              workflowId: this.workflowId,
-              name: node.data?.name || node.name,
-              deleted: node?.deleted || false,
-              description: node.data?.description || "",
-              stepType: this.getStepTypeNumeric(node.type),
-              workflowStepPrevious: prevMap.get(Number(nodeId)) || null,
-              allowBackward: node.data?.allowBackward || false,
-              workflowStepDocument: node.data?.workflowStepDocument || null,
-              configuration: node.data?.configuration || {},
-            });
-          });
-          return payloads;
-        };
-
-        // Process nodes to save/update with diff against originalGraphData
-        const nodesToSave = [];
-        const nodesToUpdate = [];
-
-        const currentPayloads = buildNodePayloads(graphData);
-        const originalPayloads = buildNodePayloads(this.originalGraphData);
-
-        currentPayloads.forEach((nodeData, nodeId) => {
-          const node = graphData?.nodes?.[nodeId];
-          const wasSaved = node?.saved === true;
-          if (!wasSaved) {
-            nodesToSave.push(nodeData);
-            return;
-          }
-          const original = originalPayloads.get(nodeId);
-          if (!original || !deepEqual(nodeData, original)) {
-            nodesToUpdate.push(nodeData);
-          }
-        });
-
-        console.log("[WorkflowEditModal] Nodes to save:", nodesToSave);
-        console.log("[WorkflowEditModal] Nodes to update (changed only):", nodesToUpdate);
-
-        if (nodesToSave.length === 0 && nodesToUpdate.length === 0) {
-          console.log("[WorkflowEditModal] No node changes detected, skipping save.");
-          this.hasUnsavedChanges = false;
-          return;
-        }
-        // Save new nodes first
-        // for (const node of nodesToSave) {
-
-        //}
-
-        // // Update existing nodes
-        // for (const node of nodesToUpdate) {
-        //     this.$socket.emit("appDataUpdate", {
-        //       table: "workflow_step",
-        //       data: node
-        //     }, (result) => {
-        //       console.log("[WorkflowEditModal] Update result:", result, node);
-        //       if (!result.success) {
-        //         this.eventBus.emit("toast", {
-        //           title: "Update Failed",
-        //           message: `Failed to update step: ${node.name}`,
-        //           variant: "danger",
-        //         });
-        //       }
-        //     });
-        // }
-
-        this.eventBus.emit("toast", {
-          title: "Workflow Updated",
-          message: "Workflow changes have been saved successfully",
-          variant: "success",
-        });
-
-        // Update original data and reset unsaved changes flag
-        this.originalGraphData = JSON.parse(JSON.stringify(graphData));
-        this.hasUnsavedChanges = false;
-
-        this.$emit("workflow-updated", this.selectedWorkflow);
-        console.log("[WorkflowEditModal] saveWorkflowChanges success");
-
-      } catch (error) {
-        console.error("Failed to save workflow changes:", error);
-        this.eventBus.emit("toast", {
-          title: "Save Failed",
-          message: error.message || "Failed to save workflow changes",
-          variant: "danger",
-        });
-        console.error("[WorkflowEditModal] saveWorkflowChanges failed", error);
-      } finally {
-        this.isLoading = false;
-        console.log("[WorkflowEditModal] saveWorkflowChanges end");
-      }
     },
 
     /**

@@ -3,74 +3,50 @@
     <template #element>
       <div class="card border-1 text-start rounded-0 w-100">
         <span class="text-start p-1 card-header">
-            <button
-              id="addNodeList"
-              type="button"
-              class="btn btn-sm border-0"
-              aria-expanded="false"
-              :disabled="!activateAddNode"
-              @click="addNode(selectedNodes[0])">
-              <BasicIcon
-                icon-name="node-plus"
-                :size="20"
-                :color="activateAddNode ? 'blue': ''"
-                class="mx-1"/>
-            </button>
-          <button
-            type="button"
-            class="btn btn-sm border-0"
-            :disabled="!activateRemoveNode">
-            <BasicIcon
-              icon-name="node-minus"
-              :size="20"
-              :color="activateRemoveNode ? 'blue': ''"
-              class="mx-1"
-              @click="removeNode(selectedNodes[0])"/>
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm border-0"
-            :disabled="!activateEditNode">
-            <BasicIcon
-              icon-name="pencil"
-              :size="18"
-              :color="activateEditNode ? 'blue': ''"
-              class="mx-1"
-              @click="editNode(selectedNodes[0])"
-            />
-          </button>
+          <BasicButton
+            class="btn-sm border-0 rotate-180"
+            icon="node-plus"
+            @click="addNodePrevious(selectedNodes[0])"
+          />
+          <BasicButton
+            class="btn-sm border-0"
+            icon="node-plus"
+            @click="addNodeAfter(selectedNodes[0])"
+          />
+          <BasicButton
+            class="btn-sm border-0"
+            icon="dash-circle"
+            @click="removeNode(selectedNodes[0])"
+          />
+          <BasicButton
+            class="btn-sm border-0"
+            icon="pencil"
+            @click="editNode(selectedNodes[0])"
+          />
         </span>
         <div class="card-body">
-          <v-network-graph
-            ref="graph"
-            v-model:selected-nodes="selectedNodes"
-            class="graph"
-            :nodes="currentData['nodes']"
-            :edges="currentData['edges']"
-            :configs="configs"
-            :layouts="currentData['layouts']"
-          />
+          <v-network-graph ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
+            :nodes="currentData['nodes']" :edges="currentData['edges']" :configs="configs"
+            :layouts="currentData['layouts']" />
         </div>
       </div>
     </template>
   </FormElement>
   <teleport to="body">
-    <NodeEditor
-      ref="nodeEditor"
-      @update:node="updateNode">
-    </NodeEditor>
-    <ConfirmModal ref="confirmDeletion"/>
+    <slot name="nodeEditor"></slot>
+    <ConfirmModal ref="confirmDeletion" />
   </teleport>
 </template>
 
 <script>
 import FormElement from "@/basic/form/Element.vue"
-import {VNetworkGraph} from "v-network-graph";
+import { VNetworkGraph } from "v-network-graph";
 import * as vNG from "v-network-graph";
 import BasicIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import NodeEditor from "./NodeEditor.vue";
 import dagre from "dagre";
+import deepEqual from "deep-equal";
 
 const nodeSize = 40;
 
@@ -85,8 +61,7 @@ const nodeSize = 40;
 export default {
   name: "FormGraph",
   components: {
-    BasicIcon, FormElement, VNetworkGraph, ConfirmModal,
-    NodeEditor
+    BasicIcon, BasicButton, FormElement, VNetworkGraph, ConfirmModal,
   },
   inject: {
     mainModal: {
@@ -119,18 +94,19 @@ export default {
       default: false,
     }
   },
-  emits: ["update:Node", "delete:Node"],
+  emits: ["update:node", "delete:node", "add:nodeAfter", "add:nodePrevious"],
   data() {
     return {
       selectedNodes: [],
       currentData: {},
       currentEditingNodeId: null,
       currentNodeTable: null,
+      editorRef: null,
       configs: vNG.defineConfigs({
         node: {
           selectable: 1,
           draggable: false,
-          normal: {radius: nodeSize / 2},
+          normal: { radius: nodeSize / 2 },
         },
         edge: {
           marker: {
@@ -145,7 +121,7 @@ export default {
           //layoutHandler: new vNG.GridLayout({grid: 15}),
           autoPanAndZoomOnLoad: "fit-content",
           autoPanOnResize: true,
-          onBeforeInitialDisplay: () => this.layout("LR"),
+          // onBeforeInitialDisplay: () => this.layout("LR"),
           panEnabled: false,
           zoomEnabled: false,
         },
@@ -171,8 +147,11 @@ export default {
   watch: {
     modelValue: {
       handler() {
-        console.log("Graph modelValue changed:", this.modelValue);
+        if(deepEqual(this.modelValue, this.currentData)) {
+          return;
+        }
         this.setCurrentData(this.modelValue);
+        this.updateLayout("LR");
       },
       deep: true
     },
@@ -180,6 +159,9 @@ export default {
   },
   mounted() {
     this.setCurrentData(this.modelValue);
+    this.$nextTick(() => {
+      this.updateLayout("LR");
+    });
   },
   methods: {
     setCurrentData(modelValue) {
@@ -194,7 +176,7 @@ export default {
       }
       if (!('nodes' in modelValue['layouts'])) {
         modelValue['layouts']['nodes'] = {};
-      }
+      }   
       this.currentData = modelValue;
     },
     /**
@@ -223,27 +205,24 @@ export default {
       // Add nodes to the graph. The first argument is the node id. The second is
       // metadata about the node. In this case we're going to add labels to each of
       // our nodes.
-      console.log("Adding nodes to dagre graph:", this.currentData['nodes']);
       Object.entries(this.currentData['nodes'])
         .filter(([nodeId, node]) => node && !node.deleted)
         .forEach(([nodeId, node]) => {
-          g.setNode(nodeId, {label: node.name, width: nodeSize, height: nodeSize})
+          g.setNode(nodeId, { label: node.name, width: nodeSize, height: nodeSize })
         })
 
       // Add edges to the graph.
-      console.log("Adding edges to dagre graph:",  g.nodes());
       Object.values(this.currentData['edges']).forEach(edge => {
         g.setEdge(edge.source, edge.target)
       })
 
       dagre.layout(g)
-      console.log("Dagre layout computed:", g);
       g.nodes().forEach((nodeId) => {
-        if( g.node(nodeId) === undefined) return;
+        if (g.node(nodeId) === undefined) return;
         // update node position
         const x = g.node(nodeId).x
         const y = g.node(nodeId).y
-        this.currentData['layouts']['nodes'][nodeId] = {x, y}
+        this.currentData['layouts']['nodes'][nodeId] = { x, y }
       })
 
       // fit after timeout to avoid bug
@@ -256,51 +235,22 @@ export default {
         this.layout(direction);
       });
     },
-    addNode(node) {
-      const selectedNode = node ? this.currentData['nodes'][node] : null;
-      const nodeData = selectedNode?.data || selectedNode || {};
-      console.log("Node data for context extraction:", nodeData);
-      const extracted = {};
-      const mappings = Array.isArray(this.nodeContextMap) ? this.nodeContextMap : [];
-      mappings.forEach((mapping) => {
-        const key = mapping?.key;
-        const value = mapping?.value;
-        if (!key) return;
-        if( typeof value !== 'string'){ //what if string and a precalculated value?
-          extracted[key] = value;
-          return;
-        }
-        if (nodeData[value] !== undefined) {
-
-          console.log("Extracted context for new node:", nodeData[value]);
-          extracted[key] = nodeData[value];
-        }
-      });
-      console.log("Extracted context for new node:", extracted);
-      this.$refs.nodeEditor.open(0, extracted);
+    addNodeAfter(node) {
+      this.$emit("add:nodeAfter", node);
+    },
+    addNodePrevious(node) {
+      this.$emit("add:nodePrevious", node);
     },
     editNode(id) {
-      this.mainModal?.hide();
-      this.currentEditingNodeId = id;
-      const node = this.currentData['nodes'][id];
-      this.$refs.nodeEditor.open(node.id, node.data);
-    },
-    updateNode(id) {
-      console.log("Node update received for node ID:", id);
-      this.mainModal?.show();
-      this.$emit("update:Node", id);
+      this.$emit("update:node", id);
     },
     deleteSubNodes(nodeId) {
       const node = Number(nodeId)
       Object.entries(this.currentData['edges']).forEach(([edgeId, edge]) => {
-        console.log("Checking edge for deletion:", edge);
-        console.log("Current nodeId for deletion:", nodeId);
         if (edge.target === node) {
-          console.log("Deleting sub-node:(target)", edge.target , " via edge:", nodeId);
-          delete this.currentData['edges'][edgeId];      
+          delete this.currentData['edges'][edgeId];
         }
-        if (edge.source === node) {  
-          console.log("Deleting sub-node:(source)", edge.source , " via edge:", nodeId);   
+        if (edge.source === node) {
           this.deleteSubNodes(edge.target);
           delete this.currentData['edges'][edgeId];
         }
@@ -322,7 +272,8 @@ export default {
           if (res) {
             this.deleteSubNodes(nodeId);
             this.selectedNodes = [];
-            this.$emit("delete:Node", nodeId, this.currentData);
+            this.$emit("delete:node", nodeId, this.currentData);
+            this.updateLayout("LR");  
           }
           this.mainModal?.show();
         }
@@ -344,5 +295,10 @@ export default {
 .graph {
   width: 100%;
   height: 300px;
+}
+
+.rotate-180 {
+  transform: scale(-1, -1);
+  
 }
 </style>
