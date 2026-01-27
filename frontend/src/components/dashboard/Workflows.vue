@@ -81,7 +81,7 @@ export default {
       columns: [
         { name: "ID", key: "id", sortable: true },
         { name: "Name", key: "name", sortable: true },
-        { name: "Description", key: "description" },
+        { name: "Hidden", key: "hidden", type: "badge" },
         { name: "Created", key: "createdAt", sortable: true },
       ],
     };
@@ -89,8 +89,14 @@ export default {
   computed: {
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
-          (workflow) => !workflow.deleted && !workflow.hideInFrontend
-        );
+          (workflow) => !workflow.deleted
+        ).map(workflow => ({
+          ...workflow,
+          hidden: {
+            text: workflow.hideInFrontend ? "Yes" : "No",
+            class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
+          }
+        }));
     },
     buttons() {
       return [
@@ -131,6 +137,18 @@ export default {
           },
         },
         {
+          title: "Toggle Hidden",
+          action: "toggleHidden",
+          stats: { workflowId: "id" },
+          icon: "eye-slash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-warning": true,
+            },
+          },
+        },
+        {
           title: "Delete Workflow",
           action: "deleteWorkflow",
           stats: { workflowId: "id" },
@@ -161,6 +179,9 @@ export default {
         case "copyWorkflow":
           this.$refs.workflowCreateModal.copy(data.params.id);
           break;
+        case "toggleHidden":
+          this.toggleHidden(data.params);
+          break;
       }
     },
     editWorkflow(params) {
@@ -169,6 +190,41 @@ export default {
 
     async renameWorkflow(params) { 
       this.$refs.workflowRenameModal.open(params.id);
+    },
+
+    toggleHidden(params) {
+      const workflow = this.$store.getters["table/workflow/get"](params.id);
+      const newHiddenState = !workflow.hideInFrontend;
+
+      console.log("Toggling hidden state for workflow", params, "to", newHiddenState); 
+      
+      this.$socket.emit(
+        "appDataUpdate",
+        {
+          table: "workflow",
+          data: {
+            id: params.id,
+            hideInFrontend: newHiddenState,
+            name: params.name,
+            stepType: params.stepType,
+          },
+        },
+        (result) => {
+          if (result.success) {
+            this.eventBus.emit("toast", {
+              title: "Workflow Updated",
+              message: `Workflow is now ${newHiddenState ? 'hidden' : 'visible'} in frontend`,
+              variant: "success",
+            });
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Update Failed",
+              message: result.message,
+              variant: "danger",
+            });
+          }
+        }
+      );
     },
 
     deleteWorkflow(params) {

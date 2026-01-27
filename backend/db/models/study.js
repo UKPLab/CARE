@@ -40,7 +40,12 @@ module.exports = (sequelize, DataTypes) => {
             options: {
                 table: "workflow",
                 name: "name",
-                value: "id"
+                value: "id",
+                filter: [
+                    {
+                        key: "hideInFrontend", value: false
+                    }
+                ]
             },
             icon: "list",
             required: true,
