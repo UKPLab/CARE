@@ -22,12 +22,23 @@
             >
               <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                  <div class="icon-container rounded p-2 text-primary">
+                  <div class="icon-container p-2 text-primary me-2">
                     <i :class="placeholder.icon"></i>
                   </div>
-                  <div>
-                    <h5 class="mb-1">{{ placeholder.label }}</h5>
-                    <p class="text-muted small mb-0">{{ placeholder.description }}</p>
+                  <div class="d-flex flex-column">
+                    <div class="d-flex align-items-center">
+                      <h5 class="mb-0 me-1">{{ placeholder.label }}</h5>
+                      <FormHelp
+                        v-if="placeholder.description"
+                        :help="getPlaceholderHelp(placeholder)"
+                      />
+                    </div>
+                    <p
+                      v-if="placeholder.description"
+                      class="mb-0 text-muted"
+                    >
+                      {{ placeholder.description }}
+                    </p>
                   </div>
                 </div>
                 <div class="d-flex align-items-center">
@@ -48,6 +59,7 @@
   </template>
   
   <script>
+  import FormHelp from "@/basic/form/Help.vue";
   /**
    * Template Configurator sidebar component
    *
@@ -58,6 +70,9 @@
    */
   export default {
     name: "TemplateConfigurator",
+    components: {
+      FormHelp,
+    },
     inject: {
       templateId: {
         type: Number,
@@ -148,6 +163,35 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      getPlaceholderHelp(placeholder) {
+        const type = this.templateType;
+        const key = placeholder.id;
+
+        const longDescriptions = {
+          1: { // Email - General
+            username: "The username of the person receiving the email. For password reset, verification, or registration emails this is the user whose account the email is about.",
+            firstName: "The first name of the person receiving the email.",
+            lastName: "The last name of the person receiving the email.",
+            link: "The URL included in the email (e.g. password reset, verification, or registration).",
+          },
+          2: { // Email - Study Session
+            username: "The person receiving this email. For session start and session finish notifications this is always the submission owner.",
+            link: "The URL to open the review (read-only). Used for session start and session finish.",
+          },
+          3: { // Email - Assignment
+            username: "The username of the reviewer who is assigned to the task.",
+            assignmentType: "How the work is assigned: \"document\" (review by document) or \"submission\" (review by submission).",
+            assignmentName: "The name of the assignment or study the reviewer is assigned to.",
+            link: "The URL for the reviewer to open and start their review session. They must use this link to begin the assigned task.",
+          },
+          6: { // Email - Study Close
+            username: "The username of the session owner who had an open session when the study was closed.",
+            studyName: "The name of the study that was closed.",
+          },
+        };
+
+        return (longDescriptions[type] && longDescriptions[type][key]) || placeholder.description;
+      },
       initializePlaceholderCounts() {
         const counts = {};
         this.availablePlaceholders.forEach(placeholder => {
