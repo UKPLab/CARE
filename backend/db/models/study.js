@@ -104,6 +104,18 @@ module.exports = (sequelize, DataTypes) => {
             type: "editor",
             required: true
         }, {
+            key: "enableEmailNotifications",
+            label: "Enable Email Notifications",
+            type: "switch",
+            default: false,
+            help: "When enabled, emails will be sent for session start/finish using admin-configured templates. If no templates are configured, default hardcoded emails will be sent."
+        }, {
+            key: "enableStudyCloseEmails",
+            label: "Enable Study Close Email Notifications",
+            type: "switch",
+            default: false,
+            help: "When enabled, emails will be sent to users with open sessions when the study is closed, using admin-configured templates."
+        }, {
             key: "timeLimit",
             type: "slider",
             label: "How much time does a participant have for the study?",
@@ -114,7 +126,8 @@ module.exports = (sequelize, DataTypes) => {
             max: 180,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}]
+            textMapping: [{from: 0, to: "unlimited"}],
+            advanced: true
         }, {
             key: "limitSessions",
             type: "slider",
@@ -126,7 +139,8 @@ module.exports = (sequelize, DataTypes) => {
             max: 200,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}]
+            textMapping: [{from: 0, to: "unlimited"}],
+            advanced: true
         }, {
             key: "limitSessionsPerUser",
             type: "slider",
@@ -138,54 +152,48 @@ module.exports = (sequelize, DataTypes) => {
             max: 200,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}]
+            textMapping: [{from: 0, to: "unlimited"}],
+            advanced: true
+        }, {
+            key: "start",
+            label: "Study sessions can't start before",
+            type: "datetime",
+            size: 6,
+            default: null,
+            advanced: true
+        }, {
+            key: "end",
+            label: "Study sessions can't start after:",
+            type: "datetime",
+            size: 6,
+            default: null,
+            advanced: true
         }, {
             key: "collab",
             label: "Should the study be collaborative?",
             type: "switch",
             default: false,
-        },
-            {
-                key: "anonymize",
-                label: "Should the comments be anonymized?",
-                type: "switch",
-                default: false,
-            }, {
-                key: "resumable",
-                label: "Should the study be resumable?",
-                type: "switch",
-                default: false,
-            }, {
-                key: "multipleSubmit",
-                label: "Allow multiple submissions?",
-                type: "switch",
-                default: false,
-                help: "Specify whether participants can submit their study multiple times."
-            }, {
-                key: "start",
-                label: "Study sessions can't start before",
-                type: "datetime",
-                size: 6,
-                default: null,
-            }, {
-                key: "end",
-                label: "Study sessions can't start after:",
-                type: "datetime",
-                size: 6,
-                default: null,
-            }, {
-                key: "enableEmailNotifications",
-                label: "Enable Email Notifications",
-                type: "switch",
-                default: false,
-                help: "When enabled, emails will be sent for session start/finish using admin-configured templates. If no templates are configured, default hardcoded emails will be sent."
-            }, {
-                key: "enableStudyCloseEmails",
-                label: "Enable Study Close Email Notifications",
-                type: "switch",
-                default: false,
-                help: "When enabled, emails will be sent to users with open sessions when the study is closed, using admin-configured templates."
-            },];
+            advanced: true
+        }, {
+            key: "anonymize",
+            label: "Should the comments be anonymized?",
+            type: "switch",
+            default: false,
+            advanced: true
+        }, {
+            key: "resumable",
+            label: "Should the study be resumable?",
+            type: "switch",
+            default: false,
+            advanced: true
+        }, {
+            key: "multipleSubmit",
+            label: "Allow multiple submissions?",
+            type: "switch",
+            default: false,
+            help: "Specify whether participants can submit their study multiple times.",
+            advanced: true
+        },];
 
         /**
          * Check if a study is still open
