@@ -37,12 +37,12 @@ const workflows = [
                 help: "If enabled, users must save a score and justification for every criterion before they can proceed."
               },
               {
-                key: "showDefaultAnnotations",
-                label: "Show Default Annotations",
+                key: "showAllDocumentAnnotations",
+                label: "Show all document Annotations",
                 type: "switch",
                 required: false,
                 default: true,
-                help: "If enabled, default annotations will be shown to the reviewer."
+                help: "If enabled, all document annotations will be shown to the reviewer."
               }
             ],
           },
