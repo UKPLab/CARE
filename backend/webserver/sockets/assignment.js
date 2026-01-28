@@ -599,12 +599,7 @@ class AssignmentSocket extends Socket {
                     );
                     
                     // Follow the parent chain to find the root submission
-                    while(originalSubmission?.parentSubmissionId !== null && originalSubmission?.parentSubmissionId !== undefined){
-                        originalSubmission = await this.models['submission'].findOne(
-                            { where: { id: originalSubmission.parentSubmissionId } }, 
-                            { transaction: options.transaction }
-                        );
-                    }
+                    originalSubmission = await this.models['submission'].getRootSubmission(originalSubmission);
                     
                     // Now find the submission that has previousSubmissionId pointing to this root
                     const latestSubmission = await this.models['submission'].findOne(
@@ -677,7 +672,8 @@ class AssignmentSocket extends Socket {
                                 studySessionId: studySession.id,
                                 studyStepId: sourceStudyStep.id,
                             }, // Document overrides
-                            { transaction: options.transaction }
+                            {}, // includes (filters for document data)
+                            { transaction: options.transaction } // options with transaction
                         );
                         
                         // Use the document mapping to find the correct duplicated document

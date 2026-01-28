@@ -815,8 +815,7 @@ class DocumentSocket extends Socket {
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
-
-                const previousSubmission = await this.models["submission"].getPreviousSubmission(submission.userId, submission.projectId);
+                const previousSubmission = await this.models["submission"].getPreviousRootSubmission(submission.userId, submission.projectId, true, {transaction});
                 // 3. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
