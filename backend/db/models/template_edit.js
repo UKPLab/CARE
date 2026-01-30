@@ -31,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       userId: DataTypes.INTEGER,
       templateId: DataTypes.INTEGER,
+      language: DataTypes.STRING,
       draft: DataTypes.BOOLEAN,
       offset: DataTypes.INTEGER,
       operationType: DataTypes.INTEGER, // 0: Insert, 1: Delete, 2: Attribute-Change (only retain)

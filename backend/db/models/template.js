@@ -130,9 +130,23 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 ],
             },
+            {
+                key: "defaultLanguage",
+                label: "Default language",
+                type: "select",
+                required: true,
+                options: [
+                    { name: "English", value: "en" },
+                    { name: "Deutsch", value: "de" },
+                    { name: "Français", value: "fr" },
+                ],
+            },
         ];
         static associate(models) {
-            // No direct association needed
+            Template.hasMany(models["template_language_content"], {
+                foreignKey: "templateId",
+                as: "template_language_contents",
+            });
         }
     }
     Template.init(
@@ -142,7 +156,7 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.INTEGER,
             published: DataTypes.BOOLEAN,
             type: DataTypes.INTEGER,
-            content: DataTypes.JSONB,
+            defaultLanguage: DataTypes.STRING,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
