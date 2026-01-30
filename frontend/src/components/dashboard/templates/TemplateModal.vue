@@ -90,8 +90,9 @@
 
         if (!isEdit) {
           delete payload.id;
-          // Set minimal content for new templates (will be edited in editor)
-          payload.content = {ops: [{insert: '\n'}]};
+          payload.defaultLanguage = payload.defaultLanguage;
+          // Set minimal content for new templates
+          payload.content = { ops: [{ insert: "\n" }] };
         }
   
         const eventName = isEdit ? "templateUpdate" : "templateAdd";
