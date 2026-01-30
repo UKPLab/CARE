@@ -21,7 +21,8 @@ class TemplateSocket extends Socket {
    * @param {string} data.name             Template name (required)
    * @param {string} data.description      Template description (required)
    * @param {number} data.type             Template type (required, immutable later)
-   * @param {Object} data.content          Template content (JSON, required)
+   * @param {Object} data.content          Initial template content for default language (JSON, required)
+   * @param {string} [data.defaultLanguage='en']  Default language code
    * @param {boolean} [data.published=false]  Publish template (makes it visible to all users, cannot be undone)
    * @param {Object} options               
    * @param {Object} options.transaction   
@@ -31,76 +32,85 @@ class TemplateSocket extends Socket {
     if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
         throw new Error("Missing required fields: name, description, type, content");
     }
-    
-    // Non-admins can only create types 4, 5 (document templates)
-    // Email templates (types 1, 2, 3, 6) are admin-only
     if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(data.type)) {
-      throw new Error("Access denied: Only administrators can create email templates (types 1, 2, 3, 6)");
+      throw new Error("Access denied: Only administrators can create email templates");
     }
-    
-    const payload = {
+
+    const defaultLanguage = data.defaultLanguage || "en";
+    const templatePayload = {
       name: data.name,
       description: data.description,
       type: data.type,
-      content: data.content,
+      defaultLanguage,
       published: data.published ?? false,
       userId: this.userId,
     };
 
-    const template = await this.models["template"].add(payload, { transaction: options.transaction });
-    
+    const template = await this.models["template"].add(templatePayload, { transaction: options.transaction });
 
-    
+    await this.models["template_language_content"].add(
+      {
+        templateId: template.id,
+        language: defaultLanguage,
+        content: data.content,
+      },
+      { transaction: options.transaction }
+    );
+
     return template;
   }
 
   /**
    * Get template content (deltas) for editor
    *
-   * Fetches the template and returns its content as Quill Delta format for the editor to load.
-   * - For owners: returns stable content composed with draft edits (like documents)
+   * Fetches the template and returns its content as Quill Delta format for the given language.
+   * - For owners: returns stable content from template_language_content composed with draft edits (like documents)
    * - For non-owners: returns only stable content (no drafts)
    *
    * @socketEvent templateGetContent
    * @param {Object} data                  The data object
    * @param {number} data.templateId       Template ID (required)
+   * @param {string} data.language         Language code (required, e.g. 'en', 'de')
    * @param {Object} options
    * @param {Object} options.transaction
    * @returns {Promise<Object>}            
    */
   async getContent(data, options){
     if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.language) throw new Error("Language is required");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
       throw new Error("Template not found");
     }
     
-    // Allow viewing:
-    // - Own templates (always, for all users including admins)
-    // - Published templates from others (view-only, for all users including admins)
-    // - Admins follow the same rules as regular users
     const isOwner = template.userId === this.userId;
     const isPublishedFromOthers = template.published === true && !isOwner;
     
     if (!isOwner && !isPublishedFromOthers) {
       throw new Error("You can only view templates that you own or published templates from others");
     }
-    // Start with stable content from template.content
+
+    const langRow = await this.models["template_language_content"].findOne({
+      where: { templateId: data.templateId, language: data.language, deleted: false },
+      raw: true,
+      ...options,
+    });
+
     let delta = new Delta();
-    if (template.content && template.content.ops) {
-      delta = new Delta(template.content.ops);
+    if (langRow && langRow.content && langRow.content.ops) {
+      delta = new Delta(langRow.content.ops);
     }
 
-    // If owner, compose with draft edits (like documents do)
     if (isOwner) {
       const draftEdits = await this.models["template_edit"].findAll({
-        where: { templateId: data.templateId, draft: true, deleted: false },
+        where: { templateId: data.templateId, language: data.language, draft: true, deleted: false },
         order: [
           ["createdAt", "ASC"],
           ["order", "ASC"],
         ],
         raw: true,
+        ...options,
       });
 
       if (draftEdits.length > 0) {
@@ -108,21 +118,22 @@ class TemplateSocket extends Socket {
         delta = delta.compose(draftDelta);
       }
     }
-    // Non-owner (read-only): delta stays as-is (stable content only)
 
-    return { template: template, deltas: delta };
+    const isNewLanguage = !langRow;
+    return { template, deltas: delta, isNewLanguage };
   }
 
   /**
    * Save template content edits (deltas) to template_edit table
    *
-   * Saves content edits as draft edits in template_edit table (like document_edit).
-   * Drafts are merged into template.content when the editor is closed.
+   * Saves content edits as draft edits in template_edit table for the given language.
+   * Drafts are merged into template_language_content when the editor is closed.
    * Users can only edit content of their own templates.
    *
    * @socketEvent templateEditContent
    * @param {Object} data                  The data object
    * @param {number} data.templateId       Template ID (required)
+   * @param {string} data.language         Language code (required)
    * @param {Array<Object>} data.ops       Delta operations in database format (from deltaToDb)
    * @param {Object} options
    * @param {Object} options.transaction
@@ -130,6 +141,7 @@ class TemplateSocket extends Socket {
    */
   async editContent(data, options) {
     if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.language) throw new Error("Language is required");
     if (!data.ops || !Array.isArray(data.ops)) {
       throw new Error("Delta operations are required");
     }
@@ -138,17 +150,16 @@ class TemplateSocket extends Socket {
     if (!template) {
       throw new Error("Template not found");
     }
-    
+
     // Check ownership: users (including admins) can only edit content of their own templates
-    // Published templates from others are view-only (can't edit content)
     if (template.userId !== this.userId) {
       throw new Error("You can only edit content of templates that you own");
     }
 
-    // Save edits to template_edit table with draft:true (like document_edit)
     const bulkEdits = data.ops.map((op, idx) => ({
       userId: this.userId,
       templateId: data.templateId,
+      language: data.language,
       draft: true,
       order: idx + 1,
       ...op,
@@ -170,7 +181,7 @@ class TemplateSocket extends Socket {
    * @param {number} data.id               Template ID to update (required)
    * @param {string} [data.name]           New name
    * @param {string} [data.description]    New description
-   * @param {Object} [data.content]        New content (JSON)
+   * @param {string} [data.defaultLanguage] Default language code
    * @param {boolean} [data.published]     New published flag (can only be set to true, cannot be unpublished)
    * @param {Object} options
    * @param {Object} options.transaction
@@ -178,13 +189,13 @@ class TemplateSocket extends Socket {
    */
   async updateTemplate(data, options) {
     if (!data.id) throw new Error("Template ID is required");
-    
-    // Get current template to check ownership and published status
+
+    // Get current template
     const currentTemplate = await this.models["template"].getById(data.id);
     if (!currentTemplate) {
       throw new Error("Template not found");
     }
-    
+
     // Check ownership: users (including admins) can only update their own templates
     if (currentTemplate.userId !== this.userId) {
       throw new Error("You can only update templates that you own");
@@ -194,17 +205,17 @@ class TemplateSocket extends Socket {
     if (currentTemplate.published === true && currentTemplate.userId !== this.userId) {
       throw new Error("Published templates from other users are view-only and cannot be edited");
     }
-    
+
     // Prevent unpublishing: if template is published, cannot set to false
     if (currentTemplate.published === true && data.published === false) {
       throw new Error("Cannot unpublish a template once it has been published");
     }
-    
+
     const updateData = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.content !== undefined) updateData.content = data.content;
+    if (data.defaultLanguage !== undefined) updateData.defaultLanguage = data.defaultLanguage;
     if (data.published !== undefined) updateData.published = data.published;
 
     return await this.models["template"].updateById(
@@ -321,9 +332,91 @@ class TemplateSocket extends Socket {
 
 
   /**
+   * Get list of language codes that have content for a template
+   *
+   * @socketEvent templateGetLanguages
+   * @param {Object} data                  The data object
+   * @param {number} data.templateId       Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Array<string>>}
+   */
+  async getLanguages(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    const isOwner = template.userId === this.userId;
+    const isPublishedFromOthers = template.published === true && !isOwner;
+    if (!isOwner && !isPublishedFromOthers) {
+      throw new Error("You can only view templates that you own or published templates from others");
+    }
+
+    const rows = await this.models["template_language_content"].findAll({
+      where: { templateId: data.templateId, deleted: false },
+      attributes: ["language"],
+      raw: true,
+      ...options,
+    });
+    const languages = rows.map((r) => r.language).sort();
+    return { languages, defaultLanguage: template.defaultLanguage || "en" };
+  }
+
+  /**
+   * Create or ensure a language content row for a template (for "add language" in editor)
+   *
+   * When the user adds a new language, creates a row in template_language_content.
+   * If content is provided (copy-from-current case), uses that content; otherwise creates empty content.
+   *
+   * @socketEvent templateAddLanguageContent
+   * @param {Object} data                  The data object
+   * @param {number} data.templateId       Template ID (required)
+   * @param {string} data.language         Language code (required)
+   * @param {Object} [data.content]        Content to copy (optional; if omitted, creates minimal empty content)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async addLanguageContent(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.language) throw new Error("Language is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    if (template.userId !== this.userId) {
+      throw new Error("You can only add language content to templates that you own");
+    }
+
+    const Tlc = this.models["template_language_content"];
+    const existing = await Tlc.findOne({
+      where: { templateId: data.templateId, language: data.language, deleted: false },
+      raw: true,
+      ...options,
+    });
+    if (existing) {
+      return { success: true, existing: true };
+    }
+
+    const content = data.content && data.content.ops
+      ? data.content
+      : { ops: [{ insert: "\n" }] };
+
+    await Tlc.add(
+      { templateId: data.templateId, language: data.language, content },
+      { transaction: options.transaction }
+    );
+    return { success: true, existing: false };
+  }
+
+  /**
    * Resolve template placeholders with context data
    *
    * Resolves all placeholders in a template using the provided context data.
+   * Uses context.language or template.defaultLanguage to pick content from template_language_content.
    * Returns resolved content as HTML string or Quill Delta object.
    *
    * @socketEvent templateResolve
@@ -377,48 +470,63 @@ class TemplateSocket extends Socket {
   }
 
   /**
-   * Save template by merging draft edits into content
+   * Save template by merging draft edits into template_language_content for the given language
    *
-   * Merges all draft edits (draft=true) from template_edit into template.content,
-   * then marks them as draft=false. This is called when the editor is closed.
-   * (Like saveDocument in document.js)
+   * Merges all draft edits (draft=true) from template_edit for (templateId, language) into
+   * the content row in template_language_content, then marks edits as draft=false.
+   * Called when the editor is closed or when switching language.
    *
    * @param {number} templateId            Template ID to save
+   * @param {string} language              Language code (e.g. 'en', 'de')
    * @param {Object} options
    * @param {Object} options.transaction
    * @returns {Promise<void>}
    */
-  async saveTemplate(templateId, options = {}) {
+  async saveTemplate(templateId, language, options = {}) {
     const template = await this.models["template"].getById(templateId);
     if (!template) {
       this.logger.error(`Template not found.`);
       return;
     }
 
-    // Get all draft edits
     const edits = await this.models["template_edit"].findAll({
-      where: { templateId: templateId, draft: true, deleted: false },
+      where: { templateId, language, draft: true, deleted: false },
       order: [
         ["createdAt", "ASC"],
         ["order", "ASC"],
       ],
       raw: true,
+      ...options,
     });
 
     if (edits.length === 0) return;
 
-    // Compose with existing content
-    let baseContent = template.content?.ops
-      ? new Delta(template.content.ops)
-      : new Delta();
+    const Tlc = this.models["template_language_content"];
+    const langRow = await Tlc.findOne({
+      where: { templateId, language, deleted: false },
+      raw: true,
+      ...options,
+    });
+
+    let baseContent = new Delta();
+    if (langRow && langRow.content && langRow.content.ops) {
+      baseContent = new Delta(langRow.content.ops);
+    }
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
-    await this.models["template"].updateById(
-      templateId,
-      { content: { ops: mergedDelta.ops } },
-      { transaction: options.transaction }
-    );
+    const contentPayload = { content: { ops: mergedDelta.ops } };
+    if (langRow) {
+      await Tlc.update(contentPayload, {
+        where: { id: langRow.id },
+        transaction: options.transaction,
+      });
+    } else {
+      await Tlc.add(
+        { templateId, language, content: contentPayload.content },
+        { transaction: options.transaction }
+      );
+    }
 
     // Mark edits as draft:false
     await this.models["template_edit"].update(
@@ -435,25 +543,25 @@ class TemplateSocket extends Socket {
   /**
    * Close template and save if owner
    *
-   * Called when the template editor is closed. Triggers saveTemplate to merge
-   * draft edits into stable content. Only the owner can trigger save on close.
-   * (Like closeDocument in document.js)
+   * Called when the template editor is closed. Saves the current language's content.
    *
    * @socketEvent templateClose
    * @param {Object} data                  The data object
    * @param {number} data.templateId       Template ID (required)
+   * @param {string} data.language         Language code (required)
    * @param {Object} options
    * @param {Object} options.transaction
    * @returns {Promise<void>}
    */
   async closeTemplate(data, options) {
     if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.language) throw new Error("Language is required");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) return;
 
     if (template.userId === this.userId) {
-      await this.saveTemplate(data.templateId, options);
+      await this.saveTemplate(data.templateId, data.language, options);
     }
   }
 
@@ -461,7 +569,9 @@ class TemplateSocket extends Socket {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
     this.createSocket("templateUpdate", this.updateTemplate, {}, true);
     this.createSocket("templateGetContent", this.getContent, {}, false);
+    this.createSocket("templateGetLanguages", this.getLanguages, {}, false);
     this.createSocket("templateEditContent", this.editContent, {}, true);
+    this.createSocket("templateAddLanguageContent", this.addLanguageContent, {}, true);
     this.createSocket("templateClose", this.closeTemplate, {}, true);
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
