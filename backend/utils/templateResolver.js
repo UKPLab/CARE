@@ -134,24 +134,45 @@ async function shouldAnonymize(studyId, models, options = {}) {
 }
 
 /**
+ * Get template content (Delta) for a given template and language from template_language_content.
+ * Falls back to template.defaultLanguage if the requested language has no row.
+ *
+ * @param {number} templateId - Template ID
+ * @param {string} language - Language code (e.g. 'en', 'de')
+ * @param {Object} models - Database models object
+ * @param {Object} options - Options (e.g. transaction)
+ * @returns {Promise<Object>} Content object with ops array, or null if no row exists
+ */
+async function getTemplateContentForLanguage(templateId, language, models, options = {}) {
+    const Tlc = models["template_language_content"];
+    if (!Tlc) {
+        return null;
+    }
+    const row = await Tlc.findOne({
+        where: { templateId, language, deleted: false },
+        raw: true,
+        ...options,
+    });
+    return row && row.content ? row.content : null;
+}
+
+/**
  * Resolve template placeholders and return HTML string
- * 
+ * Content is loaded from template_language_content by (templateId, context.language or template.defaultLanguage).
+ *
  * @param {number} templateId - Template ID to resolve
  * @param {Object} context - Context object containing:
- *   - userId: User/participant ID
- *   - creatorId: Study creator ID (optional)
- *   - studyId: Study ID (optional, for anonymization check)
- *   - studySessionId: Study session ID (optional)
- *   - studySessionHash: Study session hash (optional, for link)
- *   - baseUrl: Base URL for generating links (optional")
- *   - assignmentType: Assignment type (optional)
- *   - assignmentName: Assignment name (optional)
- *   - anonymize: Override anonymization (optional, boolean)
+ *   - language: Optional language code (defaults to template.defaultLanguage)
+ *   - userId, creatorId, studyId, studySessionId, studySessionHash, baseUrl, link, assignmentType, assignmentName, anonymize
  * @param {Object} models - Database models object
  * @param {Object} options - Options object
  * @param {Object} options.transaction - Database transaction
  * @returns {Promise<string>} Resolved template as HTML string
  * @throws {Error} If template not found or resolution fails
+ * @todo Localize resolved content per recipient: at call sites (emailHelper, auth, study_session, assignment, study),
+ *       set context.language from the recipient's preferred language or study/session locale so the resolver picks
+ *       the matching template_language_content row (e.g. send German template to German users). Currently call sites
+ *       do not set context.language, so everyone receives template.defaultLanguage.
  */
 async function resolveTemplate(templateId, context, models, options = {}) {
     if (!templateId) {
@@ -162,38 +183,38 @@ async function resolveTemplate(templateId, context, models, options = {}) {
         throw new Error("Models object is required");
     }
     
-    // Load template
     const template = await models["template"].getById(templateId, options);
     if (!template) {
         throw new Error(`Template with ID ${templateId} not found`);
     }
     
-    // Check anonymization if studyId provided
     if (context.studyId && context.anonymize === undefined) {
         context.anonymize = await shouldAnonymize(context.studyId, models, options);
     }
 
     context.templateType = template.type;
 
-    // Build replacement map
+    const language = context.language || template.defaultLanguage || "en";
+    let content = await getTemplateContentForLanguage(templateId, language, models, options);
+    if (!content && language !== (template.defaultLanguage || "en")) {
+        content = await getTemplateContentForLanguage(templateId, template.defaultLanguage || "en", models, options);
+    }
+
     const replacements = await buildReplacementMap(context, models, options);
     
-    // Extract text from Delta
     let text = "";
-    if (template.content && template.content.ops) {
-        text = extractTextFromDelta(template.content);
+    if (content && content.ops) {
+        text = extractTextFromDelta(content);
     }
     
-    // Replace placeholders
     let resolvedText = text;
     for (const [placeholder, value] of Object.entries(replacements)) {
-        // Escape special regex characters in placeholder
         const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedPlaceholder, 'g');
         resolvedText = resolvedText.replace(regex, value || "");
     }
     
-    // Convert to HTML (simple conversion - preserve line breaks)
+    // Convert to HTML
     const html = resolvedText
         .replace(/\n/g, '<br>')
         .replace(/&/g, '&amp;')
@@ -206,9 +227,10 @@ async function resolveTemplate(templateId, context, models, options = {}) {
 
 /**
  * Resolve template placeholders and return Quill Delta object
- * 
+ * Content is loaded from template_language_content by (templateId, context.language or template.defaultLanguage).
+ *
  * @param {number} templateId - Template ID to resolve
- * @param {Object} context - Context object (same as resolveTemplate)
+ * @param {Object} context - Context object (same as resolveTemplate; may include language)
  * @param {Object} models - Database models object
  * @param {Object} options - Options object
  * @param {Object} options.transaction - Database transaction
@@ -224,47 +246,43 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
         throw new Error("Models object is required");
     }
     
-    // Load template
     const template = await models["template"].getById(templateId, options);
     if (!template) {
         throw new Error(`Template with ID ${templateId} not found`);
     }
     
-    // Check anonymization if studyId provided
     if (context.studyId && context.anonymize === undefined) {
         context.anonymize = await shouldAnonymize(context.studyId, models, options);
     }
 
     context.templateType = template.type;
 
-    // Build replacement map
+    const language = context.language || template.defaultLanguage || "en";
+    let content = await getTemplateContentForLanguage(templateId, language, models, options);
+    if (!content && language !== (template.defaultLanguage || "en")) {
+        content = await getTemplateContentForLanguage(templateId, template.defaultLanguage || "en", models, options);
+    }
+
     const replacements = await buildReplacementMap(context, models, options);
     
-    // Get original Delta
     let originalDelta = new Delta();
-    if (template.content && template.content.ops) {
-        originalDelta = new Delta(template.content.ops);
+    if (content && content.ops) {
+        originalDelta = new Delta(content.ops);
     }
     
-    // Extract text and replace placeholders
     let text = extractTextFromDelta(originalDelta);
     let resolvedText = text;
     
     for (const [placeholder, value] of Object.entries(replacements)) {
-        // Escape special regex characters in placeholder
         const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedPlaceholder, 'g');
         resolvedText = resolvedText.replace(regex, value || "");
     }
     
-    // Convert resolved text back to Delta
-    // Preserve original formatting by mapping through original ops
     const resolvedDelta = new Delta();
-    let textOffset = 0;
     
     for (const op of originalDelta.ops) {
         if (op.insert && typeof op.insert === 'string') {
-            // Replace placeholders in this insert operation
             let insertText = op.insert;
             for (const [placeholder, value] of Object.entries(replacements)) {
                 const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -272,21 +290,18 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
                 insertText = insertText.replace(regex, value || "");
             }
             
-            // Insert with original attributes if present
             if (op.attributes) {
                 resolvedDelta.insert(insertText, op.attributes);
             } else {
                 resolvedDelta.insert(insertText);
             }
         } else if (op.retain) {
-            // Retain operations (formatting only)
             if (op.attributes) {
                 resolvedDelta.retain(op.retain, op.attributes);
             } else {
                 resolvedDelta.retain(op.retain);
             }
         } else if (op.delete) {
-            // Delete operations
             resolvedDelta.delete(op.delete);
         }
     }
