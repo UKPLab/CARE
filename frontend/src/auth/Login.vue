@@ -300,6 +300,21 @@ export default {
         }
         throw response.data.message;
       }
+      
+      // Check if 2FA is required
+      if (response.status === 200 && response.data.requiresTwoFactor) {
+        // Redirect to 2FA verification page with method info
+        await this.$router.push({
+          name: "2fa-verify-email",
+          query: {
+            method: response.data.method,
+            redirectedFrom: this.$route.query.redirectedFrom
+          }
+        });
+        return;
+      }
+      
+      // Normal login flow (no 2FA)
       await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
     },
 

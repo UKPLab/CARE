@@ -555,6 +555,13 @@ module.exports = (sequelize, DataTypes) => {
             emailVerificationToken: DataTypes.STRING,
             lastPasswordResetEmailSent: DataTypes.DATE,
             lastVerificationEmailSent: DataTypes.DATE,
+            twoFactorEnabled: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false
+            },
+            twoFactorMethod: DataTypes.STRING,
+            twoFactorOtp: DataTypes.STRING,
+            twoFactorOtpExpiresAt: DataTypes.DATE,
         },
         {
             sequelize,

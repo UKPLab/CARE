@@ -34,6 +34,12 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
+        path: "/2fa/verify/email",
+        name: "2fa-verify-email",
+        component: () => import("@/auth/TwoFactorVerifyEmail.vue"),
+        meta: { requiresAuth: false }
+    },
+    {
         path: "/register",
         name: "register",
         component: () => import("@/auth/Register.vue"),

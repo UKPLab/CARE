@@ -7,7 +7,7 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
-const { generateToken, decodeToken } = require('../../utils/auth');
+const { generateToken, decodeToken, generateOTP, relevantFields } = require('../../utils/auth');
 
 /**
  * Route for user management
@@ -101,6 +101,75 @@ module.exports = function (server) {
                 });
             }
             
+            
+            // Check if 2FA is enabled for this user
+            if (user.twoFactorEnabled) {
+                const method = user.twoFactorMethod;
+                
+                // Store user data in session for 2FA verification
+                // Session will be automatically managed by express-session
+                req.session.twoFactorPending = {
+                    userId: user.id,
+                    userData: user,
+                    method: method
+                };
+
+                if(method === "email") {
+                    // User has 2FA enabled with email method
+                    if (!user.email) {
+                        return res.status(400).json({
+                            message: "Email address is required for 2FA but not found for this user."
+                        });
+                    }
+
+                    try {
+                        // Generate and send OTP automatically
+                        const otp = generateOTP();
+                        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+                        
+                        // Store OTP in user record
+                        await server.db.models['user'].update(
+                            {
+                                twoFactorOtp: otp,
+                                twoFactorOtpExpiresAt: otpExpiresAt
+                            },
+                            { where: { id: user.id } }
+                        );
+                        // Send OTP via email
+                        await server.sendMail(
+                            user.email,
+                            "CARE - Two-Factor Authentication Code",
+                            `Hello ${user.userName},
+                            Your two-factor authentication code is: ${otp}
+    
+                            This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
+    
+                            Thanks,
+                            The CARE Team`
+                        );
+                        
+                        // Save session and return - session cookie will be sent automatically
+                        req.session.save((err) => {
+                            if (err) {
+                                server.logger.error("Failed to save session: " + err);
+                                return res.status(500).json({ message: "Failed to initiate 2FA verification." });
+                            }
+                            
+                            return res.status(200).json({
+                                requiresTwoFactor: true,
+                                method: "email",
+                                message: "Authentication code has been sent to your email. Please check."
+                            });
+                        });
+                        return; // Exit early to prevent normal login
+                    } catch (error) {
+                        server.logger.error("Failed to initiate 2FA: " + error);
+                        return res.status(500).json({ message: "Failed to initiate 2FA verification." });
+                    }
+                }
+            }
+            
+            // No 2FA required, proceed with normal login
             req.logIn(user, async function (err) {
                 if (err) {
                     return next(err);
