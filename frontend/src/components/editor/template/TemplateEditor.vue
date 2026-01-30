@@ -22,6 +22,34 @@
           </div>
         </div>
       </div>
+      <BasicModal
+        ref="newLanguageModal"
+        name="newLanguage"
+        @hide="onNewLanguageModalHide"
+      >
+        <template #title>
+          New language
+        </template>
+        <template #body>
+          <div v-html="newLanguageModalMessage" />
+        </template>
+        <template #footer>
+          <button
+            class="btn btn-outline-primary"
+            type="button"
+            @click="chooseNewLanguageEmpty"
+          >
+            Create Empty
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            @click="chooseNewLanguageCopied"
+          >
+            Copy Content
+          </button>
+        </template>
+      </BasicModal>
     </span>
   </template>
   
@@ -29,8 +57,10 @@
   /**
    * Template Editor component
    *
-   * Simplified Quill editor for editing template content.
-   * Unlike document editor, templates don't have edit history, subscriptions, or document_edit table.
+   * Quill editor for editing template content per language.
+   * Toolbar includes a language selector.
+   * Switching language saves the current language and loads the selected one;
+   * adding a new language shows a popup (Empty / Copied); X reverts to previous language.
    *
    * @author Mohammad Elwan
    */
@@ -40,12 +70,19 @@
   import {dbToDelta, deltaToDb} from "editor-delta-conversion";
   import {Editor} from "@/components/editor/editorStore.js";
   import Loader from "@/basic/Loading.vue";
+  import BasicModal from "@/basic/Modal.vue";
   
   const Delta = Quill.import('delta');
+
+  const SUPPORTED_LANGUAGES = [
+    { code: "en", label: "English" },
+    { code: "de", label: "Deutsch" },
+    { code: "fr", label: "Français" },
+  ];
   
   export default {
     name: "TemplateEditor",
-    components: { Loader },
+    components: { Loader, BasicModal },
     inject: {
       templateId: {
         type: Number,
@@ -65,17 +102,43 @@
         editor: null,
         templateLoaded: false,
         firstVersion: null,
+        selectedLanguage: "en",
+        availableLanguages: [],
+        pendingNewLanguage: null,
+        languageSelectorEl: null,
+        languageSelectorClickOutside: null,
+        newLanguageModalMessage: "",
       };
     },
     computed: {
       user() {
         return this.$store.getters["auth/getUser"];
       },
+      template() {
+        if (this.templateId && this.templateId > 0) {
+          return this.$store.getters["table/template/get"](this.templateId);
+        }
+        return null;
+      },
+      templateDefaultLanguage() {
+        return (this.template && this.template.defaultLanguage) || "en";
+      },
       debounceTimeForEdits() {
         return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
       },
       toolbarVisible() {
         return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
+      },
+      languageOptions() {
+        // Available languages first, then supported languages not yet added
+        const existing = new Set(this.availableLanguages);
+        const options = this.availableLanguages.slice();
+        SUPPORTED_LANGUAGES.forEach(({ code }) => {
+          if (!existing.has(code)) {
+            options.push(code);
+          }
+        });
+        return options;
       },
       editorOptions() {
         const toolsMap = {
@@ -131,10 +194,13 @@
         handler(newReadOnly) {
           if (this.editor) {
             this.editor.getEditor().enable(!newReadOnly);
-            if (newReadOnly) {
-              this.editor.getEditor().getModule("toolbar").container.style = "display:none"
-            } else {
-              this.editor.getEditor().getModule("toolbar").container.style = "display:block"
+            const toolbar = this.editor.getEditor().getModule("toolbar");
+            if (toolbar && toolbar.container) {
+              if (newReadOnly) {
+                toolbar.container.style = "display:none"
+              } else {
+                toolbar.container.style = "display:block"
+              }
             }
           }
         }
@@ -155,6 +221,7 @@
               button.setAttribute('title', format[1]);
             }
           });
+          this.injectLanguageSelector(editorId);
         }
   
         this.editor.getEditor().enable(!this.readOnly);
@@ -175,44 +242,244 @@
       
       this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
       
-      // Load template content
-      this.$socket.emit("templateGetContent",
-        {
-          templateId: this.templateId,
-        },
-        (res) => {
-          if (res.success) {
-            this.initializeEditorWithContent(res['data']['deltas']);
-
-            // Set first version to current (templates don't have history)
-            if (this.editor) {
-              let currentVersion = this.editor.getEditor().root.innerHTML;
-              this.firstVersion = currentVersion;
-
-              let studyData = {
-                firstVersion: this.firstVersion,
-                currentVersion: currentVersion,
-              };
-              this.$emit("update:data", studyData);
-            }
-          } else {
-            this.handleTemplateError(res.error || { message: res.message || "Failed to load template" });
-          }
-        }
-      );
+      // Load available languages and content
+      this.fetchLanguagesAndLoadContent();
     },
     unmounted() {
       this.eventBus.off("editorInsertText", this.insertTextHandler);
 
-      // Save template on close (like documents do)
+      // Cleanup language selector
+      if (this.languageSelectorClickOutside) {
+        document.removeEventListener("click", this.languageSelectorClickOutside);
+      }
+      if (this.languageSelectorEl && this.languageSelectorEl.parentNode) {
+        this.languageSelectorEl.parentNode.removeChild(this.languageSelectorEl);
+      }
+
+      // Save template on close
       // This triggers merging of draft edits into stable content
-      this.$socket.emit("templateClose", { templateId: this.templateId }, (res) => {
+      this.$socket.emit("templateClose", { templateId: this.templateId, language: this.selectedLanguage }, (res) => {
         if (!res.success) {
           console.error("Template close error:", res.message);
         }
       });
     },
     methods: {
+      fetchLanguagesAndLoadContent() {
+        this.$socket.emit("templateGetLanguages", { templateId: this.templateId }, (res) => {
+          
+          const data = res.success && res.data ? res.data : {};
+          const languagesArray = Array.isArray(data) ? data : (data.languages || []);
+          const defaultLanguageFromServer = (data && typeof data === "object" && !Array.isArray(data) && data.defaultLanguage) ? data.defaultLanguage : null;
+
+          if (languagesArray.length > 0) {
+            this.availableLanguages = languagesArray;
+          }
+
+          // Prefer defaultLanguage from server (template row); fallback to store, then "en"
+          const defaultLang = defaultLanguageFromServer || this.templateDefaultLanguage || "en";
+          this.selectedLanguage = this.availableLanguages.includes(defaultLang)
+            ? defaultLang
+            : (this.availableLanguages[0] || defaultLang);
+
+          // Update dropdown label 
+          this.$nextTick(() => this.updateLanguageSelectorLabel());
+
+          this.loadContentForLanguage(this.selectedLanguage);
+        });
+      },
+
+      loadContentForLanguage(language) {
+        this.$socket.emit("templateGetContent",
+          {
+            templateId: this.templateId,
+            language: language,
+          },
+          (res) => {
+            if (res.success) {
+              this.initializeEditorWithContent(res['data']['deltas']);
+
+              // Track if this is a newly added language
+              if (res['data']['isNewLanguage']) {
+                this.availableLanguages = [...new Set([...this.availableLanguages, language])].sort();
+              }
+
+              // Set first version to current
+              if (this.editor) {
+                let currentVersion = this.editor.getEditor().root.innerHTML;
+                this.firstVersion = currentVersion;
+
+                let studyData = {
+                  firstVersion: this.firstVersion,
+                  currentVersion: currentVersion,
+                };
+                this.$emit("update:data", studyData);
+              }
+            } else {
+              this.handleTemplateError(res.error || { message: res.message || "Failed to load template" });
+            }
+          }
+        );
+      },
+
+      injectLanguageSelector(editorId) {
+        // Quill inserts the toolbar as a sibling before the container, not inside it.
+        const containerEl = document.getElementById(editorId);
+        const toolbar = containerEl?.parentElement?.querySelector('.ql-toolbar') || document.querySelector(`#${editorId} .ql-toolbar`);
+        if (!toolbar) {
+          return;
+        }
+
+        // Create container span 
+        const formats = document.createElement("span");
+        formats.className = "ql-formats";
+
+        // Create picker wrapper 
+        const wrapper = document.createElement("span");
+        wrapper.className = "ql-languageSelector ql-picker";
+
+        const currentLabel = SUPPORTED_LANGUAGES.find(l => l.code === this.selectedLanguage)?.label || this.selectedLanguage;
+        wrapper.innerHTML = `
+          <span class="ql-picker-label" title="Language">${currentLabel}
+            <svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>
+          </span>
+          <span class="ql-picker-options">
+            ${this.languageOptions.map(code => {
+              const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+              return `<span class="ql-picker-item" data-value="${code}">${lang ? lang.label : code}</span>`;
+            }).join("")}
+          </span>
+        `;
+
+        // Toggle dropdown on label click
+        wrapper.addEventListener("click", (e) => {
+          const labelEl = wrapper.querySelector(".ql-picker-label");
+          if (labelEl && e.target !== labelEl && !labelEl.contains(e.target)) {
+            return;
+          }
+          wrapper.classList.toggle("ql-expanded");
+        });
+
+        // Handle option selection
+        wrapper.querySelectorAll(".ql-picker-item").forEach(item => {
+          item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const value = item.dataset.value;
+            wrapper.classList.remove("ql-expanded");
+            // Update label
+            const labelEl = wrapper.querySelector(".ql-picker-label");
+            if (labelEl) {
+              const lang = SUPPORTED_LANGUAGES.find(l => l.code === value);
+              const svg = labelEl.querySelector("svg");
+              labelEl.innerHTML = (lang ? lang.label : value) + (svg ? svg.outerHTML : "");
+            }
+            this.selectLanguage(value);
+          });
+        });
+
+        // Close dropdown on outside click
+        this.languageSelectorClickOutside = (e) => {
+          if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove("ql-expanded");
+          }
+        };
+        document.addEventListener("click", this.languageSelectorClickOutside);
+
+        formats.appendChild(wrapper);
+        toolbar.appendChild(formats);
+        this.languageSelectorEl = formats;
+      },
+
+      updateLanguageSelectorLabel() {
+        const label = this.languageSelectorEl?.querySelector('.ql-picker-label');
+        if (label) {
+          const lang = SUPPORTED_LANGUAGES.find(l => l.code === this.selectedLanguage);
+          const labelText = lang ? lang.label : this.selectedLanguage;
+          const svg = label.querySelector("svg");
+          label.innerHTML = labelText + (svg ? svg.outerHTML : "");
+        }
+      },
+
+      selectLanguage(value) {
+        if (!value || value === this.selectedLanguage) {
+          return;
+        }
+        const isNew = !this.availableLanguages.includes(value);
+        if (isNew) {
+          this.pendingNewLanguage = value;
+          this.newLanguageModalMessage = "A new language is being added for this template. Copy current content into this language?<br><br><strong>Leaving the current language will save the content in it.</strong>";
+          this.$refs.newLanguageModal.openModal();
+        } else {
+          this.saveCurrentAndSwitchTo(value);
+        }
+      },
+
+      onNewLanguageModalHide() {
+        if (this.pendingNewLanguage) {
+          this.$nextTick(() => this.updateLanguageSelectorLabel());
+          this.pendingNewLanguage = null;
+        }
+      },
+
+      chooseNewLanguageEmpty() {
+        const value = this.pendingNewLanguage;
+        this.$refs.newLanguageModal.close();
+        this.pendingNewLanguage = null;
+        if (value) this.addLanguageAndSwitch(value, false);
+      },
+
+      chooseNewLanguageCopied() {
+        const value = this.pendingNewLanguage;
+        this.$refs.newLanguageModal.close();
+        this.pendingNewLanguage = null;
+        if (value) this.addLanguageAndSwitch(value, true);
+      },
+
+      addLanguageAndSwitch(newLang, copyContent) {
+        // Save current language first
+        this.$socket.emit("templateClose",
+          { templateId: this.templateId, language: this.selectedLanguage },
+          () => {}
+        );
+
+        // Prepare content to copy if requested
+        const content = (copyContent && this.editor) ? this.editor.getEditor().getContents() : undefined;
+
+        this.$socket.emit("templateAddLanguageContent",
+          {
+            templateId: this.templateId,
+            language: newLang,
+            content: (content && content.ops) ? { ops: content.ops } : undefined
+          },
+          (res) => {
+            if (res.success) {
+              this.availableLanguages = [...new Set([...this.availableLanguages, newLang])].sort();
+              this.selectedLanguage = newLang;
+              this.loadContentForLanguage(newLang);
+              this.$nextTick(() => this.updateLanguageSelectorLabel());
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Failed to add language",
+                message: res.message || "",
+                variant: "danger"
+              });
+            }
+          }
+        );
+      },
+
+      saveCurrentAndSwitchTo(newLang) {
+        // Save current language, then switch
+        this.$socket.emit("templateClose",
+          { templateId: this.templateId, language: this.selectedLanguage },
+          () => {
+            this.selectedLanguage = newLang;
+            this.loadContentForLanguage(newLang);
+            this.$nextTick(() => this.updateLanguageSelectorLabel());
+          }
+        );
+      },
+
       isEditorEmpty() {
         if (!this.editor || typeof this.editor.getEditor !== "function") {
           return false;
@@ -306,6 +573,7 @@
   
             this.$socket.emit("templateEditContent", {
               templateId: this.templateId,
+              language: this.selectedLanguage,
               ops: dbOps
             }, (res) => {
               if (!res.success) {
@@ -352,5 +620,20 @@
     top: 25%;
     left: 50%;
     transform: translate(-50%, -50%)
+  }
+  </style>
+
+  <style>
+  .ql-toolbar .ql-languageSelector {
+    min-width: 100px;
+    background-color: #f5f5f5;
+    margin-left: 10px;
+  }
+  .ql-toolbar .ql-languageSelector .ql-picker-label {
+    padding: 2px 8px;
+  }
+  .ql-toolbar .ql-languageSelector .ql-picker-label svg {
+    width: 14px;
+    height: 14px;
   }
   </style>
