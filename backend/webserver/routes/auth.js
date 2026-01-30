@@ -135,6 +135,8 @@ module.exports = function (server) {
                             },
                             { where: { id: user.id } }
                         );
+
+                        // TODO: Needs to format the email content
                         // Send OTP via email
                         await server.sendMail(
                             user.email,
@@ -586,6 +588,91 @@ The CARE Team`
         } catch (error) {
             server.logger.error("Failed to resend verification email:", error);
             return res.status(500).json({message: "Internal server error"});
+        }
+    });
+    /**
+     * Verify OTP and complete login
+     * Uses session to track 2FA state
+     */
+    server.app.post('/auth/2fa/verify', async function (req, res) {
+        const { otp } = req.body;
+        
+        if (!otp) {
+            return res.status(400).json({ message: "OTP is required." });
+        }
+
+        // Check if session has 2FA pending state
+        if (!req.session || !req.session.twoFactorPending) {
+            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
+        }
+        
+        try {
+            const { userId, userData } = req.session.twoFactorPending;
+            // Get user details
+            const user = await server.db.models['user'].findOne({
+                where: { id: userId }
+            });
+
+
+            if (!user) {
+                // Clear invalid session state
+                delete req.session.twoFactorPending;
+                return res.status(400).json({ message: "User not found." });
+            }
+            
+            // Verify OTP
+            if (!user.twoFactorOtp || user.twoFactorOtp !== otp) {
+                return res.status(401).json({ message: "Invalid OTP code." });
+            }
+            
+            // Check if OTP has expired
+            if (!user.twoFactorOtpExpiresAt || new Date() > new Date(user.twoFactorOtpExpiresAt)) {
+                await server.db.models['user'].update(
+                    { twoFactorOtp: null, twoFactorOtpExpiresAt: null },
+                    { where: { id: user.id } }
+                );
+                // Clear session state
+                delete req.session.twoFactorPending;
+                return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+            }
+            
+            // OTP is valid - clear OTP and session state, then complete login
+            await server.db.models['user'].update(
+                { twoFactorOtp: null, twoFactorOtpExpiresAt: null },
+                { where: { id: user.id } }
+            );
+            
+            // Clear 2FA pending state from session
+            delete req.session.twoFactorPending;
+            
+            // Complete login
+            req.logIn(user, async function (err) {
+                if (err) {
+                    return res.status(500).json({ message: "Failed to complete login." });
+                }
+                
+                // Save session after login
+                req.session.save((saveErr) => {
+                    if (saveErr) {
+                        server.logger.error("Failed to save session after login: " + saveErr);
+                    }
+                });
+                
+                let transaction;
+                try {
+                    transaction = await server.db.models['user'].sequelize.transaction();
+                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
+                    await transaction.commit();
+                } catch (e) {
+                    await transaction.rollback();
+                }
+                
+                return res.status(200).json({ user: user });
+            });
+            
+        } catch (error) {
+            server.logger.error("Failed to verify OTP: " + error);
+            return res.status(500).json({ message: "Internal server error" });
         }
     });
 }
