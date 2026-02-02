@@ -7,6 +7,20 @@
         text="Add Workflow"
         @click="$refs.workflowCreateModal.open()"
       />
+      <BasicButton
+        class="btn btn-secondary btn-sm ms-2"
+        title="export Workflows"
+        text="Export"
+        icon="download"
+        @click="exportWorkflows"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm ms-2"
+        title="import Workflows"
+        text="Import"
+        icon="upload"
+        @click="importWorkflows"
+      />
     </template>
     <template #body>
         <BasicTable
@@ -25,11 +39,19 @@
   />
   <WorkflowEditModal
     ref="workflowEditModal"
-:copied-workflow-step-data="copiedData"
+    :copied-workflow-step-data="copiedData"
     @copied:node="handleCopy"
   />
   <WorkflowRenameModal
     ref="workflowRenameModal"
+  />
+  <ExportFormatModal
+    ref="exportFormatModal"
+    @formatSelected="downloadWorkflowsWithFormat"
+  />
+  <ImportFormatModal
+    ref="importFormatModal"
+    @workflowsImported="handleWorkflowsImport"
   />
   <ConfirmModal ref="confirmModal" />
 </template>
@@ -39,11 +61,14 @@ import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 // Modal components
 import WorkflowCreateModal from "./workflows/WorkflowCreateModal.vue";
 import WorkflowRenameModal from "./workflows/WorkflowRenameModal.vue";
 import WorkflowEditModal from "./workflows/WorkflowEditModal.vue";
+import ExportFormatModal from "./workflows/ExportFormatModal.vue";
+import ImportFormatModal from "./workflows/ImportFormatModal.vue";
 
 /**
  * Workflows dashboard component
@@ -63,6 +88,8 @@ export default {
     WorkflowRenameModal,
     WorkflowCreateModal,
     WorkflowEditModal,
+    ExportFormatModal,
+    ImportFormatModal,
   },
   data() {
     return {
@@ -187,10 +214,123 @@ export default {
           break;
       }
     },
+    importWorkflows() {
+      this.$refs.importFormatModal.open();
+    },
+    handleWorkflowsImport(workflowData) {
+      console.log('Importing workflows:', workflowData);
+      
+      if (!Array.isArray(workflowData)) {
+        this.eventBus.emit('toast', {
+          title: 'Import Error',
+          message: 'Invalid workflow data format. Expected an array of workflows.',
+          variant: 'danger'
+        });
+        return;
+      }
+      
+      let importCount = 0;
+      let errorCount = 0;
+      
+      workflowData.forEach(workflow => {
+        // Validate required workflow fields
+        if (!workflow.name) {
+          errorCount++;
+          return;
+        }
+        
+        // Extract workflow steps if present
+        const workflowSteps = workflow.steps || [];
+        delete workflow.steps;
+        
+        // Create workflow
+        this.$socket.emit('appDataCreate', {
+          table: 'workflow',
+          data: {
+            ...workflow,
+            id: undefined // Let server generate new ID
+          }
+        }, (result) => {
+          if (result.success) {
+            importCount++;
+            const newWorkflowId = result.data.id;
+            
+            // Import workflow steps
+            workflowSteps.forEach(step => {
+              this.$socket.emit('appDataCreate', {
+                table: 'workflow_step',
+                data: {
+                  ...step,
+                  id: undefined, // Let server generate new ID
+                  workflowId: newWorkflowId
+                }
+              });
+            });
+            
+            // Show success message after processing all workflows
+            if (importCount + errorCount === workflowData.length) {
+              this.eventBus.emit('toast', {
+                title: 'Import Complete',
+                message: `Successfully imported ${importCount} workflow(s). ${errorCount > 0 ? `${errorCount} workflow(s) failed to import.` : ''}`,
+                variant: importCount > 0 ? 'success' : 'warning'
+              });
+            }
+          } else {
+            errorCount++;
+            console.error('Failed to import workflow:', result.message);
+            
+            if (importCount + errorCount === workflowData.length) {
+              this.eventBus.emit('toast', {
+                title: 'Import Complete', 
+                message: `Successfully imported ${importCount} workflow(s). ${errorCount > 0 ? `${errorCount} workflow(s) failed to import.` : ''}`,
+                variant: importCount > 0 ? 'success' : 'danger'
+              });
+            }
+          }
+        });
+      });
+    },
+    exportWorkflows() {
+      this.$refs.exportFormatModal.open();
+    },
+    downloadWorkflowsWithFormat(format) {
+      const attributesToDelete = [
+        "draft",
+        "anonymous",
+        "createdAt",
+        "updatedAt",
+        "deleted",
+        "deletedAt",
+        "userId"
+      ];
+      
+      const workflows = this.workflows
+          .filter(w => !w.deleted)
+          .map(w => {
+            return Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key)));
+          });
+
+      // Get workflow steps for each workflow
+      const workflowsWithSteps = workflows.map(workflow => {
+        const workflowSteps = this.$store.getters["table/workflow_step/getFiltered"](
+          (step) => step.workflowId === workflow.id && !step.deleted
+        ).map(step => {
+          return Object.fromEntries(Object.entries(step).filter(([key]) => !attributesToDelete.includes(key)));
+        });
+        
+        return {
+          ...workflow,
+          steps: workflowSteps
+        };
+      });
+
+      const filename = `workflows_${Date.now()}`;
+      downloadObjectsAs(workflowsWithSteps, filename, format);
+    },
     editWorkflow(params) {
       this.$refs.workflowEditModal.open(params.id);
     },
-
+    
     handleCopy(stepData) {
       this.copiedData = stepData;
     },
