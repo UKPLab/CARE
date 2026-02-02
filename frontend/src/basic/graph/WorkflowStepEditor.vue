@@ -61,7 +61,7 @@ export default {
             data: {
               id: this.selectedNodeData.id,
               workflowStepPrevious: Number(id),  
-              name: this.selectedNodeData.name,
+              name: this.selectedNodeData.name || "",
               stepType: this.selectedNodeData.stepType,
             },
           },
@@ -69,7 +69,7 @@ export default {
             if (response.success) {
               this.$emit("update:node", id);
             } else {
-              this.eventBus.$emit(
+              this.eventBus.emit(
                 "notification",
                 "Error adding next node: " + response.error,
                 "error"
