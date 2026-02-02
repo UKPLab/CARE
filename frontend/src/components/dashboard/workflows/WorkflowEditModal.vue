@@ -43,8 +43,6 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton text="Save Changes" class="btn btn-primary" disabled="isLoading || !hasUnsavedChanges"
-        @click="saveChanges" />
       <BasicButton text="Close" class="btn btn-secondary" @click="close" />
     </template>
   </BasicModal>
@@ -113,7 +111,9 @@ export default {
     loadWorkflow() {
       this.selectedWorkflow = this.$store.getters["table/workflow/get"](this.workflowId);
       if (this.selectedWorkflow) {
+        this.isLoading = true;
         this.loadWorkflowGraph();
+        this.isLoading = false;
       }
     },
 
