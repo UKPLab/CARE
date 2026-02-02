@@ -43,9 +43,9 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton text="Save Changes" variant="primary" :disabled="isLoading || !hasUnsavedChanges"
+      <BasicButton text="Save Changes" class="btn btn-primary" disabled="isLoading || !hasUnsavedChanges"
         @click="saveChanges" />
-      <BasicButton text="Close" variant="secondary" @click="close" />
+      <BasicButton text="Close" class="btn btn-secondary" @click="close" />
     </template>
   </BasicModal>
 </template>
@@ -287,7 +287,7 @@ export default {
         });
         return;
       }
-      const prevNode = selectedNode.previous; 
+      const prevNode = selectedNode.previous;
       this.$refs.nodeEditor.open(0, {
           workflowId: this.workflowId,
           workflowStepPrevious: prevNode ? prevNode.id : null,

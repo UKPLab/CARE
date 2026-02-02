@@ -2,25 +2,31 @@
   <FormElement v-if="'nodes' in currentData" ref="formElement" :data-table="dataTable" :options="options">
     <template #element>
       <div class="card border-1 text-start rounded-0 w-100">
-        <span class="text-start p-1 card-header">
+        <div class="d-flex justify-content-between align-items-center p-1 card-header">
+          <span class="text-start">
           <BasicButton
-            class="btn-sm border-0 rotate-180"
+              class="btn border-0"
+              :rotate-icon="180"
             icon="node-plus"
+              :disabled="!activateAddNode"
             @click="addNodePrevious(selectedNodes[0])"
           />
           <BasicButton
-            class="btn-sm border-0"
+              class="btn border-0"
+              :disabled="!activateAddNode"
             icon="node-plus"
             @click="addNodeAfter(selectedNodes[0])"
           />
           <BasicButton
-            class="btn-sm border-0"
+              class="btn border-0"
             icon="dash-circle"
+              :disabled="!activateRemoveNode"
             @click="removeNode(selectedNodes[0])"
           />
           <BasicButton
-            class="btn-sm border-0"
+              class="btn border-0"
             icon="pencil"
+              :disabled="!activateEditNode"
             @click="editNode(selectedNodes[0])"
           />
             <BasicButton
@@ -52,6 +58,7 @@
               </div>
             </div>
         </span>
+        </div>
         <div class="card-body">
           <v-network-graph ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
             :nodes="currentData['nodes']" :edges="currentData['edges']" :configs="configs"
