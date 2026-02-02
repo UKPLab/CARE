@@ -1,14 +1,17 @@
 <template>
   <button
     :title="title"
+    :disabled="disabled"
     class="btn"
     type="button"
     @click="action"
   >
     <!-- class="btn btn-sm me-1" -->
-    <LoadIcon
+    <LoadIcon    
       v-if="icon"
+      :rotate="rotateIcon? rotateIcon : null"
       :icon-name="icon"
+      :color="iconColor"
     />
     {{ buttonText }}
   </button>
@@ -48,6 +51,21 @@ export default {
       required: false,
       default: null
     },
+    rotateIcon: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    iconColor: {
+      type: String,
+      required: false,
+      default: null
+    },
+    disabled: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
   },
   emits: ["click"],
   computed: {
@@ -78,5 +96,16 @@ export default {
 </script>
 
 <style scoped>
+.btn {
+  transition: box-shadow 0.2s ease-in-out;
+}
 
+.btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>
