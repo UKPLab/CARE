@@ -23,6 +23,34 @@
             icon="pencil"
             @click="editNode(selectedNodes[0])"
           />
+            <BasicButton
+              class="btn border-0"
+              icon="copy"
+              :disabled="!activateEditNode"
+              @click="copyNode(selectedNodes[0])"
+            />
+            <div class="position-relative d-inline-block" v-if="activatePasteNode">
+              <BasicButton
+                class="btn border-0"
+                :disabled="!activatePasteNode"
+                icon="clipboard"
+                @click="togglePasteOptions"
+              />
+              <!-- Paste Options Modal -->
+              <div v-if="showPasteOptions" class="paste-options-modal">
+                <BasicButton
+                  class="btn border-0"
+                  :rotate-icon="180"
+                  icon="node-plus"
+                  @click="pasteNodeBefore(selectedNodes[0])"
+                />
+                <BasicButton
+                  class="btn border-0"
+                  icon="node-plus"
+                  @click="pasteNodeAfter(selectedNodes[0])"
+                />
+              </div>
+            </div>
         </span>
         <div class="card-body">
           <v-network-graph ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
@@ -88,13 +116,18 @@ export default {
         return {}
       }
     },
+    copiedNodeData: {
+      type: Object,
+      required: false,
+      default: null,
+    },
     dataTable: {
       type: Boolean,
       required: false,
       default: false,
     }
   },
-  emits: ["update:node", "delete:node", "add:nodeAfter", "add:nodePrevious"],
+  emits: ["update:node", "delete:node", "add:nodeAfter", "add:nodePrevious", "copy:node", "paste:nodeBefore", "paste:nodeAfter"],
   data() {
     return {
       selectedNodes: [],
@@ -102,6 +135,7 @@ export default {
       currentEditingNodeId: null,
       currentNodeTable: null,
       editorRef: null,
+      showPasteOptions: false,
       configs: vNG.defineConfigs({
         node: {
           selectable: 1,
@@ -143,6 +177,9 @@ export default {
     activateEditNode() {
       return this.selectedNodes.length === 1;
     },
+    activatePasteNode() {
+      return this.copiedNodeData && this.selectedNodes.length === 1;
+    },
   },
   watch: {
     modelValue: {
@@ -155,6 +192,11 @@ export default {
       },
       deep: true
     },
+    selectedNodes: {
+      handler() {
+        this.showPasteOptions = false;
+      }
+    }
 
   },
   mounted() {
@@ -244,6 +286,20 @@ export default {
     editNode(id) {
       this.$emit("update:node", id);
     },
+    copyNode(id) {
+      this.$emit("copy:node", id);
+    },
+    togglePasteOptions() {
+      this.showPasteOptions = !this.showPasteOptions;
+    },
+    pasteNodeBefore(id) {
+      this.showPasteOptions = false;
+      this.$emit("add:nodePrevious", id, this.copiedNodeData);
+    },
+    pasteNodeAfter(id) {
+      this.showPasteOptions = false;
+      this.$emit("add:nodeAfter", id, this.copiedNodeData);
+    },
     deleteSubNodes(nodeId) {
       const node = Number(nodeId)
       Object.entries(this.currentData['edges']).forEach(([edgeId, edge]) => {
@@ -300,5 +356,20 @@ export default {
 .rotate-180 {
   transform: scale(-1, -1);
   
+}
+
+.paste-options-modal {
+  position: absolute;
+  top: 100%;
+  left: -75%;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+  z-index: 1000;
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
 }
 </style>

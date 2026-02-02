@@ -25,6 +25,8 @@
   />
   <WorkflowEditModal
     ref="workflowEditModal"
+:copied-workflow-step-data="copiedData"
+    @copied:node="handleCopy"
   />
   <WorkflowRenameModal
     ref="workflowRenameModal"
@@ -65,6 +67,7 @@ export default {
   data() {
     return {
       selectedWorkflowId: "",
+      copiedData: null,
       options: {
         striped: true,
         hover: true,
@@ -188,6 +191,9 @@ export default {
       this.$refs.workflowEditModal.open(params.id);
     },
 
+    handleCopy(stepData) {
+      this.copiedData = stepData;
+    },
     async renameWorkflow(params) { 
       this.$refs.workflowRenameModal.open(params.id);
     },

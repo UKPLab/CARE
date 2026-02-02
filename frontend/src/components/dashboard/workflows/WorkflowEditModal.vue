@@ -7,19 +7,18 @@
       <div v-if="selectedWorkflow" class="workflow-editor">
         <div class="alert alert-info mb-3" role="alert">
           <strong>Workflow:</strong> {{ selectedWorkflow.name }}<br>
-          <strong>Description:</strong> {{ selectedWorkflow.description || 'No description' }}
+          <strong>Description:</strong> {{ selectedWorkflow.description || 'No description' }}<br>
+          <strong>Copied Step:</strong> {{ copiedWorkflowStepData ? `${copiedWorkflowStepData.name || 'Unnamed step'} (${getStepTypeString(copiedWorkflowStepData.stepType)})` : 'None' }}
         </div>
 
         <Graph v-if="workflowGraphData" ref="workflowGraph" :model-value="workflowGraphData" table="workflow_step"
           :options="graphOptions" :data-table="false"
-          :node-context-map="[
-            { key: 'workflowId', value: workflowId },
-            { key: 'workflowStepPrevious', value: 'id' }
-          ]"
+          :copiedNodeData="copiedWorkflowStepData"
           @update:node="updateWorkflowStep" 
           @delete:node="deleteWorkflowStep"
           @add:nodeAfter="addWorkflowStepAfter"
-          @add:nodePrevious="addWorkflowStepPrevious">
+          @add:nodePrevious="addWorkflowStepPrevious"
+          @copy:node="copyWorkflowStep">
           <template #nodeEditor>
             <WorkflowStepEditor 
               ref="nodeEditor"
@@ -59,6 +58,7 @@ import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
 
 export default {
   name: "WorkflowEditModal",
+  emits: ["copied:node"],
   subscribeTable: ["workflow", "workflow_step"],
   components: {
     BasicModal,
@@ -91,6 +91,12 @@ export default {
         }
       },
     };
+  },
+  props: {
+    copiedWorkflowStepData: {
+      type: Object,
+      default: null
+    }
   },
   methods: {
     open(workflowId) {
@@ -194,7 +200,19 @@ export default {
           return "Annotater"; // Default to annotater
       }
     },
-
+    copyWorkflowStep(id) {
+      const selectedNode = this.workflowGraphData.nodes[id];
+      if(!selectedNode) {
+        this.$emit("copied:node", null);
+        return;
+      }
+      const stepData = { ...selectedNode.data };
+      // Remove workflow-specific properties
+      delete stepData.workflowId;
+      delete stepData.workflowStepPrevious;
+      delete stepData.id; 
+      this.$emit("copied:node", stepData);
+    },
     /**
      * Sort workflow steps based on workflowStepPrevious relationships
      * Steps with workflowStepPrevious = null are first steps
@@ -243,7 +261,7 @@ export default {
       return sorted;
     },
 
-    addWorkflowStepAfter(node) {
+    addWorkflowStepAfter(node, data) {
       const selectedNode = this.workflowGraphData.nodes[node];
       if(!selectedNode) {
         this.$refs.nodeEditor.open(0, {
@@ -256,10 +274,11 @@ export default {
       this.$refs.nodeEditor.open(0, {
           workflowId: this.workflowId,
           workflowStepPrevious: node,
+          ...data
         }, nextNode);
     },
 
-    addWorkflowStepPrevious(node) {
+    addWorkflowStepPrevious(node, data) {
       const selectedNode = this.workflowGraphData.nodes[node];
       if(!selectedNode) {
         this.$refs.nodeEditor.open(0, {
@@ -272,6 +291,7 @@ export default {
       this.$refs.nodeEditor.open(0, {
           workflowId: this.workflowId,
           workflowStepPrevious: prevNode ? prevNode.id : null,
+          ...data
         }, selectedNode.data);
     },
     success(id){
