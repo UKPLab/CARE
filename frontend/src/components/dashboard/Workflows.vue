@@ -304,11 +304,11 @@ export default {
         "userId"
       ];
       
-      const workflows = this.workflows
-          .filter(w => !w.deleted)
-          .map(w => {
+      const workflows = this.$store.getters["table/workflow/getFiltered"](
+        (w) => !w.deleted
+      ).map(w => {
             return Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key)));
-          });
+      });
 
       // Get workflow steps for each workflow
       const workflowsWithSteps = workflows.map(workflow => {
@@ -330,7 +330,7 @@ export default {
     editWorkflow(params) {
       this.$refs.workflowEditModal.open(params.id);
     },
-    
+
     handleCopy(stepData) {
       this.copiedData = stepData;
     },
