@@ -4,31 +4,31 @@
       <div class="card border-1 text-start rounded-0 w-100">
         <div class="d-flex justify-content-between align-items-center p-1 card-header">
           <span class="text-start">
-          <BasicButton
+            <BasicButton
               class="btn border-0"
               :rotate-icon="180"
-            icon="node-plus"
+              icon="node-plus"
               :disabled="!activateAddNode"
-            @click="addNodePrevious(selectedNodes[0])"
-          />
-          <BasicButton
+              @click="addNodePrevious(selectedNodes[0])"
+            />
+            <BasicButton
               class="btn border-0"
               :disabled="!activateAddNode"
-            icon="node-plus"
-            @click="addNodeAfter(selectedNodes[0])"
-          />
-          <BasicButton
+              icon="node-plus"
+              @click="addNodeAfter(selectedNodes[0])"
+            />
+            <BasicButton
               class="btn border-0"
-            icon="dash-circle"
+              icon="dash-circle"
               :disabled="!activateRemoveNode"
-            @click="removeNode(selectedNodes[0])"
-          />
-          <BasicButton
+              @click="removeNode(selectedNodes[0])"
+            />
+            <BasicButton
               class="btn border-0"
-            icon="pencil"
+              icon="pencil"
               :disabled="!activateEditNode"
-            @click="editNode(selectedNodes[0])"
-          />
+              @click="editNode(selectedNodes[0])"
+            />
             <BasicButton
               class="btn border-0"
               icon="copy"
@@ -57,7 +57,7 @@
                 />
               </div>
             </div>
-        </span>
+          </span>
         </div>
         <div class="card-body">
           <v-network-graph ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
@@ -306,7 +306,7 @@ export default {
     pasteNodeAfter(id) {
       this.showPasteOptions = false;
       this.$emit("add:nodeAfter", id, this.copiedNodeData);
-    },
+    },  
     deleteSubNodes(nodeId) {
       const node = Number(nodeId)
       Object.entries(this.currentData['edges']).forEach(([edgeId, edge]) => {
@@ -323,6 +323,7 @@ export default {
       if (this.currentData['layouts']?.nodes) {
         delete this.currentData['layouts']['nodes'][nodeId];
       }
+      this.$emit("delete:node", nodeId, this.currentData);
     },
     removeNode(nodeId) {
       // warning that all subsequent nodes are also removed!
@@ -335,7 +336,6 @@ export default {
           if (res) {
             this.deleteSubNodes(nodeId);
             this.selectedNodes = [];
-            this.$emit("delete:node", nodeId, this.currentData);
             this.updateLayout("LR");  
           }
           this.mainModal?.show();
