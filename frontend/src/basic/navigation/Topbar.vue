@@ -102,6 +102,13 @@
                 <a 
                   class="dropdown-item"
                   href="#"
+                  @click="$refs.twoFactorSettingsModal.open()"
+                >
+                  Configure Authentication
+                </a>
+                <a 
+                  class="dropdown-item"
+                  href="#"
                   @click="$refs.passwordModal.open(userId)"
                 >
                   Change password
@@ -120,6 +127,7 @@
   </div>
   <PasswordModal ref="passwordModal" />
   <ConsentUpdateModal ref="consentModal" />
+  <TwoFactorSettingsModal ref="twoFactorSettingsModal" />
 </template>
 
 <script>
@@ -139,10 +147,11 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
+import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
+  components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal, TwoFactorSettingsModal},
   data() {
     return {
       showProjectDropdown: false,

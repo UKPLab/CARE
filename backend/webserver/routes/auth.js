@@ -675,4 +675,120 @@ The CARE Team`
             return res.status(500).json({ message: "Internal server error" });
         }
     });
+
+    /**
+     * Get 2FA status for current user
+     */
+    server.app.get('/auth/2fa/status', async function (req, res) {
+        if (!req.user) {
+            return res.status(401).json({ message: "You must be logged in to check 2FA status." });
+        }
+        
+        try {
+            const user = await server.db.models['user'].findOne({
+                where: { id: req.user.id },
+                attributes: ['twoFactorEnabled', 'twoFactorMethod', 'email']
+            });
+            
+            if (!user) {
+                return res.status(404).json({ message: "User not found." });
+            }
+            
+            return res.status(200).json({
+                twoFactorEnabled: user.twoFactorEnabled || false,
+                twoFactorMethod: user.twoFactorMethod || null,
+            });
+            
+        } catch (error) {
+            server.logger.error("Failed to get 2FA status: " + error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    });
+
+    /**
+     * Enable 2FA for a user
+     */
+    server.app.post('/auth/2fa/enable', async function (req, res) {
+        if (!req.user) {
+            return res.status(401).json({ message: "You must be logged in to enable 2FA." });
+        }
+        
+        const { method } = req.body;
+        
+        if (!method || !['email', 'orgId', 'ldapauth'].includes(method)) {
+            return res.status(400).json({ message: "Valid 2FA method is required (email, orgId, or Idapauth)." });
+        }
+        
+        try {
+            const user = await server.db.models['user'].findOne({
+                where: { id: req.user.id }
+            });
+            
+            if (!user) {
+                return res.status(404).json({ message: "User not found." });
+            }
+            
+            if (method === 'email' && !user.email) {
+                return res.status(400).json({ message: "Email address is required to enable email 2FA." });
+            }
+            
+            // Enable 2FA
+            await server.db.models['user'].update(
+                {
+                    twoFactorEnabled: true,
+                    twoFactorMethod: method
+                },
+                { where: { id: user.id } }
+            );
+            
+            return res.status(200).json({ 
+                message: `2FA has been enabled with ${method} method.`,
+                twoFactorEnabled: true,
+                twoFactorMethod: method
+            });
+            
+        } catch (error) {
+            server.logger.error("Failed to enable 2FA: " + error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    });
+
+    /**
+     * Disable 2FA for a user
+     */
+    server.app.post('/auth/2fa/disable', async function (req, res) {
+        if (!req.user) {
+            return res.status(401).json({ message: "You must be logged in to disable 2FA." });
+        }
+        
+        try {
+            const user = await server.db.models['user'].findOne({
+                where: { id: req.user.id }
+            });
+            
+            if (!user) {
+                return res.status(404).json({ message: "User not found." });
+            }
+            
+            // Disable 2FA and clear related fields
+            await server.db.models['user'].update(
+                {
+                    twoFactorEnabled: false,
+                    twoFactorMethod: null,
+                    twoFactorOtp: null,
+                    twoFactorOtpExpiresAt: null
+                },
+                { where: { id: user.id } }
+            );
+            
+            return res.status(200).json({ 
+                message: "2FA has been disabled.",
+                twoFactorEnabled: false
+            });
+            
+        } catch (error) {
+            server.logger.error("Failed to disable 2FA: " + error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    });
 }
