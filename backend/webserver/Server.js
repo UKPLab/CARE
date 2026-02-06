@@ -12,6 +12,7 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const Sequelize = require('sequelize');
 const LocalStrategy = require("passport-local");
+const LdapStrategy = require('passport-ldapauth');
 const {relevantFields} = require("../utils/auth");
 const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
@@ -222,6 +223,45 @@ module.exports = class Server {
             });
         }));
 
+        // TODO: Temporary sever setting only for testing, Need to incorporate user specified domain into it.
+        passport.use('ldap-2fa', new LdapStrategy({
+            server: {
+              url: 'ldap://localhost:389',
+              bindDN: 'cn=admin,dc=example,dc=org',
+              bindCredentials: 'admin',
+              searchBase: 'ou=users,dc=example,dc=org',
+              searchFilter: '(uid={{username}})'
+            },
+            passReqToCallback: true
+          },
+          async (req, ldapUser, done) => {
+            try {
+                // Check if there's a pending 2FA verification
+                if (!req.session || !req.session.twoFactorPending) {
+                    return done(null, false, { 
+                        message: 'No pending 2FA verification' 
+                    });
+                }
+                
+                const {userId} = req.session.twoFactorPending
+                const user = await this.db.models['user'].findOne({
+                    where: { id: userId },
+                    raw: true,
+                });
+                
+                if (!user) {
+                    return done(null, false, { message: 'User not found' });
+                }
+                
+                // LDAP authentication successful
+                // Clear 2FA pending state
+                delete req.session.twoFactorPending;
+                return done(null, relevantFields(user));
+            } catch (error) {
+                return done(error);
+            }
+          }
+        ));
 
         // required to work -- defines strategy for storing user information
         passport.serializeUser(function (user, done) {
@@ -232,8 +272,6 @@ module.exports = class Server {
         passport.deserializeUser(function (user, done) {
             done(null, user);
         });
-
-
     }
 
     /**

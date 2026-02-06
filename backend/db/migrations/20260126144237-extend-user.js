@@ -25,6 +25,12 @@ const columns = [
     allowNull: true,
     defaultValue: null,
   },
+  {
+    name: "ldapDomain",
+    type: "STRING",
+    allowNull: true,
+    defaultValue: null,
+  },
 ];
 
 /** @type {import('sequelize-cli').Migration} */

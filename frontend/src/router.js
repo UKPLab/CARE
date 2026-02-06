@@ -40,6 +40,12 @@ const routes = [
         meta: { requiresAuth: false }
     },
     {
+        path: '/2fa/ldap/verify',
+        name: '2fa-verify-ldap',
+        component: () => import("@/auth/TwoFactorVerifyLDAP.vue"),
+        meta: { requiresAuth: false }
+    },
+    {
         path: "/register",
         name: "register",
         component: () => import("@/auth/Register.vue"),

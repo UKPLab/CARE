@@ -562,6 +562,7 @@ module.exports = (sequelize, DataTypes) => {
             twoFactorMethod: DataTypes.STRING,
             twoFactorOtp: DataTypes.STRING,
             twoFactorOtpExpiresAt: DataTypes.DATE,
+            ldapDomain: DataTypes.STRING,
         },
         {
             sequelize,

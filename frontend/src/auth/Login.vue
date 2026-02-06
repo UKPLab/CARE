@@ -302,20 +302,34 @@ export default {
       }
       
       // Check if 2FA is required
-      if (response.status === 200 && response.data.requiresTwoFactor) {
-        // Redirect to 2FA verification page with method info
-        await this.$router.push({
-          name: "2fa-verify-email",
-          query: {
-            method: response.data.method,
-            redirectedFrom: this.$route.query.redirectedFrom
+      if (response.status === 200) {
+        if (response.data.requiresTwoFactor) {
+          const { method } = response.data.requiresTwoFactor;
+          if (method === "email") {
+            await this.$router.push({
+              name: "2fa-verify-email",
+              query: {
+                method: response.data.method,
+                redirectedFrom: this.$route.query.redirectedFrom
+              }
+            });
+            return;
+
           }
-        });
-        return;
+          if (method === "ldapauth") {
+            await this.$router.push({
+              name: "2fa-verify-ldap",
+              query: {
+                method: response.data.method,
+                redirectedFrom: this.$route.query.redirectedFrom
+              }
+            });
+            return;
+          }
+        }
+        // Normal login flow (no 2FA)
+        await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
       }
-      
-      // Normal login flow (no 2FA)
-      await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
     },
 
     showEmailVerificationModal(email) {

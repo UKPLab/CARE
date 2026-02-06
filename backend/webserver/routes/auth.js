@@ -169,6 +169,22 @@ module.exports = function (server) {
                         return res.status(500).json({ message: "Failed to initiate 2FA verification." });
                     }
                 }
+
+                if(method === "ldapauth") {
+                    req.session.save((err) => {
+                        if (err) {
+                            server.logger.error("Failed to save session: " + err);
+                            return res.status(500).json({ message: "Failed to initiate 2FA verification." });
+                        }
+                        
+                        return res.status(200).json({
+                            requiresTwoFactor: true,
+                            method: "ldapauth",
+                            message: "success"
+                        });
+                    });
+                    return; // Exit early to prevent normal login
+                }
             }
             
             // No 2FA required, proceed with normal login
@@ -791,4 +807,32 @@ The CARE Team`
             return res.status(500).json({ message: "Internal server error" });
         }
     });
+
+    /**
+     * LDAP 2FA verification
+     */
+    server.app.post('/auth/2fa/ldap/verify',
+        passport.authenticate('ldap-2fa', { session: false }),
+        async function(req, res) {
+            const {user} = req;
+           
+            req.logIn(user, async function (err) {
+                if (err) {
+                    return next(err);
+                }
+
+                let transaction;
+                try {
+                    transaction = await server.db.models['user'].sequelize.transaction();
+
+                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
+                    await transaction.commit();
+                } catch (e) {
+                    await transaction.rollback();
+                }
+
+                res.status(200).send({user: user});
+            });
+        }
+    );
 }
