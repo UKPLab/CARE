@@ -41,6 +41,7 @@ Each entry links to its dedicated documentation page:
    dashboard
    document
    editor
+   templates
    stepmodal
    study
    apply_skill_preprocessing
@@ -138,6 +139,24 @@ By separating session resumption into its own component, CARE cleanly distinguis
 
 - **Starting or creating a new study session** → handled in :doc:`Study <study>`.  
 - **Resuming an existing session** → handled in **StudySession**.  
+
+-----
+
+Templates
+---------
+
+The :doc:`Templates <templates>` component provides **email and document content templates** available from the Dashboard.  
+Templates are used for system emails (e.g. password reset, verification, registration), session start/finish and assignment emails, study-closed notifications, and pre-filled document content.
+
+- **Template types** 1–6: Email - General, Email - Study Session, Email - Assignment, Document - General, Document - Study, Email - Study Close.  
+- Placeholders (e.g. ``~username~``, ``~link~``) are resolved per type by the backend (``backend/utils/templateResolver.js``).  
+- Content is stored per language in ``template_language_content``; the Editor shows TemplateEditor and, for email types, a **Placeholders** sidebar (TemplateConfigurator) when editing a template (``templateId`` provided).
+
+.. code-block:: html
+
+    <Editor ref="editor" :template-id="templateId" />
+
+For full details on template types, placeholders, and where each type is used, see :doc:`templates`.
 
 -----
 
