@@ -615,32 +615,6 @@ class AssignmentSocket extends Socket {
                         { transaction: options.transaction }
                     );
                     
-                    // Get document_data with key 'assessment_result' for this study session
-                    const assessmentData = await this.models['document_data'].findOne(
-                        { 
-                            where: { 
-                                studySessionId: studySession.id,
-                                key: 'assessment_result'
-                            }
-                        },
-                        { transaction: options.transaction }
-                    );
-                    
-                    // If assessment_result exists, copy it to previous_assessment_result
-                    if (assessmentData) {
-                        await this.models['document_data'].create(
-                            {
-                                userId: assessmentData.userId,
-                                documentId: document.id,
-                                studySessionId: null,
-                                studyStepId: null,
-                                key: 'previous_assessment_result',
-                                value: assessmentData.value,
-                            },
-                            { transaction: options.transaction }
-                        );
-                    }
-                    
                     currentDocuments.push({
                         documentId: document.id,
                         workflowStepId: Number(sourceWorkflowStepId),

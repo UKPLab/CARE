@@ -96,6 +96,10 @@ export default {
       type: Number,
       required: true,
     },
+    orderedStudySteps: {
+      type: Array,
+      required: true,
+    },
     studySessionId: {
       type: Number,
       required: false,
@@ -219,6 +223,12 @@ export default {
     },
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
+    },
+    previousAssessmentData() {
+      if(this.currentStudyStep?.configuration?.previousAssessmentData){
+        const previousStep = this.orderedStudySteps[this.currentStudyStep.configuration.previousAssessmentData - 1]
+        return this.studyData[previousStep?.id]?.data
+      }
     },
     assessmentDataKey() {
       return "assessment_result";
@@ -399,10 +409,9 @@ export default {
       // 1. Manual data from document_data[assessment_result] or previous_assessment_result as fallback
       let raw = this.documentData[this.assessmentDataKey];
       let isLoadedFromPrevious = false;
-      
-      // If assessment_result is not available, try previous_assessment_result
+
       if (!raw) {
-        raw = this.documentData['previous_assessment_result'];
+        raw = this.previousAssessmentData[this.assessmentDataKey]
         isLoadedFromPrevious = true; // Mark that data came from previous assessment
       }
 

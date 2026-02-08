@@ -83,6 +83,7 @@ const workflows = [
               }
             ],
           },
+          previousAssessmentData: 1,
           readOnlyComponents: [],
           placeholders: false
         }
