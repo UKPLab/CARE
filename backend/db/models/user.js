@@ -562,7 +562,20 @@ module.exports = (sequelize, DataTypes) => {
             twoFactorMethod: DataTypes.STRING,
             twoFactorOtp: DataTypes.STRING,
             twoFactorOtpExpiresAt: DataTypes.DATE,
+            // 2FA multi-method support
+            twoFactorMethods: {
+                type: DataTypes.JSON,
+                defaultValue: [],
+            },
+            totpSecret: DataTypes.STRING,
+            totpEnabled: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
+            orcidId: DataTypes.STRING,
             ldapDomain: DataTypes.STRING,
+            ldapUsername: DataTypes.STRING,
+            samlNameId: DataTypes.STRING,
         },
         {
             sequelize,
