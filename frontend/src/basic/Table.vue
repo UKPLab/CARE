@@ -274,7 +274,7 @@
     </table>
   </div>
   <div
-    v-if="selectableRows"
+    v-if="selectableRows && !(options && options.singleSelect)"
     class="text-end text-muted small mb-2"
   >
     {{ selectedCount }} of {{ totalSelectableCount }} selected
