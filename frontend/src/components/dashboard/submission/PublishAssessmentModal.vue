@@ -30,16 +30,16 @@
     <!-- STEP 2: Workflow Selection -->
     <template #step-2>
       <div class="mb-3">
-        <label class="form-label"><b>Select Workflow:</b></label>
+        <label class="form-label"><b>Select Workflows:</b></label>
         <p class="small text-muted mb-3">
-          Select a specific workflow step that uses the selected configuration.
+          Select one or more workflow steps that use the selected configuration.
           You can see how many sessions (open/closed) are available for each step.
         </p>
         <BasicTable
           v-model="selectedWorkflows"
           :data="workflowsTable"
           :columns="workflowTableColumns"
-          :options="singleSelectTableOptions"
+          :options="multiSelectTableOptions"
           :max-table-height="350"
         />
       </div>
@@ -54,7 +54,7 @@
           Please note only <strong>closed study sessions</strong> are displayed here.
         </p>
         <div v-if="sessionsTable.length === 0" class="alert alert-warning">
-          No sessions found matching the selected workflow and configuration.
+          No sessions found matching the selected workflows and configuration.
         </div>
         <BasicTable
           v-else
@@ -510,6 +510,13 @@ export default {
       ];
     },
     
+    selectedWorkflowIds() {
+      return this.selectedWorkflows.map(w => w.workflowId);
+    },
+    selectedStepNumbers() {
+      return this.selectedWorkflows.map(w => w.stepNumber);
+    },
+    // Keep for backward compatibility
     selectedWorkflowId() {
       return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].workflowId : null;
     },
@@ -545,12 +552,20 @@ export default {
 
     // Sessions filtered by workflow and configuration
     sessionsTable() {
-      if (!this.selectedWorkflowId || !this.selectedConfigurationId || !this.selectedStepNumber) return [];
+      if (this.selectedWorkflows.length === 0 || !this.selectedConfigurationId) return [];
 
-      const selectedEntry = this.selectedWorkflows[0];
-      if(!selectedEntry || !selectedEntry.studySteps) return [];
-      // First, get all studies that match the workflow and configuration
-      const matchingStudyIds = [...new Set(selectedEntry.studySteps.map(s => s.studyId))];
+      // Collect all study steps from all selected workflows
+      const allStudySteps = [];
+      this.selectedWorkflows.forEach(selectedEntry => {
+        if (selectedEntry && selectedEntry.studySteps) {
+          allStudySteps.push(...selectedEntry.studySteps);
+        }
+      });
+
+      if (allStudySteps.length === 0) return [];
+
+      // Get all unique study IDs from selected workflows
+      const matchingStudyIds = [...new Set(allStudySteps.map(s => s.studyId))];
 
       if (matchingStudyIds.length === 0) return [];
 
@@ -858,16 +873,16 @@ export default {
      * Returns an object with scores and assessment calculation.
      */
     getAssessmentDataForSession(session) {
-      // Get the specific study step for the selected step number
-      const selectedEntry = this.selectedWorkflows[0];
-      if (!selectedEntry || !selectedEntry.studySteps) {
-        return { scores: {}, assessment: {} };
+      // Search across all selected workflows to find the matching study step
+      let matchingStudyStep = null;
+      for (const selectedEntry of this.selectedWorkflows) {
+        if (selectedEntry && selectedEntry.studySteps) {
+          matchingStudyStep = selectedEntry.studySteps.find(
+            step => step.studyId === session.studyId
+          );
+          if (matchingStudyStep) break;
+        }
       }
-
-      // Find the study step for this session's study that matches the selected step
-      const matchingStudyStep = selectedEntry.studySteps.find(
-        step => step.studyId === session.studyId
-      );
 
       if (!matchingStudyStep) {
         return { scores: {}, assessment: {} };
