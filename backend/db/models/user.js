@@ -555,23 +555,17 @@ module.exports = (sequelize, DataTypes) => {
             emailVerificationToken: DataTypes.STRING,
             lastPasswordResetEmailSent: DataTypes.DATE,
             lastVerificationEmailSent: DataTypes.DATE,
-            twoFactorEnabled: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            twoFactorMethod: DataTypes.STRING,
+            // Email OTP for 2FA
             twoFactorOtp: DataTypes.STRING,
             twoFactorOtpExpiresAt: DataTypes.DATE,
-            // 2FA multi-method support
+            // Multi-method 2FA configuration
             twoFactorMethods: {
                 type: DataTypes.JSON,
                 defaultValue: [],
             },
+            // TOTP for 2FA
             totpSecret: DataTypes.STRING,
-            totpEnabled: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false,
-            },
+            // External login method identifiers
             orcidId: DataTypes.STRING,
             ldapDomain: DataTypes.STRING,
             ldapUsername: DataTypes.STRING,

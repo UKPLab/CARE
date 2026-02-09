@@ -1,19 +1,7 @@
 "use strict";
 
 const columns = [
-  // 2FA core flags
-  {
-    name: "twoFactorEnabled",
-    type: "BOOLEAN",
-    defaultValue: false,
-    allowNull: false,
-  },
-  {
-    name: "twoFactorMethod",
-    type: "STRING",
-    allowNull: true,
-    defaultValue: null,
-  },
+  // Email OTP for 2FA
   {
     name: "twoFactorOtp",
     type: "STRING",
@@ -61,12 +49,6 @@ const columns = [
     type: "JSON",
     allowNull: false,
     defaultValue: [],
-  },
-  {
-    name: "totpEnabled",
-    type: "BOOLEAN",
-    allowNull: false,
-    defaultValue: false,
   },
   {
     name: "totpSecret",
