@@ -77,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param {Object} transaction Database transaction object
          * @returns {Object|null} The most recent submission or null if none found
          */
-        static async getPreviousRootSubmission(userId, projectId, root, transaction = {}) {
+        static async getParentSubmission(userId, projectId, returnRoot, transaction = {}) {
             let submission = await Submission.findOne({
                 where: {
                     userId,
@@ -87,7 +87,7 @@ module.exports = (sequelize, DataTypes) => {
                 order: [['createdAt', 'DESC']],
                 raw: true
             });
-            if(root && submission && submission.parentSubmissionId) {
+            if(returnRoot && submission && submission.parentSubmissionId) {
                  submission = await this.getRootSubmission(submission);
             }
             return submission ? submission : null;

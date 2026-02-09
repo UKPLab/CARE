@@ -226,7 +226,7 @@ export default {
     },
     previousAssessmentData() {
       if(this.currentStudyStep?.configuration?.previousAssessmentData){
-        const previousStep = this.orderedStudySteps[this.currentStudyStep.configuration.previousAssessmentData - 1]
+        const previousStep = this.orderedStudySteps[this.currentStudyStep.configuration.previousAssessmentData - 1];
         return this.studyData[previousStep?.id]?.data
       }
     },
@@ -409,8 +409,7 @@ export default {
       // 1. Manual data from document_data[assessment_result] or previous_assessment_result as fallback
       let raw = this.documentData[this.assessmentDataKey];
       let isLoadedFromPrevious = false;
-
-      if (!raw) {
+      if (!raw && this.previousAssessmentData) {
         raw = this.previousAssessmentData[this.assessmentDataKey]
         isLoadedFromPrevious = true; // Mark that data came from previous assessment
       }
