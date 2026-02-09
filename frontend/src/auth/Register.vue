@@ -137,7 +137,7 @@
                     @blur="checkVal('password')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  Passwords must be at least 8 characters.
+                  Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis.
                 </div>
               </div>
             </div>
@@ -256,7 +256,11 @@ export default {
       return usernameRegEx.test(this.formData.userName);
     },
     validPassword() {
-      return this.formData.password.length >= 8;
+      const p = this.formData.password || "";
+      return p.length >= 8
+        && !/^\s*$/.test(p)
+        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     validTerms() {
       return this.formData.acceptTerms;
