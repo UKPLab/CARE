@@ -1003,7 +1003,6 @@ export default {
       const fileBaseName = `assessment_${configName}_${timestamp}`;
       downloadObjectsAs(rows, fileBaseName, "csv");
 
-      this.$refs.assessmentStepper.close();
       this.eventBus.emit("toast", {
         title: "CSV Export",
         message: "Assessment data CSV successfully generated and exported",
