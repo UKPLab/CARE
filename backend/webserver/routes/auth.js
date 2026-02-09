@@ -178,10 +178,11 @@ module.exports = function (server) {
 
         if (!data.password) {
             return res.status(400).json({message: "Please provide a password."});
-        } else {
-            if (data.password.length < 8) {
-                return res.status(400).json({message: "Password does not meet requirements."});
-            }
+        }
+        try {
+            server.db.models['user'].validatePasswordContent(data.password);
+        } catch (err) {
+            return res.status(400).json({message: err.message});
         }
 
         if (!data.acceptTerms && !data.isCreatedByAdmin) {
@@ -320,8 +321,10 @@ The CARE Team`);
         if (!token || !newPassword) {
             return res.status(400).json({message: "Token and new password are required."});
         }
-        if (newPassword.length < 8) {
-            return res.status(400).json({message: "Password does not meet requirements."});
+        try {
+            server.db.models['user'].validatePasswordContent(newPassword);
+        } catch (err) {
+            return res.status(400).json({message: err.message});
         }
         try {
             // Decode the token and check expiry
