@@ -77,6 +77,151 @@ module.exports = function (server) {
     }
 
     /**
+     * Get enabled 2FA methods from a user record.
+     * @param {Object} user - The user object
+     * @returns {string[]} array of enabled 2FA methods
+     */
+    function getTwoFactorMethods(user) {
+        if (!user) {
+            return [];
+        }
+
+        if (Array.isArray(user.twoFactorMethods)) {
+            return user.twoFactorMethods.filter((m) => !!m);
+        }
+
+        return [];
+    }
+
+    /**
+     * Shared helper to decide whether 2FA is required for a login and, if so,
+     * to initiate the appropriate 2FA flow (email / TOTP).
+     *
+     * Returns true if a 2FA response has been sent and normal login should stop.
+     *
+     * @param {Object} req
+     * @param {Object} res
+     * @param {Object} user - plain user object returned by passport (relevantFields)
+     * @returns {Promise<boolean>}
+     */
+    async function initiateTwoFactorIfRequired(req, res, user) {
+        // Load full user record to get latest 2FA configuration
+        const userRecord = await server.db.models['user'].findOne({
+            where: { id: user.id },
+        });
+
+        if (!userRecord) {
+            return false;
+        }
+
+        const methods = getTwoFactorMethods(userRecord);
+
+        // No 2FA configured -> normal login
+        if (!methods || methods.length === 0) {
+            return false;
+        }
+
+        // For now, pick the first configured method.
+        // Later, we can extend this to support user selection.
+        const primaryMethod = methods[0];
+
+        // Store 2FA pending state in session
+        req.session.twoFactorPending = {
+            userId: userRecord.id,
+            userData: user,
+            method: primaryMethod,
+            methods: methods
+        };
+
+        // Email-based 2FA
+        if (primaryMethod === "email") {
+            const email = user.email || userRecord.email;
+
+            if (!email) {
+                return res.status(400).json({
+                    message: "Email address is required for 2FA but not found for this user."
+                });
+            }
+
+            try {
+                // Generate and send OTP automatically
+                const otp = generateOTP();
+                const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+                // Store OTP in user record
+                await server.db.models['user'].update(
+                    {
+                        twoFactorOtp: otp,
+                        twoFactorOtpExpiresAt: otpExpiresAt
+                    },
+                    { where: { id: userRecord.id } }
+                );
+
+                // Send OTP via email
+                await server.sendMail(
+                    email,
+                    "CARE - Two-Factor Authentication Code",
+                    `Hello ${user.userName},
+Your two-factor authentication code is: ${otp}
+
+This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
+
+Thanks,
+The CARE Team`
+                );
+
+                // Save session and return - session cookie will be sent automatically
+                req.session.save((err) => {
+                    if (err) {
+                        server.logger.error("Failed to save session: " + err);
+                        return res.status(500).json({ message: "Failed to initiate 2FA verification." });
+                    }
+
+                    return res.status(200).json({
+                        requiresTwoFactor: true,
+                        method: "email",
+                        message: "Authentication code has been sent to your email. Please check."
+                    });
+                });
+                return true;
+            } catch (error) {
+                server.logger.error("Failed to initiate 2FA: " + error);
+                res.status(500).json({ message: "Failed to initiate 2FA verification." });
+                return true;
+            }
+        }
+
+        // TOTP-based 2FA
+        if (primaryMethod === "totp") {
+            req.session.save((err) => {
+                if (err) {
+                    server.logger.error("Failed to save session: " + err);
+                    return res.status(500).json({ message: "Failed to initiate 2FA verification." });
+                }
+
+                return res.status(200).json({
+                    requiresTwoFactor: true,
+                    method: "totp",
+                    message: "Two-factor authentication is required."
+                });
+            });
+            return true;
+        }
+
+        // Unsupported method – fall back to normal login
+        return false;
+    }
+
+    function ensureAuthenticated(req, res, next) {
+        if (req.isAuthenticated()) {
+            return next();
+        }
+        res.status(401).json({ 
+            message: 'Authentication required' 
+        });
+    }
+
+    /**
      * Login Procedure
      */
     server.app.post('/auth/login', function (req, res, next) {
@@ -102,89 +247,11 @@ module.exports = function (server) {
             }
             
             
-            // Check if 2FA is enabled for this user
-            if (user.twoFactorEnabled) {
-                const method = user.twoFactorMethod;
-                
-                // Store user data in session for 2FA verification
-                // Session will be automatically managed by express-session
-                req.session.twoFactorPending = {
-                    userId: user.id,
-                    userData: user,
-                    method: method
-                };
-
-                if(method === "email") {
-                    // User has 2FA enabled with email method
-                    if (!user.email) {
-                        return res.status(400).json({
-                            message: "Email address is required for 2FA but not found for this user."
-                        });
-                    }
-
-                    try {
-                        // Generate and send OTP automatically
-                        const otp = generateOTP();
-                        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
-                        
-                        // Store OTP in user record
-                        await server.db.models['user'].update(
-                            {
-                                twoFactorOtp: otp,
-                                twoFactorOtpExpiresAt: otpExpiresAt
-                            },
-                            { where: { id: user.id } }
-                        );
-
-                        // TODO: Needs to format the email content
-                        // Send OTP via email
-                        await server.sendMail(
-                            user.email,
-                            "CARE - Two-Factor Authentication Code",
-                            `Hello ${user.userName},
-                            Your two-factor authentication code is: ${otp}
-    
-                            This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
-    
-                            Thanks,
-                            The CARE Team`
-                        );
-                        
-                        // Save session and return - session cookie will be sent automatically
-                        req.session.save((err) => {
-                            if (err) {
-                                server.logger.error("Failed to save session: " + err);
-                                return res.status(500).json({ message: "Failed to initiate 2FA verification." });
-                            }
-                            
-                            return res.status(200).json({
-                                requiresTwoFactor: true,
-                                method: "email",
-                                message: "Authentication code has been sent to your email. Please check."
-                            });
-                        });
-                        return; // Exit early to prevent normal login
-                    } catch (error) {
-                        server.logger.error("Failed to initiate 2FA: " + error);
-                        return res.status(500).json({ message: "Failed to initiate 2FA verification." });
-                    }
-                }
-
-                if(method === "ldapauth") {
-                    req.session.save((err) => {
-                        if (err) {
-                            server.logger.error("Failed to save session: " + err);
-                            return res.status(500).json({ message: "Failed to initiate 2FA verification." });
-                        }
-                        
-                        return res.status(200).json({
-                            requiresTwoFactor: true,
-                            method: "ldapauth",
-                            message: "success"
-                        });
-                    });
-                    return; // Exit early to prevent normal login
-                }
+            // Check if 2FA is enabled for this user (multi-method aware)
+            const twoFactorHandled = await initiateTwoFactorIfRequired(req, res, user);
+            if (twoFactorHandled) {
+                // 2FA response has been sent; stop normal login flow
+                return;
             }
             
             // No 2FA required, proceed with normal login
@@ -606,6 +673,76 @@ The CARE Team`
             return res.status(500).json({message: "Internal server error"});
         }
     });
+
+    /**
+     * Request OTP again for 2FA verification
+     * Called after password verification when user has 2FA enabled
+     * Uses session to track 2FA state
+     */
+    server.app.post('/auth/2fa/resend-otp', async function (req, res) {
+        // Check if session has 2FA pending state
+        if (!req.session || !req.session.twoFactorPending) {
+            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
+        }
+        
+        try {
+            const { userId } = req.session.twoFactorPending;
+
+            // Get user details
+            const user = await server.db.models['user'].findOne({
+                where: { id: userId }
+            });
+
+            const methods = getTwoFactorMethods(user);
+
+            if (!user || !methods.includes('email')) {
+                // Clear invalid session state
+                delete req.session.twoFactorPending;
+                return res.status(400).json({ message: "2FA is not enabled for this user." });
+            }
+            
+            if (!user.email) {
+                return res.status(400).json({ message: "User email not found. Cannot send OTP." });
+            }
+            
+            // Generate 6-digit OTP
+            const otp = generateOTP();
+            const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+            
+            // Store OTP in user record
+            await server.db.models['user'].update(
+                {
+                    twoFactorOtp: otp,
+                    twoFactorOtpExpiresAt: otpExpiresAt
+                },
+                { where: { id: user.id } }
+            );
+            
+            // Send OTP via email
+            await server.sendMail(
+                user.email,
+                "CARE - Two-Factor Authentication Code",
+                `Hello ${user.userName},
+
+                Your two-factor authentication code is: ${otp}
+
+                This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
+
+                Thanks,
+                The CARE Team`
+            );
+            
+            return res.status(200).json({ 
+                message: "OTP has been sent to your email address.",
+                expiresIn: 10 // minutes
+            });
+            
+        } catch (error) {
+            server.logger.error("Failed to request OTP: " + error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    });
+
     /**
      * Verify OTP and complete login
      * Uses session to track 2FA state
@@ -703,16 +840,29 @@ The CARE Team`
         try {
             const user = await server.db.models['user'].findOne({
                 where: { id: req.user.id },
-                attributes: ['twoFactorEnabled', 'twoFactorMethod', 'email']
+                attributes: [
+                    'twoFactorMethods',
+                    'totpSecret',
+                    'email',
+                    'orcidId',
+                    'ldapDomain'
+                ]
             });
             
             if (!user) {
                 return res.status(404).json({ message: "User not found." });
             }
             
+            const methods = getTwoFactorMethods(user);
+            const hasTotp = methods.includes('totp') && !!user.totpSecret;
+            
             return res.status(200).json({
-                twoFactorEnabled: user.twoFactorEnabled || false,
-                twoFactorMethod: user.twoFactorMethod || null,
+                twoFactorMethods: methods,
+                hasEmail: methods.includes('email'),
+                hasTotp: hasTotp,
+                email: user.email || null,
+                orcidId: user.orcidId || null,
+                ldapDomain: user.ldapDomain || null,
             });
             
         } catch (error) {
@@ -730,9 +880,10 @@ The CARE Team`
         }
         
         const { method } = req.body;
-        
-        if (!method || !['email', 'orgId', 'ldapauth'].includes(method)) {
-            return res.status(400).json({ message: "Valid 2FA method is required (email, orgId, or Idapauth)." });
+
+        // New 2FA methods: email and totp
+        if (!method || !['email', 'totp'].includes(method)) {
+            return res.status(400).json({ message: "Valid 2FA method is required (email or totp)." });
         }
         
         try {
@@ -747,20 +898,26 @@ The CARE Team`
             if (method === 'email' && !user.email) {
                 return res.status(400).json({ message: "Email address is required to enable email 2FA." });
             }
-            
+
+            // Compute updated list of 2FA methods
+            const currentMethods = Array.isArray(user.twoFactorMethods) ? user.twoFactorMethods.slice() : [];
+            if (!currentMethods.includes(method)) {
+                currentMethods.push(method);
+            }
+
+            const updateData = {
+                twoFactorMethods: currentMethods,
+            };
+
             // Enable 2FA
             await server.db.models['user'].update(
-                {
-                    twoFactorEnabled: true,
-                    twoFactorMethod: method
-                },
+                updateData,
                 { where: { id: user.id } }
             );
             
             return res.status(200).json({ 
                 message: `2FA has been enabled with ${method} method.`,
-                twoFactorEnabled: true,
-                twoFactorMethod: method
+                twoFactorMethods: currentMethods,
             });
             
         } catch (error) {
@@ -789,17 +946,17 @@ The CARE Team`
             // Disable 2FA and clear related fields
             await server.db.models['user'].update(
                 {
-                    twoFactorEnabled: false,
-                    twoFactorMethod: null,
                     twoFactorOtp: null,
-                    twoFactorOtpExpiresAt: null
+                    twoFactorOtpExpiresAt: null,
+                    twoFactorMethods: [],
+                    totpSecret: null,
                 },
                 { where: { id: user.id } }
             );
             
             return res.status(200).json({ 
                 message: "2FA has been disabled.",
-                twoFactorEnabled: false
+                twoFactorMethods: []
             });
             
         } catch (error) {
@@ -809,30 +966,26 @@ The CARE Team`
     });
 
     /**
-     * LDAP 2FA verification
+     * Initiate ORCID linking
+     * Passport handles: redirect to ORCID, state generation, etc.
      */
-    server.app.post('/auth/2fa/ldap/verify',
-        passport.authenticate('ldap-2fa', { session: false }),
-        async function(req, res) {
-            const {user} = req;
-           
-            req.logIn(user, async function (err) {
-                if (err) {
-                    return next(err);
-                }
-
-                let transaction;
-                try {
-                    transaction = await server.db.models['user'].sequelize.transaction();
-
-                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
-                    await transaction.commit();
-                } catch (e) {
-                    await transaction.rollback();
-                }
-
-                res.status(200).send({user: user});
-            });
+    server.app.get('/auth/orcid/link',
+        ensureAuthenticated,
+        passport.authenticate('orcid-link')
+    );
+    
+    /**
+     * ORCID link callback
+     * Passport handles: code exchange, token verification, etc.
+     */
+    server.app.get('/auth/orcid/link/callback',
+        passport.authenticate('orcid-link', { 
+            session: false,
+            failureRedirect: '/dashboard?error=orcid-link-failed'
+        }),
+        async (req, res) => {
+            // req.user contains { userId, orcidId, action }
+            res.redirect('/dashboard?orcid-linked=success');
         }
     );
 }
