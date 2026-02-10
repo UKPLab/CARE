@@ -222,7 +222,7 @@ export default {
 
       try {
         const response = await axios.post(
-          getServerURL() + "/auth/2fa/resend",
+          getServerURL() + "/auth/2fa/resend-otp",
           {},
           {
             validateStatus: function (status) {

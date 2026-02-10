@@ -12,7 +12,10 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const Sequelize = require('sequelize');
 const LocalStrategy = require("passport-local");
+const OrcidStrategy = require('passport-orcid').Strategy;
 const LdapStrategy = require('passport-ldapauth');
+const SamlStrategy = require('passport-saml').Strategy;
+const TotpStrategy = require('passport-totp').Strategy;
 const {relevantFields} = require("../utils/auth");
 const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
@@ -202,7 +205,7 @@ module.exports = class Server {
     #loginManagement() {
         this.logger.debug("Initialize Routes for auth...");
 
-        passport.use(new LocalStrategy(async (username, password, cb) => {
+        passport.use('local', new LocalStrategy(async (username, password, cb) => {
 
             const user = await this.db.models['user'].find(username);
             if (!user) {
@@ -223,44 +226,207 @@ module.exports = class Server {
             });
         }));
 
-        // TODO: Temporary sever setting only for testing, Need to incorporate user specified domain into it.
-        passport.use('ldap-2fa', new LdapStrategy({
-            server: {
-              url: 'ldap://localhost:389',
-              bindDN: 'cn=admin,dc=example,dc=org',
-              bindCredentials: 'admin',
-              searchBase: 'ou=users,dc=example,dc=org',
-              searchFilter: '(uid={{username}})'
+        passport.use("orcid-link", new OrcidStrategy(
+            {
+              clientID: process.env.ORCID_CLIENT_ID,
+              clientSecret: process.env.ORCID_CLIENT_SECRET,
+              callbackURL: process.env.ORCID_LINK_CALLBACK_URL,
+              passReqToCallback: true,
             },
-            passReqToCallback: true
-          },
-          async (req, ldapUser, done) => {
+            async (req, accessToken, refreshToken, params, profile, done) => {
+              try {
+                const orcidId = params.orcid;
+
+                if (!req.user) {
+                  return done(null, false, {
+                    message: "User must be logged in",
+                  });
+                }
+
+                // Save ORCID iD to user's account
+                await this.db.models["user"].update(
+                  { orcidId: orcidId },
+                  { where: { id: req.user.id } },
+                );
+
+                // Return user data
+                return done(null, {
+                  userId: req.user.id,
+                  orcidId: orcidId,
+                  action: "link",
+                });
+              } catch (error) {
+                return done(error);
+              }
+            },
+          ),
+        );
+
+        /**
+         * ORCID login method (first factor).
+         * Minimal approach: only allow login if the ORCID iD is already linked to an existing CARE user.
+         */
+        passport.use("orcid-login", new OrcidStrategy(
+            {
+                clientID: process.env.ORCID_CLIENT_ID,
+                clientSecret: process.env.ORCID_CLIENT_SECRET,
+                callbackURL: process.env.ORCID_LOGIN_CALLBACK_URL,
+            },
+            async (accessToken, refreshToken, params, profile, done) => {
+                try {
+                    const orcidId = params.orcid;
+                    if (!orcidId) {
+                        return done(null, false, { message: "Missing ORCID iD." });
+                    }
+
+                    const user = await this.db.models['user'].findOne({
+                        where: { orcidId: orcidId },
+                        raw: true,
+                    });
+
+                    if (!user) {
+                        return done(null, false, { message: "ORCID account not linked to a CARE user." });
+                    }
+
+                    return done(null, relevantFields(user));
+                } catch (e) {
+                    return done(e);
+                }
+            }
+        ));
+
+        /**
+         * LDAP login method (first factor).
+         * Configuration is currently provided via environment variables.
+         *
+         * Required env vars:
+         * - LDAP_SERVER_URL
+         * - LDAP_BIND_DN
+         * - LDAP_BIND_CREDENTIALS
+         * - LDAP_SEARCH_BASE
+         * - LDAP_SEARCH_FILTER (optional; defaults to '(uid={{username}})')
+         */
+        passport.use('ldap-login', new LdapStrategy({
+            server: {
+                url: process.env.LDAP_SERVER_URL,
+                bindDN: process.env.LDAP_BIND_DN,
+                bindCredentials: process.env.LDAP_BIND_CREDENTIALS,
+                searchBase: process.env.LDAP_SEARCH_BASE,
+                searchFilter: process.env.LDAP_SEARCH_FILTER || '(uid={{username}})',
+            },
+            passReqToCallback: true,
+        }, async (req, ldapUser, done) => {
             try {
-                // Check if there's a pending 2FA verification
-                if (!req.session || !req.session.twoFactorPending) {
-                    return done(null, false, { 
-                        message: 'No pending 2FA verification' 
+                const username = (req.body && (req.body.username || req.body.userName)) ? (req.body.username || req.body.userName) : null;
+
+                // 1) Prefer explicit ldapUsername match
+                let user = null;
+                if (username) {
+                    user = await this.db.models['user'].findOne({
+                        where: { ldapUsername: username },
+                        raw: true,
                     });
                 }
-                
-                const {userId} = req.session.twoFactorPending
-                const user = await this.db.models['user'].findOne({
-                    where: { id: userId },
+
+                // 2) Fallback: try to match by email from LDAP profile, then bind ldapUsername
+                const ldapMail = ldapUser && (ldapUser.mail || ldapUser.email);
+                const ldapEmail = Array.isArray(ldapMail) ? ldapMail[0] : ldapMail;
+                if (!user && ldapEmail) {
+                    const existing = await this.db.models['user'].findOne({
+                        where: { email: ldapEmail },
+                        raw: true,
+                    });
+                    if (existing) {
+                        user = existing;
+                        if (username && !existing.ldapUsername) {
+                            await this.db.models['user'].update(
+                                { ldapUsername: username },
+                                { where: { id: existing.id } }
+                            );
+                        }
+                    }
+                }
+
+                if (!user) {
+                    return done(null, false, { message: "LDAP account not linked to a CARE user." });
+                }
+
+                return done(null, relevantFields(user));
+            } catch (e) {
+                return done(e);
+            }
+        }));
+
+        /**
+         * SAML login method (first factor).
+         * Configuration via environment variables for now.
+         *
+         * Required env vars:
+         * - SAML_ENTRY_POINT
+         * - SAML_ISSUER
+         * - SAML_CALLBACK_URL
+         * - SAML_CERT
+         */
+        passport.use('saml-login', new SamlStrategy({
+            entryPoint: process.env.SAML_ENTRY_POINT,
+            issuer: process.env.SAML_ISSUER,
+            callbackUrl: process.env.SAML_CALLBACK_URL,
+            cert: process.env.SAML_CERT,
+        }, async (profile, done) => {
+            try {
+                const nameId = profile && profile.nameID;
+                if (!nameId) {
+                    return done(null, false, { message: "Missing SAML NameID." });
+                }
+
+                // 1) Prefer explicit samlNameId match
+                let user = await this.db.models['user'].findOne({
+                    where: { samlNameId: nameId },
                     raw: true,
                 });
-                
-                if (!user) {
-                    return done(null, false, { message: 'User not found' });
+
+                // 2) Fallback: try to match by email and bind samlNameId
+                const email = profile && (profile.email || profile.mail || profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']);
+                const samlEmail = Array.isArray(email) ? email[0] : email;
+
+                if (!user && samlEmail) {
+                    const existing = await this.db.models['user'].findOne({
+                        where: { email: samlEmail },
+                        raw: true,
+                    });
+                    if (existing) {
+                        user = existing;
+                        if (!existing.samlNameId) {
+                            await this.db.models['user'].update(
+                                { samlNameId: nameId },
+                                { where: { id: existing.id } }
+                            );
+                        }
+                    }
                 }
-                
-                // LDAP authentication successful
-                // Clear 2FA pending state
-                delete req.session.twoFactorPending;
+
+                if (!user) {
+                    return done(null, false, { message: "SAML account not linked to a CARE user." });
+                }
+
                 return done(null, relevantFields(user));
-            } catch (error) {
-                return done(error);
+            } catch (e) {
+                return done(e);
             }
-          }
+        }));
+
+        /**
+         * TOTP verification strategy for 2FA.
+         * Used in /auth/2fa/totp/verify; expects req.user.totpSecret to be set.
+         */
+        passport.use('totp-verify', new TotpStrategy(
+            function(user, done) {
+                if (!user || !user.totpSecret) {
+                    return done(null, null);
+                }
+                // 30 second time step
+                return done(null, user.totpSecret, 30);
+            }
         ));
 
         // required to work -- defines strategy for storing user information

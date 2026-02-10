@@ -138,3 +138,17 @@ exports.generateOTP = function generateOTP() {
     return otp;
 }
 
+/**
+* Generate a Base32 secret for TOTP
+* @returns {string} 32-digit secret
+*/
+exports.generateBase32Secret = function generateBase32Secret(length = 32) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let secret = '';
+    for (let i = 0; i < length; i++) {
+        const idx = Math.floor(Math.random() * alphabet.length);
+        secret += alphabet[idx];
+    }
+    return secret;
+}
+
