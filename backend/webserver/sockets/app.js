@@ -290,28 +290,12 @@ class AppSocket extends Socket {
      */
     async sendDataByHash(data, options) {
         const record = await this.models[data.table].getByHash(data.hash);
+        let errorCode = "UNKNOWN";
 
         if (!record) {
             // Record doesn't exist or was deleted
-            const error = new Error("The requested resource does not exist or has been deleted.");
-            error.errorCode = "NOT_FOUND";
-
-            // Emit specific error event for study/session tables
-            if (data.table === "study") {
-                this.socket.emit("studyError", {
-                    errorCode: "NOT_FOUND",
-                    message: error.message,
-                    studyHash: data.hash
-                });
-            } else if (data.table === "study_session") {
-                this.socket.emit("studySessionError", {
-                    errorCode: "NOT_FOUND",
-                    message: error.message,
-                    studySessionHash: data.hash
-                });
-            }
-
-            throw error;
+            errorCode = "NOT_FOUND";
+            throw new Error(`${errorCode}|The requested resource does not exist or has been deleted.`);
         }
 
         // Now check permissions by attempting to send via filtered sendTable
@@ -322,25 +306,8 @@ class AppSocket extends Socket {
 
         if (result.length === 0) {
             // Record exists but user doesn't have permission
-            const error = new Error("You don't have rights to access this data.");
-            error.errorCode = "ACCESS_DENIED";
-
-            // Emit specific error event for study/session tables
-            if (data.table === "study") {
-                this.socket.emit("studyError", {
-                    errorCode: "ACCESS_DENIED",
-                    message: error.message,
-                    studyHash: data.hash
-                });
-            } else if (data.table === "study_session") {
-                this.socket.emit("studySessionError", {
-                    errorCode: "ACCESS_DENIED",
-                    message: error.message,
-                    studySessionHash: data.hash
-                });
-            }
-
-            throw error;
+            errorCode = "ACCESS_DENIED";
+            throw new Error(`${errorCode}|You do not have rights to access this data.`);
         }
     }
 

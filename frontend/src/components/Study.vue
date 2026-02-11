@@ -269,26 +269,6 @@ export default {
       studyError: null,
     };
   },
-  sockets: {
-    studyError: function (data) {
-      if (data.studyHash === this.studyHash) {
-        this.setStudyError(data.message, data.errorCode);
-      }
-    },
-    documentError: function (data) {
-      // Handle document errors that occur during study steps
-      if (data.errorCode === 'FILE_MISSING' || data.errorCode === 'DOCUMENT_NOT_FOUND') {
-        // Check if this error is for a document in the current study
-        const isStudyDocument = this.studySteps.some(step => {
-          const doc = this.$store.getters['table/document/get'](step.documentId);
-          return doc && doc.hash === data.documentHash;
-        });
-        if (isStudyDocument) {
-          this.setStudyError(data.message, data.errorCode);
-        }
-      }
-    }
-  },
   computed: {
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
@@ -483,6 +463,16 @@ export default {
     }
   },
   methods: {
+    /**
+     * Parse "ERROR_CODE|message" format from server error
+     */
+    parseErrorMessage(raw) {
+      const idx = raw ? raw.indexOf('|') : -1;
+      if (idx > 0) {
+        return { errorCode: raw.substring(0, idx), message: raw.substring(idx + 1) };
+      }
+      return { errorCode: null, message: raw };
+    },
     setStudyError(message, errorCode) {
       const errorMap = {
         'NOT_FOUND': {
@@ -550,7 +540,8 @@ export default {
             },
             (response) => {
               if (!response.success) {
-                this.setStudyError(response.message, null);
+                const {errorCode, message} = this.parseErrorMessage(response.message);
+                this.setStudyError(message, errorCode);
               } else {
                 if (
                     this.studySessionId === 0 ||

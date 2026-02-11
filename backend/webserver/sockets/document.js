@@ -70,11 +70,12 @@ class DocumentSocket extends Socket {
      * @param {string} identifierType - 'id' or 'hash'
      * @param {boolean} checkFile - whether to check file existence (default: true)
      * @returns {Promise<Object>} - validated document object
-     * @throws {Error} - if validation fails, error includes errorCode property
+     * @throws {Error} - if validation fails, message format: "ERROR_CODE|description"
      */
 
     async validateDocument(identifier, identifierType = 'id', checkFile = true) {
         let document;
+        let errorCode = "UNKNOWN"
 
         if (identifierType === 'hash') {
             document = await this.models['document'].getByHash(identifier);
@@ -84,16 +85,14 @@ class DocumentSocket extends Socket {
 
         // Check if document exists in database (deleted or never existed)
         if (!document || document.deleted) {
-            const error = new Error("The document does not exist or has been deleted.");
-            error.errorCode = "DOCUMENT_NOT_FOUND";
-            throw error;
+            errorCode = "DOCUMENT_NOT_FOUND";
+            throw new Error(`${errorCode}|The document does not exist or has been deleted.`);
         }
 
         // Check user access permission
         if (!(await this.checkDocumentAccess(document.id))) {
-            const error = new Error("You do not have access to this document.");
-            error.errorCode = "ACCESS_DENIED";
-            throw error;
+            errorCode = "ACCESS_DENIED";
+            throw new Error(`${errorCode}|You do not have access to this document.`);
         }
 
         // Check if file exists on disk (optional, skip for metadata-only operations)
@@ -107,9 +106,8 @@ class DocumentSocket extends Socket {
             }
             const filename = filePath.split("/").pop();
             if (filePath && !fs.existsSync(filePath)) {
-                const error = new Error(`The document file ${filename} is missing from the server.`);
-                error.errorCode = "FILE_MISSING";
-                throw error;
+                errorCode = "FILE_MISSING";
+                throw new Error(`${errorCode}|The document file ${filename} is missing from the server.`);
             }
         }
         return document;
@@ -395,20 +393,8 @@ class DocumentSocket extends Socket {
      */
     async sendByHash(data, options) {
         const documentHash = data.documentHash;
-        const document = await this.models['document'].getByHash(documentHash);
-
-        try {
-            const document = await this.validateDocument(documentHash, 'hash', true);
-            this.emit("documentRefresh", document);
-        } catch (error) {
-            this.logger.error(`Error validating document with hash ${documentHash}: ${error.message}`);
-            this.emit("documentError",{
-                documentHash: documentHash,
-                errorCode: error.errorCode || "UNKNOWN_ERROR",
-                message: error.message
-            });
-            throw error;
-        }
+        const document = await this.validateDocument(documentHash, 'hash', true)
+        this.emit("documentRefresh", document);
     }
 
     /**

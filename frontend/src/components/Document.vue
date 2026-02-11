@@ -72,7 +72,8 @@ export default {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash}, (res) => {
       if (!res.success) {
         this.documentId = res.documentId;
-        this.setDocumentError(res.message, res.errorCode);
+        const {errorCode, message} = this.parseErrorMessage(res.message);
+        this.setDocumentError(message, errorCode);
       }
     });
   },
@@ -84,6 +85,16 @@ export default {
     }
   },
   methods: {
+    /**
+     * Parse "ERROR_CODE|message" format from server error
+     */
+    parseErrorMessage(raw) {
+      const idx = raw ? raw.indexOf('|') : -1;
+      if (idx > 0) {
+        return { errorCode: raw.substring(0, idx), message: raw.substring(idx + 1) };
+      }
+      return { errorCode: null, message: raw };
+    },
     /**
      * Set document error state with user-friendly title and message
      */
