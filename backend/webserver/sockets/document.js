@@ -815,8 +815,9 @@ class DocumentSocket extends Socket {
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
+                // 3. Get previous submission for the user and project to link the new submission (if exists)
                 const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
-                // 3. Only if validation passes, create submission and save documents
+                // 4. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
                         userId: submission.userId,
@@ -891,7 +892,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId} = data;
+        const {files, userId, group, validationConfigurationId, projectId} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -899,12 +900,14 @@ class DocumentSocket extends Socket {
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
             }
+            const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
 
             const submission = await this.models["submission"].add({
                 userId,
                 group,
                 validationConfigurationId,
-                createdByUserId: this.userId
+                createdByUserId: this.userId,
+                previousSubmissionId: previousSubmission ? previousSubmission.id : null,
             }, {transaction});
             for (const file of files) {
                 await this.addDocument(
