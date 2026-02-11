@@ -109,10 +109,111 @@ export default {
         reader.readAsText(file);
       });
     },
-    importWorkflows() {
+    sortWorkflowSteps(steps) {
+      if (!steps || steps.length === 0) return [];
+
+      const sorted = [];
+      const stepMap = new Map();
+
+      // Create a map for quick lookup
+      steps.forEach(step => {
+        stepMap.set(step.id, step);
+      });
+
+      // Find the first step (workflowStepPrevious is null)
+      const firstStep = steps.find(step => !step.workflowStepPrevious);
+
+      if (!firstStep) {
+        // If no first step found, return original array
+        return steps;
+      }
+
+      // Start with the first step and follow the chain
+      let currentStep = firstStep;
+      const processedIds = new Set();
+
+      while (currentStep && !processedIds.has(currentStep.id)) {
+        sorted.push(currentStep);
+        processedIds.add(currentStep.id);
+
+        // Find the next step (step that has current step as previous)
+        currentStep = steps.find(step =>
+          step.workflowStepPrevious === currentStep.id &&
+          !processedIds.has(step.id)
+        );
+      }
+
+      // Add any remaining steps that weren't part of the main chain
+      steps.forEach(step => {
+        if (!processedIds.has(step.id)) {
+          sorted.push(step);
+        }
+      });
+
+      return sorted;
+    },
+    async createWorkflowSteps(workflowId, steps) {
+      let previousStepId = null;
+      
+      for (const [idx, step] of steps.entries()) {
+        
+        const stepResult = await new Promise((resolve) => {
+          this.$socket.emit("appDataUpdate", {
+            table: "workflow_step",
+            data: {
+              name: step.name || step.stepType + " Step " + (idx + 1),
+              workflowId: workflowId,
+              stepType: step.stepType,
+              configuration: step.configuration || {},
+              allowBackward: step.allowBackward || false,
+              workflowStepDocument: (step.workflowStepDocument !== null && step.workflowStepDocument !== undefined && step.workflowStepDocument !== "") ? step.workflowStepDocument : null,
+              workflowStepPrevious: previousStepId,
+            },
+          }, (stepResult) => {
+            resolve(stepResult);
+          });
+        });
+
+        if (stepResult.success) {
+          previousStepId = stepResult.data;
+        } else {
+          this.eventBus.emit('toast', {
+            title: 'Import Error',
+            message: `Failed to import step "${step.name}": ${stepResult.error}`,
+            variant: 'danger'
+          });
+          // Continue with next step even if this one failed
+        }
+      }
+    },
+    async importWorkflows() {
       if (this.workflowData) {
-        this.emit()
-        console.log('Importing workflows:', this.workflowData);
+        for(const workflow of this.workflowData) {
+          
+          const workflowResult = await new Promise((resolve) => {
+            this.$socket.emit("appDataUpdate", {
+              table: "workflow",
+              data: {
+                name: workflow.name,
+                description: workflow.description || "",
+                parentWorkflowId: null,
+                hideInFrontend: workflow.hideInFrontend || false,
+              },
+            }, (result) => {
+              resolve(result);
+            });
+          });
+
+          if (workflowResult.success) {
+            await this.createWorkflowSteps(workflowResult.data, workflow.steps);
+          } else {
+            this.eventBus.emit('toast', {
+              title: 'Import Error',
+              message: `Failed to import workflow "${workflow.name}": ${workflowResult.error}`,
+              variant: 'danger'
+            });
+          }
+        }
         this.eventBus.emit('toast', {
           title: 'Import Successful',
           message: 'Workflows imported successfully!',
