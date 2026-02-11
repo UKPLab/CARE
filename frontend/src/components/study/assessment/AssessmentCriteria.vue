@@ -78,14 +78,14 @@
             class="d-flex justify-content-between align-items-center"
         >
           <div>
-            <button
+            <BasicButton
                 v-if="!readOnly"
-                class="btn btn-outline-primary btn-sm"
+                class="btn-outline-primary btn-sm"
                 title="Edit"
-                @click.stop="startEdit"
-            >
-              <LoadIcon icon-name="pen" :size="14"/>
-            </button>
+                text=""
+                icon="pen"
+                @click="startEdit"
+            />
           </div>
 
           <div v-if="!readOnly" class="d-flex align-items-center gap-2">
@@ -117,34 +117,34 @@
               </template>
             </select>
 
-            <button
-                :class="['btn btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
+            <BasicButton
+                :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
                 :title="isSaved ? 'Assessment saved' : 'Save assessment'"
-                @click.stop="saveAssessment"
-            >
-              <LoadIcon icon-name="floppy" :size="14"/>
-            </button>
+                text=""
+                icon="floppy"
+                @click="saveAssessment"
+            />
           </div>
         </div>
 
         <!-- Editing actions -->
         <div v-else class="d-flex gap-2">
-          <button
+          <BasicButton
               v-if="!readOnly"
-              class="btn btn-primary btn-sm"
+              class="btn-primary btn-sm"
               title="Save"
-              @click.stop="saveEdit"
-          >
-            <LoadIcon icon-name="floppy" :size="14"/>
-          </button>
-          <button
+              text=""
+              icon="floppy"
+              @click="saveEdit"
+          />
+          <BasicButton
               v-if="!readOnly"
-              class="btn btn-secondary btn-sm"
+              class="btn-secondary btn-sm"
               title="Cancel"
-              @click.stop="cancelEdit"
-          >
-            <LoadIcon icon-name="x-lg" :size="14"/>
-          </button>
+              text=""
+              icon="x-lg"
+              @click="cancelEdit"
+          />
         </div>
       </div>
     </div>
@@ -158,10 +158,11 @@
  * @author Akash Gundapuneni, Dennis Zyska
  */
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AssessmentCriteria",
-  components: {LoadIcon},
+  components: {LoadIcon, BasicButton},
   props: {
     criterion: {
       type: Object,

@@ -52,7 +52,7 @@ export default {
   emits: ["click"],
   computed: {
     buttonText() {
-      return this.text ? this.text : this.title
+      return this.text !== null ? this.text : this.title
     }
   },
   methods: {
