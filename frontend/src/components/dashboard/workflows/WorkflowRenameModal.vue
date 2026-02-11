@@ -143,7 +143,7 @@ export default {
       this.isLoading = true;
       try {
         const newWorkflowData = {
-          name: this.formData.name.trim(),
+          name: this.formData.name.trim() || this.selectedWorkflow.name,
           description: this.selectedWorkflow.description,
           parentWorkflowId: this.selectedWorkflow.id,
           hideInFrontend: false,
@@ -160,14 +160,12 @@ export default {
                 });
             }
         });
-        
-        //TODO:should I keep workflow steps as is or should they also be copied to the new workflow?
-       
+             
         this.$socket.emit("appDataUpdate", {
             table: "workflow",
             data: {
               id: this.selectedWorkflow.id,
-              hideInFrontend: true,
+              deleted: true,
             },
           }, (result) => {
             if (!result.success) {

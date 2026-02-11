@@ -218,7 +218,6 @@ export default {
       this.$refs.importFormatModal.open();
     },
     handleWorkflowsImport(workflowData) {
-      console.log('Importing workflows:', workflowData);
       
       if (!Array.isArray(workflowData)) {
         this.eventBus.emit('toast', {
@@ -339,11 +338,7 @@ export default {
     },
 
     toggleHidden(params) {
-      const workflow = this.$store.getters["table/workflow/get"](params.id);
-      const newHiddenState = !workflow.hideInFrontend;
-
-      console.log("Toggling hidden state for workflow", params, "to", newHiddenState); 
-      
+      const newHiddenState = !workflow.hideInFrontend;  
       this.$socket.emit(
         "appDataUpdate",
         {
@@ -351,6 +346,7 @@ export default {
           data: {
             id: params.id,
             hideInFrontend: newHiddenState,
+            description: params.description,
             name: params.name,
             stepType: params.stepType,
           },
