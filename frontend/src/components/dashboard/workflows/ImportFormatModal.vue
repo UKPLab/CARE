@@ -109,49 +109,6 @@ export default {
         reader.readAsText(file);
       });
     },
-    sortWorkflowSteps(steps) {
-      if (!steps || steps.length === 0) return [];
-
-      const sorted = [];
-      const stepMap = new Map();
-
-      // Create a map for quick lookup
-      steps.forEach(step => {
-        stepMap.set(step.id, step);
-      });
-
-      // Find the first step (workflowStepPrevious is null)
-      const firstStep = steps.find(step => !step.workflowStepPrevious);
-
-      if (!firstStep) {
-        // If no first step found, return original array
-        return steps;
-      }
-
-      // Start with the first step and follow the chain
-      let currentStep = firstStep;
-      const processedIds = new Set();
-
-      while (currentStep && !processedIds.has(currentStep.id)) {
-        sorted.push(currentStep);
-        processedIds.add(currentStep.id);
-
-        // Find the next step (step that has current step as previous)
-        currentStep = steps.find(step =>
-          step.workflowStepPrevious === currentStep.id &&
-          !processedIds.has(step.id)
-        );
-      }
-
-      // Add any remaining steps that weren't part of the main chain
-      steps.forEach(step => {
-        if (!processedIds.has(step.id)) {
-          sorted.push(step);
-        }
-      });
-
-      return sorted;
-    },
     async createWorkflowSteps(workflowId, steps) {
       let previousStepId = null;
       
@@ -182,7 +139,6 @@ export default {
             message: `Failed to import step "${step.name}": ${stepResult.error}`,
             variant: 'danger'
           });
-          // Continue with next step even if this one failed
         }
       }
     },
