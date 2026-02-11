@@ -289,43 +289,58 @@ export default {
           credentials,
           {
             validateStatus: function (status) {
-              return status === 200 || status === 401;
+              return status === 200 || status === 400 || status === 401;
             },
             withCredentials: true
           });
-      if (response.status === 401) {
+      if (response.status === 400 || response.status === 401) {
         // Check if the error is due to unverified email
         if (response.data.emailNotVerified) {
           this.showEmailVerificationModal(response.data.email);
         }
         throw response.data.message;
       }
-      
+
       // Check if 2FA is required
       if (response.status === 200) {
         if (response.data.requiresTwoFactor) {
-          const { method } = response.data.requiresTwoFactor;
+          const { method, methods, selectionRequired } = response.data;
+          // If multiple methods are enabled, let the user choose
+          if (selectionRequired) {
+            await this.$router.push({
+              name: "2fa-select",
+              query: {
+                methods: Array.isArray(methods) ? methods.join(",") : "",
+                redirectedFrom: this.$route.query.redirectedFrom
+              }
+            });
+            return;
+          }
+
+          // Single method, go directly to corresponding verification
           if (method === "email") {
             await this.$router.push({
               name: "2fa-verify-email",
               query: {
-                method: response.data.method,
                 redirectedFrom: this.$route.query.redirectedFrom
               }
             });
             return;
+          }
 
-          }
-          if (method === "ldapauth") {
+          if (method === "totp") {
             await this.$router.push({
-              name: "2fa-verify-ldap",
+              name: "2fa-verify-totp",
               query: {
-                method: response.data.method,
                 redirectedFrom: this.$route.query.redirectedFrom
               }
             });
             return;
           }
+          // Unknown method: surface a clear error
+          this.showError = true;
+          this.errorMessage = "Unsupported 2FA method returned from server.";
+          return;
         }
         // Normal login flow (no 2FA)
         await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
