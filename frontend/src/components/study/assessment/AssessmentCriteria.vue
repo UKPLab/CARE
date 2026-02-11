@@ -84,6 +84,7 @@
                 title="Edit"
                 text=""
                 icon="pen"
+                :props="{ criterionName: criterion.name }"
                 @click="startEdit"
             />
           </div>
@@ -122,6 +123,7 @@
                 :title="isSaved ? 'Assessment saved' : 'Save assessment'"
                 text=""
                 icon="floppy"
+                :props="{ criterionName: criterion.name }"
                 @click="saveAssessment"
             />
           </div>
@@ -135,6 +137,7 @@
               title="Save"
               text=""
               icon="floppy"
+              :props="{ criterionName: criterion.name }"
               @click="saveEdit"
           />
           <BasicButton
@@ -143,6 +146,7 @@
               title="Cancel"
               text=""
               icon="x-lg"
+              :props="{ criterionName: criterion.name }"
               @click="cancelEdit"
           />
         </div>
