@@ -1088,40 +1088,68 @@ The CARE Team`
     });
 
     /**
-     * Disable 2FA for a user
+     * Disable a specific 2FA method for the current user.
+     * If this was the last enabled method, 2FA is fully disabled and related fields are cleared.
      */
-    server.app.post('/auth/2fa/disable', async function (req, res) {
-        if (!req.user) {
-            return res.status(401).json({ message: "You must be logged in to disable 2FA." });
+    server.app.post('/auth/2fa/disable/:method', ensureAuthenticated, async function (req, res) {
+        const method = req.params.method;
+
+        // TODO: Methods are hard coded now. Could they be dynamic?
+        if (!['email', 'totp'].includes(method)) {
+            return res.status(400).json({ message: "Valid 2FA method is required (email or totp)." });
         }
-        
+
         try {
             const user = await server.db.models['user'].findOne({
                 where: { id: req.user.id }
             });
-            
+
             if (!user) {
                 return res.status(404).json({ message: "User not found." });
             }
-            
-            // Disable 2FA and clear related fields
+
+            const currentMethods = getTwoFactorMethods(user);
+
+            if (!currentMethods.includes(method)) {
+                return res.status(400).json({ message: `2FA method '${method}' is not enabled for this user.` });
+            }
+
+            const updatedMethods = currentMethods.filter((m) => m !== method);
+
+            const updateData = {
+                twoFactorMethods: updatedMethods,
+            };
+
+            // If we remove email, clear any pending email OTP state
+            if (method === 'email') {
+                updateData.twoFactorOtp = null;
+                updateData.twoFactorOtpExpiresAt = null;
+            }
+
+            // If we remove TOTP, clear the TOTP secret
+            if (method === 'totp') {
+                updateData.totpSecret = null;
+            }
+
+            // If no methods remain, fully disable 2FA state
+            if (updatedMethods.length === 0) {
+                updateData.twoFactorOtp = null;
+                updateData.twoFactorOtpExpiresAt = null;
+                updateData.totpSecret = null;
+            }
+
             await server.db.models['user'].update(
-                {
-                    twoFactorOtp: null,
-                    twoFactorOtpExpiresAt: null,
-                    twoFactorMethods: [],
-                    totpSecret: null,
-                },
+                updateData,
                 { where: { id: user.id } }
             );
-            
-            return res.status(200).json({ 
-                message: "2FA has been disabled.",
-                twoFactorMethods: []
+
+            return res.status(200).json({
+                message: `2FA method '${method}' has been disabled.`,
+                twoFactorMethods: updatedMethods,
             });
-            
+
         } catch (error) {
-            server.logger.error("Failed to disable 2FA: " + error);
+            server.logger.error("Failed to disable 2FA method: " + error);
             return res.status(500).json({ message: "Internal server error" });
         }
     });
