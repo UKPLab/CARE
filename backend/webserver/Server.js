@@ -264,13 +264,18 @@ module.exports = class Server {
 
         /**
          * ORCID login method (first factor).
-         * Minimal approach: only allow login if the ORCID iD is already linked to an existing CARE user.
+         *
+         * Behaviour:
+         * - If an existing user with this ORCID iD exists, log that user in.
+         * - Otherwise, automatically create a new local user account linked to this ORCID iD.
          */
         passport.use("orcid-login", new OrcidStrategy(
             {
+                sandbox: process.env.NODE_ENV !== 'production',
                 clientID: process.env.ORCID_CLIENT_ID,
                 clientSecret: process.env.ORCID_CLIENT_SECRET,
                 callbackURL: process.env.ORCID_LOGIN_CALLBACK_URL,
+                passReqToCallback : true
             },
             async (accessToken, refreshToken, params, profile, done) => {
                 try {
@@ -279,13 +284,36 @@ module.exports = class Server {
                         return done(null, false, { message: "Missing ORCID iD." });
                     }
 
-                    const user = await this.db.models['user'].findOne({
+                    // 1) Try to find existing user by ORCID iD
+                    let user = await this.db.models['user'].findOne({
                         where: { orcidId: orcidId },
                         raw: true,
                     });
 
                     if (!user) {
-                        return done(null, false, { message: "ORCID account not linked to a CARE user." });
+                        // 2) No linked user yet -> auto-create a new user
+                        const email =
+                            (Array.isArray(profile?.emails) && profile.emails[0]?.value) ||
+                            profile?.email ||
+                            null;
+                        const firstName = profile?.name?.givenName || null;
+                        const lastName = profile?.name?.familyName || null;
+
+                        const userData = {
+                            orcidId: orcidId,
+                            email: email,
+                            firstName: firstName,
+                            lastName: lastName,
+                            // External accounts are created with a random password by add()
+                            // and get the default "user" role via hooks.
+                            acceptTerms: true,
+                            acceptStats: false,
+                            emailVerified: !!email, // treat ORCID email as verified if present
+                        };
+
+                        const created = await this.db.models['user'].add(userData, {});
+                        // Ensure we pass a plain object into relevantFields
+                        user = created && created.get ? created.get({ plain: true }) : created;
                     }
 
                     return done(null, relevantFields(user));
@@ -297,6 +325,11 @@ module.exports = class Server {
 
         /**
          * LDAP login method (first factor).
+         *
+         * Behaviour:
+         * - If an existing CARE user is linked via ldapUsername or email, log that user in.
+         * - Otherwise, automatically create a new CARE user account linked to this LDAP identity.
+         *
          * Configuration is currently provided via environment variables.
          *
          * Required env vars:
@@ -348,7 +381,31 @@ module.exports = class Server {
                 }
 
                 if (!user) {
-                    return done(null, false, { message: "LDAP account not linked to a CARE user." });
+                    // 3) No linked user yet -> auto-create a new user
+                    if (!ldapEmail) {
+                        return done(null, false, { message: "LDAP account has no email; cannot create local user." });
+                    }
+
+                    const firstName =
+                        (Array.isArray(ldapUser?.givenName) ? ldapUser.givenName[0] : ldapUser?.givenName) ||
+                        ldapUser?.cn ||
+                        null;
+                    const lastName =
+                        (Array.isArray(ldapUser?.sn) ? ldapUser.sn[0] : ldapUser?.sn) ||
+                        null;
+
+                    const userData = {
+                        email: ldapEmail,
+                        ldapUsername: username || (Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid) || null,
+                        firstName: firstName,
+                        lastName: lastName,
+                        acceptTerms: true,
+                        acceptStats: false,
+                        emailVerified: true,
+                    };
+
+                    const created = await this.db.models['user'].add(userData, {});
+                    user = created && created.get ? created.get({ plain: true }) : created;
                 }
 
                 return done(null, relevantFields(user));
