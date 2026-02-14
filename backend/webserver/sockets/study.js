@@ -142,6 +142,51 @@ The CARE Team`,
     }
 
     /**
+     * Close a single study by setting its closed flag.
+     * Validates that the study exists and is not already closed.
+     * Sends study closed emails after the transaction commits.
+     *
+     * @socketEvent studyClose
+     * @param {object} data The data required to close the study.
+     * @param {number} data.studyId The ID of the study to close.
+     * @param {object} options Configuration for the database operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<Object>} The updated study object.
+     */
+    async closeStudy(data, options) {
+        if (!data.studyId) {
+            throw new Error("studyId is required");
+        }
+
+        const study = await this.models["study"].getById(data.studyId, {transaction: options.transaction});
+        if (!study) {
+            throw new Error("Study not found");
+        }
+
+        if (study.closed) {
+            throw new Error("Study is already closed");
+        }
+
+        const updatedStudy = await this.models["study"].updateById(
+            data.studyId,
+            {closed: true},
+            {transaction: options.transaction}
+        );
+
+        // Send study closed emails after transaction commits
+        options.transaction.afterCommit(async () => {
+            try {
+                const freshStudy = await this.models["study"].getById(data.studyId);
+                await this.sendStudyClosedEmails(freshStudy);
+            } catch (error) {
+                this.logger.error(`Failed to send study closed emails:`, error);
+            }
+        });
+
+        return updatedStudy;
+    }
+
+    /**
      * Closes all studies associated with a given project ID in a loop.
      * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
      * 
@@ -196,7 +241,7 @@ The CARE Team`,
     async init() {
         this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
         this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
-
+        this.createSocket("studyClose", this.closeStudy, {}, true);
     }
 }
 
