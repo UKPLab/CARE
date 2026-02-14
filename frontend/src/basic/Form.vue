@@ -291,7 +291,7 @@ export default {
     },
     validate() {
       return Object.keys(this.$refs)
-        .filter((child) => typeof this.$refs[child][0].validate === "function")
+        .filter((child) => this.$refs[child][0] && typeof this.$refs[child][0].validate === "function")
         .map((child) => this.$refs[child][0].validate())
         .every(Boolean);
     },
