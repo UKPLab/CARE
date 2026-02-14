@@ -27,7 +27,7 @@ module.exports = {
         },
         onUpdate: 'CASCADE',
       },
-      hidden: {
+      published: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -36,9 +36,10 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-      content: {
-        type: Sequelize.JSONB,
+      defaultLanguage: {
+        type: Sequelize.STRING,
         allowNull: false,
+        defaultValue: 'en',
       },
       deleted: {
         type: Sequelize.BOOLEAN,

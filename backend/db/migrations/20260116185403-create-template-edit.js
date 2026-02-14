@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Migration to create template_edit table
+ * Migration to create template_edit table.
  *
  * This table stores draft edits for templates (like document_edit does for documents).
  * Enables stable content for resolution/viewing while owner sees live edits.
@@ -48,6 +48,10 @@ module.exports = {
       },
       order: {
         type: Sequelize.INTEGER,
+      },
+      language: {
+        type: Sequelize.STRING,
+        allowNull: false,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
