@@ -176,7 +176,23 @@ export default {
           }
         });
       }
-      buttons.push({
+      buttons.push(
+        {
+          icon: "copy",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          title: "Copy session",
+          action: "copySession",
+          stats:{
+            studySessionId: "id",
+          }     
+        },
+        {
         icon: "trash",
         options: {
           iconOnly: true,
