@@ -532,13 +532,9 @@ export default {
     },
     finalFinish(data) {
       this.$socket.emit(
-          "appDataUpdate",
+          "studySessionFinish",
           {
-            table: "study_session",
-            data: {
-              id: data.studySessionId,
-              end: Date.now(),
-            },
+            studySessionId: data.studySessionId,
           },
           (result) => {
             if (result.success) {

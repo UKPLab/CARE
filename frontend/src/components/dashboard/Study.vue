@@ -480,12 +480,8 @@ export default {
         this.$refs.studySessionModal.open(data.params.id);
       } else if (data.action === "closeStudy") {
 
-        this.$socket.emit("appDataUpdate", {
-          table: "study",
-          data: {
-            id: data.params.id,
-            closed: true
-          }
+        this.$socket.emit("studyClose", {
+          studyId: data.params.id,
         }, (result) => {
           if (result.success) {
             this.eventBus.emit('toast', {
