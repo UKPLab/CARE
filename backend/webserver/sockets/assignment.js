@@ -30,12 +30,24 @@ class AssignmentSocket extends Socket {
     async createAssignment(data, options) {
 
         const templateStudySteps = await this.models['study_step'].getAllByKey("studyId", data['template'].id);
-        
+        const workflowSteps = await this.models['workflow_step'].getSortedWorkflowSteps(data['template'].workflowId);
+        const workflowStepById = Object.fromEntries(workflowSteps.map((ws) => [ws.id, ws]));
+
         const stepDocuments = [];
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
                 const documentOverride = data['documents'].find(doc => doc.id === step.workflowStepId);
-                const stepDocumentId = documentOverride ? documentOverride.documentId : step.documentId;
+                const hasOverride = documentOverride != null && documentOverride.documentId != null;
+                let stepDocumentId = hasOverride ? documentOverride.documentId : step.documentId;
+                if (!hasOverride) {
+                    const workflowStep = workflowStepById[step.workflowStepId];
+                    if (workflowStep && workflowStep.workflowStepDocument != null) {
+                        const refStudyStep = templateStudySteps.find((s) => s.workflowStepId === workflowStep.workflowStepDocument);
+                        if (refStudyStep && refStudyStep.documentId != null) {
+                            stepDocumentId = refStudyStep.documentId;
+                        }
+                    }
+                }
                 
                 const assignmentType = data.assignmentType === 'submission' ? 'submission' : 'document';
                 const configuration = await this.replaceTemplateValues(
@@ -321,6 +333,7 @@ class AssignmentSocket extends Socket {
                     // Pass through optional properties if they exist
                     ...(data.assignmentType && { assignmentType: data.assignmentType }),
                     ...(data.emailTemplateId && { emailTemplateId: data.emailTemplateId }),
+                    enableEmailNotification: data.enableEmailNotification,
                 };
                 await this.createAssignment(assignmentData, options);
             }
@@ -407,6 +420,7 @@ class AssignmentSocket extends Socket {
                         // Pass through optional properties if they exist
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
                         ...(data.emailTemplateId && { emailTemplateId: data.emailTemplateId }),
+                        enableEmailNotification: data.enableEmailNotification,
                     };
                     await this.createAssignment(assignmentData, options);
                 }
