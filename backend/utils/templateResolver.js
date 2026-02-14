@@ -38,19 +38,9 @@ function textToDelta(text) {
     return new Delta().insert(text);
 }
 
-/** Placeholders allowed per template type (from template_placeholder_mapping). Type 4, 5: none. */
-const PLACEHOLDERS_BY_TYPE = {
-    1: ["username", "firstName", "lastName", "link"],
-    2: ["username", "link"],
-    3: ["username", "assignmentType", "assignmentName", "link"],
-    4: [],
-    5: [],
-    6: ["username", "studyName"],
-};
-
 /**
  * Build replacement map from context data. When context.templateType is set,
- * only adds placeholders allowed for that type. Otherwise keeps previous behaviour.
+ * queries the template_placeholder_mapping table to determine which placeholders are allowed for that type.
  *
  * @param {Object} context - Context object (userId, creatorId, studyId, studySessionId, studySessionHash, baseUrl, link, assignmentType, assignmentName, templateType)
  * @param {Object} models - Database models
@@ -60,7 +50,12 @@ const PLACEHOLDERS_BY_TYPE = {
 async function buildReplacementMap(context, models, options = {}) {
     const replacements = {};
     const templateType = context.templateType;
-    const allowed = templateType != null ? (PLACEHOLDERS_BY_TYPE[templateType] || []) : null;
+
+    let allowed = null;
+    if (templateType != null) {
+        const rows = await models["template_placeholder_mapping"].getAllByKey("templateType", templateType, options);
+        allowed = rows.map(row => row.placeholderKey);
+    }
 
     const allow = (key) => allowed === null || allowed.includes(key);
 
