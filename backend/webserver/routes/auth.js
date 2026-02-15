@@ -238,7 +238,6 @@ The CARE Team`
      */
     async function startTwoFactorIfConfigured(req, res, user, options = { mode: 'json' }) {
         const mode = options.mode || 'json'; // 'json' | 'redirect'
-        const redirectedFrom = options.redirectedFrom || '/dashboard';
 
         const userRecord = await server.db.models['user'].findOne({
             where: { id: user.id },
@@ -259,7 +258,6 @@ The CARE Team`
             userId: userRecord.id,
             methods: methods,
             method: null,
-            redirectedFrom: redirectedFrom,
         };
 
         const respondJson = (payload) => {
@@ -285,7 +283,7 @@ The CARE Team`
         // Multiple methods -> require selection
         if (methods.length > 1) {
             if (mode === 'redirect') {
-                return redirectTo(`/2fa/select?redirectedFrom=${encodeURIComponent(redirectedFrom)}`), true;
+                return redirectTo(`/2fa/select`), true;
             }
             respondJson({
                 requiresTwoFactor: true,
@@ -319,10 +317,10 @@ The CARE Team`
 
         if (mode === 'redirect') {
             if (method === 'email') {
-                return redirectTo(`/2fa/verify/email?redirectedFrom=${encodeURIComponent(redirectedFrom)}`), true;
+                return redirectTo(`/2fa/verify/email`), true;
             }
             if (method === 'totp') {
-                return redirectTo(`/2fa/verify/totp?redirectedFrom=${encodeURIComponent(redirectedFrom)}`), true;
+                return redirectTo(`/2fa/verify/totp`), true;
             }
             return redirectTo(`/login?error=unsupported-2fa-method`), true;
         }
@@ -376,7 +374,7 @@ The CARE Team`
             
             
             // Start 2FA if configured for this user
-            const twoFactorHandled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json', redirectedFrom: req.query.redirectedFrom || '/dashboard' });
+            const twoFactorHandled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json' });
             if (twoFactorHandled) {
                 // 2FA response has been sent; stop normal login flow
                 return;
@@ -416,7 +414,7 @@ The CARE Team`
                 return res.status(401).send(info || { message: "LDAP login failed." });
             }
 
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json', redirectedFrom: req.query.redirectedFrom || '/dashboard' });
+            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json' });
             if (handled) return;
 
             req.logIn(user, async function (err2) {
@@ -436,7 +434,7 @@ The CARE Team`
         passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' }),
         async function (req, res, next) {
             const user = req.user;
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect', redirectedFrom: '/dashboard' });
+            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
             if (handled) return;
 
             req.logIn(user, async function (err) {
@@ -456,7 +454,7 @@ The CARE Team`
         passport.authenticate('saml-login', { failureRedirect: '/login?error=saml-login-failed' }),
         async function (req, res, next) {
             const user = req.user;
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect', redirectedFrom: '/dashboard' });
+            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
             if (handled) return;
 
             req.logIn(user, async function (err) {
