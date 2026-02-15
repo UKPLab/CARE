@@ -36,6 +36,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
+      sourceId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+      },
       defaultLanguage: {
         type: Sequelize.STRING,
         allowNull: false,
