@@ -7,7 +7,8 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
-const { generateToken, decodeToken, generateOTP, generateBase32Secret } = require('../../utils/auth');
+const { TOTP, Secret } = require('otpauth');
+const { generateToken, decodeToken, generateOTP } = require('../../utils/auth');
 
     /**
  * Route for user management
@@ -921,70 +922,45 @@ The CARE Team`
     });
 
     /**
-     * Verify TOTP and complete login (uses passport-totp)
+     * Verify TOTP and complete login
      */
-    server.app.post('/auth/2fa/totp/verify', async function (req, res, next) {
-        const { token } = req.body;
-
-        if (!token) {
-            return res.status(400).json({ message: "TOTP token is required." });
-        }
-
-        if (!req.session || !req.session.twoFactorPending) {
-            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
-        }
-
-        if (req.session.twoFactorPending.method !== 'totp') {
-            return res.status(400).json({ message: "TOTP is not the selected 2FA method." });
-        }
-
-        try {
-            const { userId } = req.session.twoFactorPending;
-            const user = await server.db.models['user'].findOne({ where: { id: userId } });
-            if (!user) {
-                delete req.session.twoFactorPending;
-                return res.status(400).json({ message: "User not found." });
+    server.app.post('/auth/2fa/totp/verify',
+        async function (req, res, next) {
+            const token = String(req.body.token || '').replace(/\s/g, '');
+            if (!token) {
+                return res.status(400).json({ message: 'TOTP token is required.' });
             }
 
-            const methods = getTwoFactorMethods(user);
-            if (!methods.includes('totp') || !user.totpSecret) {
-                delete req.session.twoFactorPending;
-                return res.status(400).json({ message: "TOTP 2FA is not enabled for this user." });
+            const pending = req.session?.twoFactorPending;
+            if (!pending?.userId) {
+                return res.status(401).json({ message: 'Invalid TOTP code' });
             }
 
-            // Attach user and code for passport-totp verification
-            req.user = { id: user.id, totpSecret: user.totpSecret };
-            req.body.code = String(token).replace(/\s/g, '');
+            try {
+                const user = await server.db.models['user'].findOne({
+                    where: { id: pending.userId },
+                    raw: true,
+                });
+                if (!user || !user.totpSecret) {
+                    return res.status(401).json({ message: 'Invalid TOTP code' });
+                }
 
-            passport.authenticate('totp-verify', async function (err, authedUser, info) {
-                if (err || !authedUser) {
-                    return res.status(401).json({ message: "Invalid TOTP code." });
+                const totp = new TOTP({ secret: user.totpSecret, digits: 6, period: 30 });
+                if (totp.validate({ token, window: 1 }) === null) {
+                    return res.status(401).json({ message: 'Invalid TOTP code' });
                 }
 
                 delete req.session.twoFactorPending;
 
-                req.logIn(user, async function (err2) {
-                    if (err2) {
-                        return res.status(500).json({ message: "Failed to complete login." });
-                    }
-
-                    let transaction;
-                    try {
-                        transaction = await server.db.models['user'].sequelize.transaction();
-                        await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
-                        await transaction.commit();
-                    } catch (e2) {
-                        await transaction.rollback();
-                    }
-
+                req.logIn(user, (err) => {
+                    if (err) return next(err);
                     return res.status(200).json({ user: user });
                 });
-            })(req, res, next);
-        } catch (e) {
-            server.logger.error("Failed to verify TOTP: " + e);
-            return res.status(500).json({ message: "Internal server error" });
+            } catch (err) {
+                return next(err);
+            }
         }
-    });
+    );
 
     /**
      * Get 2FA status for current user
@@ -1158,7 +1134,6 @@ The CARE Team`
 
     /**
      * Initiate TOTP setup (authenticated user).
-     * Returns an otpauth URL that the frontend can convert to a QR code.
      */
     server.app.post('/auth/2fa/totp/setup/initiate', ensureAuthenticated, async function (req, res) {
         const user = await server.db.models['user'].findOne({ where: { id: req.user.id }, raw: true });
@@ -1166,10 +1141,16 @@ The CARE Team`
             return res.status(404).json({ message: "User not found." });
         }
 
-        const secretBase32 = generateBase32Secret(32);
-        const label = encodeURIComponent(`CARE (${user.userName})`);
-        const issuer = encodeURIComponent('CARE');
-        const otpauthUrl = `otpauth://totp/${label}?secret=${secretBase32}&issuer=${issuer}`;
+        const secret = new Secret({ size: 20 });
+        const secretBase32 = secret.base32;
+        const totp = new TOTP({
+            issuer: 'CARE',
+            label: `CARE (${user.userName})`,
+            secret,
+            digits: 6,
+            period: 30,
+        });
+        const otpauthUrl = totp.toString();
 
         req.session.totpSetupPending = {
             secretBase32: secretBase32,
@@ -1189,53 +1170,65 @@ The CARE Team`
 
     /**
      * Verify TOTP setup (authenticated user) and persist secret.
-     * Adds "totp" to twoFactorMethods on success.
      */
-    server.app.post('/auth/2fa/totp/setup/verify', ensureAuthenticated, async function (req, res, next) {
-        const { token } = req.body;
+    server.app.post('/auth/2fa/totp/setup/verify',
+        ensureAuthenticated,
+        async function (req, res, next) {
+            const { token } = req.body;
 
-        if (!token) {
-            return res.status(400).json({ message: "TOTP token is required." });
-        }
+            if (!token) {
+                return res.status(400).json({ message: "TOTP token is required." });
+            }
 
-        if (!req.session || !req.session.totpSetupPending || !req.session.totpSetupPending.secretBase32) {
-            return res.status(400).json({ message: "No pending TOTP setup found. Please initiate setup again." });
-        }
+            if (!req.session?.totpSetupPending?.secretBase32) {
+                return res.status(400).json({
+                    message: "No pending TOTP setup found."
+                });
+            }
 
-        const secretBase32 = req.session.totpSetupPending.secretBase32;
+            const secretBase32 = req.session.totpSetupPending.secretBase32;
+            const originalUserId = req.user.id;
 
-        // Use passport-totp strategy for verification by attaching a temporary user
-        req.user = { id: req.user.id, totpSecret: secretBase32 };
-        req.body.code = String(token).replace(/\s/g, '');
-
-        passport.authenticate('totp-verify', async function (err, authedUser, info) {
-            if (err || !authedUser) {
+            const totp = new TOTP({ secret: secretBase32, digits: 6, period: 30 });
+            if (totp.validate({ token: String(token).trim(), window: 1 }) === null) {
                 return res.status(401).json({ message: "Invalid TOTP code." });
             }
 
-            const user = await server.db.models['user'].findOne({ where: { id: req.user.id }, raw: true });
-            if (!user) {
-                return res.status(404).json({ message: "User not found." });
+            try {
+                const dbUser = await server.db.models['user'].findOne({
+                    where: { id: originalUserId }
+                });
+
+                if (!dbUser) {
+                    return res.status(404).json({ message: "User not found." });
+                }
+
+                const currentMethods = Array.isArray(dbUser.twoFactorMethods)
+                    ? [...dbUser.twoFactorMethods]
+                    : [];
+                if (!currentMethods.includes('totp')) {
+                    currentMethods.push('totp');
+                }
+
+                await server.db.models['user'].update(
+                    {
+                        totpSecret: secretBase32,
+                        twoFactorMethods: currentMethods
+                    },
+                    { where: { id: dbUser.id } }
+                );
+
+                delete req.session.totpSetupPending;
+
+                return res.status(200).json({
+                    message: "TOTP configured successfully.",
+                    twoFactorMethods: currentMethods
+                });
+            } catch (err) {
+                return next(err);
             }
-
-            const currentMethods = Array.isArray(user.twoFactorMethods) ? user.twoFactorMethods.slice() : [];
-            if (!currentMethods.includes('totp')) {
-                currentMethods.push('totp');
-            }
-
-            await server.db.models['user'].update(
-                { totpSecret: secretBase32, twoFactorMethods: currentMethods },
-                { where: { id: user.id } }
-            );
-
-            delete req.session.totpSetupPending;
-
-            return res.status(200).json({
-                message: "TOTP has been successfully configured.",
-                twoFactorMethods: currentMethods,
-            });
-        })(req, res, next);
-    });
+        }
+    );
 
     /**
      * ORCID login method

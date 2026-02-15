@@ -15,7 +15,6 @@ const LocalStrategy = require("passport-local");
 const OrcidStrategy = require('passport-orcid').Strategy;
 const LdapStrategy = require('passport-ldapauth');
 const SamlStrategy = require('passport-saml').Strategy;
-const TotpStrategy = require('passport-totp').Strategy;
 const {relevantFields} = require("../utils/auth");
 const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
@@ -471,20 +470,6 @@ module.exports = class Server {
                 return done(e);
             }
         }));
-
-        /**
-         * TOTP verification strategy for 2FA.
-         * Used in /auth/2fa/totp/verify; expects req.user.totpSecret to be set.
-         */
-        passport.use('totp-verify', new TotpStrategy(
-            function(user, done) {
-                if (!user || !user.totpSecret) {
-                    return done(null, null);
-                }
-                // 30 second time step
-                return done(null, user.totpSecret, 30);
-            }
-        ));
 
         // required to work -- defines strategy for storing user information
         passport.serializeUser(function (user, done) {
