@@ -16,6 +16,10 @@ const { generateToken, decodeToken, generateOTP } = require('../../utils/auth');
  */
 module.exports = function (server) {
 
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+
     /**
      * Helper function to get the base URL from settings
      */
@@ -121,6 +125,80 @@ This code will expire in 10 minutes. If you didn't request this code, please ign
 Thanks,
 The CARE Team`
         );
+    }
+
+    /**
+     * Request OTP again for 2FA verification
+     * Called after password verification when user has 2FA enabled
+     * Uses session to track 2FA state
+     */
+    async function resendEmailOtp(req, res) {
+        // Check if session has 2FA pending state
+        if (!req.session || !req.session.twoFactorPending) {
+            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
+        }
+
+        // Must have selected email 2FA
+        if (req.session.twoFactorPending.method !== 'email') {
+            return res.status(400).json({ message: "Email 2FA is not the selected method. Please select email first." });
+        }
+        
+        try {
+            const { userId } = req.session.twoFactorPending;
+
+            // Get user details
+            const user = await server.db.models['user'].findOne({
+                where: { id: userId }
+            });
+
+            const methods = getTwoFactorMethods(user);
+
+            if (!user || !methods.includes('email')) {
+                // Clear invalid session state
+                delete req.session.twoFactorPending;
+                return res.status(400).json({ message: "Email 2FA is not enabled for this user." });
+            }
+            
+            if (!user.email) {
+                return res.status(400).json({ message: "User email not found. Cannot send OTP." });
+            }
+            
+            // Generate 6-digit OTP
+            const otp = generateOTP();
+            const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+            
+            // Store OTP in user record
+            await server.db.models['user'].update(
+                {
+                    twoFactorOtp: otp,
+                    twoFactorOtpExpiresAt: otpExpiresAt
+                },
+                { where: { id: user.id } }
+            );
+            
+            // Send OTP via email
+            await server.sendMail(
+                user.email,
+                "CARE - Two-Factor Authentication Code",
+                `Hello ${user.userName},
+
+                Your two-factor authentication code is: ${otp}
+
+                This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
+
+                Thanks,
+                The CARE Team`
+            );
+            
+            return res.status(200).json({ 
+                message: "OTP has been sent to your email address.",
+                expiresIn: 10 // minutes
+            });
+            
+        } catch (error) {
+            server.logger.error("Failed to request OTP: " + error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
     }
 
     /**
@@ -764,91 +842,78 @@ The CARE Team`
         }
     });
 
+    // ==========================================
+    // 2FA VERIFICATION ROUTES (Login Flow)
+    // ==========================================
+
     /**
-     * Request OTP again for 2FA verification
-     * Called after password verification when user has 2FA enabled
-     * Uses session to track 2FA state
+     * Select a 2FA method when multiple are configured.
+     * If email is selected, the OTP will be sent after selection.
      */
-    async function resendEmailOtpHandler(req, res) {
-        // Check if session has 2FA pending state
+    server.app.post('/auth/2fa/select', async function (req, res) {
+        const { method } = req.body;
+
         if (!req.session || !req.session.twoFactorPending) {
             return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
         }
 
-        // Must have selected email 2FA
-        if (req.session.twoFactorPending.method !== 'email') {
-            return res.status(400).json({ message: "Email 2FA is not the selected method. Please select email first." });
+        const pending = req.session.twoFactorPending;
+        if (!method || !pending.methods || !Array.isArray(pending.methods)) {
+            return res.status(400).json({ message: "Missing 2FA method selection." });
         }
-        
+
+        if (!pending.methods.includes(method)) {
+            return res.status(400).json({ message: "Selected 2FA method is not enabled for this user." });
+        }
+
+        // Load user for any required side effects (email OTP send / totp secret existence)
+        const userRecord = await server.db.models['user'].findOne({
+            where: { id: pending.userId },
+            raw: true,
+        });
+
+        if (!userRecord) {
+            delete req.session.twoFactorPending;
+            return res.status(400).json({ message: "User not found." });
+        }
+
+        pending.method = method;
+        req.session.twoFactorPending = pending;
+
         try {
-            const { userId } = req.session.twoFactorPending;
-
-            // Get user details
-            const user = await server.db.models['user'].findOne({
-                where: { id: userId }
-            });
-
-            const methods = getTwoFactorMethods(user);
-
-            if (!user || !methods.includes('email')) {
-                // Clear invalid session state
-                delete req.session.twoFactorPending;
-                return res.status(400).json({ message: "Email 2FA is not enabled for this user." });
+            if (method === 'email') {
+                if (!userRecord.email) {
+                    return res.status(400).json({ message: "Email address not found. Cannot use email 2FA." });
+                }
+                await sendEmailOtp(userRecord);
+                req.session.save(() => {
+                    return res.status(200).json({ requiresTwoFactor: true, method: 'email' });
+                });
+                return;
             }
-            
-            if (!user.email) {
-                return res.status(400).json({ message: "User email not found. Cannot send OTP." });
+
+            if (method === 'totp') {
+                if (!userRecord.totpSecret) {
+                    return res.status(400).json({ message: "TOTP is enabled but not configured (missing secret)." });
+                }
+                req.session.save(() => {
+                    return res.status(200).json({ requiresTwoFactor: true, method: 'totp' });
+                });
+                return;
             }
-            
-            // Generate 6-digit OTP
-            const otp = generateOTP();
-            const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
-            
-            // Store OTP in user record
-            await server.db.models['user'].update(
-                {
-                    twoFactorOtp: otp,
-                    twoFactorOtpExpiresAt: otpExpiresAt
-                },
-                { where: { id: user.id } }
-            );
-            
-            // Send OTP via email
-            await server.sendMail(
-                user.email,
-                "CARE - Two-Factor Authentication Code",
-                `Hello ${user.userName},
 
-                Your two-factor authentication code is: ${otp}
-
-                This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
-
-                Thanks,
-                The CARE Team`
-            );
-            
-            return res.status(200).json({ 
-                message: "OTP has been sent to your email address.",
-                expiresIn: 10 // minutes
-            });
-            
-        } catch (error) {
-            server.logger.error("Failed to request OTP: " + error);
-            return res.status(500).json({ message: "Internal server error" });
+            return res.status(400).json({ message: `Unsupported 2FA method: ${method}` });
+        } catch (e) {
+            server.logger.error("Failed to apply 2FA selection: " + e);
+            return res.status(500).json({ message: "Failed to start selected 2FA method." });
         }
-    }
-
-    // ==========================================
-    // 2FA VERIFICATION ROUTES (Login Flow)
-    // ==========================================
-    
-    server.app.post('/auth/2fa/resend-otp', resendEmailOtpHandler);
+    });
 
     /**
      * Verify OTP and complete login
      * Uses session to track 2FA state
      */
-    server.app.post('/auth/2fa/verify', async function (req, res) {
+    server.app.post('/auth/2fa/email/verify', async function (req, res) {
         const { otp } = req.body;
         
         if (!otp) {
@@ -934,68 +999,7 @@ The CARE Team`
         }
     });
 
-    /**
-     * Select a 2FA method when multiple are configured.
-     * If email is selected, the OTP will be sent after selection.
-     */
-    server.app.post('/auth/2fa/select', async function (req, res) {
-        const { method } = req.body;
-
-        if (!req.session || !req.session.twoFactorPending) {
-            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
-        }
-
-        const pending = req.session.twoFactorPending;
-        if (!method || !pending.methods || !Array.isArray(pending.methods)) {
-            return res.status(400).json({ message: "Missing 2FA method selection." });
-        }
-
-        if (!pending.methods.includes(method)) {
-            return res.status(400).json({ message: "Selected 2FA method is not enabled for this user." });
-        }
-
-        // Load user for any required side effects (email OTP send / totp secret existence)
-        const userRecord = await server.db.models['user'].findOne({
-            where: { id: pending.userId },
-            raw: true,
-        });
-
-        if (!userRecord) {
-            delete req.session.twoFactorPending;
-            return res.status(400).json({ message: "User not found." });
-        }
-
-        pending.method = method;
-        req.session.twoFactorPending = pending;
-
-        try {
-            if (method === 'email') {
-                if (!userRecord.email) {
-                    return res.status(400).json({ message: "Email address not found. Cannot use email 2FA." });
-                }
-                await sendEmailOtp(userRecord);
-                req.session.save(() => {
-                    return res.status(200).json({ requiresTwoFactor: true, method: 'email' });
-                });
-                return;
-            }
-
-            if (method === 'totp') {
-                if (!userRecord.totpSecret) {
-                    return res.status(400).json({ message: "TOTP is enabled but not configured (missing secret)." });
-                }
-                req.session.save(() => {
-                    return res.status(200).json({ requiresTwoFactor: true, method: 'totp' });
-                });
-                return;
-            }
-
-            return res.status(400).json({ message: `Unsupported 2FA method: ${method}` });
-        } catch (e) {
-            server.logger.error("Failed to apply 2FA selection: " + e);
-            return res.status(500).json({ message: "Failed to start selected 2FA method." });
-        }
-    });
+    server.app.post('/auth/2fa/otp/resend', resendEmailOtp);
 
     /**
      * Verify TOTP and complete login
@@ -1031,6 +1035,104 @@ The CARE Team`
                 req.logIn(user, (err) => {
                     if (err) return next(err);
                     return res.status(200).json({ user: user });
+                });
+            } catch (err) {
+                return next(err);
+            }
+        }
+    );
+
+    /**
+     * Initiate TOTP setup (authenticated user).
+     */
+    server.app.post('/auth/2fa/totp/setup/initiate', ensureAuthenticated, async function (req, res) {
+        const user = await server.db.models['user'].findOne({ where: { id: req.user.id }, raw: true });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        const secret = new Secret({ size: 20 });
+        const secretBase32 = secret.base32;
+        const totp = new TOTP({
+            issuer: 'CARE',
+            label: `CARE (${user.userName})`,
+            secret,
+            digits: 6,
+            period: 30,
+        });
+        const otpauthUrl = totp.toString();
+
+        req.session.totpSetupPending = {
+            secretBase32: secretBase32,
+        };
+
+        req.session.save((err) => {
+            if (err) {
+                server.logger.error("Failed to save session for TOTP setup: " + err);
+                return res.status(500).json({ message: "Failed to initiate TOTP setup." });
+            }
+            return res.status(200).json({
+                otpauthUrl: otpauthUrl,
+                secretBase32: secretBase32,
+            });
+        });
+    });
+    
+    /**
+     * Verify TOTP setup (authenticated user) and persist secret.
+     */
+    server.app.post('/auth/2fa/totp/setup/verify',
+        ensureAuthenticated,
+        async function (req, res, next) {
+            const { token } = req.body;
+
+            if (!token) {
+                return res.status(400).json({ message: "TOTP token is required." });
+            }
+
+            if (!req.session?.totpSetupPending?.secretBase32) {
+                return res.status(400).json({
+                    message: "No pending TOTP setup found."
+                });
+            }
+
+            const secretBase32 = req.session.totpSetupPending.secretBase32;
+            const originalUserId = req.user.id;
+
+            const totp = new TOTP({ secret: secretBase32, digits: 6, period: 30 });
+            if (totp.validate({ token: String(token).trim(), window: 1 }) === null) {
+                return res.status(401).json({ message: "Invalid TOTP code." });
+            }
+
+            try {
+                const dbUser = await server.db.models['user'].findOne({
+                    where: { id: originalUserId }
+                });
+
+                if (!dbUser) {
+                    return res.status(404).json({ message: "User not found." });
+                }
+
+                const currentMethods = Array.isArray(dbUser.twoFactorMethods)
+                    ? [...dbUser.twoFactorMethods]
+                    : [];
+                if (!currentMethods.includes('totp')) {
+                    currentMethods.push('totp');
+                }
+
+                await server.db.models['user'].update(
+                    {
+                        totpSecret: secretBase32,
+                        twoFactorMethods: currentMethods
+                    },
+                    { where: { id: dbUser.id } }
+                );
+
+                delete req.session.totpSetupPending;
+
+                return res.status(200).json({
+                    message: "TOTP configured successfully.",
+                    twoFactorMethods: currentMethods
                 });
             } catch (err) {
                 return next(err);
@@ -1206,103 +1308,7 @@ The CARE Team`
         }
     });
 
-    /**
-     * Initiate TOTP setup (authenticated user).
-     */
-    server.app.post('/auth/2fa/totp/setup/initiate', ensureAuthenticated, async function (req, res) {
-        const user = await server.db.models['user'].findOne({ where: { id: req.user.id }, raw: true });
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
 
-        const secret = new Secret({ size: 20 });
-        const secretBase32 = secret.base32;
-        const totp = new TOTP({
-            issuer: 'CARE',
-            label: `CARE (${user.userName})`,
-            secret,
-            digits: 6,
-            period: 30,
-        });
-        const otpauthUrl = totp.toString();
-
-        req.session.totpSetupPending = {
-            secretBase32: secretBase32,
-        };
-
-        req.session.save((err) => {
-            if (err) {
-                server.logger.error("Failed to save session for TOTP setup: " + err);
-                return res.status(500).json({ message: "Failed to initiate TOTP setup." });
-            }
-            return res.status(200).json({
-                otpauthUrl: otpauthUrl,
-                secretBase32: secretBase32,
-            });
-        });
-    });
-
-    /**
-     * Verify TOTP setup (authenticated user) and persist secret.
-     */
-    server.app.post('/auth/2fa/totp/setup/verify',
-        ensureAuthenticated,
-        async function (req, res, next) {
-            const { token } = req.body;
-
-            if (!token) {
-                return res.status(400).json({ message: "TOTP token is required." });
-            }
-
-            if (!req.session?.totpSetupPending?.secretBase32) {
-                return res.status(400).json({
-                    message: "No pending TOTP setup found."
-                });
-            }
-
-            const secretBase32 = req.session.totpSetupPending.secretBase32;
-            const originalUserId = req.user.id;
-
-            const totp = new TOTP({ secret: secretBase32, digits: 6, period: 30 });
-            if (totp.validate({ token: String(token).trim(), window: 1 }) === null) {
-                return res.status(401).json({ message: "Invalid TOTP code." });
-            }
-
-            try {
-                const dbUser = await server.db.models['user'].findOne({
-                    where: { id: originalUserId }
-                });
-
-                if (!dbUser) {
-                    return res.status(404).json({ message: "User not found." });
-                }
-
-                const currentMethods = Array.isArray(dbUser.twoFactorMethods)
-                    ? [...dbUser.twoFactorMethods]
-                    : [];
-                if (!currentMethods.includes('totp')) {
-                    currentMethods.push('totp');
-                }
-
-                await server.db.models['user'].update(
-                    {
-                        totpSecret: secretBase32,
-                        twoFactorMethods: currentMethods
-                    },
-                    { where: { id: dbUser.id } }
-                );
-
-                delete req.session.totpSetupPending;
-
-                return res.status(200).json({
-                    message: "TOTP configured successfully.",
-                    twoFactorMethods: currentMethods
-                });
-            } catch (err) {
-                return next(err);
-            }
-        }
-    );
 
     // ==========================================
     // ORCID LINKING ROUTES
