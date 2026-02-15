@@ -156,6 +156,11 @@ class TemplateSocket extends Socket {
       throw new Error("You can only edit content of templates that you own");
     }
 
+    // Copied templates cannot be edited
+    if (template.sourceId) {
+      throw new Error("Copied templates cannot be edited");
+    }
+
     const bulkEdits = data.ops.map((op, idx) => ({
       userId: this.userId,
       templateId: data.templateId,
@@ -199,6 +204,11 @@ class TemplateSocket extends Socket {
     // Check ownership: users (including admins) can only update their own templates
     if (currentTemplate.userId !== this.userId) {
       throw new Error("You can only update templates that you own");
+    }
+
+    // Copied templates cannot be edited
+    if (currentTemplate.sourceId) {
+      throw new Error("Copied templates cannot be edited");
     }
     
     // Prevent editing published templates from others (view-only)
@@ -537,6 +547,12 @@ class TemplateSocket extends Socket {
       }
     );
 
+    // Touch template.updatedAt so "Update available" works for copies when source content changes
+    // NOTE: Must use instance-level save — Model.update() and updateById both fail to persist updatedAt
+    const templateInstance = await this.models["template"].findByPk(templateId, { transaction: options.transaction });
+    templateInstance.changed('updatedAt', true);
+    await templateInstance.save({ fields: ['updatedAt'], transaction: options.transaction });
+
     this.logger.info(`Template saved successfully.`);
   }
 
@@ -565,6 +581,58 @@ class TemplateSocket extends Socket {
     }
   }
 
+  /**
+   * Copy a published template to the current user's template list
+   *
+   * @socketEvent templateCopy
+   * @param {Object} data
+   * @param {number} data.sourceTemplateId - Source template ID (required)
+   * @param {boolean} [data.force=false] - Skip duplicate check (for "Make new copy")
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async copyTemplate(data, options) {
+    if (!data.sourceTemplateId) throw new Error("Source template ID is required");
+
+    const source = await this.models["template"].getById(data.sourceTemplateId);
+    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(source?.type)) {
+      throw new Error("Access denied: Only administrators can copy email templates");
+    }
+
+    const copiedTemplate = await this.models["template"].copyTemplate(
+      data.sourceTemplateId,
+      this.userId,
+      { force: data.force || false },
+      { transaction: options.transaction }
+    );
+
+    return copiedTemplate;
+  }
+
+  /**
+   * Update a copied template with the latest content from its source
+   *
+   * @socketEvent templateUpdateFromSource
+   * @param {Object} data
+   * @param {number} data.templateId - The copy's template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async updateFromSource(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const copy = await this.models["template"].getById(data.templateId);
+    if (!copy) throw new Error("Template not found");
+    if (copy.userId !== this.userId) throw new Error("You can only update your own copies");
+
+    return await this.models["template"].updateFromSource(
+      data.templateId,
+      { transaction: options.transaction }
+    );
+  }
+
   init() {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
     this.createSocket("templateUpdate", this.updateTemplate, {}, true);
@@ -577,6 +645,8 @@ class TemplateSocket extends Socket {
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
     this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
+    this.createSocket("templateCopy", this.copyTemplate, {}, true);
+    this.createSocket("templateUpdateFromSource", this.updateFromSource, {}, true);
   }
 }
 
