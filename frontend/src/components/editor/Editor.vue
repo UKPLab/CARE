@@ -204,6 +204,10 @@ export default {
         if (!this.template) {
           return true;
         }
+        // Copies (sourceId set) are always read-only
+        if (this.template.sourceId) {
+          return true;
+        }
         const currentUserId = this.$store.getters["auth/getUser"]?.id;
         const isOwner = this.template.userId === currentUserId;
         const isPublishedFromOthers = this.template.published === true && !isOwner;
