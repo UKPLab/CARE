@@ -815,9 +815,15 @@ module.exports = class Socket {
         if (filter[Op.or]) {
             return filter[Op.or].some(subfilter => this.matchesFilter(entry, subfilter));
         }
-        return Object.entries(filter).every(([key, val]) =>
-            entry[key] === val
-        );
+        return Object.entries(filter).every(([key, val]) => {
+            if (val && typeof val === "object" && Op.in in val) {
+                return Array.isArray(val[Op.in]) && val[Op.in].includes(entry[key]);
+            }
+            if (val && typeof val === "object" && Op.ne in val) {
+                return entry[key] !== val[Op.ne];
+            }
+            return entry[key] === val;
+        });
     }
 
     /**
@@ -857,6 +863,20 @@ module.exports = class Socket {
                 continue;
             }
             allFilter = filtersAndAttributes.filter;
+            // For template table, non-admins must also receive updates to templates that are the source of their copies
+            if (isTemplateTable && !isAdmin && allFilter[Op.or]) {
+                const copies = await this.models[tableName].findAll({
+                    where: { userId, sourceId: { [Op.ne]: null }, deleted: false },
+                    attributes: ["sourceId"],
+                    raw: true,
+                });
+                const sourceIds = copies.map((c) => c.sourceId).filter(Boolean);
+                if (sourceIds.length > 0) {
+                    const orList = Array.isArray(allFilter[Op.or]) ? [...allFilter[Op.or]] : [allFilter[Op.or]];
+                    orList.push({ id: { [Op.in]: sourceIds } });
+                    allFilter = { ...allFilter, [Op.or]: orList };
+                }
+            }
             const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
             this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
         }
