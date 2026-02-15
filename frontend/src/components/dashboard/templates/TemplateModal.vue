@@ -39,9 +39,8 @@
         const id = templateId ? Number(templateId) : 0;
         this.isEdit = id > 0;
         
-        // Filter type options for non-admins BEFORE opening
-        // Non-admins can only create document templates (types 4, 5)
-        if (!this.isEdit && !this.isAdmin) {
+        // Filter type options for non-admins: only document types (4, 5) in dropdown
+        if (!this.isAdmin) {
           this.filterTypeOptionsInStore();
         }
         
