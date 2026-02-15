@@ -10,7 +10,7 @@ const passport = require('passport');
 const { TOTP, Secret } = require('otpauth');
 const { generateToken, decodeToken, generateOTP } = require('../../utils/auth');
 
-    /**
+/**
  * Route for user management
  * @param {Server} server main server instance
  */
@@ -239,11 +239,15 @@ The CARE Team`
         });
     }
 
+    // ==========================================
+    // AUTHENTICATION ROUTES
+    // ==========================================
+
     /**
      * Login Procedure
      */
     server.app.post('/auth/login', function (req, res, next) {
-        passport.authenticate('local', async function (err, user, info) {
+        passport.authenticate('local-login', async function (err, user, info) {
             if (err) {
                 server.logger.error("Login failed: " + err);
                 return res.status(500).send("Failed to login");
@@ -294,6 +298,70 @@ The CARE Team`
     });
 
     /**
+     * LDAP login method (JSON-based, similar to /auth/login)
+     */
+    server.app.post('/auth/login/ldap', function (req, res, next) {
+        passport.authenticate('ldap-login', async function (err, user, info) {
+            if (err) {
+                server.logger.error("LDAP login failed: " + err);
+                return res.status(500).send("Failed to login");
+            }
+            if (!user) {
+                return res.status(401).send(info || { message: "LDAP login failed." });
+            }
+
+            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json', redirectedFrom: req.query.redirectedFrom || '/dashboard' });
+            if (handled) return;
+
+            req.logIn(user, async function (err2) {
+                if (err2) return next(err2);
+                await server.db.models['user'].registerUserLogin(user.id);
+                return res.status(200).send({ user: user });
+            });
+        })(req, res, next);
+    });
+
+    /**
+     * ORCID login method
+     */
+    server.app.get('/auth/login/orcid', passport.authenticate('orcid-login'));
+
+    server.app.get('/auth/login/orcid/callback',
+        passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' }),
+        async function (req, res, next) {
+            const user = req.user;
+            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect', redirectedFrom: '/dashboard' });
+            if (handled) return;
+
+            req.logIn(user, async function (err) {
+                if (err) return next(err);
+                await server.db.models['user'].registerUserLogin(user.id);
+                return res.redirect('/dashboard');
+            });
+        }
+    );
+
+    /**
+     * SAML login method
+     */
+    server.app.get('/auth/login/saml', passport.authenticate('saml-login'));
+
+    server.app.post('/auth/login/saml/callback',
+        passport.authenticate('saml-login', { failureRedirect: '/login?error=saml-login-failed' }),
+        async function (req, res, next) {
+            const user = req.user;
+            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect', redirectedFrom: '/dashboard' });
+            if (handled) return;
+
+            req.logIn(user, async function (err) {
+                if (err) return next(err);
+                await server.db.models['user'].registerUserLogin(user.id);
+                return res.redirect('/dashboard');
+            });
+        }
+    );
+
+    /**
      * Logout Procedure, no feedback needed since vuex also deletes the session
      */
     server.app.get('/auth/logout', function (req, res) {
@@ -319,6 +387,10 @@ The CARE Team`
         server.logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
         server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);
     });
+
+    // ==========================================
+    // REGISTRATION & EMAIL VERIFICATION ROUTES
+    // ==========================================
 
     /**
      * Register Procedure
@@ -766,6 +838,10 @@ The CARE Team`
         }
     }
 
+    // ==========================================
+    // 2FA VERIFICATION ROUTES (Login Flow)
+    // ==========================================
+    
     server.app.post('/auth/2fa/resend-otp', resendEmailOtpHandler);
 
     /**
@@ -1130,8 +1206,6 @@ The CARE Team`
         }
     });
 
-    
-
     /**
      * Initiate TOTP setup (authenticated user).
      */
@@ -1230,69 +1304,9 @@ The CARE Team`
         }
     );
 
-    /**
-     * ORCID login method
-     */
-    server.app.get('/auth/login/orcid', passport.authenticate('orcid-login'));
-
-    server.app.get('/auth/login/orcid/callback',
-        passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' }),
-        async function (req, res, next) {
-            const user = req.user;
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect', redirectedFrom: '/dashboard' });
-            if (handled) return;
-
-            req.logIn(user, async function (err) {
-                if (err) return next(err);
-                await server.db.models['user'].registerUserLogin(user.id);
-                return res.redirect('/dashboard');
-            });
-        }
-    );
-
-    /**
-     * LDAP login method (JSON-based, similar to /auth/login)
-     */
-    server.app.post('/auth/login/ldap', function (req, res, next) {
-        passport.authenticate('ldap-login', async function (err, user, info) {
-            if (err) {
-                server.logger.error("LDAP login failed: " + err);
-                return res.status(500).send("Failed to login");
-            }
-            if (!user) {
-                return res.status(401).send(info || { message: "LDAP login failed." });
-            }
-
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json', redirectedFrom: req.query.redirectedFrom || '/dashboard' });
-            if (handled) return;
-
-            req.logIn(user, async function (err2) {
-                if (err2) return next(err2);
-                await server.db.models['user'].registerUserLogin(user.id);
-                return res.status(200).send({ user: user });
-            });
-        })(req, res, next);
-    });
-
-    /**
-     * SAML login method
-     */
-    server.app.get('/auth/login/saml', passport.authenticate('saml-login'));
-
-    server.app.post('/auth/login/saml/callback',
-        passport.authenticate('saml-login', { failureRedirect: '/login?error=saml-login-failed' }),
-        async function (req, res, next) {
-            const user = req.user;
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect', redirectedFrom: '/dashboard' });
-            if (handled) return;
-
-            req.logIn(user, async function (err) {
-                if (err) return next(err);
-                await server.db.models['user'].registerUserLogin(user.id);
-                return res.redirect('/dashboard');
-            });
-        }
-    );
+    // ==========================================
+    // ORCID LINKING ROUTES
+    // ==========================================
 
     /**
      * Initiate ORCID linking

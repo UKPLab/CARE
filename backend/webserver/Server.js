@@ -204,7 +204,7 @@ module.exports = class Server {
     #loginManagement() {
         this.logger.debug("Initialize Routes for auth...");
 
-        passport.use('local', new LocalStrategy(async (username, password, cb) => {
+        passport.use('local-login', new LocalStrategy(async (username, password, cb) => {
 
             const user = await this.db.models['user'].find(username);
             if (!user) {
