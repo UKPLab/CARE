@@ -123,7 +123,7 @@ export default {
       ]
     },
     'document',
-    'study_session', 'workflow', 'workflow_step', 'study_step'],
+    'study_session', 'workflow', 'workflow_step', 'study_step', 'template'],
   data() {
     return {
       options: {

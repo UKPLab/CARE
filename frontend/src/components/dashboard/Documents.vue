@@ -63,7 +63,7 @@ import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
  */
 export default {
   name: "DashboardDocument",
-  subscribeTable: ["document", "study"],
+  subscribeTable: ["document", "study", "template"],
   components: {
     StudyModal,
     UploadModal,
