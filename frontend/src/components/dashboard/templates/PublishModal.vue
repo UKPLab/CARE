@@ -10,10 +10,13 @@
           role="alert"
         >
           Template successfully published!<br>
-          The template is now visible to all users.
+          The template is now {{ visibilityMessage }}.
         </div>
       </div>
       <div v-else>
+        <div v-if="isEmailTemplate" class="alert alert-info mb-3" role="alert">
+          Email templates are only {{ visibilityMessage }} after publishing.
+        </div>
         Do you really want to publish the template? <br>
         <b>This can not be undone!</b>
       </div>
@@ -77,6 +80,14 @@ export default {
     template() {
       return this.$store.getters["table/template/get"](this.id);
     },
+    isEmailTemplate() {
+      return this.template && [1, 2, 3, 6].includes(this.template.type);
+    },
+    visibilityMessage() {
+      return this.isEmailTemplate
+        ? "visible to other administrators"
+        : "visible to all users";
+    },
   },
   methods: {
     open(id) {
@@ -110,7 +121,7 @@ export default {
             this.$refs.publishModal.waiting = false;
             this.eventBus.emit('toast', {
               title: "Template published",
-              message: "The template is now visible to all users",
+              message: `The template is now ${this.visibilityMessage}`,
               variant: "success"
             });
           }
