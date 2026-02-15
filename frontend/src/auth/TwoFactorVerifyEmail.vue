@@ -178,7 +178,7 @@ export default {
 
       try {
         const response = await axios.post(
-          getServerURL() + "/auth/2fa/verify",
+          getServerURL() + "/auth/2fa/email/verify",
           { otp: this.formData.otp },
           {
             validateStatus: function (status) {
@@ -222,7 +222,7 @@ export default {
 
       try {
         const response = await axios.post(
-          getServerURL() + "/auth/2fa/resend-otp",
+          getServerURL() + "/auth/2fa/otp/resend",
           {},
           {
             validateStatus: function (status) {
