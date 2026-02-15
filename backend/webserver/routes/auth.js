@@ -163,32 +163,7 @@ The CARE Team`
                 return res.status(400).json({ message: "User email not found. Cannot send OTP." });
             }
             
-            // Generate 6-digit OTP
-            const otp = generateOTP();
-            const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
-            
-            // Store OTP in user record
-            await server.db.models['user'].update(
-                {
-                    twoFactorOtp: otp,
-                    twoFactorOtpExpiresAt: otpExpiresAt
-                },
-                { where: { id: user.id } }
-            );
-            
-            // Send OTP via email
-            await server.sendMail(
-                user.email,
-                "CARE - Two-Factor Authentication Code",
-                `Hello ${user.userName},
-
-                Your two-factor authentication code is: ${otp}
-
-                This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
-
-                Thanks,
-                The CARE Team`
-            );
+            await sendEmailOtp(user);
             
             return res.status(200).json({ 
                 message: "OTP has been sent to your email address.",
