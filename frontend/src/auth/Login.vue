@@ -98,6 +98,30 @@
                 @click="$refs.forgotPasswordModal.open()"
               >Forgot Password?</a>
             </div>
+
+            <hr>
+
+            <div class="col-md-8 offset-md-2 mt-3">
+              <p class="text-center text-muted small mb-2">
+                Or sign in with
+              </p>
+              <div class="d-grid gap-2">
+                <button
+                  type="button"
+                  class="btn btn-outline-success btn-block"
+                  @click="loginWithOrcid"
+                >
+                  Sign in with ORCID
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-block"
+                  @click="toLdapLogin"
+                >
+                  Institutional login (LDAP)
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div
@@ -345,6 +369,18 @@ export default {
         // Normal login flow (no 2FA)
         await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
       }
+    },
+
+    loginWithOrcid() {
+      // Redirect to backend ORCID login endpoint
+      window.location.href = getServerURL() + "/auth/login/orcid";
+    },
+
+    toLdapLogin() {
+      this.$router.push({
+        name: "login-ldap",
+        query: { redirectedFrom: this.$route.query.redirectedFrom },
+      });
     },
 
     showEmailVerificationModal(email) {
