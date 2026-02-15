@@ -372,9 +372,9 @@ export default {
     },
     async toggleTotp2FA() {
       if (this.totpEnabled) {
-        await this.disableTotp2FA();
-      } else {
         await this.initiateTotpSetup();
+      } else {
+        await this.disableTotp2FA();
       }
     },
     async initiateTotpSetup() {
