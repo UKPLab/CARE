@@ -100,6 +100,19 @@ class AppSocket extends Socket {
                     }
                 }
             }
+
+            // Prevent non-delete updates on copied templates (sourceId set)
+            if (data.table === "template" && data.data.deleted !== true) {
+                const templateForCopyCheck = await this.models["template"].getById(data.data.id, {transaction: transaction});
+                if (templateForCopyCheck && templateForCopyCheck.sourceId) {
+                    throw new Error("Copied templates cannot be modified");
+                }
+            }
+
+            // Strip sourceId from template updates (sourceId is immutable after copy)
+            if (data.table === "template" && data.data.sourceId !== undefined) {
+                delete data.data.sourceId;
+            }
             
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
