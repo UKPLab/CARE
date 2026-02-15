@@ -177,6 +177,59 @@ The CARE Team`
     }
 
     /**
+     * Complete 2FA verification and log user in
+     * Handles session save and login registration consistently for all 2FA methods
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {number} userId - User ID to log in
+     */
+    async function completeTwoFactorLogin(req, res, userId) {
+        try {
+            const user = await server.db.models['user'].findOne({
+                where: { id: userId },
+                raw: true
+            });
+
+            if (!user) {
+                return res.status(404).json({ message: "User not found." });
+            }
+
+            // Clear 2FA pending state from session
+            delete req.session.twoFactorPending;
+
+            // Complete login
+            req.logIn(user, async function (err) {
+                if (err) {
+                    server.logger.error("Failed to log in user after 2FA: " + err);
+                    return res.status(500).json({ message: "Failed to complete login." });
+                }
+
+                // Save session after login
+                req.session.save((saveErr) => {
+                    if (saveErr) {
+                        server.logger.error("Failed to save session after login: " + saveErr);
+                    }
+                });
+
+                // Register user login
+                let transaction;
+                try {
+                    transaction = await server.db.models['user'].sequelize.transaction();
+                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
+                    await transaction.commit();
+                } catch (e) {
+                    await transaction.rollback();
+                }
+
+                return res.status(200).json({ user: user });
+            });
+        } catch (error) {
+            server.logger.error("Error completing 2FA login: " + error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    }
+
+    /**
      * Start 2FA if configured for the user.
      * - If exactly 1 method is configured: start it immediately (send email OTP if needed).
      * - If multiple methods are configured: require the client to select one via /auth/2fa/select.
@@ -906,11 +959,11 @@ The CARE Team`
         
         try {
             const { userId } = req.session.twoFactorPending;
+
             // Get user details
             const user = await server.db.models['user'].findOne({
                 where: { id: userId }
             });
-
 
             if (!user) {
                 // Clear invalid session state
@@ -934,39 +987,14 @@ The CARE Team`
                 return res.status(400).json({ message: "OTP has expired. Please request a new one." });
             }
             
-            // OTP is valid - clear OTP and session state, then complete login
+            // OTP is valid - clear OTP from database
             await server.db.models['user'].update(
                 { twoFactorOtp: null, twoFactorOtpExpiresAt: null },
                 { where: { id: user.id } }
             );
             
-            // Clear 2FA pending state from session
-            delete req.session.twoFactorPending;
-            
             // Complete login
-            req.logIn(user, async function (err) {
-                if (err) {
-                    return res.status(500).json({ message: "Failed to complete login." });
-                }
-                
-                // Save session after login
-                req.session.save((saveErr) => {
-                    if (saveErr) {
-                        server.logger.error("Failed to save session after login: " + saveErr);
-                    }
-                });
-                
-                let transaction;
-                try {
-                    transaction = await server.db.models['user'].sequelize.transaction();
-                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
-                    await transaction.commit();
-                } catch (e) {
-                    await transaction.rollback();
-                }
-                
-                return res.status(200).json({ user: user });
-            });
+            await completeTwoFactorLogin(req, res, userId);
             
         } catch (error) {
             server.logger.error("Failed to verify OTP: " + error);
@@ -1005,12 +1033,9 @@ The CARE Team`
                     return res.status(401).json({ message: 'Invalid TOTP code' });
                 }
 
-                delete req.session.twoFactorPending;
-
-                req.logIn(user, (err) => {
-                    if (err) return next(err);
-                    return res.status(200).json({ user: user });
-                });
+                // Complete login
+                await completeTwoFactorLogin(req, res, pending.userId);
+                
             } catch (err) {
                 return next(err);
             }
