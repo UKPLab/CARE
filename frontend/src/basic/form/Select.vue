@@ -172,8 +172,9 @@ export default {
         this.parentValue?.stepType === 2 && 
         this.formData?.workflowId 
       ) {
+        const currentUserId = this.$store.getters["auth/getUserId"];
         const documentTemplates = this.$store.getters["table/template/getAll"]
-          .filter(t => t.type === 5 && !t.deleted) // Type 5 = Document Template
+          .filter(t => t.type === 5 && !t.deleted && t.userId === currentUserId) // Type 5 = Document Template, own only
           .map(t => {
             const valueKey = this.options.options.value || 'id';
             const nameKey = this.options.options.name || 'name';

@@ -83,10 +83,8 @@ export default {
       const allTemplates = this.$store.getters["table/template/getAll"]
         .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3 || t.type === 6));
       
-      // Show personal templates (userId matches) OR published templates
-      const visibleTemplates = allTemplates.filter(t => 
-        t.userId === this.user?.id || t.published === true
-      );
+      // Show only the user's own templates (includes copies since copies have userId === currentUser)
+      const visibleTemplates = allTemplates.filter(t => t.userId === this.user?.id);
       
       return visibleTemplates.map(t => ({
         id: t.id,

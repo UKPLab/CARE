@@ -82,9 +82,10 @@ export default {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     documentTemplates() {
-      // Filter templates by Type 4 (Document - General) and not deleted
+      const currentUserId = this.$store.getters["auth/getUserId"];
+      // Own templates only (Type 4 Document - General), including copies
       return this.$store.getters["table/template/getAll"]
-        .filter(t => t.type === 4 && !t.deleted)
+        .filter(t => t.type === 4 && !t.deleted && t.userId === currentUserId)
         .map(t => ({
           id: t.id,
           name: t.name

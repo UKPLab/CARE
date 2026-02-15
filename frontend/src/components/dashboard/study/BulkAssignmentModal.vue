@@ -533,8 +533,9 @@ export default {
       };
     },
     emailTemplates() {
+      const currentUserId = this.$store.getters["auth/getUserId"];
       return this.$store.getters["table/template/getAll"]
-        .filter(t => t.type === 3 && !t.deleted);
+        .filter(t => t.type === 3 && !t.deleted && t.userId === currentUserId);
     },
     emailTemplateOptions() {
       return {
