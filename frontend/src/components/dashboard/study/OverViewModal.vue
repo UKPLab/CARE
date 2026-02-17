@@ -170,8 +170,6 @@ export default {
   },
   methods: {
     getStudyStepIndex(studyStepIdMax) {
-      console.log("Getting step index for studyStepIdMax:", studyStepIdMax);
-      console.log("All study steps in store:", this.$store.getters["table/study_step/getAll"]);
       return this.$store.getters["table/study_step/get"](studyStepIdMax)?.stepNumber ?? null;
     },
     getWorkflowType(workflowId) {
