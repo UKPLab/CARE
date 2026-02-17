@@ -722,9 +722,6 @@ export default {
         options: options
       };
     },
-    getStudyStepIndex(studyStepIdMax) { 
-      return this.$store.getters["table/study_step/get"](studyStepIdMax)?.stepNumber ?? null;
-    },
     getWorkflowType(workflowId) {
         const workflow = this.$store.getters["table/workflow/get"](workflowId);
         return workflow ? workflow.name : "Unknown";
