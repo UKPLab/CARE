@@ -502,7 +502,6 @@ export default {
           }
           
           const user = this.$store.getters["table/user/get"](session.userId);
-          const currentStepIndex = this.getStudyStepIndex(session.studyId, step.id);
           
           data.push({
             id: step.id,
@@ -518,8 +517,6 @@ export default {
             userId: session.userId,
             firstName: user ? user.firstName : 'Unknown',
             lastName: user ? user.lastName : 'Unknown',
-            stepNumber: currentStepIndex !== null ? currentStepIndex + 1 : null,
-            currentStep: currentStepIndex !== null ? `Step ${currentStepIndex + 1}` : 'N/A',
             sessionStart: session.start ? new Date(session.start).toLocaleString() : 'N/A',
             sessionEnd: session.end ? new Date(session.end).toLocaleString() : 'N/A',
             status: session.end === null ? "Running" : "Finished",
@@ -725,29 +722,8 @@ export default {
         options: options
       };
     },
-    getStudyStepIndex(studyId, studyStepIdMax) {
-      if (!studyStepIdMax) return null;
-      
-      const steps = this.$store.getters["table/study_step/getFiltered"](
-        (s) => s.studyId === studyId
-      );
-      
-      if (!steps || !steps.length) return null;
-
-      const nextMap = new Map(steps.map(s => [s.studyStepPrevious, s]));
-
-      let current = steps.find(s => s.studyStepPrevious == null);
-      
-      let index = 0;
-      while (current) {
-        if (current.id === studyStepIdMax) {
-          return index;
-        }
-        current = nextMap.get(current.id);
-        index++;
-      }
-      
-      return null;
+    getStudyStepIndex(studyStepIdMax) { 
+      return this.$store.getters["table/study_step/get"](studyStepIdMax)?.stepNumber ?? null;
     },
     getWorkflowType(workflowId) {
         const workflow = this.$store.getters["table/workflow/get"](workflowId);
