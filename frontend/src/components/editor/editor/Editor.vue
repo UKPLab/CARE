@@ -11,8 +11,16 @@
           id="viewerContainer"
           ref="viewer"
           class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll;"
+          style="overflow-y: scroll; position: relative;"
         >
+          <!-- Read-Only Toolbar Bar -->
+          <div
+            v-if="!toolbarVisible && finalReadOnly"
+            class="readonly-toolbar-bar"
+          >
+            <LoadIcon icon-name="lock-fill" :size="16" />
+            <span class="readonly-toolbar-text">Read-Only Mode</span>
+          </div>
           <div
             :id="`editor-container-${studyStepId}`"
             @paste="onPaste"
@@ -38,11 +46,17 @@ import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
+import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 const Delta = Quill.import('delta');
 
 export default {
   name: "EditorView",
+  components: {
+    ReadOnlyIndicator,
+    LoadIcon,
+  },
   fetch_data: ["document_edit"],
   subscribeTable: ["document_data"],
   inject: {
@@ -79,6 +93,11 @@ export default {
     pendingNlpInsertion: {
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
   },
   emits: ["update:data"],
   data() {
@@ -97,6 +116,12 @@ export default {
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
+    },
+    componentReadOnly() {
+      return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
+    },
+    finalReadOnly() {
+      return this.readOnly || this.componentReadOnly;
     },
     allEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
@@ -132,7 +157,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
     toolbarVisible() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
+      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.finalReadOnly;
     },
     editorOptions() {
       const toolsMap = {
@@ -211,15 +236,17 @@ export default {
         this.processEdits(appliedEdits);
     },
     
-    readOnly: {
+    finalReadOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
-        if (newReadOnly) {
-          this.editor.getEditor().getModule("toolbar").container.style = "display:none"
-        } else {
-          this.editor.getEditor().getModule("toolbar").container.style = "display:block"
+        const toolbar = this.editor.getEditor().getModule("toolbar");
+        if (toolbar && toolbar.container) {
+          if (newReadOnly) {
+            toolbar.container.style = "display:none"
+          } else {
+            toolbar.container.style = "display:block"
+          }
         }
-
       }
     },
   },
@@ -243,7 +270,7 @@ export default {
         });
       }
 
-      this.editor.getEditor().enable(!this.readOnly);
+      this.editor.getEditor().enable(!this.finalReadOnly);
       this.editor.getEditor().on('text-change', this.handleTextChange);
       // Store event handler references for cleanup
       this.selectEditHandler = (data) => {
@@ -509,5 +536,20 @@ export default {
 </script>
 
 <style scoped>
+.readonly-toolbar-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f3f3f3;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 0px;
+  color: #666;
+  font-size: 14px;
+}
 
+.readonly-toolbar-text {
+  font-weight: 500;
+}
 </style>

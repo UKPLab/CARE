@@ -29,24 +29,44 @@ class AssignmentSocket extends Socket {
     async createAssignment(data, options) {
 
         const templateStudySteps = await this.models['study_step'].getAllByKey("studyId", data['template'].id);
-        
         const stepDocuments = [];
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
-                const documentOverride = data['documents'].find(doc => doc.id === step.workflowStepId);
-                const stepDocumentId = documentOverride ? documentOverride.documentId : step.documentId;
+                const stepDocument = data['documents'].find(doc => doc.workflowStepId === step.workflowStepId) || null;
+                const stepDocumentId = stepDocument ? stepDocument.documentId : null;
                 
-                const assignmentType = data.assignmentType === 'submission' ? 'submission' : 'document';
+                // Determine assignment type and gather context for template replacement
+                let assignmentType, contextData;
+                
+                if (data.assignmentType === 'study_session') {
+                    assignmentType = 'study_session';
+                    contextData = {
+                        assignmentType: assignmentType,
+                        submissionId: stepDocument?.submissionId || null,
+                        documentId: stepDocument?.documentId || null
+                    };
+                } else if (data.assignmentType === 'submission') {
+                    assignmentType = 'submission';
+                    contextData = {
+                        assignmentType: assignmentType,
+                        submissionId: data['assignment']?.id || null,
+                        documentId: null
+                    };
+                } else {
+                    assignmentType = 'document';
+                    contextData = {
+                        assignmentType: assignmentType,
+                        submissionId: null,
+                        documentId: data['assignment']?.id || null
+                    };
+                }
+                
                 const configuration = await this.replaceTemplateValues(
                     step.configuration,
-                    {
-                        assignmentType: assignmentType,
-                        documentId: assignmentType === 'document' ? data['assignment']?.id : null,
-                        submissionId: assignmentType === 'submission' ? data['assignment']?.id : null
-                    },
+                    contextData,
                     options
                 );
-                
+
                 stepDocuments.push({
                     id: step.workflowStepId,
                     documentId: stepDocumentId,
@@ -69,8 +89,12 @@ class AssignmentSocket extends Socket {
             resumable: true,
             stepDocuments: stepDocuments
         }
+        const study = await this.models["study"].add(new_study, {
+            transaction: options.transaction, 
+            context: new_study, 
+            doNotDuplicate: data.assignmentType === 'study_session'
+        });
 
-        const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
 
         await this.addReviewer({
             studyId: study.id, reviewer: data["reviewer"]
@@ -134,7 +158,9 @@ class AssignmentSocket extends Socket {
      * @param {Array<Object>} data.selectedReviewer An array of reviewer objects to be assigned to the assignments.
      * @param {Array<Object>} data.selectedAssignments An array of assignment objects to be reviewed.
      * @param {String} data.mode The mode of the assignment creation (i.e, role or reviewer)
-     * @param {Array<Array>} data.documents List of document assignments
+     * @param {String} data.assignmentType The type of assignment (document, submission, or study_session)
+     * @param {Array<Array>} data.documents List of document assignments (for document/submission types)
+     * @param {Object} data.workflowMapping Workflow mapping object (for study_session type)
      * @param {Object} data.roleSelection If the mode is role, the role selection object
      * @param {Object} data.reviewerSelection If the mode is reviewer, the reviewer selection object
      * @param options holds the managed transaction of the database (see createSocket function), passed down to the individual assignment creation step.
@@ -151,6 +177,10 @@ class AssignmentSocket extends Socket {
 
         // first shuffle the assignments, we use the Fisher-Yates shuffle algorithm from lodash
         // we also need to make sure that the documents array is shuffled in the same way
+        if(data.assignmentType === "study_session"){  
+            data["documents"] = await this.duplicate(data, options);
+        };
+       
         const shuffledAssignments = _.shuffle(data.selectedAssignments.map((assignment, index) => ({
             ...assignment, document: data.documents[index]
         })));
@@ -213,7 +243,7 @@ class AssignmentSocket extends Socket {
                             for (const otherUser of userQueue) {
                                 // if it is the same user, skip
                                 if (otherUser.id === user.id) {
-                                    continue;
+                                        continue;
                                 }
                                 // get all assignments for the other user
                                 const otherAssignments = roleSelection[roleId]['assignments'][otherUser.id];
@@ -387,12 +417,75 @@ class AssignmentSocket extends Socket {
 
             return finalAssignments;
 
+        } else if (data.mode === "session_user") {
+            // Session user-based assignment: assign each study session to its original user
+            const finalAssignments = {};
+
+            for (const assignment of shuffledAssignments) {
+                const reviewerId = assignment.userId;
+                
+                // Check if the reviewer exists in selectedReviewer
+                const reviewer = data.selectedReviewer.find((r) => r.id === reviewerId);
+                if (!reviewer) {
+                    throw new Error(`Study session owner (User ID: ${reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.`);
+                }
+
+                // Initialize array for this reviewer if not exists
+                if (!finalAssignments[reviewerId]) {
+                    finalAssignments[reviewerId] = [];
+                }
+
+                finalAssignments[reviewerId].push(assignment.id);
+            }
+
+            // Create the final assignments
+            for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
+                for (const assignmentId of assignmentIds) {
+                    const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
+                    const reviewer = data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId));
+                    
+                    const assignmentData = {
+                        assignment: assignment,
+                        reviewer: [reviewer],
+                        template: data.template,
+                        documents: assignment["document"],
+                        // Pass through optional properties if they exist
+                        ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                    };
+                    await this.createAssignment(assignmentData, options);
+                }
+            }
+
+            return finalAssignments;
+
         } else {
             throw new Error("Invalid mode provided for assignment creation.");
         }
 
     }
+    /**
+     * Creates a single assignment based on the provided data.
+     *
+     * @socketEvent assignmentCreateSingle
+     * @param {Object} data The data for creating the assignment.
+     * @param {Object} data.selectedAssignments The assignment object containing details of the assignment.
+     * @param {Object} data.template The template object containing the configuration for the assignment.
+     * @param {Array} data.documents The documents to be assigned (for document/submission types).
+     * @param {String} data.assignmentType The type of assignment (document, submission, or study_session)
+     * @param {Object} data.workflowMapping Workflow mapping object (for study_session type)
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @returns {Promise<void>} A promise that resolves when the assignment has been created.
+     * @throws {Error} Throws an error if the underlying `this.createAssignment` method fails.
+     */
+    async createAssignmentSingle(data, options) {
+        data["assignment"] = data.selectedAssignments[0];
 
+        if(data.assignmentType === "study_session"){
+            const documents= await this.duplicate(data, options);
+            data["documents"] = documents[0];
+        };
+        return await this.createAssignment(data, options);
+    }
     /**
      * Recursively processes template markers in a configuration object and adds appropriate ID properties.
      *
@@ -421,10 +514,24 @@ class AssignmentSocket extends Socket {
         const result = {};
         for (const [key, value] of Object.entries(config)) {
             if (value.isTemplate) {
-                if (context.assignmentType === 'submission') {
-                    result[key] = { ...value, submissionId: context.submissionId };
-                } else {
-                    result[key] = { ...value, documentId: context.documentId };
+                switch (context.assignmentType) {
+                    case 'submission':
+                        result[key] = { ...value, submissionId: context.submissionId };
+                        break;
+                    case 'document':
+                        result[key] = { ...value, documentId: context.documentId };
+                        break;
+                    case 'study_session':
+                        // Study sessions can have both submissionId and documentId
+                        result[key] = { 
+                            ...value, 
+                            ...(context.submissionId && { submissionId: context.submissionId }),
+                            ...(context.documentId && { documentId: context.documentId })
+                        };
+                        break;
+                    default:
+                        result[key] = value;
+                        break;
                 }
                 continue;
             }
@@ -460,10 +567,119 @@ class AssignmentSocket extends Socket {
             }
         );
     }
+    
+    /**
+     * Duplicates documents for study sessions based on the provided data.
+     *  * For each selected assignment (study session), documents are duplicated according to the workflow mapping.
+     * * If the original document is part of a submission, the entire submission is copied with overrides for context.
+     * * If the original document is standalone, it is duplicated directly with the necessary overrides.
+     * @param {Object} data The data for duplicating documents.
+     * @param {Array} data.selectedAssignments An array of selected assignment objects (study sessions).
+     * @param {Object} data.workflowMapping An object mapping source workflow step IDs to target workflow step IDs.
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @returns {Promise<Array>} A promise that resolves with an array of arrays, each containing duplicated document objects for the corresponding study session.
+     * @throws {Error} Throws an error if the underlying duplication methods fail.
+     */
 
+    async duplicate(data, options) {
+
+        const duplicatedDocuments = [];
+        for (const studySession of data.selectedAssignments) {
+            const currentDocuments = [];
+            let previousSubmissionId = null;
+            for (const [sourceWorkflowStepId, targetWorkflowStepId] of Object.entries(data.workflowMapping)) {
+                if( targetWorkflowStepId === 'previousSubmission'){
+                    // Get the original submission first
+                    if(previousSubmissionId === null){
+                        throw new Error("First step selected does not map to a submission.");
+                    }    
+                    let originalSubmission = await this.models['submission'].findOne(
+                        { where: { id: previousSubmissionId } }, 
+                        { transaction: options.transaction }
+                    );
+                    
+                    // Follow the parent chain to find the root submission
+                    originalSubmission = await this.models['submission'].getRootSubmission(originalSubmission);
+                    
+                    // Now find the submission that has previousSubmissionId pointing to this root
+                    const latestSubmission = await this.models['submission'].findOne(
+                        { where: { previousSubmissionId: originalSubmission?.id } }, 
+                        { transaction: options.transaction }
+                    );
+                    //get document based on validation file for now getting pdf
+                    if(!latestSubmission){
+                        throw new Error("The latest version of the chosen submission could not be found.");
+                    }
+                    const document = await this.models['document'].findOne(
+                        { where: { submissionId: latestSubmission.id, type: 0} },
+                        { transaction: options.transaction }
+                    );
+                    
+                    currentDocuments.push({
+                        documentId: document.id,
+                        workflowStepId: Number(sourceWorkflowStepId),
+                        submissionId: document?.submissionId || null, 
+                    });
+                }
+                else {
+                    const sourceStudyStep = await this.models['study_step'].findOne(
+                        { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
+                        { transaction: options.transaction }
+                    );
+                    
+                    const originalDocument = await this.models['document'].getById(
+                        sourceStudyStep.documentId, 
+                        { transaction: options.transaction }
+                    );
+                    
+                    let duplicatedDocument;
+                    previousSubmissionId = originalDocument.submissionId;
+
+                    // Check if document has a submissionId
+                    if (originalDocument.submissionId) {
+                        // Copy the submission with all its documents, passing overrides for context
+                        const copyResult = await this.models['submission'].copySubmission(
+                            originalDocument.submissionId,
+                            this.userId,
+                            { hideInFrontend: true }, // Submission overrides
+                            {
+                                studySessionId: studySession.id,
+                                studyStepId: sourceStudyStep.id,
+                            }, // Document overrides
+                            {}, // includes (filters for document data)
+                            { transaction: options.transaction } // options with transaction
+                        );
+                        
+                        // Use the document mapping to find the correct duplicated document
+                        duplicatedDocument = copyResult.copiedDocuments.find(doc => 
+                        doc.parentDocumentId === originalDocument.id
+                        );
+                    } else {
+                        // No submission - duplicate document directly
+                        duplicatedDocument = await this.models['document'].duplicateDocument(
+                            originalDocument.id,
+                            {
+                                studySessionId: studySession.id,
+                                studyStepId: sourceStudyStep.id,
+                            },
+                            { transaction: options.transaction }
+                        );
+                    }  
+
+                    currentDocuments.push({
+                        documentId: duplicatedDocument.id,
+                        workflowStepId: Number(sourceWorkflowStepId),
+                        submissionId: duplicatedDocument?.submissionId || null, 
+                    });
+                }
+            }
+            duplicatedDocuments.push(currentDocuments);
+        }
+        return duplicatedDocuments;
+    }
     init() {
 
-        this.createSocket("assignmentCreate", this.createAssignment, {}, true);
+        this.createSocket("assignmentCreateSingle", this.createAssignmentSingle, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
         this.createSocket("assignmentAdd", this.addReviewer, {}, true);
         this.createSocket("assignmentGetInfo", this.getAssignmentInfoFromCourse, {}, false);

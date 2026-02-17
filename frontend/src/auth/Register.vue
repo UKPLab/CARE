@@ -137,7 +137,7 @@
                     @blur="checkVal('password')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  Passwords must be at least 8 characters.
+                  Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis.
                 </div>
               </div>
             </div>
@@ -191,8 +191,9 @@
             </div>
             <div class="col-md-6 offset-md-4">
               <button
-                  class="btn btn-primary"
-                  type="submit"
+                class="btn btn-primary"
+                type="submit"
+                :disabled="!config['isRegistrationEnabled']"
               >
                 Register
               </button>
@@ -212,7 +213,7 @@
  *  This component provides a basic mask to enter user information
  *  and register a user on the server.
  *
- *  @Author: Dennis Zyska, Carly Gettinger
+ *  @Author: Dennis Zyska, Carly Gettinger, Linyin Huang
  */
 import TermsModal from "./TermsModal.vue";
 import IconAsset from "@/basic/icon/IconAsset.vue";
@@ -245,6 +246,7 @@ export default {
         isTrackingAgreed: JSON.parse(window.config["app.register.acceptStats.default"]),
         requestData: JSON.parse(window.config["app.register.requestData"]),
         isDataShared: JSON.parse(window.config["app.register.acceptDataSharing.default"]),
+        isRegistrationEnabled: JSON.parse(window.config["app.register.enabled"])
       };
     },
     validEmail() {
@@ -256,7 +258,11 @@ export default {
       return usernameRegEx.test(this.formData.userName);
     },
     validPassword() {
-      return this.formData.password.length >= 8;
+      const p = this.formData.password || "";
+      return p.length >= 8
+        && !/^\s*$/.test(p)
+        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     validTerms() {
       return this.formData.acceptTerms;
@@ -266,6 +272,11 @@ export default {
     }
   },
   mounted() {
+    // Check if registration is enabled, if not redirect to login
+    if (!this.config.isRegistrationEnabled) {
+      this.$router.push({name: "login", query: {redirectedFrom: this.$route.query.redirectedFrom}});
+      return;
+    }
     // Sets initial values for acceptStats and acceptDataSharing
     if (this.config.requestStats) {
       this.formData.acceptStats = this.config.isTrackingAgreed;
@@ -282,6 +293,9 @@ export default {
       this.validity[key] = true;
     },
     async checkForm() {
+      if (!this.config.isRegistrationEnabled) {
+        return;
+      }
       Object.keys(this.validity).map(key => {
         this.validity[key] = true
       })

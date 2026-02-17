@@ -14,6 +14,7 @@
  *   pg_stat_activity: {
  *     counts: { total, active, idle },
  *     oldestActive: [ { pid, age_ms, wait, backend, query }... ],
+ *     sequelizePool: { max, min, size, available, using, waiting } | { write, read } | null,
  *     intervalMs: <interval>,
  *     collectedAt: <ISO timestamp>
  *   }
@@ -48,6 +49,74 @@ function start(sequelize, logger, options = {}) {
 	const topN = parseInt(process.env.PG_STATS_TOP_N || options.topN || '10', 10);
 
 	/**
+	 * Best-effort snapshot of Sequelize connection pool status.
+	 *
+	 * Sequelize uses `sequelize-pool` under the hood; depending on configuration
+	 * (and replication), `connectionManager.pool` can be a single pool or an
+	 * object with `read`/`write` pools.
+	 *
+	 * This function is intentionally defensive: it never throws and returns
+	 * `null` when pool metrics are unavailable.
+	 *
+	 * @private
+	 * @param {import('sequelize').Sequelize} sequelizeInstance
+	 * @returns {object|null}
+	 */
+	function getSequelizePoolStats(sequelizeInstance) {
+		function readMaybeFn(obj, key) {
+			if (!obj) return undefined;
+			const v = obj[key];
+			if (typeof v === 'function') {
+				try {
+					return v.call(obj);
+				} catch (_) {
+					return undefined;
+				}
+			}
+			return v;
+		}
+
+		function poolSnapshot(pool) {
+			if (!pool) return null;
+			const snap = {
+				max: readMaybeFn(pool, 'max') ?? readMaybeFn(pool, 'maxSize'),
+				min: readMaybeFn(pool, 'min') ?? readMaybeFn(pool, 'minSize'),
+				size: readMaybeFn(pool, 'size'),
+				available: readMaybeFn(pool, 'available'),
+				using: readMaybeFn(pool, 'using'),
+				waiting: readMaybeFn(pool, 'waiting')
+			};
+			// Drop keys that came back undefined to keep logs tidy
+			Object.keys(snap).forEach((k) => {
+				if (snap[k] === undefined) delete snap[k];
+			});
+			return Object.keys(snap).length ? snap : null;
+		}
+
+		try {
+			const cm = sequelizeInstance && sequelizeInstance.connectionManager;
+			const pool = cm && cm.pool;
+			if (!pool) return null;
+
+			// Replication mode can expose separate read/write pools
+			if (pool.read || pool.write) {
+				const out = {};
+				if (Array.isArray(pool.read)) out.read = pool.read.map(poolSnapshot);
+				else if (pool.read) out.read = poolSnapshot(pool.read);
+
+				if (Array.isArray(pool.write)) out.write = pool.write.map(poolSnapshot);
+				else if (pool.write) out.write = poolSnapshot(pool.write);
+
+				return Object.keys(out).length ? out : null;
+			}
+
+			return poolSnapshot(pool);
+		} catch (_) {
+			return null;
+		}
+	}
+
+	/**
 	 * Collect one snapshot of PostgreSQL runtime statistics and emit via logger.
 	 *
 	 * Steps:
@@ -71,6 +140,7 @@ function start(sequelize, logger, options = {}) {
 					COUNT(*) FILTER (WHERE state='idle') AS idle
 				FROM pg_stat_activity;`);
 			const counts = countRows && countRows[0] ? normalizeCountRow(countRows[0]) : {};
+			const sequelizePool = getSequelizePoolStats(sequelize);
 			// Second query: EXACT user requested static query (1s min age, LIMIT 10)
 			const [oldestRows] = await sequelize.query(`
                 SELECT pid, now()-query_start AS age, wait_event_type||':'||COALESCE(wait_event,'') AS wait,
@@ -167,8 +237,10 @@ function start(sequelize, logger, options = {}) {
 				pg_stat_activity: {
 					counts,
 					oldestActive: oldestRows || [],
+					sequelizePool,
 					dbStats,
 					locks,
+					intervalMs,
 					collectedAt: new Date().toISOString()
 				}
 			});

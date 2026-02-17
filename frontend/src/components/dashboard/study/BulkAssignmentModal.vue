@@ -40,88 +40,291 @@
     </template>
 
     <template #step-2>
-      <BasicTable
-        v-model="selectedAssignments"
-        :columns="currentTableColumns"
-        :data="currentTableData"
-        :options="documentTableOptions"
-        :max-table-height="400"
-      />
-    </template>
-
-    <template #step-3>
-      <div class="form-check">
-        <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
-        <label class="form-check-label" for="filterHasDocumentsCheckbox">
-          Filter only users with documents
-        </label>
-        <br>
-        <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox"
-               id="filterSelectedDocumentsCheckbox">
-        <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
-          Filter only users from previous selected documents
-        </label>
-      </div>
-      <BasicTable
-        v-model="selectedReviewer"
-        :columns="reviewerTableColumns"
-        :data="reviewerTable"
-        :options="reviewerTableOptions"
-        :max-table-height="400"
-      />
-    </template>
-
-    <template #step-4>
-      <BasicForm
-          ref="selectionModeForm"
-          v-model="reviewerSelectionMode"
-          :fields="reviewerSelectionModeFields"
-      />
-
-      <div v-if="reviewerSelectionMode['mode'] === 'role'">
-        <div class="mt-2">
-          Define the number of reviews that each user of the role should perform:
+      <div v-if="assignmentType === 'study_session'">
+        <h6 class="text-secondary">Target Workflow Selection</h6>
+        <div class="mb-3">
+          <label class="form-label"><strong>Select Target Workflow:</strong></label>
+          <FormSelect
+              v-model="targetWorkflowId"
+              :options="workflowOptions"
+          />
         </div>
-        <BasicForm
-            v-if="roleSelectionFields.length > 0"
-            ref="roleBasedSelectionForm"
-            v-model="roleSelection"
-            class="mt-4"
-            :fields="roleSelectionFields"
+
+        <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
+          <h6 class="text-secondary mt-4">Workflow Step Mapping</h6>
+          <p class="text-muted">Map each source workflow step (from template) to a target workflow step:</p>
+          
+          <div
+              v-for="(templateStep, index) in workflowSteps"
+              :key="templateStep.id"
+              class="mb-3"
+          >
+            <label class="form-label">
+              <strong>Source Step {{ index + 1 }} ({{ getStepTypeName(templateStep.stepType) }}) → Target Step:</strong>
+            </label>
+            <FormSelect
+                v-model="workflowMapping[templateStep.id]"
+                :options="{ options: getTargetStepOptions(templateStep.stepType, templateStep.id) }"
+            />
+          </div>
+        </div>
+      </div>
+      <div v-else>
+        <BasicTable
+          v-model="selectedAssignments"
+          :columns="currentTableColumns"
+          :data="currentTableData"
+          :options="documentTableOptions"
+          :max-table-height="400"
         />
-        <div v-else>
-          <p class="text-center text-danger mt-4">There are no roles available!</p>
-          <p class="text-center">Please select reviewers with roles or change selection mode!</p>
-        </div>
       </div>
-      <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
-        <div class="mt-2">
-          Distribute the documents between the selected reviewers:
-        </div>
-        <div class="mb-4">
-          Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
-        </div>
+    </template>
 
-        <BasicForm
-            ref="reviewerBasedSelectionForm"
-            v-model="reviewerSelection"
-            :fields="reviewerSelectionFields"
+    <template  #step-3>
+      <div v-if="assignmentType === 'study_session'">
+        <BasicTable
+          v-model="selectedAssignments"
+          :columns="currentTableColumns"
+          :data="currentTableData"
+          :options="documentTableOptions"
+          :max-table-height="400"
         />
       </div>
       <div v-else>
-        Please select a reviewer selection mode
+        <div class="form-check">
+          <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
+          <label class="form-check-label" for="filterHasDocumentsCheckbox">
+            Filter only users with documents
+          </label>
+          <br>
+          <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox"
+                 id="filterSelectedDocumentsCheckbox">
+          <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
+            Filter only users from previous selected documents
+          </label>
+        </div>
+        <BasicTable
+          v-model="selectedReviewer"
+          :columns="reviewerTableColumns"
+          :data="reviewerTable"
+          :options="reviewerTableOptions"
+          :max-table-height="400"
+        />
+      </div>
+    </template>
+
+    <template #step-4>
+      <div v-if="assignmentType === 'study_session'">
+        <div class="form-check">
+          <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox4">
+          <label class="form-check-label" for="filterHasDocumentsCheckbox4">
+            Filter only users with documents
+          </label>
+          <br>
+          <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox"
+                 id="filterSelectedDocumentsCheckbox4">
+          <label class="form-check-label" for="filterSelectedDocumentsCheckbox4">
+            Filter only users from previous selected documents
+          </label>
+        </div>
+        <BasicTable
+          v-model="selectedReviewer"
+          :columns="reviewerTableColumns"
+          :data="reviewerTable"
+          :options="reviewerTableOptions"
+          :max-table-height="400"
+        />
+      </div>
+      <div v-else>
+        <BasicForm
+            ref="selectionModeForm"
+            v-model="reviewerSelectionMode"
+            :fields="reviewerSelectionModeFields"
+        />
+
+        <div v-if="reviewerSelectionMode['mode'] === 'role'">
+          <div class="mt-2">
+            Define the number of reviews that each user of the role should perform:
+          </div>
+          <BasicForm
+              v-if="roleSelectionFields.length > 0"
+              ref="roleBasedSelectionForm"
+              v-model="roleSelection"
+              class="mt-4"
+              :fields="roleSelectionFields"
+          />
+          <div v-else>
+            <p class="text-center text-danger mt-4">There are no roles available!</p>
+            <p class="text-center">Please select reviewers with roles or change selection mode!</p>
+          </div>
+        </div>
+        <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
+          <div class="mt-2">
+            Distribute the documents between the selected reviewers:
+          </div>
+          <div class="mb-4">
+            Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
+          </div>
+
+          <BasicForm
+              ref="reviewerBasedSelectionForm"
+              v-model="reviewerSelection"
+              :fields="reviewerSelectionFields"
+          />
+        </div>
+        <div v-else>
+          Please select a reviewer selection mode
+        </div>
       </div>
     </template>
 
     <template #step-5>
+      <div v-if="assignmentType === 'study_session'">
+        <BasicForm
+            ref="selectionModeForm"
+            v-model="reviewerSelectionMode"
+            :fields="reviewerSelectionModeFields"
+        />
+
+        <div v-if="reviewerSelectionMode['mode'] === 'role'">
+          <div class="mt-2">
+            Define the number of reviews that each user of the role should perform:
+          </div>
+          <BasicForm
+              v-if="roleSelectionFields.length > 0"
+              ref="roleBasedSelectionForm"
+              v-model="roleSelection"
+              class="mt-4"
+              :fields="roleSelectionFields"
+          />
+          <div v-else>
+            <p class="text-center text-danger mt-4">There are no roles available!</p>
+            <p class="text-center">Please select reviewers with roles or change selection mode!</p>
+          </div>
+        </div>
+        <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
+          <div class="mt-2">
+            Distribute the documents between the selected reviewers:
+          </div>
+          <div class="mb-4">
+            Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
+          </div>
+
+          <BasicForm
+              ref="reviewerBasedSelectionForm"
+              v-model="reviewerSelection"
+              :fields="reviewerSelectionFields"
+          />
+        </div>
+        <div v-else>
+          Please select a reviewer selection mode
+        </div>
+      </div>
+      <div v-else>
+        <p>
+          Are you sure you want to create the assignment with the following details?
+        </p>
+        <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
+          <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
+          <br>
+          This could lead to a failure in the assignment process, <br>
+          so make sure that the values are set correctly for a successful assignment.
+        </p>
+        <p v-else class="text-warning">
+          <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+          <br>
+          <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
+            The following reviewers do not have matching study sessions:
+            <ul>
+              <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
+                {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+              </li>
+            </ul>
+          </span>
+          <span v-else>
+            All selected reviewers have matching study sessions.
+          </span>
+        </p>
+
+        <div class="container">
+          <div class="row mb-2">
+            <div class="col-2"><strong>Template:</strong></div>
+            <div class="col-8">{{ template.name }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-2"><strong>Workflow:</strong></div>
+            <div class="col-8">{{ workflow.name }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-2"><strong>Documents:</strong></div>
+            <div class="col-8">{{ selectedAssignments.length }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-2"><strong>Reviewers:</strong></div>
+            <div class="col-8">{{ selectedReviewer.length }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-2"><strong>Reviews to create:</strong></div>
+            <div class="col-8">{{ numberOfReviews }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-2"><strong>Selection Mode:</strong></div>
+            <div class="col-8">
+              {{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}
+            </div>
+          </div>
+          <div v-if="reviewerSelectionMode.mode === 'role'">
+            <div class="row mb-2">
+              <div class="col-2"><strong>Roles:</strong></div>
+              <div class="col-8">
+                <ul>
+                  <li v-for="(value, key) in listOfSelectedRoles" :key="key">
+                    - {{ value.role }}: {{ value.value }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div v-if="reviewerSelectionMode.mode === 'reviewer'">
+            <div class="row mb-2">
+              <div class="col-2"><strong>Reviewers:</strong></div>
+              <div class="col-8">
+                <ul>
+                  <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
+                    - {{ value.reviewer }}: {{ value.value }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template #step-6>
       <p>
         Are you sure you want to create the assignment with the following details?
       </p>
-      <p class="text-danger">
-        <strong>Warning:</strong> The assignment process will make sure that a reviewer not reviews their own document.
+      <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
+        <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
         <br>
         This could lead to a failure in the assignment process, <br>
-        so make sure that the values are set correct for a successful assignment.
+        so make sure that the values are set correctly for a successful assignment.
+      </p>
+      <p v-else class="text-warning">
+        <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+        <br>
+        <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
+          The following reviewers do not have matching study sessions:
+          <ul>
+            <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
+              {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+            </li>
+          </ul>
+        </span>
+        <span v-else>
+          All selected reviewers have matching study sessions.
+        </span>
       </p>
 
       <div class="container">
@@ -220,6 +423,8 @@ export default {
       assignmentTypeSelection: {},
       selectedAssignments: [],
       reviewerSelection: {},
+      targetWorkflowId: null,
+      workflowMapping: {},
       filterHasDocuments: false,
       filterSelectedDocuments: false,
       documentTableOptions: {
@@ -253,18 +458,38 @@ export default {
       return this.assignmentTypeSelection.type || 'document';
     },
     stepValid() {
+      if (this.assignmentType === 'study_session') {
+        return [
+          this.workflowStepsAssignment.length !== 0 && !!this.assignmentType,
+          !!this.targetWorkflowId && this.isWorkflowMappingComplete,
+          this.selectedAssignments.length > 0,
+          this.selectedReviewer.length > 0,
+          this.selectionValid,
+          this.unmatchedReviewersForSessions.length === 0
+        ];
+      }
       return [
         this.workflowStepsAssignment.length !== 0 && !!this.assignmentType,
         this.selectedAssignments.length > 0,
         this.selectedReviewer.length > 0,
         this.selectionValid,
+        true
       ];
+    },
+    isWorkflowMappingComplete() {
+      if (!this.targetWorkflowId) return false;
+      return this.workflowSteps.every((step, index) => {
+        return this.workflowMapping[step.id] !== undefined && this.workflowMapping[step.id] !== null;
+      });
     },
     selectionValid() {
       if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'reviewer') {
         return this.remainingAssignments === 0;
       } else if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'role') {
         return Object.values(this.roleSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0) > 0;
+      } else if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'session_user') {
+        // For session_user mode, no additional validation needed
+        return true;
       }
       return false;
     },
@@ -292,12 +517,12 @@ export default {
               const primaryDocId = this.getPrimaryDocumentId(submission.id);
               return {
                 documentId: primaryDocId,
-                id: c.id
+                workflowStepId: c.id
               };
             }
             return {
               documentId: null,
-              id: c.id
+              workflowStepId: c.id
             };
           });
         });
@@ -306,7 +531,7 @@ export default {
           return this.workflowSteps.map((c, index) => {
             return {
               documentId: (index === 0) ? document.id : null,
-              id: c.id
+              workflowStepId: c.id
             }
           });
         });
@@ -326,13 +551,69 @@ export default {
       return this.$store.getters["table/submission/getAll"];
     },
     currentTableData() {
-      return this.assignmentType === 'submission' ? this.submissionsTable : this.documentsTable;
+      if (this.assignmentType === 'submission') return this.submissionsTable;
+      if (this.assignmentType === 'study_session') return this.studySessionsTable;
+      return this.documentsTable;
     },
     currentTableColumns() {
-      return this.assignmentType === 'submission' ? this.submissionColumns : this.documentsTableColumns;
+      if (this.assignmentType === 'submission') return this.submissionColumns;
+      if (this.assignmentType === 'study_session') return this.studySessionsTableColumns;
+      return this.documentsTableColumns;
+    },
+    studySessionsTable() {
+      if (!this.targetWorkflowId) return [];
+      
+      const sessions = this.$store.getters["table/study_session/getAll"] || [];
+      return sessions
+        .filter(session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.workflowId === this.targetWorkflowId;
+        })
+        .map(session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          const user = this.$store.getters["table/user/get"](session.userId);
+          const submission = this.getSubmission(session.studyId);
+          return {
+            id: session.id,
+            studyId: session.studyId,
+            userId: session.userId,
+            firstName: user ? user.firstName : 'Unknown',
+            lastName: user ? user.lastName : 'Unknown',
+            workflowType: this.getWorkflowType(study.workflowId),
+            submissionGroup: submission && submission.group ? submission.group : 'N/A',
+            status: session.end === null ? "Running" : "Finished",
+            createdAt: new Date(session.createdAt).toLocaleString(),
+          };
+        });
+    },
+    studySessionsTableColumns() {
+      return [
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstName", sortable: true },
+        { name: "Last Name", key: "lastName", sortable: true },
+        { name: "Workflow Type", key: "workflowType", sortable: true },
+        { name: "Created At", key: "createdAt", sortable: true },
+        { name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
+        {
+          name: "Status",
+          key: "status",
+          type: "badge",
+          sortable: true,
+          typeOptions: {
+            keyMapping: {
+              Running: "Running",
+              Finished: "Finished",
+            },
+            classMapping: {
+              Running: "bg-primary",
+              Finished: "bg-success",
+            }
+          }
+        },
+      ];
     },
     documentsTable() {
-      return this.documents.map((d) => {
+      return this.documents.filter((d) => d.type === 0).map((d) => {
         let newD = {...d};
         newD.type = d.type === 0 ? "PDF" : "HTML";
         const user = this.$store.getters["table/user/get"](d.userId)
@@ -463,6 +744,16 @@ export default {
       return this.$store.getters["table/user/getAll"];
     },
     steps() {
+      if (this.assignmentType === 'study_session') {
+        return [
+          {title: "Template Selection"},
+          {title: "Workflow Mapping"},
+          {title: "Study Session Selection"},
+          {title: "Reviewer Selection"},
+          {title: "Distribution"},
+          {title: "Confirmation"}
+        ];
+      }
       return [
         {title: "Template Selection"},
         {title: "Document Selection"},
@@ -470,6 +761,20 @@ export default {
         {title: "Distribution"},
         {title: "Confirmation"}
       ];
+    },
+    workflowOptions() {
+      return {
+        options: this.$store.getters["table/workflow/getAll"].map(workflow => ({
+          name: workflow.name,
+          value: workflow.id,
+        }))
+      };
+    },
+    targetWorkflowSteps() {
+      if (!this.targetWorkflowId) return [];
+      return this.$store.getters["table/workflow_step/getFiltered"](
+        item => item.workflowId === this.targetWorkflowId
+      ) || [];
     },
     reviewerNumberOfAssignments() {
       return Object.values(this.reviewerSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0)
@@ -493,6 +798,17 @@ export default {
         }
       })
     },
+    unmatchedReviewersForSessions() {
+      if (this.assignmentType !== 'study_session' || this.reviewerSelectionMode.mode !== 'session_user') {
+        return [];
+      }
+      
+      const selectedSessionUserIds = new Set(this.selectedAssignments.map(session => session.userId));
+      
+      return this.selectedReviewer.filter(reviewer => {
+        return !selectedSessionUserIds.has(reviewer.id);
+      });
+    },
     templateSelectionFields() {
       return [
         {
@@ -511,23 +827,34 @@ export default {
       return {
         options: [
           {value: 'document', name: 'Documents'},
-          {value: 'submission', name: 'Submissions'}
+          {value: 'submission', name: 'Submissions'},
+          {value: 'study_session', name: 'Study Sessions'}
         ]
       };
     },
     reviewerSelectionModeFields() {
+      const baseOptions = [
+        {
+          name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
+          value: "role"
+        },
+        {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
+      ];
+
+      // Add session_user option only for study_session assignment type
+      if (this.assignmentType === 'study_session') {
+        baseOptions.push({
+          name: "Session user-based selection (assign each study session to its original user)",
+          value: "session_user"
+        });
+      }
+
       return [
         {
           key: "mode",
           label: "Reviewer Selection Mode",
           type: "select",
-          options: [
-            {
-              name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
-              value: "role"
-            },
-            {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
-          ],
+          options: baseOptions,
           required: true,
         },
       ]
@@ -572,6 +899,86 @@ export default {
     }
   },
   methods: {
+    getSubmission(studyId) {  
+      const studySteps = this.$store.getters["table/study_step/getFiltered"](
+        (s) => s.studyId === studyId
+      ) || []; 
+      for (const step of studySteps) {
+        if (step.stepType === 1 && step.documentId !== null) {
+          let document = this.$store.getters["table/document/get"](step.documentId);
+          
+          while(document && document.parentDocumentId !== null) {
+            document = this.$store.getters["table/document/get"](document.parentDocumentId);
+          }
+          
+          if (document && document.submissionId) {
+            const submission = this.$store.getters["table/submission/get"](document.submissionId);
+            if (submission) {
+              return submission;
+            }
+          }
+        }
+      }
+      
+      return null;
+    },
+    getWorkflowType(workflowId) {
+        const workflow = this.$store.getters["table/workflow/get"](workflowId);
+        return workflow ? workflow.name : "Unknown";
+    },
+    getStepTypeName(stepType) {
+      switch (stepType) {
+        case 1: return 'Annotator';
+        case 2: return 'Editor';
+        default: return 'Unknown';
+      }
+    }, 
+    getTargetStepOptions(stepType, currentStepId) {
+      // First, order the target workflow steps based on workflowStepPrevious
+      const orderedSteps = [];
+      const stepPositionMap = new Map(); // Maps step.id to its position (1-based)
+      const nextMap = new Map(this.targetWorkflowSteps.map(s => [s.workflowStepPrevious, s]));
+      
+      // Find the first step (where workflowStepPrevious is null)
+      let current = this.targetWorkflowSteps.find(s => s.workflowStepPrevious === null);
+      
+      // Build ordered list by following the chain and track positions
+      let position = 1;
+      while (current) {
+        orderedSteps.push(current);
+        stepPositionMap.set(current.id, position);
+        current = nextMap.get(current.id);
+        position++;
+      }
+      
+      // Filter by stepType and create options with correct step numbers
+      const options = orderedSteps
+        .filter(step => step.stepType === stepType)
+        .map((step) => ({
+          name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
+          value: step.id,
+        }));
+      
+      // Add "Previous Submission Document" placeholder only if:
+      // 1. Current step is Annotator (type 1), AND
+      // 2. Previous step in SOURCE workflow is also Annotator (type 1)
+      if (stepType === 1 && currentStepId) {
+        const currentSourceStep = this.workflowSteps.find(s => s.id === currentStepId);
+        if (currentSourceStep && currentSourceStep.workflowStepPrevious) {
+          const previousSourceStep = this.workflowSteps.find(
+            s => s.id === currentSourceStep.workflowStepPrevious
+          );
+          if (previousSourceStep && previousSourceStep.stepType === 1) {
+            options.unshift({
+              name: '<Document> Revised Document',
+              value: 'previousSubmission',
+            });
+          }
+        }
+      }
+      
+      return options;
+    },
     userStudySessions(userId) {
       return this.$store.getters["table/study_session/getFiltered"](
           (s) => s.userId === userId
@@ -585,10 +992,22 @@ export default {
       return study.closed === null ? true : false;
     },
     getPrimaryDocumentId(submissionId) {
+      const submission = this.$store.getters["table/submission/get"](submissionId);
+      const configuration = this.$store.getters["table/configuration/get"](submission.validationConfigurationId);
       const docs = this.$store.getters["table/document/getFiltered"](
-          (d) => d.submissionId === submissionId && d.readyForReview && !d.deleted
+          (d) => d.submissionId === submissionId && !d.deleted && d.type === 0
       );
-      return docs && docs.length !== 0 ? docs[0].id : null;
+      
+      if (!docs || docs.length === 0) return null;
+      
+      // If configuration specifies a primary document key, try to use it
+      if (configuration && configuration.primaryDocument) {
+        const primaryDoc = docs.find(d => d.id === configuration.primaryDocument);
+        if (primaryDoc) return primaryDoc.id;
+      }
+      
+      // Otherwise, return the first PDF document
+      return docs[0].id;
     },
     open() {
       this.reset();
@@ -600,20 +1019,32 @@ export default {
       this.selectedReviewer = [];
       this.selectedAssignments = [];
       this.assignmentTypeSelection = {};
+      this.targetWorkflowId = null;
+      this.workflowMapping = {};
     },
     createAssignments() {
       this.$refs.assignmentStepper.setWaiting(true);
-      this.$socket.emit("assignmentCreateBulk", {
+      
+      const socketData = {
         template: this.template,
         selectedReviewer: this.selectedReviewer,
         selectedAssignments: this.selectedAssignments,
         reviewerSelection: this.reviewerSelection,
         roleSelection: this.roleSelection,
-        documents: this.workflowStepsAssignments,
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
         assignmentType: this.assignmentType,
-      }, (res) => {
+      };
+      
+      // Add workflowMapping for study_session, documents for others
+      if (this.assignmentType === 'study_session') {
+        socketData.targetWorkflowId = this.targetWorkflowId;
+        socketData.workflowMapping = this.workflowMapping;
+      } else {
+        socketData.documents = this.workflowStepsAssignments;
+      }
+
+      this.$socket.emit("assignmentCreateBulk", socketData, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
           if (this.reviewerSelectionMode.mode === 'role') {

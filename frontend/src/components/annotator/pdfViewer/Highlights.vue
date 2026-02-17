@@ -34,6 +34,11 @@ export default {
       required: false,
       default: null,
     },
+    showAllDocumentAnnotations: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   props: {
     'pageId': {
@@ -166,7 +171,7 @@ export default {
   methods: {
     // Check if a given PDF page is loaded/rendered
     isPdfPageLoaded(pageNumber) {
-        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+        const canvas = document.getElementById('pdf-canvas-' + pageNumber + '-' + this.documentId);
         const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
         const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
         const loaded = (visible && hasDimensions);
@@ -174,6 +179,11 @@ export default {
     },
     filterBySessionAndSettings(anno) {
       if (this.studySessionId && this.studyStepId) {
+        // When showAllDocumentAnnotations is true, show all annotations for the document
+        if (this.showAllDocumentAnnotations && anno.studySessionId === null && anno.studyStepId === null) {
+          return true;
+        }
+        // Otherwise, only show annotations for current session and step
         const isSessionAndStepMatch = anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
         return isSessionAndStepMatch;
       } else if (this.studySessionIds) {

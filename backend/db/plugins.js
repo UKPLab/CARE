@@ -58,5 +58,26 @@ function GlobalChangeTrackingPlugin(sequelize) {
 
     });
 }
+const logger = require("../utils/logger.js")("TransactionTimeout");
+function TimeoutTrackerPlugin(instance) {
+    const originalQuery = instance.query;
 
-module.exports = GlobalChangeTrackingPlugin;
+    instance.query = async function() {
+        try {
+            return await originalQuery.apply(this, arguments);
+        } catch (err) {
+            // Check for the specific Postgres error code for idle transaction timeouts
+            const pgError = err.parent || err.original;
+            if (pgError && pgError.code === '25P03') {
+                const stack = new Error("Sequelize Stability Tracer").stack;
+                logger.error('CRITICAL: Postgres killed a zombie transaction.');
+                logger.error("Trace: "+ stack);
+            }
+            throw err;
+        }
+    };
+}
+module.exports = {
+    GlobalChangeTrackingPlugin,
+    TimeoutTrackerPlugin,
+};  

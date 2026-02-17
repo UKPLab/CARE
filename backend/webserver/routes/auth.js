@@ -155,6 +155,12 @@ module.exports = function (server) {
 
         const data = req.body;
 
+        // Check if self-registration is enabled
+        const isSelfRegistrationEnabled = await server.db.models["setting"].get("app.register.enabled");
+        if (!isSelfRegistrationEnabled) {
+            return res.status(403).json({message: "Self-registration is currently disabled. Please contact an administrator to create an account."});
+        }
+
         // check if name is defined if it is required
         if ((await server.db.models['setting'].get("app.register.requestName")) === "true") {
             if (!data.firstName) {
@@ -178,10 +184,11 @@ module.exports = function (server) {
 
         if (!data.password) {
             return res.status(400).json({message: "Please provide a password."});
-        } else {
-            if (data.password.length < 8) {
-                return res.status(400).json({message: "Password does not meet requirements."});
-            }
+        }
+        try {
+            server.db.models['user'].validatePasswordContent(data.password);
+        } catch (err) {
+            return res.status(400).json({message: err.message});
         }
 
         if (!data.acceptTerms && !data.isCreatedByAdmin) {
@@ -320,8 +327,10 @@ The CARE Team`);
         if (!token || !newPassword) {
             return res.status(400).json({message: "Token and new password are required."});
         }
-        if (newPassword.length < 8) {
-            return res.status(400).json({message: "Password does not meet requirements."});
+        try {
+            server.db.models['user'].validatePasswordContent(newPassword);
+        } catch (err) {
+            return res.status(400).json({message: err.message});
         }
         try {
             // Decode the token and check expiry
