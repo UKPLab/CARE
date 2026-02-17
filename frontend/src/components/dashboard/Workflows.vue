@@ -122,11 +122,18 @@ export default {
           (workflow) => !workflow.deleted
         ).map(workflow => ({
           ...workflow,
+          isEditable: this.isAdmin || workflow.userId === this.userId,
           hidden: {
             text: workflow.hideInFrontend ? "Yes" : "No",
             class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
           }
         }));
+    },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
     },
     buttons() {
       return [
@@ -135,6 +142,9 @@ export default {
           action: "copyWorkflow",
           stats: { workflowId: "id" },
           icon: "files",
+          filter: [
+            {key: "isEditable", value: true},
+          ],
           options: {
             iconOnly: true,
             specifiers: {
@@ -159,6 +169,9 @@ export default {
           action: "renameWorkflow",
           stats: { workflowId: "id" },
           icon: "fonts",
+          filter: [
+            {key: "isEditable", value: true},
+          ],
           options: {
             iconOnly: true,
             specifiers: {
@@ -171,6 +184,9 @@ export default {
           action: "toggleHidden",
           stats: { workflowId: "id" },
           icon: "eye-slash",
+          filter: [
+            {key: "isEditable", value: true},
+          ],
           options: {
             iconOnly: true,
             specifiers: {
@@ -183,6 +199,9 @@ export default {
           action: "deleteWorkflow",
           stats: { workflowId: "id" },
           icon: "trash",
+          filter: [
+            {key: "isEditable", value: true},
+          ],
           options: {
             iconOnly: true,
             specifiers: {

@@ -3,7 +3,7 @@
     <template #element>
       <div class="card border-1 text-start rounded-0 w-100">
         <div class="d-flex justify-content-between align-items-center p-1 card-header">
-          <span class="text-start">
+          <span v-if="editable" class="text-start">
             <BasicButton
               class="btn border-0"
               :rotate-icon="180"
@@ -132,6 +132,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    editable: {
+      type: Boolean,
+      required: false,
+      default: true,
     }
   },
   emits: ["update:node", "delete:node", "add:nodeAfter", "add:nodePrevious", "copy:node", "paste:nodeBefore", "paste:nodeAfter"],

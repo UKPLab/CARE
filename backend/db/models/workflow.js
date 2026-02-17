@@ -11,13 +11,6 @@ module.exports = (sequelize, DataTypes) => {
         };
     static publicTable = true;
 
-    static async deleteWorkflowSteps(workflowId, options) {
-      const workflowSteps = await sequelize.models.workflow_step.getAllByKey("workflowId", workflowId);
-      for (const step of workflowSteps) {
-        await sequelize.models.workflow_step.deleteById(step.id, { transaction: options.transaction });
-      }
-    }
-
     static fields = [
         {
             key: "name",
@@ -43,6 +36,14 @@ module.exports = (sequelize, DataTypes) => {
             help: "If enabled, this workflow will be hidden from users in the frontend."
         }
     ]
+
+    static async deleteWorkflowSteps(workflowId, options) {
+      const workflowSteps = await sequelize.models.workflow_step.getAllByKey("workflowId", workflowId);
+      for (const step of workflowSteps) {
+        await sequelize.models.workflow_step.deleteById(step.id, { transaction: options.transaction });
+      }
+    }
+
 
 
     /**

@@ -119,6 +119,7 @@ export default {
             table: "workflow_step",
             data: {
               name: step.name || step.stepType + " Step " + (idx + 1),
+              stepNumber: idx + 1,
               workflowId: workflowId,
               stepType: step.stepType,
               configuration: step.configuration || {},
@@ -151,6 +152,7 @@ export default {
               table: "workflow",
               data: {
                 name: workflow.name,
+                userId: this.userId,  
                 description: workflow.description || "",
                 parentWorkflowId: null,
                 hideInFrontend: workflow.hideInFrontend || false,
