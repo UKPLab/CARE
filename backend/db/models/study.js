@@ -240,6 +240,7 @@ module.exports = (sequelize, DataTypes) => {
                 const customConfig = stepDocument?.configuration || {};
                 const plainStudyStep = await sequelize.models.study_step.add({
                     studyId: study.id,
+                    stepNumber: i + 1,
                     stepType: workflowStep.stepType,
                     workflowStepId: workflowStep.id,
                     documentId: (stepDocument && stepDocument.documentId) ? stepDocument.documentId : null,
