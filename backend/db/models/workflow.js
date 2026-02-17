@@ -79,6 +79,10 @@ module.exports = (sequelize, DataTypes) => {
       deletedAt: DataTypes.DATE,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
       parentWorkflowId: {
         type: DataTypes.INTEGER,
         allowNull: true,

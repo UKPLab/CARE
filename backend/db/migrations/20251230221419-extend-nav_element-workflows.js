@@ -3,13 +3,13 @@
 const navElements = [
   {
     name: "Workflows",
-    groupId: "Admin",
+    groupId: "Default",
     icon: "diagram-3",
     order: 15,
-    admin: true,
+    admin: false,
     path: "workflows",
     component: "Workflows",
-  },
+  }
 ];
 
 /** @type {import('sequelize-cli').Migration} */
