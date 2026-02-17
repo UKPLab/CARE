@@ -45,7 +45,15 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
+/**
+ * Export Format Modal Component
+ * 
+ * Allows users to export workflows in either JSON or YAML format. The exported file will contain an array of workflow objects with their steps, excluding certain metadata fields.
+ * 
+ * @author Karim Ouf
+ */
 export default {
   name: "ExportFormatModal",
   components: { BasicModal, BasicButton, LoadIcon },
@@ -59,8 +67,47 @@ export default {
     },
     selectFormat(format) {
       this.close();
-      this.$emit('formatSelected', format);
-    }
+      this.downloadWorkflowsWithFormat(format);
+    },
+    downloadWorkflowsWithFormat(format) {
+      const attributesToDelete = [
+        "draft",
+        "anonymous",
+        "createdAt",
+        "updatedAt",
+        "deleted",
+        "deletedAt",
+        "userId"
+      ];
+      
+      const workflows = this.$store.getters["table/workflow/getFiltered"](
+        (w) => !w.deleted
+      ).map(w => {
+            return Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key)));
+      });
+
+      // Get workflow steps for each workflow
+      const workflowsWithSteps = workflows.map(workflow => {
+        const workflowSteps = this.$store.getters["table/workflow_step/getFiltered"](
+          (step) => step.workflowId === workflow.id && !step.deleted
+        ).map(step => {
+          return Object.fromEntries(Object.entries(step).filter(([key]) => !attributesToDelete.includes(key)));
+        });
+        
+        return {
+          ...workflow,
+          steps: workflowSteps
+        };
+      });
+
+      const filename = `workflows_${Date.now()}`;
+      downloadObjectsAs(workflowsWithSteps, filename, format);
+      this.eventBus.emit("toast", {
+        title: "Export Successful",
+        message: `Workflows exported successfully in ${format.toUpperCase()} format`,
+        variant: "success",
+      });
+    },
   }
 }
 </script>

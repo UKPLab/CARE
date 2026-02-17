@@ -13,6 +13,7 @@
 
         <Graph v-if="workflowGraphData" ref="workflowGraph" :model-value="workflowGraphData" table="workflow_step"
           :options="graphOptions" :data-table="false"
+          :editable="isEditable"
           :copiedNodeData="copiedWorkflowStepData"
           @update:node="updateWorkflowStep" 
           @delete:node="deleteWorkflowStep"
@@ -54,6 +55,13 @@ import BasicButton from "@/basic/Button.vue";
 import Graph from "@/basic/graph/Graph.vue";
 import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
 
+/**
+ * Workflow Edit Modal Component
+ * 
+ * Provides a graphical interface to edit workflow steps and their relationships.
+ * 
+ * @author Karim Ouf
+ */
 export default {
   name: "WorkflowEditModal",
   emits: ["copied:node"],
@@ -94,6 +102,14 @@ export default {
     copiedWorkflowStepData: {
       type: Object,
       default: null
+    }
+  },
+  computed: {
+    isEditable() {
+      if (!this.selectedWorkflow) return false;
+      const isAdmin = this.$store.getters['auth/isAdmin'];
+      const userId = this.$store.getters['auth/getUserId'];
+      return isAdmin || this.selectedWorkflow.userId === userId;
     }
   },
   methods: {
@@ -318,22 +334,6 @@ export default {
           });
         }
       });
-    },
-
-    /**
-     * Convert string stepType back to numeric for backend
-     */
-    getStepTypeNumeric(stepTypeString) {
-      switch (stepTypeString) {
-        case "Annotater":
-          return 1; // STEP_TYPE_ANNOTATOR
-        case "Editor":
-          return 2; // STEP_TYPE_EDITOR
-        case "Modal":
-          return 3; // STEP_TYPE_MODAL
-        default:
-          return 1; // Default to annotator
-      }
     },
 
     resetForm() {

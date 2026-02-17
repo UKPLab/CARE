@@ -48,14 +48,25 @@ import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import yaml from "js-yaml";
 
+/**
+ * Import Format Modal Component
+ * 
+ * Allows users to import workflows from a JSON or YAML file. The file should contain an array of workflow objects with their steps.
+ *
+ * @author Karim Ouf
+ */
 export default {
   name: "ImportFormatModal",
   components: { BasicModal, BasicButton, LoadIcon },
-  emits: ['workflowsImported'],
   data() {
     return {
       selectedFile: null,
       workflowData: null
+    }
+  },
+  computed: {
+    userId() {
+      return this.$store.getters["auth/getUserId"];
     }
   },
   methods: {

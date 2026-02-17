@@ -14,7 +14,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
  *
  * Opens a coordinator modal to edit a workflow step node in the graph
  *
- * @author: Dennis Zyska
+ * @author: Karim Ouf
  */
 export default {
   name: "WorkflowStepEditor",

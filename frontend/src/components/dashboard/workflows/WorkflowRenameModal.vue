@@ -58,7 +58,7 @@ import BasicForm from "@/basic/Form.vue";
  * Creates a new workflow with the updated name instead of renaming the existing one.
  * The original workflow is hidden from the frontend view.
  * 
- * @author Generated for CARE System
+ * @author Karim Ouf
  */
 export default {
   name: "WorkflowRenameModal",
@@ -194,45 +194,6 @@ export default {
         });
       } finally {
         this.isLoading = false;
-      }
-    },
-    
-    async copyWorkflowSteps(originalWorkflowId, newWorkflowId) {
-      try {
-        // Get all steps from the original workflow
-        const originalSteps = this.$store.getters["table/workflow_step/getFiltered"](
-          (step) => step.workflowId === originalWorkflowId && !step.deleted
-        );
-        
-        // Copy each step to the new workflow
-        for (const step of originalSteps) {
-          const newStepData = {
-            workflowId: newWorkflowId,
-            name: step.name,
-            description: step.description,
-            stepType: step.stepType,
-            parameters: step.parameters,
-            position: step.position,
-            order: step.order,
-          };
-          
-          await new Promise((resolve, reject) => {
-            this.$socket.emit("appDataAdd", {
-              table: "workflow_step",
-              data: newStepData,
-            }, (result) => {
-              if (result.success) {
-                resolve(result);
-              } else {
-                reject(new Error(`Failed to copy step: ${step.name}`));
-              }
-            });
-          });
-        }
-        
-      } catch (error) {
-        console.error("Failed to copy workflow steps:", error);
-        throw new Error("Failed to copy workflow steps");
       }
     },
   },

@@ -91,7 +91,8 @@ const nodeSize = 40;
  * Opens a new coordinator modal to edit a graph
  * Currently only supports linear directed graphs
  *
- * @author: Dennis Zyska
+ * @author: Dennis Zyska, Karim Ouf
+ * 
  */
 export default {
   name: "FormGraph",

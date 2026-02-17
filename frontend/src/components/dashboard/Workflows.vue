@@ -51,7 +51,6 @@
   />
   <ImportFormatModal
     ref="importFormatModal"
-    @workflowsImported="handleWorkflowsImport"
   />
   <ConfirmModal ref="confirmModal" />
 </template>
@@ -61,7 +60,6 @@ import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import {downloadObjectsAs} from "@/assets/utils";
 
 // Modal components
 import WorkflowCreateModal from "./workflows/WorkflowCreateModal.vue";
@@ -119,7 +117,7 @@ export default {
   computed: {
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
-          (workflow) => !workflow.deleted
+          (workflow) => workflow.userId === null || workflow.userId === this.userId
         ).map(workflow => ({
           ...workflow,
           isEditable: this.isAdmin || workflow.userId === this.userId,
@@ -236,114 +234,8 @@ export default {
     importWorkflows() {
       this.$refs.importFormatModal.open();
     },
-    handleWorkflowsImport(workflowData) {
-      
-      if (!Array.isArray(workflowData)) {
-        this.eventBus.emit('toast', {
-          title: 'Import Error',
-          message: 'Invalid workflow data format. Expected an array of workflows.',
-          variant: 'danger'
-        });
-        return;
-      }
-      
-      let importCount = 0;
-      let errorCount = 0;
-      
-      workflowData.forEach(workflow => {
-        // Validate required workflow fields
-        if (!workflow.name) {
-          errorCount++;
-          return;
-        }
-        
-        // Extract workflow steps if present
-        const workflowSteps = workflow.steps || [];
-        delete workflow.steps;
-        
-        // Create workflow
-        this.$socket.emit('appDataCreate', {
-          table: 'workflow',
-          data: {
-            ...workflow,
-            id: undefined // Let server generate new ID
-          }
-        }, (result) => {
-          if (result.success) {
-            importCount++;
-            const newWorkflowId = result.data.id;
-            
-            // Import workflow steps
-            workflowSteps.forEach(step => {
-              this.$socket.emit('appDataCreate', {
-                table: 'workflow_step',
-                data: {
-                  ...step,
-                  id: undefined, // Let server generate new ID
-                  workflowId: newWorkflowId
-                }
-              });
-            });
-            
-            // Show success message after processing all workflows
-            if (importCount + errorCount === workflowData.length) {
-              this.eventBus.emit('toast', {
-                title: 'Import Complete',
-                message: `Successfully imported ${importCount} workflow(s). ${errorCount > 0 ? `${errorCount} workflow(s) failed to import.` : ''}`,
-                variant: importCount > 0 ? 'success' : 'warning'
-              });
-            }
-          } else {
-            errorCount++;
-            console.error('Failed to import workflow:', result.message);
-            
-            if (importCount + errorCount === workflowData.length) {
-              this.eventBus.emit('toast', {
-                title: 'Import Complete', 
-                message: `Successfully imported ${importCount} workflow(s). ${errorCount > 0 ? `${errorCount} workflow(s) failed to import.` : ''}`,
-                variant: importCount > 0 ? 'success' : 'danger'
-              });
-            }
-          }
-        });
-      });
-    },
     exportWorkflows() {
       this.$refs.exportFormatModal.open();
-    },
-    downloadWorkflowsWithFormat(format) {
-      const attributesToDelete = [
-        "draft",
-        "anonymous",
-        "createdAt",
-        "updatedAt",
-        "deleted",
-        "deletedAt",
-        "userId"
-      ];
-      
-      const workflows = this.$store.getters["table/workflow/getFiltered"](
-        (w) => !w.deleted
-      ).map(w => {
-            return Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key)));
-      });
-
-      // Get workflow steps for each workflow
-      const workflowsWithSteps = workflows.map(workflow => {
-        const workflowSteps = this.$store.getters["table/workflow_step/getFiltered"](
-          (step) => step.workflowId === workflow.id && !step.deleted
-        ).map(step => {
-          return Object.fromEntries(Object.entries(step).filter(([key]) => !attributesToDelete.includes(key)));
-        });
-        
-        return {
-          ...workflow,
-          steps: workflowSteps
-        };
-      });
-
-      const filename = `workflows_${Date.now()}`;
-      downloadObjectsAs(workflowsWithSteps, filename, format);
     },
     editWorkflow(params) {
       this.$refs.workflowEditModal.open(params.id);
@@ -352,12 +244,12 @@ export default {
     handleCopy(stepData) {
       this.copiedData = stepData;
     },
-    async renameWorkflow(params) { 
+    renameWorkflow(params) { 
       this.$refs.workflowRenameModal.open(params.id);
     },
 
     toggleHidden(params) {
-      const newHiddenState = !workflow.hideInFrontend;  
+      const newHiddenState = !params.hideInFrontend;  
       this.$socket.emit(
         "appDataUpdate",
         {

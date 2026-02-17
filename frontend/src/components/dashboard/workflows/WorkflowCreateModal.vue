@@ -12,7 +12,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 /**
  * WorkflowCreateModal - modal component for adding and editing workflows
  *
- * @author Dennis Zyska
+ * @author Karim Ouf
  */
 export default {
   name: "WorkflowCreateModal",
