@@ -291,11 +291,15 @@ class AppSocket extends Socket {
     async sendDataByHash(data, options) {
         const record = await this.models[data.table].getByHash(data.hash);
         let errorCode = "UNKNOWN";
+        let errorMessage = "";
 
         if (!record) {
             // Record doesn't exist or was deleted
             errorCode = "NOT_FOUND";
-            throw new Error(`${errorCode}|The requested resource does not exist or has been deleted.`);
+            errorMessage = "The requested resource does not exist or has been deleted.";
+            const error = new Error(`${errorMessage}`);
+            error.code = errorCode;
+            throw error;
         }
 
         // Now check permissions by attempting to send via filtered sendTable
@@ -307,7 +311,10 @@ class AppSocket extends Socket {
         if (result.length === 0) {
             // Record exists but user doesn't have permission
             errorCode = "ACCESS_DENIED";
-            throw new Error(`${errorCode}|You do not have rights to access this data.`);
+            errorMessage = "You do not have rights to access this data.";
+            const error = new Error(`${errorMessage}`);
+            error.code = errorCode;
+            throw error;
         }
     }
 

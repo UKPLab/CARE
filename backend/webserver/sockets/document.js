@@ -70,12 +70,13 @@ class DocumentSocket extends Socket {
      * @param {string} identifierType - 'id' or 'hash'
      * @param {boolean} checkFile - whether to check file existence (default: true)
      * @returns {Promise<Object>} - validated document object
-     * @throws {Error} - if validation fails, message format: "ERROR_CODE|description"
+     * @throws {Error} - if validation fails, with error.code set to the error code
      */
 
     async validateDocument(identifier, identifierType = 'id', checkFile = true) {
         let document;
         let errorCode = "UNKNOWN"
+        let errorMessage = ""
 
         if (identifierType === 'hash') {
             document = await this.models['document'].getByHash(identifier);
@@ -86,28 +87,31 @@ class DocumentSocket extends Socket {
         // Check if document exists in database (deleted or never existed)
         if (!document || document.deleted) {
             errorCode = "DOCUMENT_NOT_FOUND";
-            throw new Error(`${errorCode}|The document does not exist or has been deleted.`);
+            errorMessage = "The document does not exist or has been deleted."
+            const error = new Error(`${errorMessage}`)
+            error.code = errorCode;
+            throw error;
         }
 
         // Check user access permission
         if (!(await this.checkDocumentAccess(document.id))) {
             errorCode = "ACCESS_DENIED";
-            throw new Error(`${errorCode}|You do not have access to this document.`);
+            errorMessage = "You do not have access to this document."
+            const error = new Error(`${errorMessage}`)
+            error.code = errorCode;
+            throw error;
         }
 
         // Check if file exists on disk (optional, skip for metadata-only operations)
-        if (checkFile) {
-            let filePath;
-            if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || 
-                document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
-                filePath = `${UPLOAD_PATH}/${document.hash}.delta`;
-            } else if (document.type === this.models['document'].docTypes.DOC_TYPE_PDF) {
-                filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
-            }
+        if (checkFile && document.type === this.models['document'].docTypes.DOC_TYPE_PDF) {
+            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             const filename = filePath.split("/").pop();
-            if (filePath && !fs.existsSync(filePath)) {
+            if (!fs.existsSync(filePath)) {
                 errorCode = "FILE_MISSING";
-                throw new Error(`${errorCode}|The document file ${filename} is missing from the server.`);
+                errorMessage = `The document file ${filename} is missing from the server.`
+                const error = new Error(`${errorMessage}`)
+                error.code = errorCode;
+                throw error;
             }
         }
         return document;
