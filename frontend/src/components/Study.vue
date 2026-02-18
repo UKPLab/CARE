@@ -466,16 +466,6 @@ export default {
     }
   },
   methods: {
-    /**
-     * Parse "ERROR_CODE|message" format from server error
-     */
-    parseErrorMessage(raw) {
-      const idx = raw ? raw.indexOf('|') : -1;
-      if (idx > 0) {
-        return { errorCode: raw.substring(0, idx), message: raw.substring(idx + 1) };
-      }
-      return { errorCode: null, message: raw };
-    },
     setStudyError(message, errorCode) {
       const errorMap = {
         'NOT_FOUND': {
@@ -519,8 +509,11 @@ export default {
 
       this.pendingNlpInsertion = responseText;
     },
+    /*
+    Handle errors captured in loading modal
+     */
     handleLoadingError(errorData) {
-      this.setStudyError(errorData.message, errorData.errorCode);
+      this.setStudyError(errorData.message, errorData.code);
     },
     next() {
       const nextStep = this.nextStudyStep;
@@ -543,8 +536,7 @@ export default {
             },
             (response) => {
               if (!response.success) {
-                const {errorCode, message} = this.parseErrorMessage(response.message);
-                this.setStudyError(message, errorCode);
+                this.setStudyError(response.message, response.code);
               } else {
                 if (
                     this.studySessionId === 0 ||

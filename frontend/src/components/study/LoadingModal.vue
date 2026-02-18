@@ -283,7 +283,7 @@ export default {
               });
               
               this.$emit('error', {
-                errorCode: response.errorCode || 'FILE_MISSING',
+                code: response.code || 'FILE_MISSING',
                 message: response.message || 'An error occurred while loading the study step.'
               });
 
@@ -373,15 +373,9 @@ export default {
         'UNKNOWN_ERROR': 'An unexpected error occurred.'
       };
       
-      const errorCode = response.errorCode || 'UNKNOWN_ERROR';
+      const errorCode = response.code || 'UNKNOWN_ERROR';
       return errorMessages[errorCode] || response.message || 'An error occurred while loading the study step.';
     },
-
-    returnToDashboard() {
-      this.close();
-      this.$router.push('/dashboard');
-    },
-
   }
 }
 </script>

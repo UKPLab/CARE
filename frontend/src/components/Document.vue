@@ -72,29 +72,11 @@ export default {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash}, (res) => {
       if (!res.success) {
         this.documentId = res.documentId;
-        const {errorCode, message} = this.parseErrorMessage(res.message);
-        this.setDocumentError(message, errorCode);
+        this.setDocumentError(res.message, res.code);
       }
     });
   },
-  sockets: {
-    documentError: function (data) {
-      if (data.documentHash === this.documentHash) {
-        this.setDocumentError(data.message, data.errorCode);
-      }
-    }
-  },
   methods: {
-    /**
-     * Parse "ERROR_CODE|message" format from server error
-     */
-    parseErrorMessage(raw) {
-      const idx = raw ? raw.indexOf('|') : -1;
-      if (idx > 0) {
-        return { errorCode: raw.substring(0, idx), message: raw.substring(idx + 1) };
-      }
-      return { errorCode: null, message: raw };
-    },
     /**
      * Set document error state with user-friendly title and message
      */
@@ -119,7 +101,7 @@ export default {
         this.documentError = errorMap[errorCode];
       } else {
         // Parse message to determine error type
-        this.documentError = this.parseServerError(message);
+        this.documentError = { title: "Document Error", message: message || "An unexpected error occurred." };
       }
       
       // Also emit toast for immediate feedback
@@ -129,36 +111,6 @@ export default {
         variant: "danger"
       });
     },
-
-    /**
-     * Parse server error message to user-friendly format
-     */
-    parseServerError(message) {
-      if (!message) {
-        return { title: "Error", message: "An unexpected error occurred." };
-      }
-      
-      const lower = message.toLowerCase();
-      if (lower.includes("does not exist") || lower.includes("deleted")) {
-        return { 
-          title: "Document Not Found", 
-          message: "This document has been deleted or no longer exists." 
-        };
-      }
-      if (lower.includes("access") || lower.includes("rights")) {
-        return { 
-          title: "Access Denied", 
-          message: "You don't have permission to view this document." 
-        };
-      }
-      if (lower.includes("missing") || lower.includes("not found")) {
-        return { 
-          title: "File Not Available", 
-          message: "The document file could not be found on the server." 
-        };
-      }
-      return { title: "Document Error", message: message };
-    }
   }
 }
 </script>
