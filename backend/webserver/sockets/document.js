@@ -50,8 +50,14 @@ class DocumentSocket extends Socket {
 
         // check if the document is used in a study where the user is a participant
         const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
-        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_steps.map(step => step.studyId));
-
+        const study_ids = study_steps.map(step => step.studyId);
+        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_ids );
+        const studies = await this.models['study'].getAllByKey('id',study_ids);
+        for (const study of studies) {
+            if (study.userId === this.userId) {
+                return true;
+            }
+        }
         for (const session of study_sessions) {
             if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
                 return true;
