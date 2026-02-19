@@ -48,16 +48,19 @@ class DocumentSocket extends Socket {
             return true;
         }
 
-        // check if the document is used in a study where the user is a participant
         const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
         const study_ids = study_steps.map(step => step.studyId);
         const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_ids );
         const studies = await this.models['study'].getAllByKey('id',study_ids);
+
+        // check if the document is used in a study where the user is the owner of the study
         for (const study of studies) {
             if (study.userId === this.userId) {
                 return true;
             }
         }
+        
+        // check if the document is used in a study where the user is a participant
         for (const session of study_sessions) {
             if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
                 return true;
