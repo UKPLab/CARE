@@ -1305,35 +1305,4 @@ The CARE Team`
             return res.status(500).json({ message: "Internal server error" });
         }
     });
-
-
-
-    // ==========================================
-    // ORCID LINKING ROUTES
-    // ==========================================
-
-    /**
-     * Initiate ORCID linking
-     * Passport handles: redirect to ORCID, state generation, etc.
-     */
-    server.app.get('/auth/orcid/link',
-        ensureAuthenticated,
-        passport.authenticate('orcid-link')
-    );
-    
-    /**
-     * ORCID link callback
-     * Passport handles: code exchange, token verification, etc.
-     */
-    server.app.get('/auth/orcid/link/callback',
-        ensureAuthenticated,
-        passport.authenticate('orcid-link', { 
-            session: false,
-            failureRedirect: '/dashboard?error=orcid-link-failed'
-        }),
-        async (req, res) => {
-            // req.user contains { userId, orcidId, action }
-            res.redirect('/dashboard?orcid-linked=success');
-        }
-    );
 }

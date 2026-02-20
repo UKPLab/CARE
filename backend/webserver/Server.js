@@ -225,42 +225,6 @@ module.exports = class Server {
             });
         }));
 
-        passport.use("orcid-link", new OrcidStrategy(
-            {
-              clientID: process.env.ORCID_CLIENT_ID,
-              clientSecret: process.env.ORCID_CLIENT_SECRET,
-              callbackURL: process.env.ORCID_LINK_CALLBACK_URL,
-              passReqToCallback: true,
-            },
-            async (req, accessToken, refreshToken, params, profile, done) => {
-              try {
-                const orcidId = params.orcid;
-
-                if (!req.user) {
-                  return done(null, false, {
-                    message: "User must be logged in",
-                  });
-                }
-
-                // Save ORCID iD to user's account
-                await this.db.models["user"].update(
-                  { orcidId: orcidId },
-                  { where: { id: req.user.id } },
-                );
-
-                // Return user data
-                return done(null, {
-                  userId: req.user.id,
-                  orcidId: orcidId,
-                  action: "link",
-                });
-              } catch (error) {
-                return done(error);
-              }
-            },
-          ),
-        );
-
         /**
          * ORCID login method (first factor).
          *
