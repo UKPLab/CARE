@@ -238,47 +238,38 @@ module.exports = class Server {
                 clientID: process.env.ORCID_CLIENT_ID,
                 clientSecret: process.env.ORCID_CLIENT_SECRET,
                 callbackURL: process.env.ORCID_LOGIN_CALLBACK_URL,
-                passReqToCallback : true
+                passReqToCallback: true
             },
-            async (accessToken, refreshToken, params, profile, done) => {
+            async (req, accessToken, refreshToken, params, profile, done) => {
                 try {
                     const orcidId = params.orcid;
-                    if (!orcidId) {
-                        return done(null, false, { message: "Missing ORCID iD." });
-                    }
+                    const fullName = params.name;
 
-                    // 1) Try to find existing user by ORCID iD
+                    // Try to find existing user
                     let user = await this.db.models['user'].findOne({
-                        where: { orcidId: orcidId },
-                        raw: true,
+                        where: { orcidId },
+                        raw: true
                     });
-
+        
                     if (!user) {
-                        // 2) No linked user yet -> auto-create a new user
-                        const email =
-                            (Array.isArray(profile?.emails) && profile.emails[0]?.value) ||
-                            profile?.email ||
-                            null;
-                        const firstName = profile?.name?.givenName || null;
-                        const lastName = profile?.name?.familyName || null;
-
+                        const nameParts = fullName.trim().split(/\s+/);
+                        const firstName = nameParts[0] || null;
+                        const lastName = nameParts.length > 1 
+                            ? nameParts.slice(1).join(' ') 
+                            : null;
+                
                         const userData = {
                             orcidId: orcidId,
-                            email: email,
                             firstName: firstName,
                             lastName: lastName,
-                            // External accounts are created with a random password by add()
-                            // and get the default "user" role via hooks.
-                            acceptTerms: true,
-                            acceptStats: false,
-                            emailVerified: !!email, // treat ORCID email as verified if present
                         };
-
+        
+                        // External accounts are created with a random password by add()
+                        // and get the default "user" role via hooks.
                         const created = await this.db.models['user'].add(userData, {});
                         // Ensure we pass a plain object into relevantFields
                         user = created && created.get ? created.get({ plain: true }) : created;
                     }
-
                     return done(null, relevantFields(user));
                 } catch (e) {
                     return done(e);

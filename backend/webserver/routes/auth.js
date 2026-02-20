@@ -317,10 +317,10 @@ The CARE Team`
 
         if (mode === 'redirect') {
             if (method === 'email') {
-                return redirectTo(`/2fa/verify/email`), true;
+                return redirectTo(`http://localhost:3000/2fa/verify/email`), true;
             }
             if (method === 'totp') {
-                return redirectTo(`/2fa/verify/totp`), true;
+                return redirectTo(`http://localhost:3000/2fa/verify/totp`), true;
             }
             return redirectTo(`/login?error=unsupported-2fa-method`), true;
         }
@@ -430,7 +430,7 @@ The CARE Team`
      */
     server.app.get('/auth/login/orcid', passport.authenticate('orcid-login'));
 
-    server.app.get('/auth/login/orcid/callback',
+    server.app.get('/auth/2fa/orcid/callback',
         passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' }),
         async function (req, res, next) {
             const user = req.user;
@@ -439,8 +439,16 @@ The CARE Team`
 
             req.logIn(user, async function (err) {
                 if (err) return next(err);
-                await server.db.models['user'].registerUserLogin(user.id);
-                return res.redirect('/dashboard');
+                let transaction;
+                try {
+                    transaction = await server.db.models['user'].sequelize.transaction();
+                    await server.db.models['user'].registerUserLogin(user.id, {transaction});
+                    await transaction.commit();
+                } catch (e) {
+                    await transaction.rollback();
+                }
+                // TODO: The url is for testing only. To be removed later.
+                return res.redirect('http://localhost:3000/dashboard');
             });
         }
     );

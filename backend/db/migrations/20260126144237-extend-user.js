@@ -61,6 +61,12 @@ const columns = [
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
+    await queryInterface.changeColumn("user", "email", {
+      type: Sequelize.STRING,
+      allowNull: true,
+      unique: true
+    });
+
     for (const column of columns) {
       await queryInterface.addColumn("user", column.name, {
         type: Sequelize[column.type],
