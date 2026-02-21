@@ -130,6 +130,9 @@
         return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
       },
       languageOptions() {
+        if (this.readOnly) {
+          return this.availableLanguages.slice();
+        }
         // Available languages first, then supported languages not yet added
         const existing = new Set(this.availableLanguages);
         const options = this.availableLanguages.slice();
@@ -183,7 +186,7 @@
   
         return {
           modules: {
-            toolbar: this.toolbarVisible ? {container: toolbarTools} : false
+            toolbar: { container: this.toolbarVisible ? toolbarTools : [] }
           },
           theme: "snow"
         };
@@ -196,11 +199,14 @@
             this.editor.getEditor().enable(!newReadOnly);
             const toolbar = this.editor.getEditor().getModule("toolbar");
             if (toolbar && toolbar.container) {
-              if (newReadOnly) {
-                toolbar.container.style = "display:none"
-              } else {
-                toolbar.container.style = "display:block"
-              }
+              toolbar.container.style = "display:block";
+              toolbar.container.querySelectorAll('.ql-formats').forEach(el => {
+                if (newReadOnly && !el.querySelector('.ql-languageSelector')) {
+                  el.style.display = 'none';
+                } else {
+                  el.style.display = '';
+                }
+              });
             }
           }
         }
@@ -221,7 +227,19 @@
               button.setAttribute('title', format[1]);
             }
           });
-          this.injectLanguageSelector(editorId);
+        }
+        this.injectLanguageSelector(editorId);
+
+        // In read-only mode, hide formatting buttons but keep language selector
+        if (this.readOnly) {
+          const toolbar = this.editor.getEditor().getModule("toolbar");
+          if (toolbar && toolbar.container) {
+            toolbar.container.querySelectorAll('.ql-formats').forEach(el => {
+              if (!el.querySelector('.ql-languageSelector')) {
+                el.style.display = 'none';
+              }
+            });
+          }
         }
   
         this.editor.getEditor().enable(!this.readOnly);
@@ -275,6 +293,9 @@
           if (languagesArray.length > 0) {
             this.availableLanguages = languagesArray;
           }
+
+          // Rebuild dropdown options
+          this.rebuildLanguageSelectorOptions();
 
           // Prefer defaultLanguage from server (template row); fallback to store, then "en"
           const defaultLang = defaultLanguageFromServer || this.templateDefaultLanguage || "en";
@@ -400,8 +421,39 @@
         }
       },
 
+      rebuildLanguageSelectorOptions() {
+        const wrapper = this.languageSelectorEl?.querySelector('.ql-languageSelector');
+        if (!wrapper) return;
+        const optionsEl = wrapper.querySelector('.ql-picker-options');
+        if (!optionsEl) return;
+        optionsEl.innerHTML = this.languageOptions.map(code => {
+          const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+          return `<span class="ql-picker-item" data-value="${code}">${lang ? lang.label : code}</span>`;
+        }).join("");
+        wrapper.querySelectorAll(".ql-picker-item").forEach(item => {
+          item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const value = item.dataset.value;
+            wrapper.classList.remove("ql-expanded");
+            const labelEl = wrapper.querySelector(".ql-picker-label");
+            if (labelEl) {
+              const lang = SUPPORTED_LANGUAGES.find(l => l.code === value);
+              const svg = labelEl.querySelector("svg");
+              labelEl.innerHTML = (lang ? lang.label : value) + (svg ? svg.outerHTML : "");
+            }
+            this.selectLanguage(value);
+          });
+        });
+      },
+
       selectLanguage(value) {
         if (!value || value === this.selectedLanguage) {
+          return;
+        }
+        if (this.readOnly) {
+          this.selectedLanguage = value;
+          this.loadContentForLanguage(value);
+          this.$nextTick(() => this.updateLanguageSelectorLabel());
           return;
         }
         const isNew = !this.availableLanguages.includes(value);
