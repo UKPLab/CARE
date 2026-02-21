@@ -21,6 +21,12 @@
    * 
    * @author Mohammad Elwan
    */
+  const SUPPORTED_LANGUAGES = [
+    { name: "English", value: "en" },
+    { name: "Deutsch", value: "de" },
+    { name: "Français", value: "fr" },
+  ];
+
   export default {
     name: "TemplateModal",
     components: { BasicCoordinator },
@@ -43,12 +49,34 @@
         if (!this.isAdmin) {
           this.filterTypeOptionsInStore();
         }
-        
-        this.$nextTick(() => {
-          this.$refs.coordinator.open(id, defaultValues);
+
+        if (id === 0) {
+          this.filterDefaultLanguageOptions([]);
+          this.$nextTick(() => this.$refs.coordinator.open(id, defaultValues));
+          return;
+        }
+
+        // For edit: restrict default language to languages that have content
+        this.$socket.emit("templateGetLanguages", { templateId: id }, (res) => {
+          const data = res.success && res.data ? res.data : {};
+          const languagesArray = Array.isArray(data) ? data : (data.languages || []);
+
+          this.filterDefaultLanguageOptions(languagesArray);
+
+          this.$nextTick(() => this.$refs.coordinator.open(id, defaultValues));
         });
       },
-      
+
+      filterDefaultLanguageOptions(languagesWithContent) {
+        const fields = this.$store.getters["table/template/getFields"];
+        if (!fields) return;
+        const defaultLangField = fields.find((f) => f.key === "defaultLanguage");
+        if (!defaultLangField || !defaultLangField.options) return;
+        defaultLangField.options = languagesWithContent.length > 0
+          ? SUPPORTED_LANGUAGES.filter((opt) => languagesWithContent.includes(opt.value))
+          : [...SUPPORTED_LANGUAGES];
+      },
+
       filterTypeOptionsInStore() {
         // Filter type field options directly in the store-derived fields
         // This ensures options are filtered before the modal opens
