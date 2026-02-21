@@ -1,5 +1,6 @@
 const winston = require('winston');
 const Transport = require('winston-transport');
+require('winston-daily-rotate-file');
 
 const logging_dir = process.env.LOGGING_PATH;
 
@@ -121,6 +122,38 @@ function addCallerinfo() {
  * @return {object} - Logger
  */
 exports = module.exports = function (service = "log", db = null) {
+    const errorTransport = new winston.transports.DailyRotateFile({
+        filename: logging_dir + '/error.log',
+        level: 'error',
+        maxSize: '20m',
+        zippedArchive: true
+    });
+
+    const completeTransport = new winston.transports.DailyRotateFile({
+        filename: logging_dir + '/complete.log',
+        level: process.env.LOGGING_LEVEL,
+        maxSize: '20m',
+        zippedArchive: true
+    });
+
+    const activityTransport = new winston.transports.DailyRotateFile({
+        filename: logging_dir + '/activity.log',
+        level: 'info',
+        maxSize: '20m',
+        zippedArchive: true
+    });
+
+    // Handle transport errors
+    [errorTransport, completeTransport, activityTransport].forEach(transport => {
+        transport.on('error', error => {
+            console.error('Log transport error:', error);
+        });
+
+        transport.on('rotate', (oldFilename, newFilename) => {
+            console.log('Log rotated from %s to %s', oldFilename, newFilename);
+        });
+    });
+
     return winston.createLogger({
         level: process.env.LOGGING_LEVEL,
         format: winston.format.combine(
@@ -133,12 +166,9 @@ exports = module.exports = function (service = "log", db = null) {
         silent: (process.env.DISABLE_LOGGING === "true" || process.env.DISABLE_LOGGING === 1),
         transports:
             [
-                new winston.transports.File({filename: logging_dir + '/error.log', level: 'error'}),
-                new winston.transports.File({
-                    filename: logging_dir + '/complete.log',
-                    level: process.env.LOGGING_LEVEL
-                }),
-                new winston.transports.File({filename: logging_dir + '/activity.log', level: 'info'}),
+                errorTransport,
+                completeTransport,
+                activityTransport,
                 new winston.transports.Console({format: winston.format.simple()}),
                 new SQLTransport({level: process.env.LOGGING_LEVEL, db: db})
             ]
