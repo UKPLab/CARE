@@ -337,10 +337,18 @@ module.exports = (sequelize, DataTypes) => {
                 { where: { templateId: copyId }, transaction }
             );
 
-            // 5. Touch template.updatedAt — use instance-level save to ensure DB persistence and hook trigger
+            // 5. Sync metadata and touch updatedAt — use instance-level save to ensure DB persistence and hook trigger
             const copyInstance = await Template.findByPk(copyId, { transaction });
+            copyInstance.defaultLanguage = source.defaultLanguage;
+            copyInstance.description = source.description;
+            const copySuffixMatch = copyInstance.name.match(/\s*\(copy(?:\s+\d+)?\)$/);
+            const copySuffix = copySuffixMatch ? copySuffixMatch[0] : ' (copy)';
+            copyInstance.name = source.name + copySuffix;
             copyInstance.changed('updatedAt', true);
-            await copyInstance.save({ fields: ['updatedAt'], transaction });
+            await copyInstance.save({
+                fields: ['defaultLanguage', 'description', 'name', 'updatedAt'],
+                transaction,
+            });
 
             return await Template.findByPk(copyId, { transaction });
         }
