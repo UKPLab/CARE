@@ -299,67 +299,51 @@ module.exports = class Server {
                 bindDN: process.env.LDAP_BIND_DN,
                 bindCredentials: process.env.LDAP_BIND_CREDENTIALS,
                 searchBase: process.env.LDAP_SEARCH_BASE,
-                searchFilter: process.env.LDAP_SEARCH_FILTER || '(uid={{username}})',
+                searchFilter: process.env.LDAP_SEARCH_FILTER,
             },
             passReqToCallback: true,
         }, async (req, ldapUser, done) => {
             try {
-                const username = (req.body && (req.body.username || req.body.userName)) ? (req.body.username || req.body.userName) : null;
+                const username = Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid;
+                const ldapMail = ldapUser?.mail || ldapUser?.email;
+                const email = Array.isArray(ldapMail) ? ldapMail[0] : ldapMail;
 
-                // 1) Prefer explicit ldapUsername match
+                if (!username) return done(new Error('LDAP user entry is missing UID'));
+
                 let user = null;
-                if (username) {
-                    user = await this.db.models['user'].findOne({
-                        where: { ldapUsername: username },
-                        raw: true,
-                    });
-                }
 
-                // 2) Fallback: try to match by email from LDAP profile, then bind ldapUsername
-                const ldapMail = ldapUser && (ldapUser.mail || ldapUser.email);
-                const ldapEmail = Array.isArray(ldapMail) ? ldapMail[0] : ldapMail;
-                if (!user && ldapEmail) {
+                // 1. First try to match by ldapUsername
+                user = await this.db.models['user'].findOne({
+                    where: { ldapUsername: username },
+                    raw: true,
+                });
+
+                // 2. Second, fall back to email -> In case the ldapUsername is changed
+                if (!user && email) {
                     const existing = await this.db.models['user'].findOne({
-                        where: { email: ldapEmail },
+                        where: { email: email },
                         raw: true,
                     });
+                    
                     if (existing) {
                         user = existing;
-                        if (username && !existing.ldapUsername) {
-                            await this.db.models['user'].update(
-                                { ldapUsername: username },
-                                { where: { id: existing.id } }
-                            );
-                        }
+                        await this.db.models['user'].update(
+                            { ldapUsername: username },
+                            { where: { id: existing.id } }
+                        );
                     }
                 }
-
+                // 3. Auto create a new user if there is no match found at the previous steps
                 if (!user) {
-                    // 3) No linked user yet -> auto-create a new user
-                    if (!ldapEmail) {
-                        return done(null, false, { message: "LDAP account has no email; cannot create local user." });
-                    }
+                    const firstName = (Array.isArray(ldapUser?.givenName) ? ldapUser.givenName[0] : ldapUser?.givenName) || ldapUser?.cn || 'New';
+                    const lastName = (Array.isArray(ldapUser?.sn) ? ldapUser.sn[0] : ldapUser?.sn) || 'User';
 
-                    const firstName =
-                        (Array.isArray(ldapUser?.givenName) ? ldapUser.givenName[0] : ldapUser?.givenName) ||
-                        ldapUser?.cn ||
-                        null;
-                    const lastName =
-                        (Array.isArray(ldapUser?.sn) ? ldapUser.sn[0] : ldapUser?.sn) ||
-                        null;
-
-                    const userData = {
-                        email: ldapEmail,
-                        ldapUsername: username || (Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid) || null,
-                        firstName: firstName,
-                        lastName: lastName,
-                        acceptTerms: true,
-                        acceptStats: false,
-                        emailVerified: true,
-                    };
-
-                    const created = await this.db.models['user'].add(userData, {});
-                    user = created && created.get ? created.get({ plain: true }) : created;
+                    user = await this.db.models['user'].add({
+                        ldapUsername: username,
+                        email: email,
+                        firstName,
+                        lastName,
+                    });
                 }
 
                 return done(null, relevantFields(user));
