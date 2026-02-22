@@ -34,6 +34,12 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
+        path: "/login/ldap",
+        component: () => import("@/auth/LoginLdap.vue"),
+        name: "login-ldap",
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
+    },
+    {
         path: "/2fa/verify/email",
         name: "2fa-verify-email",
         component: () => import("@/auth/TwoFactorVerifyEmail.vue"),
