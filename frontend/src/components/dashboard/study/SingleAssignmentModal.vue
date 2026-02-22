@@ -63,7 +63,7 @@
             </label>
             <FormSelect
                 v-model="workflowMapping[workflowStep.id]"
-                :options="getTargetStepOptions(workflowStep.stepType)"
+                :options="getTargetStepOptions(workflowStep.stepType, workflowStep.id)"
             />
           </div>
         </div>
@@ -502,7 +502,6 @@ export default {
           }
           
           const user = this.$store.getters["table/user/get"](session.userId);
-          const currentStepIndex = this.getStudyStepIndex(session.studyId, step.id);
           
           data.push({
             id: step.id,
@@ -518,8 +517,6 @@ export default {
             userId: session.userId,
             firstName: user ? user.firstName : 'Unknown',
             lastName: user ? user.lastName : 'Unknown',
-            stepNumber: currentStepIndex !== null ? currentStepIndex + 1 : null,
-            currentStep: currentStepIndex !== null ? `Step ${currentStepIndex + 1}` : 'N/A',
             sessionStart: session.start ? new Date(session.start).toLocaleString() : 'N/A',
             sessionEnd: session.end ? new Date(session.end).toLocaleString() : 'N/A',
             status: session.end === null ? "Running" : "Finished",
@@ -677,7 +674,7 @@ export default {
         default: return 'Unknown';
       }
     },
-    getTargetStepOptions(stepType) {
+    getTargetStepOptions(stepType, currentStepId) {
       // First, order the target workflow steps based on workflowStepPrevious
       const orderedSteps = [];
       const stepPositionMap = new Map(); // Maps step.id to its position (1-based)
@@ -696,38 +693,34 @@ export default {
       }
       
       // Filter by stepType and create options with correct step numbers
-      return {
-        options: orderedSteps
-          .filter(step => step.stepType === stepType)
-          .map((step) => ({
-            name: `Step ${stepPositionMap.get(step.id)}: ${this.getStepTypeName(step.stepType)}`,
-            value: step.id,
-          }))
-      };
-    },
-    getStudyStepIndex(studyId, studyStepIdMax) {
-      if (!studyStepIdMax) return null;
+      const options = orderedSteps
+        .filter(step => step.stepType === stepType)
+        .map((step) => ({
+          name: `Step ${stepPositionMap.get(step.id)}: ${this.getStepTypeName(step.stepType)}`,
+          value: step.id,
+        }));
       
-      const steps = this.$store.getters["table/study_step/getFiltered"](
-        (s) => s.studyId === studyId
-      );
-      
-      if (!steps || !steps.length) return null;
-
-      const nextMap = new Map(steps.map(s => [s.studyStepPrevious, s]));
-
-      let current = steps.find(s => s.studyStepPrevious == null);
-      
-      let index = 0;
-      while (current) {
-        if (current.id === studyStepIdMax) {
-          return index;
+      // Add "Previous Submission Document" placeholder only if:
+      // 1. Current step is Annotator (type 1), AND
+      // 2. Previous step in SOURCE workflow is also Annotator (type 1)
+      if (stepType === 1 && currentStepId) {
+        const currentSourceStep = this.workflowSteps.find(s => s.id === currentStepId);
+        if (currentSourceStep && currentSourceStep.workflowStepPrevious) {
+          const previousSourceStep = this.workflowSteps.find(
+            s => s.id === currentSourceStep.workflowStepPrevious
+          );
+          if (previousSourceStep && previousSourceStep.stepType === 1) {
+            options.unshift({
+              name: '<Document> Revised Document',
+              value: 'previousSubmission',
+            });
+          }
         }
-        current = nextMap.get(current.id);
-        index++;
       }
       
-      return null;
+      return {
+        options: options
+      };
     },
     getWorkflowType(workflowId) {
         const workflow = this.$store.getters["table/workflow/get"](workflowId);
