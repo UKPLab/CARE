@@ -154,6 +154,8 @@ export default {
       });
       if (this.validForm) {
         await this.loginLdap();
+        // TODO: May need to figure out another way to fix old user data persisting issue.
+        this.$router.go(0);
       }
     },
     async loginLdap() {

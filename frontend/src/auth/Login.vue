@@ -283,10 +283,9 @@ export default {
       try {
         await this.login({username: this.formData.username, password: this.formData.password})
         {
-
+          // TODO: May need to figure out another way to fix old user data persisting issue.
           await this.$router.go(0);
           this.showError = false;
-
         }
       } catch (error) {
         this.showError = true;
