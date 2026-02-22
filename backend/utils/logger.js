@@ -123,21 +123,24 @@ function addCallerinfo() {
  */
 exports = module.exports = function (service = "log", db = null) {
     const errorTransport = new winston.transports.DailyRotateFile({
-        filename: logging_dir + '/error.log',
+        filename: logging_dir + '/error-%DATE%.log',
+        datePattern: 'YYYY-MM-DD',
         level: 'error',
         maxSize: '20m',
         zippedArchive: true
     });
 
     const completeTransport = new winston.transports.DailyRotateFile({
-        filename: logging_dir + '/complete.log',
+        filename: logging_dir + '/complete-%DATE%.log',
+        datePattern: 'YYYY-MM-DD',
         level: process.env.LOGGING_LEVEL,
         maxSize: '20m',
         zippedArchive: true
     });
 
     const activityTransport = new winston.transports.DailyRotateFile({
-        filename: logging_dir + '/activity.log',
+        filename: logging_dir + '/activity-%DATE%.log',
+        datePattern: 'YYYY-MM-DD',
         level: 'info',
         maxSize: '20m',
         zippedArchive: true
