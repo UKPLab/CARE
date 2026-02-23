@@ -434,11 +434,7 @@ The CARE Team`
             const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json' });
             if (handled) return;
 
-            req.logIn(user, async function (err2) {
-                if (err2) return next(err2);
-                await server.db.models['user'].registerUserLogin(user.id);
-                return res.status(200).send({ user: user });
-            });
+            return finalizeLogin(req, res, next, user, { mode:'json'});
         })(req, res, next);
     });
 
@@ -454,18 +450,9 @@ The CARE Team`
             const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
             if (handled) return;
 
-            req.logIn(user, async function (err) {
-                if (err) return next(err);
-                let transaction;
-                try {
-                    transaction = await server.db.models['user'].sequelize.transaction();
-                    await server.db.models['user'].registerUserLogin(user.id, {transaction});
-                    await transaction.commit();
-                } catch (e) {
-                    await transaction.rollback();
-                }
-                // TODO: The url is for testing only. To be removed later.
-                return res.redirect('http://localhost:3000/dashboard');
+            return finalizeLogin(req, res, next, user, { 
+                mode: 'redirect', 
+                target: 'http://localhost:3000/dashboard' 
             });
         }
     );
@@ -482,10 +469,9 @@ The CARE Team`
             const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
             if (handled) return;
 
-            req.logIn(user, async function (err) {
-                if (err) return next(err);
-                await server.db.models['user'].registerUserLogin(user.id);
-                return res.redirect('/dashboard');
+            return finalizeLogin(req, res, next, user, { 
+                mode: 'redirect', 
+                target: 'http://localhost:3000/dashboard' 
             });
         }
     );
