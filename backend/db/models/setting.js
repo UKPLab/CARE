@@ -49,6 +49,46 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Get settings that are shown in the setup wizard, ordered by wizardOrder.
+         * @returns {Promise<object[]>}
+         */
+        static async getWizardSettings() {
+            try {
+                return await Setting.findAll({
+                    where: { showInWizard: true, deleted: false },
+                    order: [['wizardOrder', 'ASC']],
+                    attributes: ['key', 'value', 'type', 'description', 'requiredInWizard', 'wizardStep'],
+                    raw: true,
+                });
+            } catch (e) {
+                console.log(e);
+                return [];
+            }
+        }
+
+        /**
+         * Get wizard settings grouped by wizardStep for frontend consumption.
+         * Settings without wizardStep are placed in 'general'.
+         * @returns {Promise<object>}
+         */
+        static async getWizardSettingsByStep() {
+            try {
+                const settings = await Setting.getWizardSettings();
+                const byStep = { general: [], mail: [], registration: [], moodle: [] };
+                for (const s of settings) {
+                    const step = (s.wizardStep && Object.prototype.hasOwnProperty.call(byStep, s.wizardStep))
+                        ? s.wizardStep
+                        : 'general';
+                    byStep[step].push(s);
+                }
+                return byStep;
+            } catch (e) {
+                console.log(e);
+                return { general: [], mail: [], registration: [], moodle: [] };
+            }
+        }
+
+        /**
          * Set setting value by key
          * @param {string} key setting key
          * @param {string} value setting value
@@ -78,6 +118,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         description: DataTypes.STRING,
         onlyAdmin: DataTypes.BOOLEAN,
+        showInWizard: DataTypes.BOOLEAN,
+        wizardOrder: DataTypes.INTEGER,
+        requiredInWizard: DataTypes.BOOLEAN,
+        wizardStep: DataTypes.STRING,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE
 
