@@ -142,7 +142,7 @@ module.exports = function (server) {
         server.logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
         server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);
         if (req.user) {
-            const wizardCompleted = (await server.db.models['setting'].get('app.setup.wizardCompleted')) === 'true';
+            const wizardCompleted = (await server.db.models['app_state'].get('setup.wizardCompleted')) === 'true';
             return res.status(200).send({ user: req.user, wizardCompleted });
         }
         try {
