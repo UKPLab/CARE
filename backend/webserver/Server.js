@@ -75,7 +75,9 @@ module.exports = class Server {
         this.logger.debug("Initializing Passport...");
         this.app.use(bodyParser.urlencoded({extended: false}));
         this.app.use(bodyParser.json());
-        this.#loginManagement();
+        this.#loginManagement().catch((error) => {
+            this.logger.error("Failed to initialize login management: " + error);
+        });
         this.app.use(passport.initialize());
         this.app.use(passport.session());
 
@@ -201,224 +203,165 @@ module.exports = class Server {
     /**
      * Set the login management (routes and passport)
      */
-    #loginManagement() {
-        this.logger.debug("Initialize Routes for auth...");
+    async #loginManagement() {
+        this.logger.debug("Initializing Auth Strategies...");
 
+        // 1. Setup Passport Session Handling
+        // Storing only the ID for efficiency and data freshness
+        passport.serializeUser((user, done) => {
+            done(null, user.id);
+        });
+
+        // When the session is authenticated, deserializeUser is called 
+        // to retrieve the full user object from DB using the previously stored userId
+        passport.deserializeUser(async (id, done) => {
+            try {
+                const user = await this.db.models['user'].findByPk(id);
+                done(null, user ? relevantFields(user.get({ plain: true })) : null);
+            } catch (err) {
+                done(err);
+            }
+        });
+
+        // 2. Initialize Strategies
+        await this.#setupLocalStrategy();
+        await this.#setupOrcidStrategy();
+        await this.#setupLdapStrategy();
+        await this.#setupSamlStrategy();
+    }
+
+    /**
+     * Local Strategy Logic
+     */
+    async #setupLocalStrategy() {
         passport.use('local-login', new LocalStrategy(async (username, password, cb) => {
+            try {
+                const user = await this.db.models['user'].find(username);
+                if (!user) return cb(null, false, { message: 'Incorrect username or password.' });
 
-            const user = await this.db.models['user'].find(username);
-            if (!user) {
-                return cb(null, false, {message: 'Incorrect username or password.'});
-            }
-
-            crypto.pbkdf2(password, user.salt, 310000, 32, 'sha256', (err, hashedPassword) => {
-                if (err) {
-                    return cb(err);
-                }
-
-                if (!crypto.timingSafeEqual(Buffer.from(user.passwordHash, 'hex'), hashedPassword)) {
-                    return cb(null, false, {message: 'Incorrect username or password.'});
-                }
-
-                // filter row object, because not everything is the right information for website
-                return cb(null, relevantFields(user));
-            });
-        }));
-
-        /**
-         * ORCID login method (first factor).
-         *
-         * Behaviour:
-         * - If an existing user with this ORCID iD exists, log that user in.
-         * - Otherwise, automatically create a new local user account linked to this ORCID iD.
-         */
-        passport.use("orcid-login", new OrcidStrategy(
-            {
-                sandbox: process.env.NODE_ENV !== 'production',
-                clientID: process.env.ORCID_CLIENT_ID,
-                clientSecret: process.env.ORCID_CLIENT_SECRET,
-                callbackURL: process.env.ORCID_LOGIN_CALLBACK_URL,
-                passReqToCallback: true
-            },
-            async (req, accessToken, refreshToken, params, profile, done) => {
-                try {
-                    const orcidId = params.orcid;
-                    const fullName = params.name;
-
-                    // Try to find existing user
-                    let user = await this.db.models['user'].findOne({
-                        where: { orcidId },
-                        raw: true
-                    });
-        
-                    if (!user) {
-                        const nameParts = fullName.trim().split(/\s+/);
-                        const firstName = nameParts[0] || null;
-                        const lastName = nameParts.length > 1 
-                            ? nameParts.slice(1).join(' ') 
-                            : null;
-                
-                        const userData = {
-                            orcidId: orcidId,
-                            firstName: firstName,
-                            lastName: lastName,
-                        };
-        
-                        // External accounts are created with a random password by add()
-                        // and get the default "user" role via hooks.
-                        const created = await this.db.models['user'].add(userData, {});
-                        // Ensure we pass a plain object into relevantFields
-                        user = created && created.get ? created.get({ plain: true }) : created;
+                crypto.pbkdf2(password, user.salt, 310000, 32, 'sha256', (err, hashedPassword) => {
+                    if (err) return cb(err);
+                    if (!crypto.timingSafeEqual(Buffer.from(user.passwordHash, 'hex'), hashedPassword)) {
+                        return cb(null, false, { message: 'Incorrect username or password.' });
                     }
-                    return done(null, relevantFields(user));
-                } catch (e) {
-                    return done(e);
-                }
-            }
-        ));
+                    // filter row object, because not everything is the right information for website
+                    return cb(null, relevantFields(user));
+                });
+            } catch (e) { return cb(e); }
+        }));
+    }
 
-        /**
-         * LDAP login method (first factor).
-         *
-         * Behaviour:
-         * - If an existing CARE user is linked via ldapUsername or email, log that user in.
-         * - Otherwise, automatically create a new CARE user account linked to this LDAP identity.
-         *
-         * Configuration is currently provided via environment variables.
-         *
-         * Required env vars:
-         * - LDAP_SERVER_URL
-         * - LDAP_BIND_DN
-         * - LDAP_BIND_CREDENTIALS
-         * - LDAP_SEARCH_BASE
-         * - LDAP_SEARCH_FILTER (optional; defaults to '(uid={{username}})')
-         */
-        passport.use('ldap-login', new LdapStrategy({
-            server: {
-                url: process.env.LDAP_SERVER_URL,
-                bindDN: process.env.LDAP_BIND_DN,
-                bindCredentials: process.env.LDAP_BIND_CREDENTIALS,
-                searchBase: process.env.LDAP_SEARCH_BASE,
-                searchFilter: process.env.LDAP_SEARCH_FILTER,
-            },
-            passReqToCallback: true,
-        }, async (req, ldapUser, done) => {
+    /**
+     * ORCID Strategy Logic
+     */
+    async #setupOrcidStrategy() {
+        const config = {
+            sandbox: (await this.db.models['setting'].get("system.auth.orcid.sandbox")) === "true",
+            clientID: await this.db.models['setting'].get("system.auth.orcid.clientId"),
+            clientSecret: await this.db.models['setting'].get("system.auth.orcid.clientSecret"),
+            callbackURL: await this.db.models['setting'].get("system.auth.orcid.callbackUrl"),
+            passReqToCallback: true
+        };
+
+        passport.use("orcid-login", new OrcidStrategy(config, async (req, accessToken, refreshToken, params, profile, done) => {
+            try {
+                const orcidId = params.orcid;
+                let user = await this.db.models['user'].findOne({ where: { orcidId }, raw: true });
+
+                if (!user) {
+                    const nameParts = (params.name || "").trim().split(/\s+/);
+                    user = await this.db.models['user'].add({
+                        orcidId,
+                        firstName: nameParts[0] || null,
+                        lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : null,
+                    }, {});
+                    if (user && user.get) user = user.get({ plain: true });
+                }
+                return done(null, relevantFields(user));
+            } catch (e) { return done(e); }
+        }));
+    }
+
+    /**
+     * LDAP Strategy Logic
+     */
+    async #setupLdapStrategy() {
+        const serverConfig = {
+            url: await this.db.models['setting'].get("system.auth.ldap.url"),
+            bindDN: await this.db.models['setting'].get("system.auth.ldap.bindDN"),
+            bindCredentials: await this.db.models['setting'].get("system.auth.ldap.bindCredentials"),
+            searchBase: await this.db.models['setting'].get("system.auth.ldap.searchBase"),
+            searchFilter: (await this.db.models['setting'].get("system.auth.ldap.searchFilter")) || "(uid={{username}})"
+        };
+
+        passport.use('ldap-login', new LdapStrategy({ server: serverConfig, passReqToCallback: true }, 
+        async (req, ldapUser, done) => {
             try {
                 const username = Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid;
-                const ldapMail = ldapUser?.mail || ldapUser?.email;
-                const email = Array.isArray(ldapMail) ? ldapMail[0] : ldapMail;
+                const email = [].concat(ldapUser?.mail || ldapUser?.email || [])[0];
 
-                if (!username) return done(new Error('LDAP user entry is missing UID'));
+                if (!username) return done(new Error('LDAP user missing UID'));
 
-                let user = null;
+                let user = await this.db.models['user'].findOne({ where: { ldapUsername: username }, raw: true });
 
-                // 1. First try to match by ldapUsername
-                user = await this.db.models['user'].findOne({
-                    where: { ldapUsername: username },
-                    raw: true,
-                });
-
-                // 2. Second, fall back to email -> In case the ldapUsername is changed
                 if (!user && email) {
-                    const existing = await this.db.models['user'].findOne({
-                        where: { email: email },
-                        raw: true,
-                    });
-                    
-                    if (existing) {
-                        user = existing;
-                        await this.db.models['user'].update(
-                            { ldapUsername: username },
-                            { where: { id: existing.id } }
-                        );
+                    user = await this.db.models['user'].findOne({ where: { email }, raw: true });
+                    if (user) {
+                        await this.db.models['user'].update({ ldapUsername: username }, { where: { id: user.id } });
+                        user.ldapUsername = username; // Update local reference
                     }
                 }
-                // 3. Auto create a new user if there is no match found at the previous steps
-                if (!user) {
-                    const firstName = (Array.isArray(ldapUser?.givenName) ? ldapUser.givenName[0] : ldapUser?.givenName) || ldapUser?.cn || 'New';
-                    const lastName = (Array.isArray(ldapUser?.sn) ? ldapUser.sn[0] : ldapUser?.sn) || 'User';
 
+                if (!user) {
                     user = await this.db.models['user'].add({
                         ldapUsername: username,
-                        email: email,
-                        firstName,
-                        lastName,
+                        email,
+                        firstName: [].concat(ldapUser?.givenName || ldapUser?.cn || 'New')[0],
+                        lastName: [].concat(ldapUser?.sn || 'User')[0]
                     });
+                    if (user && user.get) user = user.get({ plain: true });
                 }
-
                 return done(null, relevantFields(user));
-            } catch (e) {
-                return done(e);
-            }
+            } catch (e) { return done(e); }
         }));
+    }
 
-        /**
-         * SAML login method (first factor).
-         * Configuration via environment variables for now.
-         *
-         * Required env vars:
-         * - SAML_ENTRY_POINT
-         * - SAML_ISSUER
-         * - SAML_CALLBACK_URL
-         * - SAML_CERT
-         */
-        passport.use('saml-login', new SamlStrategy({
-            entryPoint: process.env.SAML_ENTRY_POINT,
-            issuer: process.env.SAML_ISSUER,
-            callbackUrl: process.env.SAML_CALLBACK_URL,
-            cert: process.env.SAML_CERT,
-        }, async (profile, done) => {
+    /**
+     * SAML Strategy Logic
+     */
+    async #setupSamlStrategy() {
+        const rawCert = await this.db.models['setting'].get("system.auth.saml.cert");
+        const config = {
+            entryPoint: await this.db.models['setting'].get("system.auth.saml.entryPoint"),
+            issuer: await this.db.models['setting'].get("system.auth.saml.issuer"),
+            callbackUrl: await this.db.models['setting'].get("system.auth.saml.callbackUrl"),
+            cert: typeof rawCert === "string" ? rawCert.replace(/\\n/g, "\n") : rawCert
+        };
+
+        passport.use('saml-login', new SamlStrategy(config, async (profile, done) => {
             try {
-                const nameId = profile && profile.nameID;
-                if (!nameId) {
-                    return done(null, false, { message: "Missing SAML NameID." });
-                }
+                const nameId = profile?.nameID;
+                if (!nameId) return done(null, false, { message: "Missing SAML NameID." });
 
-                // 1) Prefer explicit samlNameId match
-                let user = await this.db.models['user'].findOne({
-                    where: { samlNameId: nameId },
-                    raw: true,
-                });
+                let user = await this.db.models['user'].findOne({ where: { samlNameId: nameId }, raw: true });
 
-                // 2) Fallback: try to match by email and bind samlNameId
-                const email = profile && (profile.email || profile.mail || profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']);
-                const samlEmail = Array.isArray(email) ? email[0] : email;
+                if (!user) {
+                    const emailAttr = profile.email || profile.mail || profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+                    const email = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
 
-                if (!user && samlEmail) {
-                    const existing = await this.db.models['user'].findOne({
-                        where: { email: samlEmail },
-                        raw: true,
-                    });
-                    if (existing) {
-                        user = existing;
-                        if (!existing.samlNameId) {
-                            await this.db.models['user'].update(
-                                { samlNameId: nameId },
-                                { where: { id: existing.id } }
-                            );
+                    if (email) {
+                        user = await this.db.models['user'].findOne({ where: { email }, raw: true });
+                        if (user) {
+                            await this.db.models['user'].update({ samlNameId: nameId }, { where: { id: user.id } });
+                            user.samlNameId = nameId;
                         }
                     }
                 }
 
-                if (!user) {
-                    return done(null, false, { message: "SAML account not linked to a CARE user." });
-                }
-
+                if (!user) return done(null, false, { message: "SAML account not linked." });
                 return done(null, relevantFields(user));
-            } catch (e) {
-                return done(e);
-            }
+            } catch (e) { return done(e); }
         }));
-
-        // required to work -- defines strategy for storing user information
-        passport.serializeUser(function (user, done) {
-            done(null, user);
-        });
-
-        // required to work -- defines strategy for loading user information
-        passport.deserializeUser(function (user, done) {
-            done(null, user);
-        });
     }
 
     /**
