@@ -9,6 +9,7 @@
  * @author: Dennis Zyska, Nils Dycke
 **/
 import * as VueRouter from 'vue-router'
+import getServerURL from "@/assets/serverUrl";
 
 const routes = [
     {
@@ -44,6 +45,12 @@ const routes = [
         name: "reset-password",
         component: () => import("@/auth/ResetPassword.vue"),
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
+    },
+    {
+        path: "/wizard",
+        name: "wizard",
+        component: () => import("@/auth/SetupWizard.vue"),
+        meta: {requireAuth: false, hideTopbar: true}
     },
     {
         path: "/document/:documentHash",
@@ -82,9 +89,27 @@ const router = VueRouter.createRouter({
     history: VueRouter.createWebHistory(),
     hashbang: false,
     routes: routes,
-    mode: 'html5',
-    root: "/"
-})
+    mode: "html5",
+    root: "/",
+});
+
+/**
+ * If the user is logged in and the setup wizard is not completed, redirect to /wizard
+ * so they cannot bypass it by typing /dashboard, /login, etc.
+ */
+router.beforeEach(async (to, from, next) => {
+    if (to.path === "/wizard") return next();
+    if (!to.meta.requireAuth && !to.meta.checkLogin) return next();
+    try {
+        const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
+        if (!r.ok) return next();
+        const d = await r.json();
+        if (d.user && d.wizardCompleted === false) {
+            return next({ path: "/wizard" });
+        }
+    } catch (_) {}
+    next();
+});
 
 // Navigation guard to check if self-registration is enabled
 router.beforeEach((to, from, next) => {
