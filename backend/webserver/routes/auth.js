@@ -7,7 +7,7 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
-const { generateToken, decodeToken } = require('../../utils/auth');
+const { generateToken, decodeToken, relevantFields } = require('../../utils/auth');
 
 /**
  * Route for user management
@@ -136,16 +136,121 @@ module.exports = function (server) {
     })
 
     /**
-     * Check whether user is logged in
+     * Check whether user is logged in. If not logged in and no admin exists, returns needsSetup for the setup wizard.
      */
-    server.app.get('/auth/check', function (req, res) {
-        if (req.user) {
-            res.status(200).send({user: req.user});
-        } else {
-            res.status(401);
-        }
+    server.app.get('/auth/check', async function (req, res) {
         server.logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
         server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);
+        if (req.user) {
+            const wizardCompleted = (await server.db.models['setting'].get('app.setup.wizardCompleted')) === 'true';
+            return res.status(200).send({ user: req.user, wizardCompleted });
+        }
+        try {
+            const admins = await server.db.models['user'].getUsersByRole('admin');
+            if (admins.length === 0) {
+                return res.status(200).send({ needsSetup: true });
+            }
+        } catch (err) {
+            server.logger.error('Error checking admin in /auth/check: ' + err);
+        }
+        res.status(401).send();
+    });
+
+    /**
+     * Create the first admin account (setup wizard step 1). Allowed only when no admin exists.
+     * Reassigns the 5 Exposé configurations from Bot (userId=2) to the new admin.
+     */
+    server.app.post('/auth/setup-admin', async function (req, res) {
+        const { userName, email, password } = req.body || {};
+
+        try {
+            const admins = await server.db.models['user'].getUsersByRole('admin');
+            if (admins.length > 0) {
+                return res.status(403).json({ message: 'An admin account already exists.' });
+            }
+
+            if (!userName || (typeof userName === 'string' && !userName.trim())) {
+                return res.status(400).json({ message: 'Please provide a user name.' });
+            }
+            const existingByName = await server.db.models['user'].getUserIdByName(userName);
+            if (existingByName !== 0) {
+                return res.status(400).json({ message: 'Username already taken.' });
+            }
+
+            if (!email || (typeof email === 'string' && !email.trim())) {
+                return res.status(400).json({ message: 'Please provide an email.' });
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ message: 'Please provide a valid email.' });
+            }
+            const existingByEmail = await server.db.models['user'].getUserIdByEmail(email);
+            if (existingByEmail !== 0) {
+                return res.status(400).json({ message: 'E-Mail already taken.' });
+            }
+
+            if (!password || (typeof password === 'string' && password.length < 8)) {
+                return res.status(400).json({ message: 'Password does not meet requirements (min 8 characters).' });
+            }
+
+            const User = server.db.models['user'];
+            const Configuration = server.db.models['configuration'];
+            const { Op } = server.db.Sequelize;
+
+            const EXPOSE_CONFIG_NAMES = [
+                'Exposé assessment configuration',
+                'Exposé feedback configuration',
+                'UKP Exposé Submission Validator',
+                'Exposé assessment configuration (German)',
+                'Exposé feedback configuration (German)',
+            ];
+            const BOT_USER_ID = 2;
+
+            const transaction = await User.sequelize.transaction();
+            try {
+                const user = await User.add(
+                    {
+                        userName: userName.trim(),
+                        email: email.trim(),
+                        password,
+                        firstName: userName.trim(),
+                        lastName: 'User',
+                        acceptTerms: true,
+                        acceptStats: true,
+                        emailVerified: true,
+                    },
+                    { transaction, context: { userRoles: 'admin' } }
+                );
+
+                await Configuration.update(
+                    { userId: user.id },
+                    {
+                        where: {
+                            name: { [Op.in]: EXPOSE_CONFIG_NAMES },
+                            userId: BOT_USER_ID,
+                        },
+                        transaction,
+                    }
+                );
+
+                await transaction.commit();
+
+                req.logIn(user, function (err) {
+                    if (err) {
+                        server.logger.error('setup-admin logIn error: ' + err);
+                        return res.status(500).json({ message: 'Failed to complete setup.' });
+                    }
+                    return res.status(200).json({ user: relevantFields(user) });
+                });
+            } catch (err) {
+                await transaction.rollback();
+                server.logger.error('Cannot create setup admin: ' + err);
+                return res.status(400).json({ message: 'Failed to create admin.', error: err.message });
+            }
+        } catch (err) {
+            server.logger.error('setup-admin error: ' + err);
+            return res.status(500).json({ message: 'Internal server error.' });
+        }
     });
 
     /**
