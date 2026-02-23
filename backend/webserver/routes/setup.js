@@ -61,4 +61,37 @@ module.exports = function (server) {
             return res.status(500).json({ message: "Internal server error." });
         }
     });
+
+    /**
+     * PATCH /setup/state
+     * Updates wizard state in app_state.
+     * Body: { wizardCompleted?: string, wizardCurrentStep?: string }
+     */
+    server.app.patch("/setup/state", async function (req, res) {
+        if (!req.user) {
+            return res.status(401).json({ message: "Authentication required." });
+        }
+        try {
+            const admins = await server.db.models["user"].getUsersByRole("admin");
+            const isAdmin = admins.some((a) => a.id === req.user.id);
+            if (!isAdmin) {
+                return res.status(403).json({ message: "Admin access required." });
+            }
+
+            const { wizardCompleted, wizardCurrentStep } = req.body || {};
+            const AppState = server.db.models["app_state"];
+
+            if (wizardCompleted !== undefined) {
+                await AppState.set("setup.wizardCompleted", String(wizardCompleted));
+            }
+            if (wizardCurrentStep !== undefined) {
+                await AppState.set("setup.wizardCurrentStep", String(wizardCurrentStep));
+            }
+
+            return res.status(200).json({ success: true });
+        } catch (err) {
+            server.logger.error("PATCH /setup/state error: " + err);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+    });
 };
