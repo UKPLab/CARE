@@ -91,6 +91,7 @@ module.exports = (sequelize, DataTypes) => {
         studyStepId: DataTypes.INTEGER,
         numberSteps: DataTypes.INTEGER,
         studyStepIdMax: DataTypes.INTEGER,
+        parentStudySessionId: DataTypes.INTEGER,
         start: DataTypes.DATE,
         end: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
