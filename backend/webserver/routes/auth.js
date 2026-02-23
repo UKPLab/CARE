@@ -230,6 +230,7 @@ The CARE Team`
     }
 
     /**
+     * TODO: Refactor this method
      * Start 2FA if configured for the user.
      * - If exactly 1 method is configured: start it immediately (send email OTP if needed).
      * - If multiple methods are configured: require the client to select one via /auth/2fa/select.
@@ -443,6 +444,7 @@ The CARE Team`
      */
     server.app.get('/auth/login/orcid', passport.authenticate('orcid-login'));
 
+    // TODO: Testing route
     server.app.get('/auth/2fa/orcid/callback',
         passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' }),
         async function (req, res, next) {
