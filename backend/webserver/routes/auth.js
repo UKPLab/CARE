@@ -334,6 +334,41 @@ The CARE Team`
         return true;
     }
 
+    /**
+     * Finalizes the login process by establishing a session and recording the login activity.
+     * @param {Object} req - The Express request object.
+     * @param {Object} res - The Express response object.
+     * @param {Function} next - The Express next middleware function.
+     * @param {Object} user - The authenticated user object from Passport strategies.
+     * @param {Object} options - Configuration for the response.
+     * @param {string} options.mode - The response mode: 'json' for API responses or 'redirect' for browser-based flows.
+     * @param {string} [options.target] - The destination URL required if mode is set to 'redirect'.
+     * @returns {Promise<void>}
+     */
+    async function finalizeLogin(req, res, next, user, options = { mode: 'json' }) {
+        req.logIn(user, async (err) => {
+            if (err) return next(err);
+
+            try {
+                // Update the last login timestamp in the database.
+                // Transaction is omitted here as a simple timestamp update is atomic in Sequelize.
+                await server.db.models['user'].registerUserLogin(user.id);
+            } catch (dbError) {
+                // Log the error but do not block the user from accessing the system.
+                console.error('[Auth] Failed to record login timestamp for user ID:', user.id, dbError);
+            }
+
+            // Handle different response types based on the login source (e.g., AJAX vs OAuth Redirect).
+            if (options.mode === 'redirect') {
+                const redirectUrl = options.target || 'http://localhost:3000/dashboard';
+                return res.redirect(redirectUrl);
+            }
+
+            // Default to JSON response for LDAP or standard AJAX logins.
+            return res.status(200).send({ user });
+        });
+    }
+
     function ensureAuthenticated(req, res, next) {
         if (req.isAuthenticated()) {
             return next();
@@ -375,29 +410,11 @@ The CARE Team`
             
             // Start 2FA if configured for this user
             const twoFactorHandled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json' });
-            if (twoFactorHandled) {
-                // 2FA response has been sent; stop normal login flow
-                return;
-            }
+            // 2FA response has been sent; stop normal login flow
+            if (twoFactorHandled) return;
             
             // No 2FA required, proceed with normal login
-            req.logIn(user, async function (err) {
-                if (err) {
-                    return next(err);
-                }
-
-                let transaction;
-                try {
-                    transaction = await server.db.models['user'].sequelize.transaction();
-
-                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
-                    await transaction.commit();
-                } catch (e) {
-                    await transaction.rollback();
-                }
-
-                res.status(200).send({user: user});
-            });
+            return finalizeLogin(req, res, next, user, { mode:'json'});
         })(req, res, next);
     });
 
