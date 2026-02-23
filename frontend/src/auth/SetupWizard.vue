@@ -1075,14 +1075,14 @@ export default {
       }
       return this.formSettings[key] != null ? this.formSettings[key] : "—";
     },
-    finish() {
+    async finish() {
       this.settingsTouched = true;
       if (!this.$socket || !this.$socket.connected) {
         this.showError = true;
         this.errorMessage = "Connection not ready. Please wait and try again.";
         return;
       }
-      const merged = { ...this.formSettings, ...(this.settingsFromFile || {}), "app.setup.wizardCompleted": "true" };
+      const merged = { ...this.formSettings, ...(this.settingsFromFile || {}) };
       if (merged["system.mailService.enabled"] !== "true") {
         merged["app.register.emailVerification"] = "false";
       }
@@ -1092,14 +1092,21 @@ export default {
       }));
       this.finishing = true;
       this.showError = false;
-      this.$socket.emit("settingSave", payload, (res) => {
-        this.finishing = false;
-        if (res.success) {
-          this.$router.push("/dashboard");
-          this.$router.go(0);
-        } else {
+      this.$socket.emit("settingSave", payload, async (res) => {
+        if (!res.success) {
+          this.finishing = false;
           this.showError = true;
           this.errorMessage = (res && res.message) || "Failed to save settings.";
+          return;
+        }
+        try {
+          await axios.patch(getServerURL() + "/setup/state", { wizardCompleted: "true" }, { withCredentials: true });
+          this.$router.push("/dashboard");
+          this.$router.go(0);
+        } catch (err) {
+          this.finishing = false;
+          this.showError = true;
+          this.errorMessage = err?.response?.data?.message || err?.message || "Failed to complete setup.";
         }
       });
     },
