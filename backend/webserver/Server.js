@@ -207,20 +207,16 @@ module.exports = class Server {
         this.logger.debug("Initializing Auth Strategies...");
 
         // 1. Setup Passport Session Handling
-        // Storing only the ID for efficiency and data freshness
-        passport.serializeUser((user, done) => {
-            done(null, user.id);
+        // TODO: Could optimize by storing the userId only
+        // Storing the user object
+        passport.serializeUser(function (user, done) {
+            done(null, user);
         });
 
         // When the session is authenticated, deserializeUser is called 
-        // to retrieve the full user object from DB using the previously stored userId
-        passport.deserializeUser(async (id, done) => {
-            try {
-                const user = await this.db.models['user'].findByPk(id);
-                done(null, user ? relevantFields(user.get({ plain: true })) : null);
-            } catch (err) {
-                done(err);
-            }
+        // to retrieve the full user object from DB
+        passport.deserializeUser(function (user, done) {
+            done(null, user);
         });
 
         // 2. Initialize Strategies
