@@ -2,7 +2,6 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
-const fsSync = require("fs");
 const {resolveTemplateToDelta} = require("../../utils/templateResolver");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -202,7 +201,7 @@ module.exports = (sequelize, DataTypes) => {
                                 options
                             );
                             const deltaFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
-                            fsSync.writeFileSync(deltaFilePath, JSON.stringify(resolvedDelta, null, 2));
+                            await fs.writeFile(deltaFilePath, JSON.stringify(resolvedDelta, null, 2));
                         } catch (error) {
                             console.error(`Failed to resolve template for study document creation:`, error);
                         }
