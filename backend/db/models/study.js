@@ -110,12 +110,6 @@ module.exports = (sequelize, DataTypes) => {
             default: false,
             help: "When enabled, emails will be sent for session start/finish using admin-configured templates. If no templates are configured, default hardcoded emails will be sent."
         }, {
-            key: "enableStudyCloseEmails",
-            label: "Enable Study Close Email Notifications",
-            type: "switch",
-            default: false,
-            help: "When enabled, emails will be sent to users with open sessions when the study is closed, using admin-configured templates."
-        }, {
             key: "timeLimit",
             type: "slider",
             label: "How much time does a participant have for the study?",
