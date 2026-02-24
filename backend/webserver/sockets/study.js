@@ -78,9 +78,10 @@ class StudySocket extends Socket {
      * @param {Object} study - Study object
      * @returns {Promise<void>}
      */
-    async sendStudyClosedEmails(study) {
+    async sendStudyClosedEmails(study, options = {}) {
+        const { force = false } = options;
         const enableStudyCloseEmails = study.enableStudyCloseEmails || false;
-        if (!enableStudyCloseEmails) {
+        if (!force && !enableStudyCloseEmails) {
             return;
         }
 
@@ -144,7 +145,7 @@ The CARE Team`,
     /**
      * Close a single study by setting its closed flag.
      * Validates that the study exists and is not already closed.
-     * Sends study closed emails after the transaction commits.
+     * Sends study closed emails after the transaction commits (optional, based on notifySessions flag).
      *
      * @socketEvent studyClose
      * @param {object} data The data required to close the study.
@@ -173,11 +174,15 @@ The CARE Team`,
             {transaction: options.transaction}
         );
 
-        // Send study closed emails after transaction commits
+        const notifySessions = data.notifySessions === true;
+
         options.transaction.afterCommit(async () => {
+            if (!notifySessions) {
+                return;
+            }
             try {
                 const freshStudy = await this.models["study"].getById(data.studyId);
-                await this.sendStudyClosedEmails(freshStudy);
+                await this.sendStudyClosedEmails(freshStudy, { force: true });
             } catch (error) {
                 this.logger.error(`Failed to send study closed emails:`, error);
             }
@@ -212,14 +217,17 @@ The CARE Team`,
             try {
 
                 await this.models['study'].updateById(study.id, {closed: true}, {transaction: transaction});
+                const notifySessions = data.notifySessions === true;
                 transaction.afterCommit(async () => {
                     this.broadcastTransactionChanges(transaction);
-                    // Send study closed emails after transaction commits
-                    try {
-                        const updatedStudy = await this.models['study'].getById(study.id);
-                        await this.sendStudyClosedEmails(updatedStudy);
-                    } catch (error) {
-                        this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
+                    // Send study closed emails after transaction commits (optional, based on notifySessions flag)
+                    if (notifySessions) {
+                        try {
+                            const updatedStudy = await this.models['study'].getById(study.id);
+                            await this.sendStudyClosedEmails(updatedStudy, { force: true });
+                        } catch (error) {
+                            this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
+                        }
                     }
                 });
                 await transaction.commit();
