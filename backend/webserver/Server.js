@@ -454,6 +454,22 @@ module.exports = class Server {
         }
     }
 
+    /**
+     * Returns true if provider strategy is initialized and ready.
+     * @param {string} provider - local|orcid|ldap|saml
+     * @returns {boolean}
+     */
+    isAuthProviderReady(provider) {
+        return !!this.authProviderStatus?.[provider]?.ready;
+    }
+
+    /**
+     * Get detailed provider status.
+     * @param {string} provider
+     * @returns {{ready:boolean,reason:string}|{ready:false,reason:string}}
+     */
+    getAuthProviderStatus(provider) {
+        return this.authProviderStatus?.[provider] || { ready: false, reason: "unknown-provider" };
     }
 
     /**

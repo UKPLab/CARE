@@ -98,6 +98,10 @@ module.exports = function (server) {
         return [];
     }
 
+    async function isLoginMethodEnabled(method) {
+        return (await server.db.models['setting'].get(`system.auth.loginMethods.${method}.enabled`)) === "true";
+    }
+
     async function sendEmailOtp(userRecord) {
         if (!userRecord || !userRecord.email) {
             throw new Error("Email address missing for email 2FA.");
@@ -361,7 +365,8 @@ The CARE Team`
 
             // Handle different response types based on the login source (e.g., AJAX vs OAuth Redirect).
             if (options.mode === 'redirect') {
-                const redirectUrl = options.target || 'http://localhost:3000/dashboard';
+                const baseUrl = await getBaseUrl()
+                const redirectUrl = options.target || `${baseUrl}/dashboard`;
                 return res.redirect(redirectUrl);
             }
 
@@ -422,7 +427,17 @@ The CARE Team`
     /**
      * LDAP login method (JSON-based, similar to /auth/login)
      */
-    server.app.post('/auth/login/ldap', function (req, res, next) {
+    server.app.post('/auth/login/ldap', async function (req, res, next) {
+        if (!(await isLoginMethodEnabled('ldap'))) {
+            return res.status(403).json({ message: "LDAP login is disabled by the administrator." });
+        }
+        if (!server.isAuthProviderReady('ldap')) {
+            const status = server.getAuthProviderStatus('ldap');
+            return res.status(503).json({
+                message: "LDAP login is enabled but not fully configured. Please contact an administrator.",
+                reason: status.reason
+            });
+        }
         passport.authenticate('ldap-login', async function (err, user, info) {
             if (err) {
                 server.logger.error("LDAP login failed: " + err);
@@ -442,11 +457,31 @@ The CARE Team`
     /**
      * ORCID login method
      */
-    server.app.get('/auth/login/orcid', passport.authenticate('orcid-login'));
+    server.app.get('/auth/login/orcid', async function (req, res, next) {
+        if (!(await isLoginMethodEnabled('orcid'))) {
+            return res.redirect('/login?error=orcid-login-disabled');
+        }
+        if (!server.isAuthProviderReady('orcid')) {
+            const status = server.getAuthProviderStatus('orcid');
+            server.logger.warn(`[Auth] ORCID requested but provider is not ready (${status.reason}).`);
+            return res.redirect('/login?error=orcid-login-not-ready');
+        }
+        return passport.authenticate('orcid-login')(req, res, next);
+    });
 
     // TODO: Testing route
     server.app.get('/auth/2fa/orcid/callback',
-        passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' }),
+        async function (req, res, next) {
+            if (!(await isLoginMethodEnabled('orcid'))) {
+                return res.redirect('/login?error=orcid-login-disabled');
+            }
+            if (!server.isAuthProviderReady('orcid')) {
+                const status = server.getAuthProviderStatus('orcid');
+                server.logger.warn(`[Auth] ORCID callback hit but provider is not ready (${status.reason}).`);
+                return res.redirect('/login?error=orcid-login-not-ready');
+            }
+            return passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' })(req, res, next);
+        },
         async function (req, res, next) {
             const user = req.user;
             const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
@@ -462,10 +497,30 @@ The CARE Team`
     /**
      * SAML login method
      */
-    server.app.get('/auth/login/saml', passport.authenticate('saml-login'));
+    server.app.get('/auth/login/saml', async function (req, res, next) {
+        if (!(await isLoginMethodEnabled('saml'))) {
+            return res.redirect('/login?error=saml-login-disabled');
+        }
+        if (!server.isAuthProviderReady('saml')) {
+            const status = server.getAuthProviderStatus('saml');
+            server.logger.warn(`[Auth] SAML requested but provider is not ready (${status.reason}).`);
+            return res.redirect('/login?error=saml-login-not-ready');
+        }
+        return passport.authenticate('saml-login')(req, res, next);
+    });
 
     server.app.post('/auth/login/saml/callback',
-        passport.authenticate('saml-login', { failureRedirect: '/login?error=saml-login-failed' }),
+        async function (req, res, next) {
+            if (!(await isLoginMethodEnabled('saml'))) {
+                return res.redirect('/login?error=saml-login-disabled');
+            }
+            if (!server.isAuthProviderReady('saml')) {
+                const status = server.getAuthProviderStatus('saml');
+                server.logger.warn(`[Auth] SAML callback hit but provider is not ready (${status.reason}).`);
+                return res.redirect('/login?error=saml-login-not-ready');
+            }
+            return passport.authenticate('saml-login', { failureRedirect: '/login?error=saml-login-failed' })(req, res, next);
+        },
         async function (req, res, next) {
             const user = req.user;
             const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
