@@ -51,6 +51,12 @@ module.exports = class Server {
         this.availSockets = {};
         this.services = {};
         this.documentQueues = new Map();
+        this.authProviderStatus = {
+            local: { ready: false, reason: "not-initialized" },
+            orcid: { ready: false, reason: "not-initialized" },
+            ldap: { ready: false, reason: "not-initialized" },
+            saml: { ready: false, reason: "not-initialized" },
+        };
 
         // No Caching
         this.app.disable('etag');
@@ -245,119 +251,209 @@ module.exports = class Server {
                 });
             } catch (e) { return cb(e); }
         }));
+        this.authProviderStatus.local = { ready: true, reason: "ready" };
     }
 
     /**
      * ORCID Strategy Logic
      */
     async #setupOrcidStrategy() {
+        const enabled = (await this.db.models['setting'].get("system.auth.loginMethods.orcid.enabled")) === "true";
+        if (!enabled) {
+            this.authProviderStatus.orcid = { ready: false, reason: "disabled" };
+            return;
+        }
+
+        const clientID = await this.db.models['setting'].get("system.auth.orcid.clientId");
+        const clientSecret = await this.db.models['setting'].get("system.auth.orcid.clientSecret");
+        const callbackURL = await this.db.models['setting'].get("system.auth.orcid.callbackUrl");
+        const sandbox = (await this.db.models['setting'].get("system.auth.orcid.sandbox")) === "true";
+        
+        const missing = [];
+        if (!clientID) missing.push("system.auth.orcid.clientId");
+        if (!clientSecret) missing.push("system.auth.orcid.clientSecret");
+        if (!callbackURL) missing.push("system.auth.orcid.callbackUrl");
+        if (missing.length > 0) {
+            const reason = `missing-config:${missing.join(",")}`;
+            this.authProviderStatus.orcid = { ready: false, reason };
+            this.logger.warn(`[Auth] ORCID login enabled but not ready (${reason}).`);
+            return;
+        }
+
         const config = {
-            sandbox: (await this.db.models['setting'].get("system.auth.orcid.sandbox")) === "true",
-            clientID: await this.db.models['setting'].get("system.auth.orcid.clientId"),
-            clientSecret: await this.db.models['setting'].get("system.auth.orcid.clientSecret"),
-            callbackURL: await this.db.models['setting'].get("system.auth.orcid.callbackUrl"),
+            sandbox,
+            clientID,
+            clientSecret,
+            callbackURL,
             passReqToCallback: true
         };
 
-        passport.use("orcid-login", new OrcidStrategy(config, async (req, accessToken, refreshToken, params, profile, done) => {
-            try {
-                const orcidId = params.orcid;
-                let user = await this.db.models['user'].findOne({ where: { orcidId }, raw: true });
+        try {
+            passport.use("orcid-login", new OrcidStrategy(config, async (req, accessToken, refreshToken, params, profile, done) => {
+                try {
+                    const orcidId = params.orcid;
+                    let user = await this.db.models['user'].findOne({ where: { orcidId }, raw: true });
 
-                if (!user) {
-                    const nameParts = (params.name || "").trim().split(/\s+/);
-                    user = await this.db.models['user'].add({
-                        orcidId,
-                        firstName: nameParts[0] || null,
-                        lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : null,
-                    }, {});
-                    if (user && user.get) user = user.get({ plain: true });
-                }
-                return done(null, relevantFields(user));
-            } catch (e) { return done(e); }
-        }));
+                    if (!user) {
+                        const nameParts = (params.name || "").trim().split(/\s+/);
+                        user = await this.db.models['user'].add({
+                            orcidId,
+                            firstName: nameParts[0] || null,
+                            lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : null,
+                        }, {});
+                        if (user && user.get) user = user.get({ plain: true });
+                    }
+                    return done(null, relevantFields(user));
+                } catch (e) { return done(e); }
+            }));
+            this.authProviderStatus.orcid = { ready: true, reason: "ready" };
+        } catch (e) {
+            this.authProviderStatus.orcid = { ready: false, reason: `init-error:${e.message}` };
+            this.logger.error(`[Auth] Failed to initialize ORCID strategy: ${e.message}`);
+        }
     }
 
     /**
      * LDAP Strategy Logic
      */
     async #setupLdapStrategy() {
+        const enabled = (await this.db.models['setting'].get("system.auth.loginMethods.ldap.enabled")) === "true";
+        if (!enabled) {
+            this.authProviderStatus.ldap = { ready: false, reason: "disabled" };
+            return;
+        }
+
+        const url = await this.db.models['setting'].get("system.auth.ldap.url");
+        const bindDN = await this.db.models['setting'].get("system.auth.ldap.bindDN");
+        const bindCredentials = await this.db.models['setting'].get("system.auth.ldap.bindCredentials") || process.env.LDAP_BIND_CREDENTIALS;
+        const searchBase = await this.db.models['setting'].get("system.auth.ldap.searchBase") || process.env.LDAP_SEARCH_BASE;
+        const searchFilter = (await this.db.models['setting'].get("system.auth.ldap.searchFilter")) || process.env.LDAP_SEARCH_FILTER || "(uid={{username}})";
+
+        const missing = [];
+        if (!url) missing.push("system.auth.ldap.url");
+        if (!bindDN) missing.push("system.auth.ldap.bindDN");
+        if (!bindCredentials) missing.push("system.auth.ldap.bindCredentials");
+        if (!searchBase) missing.push("system.auth.ldap.searchBase");
+        if (missing.length > 0) {
+            const reason = `missing-config:${missing.join(",")}`;
+            this.authProviderStatus.ldap = { ready: false, reason };
+            this.logger.warn(`[Auth] LDAP login enabled but not ready (${reason}).`);
+            return;
+        }
+
         const serverConfig = {
-            url: await this.db.models['setting'].get("system.auth.ldap.url"),
-            bindDN: await this.db.models['setting'].get("system.auth.ldap.bindDN"),
-            bindCredentials: await this.db.models['setting'].get("system.auth.ldap.bindCredentials"),
-            searchBase: await this.db.models['setting'].get("system.auth.ldap.searchBase"),
-            searchFilter: (await this.db.models['setting'].get("system.auth.ldap.searchFilter")) || "(uid={{username}})"
+            url,
+            bindDN,
+            bindCredentials,
+            searchBase,
+            searchFilter
         };
 
-        passport.use('ldap-login', new LdapStrategy({ server: serverConfig, passReqToCallback: true }, 
-        async (req, ldapUser, done) => {
-            try {
-                const username = Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid;
-                const email = [].concat(ldapUser?.mail || ldapUser?.email || [])[0];
+        try {
+            passport.use('ldap-login', new LdapStrategy({ server: serverConfig, passReqToCallback: true },
+            async (req, ldapUser, done) => {
+                try {
+                    const username = Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid;
+                    const email = [].concat(ldapUser?.mail || ldapUser?.email || [])[0];
 
-                if (!username) return done(new Error('LDAP user missing UID'));
+                    if (!username) return done(new Error('LDAP user missing UID'));
 
-                let user = await this.db.models['user'].findOne({ where: { ldapUsername: username }, raw: true });
+                    let user = await this.db.models['user'].findOne({ where: { ldapUsername: username }, raw: true });
 
-                if (!user && email) {
-                    user = await this.db.models['user'].findOne({ where: { email }, raw: true });
-                    if (user) {
-                        await this.db.models['user'].update({ ldapUsername: username }, { where: { id: user.id } });
-                        user.ldapUsername = username; // Update local reference
+                    if (!user && email) {
+                        user = await this.db.models['user'].findOne({ where: { email }, raw: true });
+                        if (user) {
+                            await this.db.models['user'].update({ ldapUsername: username }, { where: { id: user.id } });
+                            user.ldapUsername = username; // Update local reference
+                        }
                     }
-                }
 
-                if (!user) {
-                    user = await this.db.models['user'].add({
-                        ldapUsername: username,
-                        email,
-                        firstName: [].concat(ldapUser?.givenName || ldapUser?.cn || 'New')[0],
-                        lastName: [].concat(ldapUser?.sn || 'User')[0]
-                    });
-                    if (user && user.get) user = user.get({ plain: true });
-                }
-                return done(null, relevantFields(user));
-            } catch (e) { return done(e); }
-        }));
+                    if (!user) {
+                        user = await this.db.models['user'].add({
+                            ldapUsername: username,
+                            email,
+                            firstName: [].concat(ldapUser?.givenName || ldapUser?.cn || 'New')[0],
+                            lastName: [].concat(ldapUser?.sn || 'User')[0]
+                        });
+                        if (user && user.get) user = user.get({ plain: true });
+                    }
+                    return done(null, relevantFields(user));
+                } catch (e) { return done(e); }
+            }));
+            this.authProviderStatus.ldap = { ready: true, reason: "ready" };
+        } catch (e) {
+            this.authProviderStatus.ldap = { ready: false, reason: `init-error:${e.message}` };
+            this.logger.error(`[Auth] Failed to initialize LDAP strategy: ${e.message}`);
+        }
     }
 
     /**
      * SAML Strategy Logic
      */
     async #setupSamlStrategy() {
-        const rawCert = await this.db.models['setting'].get("system.auth.saml.cert");
+        const enabled = (await this.db.models['setting'].get("system.auth.loginMethods.saml.enabled")) === "true";
+        if (!enabled) {
+            this.authProviderStatus.saml = { ready: false, reason: "disabled" };
+            return;
+        }
+
+        const entryPoint = await this.db.models['setting'].get("system.auth.saml.entryPoint");
+        const issuer = await this.db.models['setting'].get("system.auth.saml.issuer");
+        const callbackUrl = await this.db.models['setting'].get("system.auth.saml.callbackUrl");
+        const rawCert = (await this.db.models['setting'].get("system.auth.saml.cert"));
+        const cert = typeof rawCert === "string" ? rawCert.replace(/\\n/g, "\n") : rawCert;
+
+        const missing = [];
+        if (!entryPoint) missing.push("system.auth.saml.entryPoint");
+        if (!issuer) missing.push("system.auth.saml.issuer");
+        if (!callbackUrl) missing.push("system.auth.saml.callbackUrl");
+        if (!cert) missing.push("system.auth.saml.cert");
+        if (missing.length > 0) {
+            const reason = `missing-config:${missing.join(",")}`;
+            this.authProviderStatus.saml = { ready: false, reason };
+            this.logger.warn(`[Auth] SAML login enabled but not ready (${reason}).`);
+            return;
+        }
+
         const config = {
-            entryPoint: await this.db.models['setting'].get("system.auth.saml.entryPoint"),
-            issuer: await this.db.models['setting'].get("system.auth.saml.issuer"),
-            callbackUrl: await this.db.models['setting'].get("system.auth.saml.callbackUrl"),
-            cert: typeof rawCert === "string" ? rawCert.replace(/\\n/g, "\n") : rawCert
+            entryPoint,
+            issuer,
+            callbackUrl,
+            cert
         };
 
-        passport.use('saml-login', new SamlStrategy(config, async (profile, done) => {
-            try {
-                const nameId = profile?.nameID;
-                if (!nameId) return done(null, false, { message: "Missing SAML NameID." });
+        try {
+            passport.use('saml-login', new SamlStrategy(config, async (profile, done) => {
+                try {
+                    const nameId = profile?.nameID;
+                    if (!nameId) return done(null, false, { message: "Missing SAML NameID." });
 
-                let user = await this.db.models['user'].findOne({ where: { samlNameId: nameId }, raw: true });
+                    let user = await this.db.models['user'].findOne({ where: { samlNameId: nameId }, raw: true });
 
-                if (!user) {
-                    const emailAttr = profile.email || profile.mail || profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
-                    const email = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
+                    if (!user) {
+                        const emailAttr = profile.email || profile.mail || profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+                        const email = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
 
-                    if (email) {
-                        user = await this.db.models['user'].findOne({ where: { email }, raw: true });
-                        if (user) {
-                            await this.db.models['user'].update({ samlNameId: nameId }, { where: { id: user.id } });
-                            user.samlNameId = nameId;
+                        if (email) {
+                            user = await this.db.models['user'].findOne({ where: { email }, raw: true });
+                            if (user) {
+                                await this.db.models['user'].update({ samlNameId: nameId }, { where: { id: user.id } });
+                                user.samlNameId = nameId;
+                            }
                         }
                     }
-                }
 
-                if (!user) return done(null, false, { message: "SAML account not linked." });
-                return done(null, relevantFields(user));
-            } catch (e) { return done(e); }
-        }));
+                    if (!user) return done(null, false, { message: "SAML account not linked." });
+                    return done(null, relevantFields(user));
+                } catch (e) { return done(e); }
+            }));
+            this.authProviderStatus.saml = { ready: true, reason: "ready" };
+        } catch (e) {
+            this.authProviderStatus.saml = { ready: false, reason: `init-error:${e.message}` };
+            this.logger.error(`[Auth] Failed to initialize SAML strategy: ${e.message}`);
+        }
+    }
+
     }
 
     /**
