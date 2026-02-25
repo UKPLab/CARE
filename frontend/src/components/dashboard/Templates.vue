@@ -29,6 +29,8 @@
     <TemplateModal ref="templateModal" />
     <PublishModal ref="publishModal" />
     <ConfirmModal ref="deleteConf" />
+    <TemplateDetachModal ref="detachModal" />
+    <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
   </template>
   
@@ -39,6 +41,8 @@
   import TemplateModal from "./templates/TemplateModal.vue";
   import PublishModal from "./templates/PublishModal.vue";
   import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+  import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
+  import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
   /**
    * Templates dashboard component
@@ -59,6 +63,8 @@
       TemplateModal,
       PublishModal,
       ConfirmModal,
+      TemplateDetachModal,
+      TemplateUpdateModal,
       PublicTemplatesModal,
     },
     data() {
@@ -137,6 +143,19 @@
             title: "Edit content",
             action: "editContent",
           },
+          // Edit content - for copies (detaches first)
+          {
+            icon: "box-arrow-in-right",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            filter: [{ key: "isCopy", value: true }],
+            title: "Edit content",
+            action: "editContentCopy",
+          },
           // View content (read-only) - for copies
           {
             icon: "eye",
@@ -187,7 +206,7 @@
             title: "Published (cannot be unpublished)",
             action: null,
           },
-          // Retrieve new version - copies with updates available
+          // Source updated - copies with updates available (opens modal with Update / Make new copy)
           {
             icon: "arrow-clockwise",
             options: {
@@ -197,21 +216,8 @@
               },
             },
             filter: [{ key: "hasUpdate", value: true }],
-            title: "Retrieve new version from source",
-            action: "updateFromSource",
-          },
-          // Make new copy - copies with updates available
-          {
-            icon: "files",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-primary": true,
-              },
-            },
-            filter: [{ key: "hasUpdate", value: true }],
-            title: "Make new copy of updated source",
-            action: "makeNewCopy",
+            title: "Source updated",
+            action: "openUpdateModal",
           },
           // Delete - own templates that can be deleted (including copies)
           {
@@ -288,6 +294,9 @@
           case "editContent":
             this.$router.push(`/template/${data.params.id}`);
             break;
+          case "editContentCopy":
+            this.editContentCopy(data.params);
+            break;
           case "viewContent":
             this.$router.push(`/template/${data.params.id}`);
             break;
@@ -297,13 +306,33 @@
           case "togglePublished":
             this.$refs.publishModal.open(data.params.id);
             break;
-          case "updateFromSource":
-            this.updateFromSource(data.params);
-            break;
-          case "makeNewCopy":
-            this.makeNewCopy(data.params);
+          case "openUpdateModal":
+            this.$refs.updateModal.open(data.params);
             break;
         }
+      },
+      /**
+       * Edit content of a copy: show detach warning, then detach and navigate to editor
+       */
+      editContentCopy(template) {
+        this.$refs.detachModal.open(template, (t) => {
+          this.$socket.emit("templateDetach", { templateId: t.id }, (result) => {
+            if (result.success) {
+              this.eventBus.emit("toast", {
+                title: "Template detached",
+                message: "You can now edit this template",
+                variant: "success",
+              });
+              this.$router.push(`/template/${t.id}`);
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Detach failed",
+                message: result.message,
+                variant: "danger",
+              });
+            }
+          });
+        });
       },
       deleteTemplate(template) {
         this.$refs.deleteConf.open(
@@ -322,69 +351,6 @@
                 if (!result.success) {
                   this.eventBus.emit("toast", {
                     title: "Template delete failed",
-                    message: result.message,
-                    variant: "danger",
-                  });
-                }
-              });
-            }
-          }
-        );
-      },
-      /**
-       * Update a copied template with the latest content from its source
-       */
-      updateFromSource(template) {
-        this.$refs.deleteConf.open(
-          "Retrieve New Version",
-          `This will replace the content of "${template.name}" with the latest version from the source template. Continue?`,
-          null,
-          (confirmed) => {
-            if (confirmed) {
-              this.$socket.emit("templateUpdateFromSource", {
-                templateId: template.id,
-              }, (result) => {
-                if (result.success) {
-                  this.eventBus.emit("toast", {
-                    title: "Template updated",
-                    message: "Content has been updated from the source template",
-                    variant: "success",
-                  });
-                } else {
-                  this.eventBus.emit("toast", {
-                    title: "Update failed",
-                    message: result.message,
-                    variant: "danger",
-                  });
-                }
-              });
-            }
-          }
-        );
-      },
-      /**
-       * Make a new copy of the source template (force=true to skip duplicate check)
-       */
-      makeNewCopy(template) {
-        this.$refs.deleteConf.open(
-          "Make New Copy",
-          `Create a new copy of the source template? Your existing copy will remain unchanged.`,
-          null,
-          (confirmed) => {
-            if (confirmed) {
-              this.$socket.emit("templateCopy", {
-                sourceTemplateId: template.sourceId,
-                force: true,
-              }, (result) => {
-                if (result.success) {
-                  this.eventBus.emit("toast", {
-                    title: "Template copied",
-                    message: "A new copy has been created from the updated source",
-                    variant: "success",
-                  });
-                } else {
-                  this.eventBus.emit("toast", {
-                    title: "Copy failed",
                     message: result.message,
                     variant: "danger",
                   });
