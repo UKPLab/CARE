@@ -722,7 +722,7 @@ export default {
           })
     },
     selectedAssignmentUserIds() {
-      if (this.newStudyOwner === 'study_owner') {
+      if (this.newStudyOwner !== 'study_owner') {
         return this.selectedAssignments.map((assignment) => {
           const study = this.$store.getters["table/study/get"](assignment.studyId);
           return study ? study.userId : null;
