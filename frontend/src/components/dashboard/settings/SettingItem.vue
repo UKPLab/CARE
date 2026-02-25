@@ -28,9 +28,14 @@
                           <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
                         </div>
                         <div v-else-if="setting.type === 'boolean' || setting.type === 'bool'" class="form-check form-switch">
-                          <input v-model="setting.value" :checked="setting.value"
-                                 class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
-                                 type="checkbox">
+                          <input 
+                            v-model="setting.value" 
+                            :checked="setting.value"
+                            class="form-check-input" 
+                            role="switch" 
+                            title="Activate/Deactivate NLP support"
+                            type="checkbox"
+                          >
                         </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
                       </p>
