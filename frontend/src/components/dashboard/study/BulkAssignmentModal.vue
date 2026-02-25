@@ -835,7 +835,12 @@ export default {
         return [];
       }
 
-      const selectedSessionUserIds = new Set(this.selectedAssignments.map(session => session.userId));
+      const selectedSessionUserIds = new Set(
+        this.selectedAssignments.map(session => {
+          const studySession = this.getStudySession(session.id);
+          return studySession ? studySession.userId : null;
+        }).filter(userId => userId !== null)
+      );
 
       return this.selectedReviewer.filter(reviewer => {
         return !selectedSessionUserIds.has(reviewer.id);
@@ -1025,6 +1030,9 @@ export default {
         return false;
       }
       return study.closed === null ? true : false;
+    },
+    getStudySession(sessionId) {
+      return this.$store.getters["table/study_session/get"](sessionId);
     },
     getPrimaryDocumentId(submissionId) {
       const submission = this.$store.getters["table/submission/get"](submissionId);
