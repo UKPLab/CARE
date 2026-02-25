@@ -144,6 +144,14 @@ export default {
       Object.keys(this.formData).map((key) => [key, false]),
     );
   },
+  mounted() {
+    if (window.config["system.auth.loginMethods.ldap.enabled"] !== "true") {
+      this.$router.replace({
+        name: "login",
+        query: { redirectedFrom: this.$route.query.redirectedFrom },
+      });
+    }
+  },
   methods: {
     checkVal(key) {
       this.validity[key] = true;

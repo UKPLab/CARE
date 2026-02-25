@@ -99,14 +99,15 @@
               >Forgot Password?</a>
             </div>
 
-            <hr>
+            <hr v-if="showExternalLoginOptions">
 
-            <div class="col-md-8 offset-md-2 mt-3">
+            <div v-if="showExternalLoginOptions" class="col-md-8 offset-md-2 mt-3">
               <p class="text-center text-muted small mb-2">
                 Or sign in with
               </p>
               <div class="d-grid gap-2">
                 <button
+                  v-if="showOrcidLogin"
                   type="button"
                   class="btn btn-outline-success btn-block"
                   @click="loginWithOrcid"
@@ -114,11 +115,20 @@
                   Sign in with ORCID
                 </button>
                 <button
+                  v-if="showLdapLogin"
                   type="button"
                   class="btn btn-outline-secondary btn-block"
                   @click="toLdapLogin"
                 >
                   Institutional login (LDAP)
+                </button>
+                <button
+                  v-if="showSamlLogin"
+                  type="button"
+                  class="btn btn-outline-dark btn-block"
+                  @click="loginWithSaml"
+                >
+                  Sign in with SAML
                 </button>
               </div>
             </div>
@@ -228,6 +238,18 @@ export default {
     },
     showRegisterButton() {
       return window.config['app.register.enabled'] === 'true';
+    },
+    showOrcidLogin() {
+      return window.config['system.auth.loginMethods.orcid.enabled'] === 'true';
+    },
+    showLdapLogin() {
+      return window.config['system.auth.loginMethods.ldap.enabled'] === 'true';
+    },
+    showSamlLogin() {
+      return window.config['system.auth.loginMethods.saml.enabled'] === 'true';
+    },
+    showExternalLoginOptions() {
+      return this.showOrcidLogin || this.showLdapLogin || this.showSamlLogin;
     },
     validUsername() {
       return this.formData.username !== "";
@@ -369,19 +391,18 @@ export default {
         await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
       }
     },
-
     loginWithOrcid() {
-      // Redirect to backend ORCID login endpoint
       window.location.href = getServerURL() + "/auth/login/orcid";
     },
-
+    loginWithSaml() {
+      window.location.href = getServerURL() + "/auth/login/saml";
+    },
     toLdapLogin() {
       this.$router.push({
         name: "login-ldap",
         query: { redirectedFrom: this.$route.query.redirectedFrom },
       });
     },
-
     showEmailVerificationModal(email) {
       this.$refs.emailVerificationModal.open(email);
     },
