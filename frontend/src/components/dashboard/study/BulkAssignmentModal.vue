@@ -71,7 +71,7 @@
 
         <div>
           <h6 class="text-secondary mt-4">New Study Owner</h6>
-          <label class="form-check-label">
+          <div class="form-check">
             <input
                 id="owner-session"
                 v-model="newStudyOwner"
@@ -79,28 +79,33 @@
                 class="form-check-input"
                 value="session_owner"
             />
-            User of the study session
-          </label>
-          <label class="form-check-label">
+            <label class="form-check-label" for="owner-session">
+              User of the study session
+            </label>
+          </div>
+
+          <div class="form-check">
             <input
                 id="owner-current-user"
                 v-model="newStudyOwner"
                 type="radio"
                 class="form-check-input"
                 value="study_owner"
-            /> Owner of the study
-          </label>
+            />
+            <label class="form-check-label" for="owner-current-user">
+              Owner of the study
+            </label>
+          </div>
         </div>
-      </div>
-      <div v-else>
-        <BasicTable
-            v-model="selectedAssignments"
-            :columns="currentTableColumns"
-            :data="currentTableData"
-            :options="documentTableOptions"
-            :max-table-height="400"
-        />
-      </div>
+        <div v-else>
+          <BasicTable
+              v-model="selectedAssignments"
+              :columns="currentTableColumns"
+              :data="currentTableData"
+              :options="documentTableOptions"
+              :max-table-height="400"
+          />
+        </div>
     </template>
 
     <template #step-3>
@@ -121,8 +126,8 @@
           </label>
           <br>
           <input
-id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input"
-                 type="checkbox">
+              id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input"
+              type="checkbox">
           <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
             Filter only users from previous selected documents
           </label>
@@ -146,8 +151,8 @@ id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="fo
           </label>
           <br>
           <input
-id="filterSelectedDocumentsCheckbox4" v-model="filterSelectedDocuments" class="form-check-input"
-                 type="checkbox">
+              id="filterSelectedDocumentsCheckbox4" v-model="filterSelectedDocuments" class="form-check-input"
+              type="checkbox">
           <label class="form-check-label" for="filterSelectedDocumentsCheckbox4">
             Filter only users from previous selected documents
           </label>
@@ -609,9 +614,11 @@ export default {
             return {
               id: session.id,
               studyId: session.studyId,
-              userId: user.userId,
+              userId: this.newStudyOwner === 'session_owner' ? user.userId : studyOwner.userId,
+              completeUserName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
               firstName: user ? user.firstName : 'Unknown',
               lastName: user ? user.lastName : 'Unknown',
+              studyCompleteUserName: studyOwner ? `${studyOwner.firstName} ${studyOwner.lastName}` : 'Unknown User',
               studyUserId: studyOwner.userId,
               studyFirstName: studyOwner ? studyOwner.firstName : 'Unknown',
               studyLastName: studyOwner ? studyOwner.lastName : 'Unknown',
@@ -625,10 +632,8 @@ export default {
     studySessionsTableColumns() {
       return [
         {name: "ID", key: "id"},
-        {name: "Session First Name", key: "firstName", sortable: true},
-        {name: "Session Last Name", key: "lastName", sortable: true},
-        {name: "Study Owner First Name", key: "studyFirstName", sortable: true},
-        {name: "Study Owner Last Name", key: "studyLastName", sortable: true},
+        {name: "Session User Name", key: "completeUserName", sortable: true},
+        {name: "Study Owner User Name", key: "studyCompleteUserName", sortable: true},
         {name: "Workflow Type", key: "workflowType", sortable: true},
         {name: "Created At", key: "createdAt", sortable: true},
         {name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
@@ -842,10 +847,10 @@ export default {
       }
 
       const selectedSessionUserIds = new Set(
-        this.selectedAssignments.map(session => {
-          const studySession = this.getStudySession(session.id);
-          return studySession ? studySession.userId : null;
-        }).filter(userId => userId !== null)
+          this.selectedAssignments.map(session => {
+            const studySession = this.getStudySession(session.id);
+            return studySession ? studySession.userId : null;
+          }).filter(userId => userId !== null)
       );
 
       return this.selectedReviewer.filter(reviewer => {
