@@ -616,7 +616,7 @@ export default {
             return {
               id: session.id,
               studyId: session.studyId,
-              userId: this.newStudyOwner === 'session_owner' ? user.userId : studyOwner.userId,
+              userId: this.newStudyOwner === 'session_owner' ? user.id : studyOwner.id,
               completeUserName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
               firstName: user ? user.firstName : 'Unknown',
               lastName: user ? user.lastName : 'Unknown',
