@@ -53,7 +53,7 @@
         <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
           <h6 class="text-secondary mt-4">Workflow Step Mapping</h6>
           <p class="text-muted">Map each source workflow step (from template) to a target workflow step:</p>
-          
+
           <div
               v-for="(templateStep, index) in workflowSteps"
               :key="templateStep.id"
@@ -68,26 +68,48 @@
             />
           </div>
         </div>
+
+        <div>
+          <h6 class="text-secondary mt-4">New Study Owner</h6>
+          <input
+              type="radio"
+              id="owner-session"
+              name="newStudyOwner"
+              v-model="newStudyOwner"
+              class="form-check-input"
+              value="session_owner"
+          />
+
+          <input
+              type="radio"
+              id="owner-current-user"
+              name="newStudyOwner"
+              v-model="newStudyOwner"
+              class="form-check-input"
+              value="study_owner"
+          />
+
+        </div>
       </div>
       <div v-else>
         <BasicTable
-          v-model="selectedAssignments"
-          :columns="currentTableColumns"
-          :data="currentTableData"
-          :options="documentTableOptions"
-          :max-table-height="400"
+            v-model="selectedAssignments"
+            :columns="currentTableColumns"
+            :data="currentTableData"
+            :options="documentTableOptions"
+            :max-table-height="400"
         />
       </div>
     </template>
 
-    <template  #step-3>
+    <template #step-3>
       <div v-if="assignmentType === 'study_session'">
         <BasicTable
-          v-model="selectedAssignments"
-          :columns="currentTableColumns"
-          :data="currentTableData"
-          :options="documentTableOptions"
-          :max-table-height="400"
+            v-model="selectedAssignments"
+            :columns="currentTableColumns"
+            :data="currentTableData"
+            :options="documentTableOptions"
+            :max-table-height="400"
         />
       </div>
       <div v-else>
@@ -104,11 +126,11 @@
           </label>
         </div>
         <BasicTable
-          v-model="selectedReviewer"
-          :columns="reviewerTableColumns"
-          :data="reviewerTable"
-          :options="reviewerTableOptions"
-          :max-table-height="400"
+            v-model="selectedReviewer"
+            :columns="reviewerTableColumns"
+            :data="reviewerTable"
+            :options="reviewerTableOptions"
+            :max-table-height="400"
         />
       </div>
     </template>
@@ -128,11 +150,11 @@
           </label>
         </div>
         <BasicTable
-          v-model="selectedReviewer"
-          :columns="reviewerTableColumns"
-          :data="reviewerTable"
-          :options="reviewerTableOptions"
-          :max-table-height="400"
+            v-model="selectedReviewer"
+            :columns="reviewerTableColumns"
+            :data="reviewerTable"
+            :options="reviewerTableOptions"
+            :max-table-height="400"
         />
       </div>
       <div v-else>
@@ -225,13 +247,15 @@
           Are you sure you want to create the assignment with the following details?
         </p>
         <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
-          <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
+          <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own
+          document.
           <br>
           This could lead to a failure in the assignment process, <br>
           so make sure that the values are set correctly for a successful assignment.
         </p>
         <p v-else class="text-warning">
-          <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+          <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a
+          corresponding study session.
           <br>
           <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
             The following reviewers do not have matching study sessions:
@@ -270,7 +294,9 @@
           <div class="row mb-2">
             <div class="col-2"><strong>Selection Mode:</strong></div>
             <div class="col-8">
-              {{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}
+              {{
+                reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name
+              }}
             </div>
           </div>
           <div v-if="reviewerSelectionMode.mode === 'role'">
@@ -306,13 +332,15 @@
         Are you sure you want to create the assignment with the following details?
       </p>
       <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
-        <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
+        <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own
+        document.
         <br>
         This could lead to a failure in the assignment process, <br>
         so make sure that the values are set correctly for a successful assignment.
       </p>
       <p v-else class="text-warning">
-        <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+        <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding
+        study session.
         <br>
         <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
           The following reviewers do not have matching study sessions:
@@ -427,6 +455,7 @@ export default {
       workflowMapping: {},
       filterHasDocuments: false,
       filterSelectedDocuments: false,
+      newStudyOwner: 'session_owner',
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -562,38 +591,43 @@ export default {
     },
     studySessionsTable() {
       if (!this.targetWorkflowId) return [];
-      
+
       const sessions = this.$store.getters["table/study_session/getAll"] || [];
       return sessions
-        .filter(session => {
-          const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.workflowId === this.targetWorkflowId;
-        })
-        .map(session => {
-          const study = this.$store.getters["table/study/get"](session.studyId);
-          const user = this.$store.getters["table/user/get"](session.userId);
-          const submission = this.getSubmission(session.studyId);
-          return {
-            id: session.id,
-            studyId: session.studyId,
-            userId: session.userId,
-            firstName: user ? user.firstName : 'Unknown',
-            lastName: user ? user.lastName : 'Unknown',
-            workflowType: this.getWorkflowType(study.workflowId),
-            submissionGroup: submission && submission.group ? submission.group : 'N/A',
-            status: session.end === null ? "Running" : "Finished",
-            createdAt: new Date(session.createdAt).toLocaleString(),
-          };
-        });
+          .filter(session => {
+            const study = this.$store.getters["table/study/get"](session.studyId);
+            return study && study.workflowId === this.targetWorkflowId;
+          })
+          .map(session => {
+            const study = this.$store.getters["table/study/get"](session.studyId);
+            let user = this.$store.getters["table/user/get"](session.userId);
+
+            if (this.newStudyOwner === 'study_owner') {
+              const studyOwner = this.$store.getters["table/user/get"](study.ownerId);
+              user = studyOwner || user; // Fallback to session user if study owner not found
+            }
+            const submission = this.getSubmission(session.studyId);
+            return {
+              id: session.id,
+              studyId: session.studyId,
+              userId: session.userId,
+              firstName: user ? user.firstName : 'Unknown',
+              lastName: user ? user.lastName : 'Unknown',
+              workflowType: this.getWorkflowType(study.workflowId),
+              submissionGroup: submission && submission.group ? submission.group : 'N/A',
+              status: session.end === null ? "Running" : "Finished",
+              createdAt: new Date(session.createdAt).toLocaleString(),
+            };
+          });
     },
     studySessionsTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Workflow Type", key: "workflowType", sortable: true },
-        { name: "Created At", key: "createdAt", sortable: true },
-        { name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
+        {name: "ID", key: "id"},
+        {name: "First Name", key: "firstName", sortable: true},
+        {name: "Last Name", key: "lastName", sortable: true},
+        {name: "Workflow Type", key: "workflowType", sortable: true},
+        {name: "Created At", key: "createdAt", sortable: true},
+        {name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
         {
           name: "Status",
           key: "status",
@@ -773,7 +807,7 @@ export default {
     targetWorkflowSteps() {
       if (!this.targetWorkflowId) return [];
       return this.$store.getters["table/workflow_step/getFiltered"](
-        item => item.workflowId === this.targetWorkflowId
+          item => item.workflowId === this.targetWorkflowId
       ) || [];
     },
     reviewerNumberOfAssignments() {
@@ -802,9 +836,9 @@ export default {
       if (this.assignmentType !== 'study_session' || this.reviewerSelectionMode.mode !== 'session_user') {
         return [];
       }
-      
+
       const selectedSessionUserIds = new Set(this.selectedAssignments.map(session => session.userId));
-      
+
       return this.selectedReviewer.filter(reviewer => {
         return !selectedSessionUserIds.has(reviewer.id);
       });
@@ -899,18 +933,18 @@ export default {
     }
   },
   methods: {
-    getSubmission(studyId) {  
+    getSubmission(studyId) {
       const studySteps = this.$store.getters["table/study_step/getFiltered"](
-        (s) => s.studyId === studyId
-      ) || []; 
+          (s) => s.studyId === studyId
+      ) || [];
       for (const step of studySteps) {
         if (step.stepType === 1 && step.documentId !== null) {
           let document = this.$store.getters["table/document/get"](step.documentId);
-          
-          while(document && document.parentDocumentId !== null) {
+
+          while (document && document.parentDocumentId !== null) {
             document = this.$store.getters["table/document/get"](document.parentDocumentId);
           }
-          
+
           if (document && document.submissionId) {
             const submission = this.$store.getters["table/submission/get"](document.submissionId);
             if (submission) {
@@ -919,29 +953,32 @@ export default {
           }
         }
       }
-      
+
       return null;
     },
     getWorkflowType(workflowId) {
-        const workflow = this.$store.getters["table/workflow/get"](workflowId);
-        return workflow ? workflow.name : "Unknown";
+      const workflow = this.$store.getters["table/workflow/get"](workflowId);
+      return workflow ? workflow.name : "Unknown";
     },
     getStepTypeName(stepType) {
       switch (stepType) {
-        case 1: return 'Annotator';
-        case 2: return 'Editor';
-        default: return 'Unknown';
+        case 1:
+          return 'Annotator';
+        case 2:
+          return 'Editor';
+        default:
+          return 'Unknown';
       }
-    }, 
+    },
     getTargetStepOptions(stepType, currentStepId) {
       // First, order the target workflow steps based on workflowStepPrevious
       const orderedSteps = [];
       const stepPositionMap = new Map(); // Maps step.id to its position (1-based)
       const nextMap = new Map(this.targetWorkflowSteps.map(s => [s.workflowStepPrevious, s]));
-      
+
       // Find the first step (where workflowStepPrevious is null)
       let current = this.targetWorkflowSteps.find(s => s.workflowStepPrevious === null);
-      
+
       // Build ordered list by following the chain and track positions
       let position = 1;
       while (current) {
@@ -950,15 +987,15 @@ export default {
         current = nextMap.get(current.id);
         position++;
       }
-      
+
       // Filter by stepType and create options with correct step numbers
       const options = orderedSteps
-        .filter(step => step.stepType === stepType)
-        .map((step) => ({
-          name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
-          value: step.id,
-        }));
-      
+          .filter(step => step.stepType === stepType)
+          .map((step) => ({
+            name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
+            value: step.id,
+          }));
+
       // Add "Previous Submission Document" placeholder only if:
       // 1. Current step is Annotator (type 1), AND
       // 2. Previous step in SOURCE workflow is also Annotator (type 1)
@@ -966,7 +1003,7 @@ export default {
         const currentSourceStep = this.workflowSteps.find(s => s.id === currentStepId);
         if (currentSourceStep && currentSourceStep.workflowStepPrevious) {
           const previousSourceStep = this.workflowSteps.find(
-            s => s.id === currentSourceStep.workflowStepPrevious
+              s => s.id === currentSourceStep.workflowStepPrevious
           );
           if (previousSourceStep && previousSourceStep.stepType === 1) {
             options.unshift({
@@ -976,7 +1013,7 @@ export default {
           }
         }
       }
-      
+
       return options;
     },
     userStudySessions(userId) {
@@ -997,15 +1034,15 @@ export default {
       const docs = this.$store.getters["table/document/getFiltered"](
           (d) => d.submissionId === submissionId && !d.deleted && d.type === 0
       );
-      
+
       if (!docs || docs.length === 0) return null;
-      
+
       // If configuration specifies a primary document key, try to use it
       if (configuration && configuration.primaryDocument) {
         const primaryDoc = docs.find(d => d.id === configuration.primaryDocument);
         if (primaryDoc) return primaryDoc.id;
       }
-      
+
       // Otherwise, return the first PDF document
       return docs[0].id;
     },
@@ -1024,7 +1061,7 @@ export default {
     },
     createAssignments() {
       this.$refs.assignmentStepper.setWaiting(true);
-      
+
       const socketData = {
         template: this.template,
         selectedReviewer: this.selectedReviewer,
@@ -1035,7 +1072,7 @@ export default {
         roles: this.roles,
         assignmentType: this.assignmentType,
       };
-      
+
       // Add workflowMapping for study_session, documents for others
       if (this.assignmentType === 'study_session') {
         socketData.targetWorkflowId = this.targetWorkflowId;
@@ -1061,7 +1098,20 @@ export default {
                 console.error(`Assignment with ID ${assignmentId} not found.`);
                 return null;
               }
-              const assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
+
+              let assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
+
+              if (this.newStudyOwner === 'study_owner') {
+                const studySession = this.$store.getters["table/study_session/getFiltered"](
+                    (s) => s.studyId === assignment.studyId && s.userId === assignment.userId
+                )[0];
+                if (studySession) {
+                  const studyOwner = this.$store.getters["table/user/get"](studySession.userId);
+                  if (studyOwner) {
+                    assignmentUser = studyOwner;
+                  }
+                }
+              }
               const reviewer = res.data[assignmentId];
 
               const csv = {
