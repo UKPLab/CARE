@@ -23,7 +23,7 @@
                     <div class="card-body">
                       <h5 class="card-title">{{ setting.key }}</h5>
                       <h6 class="card-subtitle mb-2 text-muted">{{ setting.description }}</h6>
-                      <p class="card-text">
+                      <div class="card-text">
                         <div v-if="setting.type === 'edits'">
                           <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
                         </div>
@@ -37,8 +37,14 @@
                             type="checkbox"
                           >
                         </div>
+                        <textarea
+                            v-else-if="setting.type === 'text'"
+                            v-model="setting.value"
+                            class="w-100 form-control"
+                            rows="6"
+                        ></textarea>
                         <input v-else v-model="setting.value" class="w-50" type="text">
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
