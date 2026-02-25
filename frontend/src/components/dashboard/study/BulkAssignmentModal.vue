@@ -722,7 +722,14 @@ export default {
           })
     },
     selectedAssignmentUserIds() {
-      return this.selectedAssignments.map((assignment) => assignment.userId);
+      if (this.newStudyOwner === 'session_owner') {
+        return this.selectedAssignments.map((assignment) => assignment.userId);
+      } else {
+        return this.selectedAssignments.map((assignment) => {
+          const study = this.$store.getters["table/study/get"](assignment.studyId);
+          return study ? study.userId : null;
+        }).filter(userId => userId !== null);
+      }
     },
     roles() {
       return this.$store.getters["admin/getSystemRoles"] || [];
