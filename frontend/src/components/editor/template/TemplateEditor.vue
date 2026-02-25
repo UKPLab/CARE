@@ -184,9 +184,14 @@
           }
         }
   
+        // Always pass toolbarTools when setting is on so format buttons are created.
+        // readOnly watcher hides/shows them; passing [] when readOnly would leave toolbar with only languages.
+        const toolbarContainer = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true"
+          ? toolbarTools
+          : [];
         return {
           modules: {
-            toolbar: { container: this.toolbarVisible ? toolbarTools : [] }
+            toolbar: { container: toolbarContainer }
           },
           theme: "snow"
         };
