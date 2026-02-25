@@ -601,7 +601,7 @@ export default {
             let user = this.$store.getters["table/user/get"](session.userId);
 
             if (this.newStudyOwner === 'study_owner') {
-              const studyOwner = this.$store.getters["table/user/get"](study.ownerId);
+              const studyOwner = this.$store.getters["table/user/get"](study.userId);
               user = studyOwner || user; // Fallback to session user if study owner not found
             }
             const submission = this.getSubmission(session.studyId);
