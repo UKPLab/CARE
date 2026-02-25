@@ -722,7 +722,7 @@ export default {
           })
     },
     selectedAssignmentUserIds() {
-      if (this.newStudyOwner === 'session_owner') {
+      if (this.newStudyOwner !== 'session_owner') {
         return this.selectedAssignments.map((assignment) => assignment.userId);
       } else {
         return this.selectedAssignments.map((assignment) => {
