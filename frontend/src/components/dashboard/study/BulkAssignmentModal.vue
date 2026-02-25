@@ -71,22 +71,25 @@
 
         <div>
           <h6 class="text-secondary mt-4">New Study Owner</h6>
-          <input
-              type="radio"
-              id="owner-session"
-              v-model="newStudyOwner"
-              class="form-check-input"
-              value="session_owner"
-          /> User of the study session
-
-          <input
-              type="radio"
-              id="owner-current-user"
-              v-model="newStudyOwner"
-              class="form-check-input"
-              value="study_owner"
-          /> Owner of the study
-
+          <label class="form-check-label">
+            <input
+                id="owner-session"
+                v-model="newStudyOwner"
+                type="radio"
+                class="form-check-input"
+                value="session_owner"
+            />
+            User of the study session
+          </label>
+          <label class="form-check-label">
+            <input
+                id="owner-current-user"
+                v-model="newStudyOwner"
+                type="radio"
+                class="form-check-input"
+                value="study_owner"
+            /> Owner of the study
+          </label>
         </div>
       </div>
       <div v-else>
@@ -112,13 +115,14 @@
       </div>
       <div v-else>
         <div class="form-check">
-          <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
+          <input id="filterHasDocumentsCheckbox" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
           <label class="form-check-label" for="filterHasDocumentsCheckbox">
             Filter only users with documents
           </label>
           <br>
-          <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox"
-                 id="filterSelectedDocumentsCheckbox">
+          <input
+id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input"
+                 type="checkbox">
           <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
             Filter only users from previous selected documents
           </label>
@@ -136,13 +140,14 @@
     <template #step-4>
       <div v-if="assignmentType === 'study_session'">
         <div class="form-check">
-          <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox4">
+          <input id="filterHasDocumentsCheckbox4" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
           <label class="form-check-label" for="filterHasDocumentsCheckbox4">
             Filter only users with documents
           </label>
           <br>
-          <input v-model="filterSelectedDocuments" class="form-check-input" type="checkbox"
-                 id="filterSelectedDocumentsCheckbox4">
+          <input
+id="filterSelectedDocumentsCheckbox4" v-model="filterSelectedDocuments" class="form-check-input"
+                 type="checkbox">
           <label class="form-check-label" for="filterSelectedDocumentsCheckbox4">
             Filter only users from previous selected documents
           </label>
@@ -183,7 +188,7 @@
             Distribute the documents between the selected reviewers:
           </div>
           <div class="mb-4">
-            Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
+            Remaining Assignments: <strong>{{ remainingAssignments }}</strong>
           </div>
 
           <BasicForm
@@ -227,7 +232,7 @@
             Distribute the documents between the selected reviewers:
           </div>
           <div class="mb-4">
-            Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
+            Remaining Assignments: <strong>{{ remainingAssignments }}</strong>
           </div>
 
           <BasicForm
@@ -598,19 +603,22 @@ export default {
           })
           .map(session => {
             const study = this.$store.getters["table/study/get"](session.studyId);
-            let user = this.$store.getters["table/user/get"](session.userId);
+            const user = this.$store.getters["table/user/get"](session.userId);
+            const studyOwner = this.$store.getters["table/user/get"](study.userId);
 
             if (this.newStudyOwner === 'study_owner') {
-              const studyOwner = this.$store.getters["table/user/get"](study.userId);
               user = studyOwner || user; // Fallback to session user if study owner not found
             }
             const submission = this.getSubmission(session.studyId);
             return {
               id: session.id,
               studyId: session.studyId,
-              userId: this.newStudyOwner === 'study_owner' ? user.userId : session.userId,
+              userId: user.userId,
               firstName: user ? user.firstName : 'Unknown',
               lastName: user ? user.lastName : 'Unknown',
+              studyUserId: studyOwner.userId,
+              studyFirstName: studyOwner ? studyOwner.firstName : 'Unknown',
+              studyLastName: studyOwner ? studyOwner.lastName : 'Unknown',
               workflowType: this.getWorkflowType(study.workflowId),
               submissionGroup: submission && submission.group ? submission.group : 'N/A',
               status: session.end === null ? "Running" : "Finished",
@@ -621,8 +629,10 @@ export default {
     studySessionsTableColumns() {
       return [
         {name: "ID", key: "id"},
-        {name: "First Name", key: "firstName", sortable: true},
-        {name: "Last Name", key: "lastName", sortable: true},
+        {name: "Session First Name", key: "firstName", sortable: true},
+        {name: "Session Last Name", key: "lastName", sortable: true},
+        {name: "Study Owner First Name", key: "studyFirstName", sortable: true},
+        {name: "Study Owner Last Name", key: "studyLastName", sortable: true},
         {name: "Workflow Type", key: "workflowType", sortable: true},
         {name: "Created At", key: "createdAt", sortable: true},
         {name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
