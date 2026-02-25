@@ -74,20 +74,18 @@
           <input
               type="radio"
               id="owner-session"
-              name="newStudyOwner"
               v-model="newStudyOwner"
               class="form-check-input"
               value="session_owner"
-          />
+          /> User of the study session
 
           <input
               type="radio"
               id="owner-current-user"
-              name="newStudyOwner"
               v-model="newStudyOwner"
               class="form-check-input"
               value="study_owner"
-          />
+          /> Owner of the study
 
         </div>
       </div>
@@ -610,7 +608,7 @@ export default {
             return {
               id: session.id,
               studyId: session.studyId,
-              userId: session.userId,
+              userId: this.newStudyOwner === 'study_owner' ? user.userId : session.userId,
               firstName: user ? user.firstName : 'Unknown',
               lastName: user ? user.lastName : 'Unknown',
               workflowType: this.getWorkflowType(study.workflowId),
@@ -1099,19 +1097,7 @@ export default {
                 return null;
               }
 
-              let assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
-
-              if (this.newStudyOwner === 'study_owner') {
-                const studySession = this.$store.getters["table/study_session/getFiltered"](
-                    (s) => s.studyId === assignment.studyId && s.userId === assignment.userId
-                )[0];
-                if (studySession) {
-                  const studyOwner = this.$store.getters["table/user/get"](studySession.userId);
-                  if (studyOwner) {
-                    assignmentUser = studyOwner;
-                  }
-                }
-              }
+              const assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
               const reviewer = res.data[assignmentId];
 
               const csv = {
