@@ -353,6 +353,26 @@ module.exports = (sequelize, DataTypes) => {
             return await Template.findByPk(copyId, { transaction });
         }
 
+        /**
+         * Detach a copy from its source by setting sourceId to null.
+         * After detachment, the template behaves as a normal user-created template.
+         *
+         * @param {number} copyId - The ID of the copy to detach
+         * @param {Object} options - Database options including transaction
+         * @returns {Promise<Object>} The detached template
+         */
+        static async detach(copyId, options = {}) {
+            const copy = await Template.findByPk(copyId, { transaction: options.transaction });
+            if (!copy) {
+                throw new Error("Template not found");
+            }
+            if (!copy.sourceId) {
+                throw new Error("Template is not a copy");
+            }
+            await copy.update({ sourceId: null }, { transaction: options.transaction });
+            return await Template.findByPk(copyId, { transaction: options.transaction });
+        }
+
         static associate(models) {
             Template.hasMany(models["template_language_content"], {
                 foreignKey: "templateId",

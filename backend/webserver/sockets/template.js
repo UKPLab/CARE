@@ -582,12 +582,38 @@ class TemplateSocket extends Socket {
   }
 
   /**
+   * Detach a template copy from its source (set sourceId to null).
+   * After detachment, the template can be edited like any user-created template.
+   *
+   * @socketEvent templateDetach
+   * @param {Object} data
+   * @param {number} data.templateId - The copy's template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async detachTemplate(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const copy = await this.models["template"].getById(data.templateId);
+    if (!copy) throw new Error("Template not found");
+    if (copy.userId !== this.userId) throw new Error("You can only detach your own copies");
+    if (!copy.sourceId) throw new Error("Template is not a copy");
+
+    return await this.models["template"].detach(
+      data.templateId,
+      { transaction: options.transaction }
+    );
+  }
+
+  /**
    * Copy a published template to the current user's template list
    *
    * @socketEvent templateCopy
    * @param {Object} data
    * @param {number} data.sourceTemplateId - Source template ID (required)
    * @param {boolean} [data.force=false] - Skip duplicate check (for "Make new copy")
+   * @param {number} [data.detachTemplateId] - If set, detach this copy after creating the new one
    * @param {Object} options
    * @param {Object} options.transaction
    * @returns {Promise<Object>}
@@ -606,6 +632,16 @@ class TemplateSocket extends Socket {
       { force: data.force || false },
       { transaction: options.transaction }
     );
+
+    if (data.detachTemplateId) {
+      const toDetach = await this.models["template"].getById(data.detachTemplateId);
+      if (toDetach && toDetach.userId === this.userId && toDetach.sourceId) {
+        await this.models["template"].detach(
+          data.detachTemplateId,
+          { transaction: options.transaction }
+        );
+      }
+    }
 
     return copiedTemplate;
   }
@@ -646,6 +682,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
     this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
     this.createSocket("templateCopy", this.copyTemplate, {}, true);
+    this.createSocket("templateDetach", this.detachTemplate, {}, true);
     this.createSocket("templateUpdateFromSource", this.updateFromSource, {}, true);
   }
 }
