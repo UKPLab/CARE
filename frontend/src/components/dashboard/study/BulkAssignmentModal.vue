@@ -67,34 +67,35 @@
                 :options="{ options: getTargetStepOptions(templateStep.stepType, templateStep.id) }"
             />
           </div>
-        </div>
 
-        <div>
-          <h6 class="text-secondary mt-4">New Study Owner</h6>
-          <div class="form-check">
-            <input
-                id="owner-session"
-                v-model="newStudyOwner"
-                type="radio"
-                class="form-check-input"
-                value="session_owner"
-            />
-            <label class="form-check-label" for="owner-session">
-              User of the study session
-            </label>
-          </div>
 
-          <div class="form-check">
-            <input
-                id="owner-current-user"
-                v-model="newStudyOwner"
-                type="radio"
-                class="form-check-input"
-                value="study_owner"
-            />
-            <label class="form-check-label" for="owner-current-user">
-              Owner of the study
-            </label>
+          <div>
+            <h6 class="text-secondary mt-4">New Study Owner</h6>
+            <div class="form-check">
+              <input
+                  id="owner-session"
+                  v-model="newStudyOwner"
+                  type="radio"
+                  class="form-check-input"
+                  value="session_owner"
+              />
+              <label class="form-check-label" for="owner-session">
+                User of the study session
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input
+                  id="owner-current-user"
+                  v-model="newStudyOwner"
+                  type="radio"
+                  class="form-check-input"
+                  value="study_owner"
+              />
+              <label class="form-check-label" for="owner-current-user">
+                Owner of the study
+              </label>
+            </div>
           </div>
         </div>
         <div v-else>
