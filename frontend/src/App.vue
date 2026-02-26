@@ -25,6 +25,10 @@
     </div>
     <div v-else>
       <ConsentModal ref="consentModal"/>
+      <TwoFactorSettingsModal
+          ref="twoFactorSettingsModal"
+          :enforced="true"
+      />
       <router-view class="top-padding"/>
     </div>
   </div>
@@ -42,6 +46,7 @@ import {createTable} from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import ConsentModal from "@/auth/ConsentModal.vue";
+import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
 
@@ -52,7 +57,7 @@ import {computed} from "vue";
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, Loader, ConsentModal},
+  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
@@ -67,8 +72,8 @@ export default {
         systemRoles: false,
       },
       disconnected: false,
-      isTermsConsented: false,
       behaviorLogger: null,
+      postLoginModalFlowToken: 0,
     }
   },
   sockets: {
@@ -98,7 +103,6 @@ export default {
     appUser: function (data) {
       this.$store.commit("auth/SET_USER", data);
       this.loaded.users = true;
-      this.isTermsConsented = data.acceptTerms;
     },
     appSettings: function (data) {
       this.$store.commit("settings/setSettings", data);
@@ -144,6 +148,27 @@ export default {
         return false;
       }
     },
+    hasTwoFactorConfigured() {
+      const user = this.$store.getters["auth/getUser"];
+      const methods = Array.isArray(user?.twoFactorMethods) ? user.twoFactorMethods : [];
+      return methods.length > 0;
+    },
+    isTwoFactorRequired() {
+      return this.$store.getters["settings/getValue"]("system.auth.2fa.required") === "true";
+    },
+    isTermsConsented() {
+      return !!this.$store.getters["auth/getUser"]?.acceptTerms;
+    },
+    shouldShowConsentModal() {
+      return this.requireAuth && this.appLoaded && !this.isTermsConsented;
+    },
+    shouldForceTwoFactorSetup() {
+      return this.requireAuth &&
+          this.appLoaded &&
+          this.isTermsConsented &&
+          this.isTwoFactorRequired &&
+          !this.hasTwoFactorConfigured;
+    },
     requireAuth() {
       return (
           this.$route.meta.requireAuth !== undefined &&
@@ -165,17 +190,17 @@ export default {
         this.connect();
       }
     },
-    '$data': {
-      handler() {
-        if (this.appLoaded && !this.isTermsConsented) {
-          this.$nextTick(() => {
-            if (this.$refs.consentModal) {
-              this.$refs.consentModal.open();
-            }
-          });
-        }
-      },
-      deep: true
+    shouldForceTwoFactorSetup() {
+      this.syncPostLoginModalFlow();
+    },
+    shouldShowConsentModal() {
+      this.syncPostLoginModalFlow();
+    },
+    isTermsConsented() {
+      this.syncPostLoginModalFlow();
+    },
+    appLoaded() {
+      this.syncPostLoginModalFlow();
     },
     // Initialize logger after settings are loaded because we access the settings table
     'loaded.settings': {
@@ -217,6 +242,45 @@ export default {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
         this.behaviorLogger.init();
       }
+    },
+    syncPostLoginModalFlow() {
+      if (!this.requireAuth || !this.appLoaded) {
+        return;
+      }
+
+      // const flowToken = ++this.postLoginModalFlowToken;
+      this.$nextTick(() => {
+        // if (flowToken !== this.postLoginModalFlowToken) {
+        //   return;
+        // }
+        
+        if (this.shouldShowConsentModal) {
+          if (this.$refs.twoFactorSettingsModal?.isVisible()) {
+            this.$refs.twoFactorSettingsModal.close();
+          }
+          if (this.$refs.consentModal) {
+            this.$refs.consentModal.open();
+          }
+          return;
+        }
+
+        if (this.shouldForceTwoFactorSetup) {
+          if (this.$refs.consentModal?.isVisible()) {
+            this.$refs.consentModal.close();
+          }
+          if (this.$refs.twoFactorSettingsModal) {
+            this.$refs.twoFactorSettingsModal.open();
+          }
+          return;
+        }
+
+        if (this.$refs.consentModal?.isVisible()) {
+          this.$refs.consentModal.close();
+        }
+        if (this.$refs.twoFactorSettingsModal?.isVisible()) {
+          this.$refs.twoFactorSettingsModal.close();
+        }
+      });
     },
   },
 };
