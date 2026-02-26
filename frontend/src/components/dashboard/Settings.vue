@@ -65,11 +65,12 @@
         <Loading v-if="settings === null"/>
 
         <div v-else class="mt-3">
-          <SettingItem
-              v-for="(group, key) in groupedSettings"
-              :key="key"
-              :group="group"
-              :title="key"
+          <SettingsSection
+              v-for="section in sectionLayout"
+              :key="section.title"
+              :title="section.title"
+              :subsections="section.subsections"
+              :settings="displaySettings"
           />
         </div>
       </template>
@@ -142,11 +143,11 @@
 import Card from "@/basic/dashboard/card/Card.vue";
 import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
+import SettingsSection from "@/components/dashboard/settings/SettingsSection.vue";
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
-import {onBeforeRouteUpdate} from 'vue-router'
+import {onBeforeRouteUpdate} from "vue-router";
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
 
 export default {
@@ -155,7 +156,7 @@ export default {
     Card,
     LoadIcon,
     Loading,
-    SettingItem,
+    SettingsSection,
     BasicButton,
     Modal,
     ChangeUserSettingsModal,
@@ -163,21 +164,54 @@ export default {
   data() {
     return {
       settings: null,
-      collapseFirst: {},
       uploadFile: null,
       uploading: false,
       originalSettingsSnapshot: null,
     };
   },
   computed: {
-    groupedSettings() {
-      if (!this.settings) return {};
-      return this.settings.reduce((acc, setting) => {
-        const keys = setting.key.split(".");
-        if (!acc[keys[0]]) acc[keys[0]] = {};
-        this.nestSettings(acc[keys[0]], keys.slice(1), setting);
-        return acc;
-      }, {});
+    displaySettings() {
+      if (!this.settings) return [];
+      return this.settings.filter((s) => !s.key.startsWith("app.setup."));
+    },
+    sectionLayout() {
+      if (!this.displaySettings.length) return [];
+      const wizardSteps = ["general", "mail", "registration", "moodle"];
+      const sections = [];
+      for (const step of wizardSteps) {
+        let keys = this.displaySettings
+          .filter((s) => s.wizardStep === step && s.showInWizard)
+          .sort((a, b) => (a.wizardOrder || 0) - (b.wizardOrder || 0))
+          .map((s) => s.key);
+        const otherInStep = this.displaySettings.filter(
+          (s) => !s.showInWizard && (s.displayGroup || "").toLowerCase() === step
+        );
+        if (otherInStep.length) {
+          keys = [...keys, ...otherInStep.map((s) => s.key)];
+        }
+        if (keys.length) {
+          sections.push({
+            title: step.charAt(0).toUpperCase() + step.slice(1),
+            subsections: [{ title: "", keys }],
+          });
+        }
+      }
+      const other = this.displaySettings.filter((s) => !s.showInWizard);
+      const mergedSteps = new Set(wizardSteps);
+      const otherGroups = {};
+      for (const s of other) {
+        const group = s.displayGroup || "Other";
+        if (mergedSteps.has((group || "").toLowerCase())) continue;
+        if (!otherGroups[group]) otherGroups[group] = [];
+        otherGroups[group].push(s.key);
+      }
+      for (const [title, keys] of Object.entries(otherGroups).sort((a, b) => a[0].localeCompare(b[0]))) {
+        sections.push({
+          title,
+          subsections: [{ title: "", keys }],
+        });
+      }
+      return sections;
     },
     hasUnsavedChanges() {
       if (!this.settings || this.originalSettingsSnapshot === null) return false;
@@ -205,15 +239,6 @@ export default {
     });
   },
   methods: {
-    nestSettings(obj, keys, setting) {
-      if (keys.length === 1) {
-        if (!obj[keys[0]]) obj[keys[0]] = [];
-        obj[keys[0]].push(setting);
-      } else {
-        if (!obj[keys[0]]) obj[keys[0]] = {};
-        this.nestSettings(obj[keys[0]], keys.slice(1), setting);
-      }
-    },
     setSettingsSnapshot() {
       if (!this.settings) {
         this.originalSettingsSnapshot = null;
@@ -250,11 +275,6 @@ export default {
             });
           }
           this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
-          this.collapseFirst = this.settings.reduce((acc, setting) => {
-            const key = setting.key.split(".")[0];
-            acc[key] = true;
-            return acc;
-          }, {});
           this.setSettingsSnapshot();
         } else {
           this.eventBus.emit("toast", {
