@@ -84,6 +84,7 @@ class AssignmentSocket extends Socket {
             hash: undefined,
             closed: undefined,
             userIdClosed: undefined,
+            parentStudyId: data.assignmentType === 'study_session' ? data['assignment'].studyId : null,
             limitSessions: data["reviewer"].length,
             limitSessionsPerUser: 1,
             resumable: true,
