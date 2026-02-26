@@ -668,51 +668,6 @@ import Modal from "@/basic/Modal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
-/** User-facing labels for setting keys hardcoded for now later will create db migration to change to more descriptive labels*/
-const SETTING_LABELS = {
-  "app.config.copyright": "Copyright notice",
-  "app.config.consent.enabled": "Require consent before first use",
-  "app.login.guest": "Allow guest login",
-  "app.login.forgotPassword": "Enable forgot password",
-  "app.study.enabled": "Enable study mode",
-  "app.landing.showDocs": "Show documentation link",
-  "app.landing.linkDocs": "Documentation URL",
-  "app.landing.showProject": "Show project link",
-  "app.landing.linkProject": "Project URL",
-  "app.landing.showFeedback": "Show feedback link",
-  "app.landing.linkFeedback": "Feedback URL",
-  "system.mailService.enabled": "Enable email service",
-  "system.mailService.senderAddress": "Sender address",
-  "system.mailService.sendMail.enabled": "Use Sendmail",
-  "system.mailService.sendMail.path": "Path to sendmail binary",
-  "system.mailService.smtp.enabled": "Use SMTP",
-  "system.mailService.smtp.host": "SMTP host",
-  "system.mailService.smtp.port": "SMTP port",
-  "system.mailService.smtp.secure": "Use secure connection (TLS)",
-  "system.mailService.smtp.auth.enabled": "SMTP authentication",
-  "system.mailService.smtp.auth.user": "SMTP username",
-  "system.mailService.smtp.auth.pass": "SMTP password",
-  "system.baseUrl": "Application base URL",
-  "app.register.emailVerification": "Require email verification",
-  "app.register.requestName": "Ask for display name at registration",
-  "app.register.requestStats": "Ask for usage statistics consent at registration",
-  "app.register.requestData": "Ask for annotation data sharing consent at registration",
-  "app.register.acceptStats.default": "Pre-select statistics consent checkbox for new users",
-  "app.register.acceptDataSharing.default": "Pre-select data sharing consent checkbox for new users",
-  "app.register.terms": "Terms and conditions (URL or text)",
-  "rpc.moodleAPI.apiUrl": "Moodle API URL",
-  "rpc.moodleAPI.apiKey": "Moodle API key",
-  "rpc.moodleAPI.courseID": "Moodle course ID",
-};
-
-/** Override descriptions for settings where the default is unclear, hardcoded for now later will create db migration to change to more descriptive descriptions */
-const SETTING_DESCRIPTIONS = {
-  "app.register.acceptStats.default":
-    "When you ask new users for consent to collect anonymous usage statistics (e.g. how often features are used) to improve CARE, this sets whether that checkbox is pre-checked or unchecked by default.",
-  "app.register.acceptDataSharing.default":
-    "When you ask new users for consent to share their annotation data (their labels and annotations on documents) for research purposes, this sets whether that checkbox is pre-checked or unchecked by default.",
-};
-
 export default {
   name: "SetupWizard",
   components: { IconAsset, FormHelp, FormCollapsible, Modal },
@@ -793,6 +748,10 @@ export default {
         return acc;
       }, {});
       const groups = [
+        {
+          title: "Enable registration",
+          keys: ["app.register.enabled"],
+        },
         {
           title: "Information requested at registration",
           keys: ["app.register.requestName", "app.register.requestStats", "app.register.requestData"],
@@ -942,10 +901,12 @@ export default {
       return (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
     },
     settingLabel(key) {
-      return SETTING_LABELS[key] || key;
+      const s = (this.wizardSettings || []).find((x) => x.key === key);
+      return s?.displayName || key;
     },
     settingDescription(key) {
-      return SETTING_DESCRIPTIONS[key] || null;
+      const s = (this.wizardSettings || []).find((x) => x.key === key);
+      return s?.description || null;
     },
     checkVal(key) {
       this.validity[key] = true;
