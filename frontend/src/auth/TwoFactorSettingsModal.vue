@@ -3,7 +3,10 @@
     ref="modal"
     size="lg"
     name="TwoFactorSettingsModal"
-    @hide="resetForm"
+    :remove-close="enforced && enabledMethods.length === 0"
+    :disable-keyboard="enforced && enabledMethods.length === 0"
+    @show="handleModalShow"
+    @hide="handleModalHide"
   >
     <template #title>
       <span>Two-Factor Authentication Settings</span>
@@ -17,7 +20,11 @@
         <p class="text-muted mt-2">Loading...</p>
       </div>
       <!-- Main Content -->
-      <div v-else>
+        <div v-else>
+        <div v-if="enforced && enabledMethods.length === 0" class="alert alert-warning">
+          <i class="bi bi-shield-lock"></i>
+          Two-factor authentication is required by your administrator. Configure at least one method to continue.
+        </div>
         <!-- Status Summary -->
         <div v-if="enabledMethods.length === 0" class="alert alert-info">
           <i class="bi bi-info-circle"></i>
@@ -165,7 +172,7 @@
       </div>
     </template>
     <template #footer>
-      <span class="btn-group">
+      <span v-if="!(enforced && enabledMethods.length === 0)" class="btn-group">
         <BasicButton
           title="Close"
           class="btn btn-secondary"
@@ -191,6 +198,13 @@ import getServerURL from "@/assets/serverUrl";
 export default {
   name: "TwoFactorSettingsModal",
   components: { BasicModal, BasicButton },
+  props: {
+    enforced: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
   data() {
     return {
       // Loading states
@@ -200,7 +214,6 @@ export default {
       // 2FA state (from backend)
       twoFactorMethods: [],
       hasEmail: false,
-      hasTotp: false,
       userEmail: null,
 
       // UI state
@@ -213,12 +226,11 @@ export default {
       totpQrCode: null,
       totpSecret: null,
       totpVerificationCode: "",
+      modalVisible: false,
+      isOpening: false,
     };
   },
   computed: {
-    user() {
-      return this.$store.getters["auth/getUser"];
-    },
     enabledMethods() {
       return this.twoFactorMethods || [];
     },
@@ -228,8 +240,31 @@ export default {
   },
   methods: {
     async open() {
-      await this.load2FAStatus();
-      this.$refs.modal.open();
+      if (this.modalVisible || this.isOpening) {
+        return;
+      }
+      this.isOpening = true;
+
+      try {
+        await this.load2FAStatus();
+        if (!this.$refs.modal || this.modalVisible) {
+          return;
+        }
+        this.$refs.modal.open();
+      } finally {
+        this.isOpening = false;
+      }
+    },
+    close() {
+      if (!this.$refs.modal) return;
+
+      if (this.modalVisible) {
+        this.$refs.modal.close();
+      }
+    },
+    // Public method
+    isVisible() {
+      return this.modalVisible;
     },
     async load2FAStatus() {
       this.isLoading = true;
@@ -242,12 +277,18 @@ export default {
         if (response.status === 200) {
           this.twoFactorMethods = response.data.twoFactorMethods || [];
           this.hasEmail = response.data.email || false;
-          this.hasTotp = response.data.hasTotp || false;
           this.userEmail = response.data.email || null;
 
           // Update UI toggles
           this.emailEnabled = this.twoFactorMethods.includes("email");
           this.totpEnabled = this.twoFactorMethods.includes("totp");
+
+          // Keep auth store in sync with backend 2FA methods.
+          if (this.$store.getters["auth/getUser"]) {
+            this.$store.commit("auth/SET_USER", {
+              twoFactorMethods: [...this.twoFactorMethods],
+            });
+          }
         }
       } catch (error) {
         this.eventBus.emit("toast", {
@@ -321,6 +362,17 @@ export default {
       }
     },
     async disableEmail2FA() {
+      if (this.enforced && this.enabledMethods.length <= 1) {
+        this.eventBus.emit("toast", {
+          title: "Action blocked",
+          message:
+            "2FA is required. Configure another method before disabling this one.",
+          variant: "warning",
+        });
+        this.emailEnabled = true;
+        return;
+      }
+
       if (
         !confirm(
           "Are you sure you want to disable email 2FA? This will reduce your account security.",
@@ -482,6 +534,17 @@ export default {
       this.totpEnabled = false;
     },
     async disableTotp2FA() {
+      if (this.enforced && this.enabledMethods.length <= 1) {
+        this.eventBus.emit("toast", {
+          title: "Action blocked",
+          message:
+            "2FA is required. Configure another method before disabling this one.",
+          variant: "warning",
+        });
+        this.totpEnabled = true;
+        return;
+      }
+
       if (
         !confirm(
           "Are you sure you want to disable TOTP 2FA? This will reduce your account security.",
@@ -545,6 +608,13 @@ export default {
       this.totpQrCode = null;
       this.totpSecret = null;
       this.totpVerificationCode = "";
+    },
+    handleModalShow() {
+      this.modalVisible = true;
+    },
+    handleModalHide() {
+      this.modalVisible = false;
+      this.resetForm();
     },
   },
 };
