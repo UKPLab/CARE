@@ -32,16 +32,17 @@ const WIZARD_SETTINGS = [
     { key: 'app.register.emailVerification', wizardStep: 'mail', wizardOrder: 24, requiredInWizard: false },
     // app.login.forgotPassword already in general; in mail step it's a toggle in UI, same key
     // registration
-    { key: 'app.register.requestName', wizardStep: 'registration', wizardOrder: 25, requiredInWizard: false },
-    { key: 'app.register.requestStats', wizardStep: 'registration', wizardOrder: 26, requiredInWizard: false },
-    { key: 'app.register.requestData', wizardStep: 'registration', wizardOrder: 27, requiredInWizard: false },
-    { key: 'app.register.acceptStats.default', wizardStep: 'registration', wizardOrder: 28, requiredInWizard: false },
-    { key: 'app.register.acceptDataSharing.default', wizardStep: 'registration', wizardOrder: 29, requiredInWizard: false },
-    { key: 'app.register.terms', wizardStep: 'registration', wizardOrder: 30, requiredInWizard: false },
+    { key: 'app.register.enabled', wizardStep: 'registration', wizardOrder: 25, requiredInWizard: false },
+    { key: 'app.register.requestName', wizardStep: 'registration', wizardOrder: 26, requiredInWizard: false },
+    { key: 'app.register.requestStats', wizardStep: 'registration', wizardOrder: 27, requiredInWizard: false },
+    { key: 'app.register.requestData', wizardStep: 'registration', wizardOrder: 28, requiredInWizard: false },
+    { key: 'app.register.acceptStats.default', wizardStep: 'registration', wizardOrder: 29, requiredInWizard: false },
+    { key: 'app.register.acceptDataSharing.default', wizardStep: 'registration', wizardOrder: 30, requiredInWizard: false },
+    { key: 'app.register.terms', wizardStep: 'registration', wizardOrder: 31, requiredInWizard: false },
     // moodle
-    { key: 'rpc.moodleAPI.apiUrl', wizardStep: 'moodle', wizardOrder: 31, requiredInWizard: false },
-    { key: 'rpc.moodleAPI.apiKey', wizardStep: 'moodle', wizardOrder: 32, requiredInWizard: false },
-    { key: 'rpc.moodleAPI.courseID', wizardStep: 'moodle', wizardOrder: 33, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.apiUrl', wizardStep: 'moodle', wizardOrder: 32, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.apiKey', wizardStep: 'moodle', wizardOrder: 33, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.courseID', wizardStep: 'moodle', wizardOrder: 34, requiredInWizard: false },
 ];
 
 /** @type {import('sequelize-cli').Migration} */
