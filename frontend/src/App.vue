@@ -88,6 +88,7 @@ export default {
     },
     logout: function () {
       // if not authenticated, backend will always send logout event
+      this.resetAppLoadState();
       this.$socket.disconnect();
       this.$router.push({
         name: "login",
@@ -186,9 +187,11 @@ export default {
       }
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
-      if (newValue !== oldValue) {
-        this.connect();
+      if (newValue === oldValue) return;
+      if (newValue) {
+        this.resetAppLoadState(); // Call this method only when transitioning into protected area, false -> true
       }
+      this.connect();
     },
     shouldForceTwoFactorSetup() {
       this.syncPostLoginModalFlow();
@@ -232,9 +235,24 @@ export default {
     }
   },
   methods: {
+    resetAppLoadState() {
+      this.loaded = {
+        users: false,
+        tables: false,
+        settings: false,
+        systemRoles: false,
+      };
+    },
     connect() {
-      if (this.$route.meta.requireAuth && !this.$socket.connected) {
+      if (!this.$route.meta.requireAuth) return;
+
+      if (!this.$socket.connected) {
         this.$socket.connect();
+        return;
+      }
+
+      if (!this.appLoaded) {
+        this.$socket.emit("appInit");
       }
     },
     initializeBehaviorLogger() {
