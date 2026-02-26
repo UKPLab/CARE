@@ -57,7 +57,7 @@ module.exports = (sequelize, DataTypes) => {
                 return await Setting.findAll({
                     where: { showInWizard: true, deleted: false },
                     order: [['wizardOrder', 'ASC']],
-                    attributes: ['key', 'value', 'type', 'description', 'requiredInWizard', 'wizardStep'],
+                    attributes: ['key', 'value', 'type', 'description', 'displayName', 'requiredInWizard', 'wizardStep'],
                     raw: true,
                 });
             } catch (e) {
@@ -117,6 +117,8 @@ module.exports = (sequelize, DataTypes) => {
         value: DataTypes.TEXT,
         type: DataTypes.STRING,
         description: DataTypes.STRING,
+        displayName: DataTypes.STRING,
+        displayGroup: DataTypes.STRING,
         onlyAdmin: DataTypes.BOOLEAN,
         showInWizard: DataTypes.BOOLEAN,
         wizardOrder: DataTypes.INTEGER,
