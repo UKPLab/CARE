@@ -119,7 +119,7 @@ export default {
     success(id) {
       if (!this.isTemplateMode) {
         const originalStudy = this.$store.getters['table/study/get'](this.studyId);
-        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === originalStudy.id);
+        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === originalStudy?.id);
         const validNewStudy = newStudies.find(s => new Date(s.createdAt) > new Date(originalStudy.createdAt));
         this.studyId = validNewStudy ? validNewStudy.id : id;
         this.isSuccess = true;

@@ -84,6 +84,7 @@ class AssignmentSocket extends Socket {
             hash: undefined,
             closed: undefined,
             userIdClosed: undefined,
+            parentStudyId: data.assignmentType === 'study_session' ? data['assignment'].studyId : null,
             limitSessions: data["reviewer"].length,
             limitSessionsPerUser: 1,
             resumable: true,
@@ -422,7 +423,8 @@ class AssignmentSocket extends Socket {
             const finalAssignments = {};
 
             for (const assignment of shuffledAssignments) {
-                const reviewerId = assignment.userId;
+                const studySession = await this.models['study_session'].getById(assignment.id, {transaction: options.transaction});
+                const reviewerId = studySession.userId;
                 
                 // Check if the reviewer exists in selectedReviewer
                 const reviewer = data.selectedReviewer.find((r) => r.id === reviewerId);
