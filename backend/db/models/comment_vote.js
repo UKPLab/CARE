@@ -30,10 +30,10 @@ module.exports = (sequelize, DataTypes) => {
          * 
          * @param {number} originalCommentId - The ID of the original comment
          * @param {number} duplicatedCommentId - The ID of the duplicated comment
-         * @param {Object} transaction - The database transaction
+         * @param {Object} options - Database options including transaction
          * @returns {Promise<Array>} Array of duplicated comment votes
          */
-        static async duplicateCommentVotes(originalCommentId, duplicatedCommentId, transaction) {
+        static async duplicateCommentVotes(originalCommentId, duplicatedCommentId, options) {
             // Fetch all votes for the original comment
             const originalVotes = await this.findAll({
                 where: {
@@ -41,7 +41,7 @@ module.exports = (sequelize, DataTypes) => {
                     deleted: false
                 },
                 raw: true,
-                transaction
+                transaction: options.transaction
             });
             
             const duplicatedVotes = [];
@@ -55,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
                     deleted: false
                 };
                 
-                const duplicatedVote = await this.add(duplicateVoteData, {transaction});
+                const duplicatedVote = await this.add(duplicateVoteData, {transaction: options.transaction});
                 duplicatedVotes.push(duplicatedVote);
             }
             
