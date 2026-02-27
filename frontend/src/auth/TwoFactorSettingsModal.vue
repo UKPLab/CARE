@@ -237,6 +237,9 @@ export default {
     canVerifyTotpSetup() {
       return /^[0-9]{6}$/.test(this.totpVerificationCode);
     },
+    isTwoFactorRequired() {
+      return this.$store.getters["settings/getValue"]("system.auth.2fa.required") === "true";
+    },
   },
   methods: {
     async open() {
@@ -362,7 +365,7 @@ export default {
       }
     },
     async disableEmail2FA() {
-      if (this.enforced && this.enabledMethods.length <= 1) {
+      if (this.isTwoFactorRequired && this.enabledMethods.length <= 1) {
         this.eventBus.emit("toast", {
           title: "Action blocked",
           message:
@@ -534,7 +537,7 @@ export default {
       this.totpEnabled = false;
     },
     async disableTotp2FA() {
-      if (this.enforced && this.enabledMethods.length <= 1) {
+      if (this.isTwoFactorRequired && this.enabledMethods.length <= 1) {
         this.eventBus.emit("toast", {
           title: "Action blocked",
           message:
