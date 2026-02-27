@@ -1,4 +1,5 @@
 const Service = require("../Service.js");
+const Socket = require("../Socket.js");
 const fs = require("fs");
 const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
@@ -176,7 +177,7 @@ module.exports = class BackgroundTaskService extends Service {
             currentSubmissionsCount: 0,
             currentRequestId: null,
             batchStartTime: Date.now(),
-            errors: []  // Track all errors that occurred
+            errors: [],  // Track all errors that occurred
             nlpTimeout
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
@@ -470,12 +471,14 @@ module.exports = class BackgroundTaskService extends Service {
      * @throws {Error} When user lacks admin rights or no completed preprocessing
      */
     async confirmCompletion(client) {
-        const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
-        if (!documentSocket || !(await documentSocket.isAdmin())) {
-            throw new Error("Cannot confirm completion: missing admin rights");
-        }
-        if (!this.backgroundTask.preprocess || !this.backgroundTask.preprocess.completed) {
+        const preprocess = this.backgroundTask.preprocess;
+        if (!preprocess?.completed) {
             throw new Error("Cannot confirm completion: no completed preprocessing to confirm");
+        }
+
+        const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
+        if (!(documentSocket && await Socket.prototype.isAdmin.call(documentSocket))) {
+            throw new Error("Cannot confirm completion: missing admin rights");
         }
 
         delete this.backgroundTask.preprocess;
