@@ -161,9 +161,11 @@ export default {
         this.validity[key] = true;
       });
       if (this.validForm) {
-        await this.loginLdap();
-        // TODO: May need to figure out another way to fix old user data persisting issue.
-        this.$router.go(0);
+        const result = await this.loginLdap();
+        if(result) {
+          // TODO: May need to figure out another way to fix old user data persisting issue.
+          this.$router.go(0);
+        }
       }
     },
     async loginLdap() {
@@ -196,7 +198,7 @@ export default {
           this.errorMessage =
             response.data.message ||
             "Invalid institutional credentials. Please try again.";
-          return;
+          return false;
         }
 
         if (response.status === 200) {
@@ -211,7 +213,7 @@ export default {
                   redirectedFrom,
                 },
               });
-              return;
+              return true;
             }
 
             if (method === "email") {
@@ -221,7 +223,7 @@ export default {
                   redirectedFrom,
                 },
               });
-              return;
+              return true;
             }
 
             if (method === "totp") {
@@ -231,21 +233,25 @@ export default {
                   redirectedFrom,
                 },
               });
-              return;
+              return true;
             }
 
             this.showError = true;
             this.errorMessage = "Unsupported 2FA method returned from server.";
-            return;
+            return false;
           }
 
           await this.$router.push(redirectedFrom);
+          return true;
         }
+
+        return false;
       } catch (error) {
         this.showError = true;
         this.errorMessage =
           error.response?.data?.message ||
           "LDAP login failed. Please try again.";
+        return false;
       } finally {
         this.isSubmitting = false;
       }
