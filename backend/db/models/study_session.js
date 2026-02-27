@@ -64,6 +64,57 @@ module.exports = (sequelize, DataTypes) => {
             }
         }
 
+        /**
+         * Duplicate a study session along with its associated data (e.g., documents, edits) for a new user.
+         *
+         * @param {number} studySessionId - The ID of the study session to duplicate.
+         * @param {number} overrides - An object containing any fields to override in the duplicated session (e.g., userId).
+         * @param {Object} options - Additional options for the duplication process, including the database transaction.
+         * @return {Promise<StudySession>} The newly created study session instance.
+         *  @throws {Error} If the original study session is not found or if any database operation fails.
+         */
+        static async duplicateStudySession(studySessionId, overrides= {}, options) {
+            const studySession = await this.getById(studySessionId, {transaction: options.transaction});
+            if (!studySession) {
+                throw new Error('Study session not found');
+            }
+            let data = {
+                studyId: studySession.studyId,
+                userId: null,
+                creatorId: this.userId,
+                studyStepId: studySession.studyStepId,
+                numberSteps: studySession.numberSteps,
+                studyStepIdMax: studySession.studyStepIdMax,
+                parentStudySessionId: studySession.id,
+                start: null,
+                end: null,
+            };
+
+            data = Object.assign(data, overrides);
+            
+            const duplicatedSession = await this.add(data, {transaction: options.transaction});
+
+            const studySteps = await sequelize.models.study_step.getAllByKey("studyId", studySession.studyId, {transaction: options.transaction});
+            
+            //copy document related to the study session
+            for (const studyStep of studySteps) {
+                if (studyStep.documentId) {
+                    const document = await sequelize.models.document.getById(studyStep.documentId, {transaction: options.transaction});
+                    if (document) {
+                        await sequelize.models.document.duplicateDocumentData(
+                            document,
+                            document,
+                            { studySessionId: studySession.id, studyStepId: studyStep.id },
+                            duplicatedSession.id,
+                            studyStep.id,
+                            options
+                        );
+                    }
+                }
+             }
+            return duplicatedSession;
+        }
+
         static associate(models) {
             // define association here
             StudySession.belongsTo(models["study"], {
