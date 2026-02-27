@@ -7,11 +7,13 @@
     @action="action"
   />
   <ConfirmModal ref="deleteConf" />
+  <AssignUserModal ref="assignUserModal"/>
 </template>
 
 <script>
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
 
 /**
  * Table of study session with management buttons
@@ -22,7 +24,8 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "StudySessionTable",
-  components: { BasicTable, ConfirmModal },
+  subscribeTable: ["user", "study_session"],
+  components: { BasicTable, ConfirmModal, AssignUserModal },
   props: {
     studyId: {
       type: Number,
@@ -321,6 +324,9 @@ export default {
         case "deleteStudySession":
           this.confirmDelete(data.params);
           break;
+        case "copySession":
+          this.copySession(data.params);
+          break;
       }
     },
     confirmDelete(params) {
@@ -363,6 +369,9 @@ export default {
       } catch (error) {
         this.showErrorToast("Link not copied", "Could not copy study session link to clipboard!");
       }
+    },
+    async copySession(params) {
+      this.$refs.assignUserModal.open(params);
     },
     showSuccessToast(title, message) {
       this.eventBus.emit("toast", {
