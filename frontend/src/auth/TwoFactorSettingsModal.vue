@@ -105,6 +105,9 @@
                     class="qr-code-image"
                   />
                 </div>
+                <div v-else-if="totpQrCodeError" class="alert alert-warning small mb-0">
+                  Could not generate QR code. Use the manual entry key below.
+                </div>
                 <div v-else class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Generating QR code...</span>
                 </div>
@@ -187,6 +190,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
+import QRCode from "qrcode";
 import getServerURL from "@/assets/serverUrl";
 
 /**
@@ -224,6 +228,7 @@ export default {
       isSettingUpTotp: false,
       totpSetupStep: null, // 'initiate' | null
       totpQrCode: null,
+      totpQrCodeError: false,
       totpSecret: null,
       totpVerificationCode: "",
       modalVisible: false,
@@ -436,6 +441,7 @@ export default {
       this.isSettingUpTotp = true;
       this.totpSetupStep = "initiate";
       this.totpQrCode = null;
+      this.totpQrCodeError = false;
       this.totpSecret = null;
       this.totpVerificationCode = "";
 
@@ -451,15 +457,8 @@ export default {
 
         if (response.status === 200) {
           this.totpSecret = response.data.secretBase32;
-
-          // Generate QR code from otpauth URL
-          // Using a QR code library would be better, but for now we can use an online service
-          // or require a library like qrcode.js
           const otpauthUrl = response.data.otpauthUrl;
-          // TODO: Change it to a npm package
-          this.totpQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-            otpauthUrl,
-          )}`;
+          await this.generateTotpQrCode(otpauthUrl);
         } else {
           this.isSettingUpTotp = false;
           this.totpEnabled = false;
@@ -532,9 +531,27 @@ export default {
       this.isSettingUpTotp = false;
       this.totpSetupStep = null;
       this.totpQrCode = null;
+      this.totpQrCodeError = false;
       this.totpSecret = null;
       this.totpVerificationCode = "";
       this.totpEnabled = false;
+    },
+    async generateTotpQrCode(otpauthUrl) {
+      if (!otpauthUrl) {
+        this.totpQrCodeError = true;
+        return;
+      }
+
+      try {
+        this.totpQrCode = await QRCode.toDataURL(otpauthUrl, {
+          width: 200,
+          margin: 1,
+        });
+        this.totpQrCodeError = false;
+      } catch (error) {
+        this.totpQrCode = null;
+        this.totpQrCodeError = true;
+      }
     },
     async disableTotp2FA() {
       if (this.isTwoFactorRequired && this.enabledMethods.length <= 1) {
@@ -609,6 +626,7 @@ export default {
       this.isSettingUpTotp = false;
       this.totpSetupStep = null;
       this.totpQrCode = null;
+      this.totpQrCodeError = false;
       this.totpSecret = null;
       this.totpVerificationCode = "";
     },
