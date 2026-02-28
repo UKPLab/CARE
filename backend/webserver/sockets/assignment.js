@@ -469,6 +469,8 @@ class AssignmentSocket extends Socket {
             }
 
             // Create the final assignments
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
             for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
                 for (const assignmentId of assignmentIds) {
                     const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
@@ -483,6 +485,16 @@ class AssignmentSocket extends Socket {
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
                     };
                     await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
                 }
             }
 
