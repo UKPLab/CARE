@@ -67,6 +67,12 @@ class AppSocket extends Socket {
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
+            
+            // When closing a study, set the userIdClosed to the current user
+            if (data.table === 'study' && 'closed' in data.data && data.data.closed) {
+                data.data.userIdClosed = this.userId;
+            }
+            
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
