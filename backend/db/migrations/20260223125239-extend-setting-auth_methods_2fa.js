@@ -26,6 +26,12 @@ const settings = [
         description: "Enable SAML login flow"
     },
     {
+        key: "system.auth.redirect.baseUrl",
+        type: "string",
+        value: "http://localhost:3000",
+        description: "Frontend base URL for authentication redirects (login success, OAuth callback, and 2FA verification pages)"
+    },
+    {
         key: "system.auth.orcid.clientId",
         type: "string",
         value: "",

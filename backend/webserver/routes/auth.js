@@ -29,6 +29,27 @@ module.exports = function (server) {
     }
 
     /**
+     * Helper function to normalize base URLs.
+     * Ensures protocol is present and strips trailing slashes.
+     * @param {string} value
+     * @param {string} fallback
+     * @returns {string}
+     */
+    function normalizeBaseUrl(value, fallback) {
+        const rawValue = (value || fallback || "").trim();
+        const withProtocol = /^https?:\/\//i.test(rawValue) ? rawValue : `http://${rawValue}`;
+        return withProtocol.replace(/\/+$/, "");
+    }
+
+    /**
+     * Helper function to get frontend base URL used for auth redirects.
+     */
+    async function getFrontendBaseUrl() {
+        const frontendBaseUrl = await server.db.models['setting'].get("system.auth.redirect.baseUrl");
+        return normalizeBaseUrl(frontendBaseUrl, "http://localhost:3000");
+    }
+
+    /**
      * Helper function to get password reset token expiry from settings
      */
     async function getPasswordResetTokenExpiry() {
@@ -321,11 +342,12 @@ The CARE Team`
         }
 
         if (mode === 'redirect') {
+            const frontendBaseUrl = await getFrontendBaseUrl();
             if (method === 'email') {
-                return redirectTo(`http://localhost:3000/2fa/verify/email`), true;
+                return redirectTo(`${frontendBaseUrl}/2fa/verify/email`), true;
             }
             if (method === 'totp') {
-                return redirectTo(`http://localhost:3000/2fa/verify/totp`), true;
+                return redirectTo(`${frontendBaseUrl}/2fa/verify/totp`), true;
             }
             return redirectTo(`/login?error=unsupported-2fa-method`), true;
         }
@@ -347,7 +369,6 @@ The CARE Team`
      * @param {Object} user - The authenticated user object from Passport strategies.
      * @param {Object} options - Configuration for the response.
      * @param {string} options.mode - The response mode: 'json' for API responses or 'redirect' for browser-based flows.
-     * @param {string} [options.target] - The destination URL required if mode is set to 'redirect'.
      * @returns {Promise<void>}
      */
     async function finalizeLogin(req, res, next, user, options = { mode: 'json' }) {
@@ -365,8 +386,8 @@ The CARE Team`
 
             // Handle different response types based on the login source (e.g., AJAX vs OAuth Redirect).
             if (options.mode === 'redirect') {
-                const baseUrl = await getBaseUrl()
-                const redirectUrl = options.target || `${baseUrl}/dashboard`;
+                const frontendBaseUrl = await getFrontendBaseUrl();
+                const redirectUrl = `${frontendBaseUrl}/dashboard`
                 return res.redirect(redirectUrl);
             }
 
@@ -488,8 +509,7 @@ The CARE Team`
             if (handled) return;
 
             return finalizeLogin(req, res, next, user, { 
-                mode: 'redirect', 
-                target: 'http://localhost:3000/dashboard' 
+                mode: 'redirect'
             });
         }
     );
@@ -527,8 +547,7 @@ The CARE Team`
             if (handled) return;
 
             return finalizeLogin(req, res, next, user, { 
-                mode: 'redirect', 
-                target: 'http://localhost:3000/dashboard' 
+                mode: 'redirect'
             });
         }
     );
