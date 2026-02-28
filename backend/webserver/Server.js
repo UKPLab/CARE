@@ -567,12 +567,18 @@ module.exports = class Server {
         this.io.use(wrap(passport.session()));
         this.io.use((socket, next) => {
             const session = socket.request.session;
-            if (session && "passport" in session) {
+            if (session && "passport" in session && !session.twoFactorPending) {
                 socket.request.session.touch();
                 socket.request.session.save();
                 next();
+            } else if (session && session.twoFactorPending) {
+                socket.emit("logout"); // force client back to auth flow
+                this.logger.warn("Websocket blocked: 2FA verification pending.");
+                socket.disconnect();
             } else {
-                socket.request.session.destroy();
+                if (socket.request.session) {
+                    socket.request.session.destroy();
+                }
                 socket.emit("logout"); //force logout on client side
                 this.logger.warn("Session in websocket not available! Send logout...");
                 socket.disconnect();
