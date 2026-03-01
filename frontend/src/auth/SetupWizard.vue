@@ -217,176 +217,59 @@
             </label>
           </div>
 
-          <template v-if="formSettings['system.mailService.enabled'] === 'true'">
+          <template v-if="mailEnabled">
             <FormCollapsible
-              title="Email delivery configuration"
-              description="Choose Sendmail or SMTP. If both are enabled, Sendmail takes precedence."
+              v-for="group in mailFieldGroups"
+              :key="group.title"
+              :title="group.title"
               :collapsed="true"
               class="mb-3"
             >
-              <div class="form-check form-switch mb-3">
-                <input
-                  id="sendmail-enabled"
-                  :checked="formSettings['system.mailService.sendMail.enabled'] === 'true'"
-                  class="form-check-input"
-                  type="checkbox"
-                  @change="formSettings['system.mailService.sendMail.enabled'] = $event.target.checked ? 'true' : 'false'"
-                />
-                <label class="form-check-label" for="sendmail-enabled" @click.prevent>
-                  Use Sendmail (Unix system mail command)
-                </label>
-                <FormHelp
-                  :help="'If enabled, Sendmail is used for outgoing mail even when SMTP is also enabled.'"
-                  class="ms-1"
-                />
-              </div>
-              <FormCollapsible
-                v-if="formSettings['system.mailService.sendMail.enabled'] === 'true'"
-                title="Sendmail settings"
-                description="Path to the sendmail binary on your system"
-                :collapsed="false"
+              <div
+                v-for="s in group.settings"
+                :key="s.key"
+                class="form-group row my-2"
               >
-                <div
-                  v-for="s in sendmailSettings"
-                  :key="s.key"
-                  class="form-group row my-2"
+                <label
+                  class="col-md-4 col-form-label text-md-right"
+                  :for="'set-' + s.key"
+                  @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
                 >
-                  <label
-                    class="col-md-4 col-form-label text-md-right"
-                    :for="'set-' + s.key"
-                    @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-                  >
-                    {{ settingLabel(s.key) }}
-                  </label>
-                  <div class="col-md-6 d-flex align-items-start">
-                    <input
+                  {{ settingLabel(s.key) }}
+                </label>
+                <div class="col-md-6 d-flex align-items-start">
+                  <template v-if="s.type === 'boolean' || s.type === 'bool'">
+                    <div class="form-check form-switch">
+                      <input
+                        :id="'set-' + s.key"
+                        :checked="formSettings[s.key] === 'true'"
+                        class="form-check-input"
+                        type="checkbox"
+                        @change="onMailSettingChange(s.key, $event.target.checked ? 'true' : 'false')"
+                      />
+                    </div>
+                  </template>
+                  <template v-else-if="s.type === 'edits'">
+                    <textarea
                       :id="'set-' + s.key"
                       v-model="formSettings[s.key]"
-                      class="form-control"
-                      type="text"
+                      class="form-control w-100"
+                      rows="2"
                     />
-                    <FormHelp v-if="s.description" :help="s.description" class="ms-1" />
-                  </div>
+                  </template>
+                  <input
+                    v-else
+                    :id="'set-' + s.key"
+                    v-model="formSettings[s.key]"
+                    class="form-control"
+                    type="text"
+                  />
+                  <FormHelp
+                    v-if="settingDescription(s.key) || s.description"
+                    :help="settingDescription(s.key) || s.description"
+                    class="ms-1"
+                  />
                 </div>
-              </FormCollapsible>
-
-              <div class="form-check form-switch mb-3 mt-3">
-                <input
-                  id="smtp-enabled"
-                  :checked="formSettings['system.mailService.smtp.enabled'] === 'true'"
-                  class="form-check-input"
-                  type="checkbox"
-                  @change="formSettings['system.mailService.smtp.enabled'] = $event.target.checked ? 'true' : 'false'"
-                />
-                <label class="form-check-label" for="smtp-enabled" @click.prevent>
-                  Use SMTP server
-                </label>
-                <FormHelp
-                  :help="'Used only when Sendmail is disabled. Configure your SMTP host and credentials.'"
-                  class="ms-1"
-                />
-              </div>
-              <FormCollapsible
-                v-if="formSettings['system.mailService.smtp.enabled'] === 'true'"
-                title="SMTP settings"
-                description="Host, port, and authentication for your SMTP server"
-                :collapsed="false"
-              >
-                <div
-                  v-for="s in smtpSettings"
-                  :key="s.key"
-                  class="form-group row my-2"
-                >
-                  <label
-                    class="col-md-4 col-form-label text-md-right"
-                    :for="'set-' + s.key"
-                    @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-                  >
-                    {{ settingLabel(s.key) }}
-                  </label>
-                  <div class="col-md-6 d-flex align-items-start">
-                    <template v-if="s.type === 'boolean' || s.type === 'bool'">
-                      <div class="form-check form-switch">
-                        <input
-                          :id="'set-' + s.key"
-                          :checked="formSettings[s.key] === 'true'"
-                          class="form-check-input"
-                          type="checkbox"
-                          @change="formSettings[s.key] = $event.target.checked ? 'true' : 'false'"
-                        />
-                      </div>
-                    </template>
-                    <input
-                      v-else
-                      :id="'set-' + s.key"
-                      v-model="formSettings[s.key]"
-                      class="form-control"
-                      type="text"
-                    />
-                    <FormHelp v-if="s.description" :help="s.description" class="ms-1" />
-                  </div>
-                </div>
-              </FormCollapsible>
-
-              <FormCollapsible
-                title="Sender and application URL"
-                description="Required for all outgoing emails: the From address and base URL for links"
-                :collapsed="true"
-                class="mt-3"
-              >
-                <div class="form-group row my-2">
-                  <label class="col-md-4 col-form-label text-md-right" for="set-sender-address">
-                    {{ settingLabel("system.mailService.senderAddress") }}
-                  </label>
-                  <div class="col-md-6 d-flex align-items-start">
-                    <input
-                      id="set-sender-address"
-                      v-model="formSettings['system.mailService.senderAddress']"
-                      class="form-control"
-                      type="text"
-                    />
-                    <FormHelp
-                      :help="'The From address used for all outgoing emails.'"
-                      class="ms-1"
-                    />
-                  </div>
-                </div>
-                <div class="form-group row my-2">
-                  <label class="col-md-4 col-form-label text-md-right" for="set-base-url">
-                    {{ settingLabel("system.baseUrl") }}
-                  </label>
-                  <div class="col-md-6 d-flex align-items-start">
-                    <input
-                      id="set-base-url"
-                      v-model="formSettings['system.baseUrl']"
-                      class="form-control"
-                      type="text"
-                    />
-                    <FormHelp
-                      :help="'Base URL of this application (e.g. https://care.example.com). Required for password reset and email verification links.'"
-                      class="ms-1"
-                    />
-                  </div>
-                </div>
-              </FormCollapsible>
-            </FormCollapsible>
-            <FormCollapsible
-              title="Features that use email"
-              description="Optional features that require the email service to be enabled"
-              :collapsed="true"
-              class="mb-3 mt-3"
-            >
-              <div class="form-check form-switch">
-                <input
-                  id="forgot-password"
-                  :checked="formSettings['app.login.forgotPassword'] === 'true'"
-                  class="form-check-input"
-                  type="checkbox"
-                  @change="formSettings['app.login.forgotPassword'] = $event.target.checked ? 'true' : 'false'"
-                />
-                <label class="form-check-label" for="forgot-password" @click.prevent>
-                  Allow users to reset their password via email
-                </label>
               </div>
             </FormCollapsible>
           </template>
@@ -668,6 +551,14 @@ import Modal from "@/basic/Modal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
+/** Order of subsections within each wizard step (from displaySubsection in DB). */
+const SUBSECTION_ORDER = {
+  general: ["Copyright and consent", "Login options", "Study mode", "Landing page links"],
+  mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
+  registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
+  moodle: ["Connection", "Course", "Show inputs"],
+};
+
 export default {
   name: "SetupWizard",
   components: { IconAsset, FormHelp, FormCollapsible, Modal },
@@ -708,105 +599,24 @@ export default {
       return filtered;
     },
     generalFieldGroups() {
-      const keyToSetting = (this.wizardSettings || []).reduce((acc, s) => {
-        acc[s.key] = s;
-        return acc;
-      }, {});
-      const groups = [
-        {
-          title: "Copyright and consent",
-          keys: ["app.config.copyright", "app.config.consent.enabled"],
-        },
-        {
-          title: "Login options",
-          keys: ["app.login.guest", "app.login.forgotPassword"],
-        },
-        {
-          title: "Study mode",
-          keys: ["app.study.enabled"],
-        },
-        {
-          title: "Landing page links",
-          keys: [
-            "app.landing.showDocs",
-            "app.landing.linkDocs",
-            "app.landing.showProject",
-            "app.landing.linkProject",
-            "app.landing.showFeedback",
-            "app.landing.linkFeedback",
-          ],
-        },
-      ];
-      return groups.map((g) => ({
-        title: g.title,
-        settings: g.keys.map((k) => keyToSetting[k]).filter(Boolean),
-      })).filter((g) => g.settings.length > 0);
-    },
-    registrationFieldGroups() {
-      const keyToSetting = (this.wizardSettings || []).reduce((acc, s) => {
-        acc[s.key] = s;
-        return acc;
-      }, {});
-      const groups = [
-        {
-          title: "Enable registration",
-          keys: ["app.register.enabled"],
-        },
-        {
-          title: "Information requested at registration",
-          keys: ["app.register.requestName", "app.register.requestStats", "app.register.requestData"],
-        },
-        {
-          title: "Consent options",
-          keys: ["app.register.acceptStats.default", "app.register.acceptDataSharing.default"],
-        },
-        {
-          title: "Terms and conditions",
-          keys: ["app.register.terms"],
-        },
-      ];
-      return groups.map((g) => ({
-        title: g.title,
-        settings: g.keys.map((k) => keyToSetting[k]).filter(Boolean),
-      })).filter((g) => g.settings.length > 0);
+      return this.fieldGroupsForStep("general");
     },
     mailEnabled() {
       return this.formSettings["system.mailService.enabled"] === "true";
     },
-    sendmailSettings() {
-      const keys = ["system.mailService.sendMail.path"];
-      return (this.wizardSettings || []).filter((s) => keys.includes(s.key));
+    mailFieldGroups() {
+      const groups = this.fieldGroupsForStep("mail");
+      const forgotPassword = (this.wizardSettings || []).find((s) => s.key === "app.login.forgotPassword");
+      if (forgotPassword && this.mailEnabled) {
+        groups.push({ title: "Features that use email", settings: [forgotPassword] });
+      }
+      return groups;
     },
-    smtpSettings() {
-      const keys = [
-        "system.mailService.smtp.host",
-        "system.mailService.smtp.port",
-        "system.mailService.smtp.secure",
-        "system.mailService.smtp.auth.enabled",
-        "system.mailService.smtp.auth.user",
-        "system.mailService.smtp.auth.pass",
-      ];
-      return (this.wizardSettings || []).filter((s) => keys.includes(s.key));
+    registrationFieldGroups() {
+      return this.fieldGroupsForStep("registration");
     },
     moodleFieldGroups() {
-      const keyToSetting = (this.wizardSettings || []).reduce((acc, s) => {
-        acc[s.key] = s;
-        return acc;
-      }, {});
-      const groups = [
-        {
-          title: "Connection",
-          keys: ["rpc.moodleAPI.apiUrl", "rpc.moodleAPI.apiKey"],
-        },
-        {
-          title: "Course",
-          keys: ["rpc.moodleAPI.courseID"],
-        },
-      ];
-      return groups.map((g) => ({
-        title: g.title,
-        settings: g.keys.map((k) => keyToSetting[k]).filter(Boolean),
-      })).filter((g) => g.settings.length > 0);
+      return this.fieldGroupsForStep("moodle");
     },
     summaryFieldGroups() {
       const stepTitles = {
@@ -897,6 +707,44 @@ export default {
     }
   },
   methods: {
+    /**
+     * Handle mail step setting changes.
+     * @param {string} key - Setting key
+     * @param {string} value - New value ('true' or 'false')
+     */
+    onMailSettingChange(key, value) {
+      this.formSettings[key] = value;
+    },
+    /**
+     * Group wizard settings by displaySubsection for a given step.
+     * @param {string} stepType - general, registration, or moodle
+     * @returns {Array<{title: string, settings: object[]}>}
+     */
+    fieldGroupsForStep(stepType) {
+      const settings = (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
+      if (!settings.length) return [];
+      const order = SUBSECTION_ORDER[stepType];
+      const bySubsection = {};
+      for (const s of settings) {
+        const sub = s.displaySubsection || "";
+        if (!bySubsection[sub]) bySubsection[sub] = [];
+        bySubsection[sub].push(s);
+      }
+      const result = [];
+      if (order) {
+        for (const title of order) {
+          if (bySubsection[title]?.length) {
+            result.push({ title, settings: bySubsection[title] });
+          }
+        }
+      }
+      for (const [title, settingsList] of Object.entries(bySubsection)) {
+        if (!order || !order.includes(title)) {
+          result.push({ title: title || "", settings: settingsList });
+        }
+      }
+      return result.length ? result : [{ title: "", settings }];
+    },
     settingsForStep(stepType) {
       return (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
     },
