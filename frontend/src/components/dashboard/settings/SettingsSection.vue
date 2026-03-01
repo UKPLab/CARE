@@ -6,8 +6,24 @@
     </div>
     <div v-if="!isCollapsed" class="card-body mx-4 my-4">
       <template v-for="(subsection, idx) in visibleSubsections" :key="subsection.title || idx">
-        <div class="mb-4">
-          <h6 v-if="subsection.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">{{ subsection.title }}</h6>
+        <FormCollapsible
+          v-if="subsection.title"
+          :title="subsection.title"
+          :collapsed="false"
+          class="mb-3"
+        >
+          <div
+            v-for="key in subsection.keys"
+            :key="key"
+            class="form-group row my-2"
+          >
+            <SettingItem
+              :setting="getSetting(key)"
+              @update:value="(v) => setSettingValue(key, v)"
+            />
+          </div>
+        </FormCollapsible>
+        <div v-else class="mb-4">
           <div
             v-for="key in subsection.keys"
             :key="key"
@@ -26,6 +42,7 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
+import FormCollapsible from "@/basic/form/Collapsible.vue";
 import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
 
 /**
@@ -37,7 +54,7 @@ import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
  */
 export default {
   name: "SettingsSection",
-  components: { LoadIcon, SettingItem },
+  components: { LoadIcon, FormCollapsible, SettingItem },
   props: {
     title: { type: String, required: true },
     subsections: { type: Array, required: true },
@@ -78,11 +95,6 @@ export default {
 </script>
 
 <style scoped>
-.step-group-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
 .step-card-header {
   font-size: 1.2rem;
   font-weight: 600;

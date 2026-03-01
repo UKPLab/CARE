@@ -150,6 +150,21 @@ import {downloadObjectsAs} from "@/assets/utils";
 import {onBeforeRouteUpdate} from "vue-router";
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
 
+/**
+ * Order of subsections within each section (for display).
+ */
+const SUBSECTION_ORDER = {
+  general: ["Copyright and consent", "Login options", "Study mode", "Landing page links"],
+  mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
+  registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
+  moodle: ["Connection", "Course", "Show inputs"],
+  annotations: ["Comments", "Download", "NLP in annotations", "Sidebar"],
+  interface: ["Navigation and dashboard", "Projects", "Statistics and tags"],
+  "text editor": ["Document buttons", "Edit history", "Toolbar"],
+  "ai & nlp": ["Modal NLP", "NLP service"],
+  system: ["Token expiry"],
+};
+
 export default {
   name: "DashboardSettings",
   components: {
@@ -190,9 +205,10 @@ export default {
           keys = [...keys, ...otherInStep.map((s) => s.key)];
         }
         if (keys.length) {
+          const settingsInSection = keys.map((k) => this.displaySettings.find((s) => s.key === k)).filter(Boolean);
           sections.push({
             title: step.charAt(0).toUpperCase() + step.slice(1),
-            subsections: [{ title: "", keys }],
+            subsections: this.buildSubsections(step, settingsInSection),
           });
         }
       }
@@ -203,12 +219,12 @@ export default {
         const group = s.displayGroup || "Other";
         if (mergedSteps.has((group || "").toLowerCase())) continue;
         if (!otherGroups[group]) otherGroups[group] = [];
-        otherGroups[group].push(s.key);
+        otherGroups[group].push(s);
       }
-      for (const [title, keys] of Object.entries(otherGroups).sort((a, b) => a[0].localeCompare(b[0]))) {
+      for (const [groupTitle, settingsInGroup] of Object.entries(otherGroups).sort((a, b) => a[0].localeCompare(b[0]))) {
         sections.push({
-          title,
-          subsections: [{ title: "", keys }],
+          title: groupTitle,
+          subsections: this.buildSubsections(groupTitle.toLowerCase(), settingsInGroup),
         });
       }
       return sections;
@@ -239,6 +255,36 @@ export default {
     });
   },
   methods: {
+    /**
+     * Build subsections from settings grouped by displaySubsection.
+     * @param {string} sectionKey - Section key (e.g. "general", "annotations")
+     * @param {Array} settingsInSection - Setting objects in this section
+     * @returns {Array<{title: string, keys: string[]}>}
+     */
+    buildSubsections(sectionKey, settingsInSection) {
+      if (!settingsInSection.length) return [];
+      const order = SUBSECTION_ORDER[sectionKey];
+      const bySubsection = {};
+      for (const s of settingsInSection) {
+        const sub = s.displaySubsection || "";
+        if (!bySubsection[sub]) bySubsection[sub] = [];
+        bySubsection[sub].push(s.key);
+      }
+      const result = [];
+      if (order) {
+        for (const title of order) {
+          if (bySubsection[title]?.length) {
+            result.push({ title, keys: bySubsection[title] });
+          }
+        }
+      }
+      for (const [title, keys] of Object.entries(bySubsection)) {
+        if (!order || !order.includes(title)) {
+          result.push({ title: title || "", keys });
+        }
+      }
+      return result.length ? result : [{ title: "", keys: settingsInSection.map((s) => s.key) }];
+    },
     setSettingsSnapshot() {
       if (!this.settings) {
         this.originalSettingsSnapshot = null;
