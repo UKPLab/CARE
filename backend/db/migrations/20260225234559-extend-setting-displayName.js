@@ -1,12 +1,121 @@
 'use strict';
 
 /**
- * Add displayName and displayGroup columns.
+ * Add displayName, displayGroup, and displaySubsection columns.
  * displayName: user-facing label from CSV Suggested Name
  * displayGroup: section grouping for non-wizard settings from CSV Suggested group naming
+ * displaySubsection: subsection within a section for Settings page and SetupWizard
  *
  * @type {import('sequelize-cli').Migration}
  */
+
+const KEY_TO_DISPLAY_SUBSECTION = {
+    'annotator.collab.response': 'Comments',
+    'annotator.comments.defaultNumsShown.levelOneUp': 'Comments',
+    'annotator.comments.defaultNumsShown.levelZero': 'Comments',
+    'annotator.comments.votes.enabled': 'Comments',
+    'annotator.comments.votes.onlyUpvote': 'Comments',
+    'annotator.download.enabledBeforeStudyClosing': 'Download',
+    'annotator.nlp.activated': 'NLP in annotations',
+    'annotator.nlp.request.timeout': 'NLP in annotations',
+    'annotator.nlp.sentiment_analysis.activated': 'NLP in annotations',
+    'annotator.nlp.summarization.activated': 'NLP in annotations',
+    'annotator.nlp.summarization.annoLength': 'NLP in annotations',
+    'annotator.nlp.summarization.maxLength': 'NLP in annotations',
+    'annotator.nlp.summarization.minLength': 'NLP in annotations',
+    'annotator.nlp.summarization.skillName': 'NLP in annotations',
+    'annotator.sidebar.maxWidth': 'Sidebar',
+    'annotator.sidebar.minWidth': 'Sidebar',
+    'app.config.consent.enabled': 'Copyright and consent',
+    'app.config.copyright': 'Copyright and consent',
+    'app.landing.linkDocs': 'Landing page links',
+    'app.landing.linkFeedback': 'Landing page links',
+    'app.landing.linkProject': 'Landing page links',
+    'app.landing.showDocs': 'Landing page links',
+    'app.landing.showFeedback': 'Landing page links',
+    'app.landing.showProject': 'Landing page links',
+    'app.login.forgotPassword': 'Login options',
+    'app.login.guest': 'Login options',
+    'app.login.passwordResetRateLimit': 'Login options',
+    'app.register.acceptDataSharing.default': 'Consent options',
+    'app.register.acceptStats.default': 'Consent options',
+    'app.register.emailVerification': 'Base URL and verification',
+    'app.register.emailVerificationRateLimit': 'Email verification rate limit',
+    'app.register.enabled': 'Enable registration',
+    'app.register.requestData': 'Information requested at registration',
+    'app.register.requestName': 'Information requested at registration',
+    'app.register.requestStats': 'Information requested at registration',
+    'app.register.terms': 'Terms and conditions',
+    'app.study.enabled': 'Study mode',
+    'dashboard.navigation.component.default': 'Navigation and dashboard',
+    'editor.document.showButtonCreate': 'Document buttons',
+    'editor.document.showButtonDeltaDownload': 'Document buttons',
+    'editor.document.showButtonHTMLDownload': 'Document buttons',
+    'editor.document.showButtonPDFDownload': 'Document buttons',
+    'editor.edits.debounceTime': 'Edit history',
+    'editor.edits.historyGroupTime': 'Edit history',
+    'editor.edits.showHistoryForUser': 'Edit history',
+    'editor.toolbar.showHTMLDownload': 'Toolbar',
+    'editor.toolbar.tools.align': 'Toolbar',
+    'editor.toolbar.tools.background': 'Toolbar',
+    'editor.toolbar.tools.blockquote': 'Toolbar',
+    'editor.toolbar.tools.bold': 'Toolbar',
+    'editor.toolbar.tools.checkList': 'Toolbar',
+    'editor.toolbar.tools.clean': 'Toolbar',
+    'editor.toolbar.tools.code-block': 'Toolbar',
+    'editor.toolbar.tools.color': 'Toolbar',
+    'editor.toolbar.tools.direction': 'Toolbar',
+    'editor.toolbar.tools.font': 'Toolbar',
+    'editor.toolbar.tools.formula': 'Toolbar',
+    'editor.toolbar.tools.header': 'Toolbar',
+    'editor.toolbar.tools.image': 'Toolbar',
+    'editor.toolbar.tools.indent': 'Toolbar',
+    'editor.toolbar.tools.italic': 'Toolbar',
+    'editor.toolbar.tools.link': 'Toolbar',
+    'editor.toolbar.tools.orderedList': 'Toolbar',
+    'editor.toolbar.tools.size': 'Toolbar',
+    'editor.toolbar.tools.strike': 'Toolbar',
+    'editor.toolbar.tools.subscript': 'Toolbar',
+    'editor.toolbar.tools.superscript': 'Toolbar',
+    'editor.toolbar.tools.underline': 'Toolbar',
+    'editor.toolbar.tools.unorderedList': 'Toolbar',
+    'editor.toolbar.tools.video': 'Toolbar',
+    'editor.toolbar.visibility': 'Toolbar',
+    'modal.nlp.request.timeout': 'Modal NLP',
+    'modal.nlp.rotation_timer.long': 'Modal NLP',
+    'modal.nlp.rotation_timer.short': 'Modal NLP',
+    'projects.default': 'Projects',
+    'rpc.moodleAPI.apiKey': 'Connection',
+    'rpc.moodleAPI.apiUrl': 'Connection',
+    'rpc.moodleAPI.courseID': 'Course',
+    'rpc.moodleAPI.showInput.apiKey': 'Show inputs',
+    'rpc.moodleAPI.showInput.apiUrl': 'Show inputs',
+    'rpc.moodleAPI.showInput.courseID': 'Show inputs',
+    'service.nlp.enabled': 'NLP service',
+    'service.nlp.retryDelay': 'NLP service',
+    'service.nlp.test.fallback': 'NLP service',
+    'service.nlp.timeout': 'NLP service',
+    'service.nlp.url': 'NLP service',
+    'statistics.batch.size': 'Statistics and tags',
+    'statistics.tracking.mouseDebounceTime': 'Statistics and tags',
+    'system.auth.tokenExpiry.emailVerification': 'Token expiry',
+    'system.auth.tokenExpiry.passwordReset': 'Token expiry',
+    'system.baseUrl': 'Base URL and verification',
+    'system.mailService.enabled': 'Mail service',
+    'system.mailService.sendMail.enabled': 'Sendmail',
+    'system.mailService.sendMail.path': 'Sendmail',
+    'system.mailService.senderAddress': 'Mail service',
+    'system.mailService.smtp.auth.enabled': 'SMTP',
+    'system.mailService.smtp.auth.pass': 'SMTP',
+    'system.mailService.smtp.auth.user': 'SMTP',
+    'system.mailService.smtp.enabled': 'SMTP',
+    'system.mailService.smtp.host': 'SMTP',
+    'system.mailService.smtp.port': 'SMTP',
+    'system.mailService.smtp.secure': 'SMTP',
+    'tags.recencySortingIsOn': 'Statistics and tags',
+    'tags.tagSet.default': 'Statistics and tags',
+    'topBar.projects.hideProjectButton': 'Projects',
+};
 
 const KEY_TO_DISPLAY_GROUP = {
     'annotator.collab.response': 'Annotations',
@@ -175,7 +284,7 @@ const DISPLAY_NAMES = {
     'system.auth.tokenExpiry.passwordReset': 'Password reset token expiry',
     'system.baseUrl': 'Base URL for emails',
     'system.mailService.enabled': 'Mail service enabled',
-    'system.mailService.sendMail.enabled': 'Sendmail enabled',
+    'system.mailService.sendMail.enabled': 'Sendmail enabled (takes precedence over SMTP)',
     'system.mailService.sendMail.path': 'Sendmail path',
     'system.mailService.senderAddress': 'Mail sender address',
     'system.mailService.smtp.auth.enabled': 'SMTP auth enabled',
@@ -200,6 +309,10 @@ module.exports = {
             type: Sequelize.STRING(128),
             allowNull: true,
         });
+        await queryInterface.addColumn('setting', 'displaySubsection', {
+            type: Sequelize.STRING(128),
+            allowNull: true,
+        });
 
         const [results] = await queryInterface.sequelize.query(
             "SELECT key FROM setting WHERE deleted = false"
@@ -221,11 +334,19 @@ module.exports = {
                     { replacements: { displayGroup, key } }
                 );
             }
+            const displaySubsection = KEY_TO_DISPLAY_SUBSECTION[key];
+            if (displaySubsection) {
+                await queryInterface.sequelize.query(
+                    'UPDATE setting SET "displaySubsection" = :displaySubsection WHERE key = :key',
+                    { replacements: { displaySubsection, key } }
+                );
+            }
         }
     },
 
     async down(queryInterface, Sequelize) {
         await queryInterface.removeColumn('setting', 'displayName');
         await queryInterface.removeColumn('setting', 'displayGroup');
+        await queryInterface.removeColumn('setting', 'displaySubsection');
     },
 };
