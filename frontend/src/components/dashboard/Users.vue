@@ -14,35 +14,35 @@
             title="Rights Management"
             text="Rights Management"
             icon="shield-lock"
-            @click="$refs.rightsManagementModal.open()"
+            @click="openRightsManagementModal"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Upload Password"
             text="Upload Password"
             icon="key"
-            @click="$refs.uploadModal.open()"
+            @click="openUploadModal"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Import via CSV"
             text="Import CSV"
             icon="filetype-csv"
-            @click="$refs.importModal.open('csv')"
+            @click="openImportModal('csv')"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Import via Moodle"
             text="Import via Moodle"
             icon="box-arrow-in-down"
-            @click="$refs.importModal.open('moodle')"
+            @click="openImportModal('moodle')"
         />
         <BasicButton
             class="btn btn-primary btn-sm"
             title="Add User"
             text="Add User"
             icon="person-plus"
-            @click="$refs.userAddModal.open()"
+            @click="openUserAddModal"
         />
       </div>
     </template>
@@ -57,25 +57,29 @@
     </template>
   </Card>
   <DetailsModal
+      v-if="modals.details"
       ref="detailsModal"
       @update-user="fetchUsers"
   />
-  <RightsModal ref="rightsModal" />
+  <RightsModal v-if="modals.rights" ref="rightsModal" />
   <RightsManagementModal
+    v-if="modals.rightsManagement"
     ref="rightsManagementModal"
     @update-user="fetchUsers"
   />
-  <PasswordModal ref="passwordModal" />
+  <PasswordModal v-if="modals.password" ref="passwordModal" />
   <ImportModal
+      v-if="modals.import"
       ref="importModal"
       @update-user="fetchUsers"
   />
-  <UploadModal ref="uploadModal"/>
+  <UploadModal v-if="modals.upload" ref="uploadModal"/>
   <UserAddModal
+      v-if="modals.userAdd"
       ref="userAddModal"
       @update-user="fetchUsers"
   />
-  <ConfirmModal ref="confirmModal"/>
+  <ConfirmModal v-if="modals.confirm" ref="confirmModal"/>
 </template>
 
 <script>
@@ -122,6 +126,16 @@ export default {
   },
   data() {
     return {
+      modals: {
+        details: false,
+        rights: false,
+        rightsManagement: false,
+        password: false,
+        import: false,
+        upload: false,
+        userAdd: false,
+        confirm: false,
+      },
       options: {
         striped: true,
         hover: true,
@@ -245,6 +259,38 @@ export default {
     this.fetchUsers();
   },
   methods: {
+    openDetailsModal(userId) {
+      this.modals.details = true;
+      this.$nextTick(() => this.$refs.detailsModal?.open(userId));
+    },
+    openRightsModal(userId) {
+      this.modals.rights = true;
+      this.$nextTick(() => this.$refs.rightsModal?.open(userId));
+    },
+    openRightsManagementModal() {
+      this.modals.rightsManagement = true;
+      this.$nextTick(() => this.$refs.rightsManagementModal?.open());
+    },
+    openPasswordModal(userId) {
+      this.modals.password = true;
+      this.$nextTick(() => this.$refs.passwordModal?.open(userId));
+    },
+    openImportModal(type) {
+      this.modals.import = true;
+      this.$nextTick(() => this.$refs.importModal?.open(type));
+    },
+    openUploadModal() {
+      this.modals.upload = true;
+      this.$nextTick(() => this.$refs.uploadModal?.open());
+    },
+    openUserAddModal() {
+      this.modals.userAdd = true;
+      this.$nextTick(() => this.$refs.userAddModal?.open());
+    },
+    openConfirmModal(name, message, warning, cb) {
+      this.modals.confirm = true;
+      this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
+    },
     fetchUsers() {
       this.$socket.emit("userGetByRole", {role: this.role}, (response) => {
         if (!response.success) {
@@ -284,16 +330,16 @@ export default {
       }
     },
     openUserDetailsModal(user) {
-      this.$refs.detailsModal.open(user.id);
+      this.openDetailsModal(user.id);
     },
     openViewRightsModal(user) {
-      this.$refs.rightsModal.open(user.id);
+      this.openRightsModal(user.id);
     },
     openResetPasswordModal(user) {
-      this.$refs.passwordModal.open(user.id);
+      this.openPasswordModal(user.id);
     },
     deleteUser(user) {
-      this.$refs.confirmModal.open("Delete User", "Are you sure you want to delete this user?", null, (val) => {
+      this.openConfirmModal("Delete User", "Are you sure you want to delete this user?", null, (val) => {
         if (val) {
           this.$socket.emit(
               "appDataUpdate",
