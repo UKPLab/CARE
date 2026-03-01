@@ -50,6 +50,23 @@ module.exports = function (server) {
     }
 
     /**
+     * Build a frontend URL from base URL, path, and optional query object.
+     * @param {string} frontendBaseUrl
+     * @param {string} path
+     * @param {Object} query
+     * @returns {string}
+     */
+    function buildFrontendUrl(frontendBaseUrl, path, query = {}) {
+        const safePath = `/${(path || "").replace(/^\/+/, "")}`;
+        const queryString = new URLSearchParams(
+            Object.entries(query).filter(([, value]) => value !== undefined && value !== null && value !== "")
+        ).toString();
+        return queryString
+            ? `${frontendBaseUrl}${safePath}?${queryString}`
+            : `${frontendBaseUrl}${safePath}`;
+    }
+
+    /**
      * Helper function to get password reset token expiry from settings
      */
     async function getPasswordResetTokenExpiry() {
@@ -264,6 +281,7 @@ The CARE Team`
      */
     async function startTwoFactorIfConfigured(req, res, user, options = { mode: 'json' }) {
         const mode = options.mode || 'json'; // 'json' | 'redirect'
+        const frontendBaseUrl = mode === "redirect" ? await getFrontendBaseUrl() : null;
 
         const userRecord = await server.db.models['user'].findOne({
             where: { id: user.id },
@@ -300,7 +318,8 @@ The CARE Team`
             req.session.save((err) => {
                 if (err) {
                     server.logger.error("Failed to save session: " + err);
-                    return res.redirect('/login?error=twofactor-session-save-failed');
+                    const loginErrorUrl = buildFrontendUrl(frontendBaseUrl, "/login", { error: "twofactor-session-save-failed" });
+                    return res.redirect(loginErrorUrl);
                 }
                 return res.redirect(path);
             });
@@ -309,7 +328,7 @@ The CARE Team`
         // Multiple methods -> require selection
         if (methods.length > 1) {
             if (mode === 'redirect') {
-                return redirectTo(`/2fa/select`), true;
+                return redirectTo(buildFrontendUrl(frontendBaseUrl, "/2fa/select")), true;
             }
             respondJson({
                 requiresTwoFactor: true,
@@ -342,14 +361,13 @@ The CARE Team`
         }
 
         if (mode === 'redirect') {
-            const frontendBaseUrl = await getFrontendBaseUrl();
             if (method === 'email') {
-                return redirectTo(`${frontendBaseUrl}/2fa/verify/email`), true;
+                return redirectTo(buildFrontendUrl(frontendBaseUrl, "/2fa/verify/email")), true;
             }
             if (method === 'totp') {
-                return redirectTo(`${frontendBaseUrl}/2fa/verify/totp`), true;
+                return redirectTo(buildFrontendUrl(frontendBaseUrl, "/2fa/verify/totp")), true;
             }
-            return redirectTo(`/login?error=unsupported-2fa-method`), true;
+            return redirectTo(buildFrontendUrl(frontendBaseUrl, "/login", { error: "unsupported-2fa-method" })), true;
         }
 
         respondJson({
@@ -479,13 +497,14 @@ The CARE Team`
      * ORCID login method
      */
     server.app.get('/auth/login/orcid', async function (req, res, next) {
+        const frontendBaseUrl = await getFrontendBaseUrl();
         if (!(await isLoginMethodEnabled('orcid'))) {
-            return res.redirect('/login?error=orcid-login-disabled');
+            return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "orcid-login-disabled" }));
         }
         if (!server.isAuthProviderReady('orcid')) {
             const status = server.getAuthProviderStatus('orcid');
             server.logger.warn(`[Auth] ORCID requested but provider is not ready (${status.reason}).`);
-            return res.redirect('/login?error=orcid-login-not-ready');
+            return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "orcid-login-not-ready" }));
         }
         return passport.authenticate('orcid-login')(req, res, next);
     });
@@ -493,15 +512,17 @@ The CARE Team`
     // TODO: Testing route
     server.app.get('/auth/2fa/orcid/callback',
         async function (req, res, next) {
+            const frontendBaseUrl = await getFrontendBaseUrl();
             if (!(await isLoginMethodEnabled('orcid'))) {
-                return res.redirect('/login?error=orcid-login-disabled');
+                return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "orcid-login-disabled" }));
             }
             if (!server.isAuthProviderReady('orcid')) {
                 const status = server.getAuthProviderStatus('orcid');
                 server.logger.warn(`[Auth] ORCID callback hit but provider is not ready (${status.reason}).`);
-                return res.redirect('/login?error=orcid-login-not-ready');
+                return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "orcid-login-not-ready" }));
             }
-            return passport.authenticate('orcid-login', { failureRedirect: '/login?error=orcid-login-failed' })(req, res, next);
+            const failureRedirect = buildFrontendUrl(frontendBaseUrl, "/login", { error: "orcid-login-failed" });
+            return passport.authenticate('orcid-login', { failureRedirect })(req, res, next);
         },
         async function (req, res, next) {
             const user = req.user;
@@ -518,28 +539,31 @@ The CARE Team`
      * SAML login method
      */
     server.app.get('/auth/login/saml', async function (req, res, next) {
+        const frontendBaseUrl = await getFrontendBaseUrl();
         if (!(await isLoginMethodEnabled('saml'))) {
-            return res.redirect('/login?error=saml-login-disabled');
+            return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "saml-login-disabled" }));
         }
         if (!server.isAuthProviderReady('saml')) {
             const status = server.getAuthProviderStatus('saml');
             server.logger.warn(`[Auth] SAML requested but provider is not ready (${status.reason}).`);
-            return res.redirect('/login?error=saml-login-not-ready');
+            return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "saml-login-not-ready" }));
         }
         return passport.authenticate('saml-login')(req, res, next);
     });
 
     server.app.post('/auth/login/saml/callback',
         async function (req, res, next) {
+            const frontendBaseUrl = await getFrontendBaseUrl();
             if (!(await isLoginMethodEnabled('saml'))) {
-                return res.redirect('/login?error=saml-login-disabled');
+                return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "saml-login-disabled" }));
             }
             if (!server.isAuthProviderReady('saml')) {
                 const status = server.getAuthProviderStatus('saml');
                 server.logger.warn(`[Auth] SAML callback hit but provider is not ready (${status.reason}).`);
-                return res.redirect('/login?error=saml-login-not-ready');
+                return res.redirect(buildFrontendUrl(frontendBaseUrl, "/login", { error: "saml-login-not-ready" }));
             }
-            return passport.authenticate('saml-login', { failureRedirect: '/login?error=saml-login-failed' })(req, res, next);
+            const failureRedirect = buildFrontendUrl(frontendBaseUrl, "/login", { error: "saml-login-failed" });
+            return passport.authenticate('saml-login', { failureRedirect })(req, res, next);
         },
         async function (req, res, next) {
             const user = req.user;

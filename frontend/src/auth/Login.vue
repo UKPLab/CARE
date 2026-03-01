@@ -274,10 +274,31 @@ export default {
   },
   methods: {
     handleQueryParams() {
+      if (this.$route.query.error) {
+        this.showError = true;
+        this.errorMessage = this.mapAuthErrorCode(this.$route.query.error);
+      }
       if (this.$route.query.token) {
         this.verifyEmail(this.$route.query.token);
       }
-      this.$router.replace({ name: this.$route.name });
+      const query = {};
+      if (this.$route.query.redirectedFrom) {
+        query.redirectedFrom = this.$route.query.redirectedFrom;
+      }
+      this.$router.replace({ name: this.$route.name, query });
+    },
+    mapAuthErrorCode(errorCode) {
+      const mapping = {
+        "twofactor-session-save-failed": "Could not start 2FA due to a session issue. Please try logging in again.",
+        "unsupported-2fa-method": "This account uses an unsupported 2FA method. Please contact an administrator.",
+        "orcid-login-disabled": "ORCID login is currently disabled.",
+        "orcid-login-not-ready": "ORCID login is enabled but not fully configured.",
+        "orcid-login-failed": "ORCID login failed. Please try again.",
+        "saml-login-disabled": "SAML login is currently disabled.",
+        "saml-login-not-ready": "SAML login is enabled but not fully configured.",
+        "saml-login-failed": "SAML login failed. Please try again.",
+      };
+      return mapping[errorCode] || "Login failed. Please try again.";
     },
     checkSelfRegistration() {
       if (this.$route.query.registrationDisabled === "true") {
