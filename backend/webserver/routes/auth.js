@@ -217,59 +217,6 @@ The CARE Team`
     }
 
     /**
-     * Complete 2FA verification and log user in
-     * Handles session save and login registration consistently for all 2FA methods
-     * @param {Object} req - Express request object
-     * @param {Object} res - Express response object
-     * @param {number} userId - User ID to log in
-     */
-    async function completeTwoFactorLogin(req, res, userId) {
-        try {
-            const user = await server.db.models['user'].findOne({
-                where: { id: userId },
-                raw: true
-            });
-
-            if (!user) {
-                return res.status(404).json({ message: "User not found." });
-            }
-
-            // Clear 2FA pending state from session
-            delete req.session.twoFactorPending;
-
-            // Complete login
-            req.logIn(user, async function (err) {
-                if (err) {
-                    server.logger.error("Failed to log in user after 2FA: " + err);
-                    return res.status(500).json({ message: "Failed to complete login." });
-                }
-
-                // Save session after login
-                req.session.save((saveErr) => {
-                    if (saveErr) {
-                        server.logger.error("Failed to save session after login: " + saveErr);
-                    }
-                });
-
-                // Register user login
-                let transaction;
-                try {
-                    transaction = await server.db.models['user'].sequelize.transaction();
-                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
-                    await transaction.commit();
-                } catch (e) {
-                    await transaction.rollback();
-                }
-
-                return res.status(200).json({ user: user });
-            });
-        } catch (error) {
-            server.logger.error("Error completing 2FA login: " + error);
-            return res.status(500).json({ message: "Internal server error" });
-        }
-    }
-
-    /**
      * Start 2FA login flow.
      * - If exactly 1 method is configured: start it immediately (send email OTP if needed).
      * - If multiple methods are configured: require the client to select one via /auth/2fa/select.
@@ -364,37 +311,53 @@ The CARE Team`
     }
 
     /**
-     * Finalizes the login process by establishing a session and recording the login activity.
+     * Finalizes the authentication process by establishing a passport session, 
+     * updating login records, and handling the HTTP response.
      * @param {Object} req - The Express request object.
      * @param {Object} res - The Express response object.
-     * @param {Function} next - The Express next middleware function.
-     * @param {Object} user - The authenticated user object from Passport strategies.
+     * @param {Object} user - The user object to be logged in.
      * @param {Object} options - Configuration for the response.
-     * @param {string} options.mode - The response mode: 'json' for API responses or 'redirect' for browser-based flows.
+     * @param {string} [options.mode='json'] - The response mode: 'json' or 'redirect'.
+     * @param {string} [options.redirectPath='/dashboard'] - The path to redirect to if mode is 'redirect'.
      * @returns {Promise<void>}
      */
-    async function finalizeLogin(req, res, next, user, options = { mode: 'json' }) {
+    async function finalizeLogin(req, res, user, options = { mode: 'json', redirectPath: '/dashboard' }) {
+        const mode = options.mode || 'json';
+        
+        // 1. Establish the Passport session
         req.logIn(user, async (err) => {
-            if (err) return next(err);
+            if (err) {
+                server.logger.error(`[Auth] Passport login failed for user ${user.id}: ${err}`);
+                return res.status(500).json({ message: "Failed to establish login session." });
+            }
 
+            // 2. Cleanup: Remove 2FA pending state if it exists
+            if (req.session.twoFactorPending) {
+                delete req.session.twoFactorPending;
+            }
+
+            // 3. Post-login activities (Non-blocking database updates)
             try {
-                // Update the last login timestamp in the database.
-                // Transaction is omitted here as a simple timestamp update is atomic in Sequelize.
+                // Standardizing the login registration logic
                 await server.db.models['user'].registerUserLogin(user.id);
             } catch (dbError) {
-                // Log the error but do not block the user from accessing the system.
-                console.error('[Auth] Failed to record login timestamp for user ID:', user.id, dbError);
+                server.logger.error(`[Auth] Failed to record login activity for user ${user.id}: ${dbError}`);
             }
 
-            // Handle different response types based on the login source (e.g., AJAX vs OAuth Redirect).
-            if (options.mode === 'redirect') {
-                const frontendBaseUrl = await getFrontendBaseUrl();
-                const redirectUrl = `${frontendBaseUrl}/dashboard`
-                return res.redirect(redirectUrl);
-            }
+            // 4. Ensure session is persisted before responding
+            req.session.save(async (saveErr) => {
+                if (saveErr) {
+                    server.logger.error(`[Auth] Session save failed for user ${user.id}: ${saveErr}`);
+                }
 
-            // Default to JSON response for LDAP or standard AJAX logins.
-            return res.status(200).send({ user });
+                if (mode === 'redirect') {
+                    const frontendBaseUrl = await getFrontendBaseUrl();
+                    const finalUrl = buildFrontendUrl(frontendBaseUrl, options.redirectPath);
+                    return res.redirect(finalUrl);
+                }
+
+                return res.status(200).json({ user });
+            });
         });
     }
 
@@ -443,7 +406,7 @@ The CARE Team`
             if (twoFactorHandled) return;
             
             // No 2FA required, proceed with normal login
-            return finalizeLogin(req, res, next, user, { mode:'json'});
+            return finalizeLogin(req, res, user, { mode: 'json' });
         })(req, res, next);
     });
 
@@ -473,7 +436,7 @@ The CARE Team`
             const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'json' });
             if (handled) return;
 
-            return finalizeLogin(req, res, next, user, { mode:'json'});
+            return finalizeLogin(req, res, user, { mode:'json'});
         })(req, res, next);
     });
 
@@ -513,9 +476,7 @@ The CARE Team`
             const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect'});
             if (handled) return;
 
-            return finalizeLogin(req, res, next, user, { 
-                mode: 'redirect'
-            });
+            return finalizeLogin(req, res, user, { mode:'redirect'});
         }
     );
 
@@ -554,9 +515,7 @@ The CARE Team`
             const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect'});
             if (handled) return;
 
-            return finalizeLogin(req, res, next, user, { 
-                mode: 'redirect'
-            });
+            return finalizeLogin(req, res, user, { mode: 'redirect'});
         }
     );
 
@@ -1087,8 +1046,7 @@ The CARE Team`
             );
             
             // Complete login
-            await completeTwoFactorLogin(req, res, userId);
-            
+            return finalizeLogin(req, res, user, { mode: 'json' });
         } catch (error) {
             server.logger.error("Failed to verify OTP: " + error);
             return res.status(500).json({ message: "Internal server error" });
@@ -1127,8 +1085,7 @@ The CARE Team`
                 }
 
                 // Complete login
-                await completeTwoFactorLogin(req, res, pending.userId);
-                
+                return finalizeLogin(req, res, user, { mode: 'json' });
             } catch (err) {
                 return next(err);
             }
