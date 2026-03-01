@@ -1205,8 +1205,7 @@ The CARE Team`
                     'twoFactorMethods',
                     'totpSecret',
                     'email',
-                    'orcidId',
-                    'ldapDomain'
+                    'orcidId'
                 ]
             });
             
@@ -1223,7 +1222,6 @@ The CARE Team`
                 hasTotp: hasTotp,
                 email: user.email || null,
                 orcidId: user.orcidId || null,
-                ldapDomain: user.ldapDomain || null,
             });
             
         } catch (error) {

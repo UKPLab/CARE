@@ -16,12 +16,6 @@ const columns = [
   },
   // LDAP support
   {
-    name: "ldapDomain",
-    type: "STRING",
-    allowNull: true,
-    defaultValue: null,
-  },
-  {
     name: "ldapUsername",
     type: "STRING",
     allowNull: true,

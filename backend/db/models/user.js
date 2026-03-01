@@ -567,7 +567,6 @@ module.exports = (sequelize, DataTypes) => {
             totpSecret: DataTypes.STRING,
             // External login method identifiers
             orcidId: DataTypes.STRING,
-            ldapDomain: DataTypes.STRING,
             ldapUsername: DataTypes.STRING,
             samlNameId: DataTypes.STRING,
         },
