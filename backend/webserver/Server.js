@@ -213,7 +213,6 @@ module.exports = class Server {
         this.logger.debug("Initializing Auth Strategies...");
 
         // 1. Setup Passport Session Handling
-        // TODO: Could optimize by storing the userId only
         // Storing the user object
         passport.serializeUser(function (user, done) {
             done(null, user);

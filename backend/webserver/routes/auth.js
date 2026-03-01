@@ -456,7 +456,6 @@ The CARE Team`
         return passport.authenticate('orcid-login')(req, res, next);
     });
 
-    // TODO: Testing route
     server.app.get('/auth/2fa/orcid/callback',
         async function (req, res, next) {
             const frontendBaseUrl = await getFrontendBaseUrl();
@@ -1296,7 +1295,6 @@ The CARE Team`
     server.app.post('/auth/2fa/disable/:method', ensureAuthenticated, async function (req, res) {
         const method = req.params.method;
 
-        // TODO: Methods are hard coded now. Could they be dynamic?
         if (!['email', 'totp'].includes(method)) {
             return res.status(400).json({ message: "Valid 2FA method is required (email or totp)." });
         }
