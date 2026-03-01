@@ -125,9 +125,7 @@ module.exports = function (server) {
      * @returns {string[]} array of enabled 2FA methods
      */
     function getTwoFactorMethods(user) {
-        if (!user) {
-            return [];
-        }
+        if (!user) return [];
 
         if (Array.isArray(user.twoFactorMethods)) {
             return user.twoFactorMethods.filter((m) => !!m);
@@ -272,111 +270,97 @@ The CARE Team`
     }
 
     /**
-     * TODO: Refactor this method
-     * Start 2FA if configured for the user.
+     * Start 2FA login flow.
      * - If exactly 1 method is configured: start it immediately (send email OTP if needed).
      * - If multiple methods are configured: require the client to select one via /auth/2fa/select.
      *
      * Returns true if a response has been sent (2FA flow started / selection required).
      */
-    async function startTwoFactorIfConfigured(req, res, user, options = { mode: 'json' }) {
-        const mode = options.mode || 'json'; // 'json' | 'redirect'
-        const frontendBaseUrl = mode === "redirect" ? await getFrontendBaseUrl() : null;
-
-        const userRecord = await server.db.models['user'].findOne({
-            where: { id: user.id },
-            raw: true,
-        });
-
-        if (!userRecord) {
-            return false;
-        }
-
-        const methods = getTwoFactorMethods(userRecord);
-        if (!methods || methods.length === 0) {
-            return false;
-        }
-
-        // Store 2FA pending state; method may be selected later
+    async function startTwoFactorLogin(req, res, userId, options = { mode: 'json' }) {
+        const mode = options.mode || 'json';
+    
+        // 1.Get user record and 2fa methods
+        const dbUser = await server.db.models['user'].findByPk(userId, { raw: true });
+        if (!dbUser) return false;
+    
+        const methods = getTwoFactorMethods(dbUser);
+        if (!methods || methods.length === 0) return false;
+    
+        // 2. Initialize 2FA Session
         req.session.twoFactorPending = {
-            userId: userRecord.id,
+            userId: dbUser.id,
             methods: methods,
-            method: null,
+            method: null
         };
-
-        const respondJson = (payload) => {
-            req.session.save((err) => {
-                if (err) {
-                    server.logger.error("Failed to save session: " + err);
-                    return res.status(500).json({ message: "Failed to initiate 2FA verification." });
-                }
-                return res.status(200).json(payload);
-            });
-        };
-
-        const redirectTo = (path) => {
-            req.session.save((err) => {
-                if (err) {
-                    server.logger.error("Failed to save session: " + err);
-                    const loginErrorUrl = buildFrontendUrl(frontendBaseUrl, "/login", { error: "twofactor-session-save-failed" });
-                    return res.redirect(loginErrorUrl);
-                }
-                return res.redirect(path);
-            });
-        };
-
-        // Multiple methods -> require selection
-        if (methods.length > 1) {
+    
+        let responseData = { requiresTwoFactor: true, methods };
+        let redirectPath = "/2fa/select";
+    
+        // 3. Handle single method vs multiple methods
+        if (methods.length === 1) {
+            const method = methods[0];
+            req.session.twoFactorPending.method = method;
+    
+            try {
+                // Execute 2fa relevant operation
+                await performTwoFactorAction(dbUser, method);
+                
+                // Set results for a single 2FA method
+                responseData.selectionRequired = false;
+                responseData.method = method;
+                redirectPath = getTwoFactorRedirectPath(method);
+            } catch (err) {
+                server.logger.error(`2FA Initialization failed: ${err.message}`);
+                return res.status(err.status || 500).json({ message: err.message });
+            }
+        } else {
+            // Multiple methods available; requiring frontend to display selection page
+            responseData.selectionRequired = true;
+        }
+    
+        // 4. Unified handling of session persistence and response
+        const frontendBaseUrl = mode === "redirect" ? await getFrontendBaseUrl() : null;
+        
+        req.session.save((err) => {
+            if (err) {
+                server.logger.error("Failed to save session: " + err);
+                return res.status(500).json({ message: "Session error during 2FA." });
+            }
+    
             if (mode === 'redirect') {
-                return redirectTo(buildFrontendUrl(frontendBaseUrl, "/2fa/select")), true;
+                const finalUrl = buildFrontendUrl(frontendBaseUrl, redirectPath);
+                return res.redirect(finalUrl);
             }
-            respondJson({
-                requiresTwoFactor: true,
-                selectionRequired: true,
-                methods: methods,
-            });
-            return true;
-        }
-
-        // Single method -> start immediately
-        const method = methods[0];
-        req.session.twoFactorPending.method = method;
-
-        try {
-            if (method === 'email') {
-                if (!userRecord.email) {
-                    return res.status(400).json({ message: "Email address is required for email 2FA but not found for this user." });
-                }
-                await sendEmailOtp(userRecord);
-            } else if (method === 'totp') {
-                if (!userRecord.totpSecret) {
-                    return res.status(400).json({ message: "TOTP 2FA is enabled but not configured (missing secret)." });
-                }
-            } else {
-                return res.status(400).json({ message: `Unsupported 2FA method: ${method}` });
-            }
-        } catch (e) {
-            server.logger.error("Failed to initiate 2FA: " + e);
-            return res.status(500).json({ message: "Failed to initiate 2FA verification." });
-        }
-
-        if (mode === 'redirect') {
-            if (method === 'email') {
-                return redirectTo(buildFrontendUrl(frontendBaseUrl, "/2fa/verify/email")), true;
-            }
-            if (method === 'totp') {
-                return redirectTo(buildFrontendUrl(frontendBaseUrl, "/2fa/verify/totp")), true;
-            }
-            return redirectTo(buildFrontendUrl(frontendBaseUrl, "/login", { error: "unsupported-2fa-method" })), true;
-        }
-
-        respondJson({
-            requiresTwoFactor: true,
-            selectionRequired: false,
-            method: method,
-            methods: methods,
+            return res.status(200).json(responseData);
         });
+    
         return true;
+    }
+    
+    async function performTwoFactorAction(user, method) {
+        if (method === 'email') {
+            if (!user.email) {
+                throw { status: 400, message: "Email not found for this user." };
+            }
+            await sendEmailOtp(user);
+        } else if (method === 'totp') {
+            if (!user.totpSecret) {
+                throw { status: 400, message: "TOTP is not configured." };
+            }
+        } else {
+            throw { status: 400, message: `Unsupported 2FA method: ${method}` };
+        }
+    }
+    
+    /**
+     * Map redirect paths
+     */
+    function getTwoFactorRedirectPath(method) {
+        const paths = { 
+            email: "/2fa/verify/email",
+            totp: "/2fa/verify/totp"
+        };
+        return paths[method] || "/login?error=unsupported-method";
     }
 
     /**
@@ -454,7 +438,7 @@ The CARE Team`
             
             
             // Start 2FA if configured for this user
-            const twoFactorHandled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json' });
+            const twoFactorHandled = await startTwoFactorLogin(req, res, user.id, { mode: 'json' });
             // 2FA response has been sent; stop normal login flow
             if (twoFactorHandled) return;
             
@@ -486,7 +470,7 @@ The CARE Team`
                 return res.status(401).send(info || { message: "LDAP login failed." });
             }
 
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'json' });
+            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'json' });
             if (handled) return;
 
             return finalizeLogin(req, res, next, user, { mode:'json'});
@@ -526,7 +510,7 @@ The CARE Team`
         },
         async function (req, res, next) {
             const user = req.user;
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
+            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect'});
             if (handled) return;
 
             return finalizeLogin(req, res, next, user, { 
@@ -567,7 +551,7 @@ The CARE Team`
         },
         async function (req, res, next) {
             const user = req.user;
-            const handled = await startTwoFactorIfConfigured(req, res, user, { mode: 'redirect'});
+            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect'});
             if (handled) return;
 
             return finalizeLogin(req, res, next, user, { 
