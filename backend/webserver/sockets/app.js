@@ -67,16 +67,13 @@ class AppSocket extends Socket {
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
-            
-            // When closing a study, set the userIdClosed to the current user
-            if (data.table === 'study' && 'closed' in data.data && data.data.closed) {
-                data.data.userIdClosed = this.userId;
-            }
-            
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction}
+                {
+                    context: {...data.data, currentUserId: this.userId},
+                    transaction: transaction
+                }
             );
             return newEntry.id;
         }
@@ -113,12 +110,18 @@ class AppSocket extends Socket {
             if (!("userId" in data.data)) {
                 data.data.userId = this.userId;
             }
-            newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
+            newEntry = await this.models[data.table].add(data.data, {
+                context: {...data.data, currentUserId: this.userId},
+                transaction: transaction
+            });
         } else {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction}
+                {
+                    context: {...data.data, currentUserId: this.userId},
+                    transaction: transaction
+                }
             );
         }
 
