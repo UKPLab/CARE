@@ -226,7 +226,7 @@ export default {
           {},
           {
             validateStatus: function (status) {
-              return status === 200 || status === 400 || status === 429;
+              return status === 200 || status === 400;
             },
             withCredentials: true,
           },
@@ -246,10 +246,6 @@ export default {
               this.resendInterval = null;
             }
           }, 1000);
-        } else if (response.status === 429) {
-          this.showError = true;
-          this.errorMessage =
-            "Too many requests. Please wait before requesting another code.";
         } else {
           this.showError = true;
           this.errorMessage =
