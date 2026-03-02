@@ -1,7 +1,7 @@
 <template>
   <div>
     <ApplySkillSetupStepper
-        v-if="!isProcessingActive"
+        v-if="!showProcessStepper"
         ref="applySkillSetupStepper"
         @start-preprocessing="startPreprocessing"
     />
@@ -16,6 +16,7 @@
         :show-close="true"
         cancel-next-text="Cancel Preprocess"
         @cancel="cancelProcessing"
+        @confirm="confirmCompletion"
     />
   </div>
 </template>
@@ -71,6 +72,12 @@ export default {
           Object.keys(this.preprocess.requests).length > 0
       );
     },
+    isCompleted() {
+      return this.preprocess && this.preprocess.completed === true;
+    },
+    showProcessStepper() {
+      return this.isProcessingActive || this.isCompleted;
+    },
   },
   watch: {
     isProcessingActive: {
@@ -81,7 +88,7 @@ export default {
         }
       },
       immediate: true
-    }
+    },
   },
   mounted() {
     this.$socket.emit("serviceCommand", {
@@ -99,23 +106,22 @@ export default {
   },
   methods: {
     async open() {
-      if (!this.isProcessingActive) {
+      if (!this.showProcessStepper) {
         this.$refs.applySkillSetupStepper.open();
       } else {
         this.eventBus.emit("toast", {
-          title: "Preprocessing In Progress",
-          message: "Preprocessing is currently running. Showing progress...",
+          title: this.isCompleted ? "Preprocessing Complete" : "Preprocessing In Progress",
+          message: this.isCompleted ? "Review the results below." : "Preprocessing is currently running. Showing progress...",
           variant: "info",
         });
         this.$refs.processStepper.open();
       }
     },
     close() {
-      this.stopPolling();
       this.isAutoOpened = false;
       this.isWaitingForData = false;
 
-      if (!this.isProcessingActive) {
+      if (!this.showProcessStepper) {
         this.$refs.applySkillSetupStepper.close();
       } else {
         this.$refs.processStepper.close();
@@ -194,6 +200,25 @@ export default {
       if (this.isProcessingActive && !this.isAutoOpened) {
         this.autoOpenProcessStepper();
       }
+    },
+
+    confirmCompletion() {
+      this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "confirmCompletion",
+        data: {}
+      }, (res) => {
+        if (res.success) {
+          this.isAutoOpened = false;
+          this.$refs.processStepper.close();
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Confirmation Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
   },
 };
