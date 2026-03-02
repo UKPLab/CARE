@@ -122,6 +122,7 @@ export default {
         {table: "user", by: "userId"}
       ]
     },
+    "user",
     'document',
     'study_session', 'workflow', 'workflow_step', 'study_step'],
   data() {

@@ -106,6 +106,7 @@ export default {
     {
       table: "submission",
     },
+    "user",
   ],
   components: {
     UploadModal,
