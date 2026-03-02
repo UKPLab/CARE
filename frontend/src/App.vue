@@ -266,12 +266,7 @@ export default {
         return;
       }
 
-      // const flowToken = ++this.postLoginModalFlowToken;
       this.$nextTick(() => {
-        // if (flowToken !== this.postLoginModalFlowToken) {
-        //   return;
-        // }
-        
         if (this.shouldShowConsentModal) {
           if (this.$refs.twoFactorSettingsModal?.isVisible()) {
             this.$refs.twoFactorSettingsModal.close();
