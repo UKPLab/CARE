@@ -4,7 +4,7 @@
       :steps="steps"
       :validation="stepValid"
       submit-text="Download"
-      xl
+      size = "xl"
       @submit="downloadData"
       @hide="hide">
     <template #title>
@@ -63,6 +63,25 @@
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
+      <div v-else-if="dataSelection.exportType === 'submissions'">
+        <h6>Select Submissions to Download:</h6>
+    
+        <BasicTable
+          v-if="submissionTableData.length > 0"
+          v-model="submissionSelection" 
+          :columns="submissionTable.columns"
+          :data="submissionTableData"
+          :options="submissionTable.options"
+        />
+
+        <div v-else class="alert alert-warning">
+          No submissions found for this project.
+        </div>
+
+        <small class="text-muted">
+          {{ submissionSelection.length }} student(s) selected
+        </small>
+      </div>
       <div v-else>
         <p>Exporting all data</p>
 
@@ -81,11 +100,37 @@
       </div>
 
     </template>
+
+    
+    <template #step-3>
+      <div v-if="wait">
+        <BasicLoading/>
+      </div>
+      <div v-if="dataSelection.exportType === 'submissions'" class="mb-3">
+        <h6>Confirm Selection:</h6>
+        <div class="alert alert-info">
+          <strong>Summary:</strong><br />
+          You are about to download submissions for 
+          <strong>{{ submissionSelection.length }}</strong> student(s).
+        </div>
+
+        <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
+          <ul class="mb-0 pl-3">
+            <li v-for="row in submissionSelection" :key="row.userId">
+              {{ row.studentName }} ({{ row.fileCount }} files)
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </template>
+
   </StepperModal>
 </template>
 
 <script>
 import BasicForm from "@/basic/Form.vue";
+import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import {computed} from "vue";
 import {downloadObjectsAs} from "@/assets/utils";
@@ -103,7 +148,7 @@ import BasicLoading from "@/basic/Loading.vue";
  */
 export default {
   name: "ExportProjectModal",
-  components: {BasicLoading, StepperModal, BasicForm},
+  components: {BasicLoading, StepperModal, BasicForm, BasicTable },
   subscribeTable: [{
     table: "document",
   }, {
@@ -122,8 +167,6 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
-  }, {
-    table: "document"
   }
   ],
   provide() {
@@ -139,15 +182,48 @@ export default {
       },
       filter: [],
       wait: false,
-    }
+      submissionSelection: [],
+      submissionTable: {
+        options: {
+          selectableRows: true,
+          selectMode: 'multi',
+          pagination: 10,
+          striped: true,
+          hover: true
+        },
+        columns: [
+          { name: "Student Name", key: "studentName", sortable: true },
+          { name: "Files", key: "fileCount", sortable: true },
+          { name: "Submitted", key: "submissionDate", sortable: true }
+        ]
+      }
+    };
   },
   computed: {
     stepValid() {
+      if (this.dataSelection.exportType === "submissions") {
+        return [
+          !!this.dataSelection.projectId,
+          this.submissionSelection.length > 0,
+          !this.wait
+        ];
+      }
       return [
+        !!this.dataSelection.exportType,
         true
       ];
     },
+    users() {
+      return this.$store.getters["table/user/getAll"];
+    },
     steps() {
+      if (this.dataSelection.exportType === 'submissions') {
+        return [
+          { title: "Settings" },
+          { title: "Select Students" },
+          { title: "Confirm Download" }
+        ];
+      }
       return [
         {title: "Settings"},
         {title: "Confirmation"}
@@ -171,6 +247,7 @@ export default {
           type: "select",
           options: [
             {name: "Export a list of all reviewers", value: "reviewerList"},
+            {name: "Export submissions", value: "submissions"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -228,6 +305,40 @@ export default {
     projects() {
       return this.$store.getters["table/project/getAll"];
     },
+    submissionTableData() {
+      const currentUser = this.$store.getters["auth/getUser"];
+      
+      if (!this.documents || !this.users || !this.dataSelection.projectId) {
+        return [];
+      }
+
+      const projectDocs = this.documents.filter(doc => doc.projectId == this.dataSelection.projectId && doc.submissionId);
+      const submissionsByUser = {};
+      projectDocs.forEach(doc => {
+        const uid = doc.userId;
+        if (!uid) return;
+        console.log(uid);
+
+        let student = this.users.find(u => u.id === uid);
+
+        if (!student && currentUser && currentUser.id === uid) {
+          student = currentUser;
+        }
+
+        if (student && student.acceptDataSharing) {
+          if (!submissionsByUser[uid]) {
+            submissionsByUser[uid] = {
+              userId: uid,
+              studentName: `${student.firstName} ${student.lastName}`,
+              fileCount: 0,
+              submissionDate: new Date(doc.createdAt).toISOString().slice(0, 19).replace('T', ' ')
+            };
+          }
+          submissionsByUser[uid].fileCount++;
+        }
+      });
+      return Object.values(submissionsByUser);
+    },
   },
   methods: {
     open(projectId) {
@@ -240,6 +351,8 @@ export default {
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
         this.downloadReviewerList();
+      } else if (this.dataSelection.exportType === "submissions") {
+        this.downloadSubmissions();
       } else {
         this.downloadAllData();
       }
@@ -299,6 +412,50 @@ export default {
       await Promise.all(workers);
 
       return results;
+    },
+    async downloadSubmissions() {
+      this.wait = true;
+
+      try {
+        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+
+        const serverUrl = import.meta.env.VITE_APP_SERVER_URL || "";
+
+        const response = await fetch(`${serverUrl}/export/project/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', 
+          body: JSON.stringify({
+            projectId: this.dataSelection.projectId,
+            exportType: "submissions",
+            userIds: selectedUserIds
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server responded with ${response.status}: ${errorText}`);
+        }
+
+        const blob = await response.blob();
+
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = 'submissions.zip';
+        if (disposition && disposition.includes('filename=')) {
+            filename = disposition.split('filename=')[1].replace(/"/g, '');
+        }
+
+        FileSaver.saveAs(blob, filename);
+
+        this.wait = false;
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        alert("An error occurred starting the stream.");
+        this.wait = false;
+      }
     },
     async downloadAllData() {
       this.wait = true;
