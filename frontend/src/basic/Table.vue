@@ -163,7 +163,7 @@
         <tr
           v-for="r in tableData"
           v-else
-          :key="r"
+          :key="r.id"
           @click="selectRow(r)"
         >
           <td v-if="selectableRows">

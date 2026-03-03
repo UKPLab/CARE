@@ -221,16 +221,19 @@ export default {
       }, 1000);
     },
     updateVisibility(page) {
+      let stateChanged = false;
       if (page.isVisible) {
         if (!this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.push(page.pageNumber);
+          stateChanged = true;
         }
       } else {
         if (this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
+          stateChanged = true;
         }
       }
-      if (this.acceptStats) {
+      if (stateChanged && this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfPageVisibilityChange",
           data: {

@@ -602,9 +602,9 @@ export default {
             document?.submissionId &&
             this.submissions.find((s) => s.id === document.submissionId);
 
-          // Get owner info
-          const owner = submission
-            ? this.users.find((u) => u.id === submission.userId)
+          // Get owner info from the study
+          const owner = study
+            ? this.users.find((u) => u.id === study.userId)
             : null;
 
           return {
@@ -905,8 +905,8 @@ export default {
      * Returns the user object or null if not found.
      */
     getOwnerUserForSession(session) {
-      const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
-      return submission ? this.users.find((u) => u.id === submission.userId) : null;
+      const study = session.studyId ? this.studies.find((s) => s.id === session.studyId) : null;
+      return study ? this.users.find((u) => u.id === study.userId) : null;
     },
     /**
      * Gets the reviewer user for a given session.
