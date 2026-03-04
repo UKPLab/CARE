@@ -74,17 +74,11 @@ class StudySocket extends Socket {
 
     /**
      * Send study closed email to users with open/unfinished sessions.
-     * Uses enableStudyCloseEmails checkbox and Type 6 templates.
+     * Uses Type 6 templates configured in settings.
      * @param {Object} study - Study object
      * @returns {Promise<void>}
      */
-    async sendStudyClosedEmails(study, options = {}) {
-        const { force = false } = options;
-        const enableStudyCloseEmails = study.enableStudyCloseEmails || false;
-        if (!force && !enableStudyCloseEmails) {
-            return;
-        }
-
+    async sendStudyClosedEmails(study) {
         const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
 
         try {
@@ -181,10 +175,10 @@ The CARE Team`,
                 return;
             }
             try {
-                const freshStudy = await this.models["study"].getById(data.studyId);
-                await this.sendStudyClosedEmails(freshStudy, { force: true });
+                const updatedStudy = await this.models["study"].getById(data.studyId);
+                await this.sendStudyClosedEmails(updatedStudy);
             } catch (error) {
-                this.logger.error(`Failed to send study closed emails:`, error);
+                this.logger.error(`Failed to send study closed emails for study ${data.studyId}:`, error);
             }
         });
 
@@ -224,7 +218,7 @@ The CARE Team`,
                     if (notifySessions) {
                         try {
                             const updatedStudy = await this.models['study'].getById(study.id);
-                            await this.sendStudyClosedEmails(updatedStudy, { force: true });
+                            await this.sendStudyClosedEmails(updatedStudy);
                         } catch (error) {
                             this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
                         }
