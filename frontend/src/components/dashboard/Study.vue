@@ -335,7 +335,7 @@ export default {
         {name: "Session Limit", key: "limitSessions", sortable: true},
         {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
         {
-          name: "Email Notifications",
+          name: "Session Start/Finish Emails",
           key: "enableEmailNotifications",
           type: "badge",
           typeOptions: {
