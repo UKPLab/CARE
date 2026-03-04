@@ -69,13 +69,13 @@
       />
     </template>
   </Card>
-  <UploadModal v-if="modals.upload" ref="uploadModal"/>
-  <ConfirmModal v-if="modals.deleteConf" ref="deleteConf"/>
-  <ImportModal v-if="modals.import" ref="importModal"/>
-  <PublishModal v-if="modals.publish" ref="publishModal"/>
-  <PublishAssessmentModal v-if="modals.publishAssessment" ref="publishAssessmentModal"/>
-  <AssignModal v-if="modals.assign" ref="assignModal"/>
-  <ApplySkillModal v-if="modals.applySkill" ref="applySkillModal"/>
+  <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
+  <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
+  <ImportModal v-if="modals.import" ref="importModal" @hide="modals.import = false"/>
+  <PublishModal v-if="modals.publish" ref="publishModal" @hide="modals.publish = false"/>
+  <PublishAssessmentModal v-if="modals.publishAssessment" ref="publishAssessmentModal" @hide="modals.publishAssessment = false"/>
+  <AssignModal v-if="modals.assign" ref="assignModal" @hide="modals.assign = false"/>
+  <ApplySkillModal v-if="modals.applySkill" ref="applySkillModal" @hide="modals.applySkill = false"/>
 </template>
 
 <script>

@@ -60,26 +60,30 @@
       v-if="modals.details"
       ref="detailsModal"
       @update-user="fetchUsers"
+      @hide="modals.details = false"
   />
-  <RightsModal v-if="modals.rights" ref="rightsModal" />
+  <RightsModal v-if="modals.rights" ref="rightsModal" @hide="modals.rights = false"/>
   <RightsManagementModal
     v-if="modals.rightsManagement"
     ref="rightsManagementModal"
     @update-user="fetchUsers"
+    @hide="modals.rightsManagement = false"
   />
-  <PasswordModal v-if="modals.password" ref="passwordModal" />
+  <PasswordModal v-if="modals.password" ref="passwordModal" @hide="modals.password = false"/>
   <ImportModal
       v-if="modals.import"
       ref="importModal"
       @update-user="fetchUsers"
+      @hide="modals.import = false"
   />
-  <UploadModal v-if="modals.upload" ref="uploadModal"/>
+  <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
   <UserAddModal
       v-if="modals.userAdd"
       ref="userAddModal"
       @update-user="fetchUsers"
+      @hide="modals.userAdd = false"
   />
-  <ConfirmModal v-if="modals.confirm" ref="confirmModal"/>
+  <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
 </template>
 
 <script>

@@ -61,16 +61,16 @@
         />
       </template>
     </Card>
-        <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator"/>
-    <StudySessionModal v-if="modals.studySession" ref="studySessionModal"/>
-    <ConfirmModal v-if="modals.deleteConf" ref="deleteConf"/>
-    <ConfirmModal v-if="modals.confirm" ref="confirmModal"/>
-    <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal"/>
-    <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal"/>
-    <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal"/>
-    <InformationModal v-if="modals.information" ref="informationModal"/>
-    <OverViewModal v-if="modals.overview" ref="overviewModal"/>
-    <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal"/>
+        <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator" @hide="modals.studyCoordinator = false"/>
+    <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
+    <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
+    <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
+    <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
+    <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
+    <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
+    <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
+    <OverViewModal v-if="modals.overview" ref="overviewModal" @hide="modals.overview = false"/>
+    <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>
 </template>
 
