@@ -105,10 +105,10 @@ module.exports = (sequelize, DataTypes) => {
             required: true
         }, {
             key: "enableEmailNotifications",
-            label: "Enable Email Notifications",
+            label: "Send email notification on session start/finish",
             type: "switch",
             default: false,
-            help: "When enabled, emails will be sent for session start/finish using admin-configured templates. If no templates are configured, default hardcoded emails will be sent."
+            help: "When enabled, the study owner receives an email each time a participant starts or finishes a session."
         }, {
             key: "timeLimit",
             type: "slider",
@@ -371,11 +371,6 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "projectId",
                 as: "project"
             });
-            // Association with study template mappings
-            Study.hasMany(models["study_template_mapping"], {
-                foreignKey: "studyId",
-                as: "templateMappings"
-            });
         }
 
     }
@@ -406,7 +401,6 @@ module.exports = (sequelize, DataTypes) => {
         projectId: DataTypes.INTEGER,
         anonymize: DataTypes.BOOLEAN,
         enableEmailNotifications: DataTypes.BOOLEAN,
-        enableStudyCloseEmails: DataTypes.BOOLEAN,
         parentStudyId: {
             type: DataTypes.INTEGER,
             allowNull: true,
