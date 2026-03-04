@@ -4,6 +4,73 @@ Modal
 This section summarizes the modal components available in CARE, when to use them, and their key APIs.  
 All of them are built on top of :ref:`BasicModal <modal>` and support open/close via a template ref.
 
+.. _lazy-loading-modals:
+
+Lazy-Loading Modals
+-------------------
+
+Modals that use ``subscribeTable`` run ``subscribeAppData`` on mount. If all modals are always rendered, every subscription fires on page load, even for modals the user never opens. On large databases this causes the browser to freeze.
+
+Use ``v-if`` to defer mounting until the modal is actually needed, and **unload on close** (reset the flag in ``@hide``) so the modal unmounts and its subscriptions are released. All top-level modals in dashboard pages should use this pattern for consistency and performance.
+
+.. tip::
+
+    Apply this pattern to **top-level** modals only (those rendered directly in a dashboard page).
+    Nested modals (children rendered inside a parent modal) should stay always-rendered so they are
+    available immediately when the parent is open.
+
+**Pattern**
+
+1. Declare a reactive ``modals`` object with a boolean flag per modal.
+2. Guard each modal with ``v-if``.
+3. Open via a method that sets the flag, then calls ``open()`` in ``$nextTick``.
+4. Listen for ``@hide`` and reset the flag so the modal unmounts.
+
+.. code-block:: html
+
+    <template>
+      <!-- button triggers the open method -->
+      <button @click="openUploadModal">Upload</button>
+
+      <!-- modal mounts only when needed, unmounts on close -->
+      <UploadModal
+          v-if="modals.upload"
+          ref="uploadModal"
+          @hide="modals.upload = false"
+      />
+    </template>
+
+.. code-block:: javascript
+
+    export default {
+      data() {
+        return {
+          modals: {
+            upload: false,
+          },
+        };
+      },
+      methods: {
+        openUploadModal() {
+          this.modals.upload = true;
+          this.$nextTick(() => this.$refs.uploadModal?.open());
+        },
+      },
+    };
+
+.. note::
+
+    ``$nextTick`` is required because Vue needs one tick to mount the component after the flag
+    becomes ``true``. Optional chaining (``?.``) guards against the rare case where the ref is not
+    yet available.
+
+.. note::
+
+    When a lazy-loaded modal is closed and unmounted, all internal state (form data, selections,
+    step progress) is destroyed.
+
+-----
+
 `StepperModal`
 
 Import this component if you need a modal that guides users through a sequence of steps, with validation and feedback.
