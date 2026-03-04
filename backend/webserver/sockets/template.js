@@ -1,6 +1,7 @@
 "use strict";
 const Socket = require("../Socket");
 const Delta = require("quill-delta");
+const {Op} = require("sequelize");
 const {dbToDelta} = require("editor-delta-conversion");
 const {resolveTemplate, resolveTemplateToDelta} = require("../../utils/templateResolver");
 
@@ -669,6 +670,50 @@ class TemplateSocket extends Socket {
     );
   }
 
+  /**
+   * Soft-delete a template after verifying ownership and usage constraints.
+   *
+   * @socketEvent templateDelete
+   * @param {Object} data
+   * @param {number} data.templateId - The template ID to delete (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   */
+  async deleteTemplate(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId, {transaction: options.transaction});
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    if (template.userId !== this.userId) {
+      throw new Error("You can only delete templates that you own");
+    }
+
+    if (template.published && [1, 2, 3, 6].includes(template.type)) {
+      throw new Error("Published email templates cannot be deleted");
+    }
+
+    if ([1, 2, 3, 6].includes(template.type)) {
+      const usedBySettings = await this.models["setting"].findAll({
+        where: {
+          key: {[Op.like]: "email.template.%"},
+          value: String(template.id),
+        },
+        raw: true,
+        transaction: options.transaction,
+      });
+      if (usedBySettings.length > 0) {
+        const settingNames = usedBySettings.map(s => s.key.replace("email.template.", "")).join(", ");
+        throw new Error(`Template is currently assigned as an email template (${settingNames}). Please unassign it in Settings before deleting.`);
+      }
+    }
+
+    return await this.models["template"].deleteById(data.templateId, {transaction: options.transaction});
+  }
+
   init() {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
     this.createSocket("templateUpdate", this.updateTemplate, {}, true);
@@ -684,6 +729,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templateCopy", this.copyTemplate, {}, true);
     this.createSocket("templateDetach", this.detachTemplate, {}, true);
     this.createSocket("templateUpdateFromSource", this.updateFromSource, {}, true);
+    this.createSocket("templateDelete", this.deleteTemplate, {}, true);
   }
 }
 

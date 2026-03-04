@@ -341,12 +341,8 @@
           null,
           (confirmed) => {
             if (confirmed) {
-              this.$socket.emit("appDataUpdate", {
-                table: "template",
-                data: {
-                  id: template.id,
-                  deleted: true,
-                },
+              this.$socket.emit("templateDelete", {
+                templateId: template.id,
               }, (result) => {
                 if (!result.success) {
                   this.eventBus.emit("toast", {
