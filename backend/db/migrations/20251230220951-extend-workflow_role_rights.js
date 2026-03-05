@@ -17,6 +17,10 @@ const roleRights = [
     role: "user",
     userRightName: "frontend.dashboard.workflows.view",
   },
+  {
+    role: "guest",
+    userRightName: "frontend.dashboard.workflows.view",
+  }
 ];
 
 /** @type {import('sequelize-cli').Migration} */
