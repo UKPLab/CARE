@@ -10,7 +10,7 @@
     <template #body>
       <div v-if="selectedWorkflow" class="mb-3">
         <p class="text-muted mb-3">
-          This will create a new workflow with the updated name. The original workflow will be hidden.
+          This will rename the existing workflow.
         </p>
         
         <div class="alert alert-info" role="alert">
@@ -28,7 +28,7 @@
         <div class="spinner-border spinner-border-sm me-2" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-        Creating new workflow...
+        Renaming workflow...
       </div>
     </template>
     <template #footer>
@@ -39,7 +39,7 @@
       />
       <BasicButton
         class="btn btn-primary"
-        text="Create New Workflow"
+        text="Rename Workflow"
         :disabled="!canSubmit"
         @click="handleSubmit"
       />
@@ -55,7 +55,7 @@ import BasicForm from "@/basic/Form.vue";
 /**
  * Workflow Rename Modal Component
  * 
- * Creates a new workflow with the updated name instead of renaming the existing one.
+ * Renames the existing workflow with the updated name instead of creating a new one.
  * The original workflow is hidden from the frontend view.
  * 
  * @author Karim Ouf
