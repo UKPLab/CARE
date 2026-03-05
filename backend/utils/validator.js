@@ -249,7 +249,7 @@ class Validator {
                             if (pathParts.length > 1) {
                                 return resolve({
                                     success: false,
-                                    message: `Files must be at root level in ZIP ${zipFile.fileName}. Found file in subdirectory: ${entry}`,
+                                    message: `Files must be located either at the ZIP root or within a single top-level directory in ${zipFile.fileName}. Found file in a nested subdirectory: ${entry}`,
                                 });
                             }
 

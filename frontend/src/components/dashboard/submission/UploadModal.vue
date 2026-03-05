@@ -107,6 +107,9 @@ export default {
     users() {
       return this.$store.getters["table/user/getAll"];
     },
+    projectId() {
+      return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
+    },
     stepValid() {
       return [this.selectedUser.length > 0, this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
     },
@@ -164,6 +167,7 @@ export default {
         userId: this.selectedUser[0].id,
         group: this.formData.group,
         validationConfigurationId: this.selectedValidatorId,
+        projectId: this.projectId, 
         files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
       };
       this.$refs.uploadStepper.setWaiting(true);

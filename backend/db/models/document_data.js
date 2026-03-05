@@ -110,10 +110,12 @@ module.exports = (sequelize, DataTypes) => {
                 const newDataEntries = originalDataEntries.map(entry => ({
                     ...entry,
                     documentId: duplicateDocumentId, // Set to the new duplicated document ID
+                    createdAt: new Date(),
                     updatedAt: new Date(),
                     studySessionId: null,
                     studyStepId: null,
-                    id: undefined
+                    id: undefined,
+                    deletedAt: undefined,
                 }));
                 await this.bulkCreate(newDataEntries, {transaction});
             }

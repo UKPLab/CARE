@@ -4,11 +4,10 @@
     :steps="processingSteps"
     :validation="[true, true]"
     :current-step="currentStep"
-    :show-footer="false"
-    :next-text="currentStep === 1 ? cancelNextText : 'Next'"
+    :next-text="isCompleted ? 'Confirm' : cancelNextText"
     submit-text="Confirm"
     :show-close="showClose"
-    @submit="$emit('cancel')"
+    @submit="handleSubmit"
   >
     <template #title>
       <h5 class="modal-title text-primary">{{ title }}</h5>
@@ -35,12 +34,43 @@
 
         <div class="mt-2 text-muted">
           Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
+          <span v-if="isTimeoutExceeded" class="text-warning ms-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Taking longer than expected
+          </span>
         </div>
         <div class="mt-2 text-muted">
           Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
         </div>
         <div class="mt-2 text-muted">
           Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
+        </div>
+
+        <!-- Errors Display -->
+        <div v-if="hasErrors" class="mt-3">
+          <h6 class="text-danger">Errors Encountered</h6>
+          <div 
+            v-for="(error, index) in errorsList" 
+            :key="index" 
+            class="alert alert-danger py-2 mb-2"
+            role="alert"
+          >
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong>Error:</strong> 
+                {{ error.message }}
+              </div>
+              <small class="text-muted ms-2">
+                {{ formatTimestamp(error.timestamp) }}
+              </small>
+            </div>
+            <small v-if="error.submissionId" class="text-muted">
+              Submission ID: {{ error.submissionId }}
+            </small>
+            <small v-else-if="error.documentId" class="text-muted">
+              Document ID: {{ error.documentId }}
+            </small>
+          </div>
         </div>
 
         <h6 class="mt-4">Submissions in Queue</h6>
@@ -98,7 +128,7 @@ export default {
       default: "Cancel Preprocess" 
     },
   },
-  emits: ["cancel"],
+  emits: ["cancel", "confirm"],
   data() {
     return {
       now: Date.now(),
@@ -115,6 +145,12 @@ export default {
   },
   computed: {
     processingSteps() {
+      // When completed, only show 1 step so the button becomes "Confirm" (submitText)
+      if (this.isCompleted) {
+        return [
+          { title: 'Processing Complete' }
+        ];
+      }
       return [
         { title: 'Processing Progress' },
         { title: 'Confirm Cancellation' }
@@ -128,17 +164,20 @@ export default {
         Object.keys(this.preprocess.requests).length > 0
       );
     },
+    isCompleted() {
+      return this.preprocess && this.preprocess.completed === true;
+    },
     totalCount() {
       return this.preprocess?.currentSubmissionsCount || 0;
     },
     processedCount() {
-      if (!this.isProcessingActive) return 0;
+      if (!this.isProcessingActive && !this.isCompleted) return 0;
       const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess.requests).length;
+      const remaining = Object.keys(this.preprocess?.requests || {}).length;
       return total - remaining;
     },
     progressPercent() {
-      if (!this.isProcessingActive) return 0;
+      if (!this.isProcessingActive && !this.isCompleted) return 0;
       const total = this.totalCount;
       if (!total) return 0;
       const processed = this.processedCount;
@@ -154,6 +193,17 @@ export default {
       const start = this.activeRequestStartTime;
       return this.formatElapsedSince(start);
     },
+    currentRequestElapsedMs() {
+      const start = this.activeRequestStartTime;
+      if (!start) return 0;
+      return Math.max(0, this.now - start);
+    },
+    nlpTimeout() {
+      return this.preprocess?.nlpTimeout;
+    },
+    isTimeoutExceeded() {
+      return this.currentRequestElapsedMs > this.nlpTimeout;
+    },
     remainingSubmissions() {
       if (!this.isProcessingActive) return [];
       
@@ -162,7 +212,7 @@ export default {
       const remainingIds = new Set(
         Object.entries(this.preprocess.requests)
           .filter(([requestId]) => requestId !== currentRequestId)
-          .map(([_, request]) => request.submissionId || request.documentId)
+          .map(([, request]) => request.submissionId || request.documentId)
           .filter(id => id != null)
       );
       
@@ -202,6 +252,13 @@ export default {
       const timeInSeconds = stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
       return timeInSeconds ? this.formatDurationSeconds(timeInSeconds) : "Calculating...";
     },
+    hasErrors() {
+      const errors = this.preprocess?.errors;
+      return errors && errors.length > 0;
+    },
+    errorsList() {
+      return this.preprocess?.errors || [];
+    },
   },
   watch: {
     isProcessingActive(newVal) {
@@ -227,6 +284,13 @@ export default {
     close() {
       this.$refs.stepper.close();
     },
+    handleSubmit() {
+      if (this.isCompleted) {
+        this.$emit('confirm');
+      } else {
+        this.$emit('cancel');
+      }
+    },
     formatDurationSeconds(totalSeconds) {
       const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
       if (seconds < 60) {
@@ -246,6 +310,11 @@ export default {
       if (!startMs) return "0s";
       const diffSeconds = Math.max(0, Math.floor((this.now - startMs) / 1000));
       return this.formatDurationSeconds(diffSeconds);
+    },
+    formatTimestamp(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString();
     },
     startElapsedTimer() {
       if (this.elapsedTimer) return;
