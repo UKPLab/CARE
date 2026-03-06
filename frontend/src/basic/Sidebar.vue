@@ -1,6 +1,6 @@
 <template>
   <div
-      v-show="isSidebarVisible"
+      v-show="isSidebarVisible && resolvedActiveSlot"
       id="sidebarContainer"
       class="sidebar-wrapper"
       :class="sidebarClasses"
@@ -108,16 +108,13 @@
               </div>
             </keep-alive>
           </template>
-          <div v-if="!resolvedActiveSlot">
-            <p>No sidebar content selected.</p>
-          </div>
         </div>
       </div>
     </div>
     <Teleport to="#topBarNavItems">
-      <li class="nav-item">
+      <li v-if="isShown" class="nav-item">
         <TopBarButton
-            v-show="isActive"
+            :show="isShown"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
             :class="{ 'sidebar-highlight': sidebarIconHighlight }"
@@ -156,6 +153,11 @@ export default {
       type: String,
       required: false,
       default: null,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     buttons: {
       type: Array,
@@ -252,9 +254,6 @@ export default {
     }
   },
   computed: {
-    isActive() {
-      return this.currentStudyStep?.stepType === 1; ;
-    },
     availableSlots() {
       return Object.keys(this.$slots).filter(slot => slot !== 'default');
     },

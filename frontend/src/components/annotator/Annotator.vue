@@ -8,7 +8,7 @@
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="d-flex flex-grow-1 overflow-hidden top-padding">
         <div
-            id="viewerContainer"
+            :id="'viewerContainer-' + documentId"
             ref="viewer"
             class="flex-grow-1 border mh-100 justify-content-center p-3"
             style="overflow-y: scroll;"
@@ -24,6 +24,7 @@
         <BasicSidebar
             ref="basicSidebar"
             v-if="!sidebarDisabled"
+            :isShown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -104,6 +105,7 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import ReadOnlyIndicator from "../common/ReadOnlyIndicator.vue";
 
 export default {
   name: "AnnotatorView",
@@ -114,12 +116,14 @@ export default {
     AnnotationSidebar,
     Loader,
     TopBarButton,
-    BasicSidebar
+    BasicSidebar,
+    ReadOnlyIndicator
   },
   provide() {
     return {
       documentId: computed(() => this.documentId),
-      studyStepId: computed(() => this.studyStepId)
+      studyStepId: computed(() => this.studyStepId),
+      showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
   },
   inject: {
@@ -132,6 +136,11 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    currentStudyStep:{
+      type: Object,
+      required: false,
+      default: null
     },
     acceptStats: {
       type: Boolean,
@@ -149,6 +158,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     review: {
       type: Boolean,
@@ -195,6 +209,12 @@ export default {
   computed: {
     userId() {
       return this.$store.getters["auth/getUserId"];
+    },
+    computedReadOnly() {
+      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+    },
+    showDefaultAllAnnotations(){
+      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
@@ -257,8 +277,10 @@ export default {
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return annotations.filter(annotation =>
+        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
             annotation.studySessionId === this.studySessionId
+        ) : annotations.filter(annotation =>
+            annotation.studySessionId === null && annotation.studyStepId === null
         );
       }
     },
@@ -271,8 +293,10 @@ export default {
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return comments.filter(comment =>
+        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
             comment.studySessionId === this.studySessionId
+        ) : comments.filter(comment =>
+            comment.studySessionId === null && comment.studyStepId === null
         );
       }
     },
@@ -290,7 +314,7 @@ export default {
       }
 
       // NLP Toggle Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.active && this.nlpEnabled : this.nlpEnabled) {
+      if (this.studySessionId && this.studySessionId !== 0 ? this.nlpEnabled : this.nlpEnabled) {
         buttons.push({
           id: 'toggle-nlp',
           icon: 'robot',
@@ -301,7 +325,7 @@ export default {
       }
 
       // Download Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.active : true) {
+      if (this.studySessionId && this.studySessionId !== 0) {
         const canDownload = this.annotations.length + this.comments.length > 0 &&
             !this.downloading &&
             (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
@@ -461,7 +485,8 @@ export default {
       //Todo get current page in a better way
       const container = this.$refs.viewer;
       if (!container) return 1;
-      const pages = container.querySelectorAll('.scrolling-page');
+      const pages = container.querySelectorAll('.scrolling-page' );
+      console.log("pages", pages);
       if (!pages || pages.length === 0) return 1;
       let bestIndex = 0;
       let bestDist = Infinity;
@@ -477,7 +502,7 @@ export default {
       return bestIndex + 1; // pages are 1-based
     },
     isPdfPageLoaded(pageNumber) {
-      const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+      const canvas = document.getElementById('pdf-canvas-' + pageNumber + '-' + this.documentId);
       const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
       const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
       const loaded = (visible && hasDimensions);
@@ -505,7 +530,7 @@ export default {
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['table/annotation/get'](annotationId);
-      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer');
+      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer-' + this.documentId);
       const hasAnchors = Array.isArray(annotation.anchors) && annotation.anchors.length > 0;
       if (hasAnchors) {
         const anchor = annotation.anchors[0];
@@ -520,7 +545,7 @@ export default {
           return;
         }
         // Correct offset since we have a fixed top
-        offset -= 106; // see css class padding-top
+        offset -= 123; // see css class padding-top
         // nb. We only compute the scroll offset once at the start of scrolling.
         // This is important as the highlight may be removed from the document during
         // the scroll due to a page transitioning from rendered <-> un-rendered.
@@ -568,7 +593,7 @@ export default {
         return null;
       }
       const highlight = anchor.highlights[0];
-      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
+      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer' + '-' + this.documentId));
     },
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();

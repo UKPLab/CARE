@@ -260,6 +260,7 @@ module.exports = (sequelize, DataTypes) => {
                 
                 const plainStudyStep = await sequelize.models.study_step.add({
                     studyId: study.id,
+                    stepNumber: i + 1,
                     stepType: workflowStep.stepType,
                     workflowStepId: workflowStep.id,
                     documentId: (stepDocument && stepDocument.documentId) ? stepDocument.documentId : null,
@@ -267,7 +268,7 @@ module.exports = (sequelize, DataTypes) => {
                     allowBackward: workflowStep.allowBackward,
                     studyStepDocument: null,
                     configuration: customConfig
-                }, { transaction: options.transaction, context: studyContext });
+                }, { transaction: options.transaction, context: studyContext, doNotDuplicate: options.doNotDuplicate});
 
                 const studyStep = await sequelize.models.study_step.findByPk(plainStudyStep.id, {
                     transaction: options.transaction

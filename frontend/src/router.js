@@ -92,4 +92,25 @@ const router = VueRouter.createRouter({
     root: "/"
 })
 
+// Navigation guard to check if self-registration is enabled
+router.beforeEach((to, from, next) => {
+    // Check if trying to access register page
+    if (to.name === "register") {
+        // Check if self-registration is enabled
+        const isSelfRegistrationEnabled = window.config && window.config["app.register.enabled"] === "true";
+        if (!isSelfRegistrationEnabled) {
+            // Redirect to login
+            next({
+                name: "login",
+                query: { 
+                    redirectedFrom: to.query.redirectedFrom,
+                    registrationDisabled: "true"
+                }
+            });
+            return;
+        }
+    }
+    next();
+});
+
 export default router;

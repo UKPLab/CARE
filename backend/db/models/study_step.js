@@ -99,7 +99,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object|undefined>}
          */
         static async add(data, options = {}) {
-            if (data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR || data.stepType === StudyStep.stepTypes.STEP_TYPE_MODAL) {
+            if ((data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR || data.stepType === StudyStep.stepTypes.STEP_TYPE_MODAL) && (!options.doNotDuplicate && data.documentId === null ) ) {
                 const study = options.context;
 
                 const expectedDocType = data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR
@@ -210,7 +210,7 @@ module.exports = (sequelize, DataTypes) => {
                     data.documentId = newDocument.id;
 
                 } else {
-                    const document = await sequelize.models.document.getById(data.documentId);
+                    const document = await sequelize.models.document.getById(data.documentId, {transaction: options.transaction});
 
                     // Check if document exists!
                     if (!document) {
@@ -298,6 +298,7 @@ module.exports = (sequelize, DataTypes) => {
 
     StudyStep.init({
             studyId: DataTypes.INTEGER,
+            stepNumber: DataTypes.INTEGER,
             workflowStepId: DataTypes.INTEGER,
             stepType: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,

@@ -24,6 +24,43 @@ module.exports = (sequelize, DataTypes) => {
             });
 
         }
+
+        /**
+         * Duplicate comment votes from original comment to duplicated comment
+         * 
+         * @param {number} originalCommentId - The ID of the original comment
+         * @param {number} duplicatedCommentId - The ID of the duplicated comment
+         * @param {Object} transaction - The database transaction
+         * @returns {Promise<Array>} Array of duplicated comment votes
+         */
+        static async duplicateCommentVotes(originalCommentId, duplicatedCommentId, transaction) {
+            // Fetch all votes for the original comment
+            const originalVotes = await this.findAll({
+                where: {
+                    commentId: originalCommentId,
+                    deleted: false
+                },
+                raw: true,
+                transaction
+            });
+            
+            const duplicatedVotes = [];
+            
+            // Create new votes for the duplicated comment
+            for (const originalVote of originalVotes) {
+                const duplicateVoteData = {
+                    userId: originalVote.userId,
+                    commentId: duplicatedCommentId,
+                    vote: originalVote.vote,
+                    deleted: false
+                };
+                
+                const duplicatedVote = await this.add(duplicateVoteData, {transaction});
+                duplicatedVotes.push(duplicatedVote);
+            }
+            
+            return duplicatedVotes;
+        }
     }
 
     CommentVote.init({

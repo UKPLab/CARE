@@ -49,10 +49,19 @@ class DocumentSocket extends Socket {
             return true;
         }
 
-        // check if the document is used in a study where the user is a participant
         const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
-        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_steps.map(step => step.studyId));
+        const study_ids = study_steps.map(step => step.studyId);
+        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_ids );
+        const studies = await this.models['study'].getAllByKey('id',study_ids);
 
+        // check if the document is used in a study where the user is the owner of the study
+        for (const study of studies) {
+            if (study.userId === this.userId) {
+                return true;
+            }
+        }
+        
+        // check if the document is used in a study where the user is a participant
         for (const session of study_sessions) {
             if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
                 return true;
@@ -543,6 +552,13 @@ class DocumentSocket extends Socket {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
+                
+                // Check if showAllDocumentAnnotations is enabled in study step configuration
+                let showAllDocumentAnnotations = false;
+                if (data.studyStepId) {
+                    const studyStep = await this.models['study_step'].getById(data.studyStepId);
+                    showAllDocumentAnnotations = studyStep?.configuration?.settings?.showAllDocumentAnnotations ?? true;
+                }
 
                 if (study.collab) {
 
@@ -550,51 +566,89 @@ class DocumentSocket extends Socket {
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                     this.emit("study_sessionRefresh", studySessions);
 
-                    // send annotations
-                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
-                        {
-                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                            raw: true
-                        })
-                    ));
-                    this.emit("annotationRefresh", annotations.flat(1));
-
-                    // send comments
-                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
-                        {
-                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
-                            raw: true
-                        })
-                    ));
-                    this.emit("commentRefresh", comments.flat(1));
-
-                    // send comment votes (get votes for all comments)
-                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.flat(1).map(c => c.id));
-                    this.emit("comment_voteRefresh", commentVotes);
-
-                    const tagIds = new Set(annotations.flat(1).map(a => a.tagId));
-                    this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
-
-                } else {
-                    const annotations = await this.models['annotation'].findAll(
-                        {
-                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                    // send annotations - if showAllDocumentAnnotations is true, include document annotations in OR condition
+                    let annotations;
+                   
+                    annotations = await Promise.all(studySessions.map(async s => {
+                        const whereCondition = showAllDocumentAnnotations ? {
+                            [Op.or]: [
+                                {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                            ]
+                        } : {'studySessionId': s.id, 'studyStepId': data.studyStepId};
+                        
+                        return await this.models['annotation'].findAll({
+                            where: whereCondition,
                             raw: true
                         });
+                    }));
+                    annotations = annotations.flat(1);
+                
                     this.emit("annotationRefresh", annotations);
 
-                    const comments = await this.models['comment'].findAll(
-                        {
-                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                    // send comments - if showAllDocumentAnnotations is true, include document comments in OR condition
+                    let comments;
+                    comments = await Promise.all(studySessions.map(async s => {
+                        const whereCondition = showAllDocumentAnnotations ? {
+                            [Op.or]: [
+                                {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                                {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                            ]
+                        } : {'studySessionId': s.id, 'studyStepId': data.studyStepId};
+                        
+                        return await this.models['comment'].findAll({
+                            where: whereCondition,
                             raw: true
                         });
+                    }));
+                    comments = comments.flat(1);
                     this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
-                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id));
+                    const commentIds = Array.isArray(comments) ? comments.map(c => c.id) : [];
+                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', commentIds);
                     this.emit("comment_voteRefresh", commentVotes);
 
-                    const tagIds = new Set(annotations.flat(1).map(a => a.tagId));
+                    const tagIds = new Set(Array.isArray(annotations) ? annotations.map(a => a.tagId) : []);
+                    this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
+
+                } else {
+                    // Non-collab study - check showAllDocumentAnnotations
+                    let annotations;
+                    const annotationWhereCondition = showAllDocumentAnnotations ? {
+                        [Op.or]: [
+                            {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                        ]
+                    } : {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId};
+                    
+                    annotations = await this.models['annotation'].findAll({
+                        where: annotationWhereCondition,
+                        raw: true
+                    });
+
+                    this.emit("annotationRefresh", annotations);
+
+                    let comments;
+                    const commentWhereCondition = showAllDocumentAnnotations ? {
+                        [Op.or]: [
+                            {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            {'documentId': data.documentId, 'studySessionId': null, 'studyStepId': null}
+                        ]
+                    } : {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId};
+                    
+                    comments = await this.models['comment'].findAll({
+                        where: commentWhereCondition,
+                        raw: true
+                    });
+                    this.emit("commentRefresh", comments);
+
+                    // send comment votes (get votes for all comments)
+                    const commentIds = Array.isArray(comments) ? comments.map(c => c.id) : [];
+                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', commentIds);
+                    this.emit("comment_voteRefresh", commentVotes);
+
+                    const tagIds = new Set(Array.isArray(annotations) ? annotations.map(a => a.tagId) : []);
                     this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
 
                 }
@@ -801,13 +855,16 @@ class DocumentSocket extends Socket {
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
-
-                // 3. Only if validation passes, create submission and save documents
+                // 3. Get previous submission for the user and project to link the new submission (if exists)
+                const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+                // 4. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
+                        previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                        projectId: submission.projectId,
                         group: data.group,
                         validationConfigurationId: data.validationConfigurationId,
                     },
@@ -842,6 +899,7 @@ class DocumentSocket extends Socket {
                 await transaction.rollback();
                 downloadedErrors.push({
                     userId: submission.userId,
+                    userExtId: submission.userExtId,
                     firstName: submission.firstName,
                     lastName: submission.lastName,
                     message: err.message,
@@ -874,7 +932,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId} = data;
+        const {files, userId, group, validationConfigurationId, projectId} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -882,12 +940,14 @@ class DocumentSocket extends Socket {
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
             }
+            const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
 
             const submission = await this.models["submission"].add({
                 userId,
                 group,
                 validationConfigurationId,
-                createdByUserId: this.userId
+                createdByUserId: this.userId,
+                previousSubmissionId: previousSubmission ? previousSubmission.id : null,
             }, {transaction});
             for (const file of files) {
                 await this.addDocument(

@@ -21,8 +21,9 @@
         <TemplateEditor v-else ref="templateEditor" @update:data="$emit('update:data', $event)"/>
       </div>
       <BasicSidebar
-          v-if="!sidebarDisabled && defaultActiveSidebar && studySessionId === null"
+          v-if="!sidebarDisabled"
           ref="sidebar"
+          :isShown="isShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
@@ -79,6 +80,7 @@ import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
+import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
 
 export default {
   name: "EditorView",
@@ -92,6 +94,7 @@ export default {
     Editor,
     TemplateEditor,
     TemplateConfigurator,
+    ReadOnlyIndicator,
   },
   provide() {
     return {
@@ -112,6 +115,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
   },
   props: {
     documentId: {
@@ -128,6 +136,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     studyStepId: {
       type: Number,

@@ -20,6 +20,14 @@
 
         <BasicButton
             class="btn-secondary btn-sm"
+            text="Publish Assessment"
+            title="Publish Assessment"
+            icon="clipboard-data"
+            @click="$refs.publishAssessmentModal.open()"
+        />
+
+        <BasicButton
+            class="btn-secondary btn-sm"
             text="Manual Import"
             title="Manual Import"
             icon="file-earmark-arrow-up"
@@ -65,6 +73,7 @@
   <ConfirmModal ref="deleteConf"/>
   <ImportModal ref="importModal"/>
   <PublishModal ref="publishModal"/>
+  <PublishAssessmentModal ref="publishAssessmentModal"/>
   <AssignModal ref="assignModal"/>
   <ApplySkillModal
       ref="applySkillModal"
@@ -78,6 +87,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./submission/UploadModal.vue";
 import ImportModal from "./submission/ImportModal.vue";
 import PublishModal from "./submission/PublishModal.vue";
+import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 import AssignModal from "./submission/AssignModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
@@ -104,6 +114,7 @@ export default {
     ImportModal,
     ConfirmModal,
     PublishModal,
+    PublishAssessmentModal,
     AssignModal,
     Card,
     BasicTable,
@@ -119,6 +130,7 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true,
       },
       tableColumns: [
         {name: "ID", key: "id"},
@@ -178,17 +190,19 @@ export default {
   },
   computed: {
     submissions() {
-      return this.$store.getters["table/submission/getAll"];
+      return this.$store.getters["table/submission/getAll"].filter((s) => s.parentSubmissionId === null);
     },
     isProcessingActive() {
       const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
       const preprocess = bgTask.preprocess || {};
-      return (
-          preprocess &&
+      // Show "View Processing" both when requests are pending OR when completed but not yet confirmed
+      const hasActiveRequests = (
           preprocess.requests &&
           typeof preprocess.requests === 'object' &&
           Object.keys(preprocess.requests).length > 0
       );
+      const isCompletedAwaitingConfirmation = preprocess.completed === true;
+      return hasActiveRequests || isCompletedAwaitingConfirmation;
     },
     submissionTable() {
       return this.submissions.map((s) => {
@@ -206,9 +220,24 @@ export default {
     },
   },
   mounted() {
+    // Get initial state
     this.$socket.emit("serviceCommand", {
       service: "BackgroundTaskService",
       command: "getBackgroundTask",
+      data: {}
+    });
+    // Subscribe to real-time updates
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "subscribeBackgroundTaskUpdates",
+      data: {}
+    });
+  },
+  unmounted() {
+    // Unsubscribe from updates
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "unsubscribeBackgroundTaskUpdates",
       data: {}
     });
   },

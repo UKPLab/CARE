@@ -314,9 +314,6 @@ export default {
     },
     started() {
       if (this.study && this.study.start !== null) {
-        if (!(this.study.start instanceof Date)) {
-          throw new Error("Invalid type for study start date. Expected a Date object.");
-        }
         return (new Date(this.study.start) < new Date());
       }
       return true;
