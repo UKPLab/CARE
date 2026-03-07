@@ -9,7 +9,7 @@ export default {
         app.mixin({
             data() {
                 return {
-                    subscriptionId: []
+                    subscriptionIds: []
                 }
             },
             mounted() {
@@ -21,7 +21,7 @@ export default {
                             }
                             this.$socket.emit("subscribeAppData", table, (result) => {
                                 if (result.success) {
-                                    this.$data.subscriptionId.push(result.data);
+                                    this.$data.subscriptionIds.push(result.data);
                                 }
                             });
                         });
@@ -29,15 +29,15 @@ export default {
                 }
             },
             unmounted() {
-                if (this.$data.subscriptionId && this.$data.subscriptionId.length > 0) {
-                    this.$data.subscriptionId.forEach((id) => {
+                if (this.$data.subscriptionIds && this.$data.subscriptionIds.length > 0) {
+                    this.$data.subscriptionIds.forEach((id) => {
                         this.$socket.emit("unsubscribeAppData", id, (result) => {
                             if (!result?.success) {
                                 console.warn("unsubscribeAppData failed", { id, result });
                             }
                         });
                     });
-                    this.$data.subscriptionId = [];
+                    this.$data.subscriptionIds = [];
                 }
             }
         })
