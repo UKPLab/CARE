@@ -171,21 +171,29 @@ module.exports = class Server {
      * Send a mail
      * @param to email address
      * @param subject of the mail
-     * @param text of the mail
+     * @param body body of the mail (plain text or HTML depending on options.isHtml)
+     * @param {Object} [options] options
+     * @param {boolean} [options.isHtml] if true, body is sent as HTML (Content-Type text/html); otherwise as plain text
      * @returns {Promise<void>}
      */
-    async sendMail(to, subject, text) {
+    async sendMail(to, subject, body, options = {}) {
         if (!this.mailer) {
             this.logger.warn(`Email service not configured. Would send email to ${to} with subject: ${subject}`);
             return;
         }
-        
-        this.mailer.sendMail({
+
+        const mailOptions = {
             from: await this.db.models['setting'].get("system.mailService.senderAddress"),
             to: to,
-            subject: subject,
-            text: text
-        }, (err, info) => {
+            subject: subject
+        };
+        if (options.isHtml === true) {
+            mailOptions.html = body;
+        } else {
+            mailOptions.text = body;
+        }
+
+        this.mailer.sendMail(mailOptions, (err, info) => {
             if (err) {
                 this.logger.error(err);
             } else {

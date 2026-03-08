@@ -47,6 +47,7 @@ class AssignmentSocket extends Socket {
                             stepDocumentId = refStudyStep.documentId;
                         }
                     }
+                }
 
                 // Determine assignment type and gather context for template replacement
                 let assignmentType, contextData;
@@ -103,17 +104,14 @@ class AssignmentSocket extends Socket {
             resumable: true,
             stepDocuments: stepDocuments
         }
+        // Check if email notifications are enabled
+        const enableEmailNotification = data.enableEmailNotification || false;
+
         const study = await this.models["study"].add(new_study, {
             transaction: options.transaction, 
             context: new_study, 
             doNotDuplicate: data.assignmentType === 'study_session'
         });
-
-        // Check if email notifications are enabled
-        const enableEmailNotification = data.enableEmailNotification || false;
-
-        const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
-
 
         await this.addReviewer({
             studyId: study.id, 
@@ -643,7 +641,8 @@ The CARE Team`,
         await this.server.sendMail(
             user.email,
             emailContent.subject,
-            emailContent.body
+            emailContent.body,
+            { isHtml: emailContent.isHtml }
         );
     }
 

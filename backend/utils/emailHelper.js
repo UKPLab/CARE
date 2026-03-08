@@ -20,7 +20,7 @@ const { resolveTemplate } = require("./templateResolver");
  * @param {string} [context.assignmentName] - Assignment name
  * @param {Object} models - Database models
  * @param {Object} logger - Logger instance
- * @returns {Promise<{subject: string, body: string}>} Email subject and body
+ * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML
  */
 async function getEmailContent(
   settingKey,
@@ -35,21 +35,21 @@ async function getEmailContent(
 
     // If no template configured or empty, use fallback
     if (!templateIdStr || templateIdStr === "" || templateIdStr === "0") {
-      return { subject: fallbackSubject, body: fallbackBody };
+      return { subject: fallbackSubject, body: fallbackBody, isHtml: false };
     }
 
     const templateId = parseInt(templateIdStr);
     if (isNaN(templateId) || templateId <= 0) {
-      return { subject: fallbackSubject, body: fallbackBody };
+      return { subject: fallbackSubject, body: fallbackBody, isHtml: false };
     }
 
     // Resolve template
     const resolvedHtml = await resolveTemplate(templateId, context, models);
-    return { subject: fallbackSubject, body: resolvedHtml };
+    return { subject: fallbackSubject, body: resolvedHtml, isHtml: true };
   } catch (error) {
     logger.error(`Failed to resolve template for ${settingKey}:`, error);
     // Fallback to hardcoded text on error
-    return { subject: fallbackSubject, body: fallbackBody };
+    return { subject: fallbackSubject, body: fallbackBody, isHtml: false };
   }
 }
 

@@ -86,7 +86,7 @@ module.exports = function (server) {
      * @param {Object} context - Context object for template resolution
      * @param {number} context.userId - User ID for placeholder resolution
      * @param {string} context.link - Link for placeholder resolution
-     * @returns {Promise<{subject: string, body: string}>} Email subject and body
+     * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML
      */
     async function getEmailContent(settingKey, fallbackSubject, fallbackBody, context) {
         try {
@@ -96,7 +96,8 @@ module.exports = function (server) {
             if (!templateIdStr || templateIdStr === "" || templateIdStr === "0") {
                 return {
                     subject: fallbackSubject,
-                    body: fallbackBody
+                    body: fallbackBody,
+                    isHtml: false
                 };
             }
             
@@ -104,7 +105,8 @@ module.exports = function (server) {
             if (isNaN(templateId) || templateId <= 0) {
                 return {
                     subject: fallbackSubject,
-                    body: fallbackBody
+                    body: fallbackBody,
+                    isHtml: false
                 };
             }
             
@@ -123,14 +125,16 @@ module.exports = function (server) {
             
             return {
                 subject: fallbackSubject, // Keep same subject for now (could be from template later)
-                body: resolvedHtml
+                body: resolvedHtml,
+                isHtml: true
             };
         } catch (error) {
             server.logger.error(`Failed to resolve template for ${settingKey}:`, error);
             // Fallback to hardcoded text on error
             return {
                 subject: fallbackSubject,
-                body: fallbackBody
+                body: fallbackBody,
+                isHtml: false
             };
         }
     }
@@ -319,7 +323,8 @@ The CARE Team`,
                 await server.sendMail(
                     data.email,
                     emailContent.subject,
-                    emailContent.body
+                    emailContent.body,
+                    { isHtml: emailContent.isHtml }
                 );
                 await transaction.commit();
                 res.status(201).json({message: "User was successfully created. Please check your email to verify your account.", emailVerificationRequired: true}); // TODO: Adjust link as needed   
@@ -395,7 +400,7 @@ The CARE Team`,
                 }
             );
             
-            await server.sendMail(user.email, emailContent.subject, emailContent.body);
+            await server.sendMail(user.email, emailContent.subject, emailContent.body, { isHtml: emailContent.isHtml });
             return res.status(200).json({message: "A password reset link has been sent."});
         } catch (err) {
             server.logger.error("Failed to find user:", err);
@@ -608,7 +613,8 @@ The CARE Team`,
             await server.sendMail(
                 email,
                 emailContent.subject,
-                emailContent.body
+                emailContent.body,
+                { isHtml: emailContent.isHtml }
             );
             
             return res.status(200).json({message: "Verification email has been sent."});

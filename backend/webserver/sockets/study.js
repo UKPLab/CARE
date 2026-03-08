@@ -126,7 +126,7 @@ The CARE Team`,
                         this.logger
                     );
 
-                    await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
+                    await this.server.sendMail(user.email, emailContent.subject, emailContent.body, { isHtml: emailContent.isHtml });
                 } catch (error) {
                     this.logger.error(`Failed to send study closed email to user ${sessionOwnerId}:`, error);
                 }

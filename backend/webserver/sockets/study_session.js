@@ -120,7 +120,7 @@ The CARE Team`,
             this.models,
             this.logger
         );
-        await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
+        await this.server.sendMail(user.email, emailContent.subject, emailContent.body, { isHtml: emailContent.isHtml });
     }
 
     /**
@@ -176,7 +176,7 @@ The CARE Team`,
         );
 
         // Send email
-        await this.server.sendMail(user.email, emailContent.subject, emailContent.body);
+        await this.server.sendMail(user.email, emailContent.subject, emailContent.body, { isHtml: emailContent.isHtml });
     }
 
     /**
