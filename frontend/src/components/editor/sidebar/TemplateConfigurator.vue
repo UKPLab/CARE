@@ -27,7 +27,7 @@
                   </div>
                   <div class="d-flex flex-column">
                     <div class="d-flex align-items-center">
-                      <h5 class="mb-0 me-1">{{ placeholder.label }}</h5>
+                      <h5 class="mb-0 me-1">{{ placeholder.label }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
                       <FormHelp
                         v-if="placeholder.description"
                         :help="getPlaceholderHelp(placeholder)"
@@ -142,6 +142,7 @@
               label: ph.placeholderLabel,
               description: ph.placeholderDescription || ph.placeholderLabel,
               icon: this.getPlaceholderIcon(ph.placeholderType),
+              required: ph.required === true,
             }));
             
             if (this.templateType && this.placeholderConfigs[this.templateType]) {
