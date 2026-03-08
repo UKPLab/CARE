@@ -209,13 +209,23 @@ async function resolveTemplate(templateId, context, models, options = {}) {
         resolvedText = resolvedText.replace(regex, value || "");
     }
     
-    // Convert to HTML
-    const html = resolvedText
-        .replace(/\n/g, '<br>')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/&lt;br&gt;/g, '<br>'); // Restore <br> tags
+    // Make URLs clickable: split by URL pattern, escape non-URL parts, wrap URLs in <a>
+    const urlPattern = /(https?:\/\/\S+)/g;
+    const escapeForHtml = (s) =>
+        s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const escapeForAttr = (s) =>
+        s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const parts = resolvedText.split(urlPattern);
+    let htmlParts = [];
+    for (let i = 0; i < parts.length; i++) {
+        if (i % 2 === 0) {
+            htmlParts.push(parts[i].replace(/\n/g, '<br>').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&lt;br&gt;/g, '<br>'));
+        } else {
+            const url = parts[i];
+            htmlParts.push(`<a href="${escapeForAttr(url)}">${escapeForHtml(url)}</a>`);
+        }
+    }
+    const html = htmlParts.join('');
     
     return html;
 }
@@ -304,7 +314,31 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
     return resolvedDelta;
 }
 
+/**
+ * Return placeholder keys that are required for the given template type but missing in content.
+ *
+ * @param {Object} content - Quill Delta object with ops array
+ * @param {number} templateType - Template type (e.g. 1, 2, 3, 6)
+ * @param {Object} models - Database models
+ * @param {Object} [options]
+ * @returns {Promise<string[]>} Array of missing required placeholder keys (e.g. ['link'])
+ */
+async function getMissingRequiredPlaceholders(content, templateType, models, options = {}) {
+    const rows = await models["template_placeholder_mapping"].getAllByKey("templateType", templateType, options);
+    const requiredKeys = rows.filter((r) => r.required === true).map((r) => r.placeholderKey);
+    if (requiredKeys.length === 0) return [];
+
+    const text = extractTextFromDelta(content && content.ops ? { ops: content.ops } : content);
+    const missing = [];
+    for (const key of requiredKeys) {
+        const token = `~${key}~`;
+        if (!text.includes(token)) missing.push(key);
+    }
+    return missing;
+}
+
 module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
+    getMissingRequiredPlaceholders,
 };

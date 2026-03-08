@@ -3,7 +3,7 @@ const Socket = require("../Socket");
 const Delta = require("quill-delta");
 const {Op} = require("sequelize");
 const {dbToDelta} = require("editor-delta-conversion");
-const {resolveTemplate, resolveTemplateToDelta} = require("../../utils/templateResolver");
+const {resolveTemplate, resolveTemplateToDelta, getMissingRequiredPlaceholders} = require("../../utils/templateResolver");
 
 /**
  * Handle templates through websocket
@@ -510,7 +510,33 @@ class TemplateSocket extends Socket {
       ...options,
     });
 
-    if (edits.length === 0) return;
+    if (edits.length === 0) {
+      if ([1, 2, 3, 6].includes(template.type)) {
+        const Tlc = this.models["template_language_content"];
+        const langRow = await Tlc.findOne({
+          where: { templateId, language, deleted: false },
+          raw: true,
+          ...options,
+        });
+        let baseContent = new Delta();
+        if (langRow && langRow.content && langRow.content.ops) {
+          baseContent = new Delta(langRow.content.ops);
+        }
+        const missing = await getMissingRequiredPlaceholders(
+          { ops: baseContent.ops },
+          template.type,
+          this.models,
+          options
+        );
+        if (missing.length > 0) {
+          const tokens = missing.map((k) => `~${k}~`).join(", ");
+          throw new Error(
+            `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before saving.`
+          );
+        }
+      }
+      return;
+    }
 
     const Tlc = this.models["template_language_content"];
     const langRow = await Tlc.findOne({
@@ -525,6 +551,22 @@ class TemplateSocket extends Socket {
     }
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
+
+    // Email templates (types 1, 2, 3, 6) must include all required placeholders
+    if ([1, 2, 3, 6].includes(template.type)) {
+      const missing = await getMissingRequiredPlaceholders(
+        { ops: mergedDelta.ops },
+        template.type,
+        this.models,
+        options
+      );
+      if (missing.length > 0) {
+        const tokens = missing.map((k) => `~${k}~`).join(", ");
+        throw new Error(
+          `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before saving.`
+        );
+      }
+    }
 
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {
