@@ -283,11 +283,29 @@
       // This triggers merging of draft edits into stable content
       this.$socket.emit("templateClose", { templateId: this.templateId, language: this.selectedLanguage }, (res) => {
         if (!res.success) {
-          console.error("Template close error:", res.message);
+          this.eventBus.emit("toast", {
+            title: "Template save failed",
+            message: res.message || "",
+            variant: "danger"
+          });
         }
       });
     },
     methods: {
+      /**
+       * Request close/save of the current language. Used by the route guard so navigation
+       * can be blocked when save fails (e.g. missing required placeholders).
+       * @returns {Promise<{ success: boolean, message?: string }>}
+       */
+      requestClose() {
+        return new Promise((resolve) => {
+          this.$socket.emit(
+            "templateClose",
+            { templateId: this.templateId, language: this.selectedLanguage },
+            (res) => resolve(res || { success: false })
+          );
+        });
+      },
       fetchLanguagesAndLoadContent() {
         this.$socket.emit("templateGetLanguages", { templateId: this.templateId }, (res) => {
           
@@ -493,43 +511,57 @@
       },
 
       addLanguageAndSwitch(newLang, copyContent) {
-        // Save current language first
+        // Save current language first; only add language if save succeeded
         this.$socket.emit("templateClose",
           { templateId: this.templateId, language: this.selectedLanguage },
-          () => {}
-        );
-
-        // Prepare content to copy if requested
-        const content = (copyContent && this.editor) ? this.editor.getEditor().getContents() : undefined;
-
-        this.$socket.emit("templateAddLanguageContent",
-          {
-            templateId: this.templateId,
-            language: newLang,
-            content: (content && content.ops) ? { ops: content.ops } : undefined
-          },
-          (res) => {
-            if (res.success) {
-              this.availableLanguages = [...new Set([...this.availableLanguages, newLang])].sort();
-              this.selectedLanguage = newLang;
-              this.loadContentForLanguage(newLang);
-              this.$nextTick(() => this.updateLanguageSelectorLabel());
-            } else {
+          (closeRes) => {
+            if (!closeRes.success) {
               this.eventBus.emit("toast", {
-                title: "Failed to add language",
-                message: res.message || "",
+                title: "Template save failed",
+                message: closeRes.message || "",
                 variant: "danger"
               });
+              return;
             }
+            const content = (copyContent && this.editor) ? this.editor.getEditor().getContents() : undefined;
+            this.$socket.emit("templateAddLanguageContent",
+              {
+                templateId: this.templateId,
+                language: newLang,
+                content: (content && content.ops) ? { ops: content.ops } : undefined
+              },
+              (res) => {
+                if (res.success) {
+                  this.availableLanguages = [...new Set([...this.availableLanguages, newLang])].sort();
+                  this.selectedLanguage = newLang;
+                  this.loadContentForLanguage(newLang);
+                  this.$nextTick(() => this.updateLanguageSelectorLabel());
+                } else {
+                  this.eventBus.emit("toast", {
+                    title: "Failed to add language",
+                    message: res.message || "",
+                    variant: "danger"
+                  });
+                }
+              }
+            );
           }
         );
       },
 
       saveCurrentAndSwitchTo(newLang) {
-        // Save current language, then switch
+        // Save current language, then switch only if save succeeded
         this.$socket.emit("templateClose",
           { templateId: this.templateId, language: this.selectedLanguage },
-          () => {
+          (res) => {
+            if (!res.success) {
+              this.eventBus.emit("toast", {
+                title: "Template save failed",
+                message: res.message || "",
+                variant: "danger"
+              });
+              return;
+            }
             this.selectedLanguage = newLang;
             this.loadContentForLanguage(newLang);
             this.$nextTick(() => this.updateLanguageSelectorLabel());
