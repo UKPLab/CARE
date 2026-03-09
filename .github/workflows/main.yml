@@ -43,6 +43,32 @@ jobs:
           name: documentation
           path: docs.tar.gz
 
+  deploy_docs:
+    runs-on: ubuntu-latest
+    needs: build
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment: github-pages
+    steps:
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+      - name: Extract documentation
+        run: tar -xzvf docs.tar.gz
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/html
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   sync_to_gitlab:
     runs-on: ubuntu-latest
     needs: build
