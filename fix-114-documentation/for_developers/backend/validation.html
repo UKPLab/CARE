@@ -1,0 +1,278 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validation &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Moodle API" href="rpcs/moodle.html" />
+    <link rel="prev" title="Tests" href="testing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Validation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-procedure">General Procedure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#key-components">Key Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#validator-class">Validator Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage-example">Usage Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling-patterns">Error Handling Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Validation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/validation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="validation">
+<h1>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h1>
+<p>CARE enables users to validate files, both uploaded directly and imported from
+third-party platforms, before they are stored in the database. This validation
+process prevents broken or incomplete submissions and enforces
+project-specific format requirements (e.g., “PDF + LaTeX ZIP” for exposés).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <em>submission</em> refers to the set of one or more files that are uploaded or imported together
+for a specific assignment and it can only be accepted if a validation schema is defined
+and the validation check succeeds.</p>
+</div>
+<p>This documentation describes the key components of the validation mechanism
+and its practical use cases.</p>
+<section id="general-procedure">
+<h2>General Procedure<a class="headerlink" href="#general-procedure" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>The user selects a validation schema on the frontend.</p></li>
+<li><p>Files are uploaded or fetched from Moodle.</p></li>
+<li><p>On the backend, <code class="docutils literal notranslate"><span class="pre">validator.js</span></code> loads the configuration and validates files
+according to the selected schema.</p>
+<ul class="simple">
+<li><p><strong>On success</strong>: Files are saved and linked to a submission.</p></li>
+<li><p><strong>On failure</strong>: An error message is displayed to the user on the frontend.</p></li>
+</ul>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Validation schemas can be uploaded by an admin via the Configuration Dashboard.</p>
+</div>
+</section>
+<section id="key-components">
+<h2>Key Components<a class="headerlink" href="#key-components" title="Link to this heading"></a></h2>
+<p>The validation flow consists of three key components:</p>
+<ul class="simple">
+<li><p><strong>Validation Schema</strong>: A JSON schema stored in the Configuration table that defines validation rules.
+For details on creating and configuring validation schemas, see <a class="reference internal" href="../../for_researchers/validation_schemas.html"><span class="doc">Validation Schemas</span></a>.</p></li>
+<li><p><strong>Validator</strong>: A utility class implemented in <code class="docutils literal notranslate"><span class="pre">backend/utils/validator.js</span></code>. Handles file download and validation logic.</p></li>
+<li><p><strong>Frontend</strong>: Users select a validation schema via the validator selector
+(see the <code class="docutils literal notranslate"><span class="pre">ValidatorSelector</span></code> component used in the dashboard submission flow).</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Default validation schemas are stored in the database via migrations.
+Example: <code class="docutils literal notranslate"><span class="pre">backend/db/migrations/20250919125851-basic-configuration-expose_validation.json</span></code>.</p>
+</div>
+</section>
+<section id="validator-class">
+<h2>Validator Class<a class="headerlink" href="#validator-class" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Validator</span></code> class provides methods for validating submission files against
+validation schemas. It handles file downloads from Moodle, file categorization,
+and validation logic.</p>
+<p><strong>Constructor</strong></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">Validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../../utils/validator.js&quot;</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Validator</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span><span class="w"> </span><span class="nx">models</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Key Methods</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">downloadFilesToTemp(files,</span> <span class="pre">options)</span></code>: Downloads files from Moodle to temporary location</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">validateSubmissionFiles(files,</span> <span class="pre">configId)</span></code>: Validates files against a schema</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">categorizeFiles(files)</span></code>: Categorizes files by type (PDFs, ZIPs, others)</p></li>
+</ul>
+</section>
+<section id="usage-example">
+<h2>Usage Example<a class="headerlink" href="#usage-example" title="Link to this heading"></a></h2>
+<p>This example shows how the validator is used in practice as part of
+the submission import flow (e.g. in <code class="docutils literal notranslate"><span class="pre">DocumentSocket</span></code>) .</p>
+<p><strong>Goal:</strong> Download submissions (optionally from Moodle), validate them against a
+validation schema, and either create the submission or abort with an error.</p>
+<p><strong>Steps:</strong></p>
+<ol class="arabic simple">
+<li><p>Instantiate the validator with <code class="docutils literal notranslate"><span class="pre">server</span></code> and <code class="docutils literal notranslate"><span class="pre">models</span></code>.</p></li>
+<li><p>(Optional) Download files to a temporary location (e.g. from Moodle).</p></li>
+<li><p>Validate the temporary files using <code class="docutils literal notranslate"><span class="pre">validateSubmissionFiles</span></code>.</p></li>
+<li><p>On success, create the submission and related documents inside a transaction.</p></li>
+<li><p>On failure, abort the transaction and report the error to the user.</p></li>
+</ol>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">//  1) Instantiate the validator.</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">Validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../../utils/validator.js&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// path shown is for reference only</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Validator</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span><span class="w"> </span><span class="nx">models</span><span class="p">);</span>
+
+<span class="k">async</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">handleSubmission</span><span class="p">(</span><span class="nx">submissionFiles</span><span class="p">,</span><span class="w"> </span><span class="nx">moodleOptions</span><span class="p">,</span><span class="w"> </span><span class="nx">configId</span><span class="p">,</span><span class="w"> </span><span class="nx">transaction</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 2) (Optional) Download submissions from Moodle</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">tempFiles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">submissionFiles</span>
+<span class="w">        </span><span class="o">?</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">validator</span><span class="p">.</span><span class="nx">downloadFilesToTemp</span><span class="p">(</span><span class="nx">submissionFiles</span><span class="p">,</span><span class="w"> </span><span class="nx">moodleOptions</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="nx">files</span><span class="p">;</span><span class="w"> </span><span class="c1">// use already-uploaded files</span>
+
+<span class="w">    </span><span class="c1">// 3) Validate files against the configured validation schema</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">validator</span><span class="p">.</span><span class="nx">validateSubmissionFiles</span><span class="p">(</span><span class="nx">tempFiles</span><span class="p">,</span><span class="w"> </span><span class="nx">configId</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// 5) Abort on failure</span>
+<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// 4) Proceed with creating the submission</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling-patterns">
+<h2>Error Handling Patterns<a class="headerlink" href="#error-handling-patterns" title="Link to this heading"></a></h2>
+<p><strong>Best practices:</strong></p>
+<ul class="simple">
+<li><p>Always check <code class="docutils literal notranslate"><span class="pre">result.success</span></code> and display <code class="docutils literal notranslate"><span class="pre">result.message</span></code> to the user.</p></li>
+<li><p>In batch imports, collect errors per submission while processing the rest.</p></li>
+<li><p>Wrap validation and database operations in a transaction and roll back on failure.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The validator does not exhaustively check all errors.
+It stops at the first error encountered and reports it.</p>
+</div>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/utils/validator.js</span></code> (implementation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/document.js</span></code> (integration)</p></li>
+<li><p><a class="reference internal" href="../../for_researchers/validation_schemas.html"><span class="doc">Validation Schemas</span></a> (creating and configuring validation schemas)</p></li>
+<li><p>Frontend validator selector (dashboard submission flow)</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="testing.html" class="btn btn-neutral float-left" title="Tests" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="rpcs/moodle.html" class="btn btn-neutral float-right" title="Moodle API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

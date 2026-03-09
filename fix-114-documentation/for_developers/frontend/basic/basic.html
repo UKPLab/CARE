@@ -1,0 +1,708 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basic &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Dashboard" href="dashboard.html" />
+    <link rel="prev" title="Frontend Development" href="../frontend.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Basic</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#code-structure-overview">Code Structure Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="download.html">Download</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="form.html">Form</a></li>
+<li class="toctree-l4"><a class="reference internal" href="icon.html">Icon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modal.html">Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="navigation.html">Navigation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="table.html">Table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="service.html">NLPService</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#button">Button</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#form">Form</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#icon">Icon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading">Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#modal">Modal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#table">Table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#timer">Timer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#toast">Toast</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../components/components.html">Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+      <li class="breadcrumb-item active">Basic</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/basic/basic.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="basic">
+<h1>Basic<a class="headerlink" href="#basic" title="Link to this heading"></a></h1>
+<p>CARE comes with a range of easy-to-use and function rich base components that you can find under
+<code class="docutils literal notranslate"><span class="pre">frontend/src/basic</span></code>. Using these components ensures a consistent design throughout the application
+and makes your live as a developer much easier.</p>
+<p>In this brief chapter we outline the toolbox of basic components in a high-level fashion. For the details
+of each base component, please refer to the documentation within each of them.</p>
+<section id="code-structure-overview">
+<h2>Code Structure Overview<a class="headerlink" href="#code-structure-overview" title="Link to this heading"></a></h2>
+<p>Below are the <strong>folders</strong> you’ll find first under <code class="docutils literal notranslate"><span class="pre">frontend/src/basic</span></code>.
+Each entry links to its detailed documentation. Further down on this page, you’ll find the <strong>single-file base components</strong>.
+This structure mirrors the actual code layout.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor.html">Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="form.html">Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="icon.html">Icon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modal.html">Modal</a></li>
+<li class="toctree-l1"><a class="reference internal" href="navigation.html">Navigation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="table.html">Table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="service.html">NLPService</a></li>
+</ul>
+</div>
+</section>
+<hr class="docutils" />
+<section id="button">
+<h2>Button<a class="headerlink" href="#button" title="Link to this heading"></a></h2>
+<p>The button component provides a consistent wrapper around the native <code class="docutils literal notranslate"><span class="pre">&lt;button&gt;</span></code> element with support for
+labels, optional icons (see <a class="reference external" href="https://icons.getbootstrap.com">Bootstrap Icons</a>), and integrated statistics events (see <a class="reference internal" href="../stats.html"><span class="doc">User Statistics</span></a> ). Use it in modals, forms, or dashboards to keep actions
+consistent across CARE.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicButton</span>
+    <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn btn-primary&quot;</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Confirm&quot;</span>
+    <span class="na">icon</span><span class="o">=</span><span class="s">&quot;check2&quot;</span>
+    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;submit&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicButton</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Button.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ButtonExample&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">BasicButton</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">submit</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;confirmed&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">Button properties</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>title</p></td>
+<td><p>Button tooltip and fallback label</p></td>
+<td><p>None</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>text</p></td>
+<td><p>Visible button label (if not set, <code class="docutils literal notranslate"><span class="pre">title</span></code> is used)</p></td>
+<td><p>None</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-even"><td><p>icon</p></td>
+<td><p>Optional icon name (see <a class="reference internal" href="icon.html"><span class="doc">Icon</span></a>)</p></td>
+<td><p>None</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>props</p></td>
+<td><p>Extra payload for statistics events</p></td>
+<td><p>None</p></td>
+<td><p>Object</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="form">
+<span id="form-section"></span><h2>Form<a class="headerlink" href="#form" title="Link to this heading"></a></h2>
+<p>Renders a dynamic form from a <strong>fields</strong> description and two-way binds data via <code class="docutils literal notranslate"><span class="pre">v-model</span></code>.
+Includes per-field validation, default values, and specialized inputs (switch, slider, select, checkbox, editor/html, textarea, table, choice, password, file, default).</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicForm</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;form&quot;</span>
+  <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
+  <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fields&quot;</span>
+  <span class="err">@</span><span class="na">update:config-status</span><span class="o">=</span><span class="s">&quot;handleConfigStatusChange&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicForm</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/Form.vue&quot;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">BasicForm</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="nx">fields</span><span class="o">:</span><span class="w"> </span><span class="p">[]</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">  </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">handleConfigStatusChange</span><span class="p">(</span><span class="nx">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;config:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="p">);</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">save</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">form</span><span class="p">.</span><span class="nx">validate</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="cm">/* submit */</span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id5">
+<caption><span class="caption-text">Form properties</span><a class="headerlink" href="#id5" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">modelValue</span></code></p></td>
+<td><p>Two-way bound data object</p></td>
+<td><p>None</p></td>
+<td><p>Object</p></td>
+<td><p>True</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fields</span></code></p></td>
+<td><p>Array of field descriptors (type, key, defaults, etc.)</p></td>
+<td><p>None</p></td>
+<td><p>Object/Array</p></td>
+<td><p>True</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id6">
+<caption><span class="caption-text">Form events &amp; methods</span><a class="headerlink" href="#id6" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;update:modelValue</span></code></p></td>
+<td><p>event</p></td>
+<td><p>Emits when internal data changes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;update:config-status</span></code></p></td>
+<td><p>event</p></td>
+<td><p>Emits config state (e.g., <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">hasIncompleteConfig,</span> <span class="pre">incompleteSteps</span> <span class="pre">}</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">validate()</span></code></p></td>
+<td><p>method (via <code class="docutils literal notranslate"><span class="pre">ref</span></code>)</p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">true</span></code> if all visible fields validate</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Supported field types:</strong> <code class="docutils literal notranslate"><span class="pre">switch</span></code>, <code class="docutils literal notranslate"><span class="pre">slider</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime</span></code>, <code class="docutils literal notranslate"><span class="pre">select</span></code>, <code class="docutils literal notranslate"><span class="pre">checkbox</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span></code>/<code class="docutils literal notranslate"><span class="pre">html</span></code>, <code class="docutils literal notranslate"><span class="pre">textarea</span></code>, <code class="docutils literal notranslate"><span class="pre">table</span></code>, <code class="docutils literal notranslate"><span class="pre">choice</span></code>, <code class="docutils literal notranslate"><span class="pre">password</span></code>, <code class="docutils literal notranslate"><span class="pre">file</span></code>, and a <em>default</em> HTML input fallback.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The form auto-applies <code class="docutils literal notranslate"><span class="pre">default</span></code> values from <code class="docutils literal notranslate"><span class="pre">fields</span></code> and preserves <code class="docutils literal notranslate"><span class="pre">id</span></code> if present.
+For detailed field options and type-specific properties, see the full <a class="reference internal" href="form.html"><span class="doc">Form</span></a>.</p>
+</div>
+</section>
+<section id="icon">
+<h2>Icon<a class="headerlink" href="#icon" title="Link to this heading"></a></h2>
+<p>All icons are based on <a class="reference external" href="https://icons.getbootstrap.com/">Bootstrap icons</a>.</p>
+<p>The icons are included as SVGs through the Icon.vue component. Simply add the component to your
+template to load the respective icon. During actual loading of the icon, a loading symbol shows to ensure
+proper spacing and usability.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicIcon</span> <span class="na">iconName</span><span class="o">=</span><span class="s">&quot;&lt;bootstrap_icon_name&gt;&quot;</span> <span class="na">size</span><span class="o">=</span><span class="s">&quot;&lt;size in px&gt;&quot;</span><span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicIcon</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Icon.vue&#39;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">BasicIcon</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id7">
+<caption><span class="caption-text">Icon properties</span><a class="headerlink" href="#id7" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>iconName</p></td>
+<td><p>The name of the icon</p></td>
+<td><p>“IconQuestionCircle”</p></td>
+<td><p>String</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>size</p></td>
+<td><p>The size of the icon</p></td>
+<td><p>16</p></td>
+<td><p>Number</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-even"><td><p>color</p></td>
+<td><p>The color of the icon</p></td>
+<td><p>null</p></td>
+<td><p>String</p></td>
+<td><p>False</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use ‘loading’ as the icon name to show a loading spinner.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The list of icons can also be found in /node_modules/bootstrap-icons/icons.</p>
+<p>For details on the underlying components (<strong>IconAsset</strong>, <strong>IconBootstrap</strong>, <strong>IconLoading</strong>) and when to use them directly,
+see the dedicated <a class="reference internal" href="icon.html"><span class="doc">Icon page</span></a>.</p>
+</div>
+</section>
+<section id="loading">
+<h2>Loading<a class="headerlink" href="#loading" title="Link to this heading"></a></h2>
+<p>If you need to fetch resources from the server or do computations that need more than a few milliseconds, you should
+provide visual feedback to the user. The <code class="docutils literal notranslate"><span class="pre">Loading</span></code> component offers an easy-to-use standardized way of doing this.</p>
+<p>Simply add it to your component template, usually within an if clause conditioned on the data to be loaded.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Loading</span> <span class="na">text</span><span class="o">=</span><span class="s">&quot;&lt;loading_text&gt;&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">Loading</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">Loading</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Loading.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">Loading</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id8">
+<caption><span class="caption-text">Loading properties</span><a class="headerlink" href="#id8" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>text</p></td>
+<td><p>The text to display</p></td>
+<td><p>“Loading…”</p></td>
+<td><p>String</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>loading</p></td>
+<td><p>Whether the loading should be displayed</p></td>
+<td><p>True</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="modal">
+<span id="id2"></span><h2>Modal<a class="headerlink" href="#modal" title="Link to this heading"></a></h2>
+<p>Import this component if you need a modal prompted to the user. You can customize the header, body and footer.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Opening and closing of modals triggers statistics events. Additional data can be passed to the event by adding a
+<code class="docutils literal notranslate"><span class="pre">props</span></code> attribute to the modal. This data will be passed to the event.</p>
+</div>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicModal</span>
+    <span class="na">name</span><span class="o">=</span><span class="s">&quot;Example&quot;</span>
+    <span class="na">:props</span><span class="o">=</span><span class="s">&quot;{ &#39;example&#39;: &#39;data&#39; }&quot;</span>
+    <span class="err">@</span><span class="na">show</span><span class="o">=</span><span class="s">&quot;show&quot;</span>
+    <span class="err">@</span><span class="na">hide</span><span class="o">=</span><span class="s">&quot;hide&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">body</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>Example body<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">footer</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn btn-primary&quot;</span> <span class="na">data-bs-dismiss</span><span class="o">=</span><span class="s">&quot;modal&quot;</span><span class="p">&gt;</span>Close<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">BasicModal</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Modal.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ModalExample&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">BasicModal</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">show</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;show modal&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nx">hide</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;hide modal&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id9">
+<caption><span class="caption-text">Modal properties</span><a class="headerlink" href="#id9" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>name</p></td>
+<td><p>The name of the modal</p></td>
+<td><p>None</p></td>
+<td><p>String</p></td>
+<td><p>True</p></td>
+</tr>
+<tr class="row-odd"><td><p>props</p></td>
+<td><p>The props to pass for the statistics event</p></td>
+<td><p>{}</p></td>
+<td><p>Object</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-even"><td><p>autoOpen</p></td>
+<td><p>Whether the modal should be opened automatically</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>removeClose</p></td>
+<td><p>Whether the close button should be removed,
+| modal is only closable by keyboard</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-even"><td><p>disableKeyboard</p></td>
+<td><p>Disable the keyboard for closing the modal</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>lg</p></td>
+<td><p>Whether the modal should be large</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-even"><td><p>xl</p></td>
+<td><p>Whether the modal should be extra large</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="table">
+<span id="id3"></span><h2>Table<a class="headerlink" href="#table" title="Link to this heading"></a></h2>
+<p>The table component renders data using a declarative <code class="docutils literal notranslate"><span class="pre">columns</span></code> description and flexible <code class="docutils literal notranslate"><span class="pre">options</span></code> (sorting, filtering, search, selection, pagination). Use it for consistent, feature-rich data grids.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicTable</span>
+    <span class="na">:columns</span><span class="o">=</span><span class="s">&quot;columns&quot;</span>
+    <span class="na">:data</span><span class="o">=</span><span class="s">&quot;rows&quot;</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;options&quot;</span>
+    <span class="na">:buttons</span><span class="o">=</span><span class="s">&quot;buttons&quot;</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onAction&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicTable</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Table.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">BasicTable</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">striped</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">hover</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">pagination</span><span class="o">:</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="nx">search</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nx">columns</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Title&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Created&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;datetime&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Manage&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;manage&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;button-group&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nx">rows</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">      </span><span class="nx">buttons</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Edit&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;edit&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;pencil&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;trash&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">onAction</span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">payload</span><span class="p">.</span><span class="nx">action</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">.</span><span class="nx">params</span><span class="p">);</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id10">
+<caption><span class="caption-text">Table properties</span><a class="headerlink" href="#id10" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">columns</span></code></p></td>
+<td><p>Column config (name, key, type, sortable, filter, …)</p></td>
+<td><p>None</p></td>
+<td><p>Array (required)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">data</span></code></p></td>
+<td><p>Row data</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+<td><p>Array</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">options</span></code></p></td>
+<td><p>Behavior/styling (striped, hover, pagination, search, selectableRows, singleSelect, sort, …)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{}</span></code></p></td>
+<td><p>Object</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buttons</span></code></p></td>
+<td><p>Extra per-row actions shown in a rightmost column</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+<td><p>Array</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">modelValue</span></code></p></td>
+<td><p>Selected rows (when <code class="docutils literal notranslate"><span class="pre">selectableRows</span></code> is enabled)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{}</span></code></p></td>
+<td><p>Object</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">count</span></code></p></td>
+<td><p>External count (for server-side pagination)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>Number</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id11">
+<caption><span class="caption-text">Events</span><a class="headerlink" href="#id11" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Event</p></th>
+<th class="head"><p>Payload</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;action</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">action,</span> <span class="pre">params,</span> <span class="pre">stats?</span> <span class="pre">}</span></code></p></td>
+<td><p>Emitted by buttons/toggles/icon selectors</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;update:modelValue</span></code></p></td>
+<td><p>Selected rows</p></td>
+<td><p>Emitted when selection changes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;paginationUpdate</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">page,</span> <span class="pre">limit,</span> <span class="pre">order,</span> <span class="pre">filter</span> <span class="pre">}</span></code></p></td>
+<td><p>For server-side pagination</p></td>
+</tr>
+</tbody>
+</table>
+<p>For the full API (types, filters, client/server pagination), see <a class="reference internal" href="table.html"><span class="doc">Table</span></a>.</p>
+</section>
+<section id="timer">
+<h2>Timer<a class="headerlink" href="#timer" title="Link to this heading"></a></h2>
+<p>This module provides timing utilities for countdowns. Provides emit events and supports different granularity.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicTimer</span> <span class="na">autostart</span> <span class="na">show</span> <span class="na">:resolution</span><span class="o">=</span><span class="s">&quot;1*1000&quot;</span> <span class="err">@</span><span class="na">timeStep</span><span class="o">=</span><span class="s">&quot;doSmth()&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicTimer</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Timer.vue&#39;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">BasicTimer</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">doSmth</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;do something&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id12">
+<caption><span class="caption-text">Timer properties</span><a class="headerlink" href="#id12" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>autostart</p></td>
+<td><p>Whether the timer should start automatically</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>show</p></td>
+<td><p>Whether the timer should be shown</p></td>
+<td><p>False</p></td>
+<td><p>Boolean</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-even"><td><p>resolution</p></td>
+<td><p>The resolution of the timer in milliseconds</p></td>
+<td><p>60 * 1000</p></td>
+<td><p>Number</p></td>
+<td><p>False</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="toast">
+<span id="toasts"></span><h2>Toast<a class="headerlink" href="#toast" title="Link to this heading"></a></h2>
+<p>To provide users feedback to their actions, consider using the <a class="reference external" href="https://bootstrap-vue.org/docs/components/toast">toast messaging</a>
+functionality integrated in CARE. A toast message is a simple message prompted in the viewport of the user without
+obstructing their view and workflow.</p>
+<p><strong>Toasting in the Frontend</strong></p>
+<p>To create such a prompt from anywhere in the application, you simply put a <code class="docutils literal notranslate"><span class="pre">toast</span></code> message on the eventbus of the
+application:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;toast&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;title&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Message&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;warning&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">delay</span><span class="o">:</span><span class="w"> </span><span class="mf">3000</span><span class="p">});</span>
+</pre></div>
+</div>
+<p>This produces a toast with the title ‘title’ and showing the short message ‘Message’ for 3000ms before disappearing
+again. By providing the <code class="docutils literal notranslate"><span class="pre">variant</span></code> attribute as either of the <a class="reference external" href="https://getbootstrap.com/docs/5.0/components/badge/#pill-badges">boostrap badge color</a>
+keywords, you can define the color of the prompt. For consistency, you should use the badge types consistently to their
+semantics; e.g. use the “danger” keyword for errors.</p>
+<p><strong>Toasting from the Backend</strong></p>
+<p>In case you want to provide direct feedback from the backend to the user, e.g. in case of a server error upon a given
+request, you can also use the <code class="docutils literal notranslate"><span class="pre">Socket</span></code> class’ <code class="docutils literal notranslate"><span class="pre">sendToast</span></code> method:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">sendToast</span><span class="p">(</span><span class="s2">&quot;Example Error Title&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Example Error Message&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../frontend.html" class="btn btn-neutral float-left" title="Frontend Development" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dashboard.html" class="btn btn-neutral float-right" title="Dashboard" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

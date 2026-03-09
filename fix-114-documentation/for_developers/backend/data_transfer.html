@@ -1,0 +1,437 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Transfer &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Database" href="database.html" />
+    <link rel="prev" title="Backend Development" href="backend.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Data Transfer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#data-flow">Data Flow</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#step-by-step-backend-frontend">Step-by-step (Backend → Frontend)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sendtable">sendTable</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#appdataupdate-socket">AppDataUpdate Socket</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#when-to-use">When to use</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-use">How to use</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend-update-logic">Backend Update Logic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#store-updates-table-refresh-events">Store Updates &amp; <code class="docutils literal notranslate"><span class="pre">&lt;table&gt;Refresh</span></code> Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#subscribe-db-in-the-frontend-when-where">Subscribe DB in the Frontend (when &amp; where)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#accessing-the-vuex-store-in-components">Accessing the Vuex Store in Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#collaboration-use-case">Collaboration Use Case</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Data Transfer</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/data_transfer.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-transfer">
+<h1>Data Transfer<a class="headerlink" href="#data-transfer" title="Link to this heading"></a></h1>
+<p id="id1">CARE implements a <strong>data subscription mechanism</strong> between the backend and the frontend, enabling real-time collaboration and automatic synchronization of database tables with the Vuex store in the frontend application.</p>
+<section id="data-flow">
+<span id="id2"></span><h2>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading"></a></h2>
+<figure class="align-center">
+<a class="reference internal image-reference" href="../../_images/data_flow.drawio.png"><img alt="CARE Data Flow: Component ↔ Sockets ↔ Vuex ↔ Computed" src="../../_images/data_flow.drawio.png" style="width: 100%;" />
+</a>
+</figure>
+<hr class="docutils" />
+<p><strong>Prerequisites</strong></p>
+<ul class="simple">
+<li><p><strong>Model</strong> sets <code class="docutils literal notranslate"><span class="pre">autoTable</span> <span class="pre">=</span> <span class="pre">true</span></code> to be mirrored into Vuex.</p></li>
+<li><p><strong>Component</strong> declares <code class="docutils literal notranslate"><span class="pre">subscribeTable:</span> <span class="pre">[&quot;&lt;table&gt;&quot;]</span></code> (or object form) to receive pushes.</p></li>
+</ul>
+<section id="step-by-step-backend-frontend">
+<h3>Step-by-step (Backend → Frontend)<a class="headerlink" href="#step-by-step-backend-frontend" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>DB model (top-center “Database”)</strong>: The model sets <code class="docutils literal notranslate"><span class="pre">autoTable</span> <span class="pre">=</span> <span class="pre">true</span></code> to enable automatic Vuex store table creation and participate in app data sync.</p></li>
+<li><p><strong>Subscribe (bottom-left “Example Component” → center “Sockets”)</strong>: On mount, the <code class="docutils literal notranslate"><span class="pre">subscribeTable</span></code> plugin emits <code class="docutils literal notranslate"><span class="pre">subscribeAppData</span></code> for each table to <strong>Sockets (AppSocket, center)</strong>; the server returns a <code class="docutils literal notranslate"><span class="pre">subscriptionId</span></code>.</p></li>
+<li><p><strong>Access-aware filtering (center “Sockets” ↔ top-center “Database”)</strong>: Before sending any data, <strong>Sockets</strong> applies the model’s <code class="docutils literal notranslate"><span class="pre">accessMap</span></code> / <code class="docutils literal notranslate"><span class="pre">publicTable</span></code> via <code class="docutils literal notranslate"><span class="pre">getFiltersAndAttributes</span></code> so each socket only receives permitted rows/columns.</p></li>
+<li><p><strong>Initial snapshot (center “Sockets” → bottom-right “Vuex Store”)</strong>: The server calls <code class="docutils literal notranslate"><span class="pre">sendTable</span></code> and emits <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> to the <strong>Vuex Store (right)</strong> with the current rows. The <strong>same event name</strong> is used later for updates.</p></li>
+<li><p><strong>Socket write (optional; bottom-left “Example Component” → center “Sockets”)</strong>: The frontend emits <code class="docutils literal notranslate"><span class="pre">appDataUpdate</span></code> with <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">table,</span> <span class="pre">data</span> <span class="pre">}</span></code> to create or update rows.</p></li>
+<li><p><strong>Backend transaction (center “Sockets” → top-center “Database”)</strong>: <code class="docutils literal notranslate"><span class="pre">updateData</span></code> validates, applies defaults, and enforces access; inside a transaction it persists changes to the <strong>Database (top-center)</strong>. On <strong>commit</strong> (<code class="docutils literal notranslate"><span class="pre">afterCommit</span></code>) the server aggregates changed rows of <code class="docutils literal notranslate"><span class="pre">autoTable</span></code> models. See also: <a class="reference internal" href="database.html#metamodel-behavior"><span class="std std-ref">MetaModel behavior</span></a> for the shared logic used in <code class="docutils literal notranslate"><span class="pre">updateData</span></code>, including soft-deletion, access filtering, and hook handling.</p></li>
+<li><p><strong>Broadcast (center “Sockets” → right “Vuex Store”)</strong>: <code class="docutils literal notranslate"><span class="pre">broadcastTable</span></code> re-applies per-socket visibility with <code class="docutils literal notranslate"><span class="pre">getFiltersAndAttributes</span></code> (admins/public can bypass) and emits <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> only to relevant subscribers; <strong>Vuex (right)</strong> receives the updated data.</p></li>
+<li><p><strong>Vuex merge (right “Vuex Store”)</strong>: Each autoTable module handles the <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> mutation and merges rows (see <code class="docutils literal notranslate"><span class="pre">refreshState</span></code>); <code class="docutils literal notranslate"><span class="pre">refreshCount</span></code> increments.</p></li>
+<li><p><strong>Computed → Component (lower-left “Computed Getters” → bottom-left “Example Component”)</strong>: Components read via Vuex getters (e.g., <code class="docutils literal notranslate"><span class="pre">getAll</span></code>, <code class="docutils literal notranslate"><span class="pre">getFiltered</span></code>); computed properties update and the <strong>Component</strong> re-renders automatically.</p></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><strong>Two directions in the diagram</strong></p>
+<ul class="simple">
+<li><p><strong>Downstream:</strong> <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code>: (Sockets → Vuex) is used for the <strong>initial snapshot</strong> and all <strong>subsequent updates</strong>.</p></li>
+<li><p><strong>Upstream:</strong> <code class="docutils literal notranslate"><span class="pre">appDataUpdate</span></code>: (Component → Sockets) performs a write; after commit the server pushes <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> to keep everyone consistent.</p></li>
+</ul>
+</div>
+<p><strong>Unsubscribe (on unmount; bottom-left “Example Component”)</strong></p>
+<p>The component emits <code class="docutils literal notranslate"><span class="pre">unsubscribeAppData(subscriptionId)</span></code>; the socket removes the subscription so no further <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> events are delivered.</p>
+</section>
+<section id="sendtable">
+<h3>sendTable<a class="headerlink" href="#sendtable" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Purpose</strong>: send the current snapshot for a table and emit updates to the client.</p></li>
+<li><p><strong>Preconditions</strong>: only works for models with <code class="docutils literal notranslate"><span class="pre">autoTable</span> <span class="pre">=</span> <span class="pre">true</span></code>; otherwise it no-ops with a log.</p></li>
+<li><p><strong>Filtering</strong>: starts with <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">deleted:</span> <span class="pre">false</span> <span class="pre">}</span></code> and OR-adds any provided <code class="docutils literal notranslate"><span class="pre">filter</span></code>; then applies per-socket access via <code class="docutils literal notranslate"><span class="pre">getFiltersAndAttributes</span></code> (may also add allowed columns).</p></li>
+<li><p><strong>Attributes</strong>: excludes sensitive fields by default (e.g., <code class="docutils literal notranslate"><span class="pre">deleted</span></code>, <code class="docutils literal notranslate"><span class="pre">deletedAt</span></code>, <code class="docutils literal notranslate"><span class="pre">updatedAt</span></code>, <code class="docutils literal notranslate"><span class="pre">rolesUpdatedAt</span></code>, <code class="docutils literal notranslate"><span class="pre">initialPassword</span></code>, <code class="docutils literal notranslate"><span class="pre">passwordHash</span></code>, <code class="docutils literal notranslate"><span class="pre">salt</span></code>).</p></li>
+<li><p><strong>Injects</strong>: supports <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">type:</span> <span class="pre">&quot;count&quot;,</span> <span class="pre">table,</span> <span class="pre">by,</span> <span class="pre">as</span> <span class="pre">}</span></code>; counts related rows and injects the result into each entry as <code class="docutils literal notranslate"><span class="pre">as</span></code>.</p></li>
+<li><p><strong>Related tables</strong>: if the model’s <code class="docutils literal notranslate"><span class="pre">autoTable.foreignTables</span></code> or <code class="docutils literal notranslate"><span class="pre">autoTable.parentTables</span></code> are set, it also fetches those and emits <code class="docutils literal notranslate"><span class="pre">&lt;relatedTable&gt;Refresh</span></code> for them.</p></li>
+<li><p><strong>Emit &amp; return</strong>: always emits <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> with the rows and returns the same data.</p></li>
+</ul>
+</section>
+</section>
+<section id="appdataupdate-socket">
+<h2>AppDataUpdate Socket<a class="headerlink" href="#appdataupdate-socket" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">appDataUpdate</span></code> socket is the generic way to <strong>create or update rows</strong> in models with <code class="docutils literal notranslate"><span class="pre">autoTable</span> <span class="pre">=</span> <span class="pre">true</span></code>. It is defined in <code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/app.js</span></code> inside the <code class="docutils literal notranslate"><span class="pre">AppSocket</span></code> class:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * Update data for a specific table to the client.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Acts as a wrapper around the underlying `updateData` method, using a Sequelize</span>
+<span class="cm"> * transaction if provided, and returns the outcome to the caller.</span>
+<span class="cm"> *</span>
+<span class="cm"> * @socketEvent appDataUpdate</span>
+<span class="cm"> * @param {Object} data The input data from the frontend</span>
+<span class="cm"> * @param {String} data.table The name of the table to update</span>
+<span class="cm"> * @param {Object} data.data New data to update</span>
+<span class="cm"> * @param {Object} options Additional configuration parameter</span>
+<span class="cm"> * @param {Object} options.transaction Sequelize DB transaction options</span>
+<span class="cm"> * @returns {Promise&lt;*&gt;} A promise that resolves with the result from updateData</span>
+<span class="cm"> */</span>
+<span class="k">async</span><span class="w"> </span><span class="nx">updateAppData</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">options</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">updateData</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">options</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This method wraps the internal <code class="docutils literal notranslate"><span class="pre">updateData</span></code> logic. It checks access permissions, validates required fields, applies defaults, and then either <strong>creates a new row</strong> or <strong>updates an existing one</strong>. All operations run inside a transaction, and on commit the modified rows are broadcast to subscribed clients (see <a class="reference internal" href="#data-flow"><span class="std std-ref">Data Flow</span></a>).</p>
+<section id="when-to-use">
+<h3>When to use<a class="headerlink" href="#when-to-use" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Create</strong> a new row in an autoTable model — omit <code class="docutils literal notranslate"><span class="pre">id</span></code> or set it to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p><strong>Update</strong> an existing row — include <code class="docutils literal notranslate"><span class="pre">id</span></code> and the fields to change.</p></li>
+<li><p><strong>Soft-delete / quick state toggles</strong> — include <code class="docutils literal notranslate"><span class="pre">id</span></code> with one of <code class="docutils literal notranslate"><span class="pre">deleted</span></code>, <code class="docutils literal notranslate"><span class="pre">closed</span></code>, <code class="docutils literal notranslate"><span class="pre">public</span></code> or <code class="docutils literal notranslate"><span class="pre">end</span></code>; the server updates immediately.</p></li>
+<li><p><strong>Not for reads</strong> — data is delivered via <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> after you subscribe with <code class="docutils literal notranslate"><span class="pre">subscribeAppData</span></code>.</p></li>
+<li><p><strong>Don’t use</strong> for non-<code class="docutils literal notranslate"><span class="pre">autoTable</span></code> models or bulk/admin maintenance — use dedicated endpoints instead.</p></li>
+</ul>
+</section>
+<section id="how-to-use">
+<h3>How to use<a class="headerlink" href="#how-to-use" title="Link to this heading"></a></h3>
+<p>From the frontend you call:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;appDataUpdate&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;table_name&gt;&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// must be an autoTable model</span>
+<span class="w">  </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* fields */</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c1">// include id for updates, omit for create</span>
+<span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">result</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// result.data contains the new or updated id</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// result.message contains a human-readable error</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<ul class="simple">
+<li><p><strong>Create</strong>: omit <code class="docutils literal notranslate"><span class="pre">id</span></code> or set it to <code class="docutils literal notranslate"><span class="pre">0</span></code></p></li>
+<li><p><strong>Update</strong>: include <code class="docutils literal notranslate"><span class="pre">id</span></code></p></li>
+<li><p><strong>Quick state toggles</strong>: if you send an <code class="docutils literal notranslate"><span class="pre">id</span></code> with <code class="docutils literal notranslate"><span class="pre">deleted</span></code>, <code class="docutils literal notranslate"><span class="pre">closed</span></code>, <code class="docutils literal notranslate"><span class="pre">public</span></code> or <code class="docutils literal notranslate"><span class="pre">end</span></code>,
+the server will update immediately without requiring other fields.</p></li>
+</ul>
+</div>
+<p><strong>Example usage in the frontend</strong></p>
+<p>A typical usage pattern is emitting the socket event and showing a toast depending on the result.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Close a study (from Study.vue)</span>
+<span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;appDataUpdate&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;study&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">studyId</span><span class="p">,</span><span class="w"> </span><span class="nx">closed</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">result</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;toast&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Study closed&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;The study has been closed&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;success&quot;</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;toast&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Study closing failed&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The server response has the shape: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">success:</span> <span class="pre">true,</span> <span class="pre">data:</span> <span class="pre">&lt;id&gt;</span> <span class="pre">}</span></code> on success, or  <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">success:</span> <span class="pre">false,</span> <span class="pre">message:</span> <span class="pre">&quot;&lt;error&gt;&quot;</span> <span class="pre">}</span></code> on failure.</p>
+<p><strong>Fast path:</strong> If <code class="docutils literal notranslate"><span class="pre">id</span></code> is present and any of <code class="docutils literal notranslate"><span class="pre">deleted</span></code>, <code class="docutils literal notranslate"><span class="pre">closed</span></code>, <code class="docutils literal notranslate"><span class="pre">public</span></code> or <code class="docutils literal notranslate"><span class="pre">end</span></code> is included, the server updates the row immediately via <code class="docutils literal notranslate"><span class="pre">updateById</span></code> (skips required-field checks and nested recursion). <code class="docutils literal notranslate"><span class="pre">closed:</span> <span class="pre">true</span></code> is stored as a timestamp. After commit, the change is broadcast via <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> as usual.</p>
+</div>
+</section>
+<section id="backend-update-logic">
+<h3>Backend Update Logic<a class="headerlink" href="#backend-update-logic" title="Link to this heading"></a></h3>
+<p>Typical component actions map to small <code class="docutils literal notranslate"><span class="pre">appDataUpdate</span></code> calls:</p>
+<ul>
+<li><p><strong>Delete</strong> - soft-delete a row:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;appDataUpdate&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">deleted</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nx">cb</span><span class="p">);</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Convert to child item</strong>: Create/update a <strong>parent</strong> and send <strong>child</strong> rows in an array field. The server detects <code class="docutils literal notranslate"><span class="pre">fields</span></code> of type <code class="docutils literal notranslate"><span class="pre">table</span></code> and <strong>recursively</strong> runs updates for each child, injecting the parent’s foreign key.</p></li>
+<li><p><strong>Fast-path updates</strong>: If an entry has an <code class="docutils literal notranslate"><span class="pre">id</span></code> and includes one of <code class="docutils literal notranslate"><span class="pre">deleted</span></code>, <code class="docutils literal notranslate"><span class="pre">closed</span></code>, <code class="docutils literal notranslate"><span class="pre">public</span></code> or <code class="docutils literal notranslate"><span class="pre">end</span></code>, it is updated immediately without requiring other fields (schema required-field checks are skipped for these toggles).</p></li>
+<li><p><strong>Timestamp semantics for</strong> <code class="docutils literal notranslate"><span class="pre">closed</span></code>: The backend stores <code class="docutils literal notranslate"><span class="pre">closed</span></code> as a <strong>timestamp</strong>. Passing <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">closed:</span> <span class="pre">true</span> <span class="pre">}</span></code> sets it to the current time (see <code class="docutils literal notranslate"><span class="pre">MetaModel.updateById</span></code>).</p></li>
+</ul>
+<p><strong>Important details</strong></p>
+<ul class="simple">
+<li><p><strong>Validation</strong>: On create, required fields are checked and defaults are applied if not set through the frontend.</p></li>
+<li><p><strong>Access control</strong>: if <code class="docutils literal notranslate"><span class="pre">userId</span></code> is provided, the server verifies the caller is allowed to update for that user.</p></li>
+<li><p><strong>Nested tables</strong>: if the model defines fields of type <code class="docutils literal notranslate"><span class="pre">table</span></code>, the server recursively calls <code class="docutils literal notranslate"><span class="pre">updateData</span></code> to update child rows.</p></li>
+<li><p><strong>Broadcasts</strong>: after a successful commit, all subscribed clients receive the updated data automatically.</p></li>
+</ul>
+</section>
+<section id="store-updates-table-refresh-events">
+<span id="table-refresh-events"></span><h3>Store Updates &amp; <code class="docutils literal notranslate"><span class="pre">&lt;table&gt;Refresh</span></code> Events<a class="headerlink" href="#store-updates-table-refresh-events" title="Link to this heading"></a></h3>
+<p>Sockets broadcast table changes via events named <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code>. Each autoTable module
+registers a mutation with that exact name and merges incoming rows using <code class="docutils literal notranslate"><span class="pre">refreshState</span></code>.</p>
+<p><strong>Mutation shape (generated per table):</strong></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nx">websocketPrefix</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">table</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">&quot;Refresh&quot;</span><span class="p">]</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">state</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// table-specific pre-processing (e.g., annotation/comment tweaks) may occur here</span>
+<span class="w">  </span><span class="nx">refreshState</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">table</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="s2">&quot;tag&quot;</span><span class="p">));</span>
+<span class="w">  </span><span class="nx">state</span><span class="p">.</span><span class="nx">refreshCount</span><span class="o">++</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Merge behavior:</strong></p>
+<p>The helper function <code class="docutils literal notranslate"><span class="pre">refreshState</span></code> determines how incoming rows are handled:</p>
+<ul class="simple">
+<li><p>Existing entries with the same <code class="docutils literal notranslate"><span class="pre">id</span></code> are <strong>overwritten</strong> with the new data.</p></li>
+<li><p>Entries with <code class="docutils literal notranslate"><span class="pre">deleted:</span> <span class="pre">true</span></code> are <strong>removed</strong> from the Vuex store.</p></li>
+</ul>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">refreshState</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">removeDeleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nb">Array</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="nx">data</span><span class="p">];</span>
+<span class="w">  </span><span class="nx">data</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">entry</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">entry</span><span class="p">.</span><span class="nx">deleted</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">state</span><span class="p">.</span><span class="nx">data</span><span class="p">[</span><span class="nx">entry</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="nx">state</span><span class="p">.</span><span class="nx">data</span><span class="p">[</span><span class="nx">entry</span><span class="p">.</span><span class="nx">id</span><span class="p">],</span><span class="w"> </span><span class="p">...</span><span class="nx">entry</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">removeDeleted</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="ow">delete</span><span class="w"> </span><span class="nx">state</span><span class="p">.</span><span class="nx">data</span><span class="p">[</span><span class="nx">entry</span><span class="p">.</span><span class="nx">id</span><span class="p">];</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you don’t see updates, verify:</p>
+<ol class="arabic simple">
+<li><p>the model has <code class="docutils literal notranslate"><span class="pre">autoTable</span> <span class="pre">=</span> <span class="pre">true</span></code>,</p></li>
+<li><p>the component declared <code class="docutils literal notranslate"><span class="pre">subscribeTable:</span> <span class="pre">[&quot;&lt;table&gt;&quot;]</span></code>,</p></li>
+<li><p>the same <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> mutation fires for the <strong>initial snapshot</strong> and later <strong>updates</strong> (check Vue devtools).</p></li>
+</ol>
+</div>
+<p>Frontend access patterns and the list of available getters are documented in <a class="reference internal" href="../frontend/vuex_store.html"><span class="doc">Vuex Store</span></a>.
+For inspecting Vuex modules, socket messages, and mutations with browser devtools, see <a class="reference internal" href="../debugging/index.html"><span class="doc">Debugging</span></a>.</p>
+</section>
+<section id="subscribe-db-in-the-frontend-when-where">
+<h3>Subscribe DB in the Frontend (when &amp; where)<a class="headerlink" href="#subscribe-db-in-the-frontend-when-where" title="Link to this heading"></a></h3>
+<p>Use <code class="docutils literal notranslate"><span class="pre">subscribeTable</span></code> in route views or components that actively display changing table data; unsubscription happens automatically on unmount.</p>
+<p>On mount, the plugin checks for a component option <code class="docutils literal notranslate"><span class="pre">subscribeTable</span></code> and emits <code class="docutils literal notranslate"><span class="pre">subscribeAppData</span></code> for each entry; on unmount it emits <code class="docutils literal notranslate"><span class="pre">unsubscribeAppData(subscriptionId)</span></code>. The server tracks subscriptions per socket in <code class="docutils literal notranslate"><span class="pre">socket.appDataSubscriptions</span></code> and uses them to decide which clients receive updates.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Minimal usage (string form)</span>
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;nav_element&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Object form supports optional filter/inject</span>
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;nav_element&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;document&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">projectId</span><span class="o">:</span><span class="w"> </span><span class="mf">42</span><span class="w"> </span><span class="p">}],</span>
+<span class="w">      </span><span class="nx">inject</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;count&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;comment&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">by</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;documentId&quot;</span><span class="p">,</span><span class="w"> </span><span class="kr">as</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;comments&quot;</span><span class="w"> </span><span class="p">}]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="accessing-the-vuex-store-in-components">
+<h2>Accessing the Vuex Store in Components<a class="headerlink" href="#accessing-the-vuex-store-in-components" title="Link to this heading"></a></h2>
+<p>Use the generated getters under the <code class="docutils literal notranslate"><span class="pre">table/&lt;name&gt;</span></code> namespace directly in <code class="docutils literal notranslate"><span class="pre">computed</span></code>:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// all documents</span>
+<span class="w">  </span><span class="nx">documents</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/document/getAll&quot;</span><span class="p">];</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="c1">// filtered by project</span>
+<span class="w">  </span><span class="nx">projectDocuments</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">pid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;settings/getValueAsInt&quot;</span><span class="p">](</span><span class="s2">&quot;projects.default&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/document/getFiltered&quot;</span><span class="p">](</span><span class="nx">d</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">projectId</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nx">pid</span><span class="p">);</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="c1">// single by id</span>
+<span class="w">  </span><span class="nx">doc</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/document/get&quot;</span><span class="p">](</span><span class="k">this</span><span class="p">.</span><span class="nx">$route</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">id</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Available getters per autoTable module:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get(id)</span></code> → object by id</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getAll()</span></code> → all rows</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getFiltered(fn)</span></code> → filter predicate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getByHash(hash)</span></code> → first row by hash</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getByUser(userId)</span></code> → rows by userId</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getByKey(key,</span> <span class="pre">value)</span></code> → rows where <code class="docutils literal notranslate"><span class="pre">row[key]</span> <span class="pre">===</span> <span class="pre">value</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">length</span></code> → number of rows</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">refreshCount</span></code> → number of times the table has been refreshed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hasFields</span></code> / <code class="docutils literal notranslate"><span class="pre">getFields</span></code> → schema metadata if available</p></li>
+</ul>
+<section id="collaboration-use-case">
+<h3>Collaboration Use Case<a class="headerlink" href="#collaboration-use-case" title="Link to this heading"></a></h3>
+<p>This subscription system enables <strong>real-time collaboration</strong>:</p>
+<ul class="simple">
+<li><p>If one user modifies a row (e.g., adds an annotation), all other users subscribed to the same table
+immediately receive the updated data.</p></li>
+<li><p>By maintaining a per-user subscription list, the backend ensures that <strong>only relevant users</strong> are notified
+about changes.</p></li>
+</ul>
+<p>This approach avoids polling and keeps all connected clients synchronized with the authoritative state
+in the database.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="backend.html" class="btn btn-neutral float-left" title="Backend Development" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="database.html" class="btn btn-neutral float-right" title="Database" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,741 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Icon" href="icon.html" />
+    <link rel="prev" title="Editor" href="editor.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="basic.html">Basic</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="basic.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="download.html">Download</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Editor</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Form</a></li>
+<li class="toctree-l4"><a class="reference internal" href="icon.html">Icon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modal.html">Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="navigation.html">Navigation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="table.html">Table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="service.html">NLPService</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#button">Button</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#form">Form</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#icon">Icon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#loading">Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#modal">Modal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#table">Table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#timer">Timer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#toast">Toast</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../components/components.html">Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="basic.html">Basic</a></li>
+      <li class="breadcrumb-item active">Form</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/basic/form.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="form">
+<h1>Form<a class="headerlink" href="#form" title="Link to this heading"></a></h1>
+<p>To build forms, you can use the form component. It offers a simple way to build forms in a consistent way only by passing a dictionary.
+Mainly it is used by the coordinator component, but it can also be used standalone.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicForm</span>
+    <span class="na">ref</span><span class="o">=</span><span class="s">&quot;form&quot;</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
+    <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fields&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicForm</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/Form.vue&quot;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">BasicForm</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">            </span><span class="nx">fields</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The formular is built from the properties of the object <code class="docutils literal notranslate"><span class="pre">fields</span></code>.
+It is a dictionary with basic keys to describe each part of the form.
+There are three kinds of properties:</p>
+<ul class="simple">
+<li><p>Basic form properties - These properties are required for each field</p></li>
+<li><p>Extended form properties - These properties are optional and are specific to different field types</p></li>
+<li><p>Field specific properties - These properties are optional but are highly field specific</p></li>
+</ul>
+<p><strong>Basic form properties</strong></p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Basic form properties</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Data Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>key</p></td>
+<td><p>The key of the field in the data object</p></td>
+<td><p>true</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>type</p></td>
+<td><p>The type of the field (see <a class="reference internal" href="#types"><span class="std std-ref">Types</span></a> for available types)</p></td>
+<td><p>true</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-even"><td><p>required</p></td>
+<td><p>If the field is required (will be validated in frontend and backend)</p></td>
+<td><p>false</p></td>
+<td><p>Boolean</p></td>
+</tr>
+<tr class="row-odd"><td><p>default</p></td>
+<td><p>The default value of the field (data type depends on the field type)</p></td>
+<td><p>false</p></td>
+<td><p>Any</p></td>
+</tr>
+<tr class="row-even"><td><p>pattern</p></td>
+<td><p>The regex pattern of the field that is checked if required</p></td>
+<td><p>false</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>minLength</p></td>
+<td><p>The minimum length of the field that is checked if required</p></td>
+<td><p>false</p></td>
+<td><p>Number</p></td>
+</tr>
+<tr class="row-even"><td><p>maxLength</p></td>
+<td><p>The maximum length of the field that is checked if required</p></td>
+<td><p>false</p></td>
+<td><p>Number</p></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p><strong>Extended form properties</strong></p>
+<p>The properties of the <code class="docutils literal notranslate"><span class="pre">fields</span></code> object could be extended by the field specific properties. See the <a class="reference internal" href="#types"><span class="std std-ref">Types</span></a> section for more information.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Extended form properties</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>label</p></td>
+<td><p>The label of the field shown in frontend</p></td>
+<td><p>true</p></td>
+<td><p>“”</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>disabled</p></td>
+<td><p>If the switch should be disabled (also <code class="docutils literal notranslate"><span class="pre">readOnly</span></code> is possible)</p></td>
+<td><p>false</p></td>
+<td><p>false</p></td>
+<td><p>Boolean</p></td>
+</tr>
+<tr class="row-even"><td><p>help</p></td>
+<td><p>The help text shown in the near of the field</p></td>
+<td><p>false</p></td>
+<td><p>“”</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>placeholder</p></td>
+<td><p>The placeholder text shown in the field</p></td>
+<td><p>false</p></td>
+<td><p>“”</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-even"><td><p>class</p></td>
+<td><p>The class of the field</p></td>
+<td><p>false</p></td>
+<td><p>“”</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-odd"><td><p>readOnly</p></td>
+<td><p>Marks the field as read-only (used instead of or with <cite>disabled</cite>)</p></td>
+<td><p>false</p></td>
+<td><p>false</p></td>
+<td><p>Boolean</p></td>
+</tr>
+<tr class="row-even"><td><p>suffix</p></td>
+<td><p>Optional clickable icon/button inside input (e.g., for actions)</p></td>
+<td><p>false</p></td>
+<td><p>null</p></td>
+<td><p>Object</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Available extended properties in form fields</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>label</p></th>
+<th class="head"><p>disabled</p></th>
+<th class="head"><p>help</p></th>
+<th class="head"><p>placeholder</p></th>
+<th class="head"><p>class</p></th>
+<th class="head"><p>readOnly</p></th>
+<th class="head"><p>suffix</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="xref std std-ref">text</span></p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-switch"><span class="std std-ref">switch</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-slider"><span class="std std-ref">slider</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-datetime"><span class="std std-ref">datetime</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-select"><span class="std std-ref">select</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-checkbox"><span class="std std-ref">checkbox</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-editor"><span class="std std-ref">editor</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-textarea"><span class="std std-ref">textarea</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-table"><span class="std std-ref">table</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-password"><span class="std std-ref">password</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-file"><span class="std std-ref">file</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-choice"><span class="std std-ref">choice</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-default"><span class="std std-ref">default (*)</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p id="types"><strong>Specific form properties</strong></p>
+<p>The following types are available:</p>
+<p id="form-type-switch"><cite>Switch</cite>: No specific options.</p>
+<hr class="docutils" />
+<p id="form-type-slider"><cite>Slider</cite>: Additional options:</p>
+<ul>
+<li><p>min</p></li>
+<li><p>max</p></li>
+<li><p>step</p></li>
+<li><p>unit — Optional unit label shown next to the current value.</p></li>
+<li><p>textMapping — Array that maps numeric values to display labels.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">textMapping</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Low&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Medium&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;High&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<hr class="docutils" />
+<p id="form-type-datetime"><cite>Datetime</cite>: No specific options.</p>
+<hr class="docutils" />
+<p id="form-type-select"><cite>Select</cite>: There are two ways to define the options of a select field, either by passing an object or use data from a autotable in (<a class="reference internal" href="../vuex_store.html"><span class="doc">Vuex Store</span></a>).</p>
+<p>Passing an object:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="kd">class</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;border border-info&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Using autotable:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">tableName</span><span class="o">&gt;</span><span class="p">,</span><span class="w">             </span><span class="c1">// the name of the autotable in the vuex store</span>
+<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">keyOfDisplayName</span><span class="o">&gt;</span><span class="p">,</span><span class="w">       </span><span class="c1">// the key of the display text used in the table entries</span>
+<span class="w">        </span><span class="nx">value</span><span class="o">:&lt;</span><span class="nx">keyOfValueUsed</span><span class="o">&gt;</span><span class="p">,</span><span class="w">         </span><span class="c1">// the key of the value used in the table entries</span>
+<span class="w">        </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="w">                       </span><span class="c1">// -- optional - list of filters to apply to the table entries</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">filterType</span><span class="o">&gt;</span><span class="p">,</span><span class="w">    </span><span class="c1">// the type of the filter</span>
+<span class="w">                </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">keyOfFilter</span><span class="o">&gt;</span><span class="p">,</span><span class="w">     </span><span class="c1">// the key in the table entries that should be filtered</span>
+<span class="w">                </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">valueOfFilter</span><span class="o">&gt;</span><span class="w">  </span><span class="c1">// the value that should be filtered for</span>
+<span class="w">                </span><span class="nx">mapping</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">mapObject</span><span class="o">&gt;</span><span class="w">    </span><span class="c1">// the real values will be used as key of this object, the output values as compared value</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p id="form-type-checkbox"><cite>Checkbox</cite>: Each checkbox expects <cite>options.options</cite> to be an array of <cite>{ label, value }</cite> objects.</p>
+<hr class="docutils" />
+<p id="form-type-editor"><cite>Editor</cite>: See <a class="reference internal" href="editor.html"><span class="doc">Editor</span></a> for more information.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can also use <code class="docutils literal notranslate"><span class="pre">html</span></code> as type.</p>
+</div>
+<hr class="docutils" />
+<p id="form-type-textarea"><cite>Textarea</cite>: No specific options.</p>
+<hr class="docutils" />
+<p id="form-type-table"><cite>Table</cite>: Tables are a bit more complex, example:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tags&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">label</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Tags:&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tag&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tagSetId&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">required</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>It shows the corresponding fields of the table <code class="docutils literal notranslate"><span class="pre">tag</span></code> and allows to add and remove rows.
+Only Select and Text fields are supported.</p>
+<hr class="docutils" />
+<p id="form-type-password"><cite>Password</cite>: No specific options.</p>
+<hr class="docutils" />
+<p id="form-type-file"><cite>File</cite>: The <code class="docutils literal notranslate"><span class="pre">file</span></code> field type allows uploading a file using a standard file input.
+It is typically used for attaching documents such as PDFs or Delta files in forms.
+The field stores the uploaded <cite>File</cite> object, which is then passed to the backend via socket communication.</p>
+<p>Additional options:</p>
+<ul class="simple">
+<li><p>accept — allowed MIME types (e.g. <cite>application/pdf</cite>, <cite>.delta</cite>)</p></li>
+<li><p>class — custom input class</p></li>
+</ul>
+<p>File uploads are handled via the <code class="docutils literal notranslate"><span class="pre">documentAdd</span></code> method in the <code class="docutils literal notranslate"><span class="pre">document.js</span></code> Socket.This is a <strong>special case</strong> because uploaded files are not just saved as form values but:</p>
+<ol class="arabic simple">
+<li><p><strong>Validated</strong> — only <code class="docutils literal notranslate"><span class="pre">.pdf</span></code> and <code class="docutils literal notranslate"><span class="pre">.delta</span></code> files are allowed.</p></li>
+<li><p><strong>Stored to disk</strong> — files are written to the <code class="docutils literal notranslate"><span class="pre">/files</span></code> directory using a generated hash as filename.</p></li>
+<li><p><strong>Stored in database</strong> — an entry is created in the <code class="docutils literal notranslate"><span class="pre">document</span></code> table with metadata like <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">userId</span></code>, etc.</p></li>
+</ol>
+<p><strong>For .delta files:</strong></p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">document_edit</span></code> entry is also created using content from the Delta format. See <a class="reference internal" href="../components/editor.html#delta-overview-ref"><span class="std std-ref">Delta Files and DB Edits</span></a> for more information on how <code class="docutils literal notranslate"><span class="pre">.delta</span></code> files are stored and processed.</p></li>
+</ul>
+<p><strong>For .pdf files:</strong></p>
+<ul class="simple">
+<li><p>Existing annotations are removed via a server RPC (<code class="docutils literal notranslate"><span class="pre">PDFRPC.deleteAllAnnotations</span></code>).</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">importAnnotations</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, new annotations are automatically extracted and saved.</p></li>
+</ul>
+<hr class="docutils" />
+<p id="form-type-choice"><cite>Choice</cite>: The <code class="docutils literal notranslate"><span class="pre">Choice</span></code> component displays a dynamic list of items (choices) where each row can be configured individually.
+This component is useful when you want to collect structured data per entry—especially in workflows or assignments where each step or entity may have different options or linked configurations.</p>
+<p>It renders a table layout and allows you to bind form fields per row.</p>
+<p>While the <code class="docutils literal notranslate"><span class="pre">options</span></code> object often points to backend tables and filters (similar to how workflows are stored in the database),
+it’s important to understand that <strong>in the context of the Choice component, these keys control what is shown, editable, and validated in the UI</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">table</span></code> – Defines where the component stores and reads the selected/configured entries.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">choices.table</span></code> – Defines the source from which the list of available rows is loaded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">choices.filter</span></code> – Controls which rows appear at all (static or dynamic rules).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">choices.disabled</span></code> – Prevents specific rows from being selectable or editable while keeping them visible if needed.</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>To better understand how the <code class="docutils literal notranslate"><span class="pre">Choice</span></code> component fits into a workflow, here’s a minimal example of how workflows are structured in the backend (see <a class="reference internal" href="../../../for_researchers/study/study_basics.html"><span class="doc">What is a Study?</span></a> for further examples of study workflows):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Peer Review Workflow&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepType&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;allowBackward&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;stepType&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;allowBackward&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;configuration&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reviewLink&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reviewText&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">          </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>In this structure:</p>
+<ul class="simple">
+<li><p>Each workflow contains multiple <code class="docutils literal notranslate"><span class="pre">steps</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stepType</span></code> defines the type of action (e.g., edit, review).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allowBackward</span></code> determines if users can return to a step.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">configuration</span></code> holds extra options or fields for that step.</p></li>
+</ul>
+<p><strong>However</strong>, when using the Choice component, you are not editing this structure directly.
+Instead, you are <strong>selecting and configuring rows</strong> from a source list (<code class="docutils literal notranslate"><span class="pre">choices.table</span></code>) based on filters (<code class="docutils literal notranslate"><span class="pre">choices.filter</span></code>),
+and binding the results to your form via <code class="docutils literal notranslate"><span class="pre">v-model</span></code>.</p>
+</div>
+<p>Example usage:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">FormChoice</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;workflowSteps&quot;</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;{</span>
+<span class="s">        options: {</span>
+<span class="s">            table: &#39;workflow_step_assignment&#39;,</span>
+<span class="s">            choices: {</span>
+<span class="s">                table: &#39;workflow_step&#39;,</span>
+<span class="s">                filter: [</span>
+<span class="s">                    { type: &#39;formData&#39;, key: &#39;workflowId&#39;, value: &#39;workflowId&#39; }</span>
+<span class="s">                ]</span>
+<span class="s">            }</span>
+<span class="s">        }</span>
+<span class="s">    }&quot;</span>
+    <span class="err">@</span><span class="na">update:config-status</span><span class="o">=</span><span class="s">&quot;handleStatus&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">FormChoice</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/form/Choice.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ChoiceExample&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">FormChoice</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">workflowSteps</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">handleStatus</span><span class="p">(</span><span class="nx">status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Config status:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="p">);</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">Choice properties</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>modelValue</p></td>
+<td><p>Two-way bound data array for all choices (stores the selected/configured rows).</p></td>
+<td><p>Array</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>options</p></td>
+<td><p>Configuration object that defines both:
+- The target table for storing selection/configuration.
+- The source and filtering logic for available choices.</p></td>
+<td><p>Object</p></td>
+<td><p>True</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id5">
+<caption><span class="caption-text">options.options.choices</span><a class="headerlink" href="#id5" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>table</p></td>
+<td><p>Backend table from which the component <strong>loads available choices</strong> to display in the list.</p></td>
+</tr>
+<tr class="row-odd"><td><p>filter</p></td>
+<td><p>Rules controlling <strong>which rows are visible</strong>.
+Can be based on static values or dynamic form data.</p></td>
+</tr>
+<tr class="row-even"><td><p>disabled</p></td>
+<td><p>Optional rules to <strong>hide or lock</strong> certain rows without removing them.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The component emits <code class="docutils literal notranslate"><span class="pre">&#64;update:config-status</span></code> whenever one or more of the rows has incomplete configuration.
+It also provides a <code class="docutils literal notranslate"><span class="pre">validate()</span></code> method which can be called from the parent via a ref to ensure all required inputs are set.</p>
+<p>While the backend table/field names come from the database model,
+<strong>their effect inside the Choice component is purely about what gets rendered, how it can be interacted with, and what gets sent back when saving</strong>.</p>
+</div>
+<hr class="docutils" />
+<p id="form-type-default"><cite>Default</cite>: Basic HTML <a class="reference external" href="https://www.w3.org/TR/2010/WD-html5-20101019/the-input-element.html">input</a> from type specified in <code class="docutils literal notranslate"><span class="pre">type</span></code> if no other type matches.
+For example it is used for <code class="docutils literal notranslate"><span class="pre">text</span></code>.</p>
+<table class="docutils align-default" id="id6">
+<caption><span class="caption-text">Extended form properties</span><a class="headerlink" href="#id6" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>name</p></td>
+<td><p>The name of the input field</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="row-odd"><td><p>class</p></td>
+<td><p>The css class of the input field</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="row-even"><td><p>placeholder</p></td>
+<td><p>The placeholder of the input field</p></td>
+<td><p>false</p></td>
+</tr>
+</tbody>
+</table>
+<p>Additional options:</p>
+<ul>
+<li><p>suffix — Optional action button inside the input. Provide an object like:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nx">suffix</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Go&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">tooltip</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Click to trigger&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">onClick</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>readOnly — If <cite>true</cite>, the field cannot be modified but remains visible.</p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Moodle Options</strong></p>
+<p>The <strong>MoodleOptions</strong> wraps a <span class="xref std std-doc">Basic Form</span> to collect
+Moodle connection parameters and, optionally, an assignment ID. It is used inside
+<span class="xref std std-doc">StepperModal</span> workflows such as:</p>
+<ul class="simple">
+<li><p>Importing submissions from Moodle</p></li>
+<li><p>Publishing review links</p></li>
+<li><p>Bulk user creation with upload to Moodle</p></li>
+</ul>
+<p>Example usage:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">MoodleOptions</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;moodleOptionsForm&quot;</span>
+  <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;moodleOptions&quot;</span>
+  <span class="na">with-assignment-id</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Field visibility and defaults are driven by admin settings (<code class="docutils literal notranslate"><span class="pre">rpc.moodleAPI.*</span></code>).
+Assignment IDs can be fetched live from Moodle via a <code class="docutils literal notranslate"><span class="pre">Refresh</span></code> button, which triggers
+a backend request (<code class="docutils literal notranslate"><span class="pre">assignmentGetInfo</span></code>).
+For the end-to-end researcher workflow, see <span class="xref std std-doc">../../for_researchers/moodle_usage</span>.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="editor.html" class="btn btn-neutral float-left" title="Editor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="icon.html" class="btn btn-neutral float-right" title="Icon" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

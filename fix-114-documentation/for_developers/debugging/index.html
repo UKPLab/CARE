@@ -1,0 +1,303 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Debugging &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Basics" href="../../for_researchers/basics.html" />
+    <link rel="prev" title="Data Table" href="../examples/table.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Debugging</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#general">General</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#browser-developer-tools">Browser Developer Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#inspect-websocket-connection">Inspect Websocket Connection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inspect-vue-js-components">Inspect Vue.js Components</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#stopping-open-processes">Stopping open processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#importing-a-production-database-locally">Importing a Production Database Locally</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#export-on-the-production-server">Export on the production server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#transfer-files-and-restore-on-the-local-development-environment">Transfer files and restore on the local development environment</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Debugging</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/debugging/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="debugging">
+<h1>Debugging<a class="headerlink" href="#debugging" title="Link to this heading"></a></h1>
+<p>During development it is often necessary to get some insights into the different aspects of the application.
+Thereby, a few methods have been found to be very helpful in accelerating the programming process.
+Some of them are already describe inside the other sections of this documentation, but here they are listed again for convenience.</p>
+<section id="general">
+<h2>General<a class="headerlink" href="#general" title="Link to this heading"></a></h2>
+<p>Within the Development Mode (i.e. when running <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code>), we enabled different debugging options supporting you in the development process.
+For example, the backend will log everything to the console, and the frontend will not minify the code. Also, the frontend will automatically reload the page when you change the code (i.e., hot loading).
+Furthermore, the debugging options for vue.js are enabled, such that you can use the vue.js devtools to inspect the application.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use console.log() to print out the values of variables and objects.
+To help you find the output in the console, you can use some kind of prefix, e.g. <code class="docutils literal notranslate"><span class="pre">console.log(&quot;debugging</span> <span class="pre">output:</span> <span class="pre">&quot;,</span> <span class="pre">myVar);</span></code>.
+Remember that logging in backend is displayed in your terminal, while logging in frontend is displayed in your browser console (i.e., Developer tools).</p>
+</div>
+</section>
+<section id="browser-developer-tools">
+<h2>Browser Developer Tools<a class="headerlink" href="#browser-developer-tools" title="Link to this heading"></a></h2>
+<p>Most of the commonly used browser support debugging tools, such as the developer console, the network tab, and the vue.js devtools.
+The developer console is a very powerful tool, which allows you to inspect the DOM, the CSS, and the JavaScript code.
+In the following, we will describe some of the most useful features of the developer console.</p>
+<section id="inspect-websocket-connection">
+<h3>Inspect Websocket Connection<a class="headerlink" href="#inspect-websocket-connection" title="Link to this heading"></a></h3>
+<p>The websocket is used to communicate between the frontend and the backend. It is often necessary to inspect the websocket connection to see what data is sent and received between the frontend and the backend.</p>
+<p>To do so:</p>
+<ol class="arabic simple">
+<li><p>Open the developer console and go to the network tab.</p></li>
+<li><p>Reload the page and at filter for <code class="docutils literal notranslate"><span class="pre">websocket</span></code>.</p></li>
+<li><p>The websocket connection should be listed there. Click on it to see the details.</p></li>
+</ol>
+<figure class="align-default">
+<img alt="Websocket_Inspection" src="../../_images/Websocket_Inspection.png" />
+</figure>
+<p>On the On the <code class="docutils literal notranslate"><span class="pre">Message</span></code> tab (or <code class="docutils literal notranslate"><span class="pre">Responses</span></code>), you can see the messages that are transmitted between the frontend and the backend.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If messages are not immediately visible, refresh the page to ensure all WebSocket communications are captured.</p>
+</div>
+</section>
+<section id="inspect-vue-js-components">
+<h3>Inspect Vue.js Components<a class="headerlink" href="#inspect-vue-js-components" title="Link to this heading"></a></h3>
+<p>The vue.js devtools are a very powerful tool to inspect the vue.js components and they are browser extensions that can be installed from the Chrome Web Store (for Chrome/Edge) or Firefox Add-ons (for Firefox).
+Simply search for “Vue.js devtools” in your browser’s extension store and install the official extension by Vue.js.
+Once you have installed the vue.js devtools in your browser, you can open it by clicking on the <code class="docutils literal notranslate"><span class="pre">Vue</span></code> tab in the top bar of the developer tools.
+(You might also have to unfold the top bar to see the <code class="docutils literal notranslate"><span class="pre">Vue</span></code> tab.)</p>
+<p><strong>Component Inspector Tool:</strong></p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">Components</span></code> panel (the second icon from the left panel in the Vue.js DevTools), you can see all the components that are currently loaded in the application, including their data, props, computed properties, and event listeners.
+It also provides a special component inspector tool (the cursor/mouse icon in the top-right corner of the <code class="docutils literal notranslate"><span class="pre">Components</span></code> panel) that allows you to:</p>
+<ol class="arabic simple">
+<li><p>Click the inspector icon (it shows “Select component in the page” on hover)</p></li>
+<li><p>Hover over any element on the webpage to highlight the corresponding Vue component</p></li>
+<li><p>Click on an element to select its Vue component in the component tree</p></li>
+</ol>
+<p>This tool is particularly useful for:</p>
+<ul class="simple">
+<li><p>Quickly finding which Vue component is responsible for a specific part of the UI</p></li>
+<li><p>Understanding the component hierarchy in complex interfaces</p></li>
+<li><p>Debugging component rendering issues</p></li>
+</ul>
+<figure class="align-default">
+<img alt="Vuex_Inspection" src="../../_images/Vuex_Inspection.png" />
+</figure>
+<p>A very useful feature of the vue.js devtools is the <code class="docutils literal notranslate"><span class="pre">Vuex</span></code> module (the icon at the bottom of the left panel).
+It allows you to inspect the state of the application, including the state of the different vuex modules.
+Sometimes, it is necessary to reload the page again to see the vuex tab in the vue.js devtools.</p>
+<p><strong>Quick Vuex Debugging Tips:</strong></p>
+<ul class="simple">
+<li><p>Use the Vuex tab to monitor state changes in real-time</p></li>
+<li><p>Check the mutation log to see what actions are modifying the state</p></li>
+<li><p>Use the “Time Travel” feature to step back through state changes</p></li>
+<li><p>Export/import state for testing different scenarios</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If Vuex tab doesn’t appear, ensure:</p>
+<ul class="simple">
+<li><p>Vue.js DevTools extension is installed and enabled</p></li>
+<li><p>You’re running in development mode (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code>)</p></li>
+<li><p>The page has been refreshed after installing the extension</p></li>
+<li><p>Vuex store is properly configured in your application</p></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="stopping-open-processes">
+<h2>Stopping open processes<a class="headerlink" href="#stopping-open-processes" title="Link to this heading"></a></h2>
+<p>Sometimes during development, the backend will throw an error, which is not handled by the application itself.
+In that case, the backend will stop working but the process will not be terminated and a error message “Error: listen EADDRINUSE: address already in use :::3001” will be displayed in the terminal.
+In such a case, you have to terminate the process manually in the system monitor.
+To find the process, you can search for <code class="docutils literal notranslate"><span class="pre">node</span></code> in the system monitor.
+If you are sure no other node process is running, you can also terminate the process by executing <code class="docutils literal notranslate"><span class="pre">killall</span> <span class="pre">node</span></code> in the terminal.</p>
+</section>
+<section id="importing-a-production-database-locally">
+<h2>Importing a Production Database Locally<a class="headerlink" href="#importing-a-production-database-locally" title="Link to this heading"></a></h2>
+<p>Sometimes you need the exact data that lives in the production system to reproduce or
+diagnose a bug.  The workflow below shows how to <strong>export</strong> the production database and
+static files, copy them to your workstation, and <strong>restore</strong> them for offline debugging.</p>
+<section id="export-on-the-production-server">
+<span id="db-backup-export"></span><h3>Export on the production server<a class="headerlink" href="#export-on-the-production-server" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1 – Find the running Postgres container (the name will be always like &lt;project_name&gt;-postgres-1)</span>
+docker<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>&lt;project_name&gt;
+
+<span class="c1"># 2 – Create the dump (Makefile target)</span>
+make<span class="w"> </span><span class="nv">CONTAINER</span><span class="o">=</span>&lt;project_name&gt;-postgres-1<span class="w"> </span>backup_db
+
+<span class="c1"># 3 – Inspect the dump folder</span>
+ls<span class="w"> </span>-l<span class="w"> </span>db_dumps/
+
+<span class="c1"># 4 – Prepare a non-root backup location</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>/opt/backups/&lt;project_name&gt;/<span class="k">$(</span>date<span class="w"> </span>+%d-%m-%Y<span class="k">)</span>/
+
+<span class="c1"># 5 – Copy the dump and related files</span>
+cp<span class="w"> </span>db_dumps/dump_dd-mm-yyyy_xx_yy_zz.sql<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>/opt/backups/&lt;project_name&gt;/dd-mm-yyyy/
+cp<span class="w"> </span>-r<span class="w"> </span>./files<span class="w"> </span>/opt/backups/&lt;project_name&gt;/dd-mm-yyyy/
+</pre></div>
+</div>
+</section>
+<section id="transfer-files-and-restore-on-the-local-development-environment">
+<span id="db-backup-download"></span><h3>Transfer files and restore on the local development environment<a class="headerlink" href="#transfer-files-and-restore-on-the-local-development-environment" title="Link to this heading"></a></h3>
+<p>Now that we have the database dump and related files in the backup directory on the deployment server, we need to transfer them to your local development environment.
+Since this is a git repository, you’ll need to manually copy these files to your local working directory.
+The files (.pdf &amp; .delta) are necessary to restore the production data on the local development environment, otherwise the actual data points behind the document entries and studies cannot be found.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1 – Create matching target folders</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>~/projects/&lt;project_name&gt;/db_dumps
+mkdir<span class="w"> </span>-p<span class="w"> </span>~/projects/&lt;project_name&gt;/files
+
+<span class="c1"># 2 – Download the dump</span>
+scp<span class="w"> </span>username@yourServer.domain:/opt/backups/&lt;project_name&gt;/dd-mm-yyyy/dump_dd-mm-yyyy_xx_yy_zz.sql<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>~/projects/&lt;project_name&gt;/db_dumps/
+
+<span class="c1"># 3 – Download / Overwrite related files (LaTeX, PDFs, uploads, etc.)</span>
+<span class="c1"># If your shell interpreter doesn&#39;t need the apostrophe, please remove them from the source path.</span>
+scp<span class="w"> </span>-r<span class="w"> </span>username@yourServer.domain:<span class="sb">`</span>/opt/backups/&lt;project_name&gt;/dd-mm-yyyy/files/*<span class="sb">`</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>~/projects/&lt;project_name&gt;/files/
+</pre></div>
+</div>
+<p id="db-backup-restore">From the <strong>project root</strong> (where the <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> is located):</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>clean<span class="w">                        </span><span class="c1"># drop any existing local database</span>
+make<span class="w"> </span>docker<span class="w">                       </span><span class="c1"># build &amp; start the Postgres container</span>
+make<span class="w"> </span>init<span class="w">                         </span><span class="c1"># create empty tables / seed data</span>
+make<span class="w"> </span>recover_db<span class="w"> </span><span class="nv">CONTAINER</span><span class="o">=</span>&lt;project_name&gt;-postgres-1<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span><span class="nv">DUMP</span><span class="o">=</span>dump_dd-mm-yyyy_xx_yy_zz.sql<span class="w">     </span><span class="c1"># DUMP is just the file name, because the Makefile already prefixes it with `db_dumps/`</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When switching between different branches, be aware that the database will be preserved, but the files in the <code class="docutils literal notranslate"><span class="pre">.files</span></code> directory might be affected.
+If you encounter issues with missing files after switching branches, you may need to manually restore the files from your backup.
+A recommended way is to make a copy of the <code class="docutils literal notranslate"><span class="pre">.files</span></code> folder on a backup directory locally.</p>
+</div>
+<p>Your local instance now should run with the freshest production data, so you can
+reproduce bugs and test fixes without touching the live system.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../examples/table.html" class="btn btn-neutral float-left" title="Data Table" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../for_researchers/basics.html" class="btn btn-neutral float-right" title="Basics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

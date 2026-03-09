@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conventions and Paradigms &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Frameworks" href="frameworks.html" />
+    <link rel="prev" title="Basics" href="basics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="basics.html">Basics</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Conventions and Paradigms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#coding-conventions">Coding Conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#architectural-paradigms">Architectural Paradigms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#communication-paradigms">Communication Paradigms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#code-review-guidelines">Code Review Guidelines</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#general">General</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend">Backend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#frontend">Frontend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#repository-workflows">Repository Workflows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#issue-management">Issue Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#git-workflows">git Workflows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assumptions">Assumptions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#general-guidelines">General Guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#instructions">Instructions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="frameworks.html">Frameworks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_stories.html">User Stories</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="basics.html">Basics</a></li>
+      <li class="breadcrumb-item active">Conventions and Paradigms</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/basics/conventions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="conventions-and-paradigms">
+<h1>Conventions and Paradigms<a class="headerlink" href="#conventions-and-paradigms" title="Link to this heading"></a></h1>
+<p>This document describes the conventions and paradigms that are used in the project.</p>
+<section id="coding-conventions">
+<span id="naming-conventions"></span><h2>Coding Conventions<a class="headerlink" href="#coding-conventions" title="Link to this heading"></a></h2>
+<p>We follow the <a class="reference external" href="https://javascript.info/coding-style">Java Script Coding Style</a> for most parts of the project.
+For the frontend we employ the <a class="reference external" href="https://vuejs.org/style-guide/rules-essential.html">Vue Style Guidelines</a>.</p>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
+<p>All methods and classes must be documented.
+We use <a class="reference external" href="https://jsdoc.app/">JSDoc</a> for this purpose.
+The documentation must be written in English.</p>
+</section>
+<section id="architectural-paradigms">
+<h2>Architectural Paradigms<a class="headerlink" href="#architectural-paradigms" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Keeping services lean and simple</p></li>
+<li><p>Extend already defined classes and use already defined methods whenever possible</p></li>
+</ul>
+</section>
+<section id="communication-paradigms">
+<h2>Communication Paradigms<a class="headerlink" href="#communication-paradigms" title="Link to this heading"></a></h2>
+<p>For the socket communication we follow the following conventions:</p>
+<ul class="simple">
+<li><p>All messages are JSON objects.</p></li>
+<li><p>All events use the <a class="reference external" href="https://en.wikipedia.org/wiki/Camel_case">camelCase</a> naming convention.</p></li>
+<li><p>All events are prefixed with the name of the service that emits the event, followed by the action that is performed.
+For example, the event to refresh document data to the client <code class="docutils literal notranslate"><span class="pre">documentRefresh</span></code>.</p></li>
+<li><p>Additional specifier can be added to the event name, if necessary.
+For example, the request of an annotation by a user <code class="docutils literal notranslate"><span class="pre">annotationGetByUser</span></code>.</p></li>
+</ul>
+<p>Additionally, all socket events defined in the Backend must be surrounded by a try-catch block.
+Inside the try block, maximum four lines of code should be executed. If more lines are necessary,
+an additional method should be created and documented.</p>
+<p><strong>Socket Function Documentation Style</strong></p>
+<p>All socket methods in the backend must follow the JSDoc format shown below:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * The description of the method...</span>
+<span class="cm"> * @param {Object} data - The input data from the frontend</span>
+<span class="cm"> * @param {number} data.XXX - some description</span>
+<span class="cm"> * @param {anotherType} data.OOO - some description</span>
+<span class="cm"> * @param {Object} options - Additional configuration parameter</span>
+<span class="cm"> * @param {Object} options.transaction - Sequelize DB transaction options</span>
+<span class="cm"> * @returns {Promise&lt;void&gt;} // specify the return result is void if the method does not return anything</span>
+<span class="cm"> * @throws {Error} - Describe when the error occurs and send the message back</span>
+<span class="cm"> */</span>
+</pre></div>
+</div>
+<p>Use this template when adding or updating any socket functionality. This ensures that the interface is clear and standardized for all developers.</p>
+</section>
+<section id="code-review-guidelines">
+<h2>Code Review Guidelines<a class="headerlink" href="#code-review-guidelines" title="Link to this heading"></a></h2>
+<p>The following checklist ensures consistency, quality, and maintainability across the codebase.
+Reviewers should verify each item before approving changes.</p>
+<section id="general">
+<h3>General<a class="headerlink" href="#general" title="Link to this heading"></a></h3>
+<ul>
+<li><p>All open <code class="docutils literal notranslate"><span class="pre">TODOs</span></code> in the code handled</p></li>
+<li><p>All <a class="reference internal" href="#naming-conventions"><span class="std std-ref">naming conventions</span></a> are fulfilled</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>No redundant or unused variables</p></li>
+<li><p>Variable names are self-explanatory</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Lint: Code is adequately indented and readable</p></li>
+<li><p>All comments properly (e.g., without spelling errors, consistent with the code)</p></li>
+<li><p>All functions are documented properly (e.g., parameters correctly defined, description understandable)</p></li>
+<li><p>Code structure adequate (e.g., no blocks of repeated code, no one-liners in functions)</p></li>
+<li><p>No <code class="docutils literal notranslate"><span class="pre">console.log</span></code> printouts (i.e., always use integrated logger for handling messages) – check console in backend and browser!</p></li>
+</ul>
+</section>
+<section id="backend">
+<h3>Backend<a class="headerlink" href="#backend" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>All file handles in socket connection are async</p></li>
+<li><p>All functions documented</p></li>
+<li><p>All sockets are defined using <a class="reference internal" href="../backend/socket.html#createsocket"><span class="std std-ref">createSocket: How it works</span></a></p></li>
+<li><p>All socket events that perform database changes set <code class="docutils literal notranslate"><span class="pre">db_transaction:</span> <span class="pre">true</span></code> (see <a class="reference internal" href="../backend/socket.html#socket-db-transaction"><span class="std std-ref">Transaction Usage</span></a>)</p></li>
+<li><p>Socket classes do not call the DB directly (always use predefined functions in DB Models or <code class="docutils literal notranslate"><span class="pre">MetaModel</span></code> class – see <code class="docutils literal notranslate"><span class="pre">./backend/db/models</span></code> and <code class="docutils literal notranslate"><span class="pre">./backend/db/MetaModel.js</span></code>)</p></li>
+<li><p>DB transactions are used if multiple DB calls are depending on each other</p></li>
+<li><p>MetaModel.js used for all possible functions</p></li>
+<li><p>Security: No <code class="docutils literal notranslate"><span class="pre">userId</span></code> is set from the frontend, backend <code class="docutils literal notranslate"><span class="pre">this.userId</span></code> is always used</p></li>
+</ul>
+</section>
+<section id="frontend">
+<h3>Frontend<a class="headerlink" href="#frontend" title="Link to this heading"></a></h3>
+<ul>
+<li><p>Complied with <a class="reference external" href="https://vuejs.org/style-guide/">Vue Styling Guidelines</a></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Vue component names without “.vue” and multi-word</p></li>
+<li><p>Use detailed prop definitions (e.g., type and required defined!)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">v-for</span></code> loops use <code class="docutils literal notranslate"><span class="pre">:key=&quot;&lt;&gt;.id&quot;</span></code> attribute</p></li>
+<li><p>No usage of <code class="docutils literal notranslate"><span class="pre">v-if</span></code> on the same element as <code class="docutils literal notranslate"><span class="pre">v-for</span></code></p></li>
+<li><p><a class="reference external" href="https://vuejs.org/style-guide/rules-essential.html#use-component-scoped-styling">Component-scoped styling</a> used</p></li>
+<li><p><a class="reference external" href="https://vuejs.org/style-guide/rules-strongly-recommended.html#simple-computed-properties">Simple computed properties</a> (i.e., no complex code in computes)</p></li>
+<li><p><a class="reference external" href="https://vuejs.org/style-guide/rules-recommended.html#component-instance-options-order">Component/instance options order</a> and <a class="reference external" href="https://vuejs.org/style-guide/rules-recommended.html#element-attribute-order">Element attribute order</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Check for stale variables and methods (e.g., remove unused functions and options)</p></li>
+<li><p>Imports use “&#64;” in path (except for same or one-level sub-directory imports)</p></li>
+<li><p>Basic components are used (e.g., Icons, Buttons, Tables, etc.)</p></li>
+<li><p>Safeguards for loaded variables from backend are available (i.e., what happens if receiving a variable from backend fails or needs time – user needs to be informed!)</p></li>
+<li><p>Every component loads data it needs by itself (using the <span class="xref std std-ref">DB subscription method</span>) // TODO: Link to DB subscription method when ready</p></li>
+</ul>
+</section>
+<section id="id1">
+<h3>Documentation<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Documentation compiles without errors and is readable (i.e., <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">doc</span></code>)</p></li>
+<li><p>Documentation is clearly written and helps a <a class="reference external" href="https://de.wikipedia.org/wiki/D%C3%BCmmster_anzunehmender_User">DAU</a> to implement a feature</p></li>
+</ul>
+</section>
+</section>
+<section id="repository-workflows">
+<h2>Repository Workflows<a class="headerlink" href="#repository-workflows" title="Link to this heading"></a></h2>
+<section id="issue-management">
+<h3>Issue Management<a class="headerlink" href="#issue-management" title="Link to this heading"></a></h3>
+<hr class="docutils" />
+<p><strong>Issues</strong> are the central means of tracking tasks in this process. You should open an issue when</p>
+<ul class="simple">
+<li><p>you are fixing a bug in a stable branch (e.g. on development).</p></li>
+<li><p>you are making hot fixes (on the deployment branch).</p></li>
+<li><p>you are creating a new feature or part of a feature.</p></li>
+</ul>
+<p>One issue can comprise multiple smaller tasks, but it should specify a development process that has clear intended value to the project. Typically, an issue is processed by a single developer.</p>
+</section>
+</section>
+<section id="git-workflows">
+<h2>git Workflows<a class="headerlink" href="#git-workflows" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="overview">
+<h3>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h3>
+<p>This part explains the workflow for adding a new feature to the code base involving proper management of git branches and naming conventions. Please read this manual before making any changes to the code. We essentially stick to <a class="reference external" href="https://nvie.com/posts/a-successful-git-branching-model/">this</a> branching model for git.</p>
+</section>
+<section id="assumptions">
+<h3>Assumptions<a class="headerlink" href="#assumptions" title="Link to this heading"></a></h3>
+<p>You want to implement a new feature, realize a hot fix or make any other non-trivial change to the repository code. You created a summarizing issue of this feature/bug/release using one of the templates describing the details of what you plan to do and what the objective (testable) outcome is.</p>
+<p>There are currently two main branches in the repository:</p>
+<ul class="simple">
+<li><p><cite>main</cite>: holds only verified, stable and deployable code. Only major pull requests are added to this by repo maintainers. This branch is protected.</p></li>
+<li><p><cite>dev</cite>: holds current, stable code under development. This branch may include experimental features etc. and is merged to <cite>main</cite> occasionally. This branch is protected.</p></li>
+</ul>
+</section>
+<section id="general-guidelines">
+<h3>General Guidelines<a class="headerlink" href="#general-guidelines" title="Link to this heading"></a></h3>
+<p><strong>Branch naming</strong></p>
+<ul class="simple">
+<li><p>Child branches start with the name of their parent branch (excluding <cite>main</cite> and <cite>dev</cite> as parents) as a prefix, e.g.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">feat</span><span class="o">-</span><span class="n">FNUM</span><span class="o">-</span><span class="n">FNAME</span><span class="o">-</span><span class="n">CHILD</span> <span class="n">feat</span><span class="o">-</span><span class="n">FNUM</span><span class="o">-</span><span class="n">FNAME</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Separate each part of the branch name by “-”</p></li>
+<li><p>Child names are short and expressive. If you created an extra issue for them, you should start with its number, e.g.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">feat</span><span class="o">-</span><span class="n">FNUM</span><span class="o">-</span><span class="n">FNAME</span><span class="o">-</span><span class="n">CHILDNUM</span><span class="o">-</span><span class="n">CHILDNAME</span> <span class="n">feat</span><span class="o">-</span><span class="n">FNUM</span><span class="o">-</span><span class="n">FNAME</span>
+</pre></div>
+</div>
+<p><strong>Commit Messages</strong></p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">&lt;type&gt;</span> <span class="pre">:</span> <span class="pre">&lt;short</span> <span class="pre">summary&gt;</span></code></p>
+<p>Explanation of Each Part:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;type&gt;</span></code>: Indicates the category of change (e.g., feat, fix, docs).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;short</span> <span class="pre">summary&gt;</span></code>: A concise description of the change in the present tense.</p></li>
+</ul>
+<p><strong>Rules</strong>:</p>
+<ol class="arabic simple">
+<li><p>Concise and precise commit messages that describe what you have done.</p></li>
+<li><p>Use the <strong>present tense</strong> (e.g., “add”, not “added”).</p></li>
+<li><p>Use <strong>lowercase</strong> for <code class="docutils literal notranslate"><span class="pre">&lt;type&gt;</span></code> and the summary.</p></li>
+<li><p>Describe <strong>WHAT</strong> the commit does, <strong>not WHY</strong>.</p></li>
+<li><p><strong>Atomic commits</strong> only: Each commit should represent a <strong>single, small, self-contained change</strong> instead of a list of unrelated changes.</p></li>
+<li><p><strong>Rule-of-thumb</strong>: A commit should cover code of at most one day of work.</p></li>
+</ol>
+<p>General Example: <code class="docutils literal notranslate"><span class="pre">fix:</span> <span class="pre">remove</span> <span class="pre">parameter</span> <span class="pre">&quot;xyz&quot;</span></code></p>
+<p><strong>Examples of Types</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">feat</span></code>: A new feature</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fix</span></code>: A bug fix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">refactor</span></code>: A code change that neither fixes a bug nor adds a feature</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code>: Documentation changes only</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test</span></code>: Adding tests or correcting existing tests</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style</span></code>: Changes that do not affect the meaning of the code (formatting, whitespace, etc.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ci</span></code>: Changes to CI configuration files and scripts</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chore</span></code>: Other changes (build tasks, dependencies, maintenance)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">other</span></code>: Use it in case nothing above fits your case (not recommended)</p></li>
+</ul>
+<p><strong>Suggestive Verbs per Type</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Suggestive Verbs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>feat</p></td>
+<td><p>add, implement, introduce, create, enable, integrate</p></td>
+</tr>
+<tr class="row-odd"><td><p>fix</p></td>
+<td><p>fix, resolve, patch, correct, repair, handle</p></td>
+</tr>
+<tr class="row-even"><td><p>refactor</p></td>
+<td><p>refactor, restructure, simplify, optimize, extract, consolidate</p></td>
+</tr>
+<tr class="row-odd"><td><p>docs</p></td>
+<td><p>add, update, revise, clarify, document, remove</p></td>
+</tr>
+<tr class="row-even"><td><p>test</p></td>
+<td><p>add, update, fix, expand, cover, mock</p></td>
+</tr>
+<tr class="row-odd"><td><p>style</p></td>
+<td><p>format, reformat, lint, clean, style, prettify</p></td>
+</tr>
+<tr class="row-even"><td><p>ci</p></td>
+<td><p>configure, update, fix, add, adjust, remove</p></td>
+</tr>
+<tr class="row-odd"><td><p>chore</p></td>
+<td><p>update, bump, remove, clean, upgrade, configure</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="instructions">
+<h3>Instructions<a class="headerlink" href="#instructions" title="Link to this heading"></a></h3>
+<hr class="docutils" />
+<p><strong>New feature</strong></p>
+<p>You want to implement an entirely new feature, which is non-trivial to realize.</p>
+<ol class="arabic simple">
+<li><p>Any features are realized starting from the development branch. Switch to this branch for creating a child branch.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="n">dev</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>To create a new feature branch on <cite>dev</cite>, you first need to define a proper name. The feature has an associated issue number <code class="docutils literal notranslate"><span class="pre">FNUM</span></code> and a one-word name <code class="docutils literal notranslate"><span class="pre">FNAME</span></code>. Then you create a child branch as:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">feat</span><span class="o">-</span><span class="n">FNUM</span><span class="o">-</span><span class="n">FNAME</span> <span class="n">dev</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Work on this branch. You may create arbitrary child branches as you see fit, but please stick to the general naming conventions (outlined above).</p></li>
+<li><p>Push the branch and open a <strong>Merge Request</strong> into <cite>dev</cite>. Do <strong>not</strong> merge locally.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">push</span> <span class="o">-</span><span class="n">u</span> <span class="n">origin</span> <span class="n">feat</span><span class="o">-</span><span class="n">FNUM</span><span class="o">-</span><span class="n">FNAME</span>
+<span class="c1"># then open a Merge Request targeting &#39;dev&#39;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="5">
+<li><p>After the MR is approved and merged, delete the branch via the platform option
+(“Delete source branch on merge”). Avoid manual deletions unless needed.</p></li>
+</ol>
+<p><strong>Hot fixes</strong></p>
+<p>The deployed version has a bug that needs to be fixed ad-hoc. There is an associated issue with an issue number.</p>
+<ol class="arabic simple">
+<li><p>Create a hot-fix branch from the main branch with issue number <code class="docutils literal notranslate"><span class="pre">INUM</span></code>.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="n">main</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">hotfix</span><span class="o">-</span><span class="n">INUM</span> <span class="n">main</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Realize the changes on this branch.</p></li>
+<li><p>Push the branch and open a <strong>Merge Request</strong> into <cite>dev</cite>. It is reviewed by maintainers.</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">push</span> <span class="o">-</span><span class="n">u</span> <span class="n">origin</span> <span class="n">hotfix</span><span class="o">-</span><span class="n">INUM</span>
+<span class="c1"># then open a Merge Request targeting &#39;main&#39;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>After the MR is merged, delete the branch via the platform option
+(“Delete source branch on merge”).</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basics.html" class="btn btn-neutral float-left" title="Basics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="frameworks.html" class="btn btn-neutral float-right" title="Frameworks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

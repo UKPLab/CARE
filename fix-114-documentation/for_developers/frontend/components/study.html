@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Apply Skill Modal : Preprocessing" href="apply_skill_preprocessing.html" />
+    <link rel="prev" title="Step Modal" href="stepmodal.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../basic/basic.html">Basic</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="components.html">Components</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="components.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="annotator.html">Annotator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stepmodal.html">Step Modal</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#dashboard">Dashboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#document">Document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study">Study</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="components.html">Components</a></li>
+      <li class="breadcrumb-item active">Study</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/components/study.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="study">
+<h1>Study<a class="headerlink" href="#study" title="Link to this heading"></a></h1>
+<p>This documentation explains the <strong>purpose</strong>, <strong>props/events</strong>, and <strong>integration patterns</strong> for each modal connected to study.
+Use these patterns to add study features or wire the modals into dashboards and routes.</p>
+<p>Key features:</p>
+<ul class="simple">
+<li><p><strong>End-to-end session flow</strong>: join/start, resume, finish, evaluate, and report.</p></li>
+<li><p><strong>Store-backed rendering</strong>: lists of sessions, tags, comments, and annotations are pulled from <a class="reference internal" href="../vuex_store.html"><span class="doc">Vuex Store</span></a> <code class="docutils literal notranslate"><span class="pre">table/*</span></code> stores.</p></li>
+<li><p><strong>WebSocket actions</strong>: starting/finishing sessions, updating evaluations, etc.</p></li>
+<li><p><strong>Navigation &amp; telemetry hooks</strong>: emit events to scroll the PDF/Sidebar, emit optional <a class="reference internal" href="../stats.html"><span class="doc">User Statistics</span></a> events, and route back to <a class="reference internal" href="dashboard.html"><span class="doc">Dashboard</span></a>.</p></li>
+</ul>
+<section id="studymodal">
+<h2>StudyModal<a class="headerlink" href="#studymodal" title="Link to this heading"></a></h2>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/study/StudyModal.vue</span></code></p>
+<p><strong>Purpose</strong>
+Gatekeeper to a study: either <strong>start/join</strong> a session (collab or solo), <strong>resume</strong> open sessions, or <strong>finish</strong> specific ones from a table of sessions.</p>
+<p><strong>Highlights</strong></p>
+<ul class="simple">
+<li><p>Renders a sessions table for the selected study with <strong>contextual action buttons</strong>:</p>
+<ul>
+<li><p><strong>Start session</strong> (if resumable = false and session not started)</p></li>
+<li><p><strong>Resume session</strong> (if resumable and started)</p></li>
+<li><p><strong>Finish session</strong> (close an open session)</p></li>
+</ul>
+</li>
+<li><p>Shows study description (read-only) and meta-info (time limit, collab, session limits).</p></li>
+<li><p>Emits:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;start({</span> <span class="pre">studySessionId</span> <span class="pre">})</span></code> — after a successful <code class="docutils literal notranslate"><span class="pre">studySessionStart</span></code> socket call</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;finish({</span> <span class="pre">studySessionId</span> <span class="pre">})</span></code> — when user triggers finish from the table</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Initialization / Data dependencies</strong></p>
+<ul class="simple">
+<li><p>Props:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">studyId</span></code> (Number, required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">studyClosed</span></code> (Boolean)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> (Number, default 0)</p></li>
+</ul>
+</li>
+<li><p>Reads from Vuex:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">table/study</span></code> (study meta, scheduling, constraints)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">table/study_session</span></code> (all sessions for the study, transformed for the table)</p></li>
+</ul>
+</li>
+<li><p>WebSocket:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">studySessionStart</span></code> — start/join a session</p></li>
+</ul>
+</li>
+<li><p>Optional stats: emits a <code class="docutils literal notranslate"><span class="pre">stats</span></code> event on session actions if <code class="docutils literal notranslate"><span class="pre">acceptStats</span></code> is provided via inject.</p></li>
+</ul>
+<p><strong>Usage</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyCoordinator&quot;</span><span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>In a dashboard list:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyCoordinator&quot;</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;deleteConf&quot;</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">UploadModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;uploadModal&quot;</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">CreateModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;createModal&quot;</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">EditModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;editModal&quot;</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">DownloadPDFModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;pdfDownloadModal&quot;</span><span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>In a study route:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;studySessionId === 0 || (studySession &amp;&amp; studySession.start === null)&quot;</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyModal&quot;</span>
+  <span class="na">:study-id</span><span class="o">=</span><span class="s">&quot;studyId&quot;</span>
+  <span class="na">:study-closed</span><span class="o">=</span><span class="s">&quot;studyClosed&quot;</span>
+  <span class="na">:study-session-id</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
+  <span class="err">@</span><span class="na">finish</span><span class="o">=</span><span class="s">&quot;finalFinish&quot;</span>
+  <span class="err">@</span><span class="na">start</span><span class="o">=</span><span class="s">&quot;start&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="finishmodal">
+<span id="finish-modal"></span><h2>FinishModal<a class="headerlink" href="#finishmodal" title="Link to this heading"></a></h2>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/study/FinishModal.vue</span></code></p>
+<p><strong>Purpose</strong>
+Confirm final submission of a study; show <em>time up</em> information when applicable, then thank-you and link back to dashboard after finishing.</p>
+<p><strong>Highlights</strong></p>
+<ul class="simple">
+<li><p>Props:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> (Number, required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">closeable</span></code> (Boolean) — disables closing with keyboard/close button if false</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">showTimeUp</span></code> (Boolean) — displays <em>time expired</em> message</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">finished</span></code> (Boolean) — if already finished, auto-opens in thank-you view</p></li>
+</ul>
+</li>
+<li><p>Emits:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;finish</span></code> — when user clicks “Finish study”</p></li>
+</ul>
+</li>
+<li><p>Navigation:</p>
+<ul>
+<li><p>“Back to Dashboard” button after finish</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Usage</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">FinishModal</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyFinishModal&quot;</span>
+  <span class="na">:study-session-id</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
+  <span class="na">:show-time-up</span><span class="o">=</span><span class="s">&quot;timeUp&quot;</span>
+  <span class="err">@</span><span class="na">finish</span><span class="o">=</span><span class="s">&quot;finalFinish({ studySessionId: studySessionId })&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="reviewmodal">
+<h2>ReviewModal<a class="headerlink" href="#reviewmodal" title="Link to this heading"></a></h2>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/study/ReviewModal.vue</span></code></p>
+<p><strong>Purpose</strong>
+Allow a reviewer to <strong>accept</strong> or <strong>decline</strong> a <strong>finished</strong> study session with an optional comment.</p>
+<p><strong>Highlights</strong></p>
+<ul class="simple">
+<li><p>Only actionable if the target session has an <code class="docutils literal notranslate"><span class="pre">end</span></code> timestamp (i.e., it’s closed).</p></li>
+<li><p>Props via inject:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> — used to fetch the session and to validate state</p></li>
+</ul>
+</li>
+<li><p>Emits no custom event; instead it <strong>writes via socket</strong>:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">studySessionUpdate</span></code> with fields <code class="docutils literal notranslate"><span class="pre">evaluation</span></code> (0/1) and <code class="docutils literal notranslate"><span class="pre">reviewComment</span></code></p></li>
+</ul>
+</li>
+<li><p>Computed:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">evaluated</span></code> checks if current session already has an evaluation</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Usage</strong></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">reviewModal</span><span class="p">.</span><span class="nx">open</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="reportmodal-reportitem">
+<h2>ReportModal (+ ReportItem)<a class="headerlink" href="#reportmodal-reportitem" title="Link to this heading"></a></h2>
+<p>Location:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/study/ReportModal.vue</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/study/ReportItem.vue</span></code></p></li>
+</ul>
+<p><strong>Purpose</strong>
+Generate a <strong>review report</strong> for a study by grouping annotations by tag (sections) and listing <strong>general notes</strong> (top).
+Each entry is clickable and <strong>jumps to the PDF &amp; Sidebar</strong> position (see <a class="reference internal" href="annotator.html"><span class="doc">Annotator</span></a>).</p>
+<p><strong>Highlights</strong></p>
+<ul class="simple">
+<li><p>Collects <strong>annotations</strong> (from all sessions of the current study) and <strong>comments</strong> without annotation (general notes).</p></li>
+<li><p>Groups by <strong>tagId</strong> to create sections (with tag color).</p></li>
+<li><p>Sorting:</p>
+<ul>
+<li><p>Anchored annotations are sorted by <code class="docutils literal notranslate"><span class="pre">TextPositionSelector.start</span></code> (see <a class="reference internal" href="annotator.html"><span class="doc">Annotator</span></a>)</p></li>
+<li><p>Items without anchors are listed first</p></li>
+</ul>
+</li>
+<li><p>Interaction:</p>
+<ul>
+<li><p>Clicking an item emits <code class="docutils literal notranslate"><span class="pre">sidebarScroll</span></code> and <code class="docutils literal notranslate"><span class="pre">pdfScroll</span></code> with the related id</p></li>
+</ul>
+</li>
+<li><p>The <strong>ReportItem</strong> component:</p>
+<ul>
+<li><p>Displays the annotation’s leading comment or “(no text)”</p></li>
+<li><p>Shows a citation button rendering the <strong>quote</strong> (<code class="docutils literal notranslate"><span class="pre">TextQuoteSelector.exact</span></code>) as tooltip</p></li>
+<li><p>Emits back to ReportModal which forwards PDF/Sidebar scroll events and closes itself</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Usage</strong></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">reportModal</span><span class="p">.</span><span class="nx">open</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="stepmodal.html" class="btn btn-neutral float-left" title="Step Modal" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apply_skill_preprocessing.html" class="btn btn-neutral float-right" title="Apply Skill Modal : Preprocessing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
