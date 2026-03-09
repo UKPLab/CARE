@@ -274,7 +274,7 @@ export default {
               }
             } else {
               this.error = true;
-              this.errorMessage = this.getErrorMessage(response);
+              this.errorMessage = response.message || 'An error occurred while loading the study step.';
 
               this.$nextTick(() => {
                 if (this.$refs.modal) {
@@ -283,7 +283,7 @@ export default {
               });
               
               this.$emit('error', {
-                code: response.code || 'FILE_MISSING',
+                code: response.code || 'UNKNOWN_ERROR',
                 message: response.message || 'An error occurred while loading the study step.'
               });
 
@@ -363,18 +363,6 @@ export default {
       });
 
       this.close();
-    },
-
-    getErrorMessage(response) {
-      const errorMessages = {
-        'DOCUMENT_NOT_FOUND': 'The document has been deleted or does not exist.',
-        'ACCESS_DENIED': 'You do not have permission to access this document.',
-        'FILE_MISSING': 'The document file is missing from the server.',
-        'UNKNOWN_ERROR': 'An unexpected error occurred.'
-      };
-      
-      const errorCode = response.code || 'UNKNOWN_ERROR';
-      return errorMessages[errorCode] || response.message || 'An error occurred while loading the study step.';
     },
   }
 }

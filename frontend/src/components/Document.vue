@@ -81,29 +81,18 @@ export default {
      * Set document error state with user-friendly title and message
      */
     setDocumentError(message, errorCode) {
-      const errorMap = {
-        'DOCUMENT_NOT_FOUND': {
-          title: 'Document Not Found',
-          message: 'The document you are looking for does not exist or has been deleted.'
-        },
-        'ACCESS_DENIED': {
-          title: 'Access Denied',
-          message: 'You don\'t have permission to view this document.'
-        },
-        'FILE_MISSING': {
-          title: 'File Not Available',
-          message: 'The document file could not be found on the server.'
-        }
+      const titleMap = {
+        'DOCUMENT_NOT_FOUND': 'Document Not Found',
+        'ACCESS_DENIED': 'Access Denied',
+        'FILE_MISSING': 'File Not Available',
       };
-      
+
       // Use predefined message if error code exists
-      if (errorCode && errorMap[errorCode]) {
-        this.documentError = errorMap[errorCode];
-      } else {
-        // Parse message to determine error type
-        this.documentError = { title: "Document Error", message: message || "An unexpected error occurred." };
-      }
-      
+      this.documentError = {
+        title: titleMap[errorCode] || 'Document Error',
+        message: message || 'An unexpected error occurred.'
+      };
+
       // Also emit toast for immediate feedback
       this.eventBus.emit('toast', {
         title: this.documentError.title,

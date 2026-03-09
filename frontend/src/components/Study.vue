@@ -467,32 +467,17 @@ export default {
   },
   methods: {
     setStudyError(message, errorCode) {
-      const errorMap = {
-        'NOT_FOUND': {
-          title: 'Study Not Found',
-          message: 'This study no longer exists or has been removed.'
-        },
-        'ACCESS_DENIED': {
-          title: 'Access Denied',
-          message: 'You don\'t have permission to access this study.'
-        },
-        'FILE_MISSING': {
-          title: 'Files Not Available',
-          message: 'Required files are missing. Please contact the study administrator.'
-        },
-        'DOCUMENT_NOT_FOUND': {
-          title: 'Document Not Found',
-          message: 'The study document no longer exists or has been removed.'
-        }
+      const titleMap = {
+        NOT_FOUND: 'Study Not Found',
+        ACCESS_DENIED: 'Access Denied',
+        FILE_MISSING: 'Files Not Available',
+        DOCUMENT_NOT_FOUND: 'Document Not Found',
       };
-      if (errorCode && errorMap[errorCode]) {
-        this.studyError = errorMap[errorCode];
-      } else {
-        this.studyError = {
-          title: 'Access Error!',
-          message: message,
-        }
-      }
+
+      this.studyError = {
+        title: titleMap[errorCode] || 'Access Error!',
+        message: message || 'An unexpected error occurred.'
+      };
     },
     updateStudyData(stepId, data_type, data) {
       if (!this.studyData[stepId]) {
