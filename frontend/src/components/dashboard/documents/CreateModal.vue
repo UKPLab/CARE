@@ -21,7 +21,8 @@
             Please select a valid document type.
           </div>
           <label class="form-label mt-3">Name of the document:</label>
-          <input class="form-control" name="file" type="text" v-model="name"
+          <input
+v-model="name" class="form-control" name="file" type="text"
                  @keyup.enter="create"/>
         </div>
       </div>
@@ -31,7 +32,8 @@
         <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
           Close
         </button>
-        <button class="btn btn-primary" type="button" @click="create"
+        <button
+class="btn btn-primary" type="button" @click="create"
                 @keyup.enter="create">
           Create
         </button>

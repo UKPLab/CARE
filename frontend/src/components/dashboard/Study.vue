@@ -9,7 +9,7 @@
               title="Overview"
               text="Overview"
               icon="clipboard"
-              @click="this.$refs.overviewModal.open()"
+              @click="$refs.overviewModal.open()"
           />
           <BasicButton
               class="btn-secondary btn-sm"

@@ -3,9 +3,9 @@
       ref="coordinator"
       table="study"
       :title="isTemplateMode ? 'Template' : 'Study'"
-      :textAdd="isTemplateMode ? 'Create' : 'Add'"
-      :customSubmit="isTemplateMode"
-      :defaultValue="{ isTemplateMode: isTemplateMode }"
+      :text-add="isTemplateMode ? 'Create' : 'Add'"
+      :custom-submit="isTemplateMode"
+      :default-value="{ isTemplateMode: isTemplateMode }"
       @success="success"
       @submit="handleSubmit"
   >

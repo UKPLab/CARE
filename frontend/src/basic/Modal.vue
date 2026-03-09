@@ -24,8 +24,8 @@
                 v-if="!removeClose"
                 aria-label="Close"
                 class="btn-close"
-                @click="handleCloseClick"
                 type="button"
+                @click="handleCloseClick"
             />
           </div>
           <div class="modal-body">

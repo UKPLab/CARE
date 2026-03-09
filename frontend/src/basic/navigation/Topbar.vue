@@ -1,7 +1,7 @@
 <template>
   <div
-    ref="topbar"
     id="wrapper"
+    ref="topbar"
     class="nav-container"
   >
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
@@ -45,9 +45,9 @@
               "
             >
               <div
-                @click.stop="toggleProjectDropdown"
                 class="project-box"
                 :title="`Project: ${currentProjectName}`"
+                @click.stop="toggleProjectDropdown"
               >
                 <span class="project-text">Project: {{ currentProjectName }}</span>
               </div>
@@ -180,6 +180,12 @@ export default {
       return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
   },
+  mounted() {
+    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
+  },
   methods: {
     selectProject(projectId) {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
@@ -221,12 +227,6 @@ export default {
         dropdownElement.classList.add("show");
       }
     },
-  },
-  mounted() {
-    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
-  },
-  beforeUnmount() {
-    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
 }
 

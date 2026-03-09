@@ -48,7 +48,6 @@
         <div v-if="editingTag && annotationId" class="d-flex align-items-center">
           <select
             v-model="selectedTagId"
-            @change="saveTagChange"
             class="form-select form-select-md"
             :style="{
               display: 'inline-block',
@@ -57,6 +56,7 @@
               fontSize: 'small',
               fontStyle: 'italic'
             }"
+            @change="saveTagChange"
           >
             <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
               {{ tag.name }}
@@ -197,22 +197,22 @@
           </span>
           <div class="btn-group">
             <button
-            class="btn btn-light btn-sm"
             v-if="showExtenderButton"
+            class="btn btn-light btn-sm"
             @click="maxComments+=5"
             >
               Show more
             </button>
             <button
-            class="btn btn-light btn-sm"
             v-if="!showExtenderButton && numChildComments > defaultNumComments"
+            class="btn btn-light btn-sm"
             @click="maxComments=defaultNumComments"
             >
               Show less
             </button>
             <button
-            class="btn btn-light btn-sm"
             v-if="maxComments > defaultNumComments"
+            class="btn btn-light btn-sm"
             @click="maxComments=defaultNumComments; showReplies = !showReplies"
             >
               Hide replies
@@ -286,48 +286,6 @@ export default {
       selectedTagId: null,
       collapsed: false,
       maxComments: 3,
-    }
-  },
-  watch: {
-    commentState: {
-    immediate: true,
-    handler(newVal) {
-      if (newVal) {
-        this.collapsed = newVal.state === 1 ? true : false;
-      }
-    }
-  },
-    collapsed(newValue) {
-      if(!this.commentState){
-        this.$socket.emit("appDataUpdate", {
-          table: "comment_state",
-          data: {
-            userId: this.userId,
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            commentId: this.commentId,
-            state: newValue? 1 : 0,
-          }
-        });
-      } else {
-        this.$socket.emit("appDataUpdate", {
-          table: "comment_state",
-          data: {
-            id: this.commentState.id,
-            state: newValue? 1 : 0,
-          }
-        });
-      }    
-      if(this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "commentToggleCollapse",
-          data: {
-            commentId: this.commentId,
-            state: newValue,
-          }
-        });
-      }
     }
   },
   computed: {
@@ -452,6 +410,48 @@ export default {
             && this.summarizationActivated;
       return null;
     },
+  },
+  watch: {
+    commentState: {
+    immediate: true,
+    handler(newVal) {
+      if (newVal) {
+        this.collapsed = newVal.state === 1 ? true : false;
+      }
+    }
+  },
+    collapsed(newValue) {
+      if(!this.commentState){
+        this.$socket.emit("appDataUpdate", {
+          table: "comment_state",
+          data: {
+            userId: this.userId,
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            commentId: this.commentId,
+            state: newValue? 1 : 0,
+          }
+        });
+      } else {
+        this.$socket.emit("appDataUpdate", {
+          table: "comment_state",
+          data: {
+            id: this.commentState.id,
+            state: newValue? 1 : 0,
+          }
+        });
+      }    
+      if(this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "commentToggleCollapse",
+          data: {
+            commentId: this.commentId,
+            state: newValue,
+          }
+        });
+      }
+    }
   },
   mounted() {
     if (this.comment.draft) {
