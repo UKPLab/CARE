@@ -30,16 +30,16 @@
     <!-- STEP 2: Workflow Selection -->
     <template #step-2>
       <div class="mb-3">
-        <label class="form-label"><b>Select Workflow:</b></label>
+        <label class="form-label"><b>Select Workflows:</b></label>
         <p class="small text-muted mb-3">
-          Select a specific workflow step that uses the selected configuration.
+          Select one or more workflow steps that use the selected configuration.
           You can see how many sessions (open/closed) are available for each step.
         </p>
         <BasicTable
           v-model="selectedWorkflows"
           :data="workflowsTable"
           :columns="workflowTableColumns"
-          :options="singleSelectTableOptions"
+          :options="multiSelectTableOptions"
           :max-table-height="350"
         />
       </div>
@@ -54,7 +54,7 @@
           Please note only <strong>closed study sessions</strong> are displayed here.
         </p>
         <div v-if="sessionsTable.length === 0" class="alert alert-warning">
-          No sessions found matching the selected workflow and configuration.
+          No sessions found matching the selected workflows and configuration.
         </div>
         <BasicTable
           v-else
@@ -510,6 +510,13 @@ export default {
       ];
     },
     
+    selectedWorkflowIds() {
+      return this.selectedWorkflows.map(w => w.workflowId);
+    },
+    selectedStepNumbers() {
+      return this.selectedWorkflows.map(w => w.stepNumber);
+    },
+    // Keep for backward compatibility
     selectedWorkflowId() {
       return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].workflowId : null;
     },
@@ -545,12 +552,20 @@ export default {
 
     // Sessions filtered by workflow and configuration
     sessionsTable() {
-      if (!this.selectedWorkflowId || !this.selectedConfigurationId || !this.selectedStepNumber) return [];
+      if (this.selectedWorkflows.length === 0 || !this.selectedConfigurationId) return [];
 
-      const selectedEntry = this.selectedWorkflows[0];
-      if(!selectedEntry || !selectedEntry.studySteps) return [];
-      // First, get all studies that match the workflow and configuration
-      const matchingStudyIds = [...new Set(selectedEntry.studySteps.map(s => s.studyId))];
+      // Collect all study steps from all selected workflows
+      const allStudySteps = [];
+      this.selectedWorkflows.forEach(selectedEntry => {
+        if (selectedEntry && selectedEntry.studySteps) {
+          allStudySteps.push(...selectedEntry.studySteps);
+        }
+      });
+
+      if (allStudySteps.length === 0) return [];
+
+      // Get all unique study IDs from selected workflows
+      const matchingStudyIds = [...new Set(allStudySteps.map(s => s.studyId))];
 
       if (matchingStudyIds.length === 0) return [];
 
@@ -587,9 +602,9 @@ export default {
             document?.submissionId &&
             this.submissions.find((s) => s.id === document.submissionId);
 
-          // Get owner info
-          const owner = submission
-            ? this.users.find((u) => u.id === submission.userId)
+          // Get owner info from the study
+          const owner = study
+            ? this.users.find((u) => u.id === study.userId)
             : null;
 
           return {
@@ -721,7 +736,7 @@ export default {
       if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
         let factor = targetGradeRange / sourcePointsRange;
         // Keep 3 decimal places for display and internal use
-        factor = Math.round(factor * 1000) / 1000;
+        factor = Math.round(factor * 1000000) / 1000000;
         return factor;
       }
 
@@ -731,7 +746,7 @@ export default {
       if (!study) {
         return false;
       }
-      return study.closed === null ? true : false;
+      return study.closed !== null ? true : false;
     },
     /**
      * Detect if a study step uses AI workflow by checking for services with skills.
@@ -858,16 +873,16 @@ export default {
      * Returns an object with scores and assessment calculation.
      */
     getAssessmentDataForSession(session) {
-      // Get the specific study step for the selected step number
-      const selectedEntry = this.selectedWorkflows[0];
-      if (!selectedEntry || !selectedEntry.studySteps) {
-        return { scores: {}, assessment: {} };
+      // Search across all selected workflows to find the matching study step
+      let matchingStudyStep = null;
+      for (const selectedEntry of this.selectedWorkflows) {
+        if (selectedEntry && selectedEntry.studySteps) {
+          matchingStudyStep = selectedEntry.studySteps.find(
+            step => step.studyId === session.studyId
+          );
+          if (matchingStudyStep) break;
+        }
       }
-
-      // Find the study step for this session's study that matches the selected step
-      const matchingStudyStep = selectedEntry.studySteps.find(
-        step => step.studyId === session.studyId
-      );
 
       if (!matchingStudyStep) {
         return { scores: {}, assessment: {} };
@@ -875,22 +890,8 @@ export default {
       // fetch document_data for this session and study step
       // Try both AI workflow keys and non-AI key (assessment_result)
       const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
-
-      let assessmentRaw = {};
-
-      if (matchingStudyStep && Array.isArray(documentDataArray)) {
-        // Get all possible assessment keys (AI or non-AI)
-        const assessmentKeys = this.getAssessmentDataKeys(matchingStudyStep);
-
-        // Try to find data using any of the possible keys
-        for (const key of assessmentKeys) {
-          const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === key);
-          if (documentDataItem) {
-            assessmentRaw = documentDataItem.value || {};
-            break; // Found data, stop searching
-          }
-        }
-      }
+      const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === "assessment_result");
+      const assessmentRaw = documentDataItem.value || {};
 
       const scoreState = assessmentRaw || {};
       const scores = buildScoresFromState(scoreState);
@@ -904,8 +905,8 @@ export default {
      * Returns the user object or null if not found.
      */
     getOwnerUserForSession(session) {
-      const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
-      return submission ? this.users.find((u) => u.id === submission.userId) : null;
+      const study = session.studyId ? this.studies.find((s) => s.id === session.studyId) : null;
+      return study ? this.users.find((u) => u.id === study.userId) : null;
     },
     /**
      * Gets the reviewer user for a given session.
@@ -1017,7 +1018,6 @@ export default {
       const fileBaseName = `assessment_${configName}_${timestamp}`;
       downloadObjectsAs(rows, fileBaseName, "csv");
 
-      this.$refs.assessmentStepper.close();
       this.eventBus.emit("toast", {
         title: "CSV Export",
         message: "Assessment data CSV successfully generated and exported",

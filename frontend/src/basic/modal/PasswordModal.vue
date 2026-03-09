@@ -132,6 +132,14 @@ export default {
         });
         return false;
       }
+      if (/^\s*$/.test(password) || /[\x00-\x1F\x7F]/.test(password) || [...password].some((c) => (c.codePointAt(0) || 0) > 0xFFFF)) {
+        this.eventBus.emit("toast", {
+          title: "Validation Error",
+          message: "Password cannot contain only spaces, control characters, or emojis. Use letters, numbers, and standard punctuation.",
+          variant: "danger",
+        });
+        return false;
+      }
       return true;
     }
   },

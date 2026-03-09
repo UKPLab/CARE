@@ -171,7 +171,7 @@ export default {
   methods: {
     // Check if a given PDF page is loaded/rendered
     isPdfPageLoaded(pageNumber) {
-        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+        const canvas = document.getElementById('pdf-canvas-' + pageNumber + '-' + this.documentId);
         const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
         const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
         const loaded = (visible && hasDimensions);

@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="adder"
     id="adder"
     :style="{visibility: isVisible ? 'visible':'hidden'}"
     :class="{ 'is-extended': isExtended }"
@@ -313,7 +314,7 @@ export default {
       this.selectedRanges = [];
 
       const rangeSelectors = await Promise.all(
-          ranges.map(range => this.describe(document.getElementById('pdfContainer'), range))
+          ranges.map(range => this.describe(document.getElementById('pdfContainer-' + this.documentId), range))
       );
       const target = rangeSelectors.map(selectors => ({
         // In the Hypothesis API the field containing the selectors is called
@@ -414,9 +415,11 @@ export default {
       this.searchTerm = '';
       this.$refs.adderWrapper.scrollTop =0;
       // get size of the box
-      const adder = /** @type {Element} */ (document.getElementById("adder"));
-      const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer")).getBoundingClientRect();
-      const pdfToolbarRect = /** @type {Element} */ (document.getElementById("pdfToolbar")).getBoundingClientRect();
+      const adder = this.$refs.adder;
+      const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer-" + this.documentId)).getBoundingClientRect();
+      console.log("pdfContainerRect", document.getElementById("pdfContainer-" + this.documentId));
+      const pdfToolbarRect = /** @type {Element} */ (document.getElementById("pdfToolbar-" + this.documentId)).getBoundingClientRect();
+      console.log("pdfToolbarRect", (document.getElementById("pdfToolbar-" + this.documentId)));
       const width = adder.getBoundingClientRect().width;
       const height = adder.getBoundingClientRect().height;
       const bottom = pdfToolbarRect.bottom;
@@ -445,7 +448,7 @@ export default {
       );
 
       // move to position
-      Object.assign(document.getElementById("adder").style, {
+      Object.assign(this.$refs.adder.style, {
         left: x.toString() + 'px',
         top: y.toString() + 'px',
         zIndex: maxZIndex + 1,

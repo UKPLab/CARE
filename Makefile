@@ -128,6 +128,10 @@ recover_db:
 	@echo "Recovering int container $${CONTAINER}"
 	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
 
+.PHONY: admin-password
+admin-password: backend/node_modules/.uptodate
+	cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" npm run set-admin-password
+
 .PHONY: check_clean clean
 
 check_clean:

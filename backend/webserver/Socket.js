@@ -1,7 +1,7 @@
 const {inject} = require("../utils/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
-
+const {EWMAMonitor} = require("../utils/EWMAMonitor")
 /**
  * Defines as new Socket class
  *
@@ -38,6 +38,8 @@ module.exports = class Socket {
 
         // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
         this.userInfo = {};
+
+        this.transactionMonitor = new EWMAMonitor(30, this.logger);
     }
 
     /**
@@ -53,37 +55,60 @@ module.exports = class Socket {
      * @param {string} eventName The name of the event
      * @param {Function} func  The function to execute (need parameter data and options)
      * @param {Object} options Additional options for the function
-     * @param {boolean} transaction If the function should be executed in a transaction for db operations
+     * @param {boolean} useTransaction If the function should be executed in a transaction for db operations
      * @returns {void}
      */
-    createSocket(eventName, func, options = {}, transaction = false) {
+    createSocket(eventName, func, options = {}, useTransaction = false) {
         this.socket.on(eventName, async (data, callback) => {
-            let t = undefined;
+            let t;
+            const perCallOptions = {...options};
+            let finished = false;
             try {
-                if (transaction) {
+                if (useTransaction) {
+                    this.transactionMonitor.start(); //Start Transaction Time Tracking 
                     t = await this.server.db.sequelize.transaction();
-                    options.transaction = t;
+                    perCallOptions.transaction = t;
 
                     t.afterCommit(() => {
                         this.broadcastTransactionChanges(t);
                     });
                 }
 
-                const result = await func.bind(this)(data, options);
+                const result = await func.call(this, data, perCallOptions);
                 if (t) {
                     await t.commit();
+                    this.transactionMonitor.finish(eventName, true); //transaction successful 
+                    finished = true;
                 }
                 if (callback) {
                     callback({success: true, data: result});
                 }
             } catch (err) {
+                if (t) {
+                    try {
+                        await t.rollback();
+                    } catch (rollbackError) {
+                        this.logger.error(`Rollback of Transaction in Event: ${eventName} failed`);
+                        this.logger.error(rollbackError.message);
+                    }
+                    this.transactionMonitor.finish(eventName, false); //transaction failed 
+                    finished = true; 
+                }
+
                 console.log(err);
                 this.logger.error(err.message);
-                if (t) {
-                    await t.rollback();
-                }
+
                 if (callback) {
                     callback({success: false, message: err.message});
+                }
+            }
+            finally {
+                if (t && !finished){
+                    try {
+                        await t.rollback();
+                    } catch(err){
+                        this.logger.error(`Transaction rollback in finally has failed for event: ${eventName}`);
+                    }
                 }
             }
         });
@@ -369,8 +394,7 @@ module.exports = class Socket {
     handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
 
 
-
-         let filteredAccessMap = accessMap
+        let filteredAccessMap = accessMap
             .flatMap(a => {
                 const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
                 return a.limitation
@@ -378,7 +402,6 @@ module.exports = class Socket {
                     : null;
             })
             .filter(Boolean);
-
 
 
         if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
@@ -509,7 +532,7 @@ module.exports = class Socket {
         }
         visited.add(tableName);
 
-        const {autoTable} =  this.models[tableName];
+        const {autoTable} = this.models[tableName];
         const tasks = [];
 
         // --- FOREIGN TABLES (children) ---

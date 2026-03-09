@@ -19,9 +19,9 @@
             @click.stop="handleCheckIconClick"
           >
             <LoadIcon
-              icon-name="check-square"
-              :size="16"
-              :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
+              :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
+              :size="18"
+              :style="{ cursor: 'pointer' }"
               class="check-icon"
             />
           </div>
@@ -100,7 +100,7 @@
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="save-fill"
+                  icon="floppy-fill"
                   title="Save"
                   @click="save"
               />
@@ -757,7 +757,7 @@ export default {
 }
 
 .check-icon:hover {
-  color: #28a745 !important;
+  color: #007bff !important;
 }
 
 .header-hoverable {

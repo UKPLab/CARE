@@ -1,5 +1,4 @@
-// make sure, it's not been reactive!
-const state = {pdf: undefined, pages: {}};
+import { markRaw } from 'vue';
 
 /**
  *  PDF Store
@@ -17,11 +16,12 @@ export class PDF {
 
     constructor(pdf, SIZE = 10) {
         this.BUFFER_SIZE = SIZE;
+        this.state = {pdf: undefined, pages: {}};
     }
 
     reset() {
-        state.pdf = {pdf: undefined};
-        state.pages = {};
+        this.state.pdf = {pdf: undefined};
+        this.state.pages = {};
 
         this.currentBuffer = [];
         this.pageCount = 0;
@@ -32,25 +32,25 @@ export class PDF {
 
     setPDF(pdf) {
         this.reset();
-        state.pdf = pdf;
-        this.pageCount = state.pdf.numPages;
+        this.state.pdf = markRaw(pdf);
+        this.pageCount = this.state.pdf.numPages;
     }
 
     async getPage(pageNumber) {
 
-        if (!(pageNumber in state.pages)) {
+        if (!(pageNumber in this.state.pages)) {
 
             //Buffer handling
             if (this.currentBuffer.length > this.BUFFER_SIZE) {
-                delete state.pages[this.currentBuffer.shift()];
+                delete this.state.pages[this.currentBuffer.shift()];
             }
             this.currentBuffer.push(pageNumber);
 
-            await state.pdf.getPage(pageNumber).then((page) => {
-                state.pages[pageNumber] = page;
+            await this.state.pdf.getPage(pageNumber).then((page) => {
+                this.state.pages[pageNumber] = markRaw(page);
             });
         }
-        return state.pages[pageNumber];
+        return this.state.pages[pageNumber];
     }
 
     async getPageTextContent(pageIndex) {

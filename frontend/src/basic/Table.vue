@@ -163,7 +163,7 @@
         <tr
           v-for="r in tableData"
           v-else
-          :key="r"
+          :key="r.id"
           @click="selectRow(r)"
         >
           <td v-if="selectableRows">
@@ -270,11 +270,19 @@
             />
           </td>
         </tr>
+        <tr v-if="isAllMode && allRenderLimit < total" ref="loadMoreSentinel">
+          <td 
+            :colspan="emptyColspan" 
+            style="height: 1px; 
+            padding: 0; 
+            border: 0;">
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
   <div
-    v-if="selectableRows"
+    v-if="selectableRows && !(options && options.singleSelect)"
     class="text-end text-muted small mb-2"
   >
     {{ selectedCount }} of {{ totalSelectableCount }} selected
@@ -415,6 +423,9 @@ export default {
       debouncedComputeFixedColumns: null,
       hasHorizontalOverflow: false,
       resizeObserver: null,
+      allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
+      allChunkSize: 50, // Append the next 50 items on scroll
+      allObserver: null,
     };
   },
   computed: {
@@ -458,11 +469,15 @@ export default {
       }
       return this.data.length;
     },
+    isAllMode() {
+      return this.itemsPerPage === 0;
+    },
     limit() {
       // if manually set, use that
       if (this.itemsPerPage !== null) {
         if (this.itemsPerPage === 0) {
-          return this.total;
+          // Prevent UI freeze when "All" is selected
+          return Math.min(this.total, this.allRenderLimit);
         }
         return this.itemsPerPage;
       }
@@ -478,6 +493,9 @@ export default {
       return this.total;
     },
     pages() {
+      if (this.isAllMode) {
+        return 1;
+      }
       if (this.serverSidePagination) {
         return Math.ceil(this.total / this.limit);
       }
@@ -501,8 +519,11 @@ export default {
       
       let data = this.getFilteredAndSortedData();
 
-      if (this.options && this.options.pagination) {
+      if (this.options && this.options.pagination && !this.isAllMode) {
         data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
+      } else if (this.isAllMode) {
+        // In "All" mode we render a growing prefix (0..limit)
+        data = data.slice(0, this.limit);
       }
       return data;
     },
@@ -583,7 +604,16 @@ export default {
         this.cleanupFixedColumns();
         this.manageColumnStyle = {};
       }
-    }
+    },
+    itemsPerPage(newVal) {
+      if (newVal === 0) {
+        this.currentPage = 1;
+        this.allRenderLimit = this.allChunkSize;
+        this.$nextTick(() => this.setupAllObserver());
+      } else {
+        this.cleanupAllObserver();
+      }
+    },
   },
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
@@ -622,6 +652,7 @@ export default {
   },
   beforeUnmount() {
     this.cleanupFixedColumns();
+    this.cleanupAllObserver();
   },
   methods: {
     setupFixedColumns() {
@@ -1008,6 +1039,41 @@ export default {
       return {
         "--line-clamp": lines,
       };
+    },
+    setupAllObserver() {
+      this.cleanupAllObserver();
+
+      const wrapper = this.$refs.tableWrapper;
+      const sentinel = this.$refs.loadMoreSentinel;
+      if (!sentinel) return;
+
+      // If there is a scroll container (maxTableHeight), observe within it.
+      // Otherwise observe in the viewport.
+      const root = wrapper && this.maxTableHeight ? wrapper : null;
+
+      this.allObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry?.isIntersecting) return;
+
+          if (this.allRenderLimit < this.total) {
+            this.allRenderLimit = Math.min(this.total, this.allRenderLimit + this.allChunkSize);
+          }
+        },
+        { 
+          root, 
+          threshold: 0.1,
+        }
+      );
+
+      this.allObserver.observe(sentinel);
+    },
+
+    cleanupAllObserver() {
+      if (this.allObserver) {
+        this.allObserver.disconnect();
+        this.allObserver = null;
+      }
     },
   },
 };
