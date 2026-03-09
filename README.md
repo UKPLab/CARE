@@ -19,7 +19,9 @@ __Note:__ On Windows, you need to install [GnuWin32 Make](http://gnuwin32.source
 
 ### Documentation
 
-You can find the latest version of the documentation under https://care.ukp.informatik.tu-darmstadt.de/docs/.
+You can find the documentation on GitHub Pages:
+- Main branch: https://ukplab.github.io/CARE/main/
+- Dev branch: https://ukplab.github.io/CARE/dev/
 
 The documentation can also be built locally by running `make doc` and is then available under `docs/build/html/index.html`.
 
