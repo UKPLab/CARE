@@ -17,8 +17,6 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
-// as directive
-import { VBTooltip } from 'bootstrap-vue-3';
 
 /**
  * Show help icon with tooltip if help is provided.
