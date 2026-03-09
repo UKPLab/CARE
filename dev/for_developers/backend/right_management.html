@@ -1,0 +1,323 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Right Management &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="RPC Service" href="rpc.html" />
+    <link rel="prev" title="Logging" href="logging.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Right Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#looking-up-existing-rights">Looking up Existing Rights</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-new-right">Adding a New Right</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#naming-schema-for-rights">Naming Schema for Rights</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#role-definitions-and-rights">Role Definitions and Rights</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#current-rights">Current Rights</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Right Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/right_management.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="right-management">
+<h1>Right Management<a class="headerlink" href="#right-management" title="Link to this heading"></a></h1>
+<p>CARE has several roles, each with different rights on the platform.
+The admin has full rights on the platform,
+while other roles may need to be granted additional rights
+as the platform develops. Therefore, developers need to review this
+document to understand the current rights of each role (to avoid adding
+rights that have already existed or using rights in a wrong way) and to
+understand how to add rights for the corresponding roles in the
+database. For a list of roles in CARE, please refer to the <a class="reference internal" href="#role-definitions-and-rights">Role Definitions and Rights</a> section.</p>
+<section id="looking-up-existing-rights">
+<h2>Looking up Existing Rights<a class="headerlink" href="#looking-up-existing-rights" title="Link to this heading"></a></h2>
+<p>Before adding any rights to the database, please first confirm whether the
+corresponding role already holds the specified right.
+You can check the <code class="docutils literal notranslate"><span class="pre">role_right_matching</span></code> table,
+which records the current rights assigned to all roles.</p>
+</section>
+<section id="adding-a-new-right">
+<h2>Adding a New Right<a class="headerlink" href="#adding-a-new-right" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>To add rights for a role, first, please go to the
+<code class="docutils literal notranslate"><span class="pre">backend/db/migrations/{timestamp}-basic_user_right.js</span></code> file. The
+<code class="docutils literal notranslate"><span class="pre">userRights</span></code> variable stores the existing rights as follows. You
+can directly add new rights to the <code class="docutils literal notranslate"><span class="pre">userRights</span></code> array.</p></li>
+</ol>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">userRights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;backend.socket.user.getUsers.student&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;access to get all students&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;backend.socket.user.getUsers.mentor&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;access to get all mentors&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;frontend.dashboard.users.view&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;access to view users on the dashboard&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="c1">// Please add more rights here...</span>
+<span class="p">];</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please note that right names should follow the established naming schema. For naming conventions, please refer to the following <a class="reference internal" href="#naming-schema-for-rights">Naming Schema for Rights</a>.</p>
+</div>
+<ol class="arabic simple">
+<li><p>After adding the rights, please go to the
+<code class="docutils literal notranslate"><span class="pre">backend/db/migrations/{timestamp}-basic_role_right.js</span></code> file to
+assign the rights to the corresponding roles. The <code class="docutils literal notranslate"><span class="pre">roleRights</span></code>
+variable stores the rights held by each role as follows:</p></li>
+</ol>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">roleRights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;teacher&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">userRightName</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;backend.socket.user.getUsers.student&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;teacher&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">userRightName</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;backend.socket.user.getUsers.mentor&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="c1">// Please assign more rights to the corresponding roles here...</span>
+<span class="p">];</span>
+</pre></div>
+</div>
+<section id="naming-schema-for-rights">
+<h3>Naming Schema for Rights<a class="headerlink" href="#naming-schema-for-rights" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Use periods (“.”) to separate each part of the name.</p></li>
+<li><p>Prefix: “frontend” / “backend”</p></li>
+</ol>
+<ul class="simple">
+<li><p>For backend:</p>
+<ul>
+<li><p>“socket”</p></li>
+<li><p>Name of the socket</p></li>
+<li><p>Functionality of the socket</p></li>
+<li><p>Right level on that socket (e.g., all / any / me)</p></li>
+</ul>
+</li>
+<li><p>For frontend:</p>
+<ul>
+<li><p>As defined in settings table, use the route name</p></li>
+<li><p>component</p></li>
+<li><p>specific right</p></li>
+</ul>
+</li>
+<li><p>For verifying if an access matches a given right, use exact matching.</p></li>
+</ul>
+<p><strong>Naming schema examples:</strong></p>
+<ol class="arabic simple">
+<li><p>backend.socket.role.getUsers.student</p></li>
+<li><p>frontend.dashboard.users.view</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When operations involve checking if the user has certain right to perform certain actions (e.g., access to view all students), please use <code class="docutils literal notranslate"><span class="pre">hasAccess</span></code> method in <code class="docutils literal notranslate"><span class="pre">backend/webserver/Socket.js</span></code>, instead of <code class="docutils literal notranslate"><span class="pre">isAdmin</span></code> to execute this checking. The <code class="docutils literal notranslate"><span class="pre">isAdmin</span></code> method now exists only for historical reasons.</p>
+</div>
+</section>
+</section>
+<section id="role-definitions-and-rights">
+<h2>Role Definitions and Rights<a class="headerlink" href="#role-definitions-and-rights" title="Link to this heading"></a></h2>
+<p>Below is a list of the roles currently available in CARE, along with additional information about the rights associated with each role:</p>
+<ul class="simple">
+<li><p><strong>Admin</strong>: Has full access to all features and settings. Admins can create and assign studies, manage users and roles, and edit platform settings. They automatically have access to everything that other roles can do.</p></li>
+<li><p><strong>Teacher</strong>: Coordination role. Teachers can view studies, inspect sessions, see user information (like names and emails), and query lists of students or mentors through the backend. They usually prepare and manage study workflows but do not have full system control.</p></li>
+<li><p><strong>Mentor</strong>: Support role. Mentors can open and read studies, inspect sessions in read-only mode, and view user information related to those studies. They cannot manage users or assign studies.</p></li>
+<li><p><strong>Student</strong>: Study participant. Students join study sessions. They normally only see their assigned documents. More rights can be added if the study setup requires it.</p></li>
+<li><p><strong>User</strong>: Standard CARE account. Users can log in, view documents and tags, open projects, join study sessions, and view studies. They form the base role for participants outside of special workflows.</p></li>
+<li><p><strong>Guest</strong>: Very limited access. Guests can view demo documents and dashboards but cannot upload content or join studies. They are meant for trying the system without registration.</p></li>
+</ul>
+</section>
+<section id="current-rights">
+<h2>Current Rights<a class="headerlink" href="#current-rights" title="Link to this heading"></a></h2>
+<p>This table shows which rights are assigned to which roles.
+Admins can do everything, so they are not listed separately in each row.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 40.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Capability</p></th>
+<th class="head"><p>Right</p></th>
+<th class="head"><p>Roles (besides admin)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>View Documents dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.documents.view</span></code></p></td>
+<td><p>guest, user</p></td>
+</tr>
+<tr class="row-odd"><td><p>View Tags dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.tags.view</span></code></p></td>
+<td><p>guest, user</p></td>
+</tr>
+<tr class="row-even"><td><p>View Projects dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.projects.view</span></code></p></td>
+<td><p>guest, user</p></td>
+</tr>
+<tr class="row-odd"><td><p>View Study Sessions dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.study_sessions.view</span></code></p></td>
+<td><p>guest, user</p></td>
+</tr>
+<tr class="row-even"><td><p>View Studies</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.studies.view</span></code></p></td>
+<td><p>guest, user, mentor, teacher</p></td>
+</tr>
+<tr class="row-odd"><td><p>View Studies (read-only)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.studies.view.readOnly</span></code></p></td>
+<td><p>user, mentor, teacher</p></td>
+</tr>
+<tr class="row-even"><td><p>See user private info in Studies</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.studies.view.userPrivateInfo</span></code></p></td>
+<td><p>mentor, teacher</p></td>
+</tr>
+<tr class="row-odd"><td><p>List users (students)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend.socket.user.getUsers.student</span></code></p></td>
+<td><p>teacher</p></td>
+</tr>
+<tr class="row-even"><td><p>List users (mentors)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend.socket.user.getUsers.mentor</span></code></p></td>
+<td><p>teacher</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="logging.html" class="btn btn-neutral float-left" title="Logging" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="rpc.html" class="btn btn-neutral float-right" title="RPC Service" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Statistics &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Backend Development" href="../backend/backend.html" />
+    <link rel="prev" title="Vuex Store" href="vuex_store.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="basic/basic.html">Basic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components/components.html">Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">User Statistics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#user-statistics-logging">User Statistics Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-a-new-interaction">Logging a New Interaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#advanced-logging-class">Advanced Logging Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#extending-the-logging-class">Extending the Logging Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#usage-in-care">Usage in CARE</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="frontend.html">Frontend Development</a></li>
+      <li class="breadcrumb-item active">User Statistics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/frontend/stats.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-statistics">
+<h1>User Statistics<a class="headerlink" href="#user-statistics" title="Link to this heading"></a></h1>
+<p>If users agree to the collection of their behavior traces during registration, the CARE frontend collects and stores
+the user face interaction traces in the database. This data can be used to analyze the importance of different features,
+compare different implementations and simply generate statistics on users.</p>
+<p>If you add new features or components, it makes sense to extend the user statistics logging. Below we outline the stats
+logging interface and how to log new interactions.</p>
+<section id="user-statistics-logging">
+<h2>User Statistics Logging<a class="headerlink" href="#user-statistics-logging" title="Link to this heading"></a></h2>
+<p>To log statistics you need to provide an action type (i.e. the type of interaction you are logging) and an arbitrary
+data object that specifies the parameters of the interaction (e.g. the page number that is moved into the viewport).
+Send these information over the websocket on the <code class="docutils literal notranslate"><span class="pre">stats</span></code> message type, to log them in the database.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">acceptStats</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;action type&gt;&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span><span class="w">                      </span><span class="c1">//add any data information into the object</span>
+<span class="w">    </span><span class="p">})</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Each logged user interaction is assigned a timestamp (according to the time of storing in the backend) and the user id allowing to
+generate trace data from all logged interactions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Statistics are only logged if the user has agreed to the data collection during registration!
+If the user has not agreed, we do not log any statistics. This is ensured by the backend!
+Admins can configure consent defaults in <a class="reference internal" href="../examples/settings.html"><span class="doc">Settings</span></a>.
+But we also want to reduce the network traffic and the load on the backend, so make sure you check the <cite>acceptStats</cite> flag!</p>
+</div>
+<p>You can inject the <cite>acceptStats</cite> variable into any component by using:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">inject</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">acceptStats</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="logging-a-new-interaction">
+<h2>Logging a New Interaction<a class="headerlink" href="#logging-a-new-interaction" title="Link to this heading"></a></h2>
+<p>Let’s assume we want to log a new interaction <code class="docutils literal notranslate"><span class="pre">specialButtonClick</span></code> upon click on a button. Please always use
+camelcasing for the action types and make them uniquely identifiable for a specific component in the frontend. This
+helps to keep track of the different interaction types and process them in the database.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While more fine-grained behavior logging implies more information, be aware that each logged interaction causes
+network traffic and requires database storage. Please have this in mind and check if you want to track very
+frequent interactions (e.g. mouse movements) or when you log large accompanying statistics data (e.g. whole
+paragraph texts).</p>
+</div>
+<p>To log the button click, we can simply execute the statistics logging snippet defined above on click of the button.
+Likewise, you can listen to component events (using a <code class="docutils literal notranslate"><span class="pre">watch</span></code>) or child component messages (using <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> on child
+messages).</p>
+<p>For our simple example, the code would look like this:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+ <span class="p">&lt;</span><span class="nt">button</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;specialButton&quot;</span> <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;log&quot;</span><span class="p">&gt;</span>Hello!<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">log</span><span class="p">(){</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">acceptStats</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;specialButtonClick&quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()}</span>
+<span class="w">            </span><span class="p">})</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-logging-class">
+<h2>Advanced Logging Class<a class="headerlink" href="#advanced-logging-class" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">BehaviorLogger</span></code> class is a dedicated logging class that unifies several high-level logging functions in one file.
+It is designed to serve as a centralized baseclass for the existing logging functionalities, minimizing the effort of
+adding new logging functionalities and to keep the logging logic in one place, without cluttering the project’s
+components.</p>
+<p>The class is implemented in the file frontend/src/assets/behaviorLogger.js.</p>
+<p>Currently, the class logs the following interactions:</p>
+<ul class="simple">
+<li><p>Device &amp; Browser Information</p></li>
+<li><p>Route Changes</p></li>
+<li><p>Tab visibility changes</p></li>
+<li><p>Mouse move events</p></li>
+<li><p>Click events</p></li>
+<li><p>Specific key down events (currently only cmd/ctrl + f to detect search start)</p></li>
+<li><p>Window focus events (currently only used to detect search end)</p></li>
+</ul>
+<section id="extending-the-logging-class">
+<h3>Extending the Logging Class<a class="headerlink" href="#extending-the-logging-class" title="Link to this heading"></a></h3>
+<p>To log a new interaction, you can extend an existing logging function or create a new one. For example, we could extend
+the key down logging function to log a new interaction when the user presses a specific key or key combination:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleKeyDown</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Previous code ...</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="nx">event</span><span class="p">.</span><span class="nx">metaKey</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">ctrlKey</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">key</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;f&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Search started</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">startSearch</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// New code ...</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">key</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;s&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">handleNewInteraction</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">handleNewInteraction</span></code> function would then dictate the logic on how to interpret the event and send the log to
+the statistics table.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleNewInteraction</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;newInteraction&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()}</span>
+<span class="w">    </span><span class="p">})</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>When extending the BehaviorLogger class, make sure to follow these general guidelines:</p>
+<ol class="arabic simple">
+<li><p>Bind new logging functions in the constructor to maintain the correct context.</p></li>
+<li><p>Add new event listeners to both <code class="docutils literal notranslate"><span class="pre">init()</span></code> and <code class="docutils literal notranslate"><span class="pre">destroy()</span></code> methods.</p></li>
+<li><p>Use the existing WebSocket connection (<code class="docutils literal notranslate"><span class="pre">this.socket.emit</span></code>) to send data to the backend.</p></li>
+<li><p>Consider performance optimizations (like debouncing) for frequent events.</p></li>
+</ol>
+</div>
+</section>
+<section id="usage-in-care">
+<h3>Usage in CARE<a class="headerlink" href="#usage-in-care" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">BehaviorLogger</span></code> class is instantiated in the main App component (<cite>App.vue</cite>).
+It is initialized after the application settings are loaded, as it requires access to certain configuration values
+(like the mouse debounce time).</p>
+<p>This initialization ensures that user behavior logging begins as soon as the application is ready,
+providing comprehensive tracking of user interactions from the start of the user session.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vuex_store.html" class="btn btn-neutral float-left" title="Vuex Store" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../backend/backend.html" class="btn btn-neutral float-right" title="Backend Development" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

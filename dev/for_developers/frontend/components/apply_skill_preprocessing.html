@@ -1,0 +1,405 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apply Skill Modal : Preprocessing &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Plugins" href="../plugins.html" />
+    <link rel="prev" title="Study" href="study.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../basic/basic.html">Basic</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="components.html">Components</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="components.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="annotator.html">Annotator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stepmodal.html">Step Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="study.html">Study</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Apply Skill Modal : Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#dashboard">Dashboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#document">Document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study">Study</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="components.html">Components</a></li>
+      <li class="breadcrumb-item active">Apply Skill Modal : Preprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/components/apply_skill_preprocessing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="apply-skill-modal-preprocessing">
+<h1>Apply Skill Modal : Preprocessing<a class="headerlink" href="#apply-skill-modal-preprocessing" title="Link to this heading"></a></h1>
+<p>The <strong>ApplySkillModal</strong> provides a comprehensive workflow for preprocessing files (documents and submissions) through NLP skills.
+This component orchestrates multi-step skill application, skill parameter mapping, input files selection, and asynchronous background processing
+with real-time progress monitoring.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>ApplySkillModal allows administrators to:</p>
+<ul class="simple">
+<li><p>Select an NLP skill from available list</p></li>
+<li><p>Map skill parameters to data sources (documents, submissions, configurations)</p></li>
+<li><p>Select which files to apply skills to</p></li>
+<li><p>Configure base document type for result storage in <strong>document_data</strong> table, in case of input mapping with <strong>submission</strong> table type</p></li>
+<li><p>Monitor preprocessing progress in real-time</p></li>
+<li><p>Cancel ongoing preprocessing if needed (no automatic cancellation when error occurs, needs manual intervention)</p></li>
+</ul>
+<p>The modal operates in two phases:</p>
+<ol class="arabic simple">
+<li><p><strong>Setup Phase</strong> (<code class="docutils literal notranslate"><span class="pre">ApplySkillSetupStepper</span></code>): User configures the preprocessing task for the skill input</p></li>
+<li><p><strong>Processing Phase</strong> (<code class="docutils literal notranslate"><span class="pre">ApplySkillProcessStepper</span></code>): Background task executes and reports progress</p></li>
+</ol>
+</section>
+<section id="component-architecture">
+<h2>Component Architecture<a class="headerlink" href="#component-architecture" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>ApplySkillModal</strong> (main container)</dt><dd><p>├── <strong>ApplySkillSetupStepper</strong> (setup workflow)
+│   ├── SkillSelector
+│   ├── InputMap
+│   ├── InputFiles
+│   ├── InputGroup (conditional)
+│   └── InputConfirm
+└── <strong>ApplySkillProcessStepper</strong> (processing monitor)</p>
+</dd>
+</dl>
+<section id="applyskillmodal">
+<h3>ApplySkillModal<a class="headerlink" href="#applyskillmodal" title="Link to this heading"></a></h3>
+<p>The root component that manages the modal lifecycle and coordinates between setup and processing phases.</p>
+<p><strong>Key Responsibilities:</strong></p>
+<ul class="simple">
+<li><p>Maintains modal state (processing active/inactive)</p></li>
+<li><p>Subscribes to background task updates via <code class="docutils literal notranslate"><span class="pre">BackgroundTaskService</span></code></p></li>
+<li><p>Toggles between setup and process steppers based on processing status</p></li>
+<li><p>Handles preprocessing initiation and cancellation</p></li>
+</ul>
+<dl class="simple">
+<dt><strong>Emits:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">submit</span></code> – when preprocessing configuration is confirmed</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Key Data:</strong></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">currentStep</span><span class="o">:</span><span class="w"> </span><span class="nb">Number</span><span class="p">,</span><span class="w">           </span><span class="c1">// current step in processing</span>
+<span class="w">    </span><span class="nx">isAutoOpened</span><span class="o">:</span><span class="w"> </span><span class="nb">Boolean</span><span class="p">,</span><span class="w">         </span><span class="c1">// whether modal auto-opened</span>
+<span class="w">    </span><span class="nx">isWaitingForData</span><span class="o">:</span><span class="w"> </span><span class="nb">Boolean</span><span class="w">      </span><span class="c1">// waiting for processing to start</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Key Computed Properties:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">preprocess</span></code> – current preprocessing state from BackgroundTaskService</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inputFiles</span></code> – list of selected submissions with metadata</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">isProcessingActive</span></code> – whether preprocessing requests are queued/running</p></li>
+</ul>
+<p><strong>Socket Integration:</strong></p>
+<p>Manages subscription to background task updates:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">mounted</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;serviceCommand&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">service</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;BackgroundTaskService&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">command</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;subscribeBackgroundTaskUpdates&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="applyskillsetupstepper">
+<h3>ApplySkillSetupStepper<a class="headerlink" href="#applyskillsetupstepper" title="Link to this heading"></a></h3>
+<p>A multi-step stepper modal that guides users through configuring a skill application task.</p>
+<p><strong>Steps:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Select Skill</strong> – Choose NLP skill and map inputs to data sources</p></li>
+<li><p><strong>Select Files</strong> – Choose files (here, documents or submissions) to process</p></li>
+<li><p><strong>Select Base Files</strong> (conditional) – For submission-based skills, specify which document type stores results</p></li>
+<li><p><strong>Confirmation</strong> – Review all settings before submission</p></li>
+</ol>
+<p><strong>Compulsory input map selection:</strong></p>
+<p>Users must select atleast one data source which is either document or submission, meaning atleast and atmost one table-based selection, in the input mapping step.
+In case, no such selection is made, the step is invalid and user cannot proceed further.</p>
+<p><strong>Conditional Logic:</strong></p>
+<p>Step 3 only appears when the base file parameter maps to a submission (not document or configuration).
+This is because submission-based skills have multiple documents and need to specify the target for results.</p>
+<p><strong>Child Components:</strong></p>
+<p>Includes <code class="docutils literal notranslate"><span class="pre">SkillSelector</span></code>, <code class="docutils literal notranslate"><span class="pre">InputMap</span></code>, <code class="docutils literal notranslate"><span class="pre">InputFiles</span></code>, <code class="docutils literal notranslate"><span class="pre">InputGroup</span></code> (conditional),
+and <code class="docutils literal notranslate"><span class="pre">InputConfirm</span></code> components described below.</p>
+<p><strong>State Management:</strong></p>
+<ul class="simple">
+<li><p>Resets file selections when skill or mappings change</p></li>
+<li><p>Validates that each step’s requirements are met before allowing progression, using step-specific validation logic</p></li>
+<li><p>Emits <code class="docutils literal notranslate"><span class="pre">start-preprocessing</span></code> with formatted configuration when submitted</p></li>
+</ul>
+<section id="skillselector">
+<h4>SkillSelector<a class="headerlink" href="#skillselector" title="Link to this heading"></a></h4>
+<p>Dropdown component that displays available NLP skills from the <code class="docutils literal notranslate"><span class="pre">NLPService</span></code>.
+Bound via <code class="docutils literal notranslate"><span class="pre">v-model</span></code> and emits <code class="docutils literal notranslate"><span class="pre">update:modelValue</span></code> when selection changes.</p>
+</section>
+<section id="inputmap">
+<h4>InputMap<a class="headerlink" href="#inputmap" title="Link to this heading"></a></h4>
+<p>Maps each skill input parameter to a data source (document, submission, or configuration).
+Displays options conditionally based on the selected skill and <code class="docutils literal notranslate"><span class="pre">studyBased</span></code> flag. In this case, the preprocessing is not study-based.
+Emits updated mappings via <code class="docutils literal notranslate"><span class="pre">update:modelValue</span></code> and validation state via <code class="docutils literal notranslate"><span class="pre">update:valid</span></code>.</p>
+<p>Each mapping stores: <code class="docutils literal notranslate"><span class="pre">{value,</span> <span class="pre">tableType,</span> <span class="pre">requiresTableSelection}</span></code>.</p>
+</section>
+<section id="inputfiles">
+<h4>InputFiles<a class="headerlink" href="#inputfiles" title="Link to this heading"></a></h4>
+<p>Allows multi-select of specific files/submissions for each mapped parameter.
+Only shown for parameters where <code class="docutils literal notranslate"><span class="pre">requiresTableSelection:</span> <span class="pre">true</span></code>.
+Validates that at least one option is selected per parameter.
+Emits selected files and validation state.</p>
+</section>
+<section id="inputgroup">
+<h4>InputGroup<a class="headerlink" href="#inputgroup" title="Link to this heading"></a></h4>
+<p><strong>Only shown when base file parameter is a submission.</strong></p>
+<p>Allows selection of which document type to save results to (e.g., “pdf”, “html”, “modal”, “zip”).
+This is derived from the validation configuration attached to a submission-group.
+A submission-group is composed of multiple files having the same validation configuration.
+Needed because submission-based skill inputs require specifying which document within the submission will save the NLP results, as the skill results need to be stored for a specific <code class="docutils literal notranslate"><span class="pre">documentId</span></code> in the <code class="docutils literal notranslate"><span class="pre">document_data</span></code> table.</p>
+<p>Emits selected base files, validation state, and configuration names.</p>
+</section>
+<section id="inputconfirm">
+<h4>InputConfirm<a class="headerlink" href="#inputconfirm" title="Link to this heading"></a></h4>
+<p>Summary page showing all configured settings before submission.
+Displays: skill name, input mappings, selected files count, and base file configuration.
+No props modification; purely informational.</p>
+</section>
+</section>
+<section id="applyskillprocessstepper">
+<h3>ApplySkillProcessStepper<a class="headerlink" href="#applyskillprocessstepper" title="Link to this heading"></a></h3>
+<p>Monitors real-time progress of preprocessing task execution.</p>
+<p><strong>Two-step display:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Progress Display</strong> – Shows progress bar, elapsed time, time estimates, and queue of remaining submissions</p></li>
+<li><p><strong>Cancel Confirmation</strong> – Confirmation dialog before cancelling remaining requests</p></li>
+</ol>
+<p><strong>Metrics shown:</strong></p>
+<ul class="simple">
+<li><p>Current processed count and total count</p></li>
+<li><p>Progress percentage</p></li>
+<li><p>Elapsed time on current request</p></li>
+<li><p>Average time per request (from completed items)</p></li>
+<li><p>Estimated time remaining</p></li>
+<li><p>List of submissions still queued</p></li>
+</ul>
+<p><strong>State Updates:</strong></p>
+<p>Subscribes to <code class="docutils literal notranslate"><span class="pre">BackgroundTaskService</span></code> updates and re-renders progress in real-time.
+Users can navigate away or close the program; processing continues in the background and asynchronous.
+Can re-open the modal to see current progress.</p>
+</section>
+</section>
+<section id="backend-integration">
+<h2>Backend Integration<a class="headerlink" href="#backend-integration" title="Link to this heading"></a></h2>
+<p>The frontend communicates with the <code class="docutils literal notranslate"><span class="pre">BackgroundTaskService</span></code> (<code class="docutils literal notranslate"><span class="pre">backend/webserver/services/backgroundTask.js</span></code>)
+which orchestrates the entire preprocessing workflow.</p>
+<p><strong>Key responsibilities:</strong></p>
+<ul class="simple">
+<li><p><strong>Item generation</strong>: Computes the Cartesian product of parameter combinations(the variable is anyways only the table-based parameter selections only, rest are static selections in the Cartesian product) to determine all processing requests.</p></li>
+<li><p><strong>Data preparation</strong>: For each request, loads input data from the database (documents as base64, configurations as JSON)</p></li>
+<li><p><strong>NLP orchestration</strong>: Sends requests to the NLP service and polls for results</p></li>
+<li><p><strong>Result persistence</strong>: Stores results in the <code class="docutils literal notranslate"><span class="pre">document_data</span></code> table with keys formatted as <code class="docutils literal notranslate"><span class="pre">nlpRequest_{skillName}_{fieldName}</span></code></p></li>
+<li><p><strong>State management</strong>: Maintains preprocessing state and broadcasts updates to all subscribed clients</p></li>
+<li><p><strong>Cancellation</strong>: Supports user-initiated cancellation of remaining requests</p></li>
+</ul>
+<p><strong>Workflow overview:</strong></p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">startPreprocessing()</span></code> validates permissions and initializes state</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prepareProcessingItems()</span></code> generates all parameter combinations</p></li>
+<li><p>For each item:
+- <code class="docutils literal notranslate"><span class="pre">prepareNlpInput()</span></code> loads files (as base64 encoded) and configurations
+- <code class="docutils literal notranslate"><span class="pre">sendNlpRequest()</span></code> sends to NLP service
+- <code class="docutils literal notranslate"><span class="pre">waitForNlpResult()</span></code> polls for result (cancellable at any time)
+- <code class="docutils literal notranslate"><span class="pre">saveNlpResult()</span></code> stores result in <code class="docutils literal notranslate"><span class="pre">document_data</span></code> table</p></li>
+<li><p>State is broadcasted after each item completes</p></li>
+<li><p>Cleanup and final broadcast when batch finishes or is cancelled</p></li>
+</ol>
+<p><strong>Input data sources:</strong></p>
+<ul class="simple">
+<li><p><strong>submission</strong>: All documents attached to submission, loaded and converted to base64</p></li>
+<li><p><strong>document</strong>: Single document by ID, loaded and converted to base64</p></li>
+<li><p><strong>configuration</strong>: Configuration object by ID, parsed from JSON</p></li>
+</ul>
+<p><strong>Result storage:</strong></p>
+<p>Results are stored in <code class="docutils literal notranslate"><span class="pre">document_data</span></code> with keys like:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>nlpRequest_sentiment-classification_sentiment: &quot;positive&quot;
+nlpRequest_sentiment-classification_confidence: 0.92
+</pre></div>
+</div>
+<p>This allows multiple NLP results per document, differentiated by skill name and result field.</p>
+<p><strong>Error handling:</strong></p>
+<p>Errors during item processing are caught and logged; processing continues with the next item:</p>
+<ul class="simple">
+<li><p>Missing input data -&gt; item skipped</p></li>
+<li><p>NLP timeout -&gt; item skipped, timeout configured in settings</p></li>
+<li><p>File not found -&gt; item skipped</p></li>
+<li><p>Database errors -&gt; logged, processing continues</p></li>
+<li><p>Permission errors -&gt; rejected before processing begins</p></li>
+</ul>
+<p>Cancellation is supported at any time; completed requests remain saved in the database.</p>
+</section>
+<section id="data-flow-example">
+<h2>Data Flow Example<a class="headerlink" href="#data-flow-example" title="Link to this heading"></a></h2>
+<p>Complete example: Processing a submission with the <code class="docutils literal notranslate"><span class="pre">grading_expose</span></code> skill</p>
+<p><strong>User Configuration (Frontend):</strong></p>
+<p>Admin selects the <code class="docutils literal notranslate"><span class="pre">grading_expose</span></code> skill, maps the “submission” parameter to <code class="docutils literal notranslate"><span class="pre">&lt;Submission&gt;</span></code> data source,
+manually selects 5 individual student submissions (IDs: 10, 11, 12, 13, 14), and configures to save results to PDF documents.</p>
+<p>The InputFiles component displays all available submissions grouped by their validation configuration automatically.</p>
+<p><strong>Backend Processing:</strong></p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prepareProcessingItems()</span></code> creates 5 requests (one per selected submission)</p></li>
+<li><p>For each submission:
+- <code class="docutils literal notranslate"><span class="pre">prepareNlpInput()</span></code> loads all documents from the submission, converts to base64
+- Input structure: <code class="docutils literal notranslate"><span class="pre">{submission:</span> <span class="pre">{pdf:</span> <span class="pre">&quot;base64...&quot;,</span> <span class="pre">zip:</span> <span class="pre">&quot;base64...&quot;,</span> <span class="pre">...}}</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sendNlpRequest()</span></code> forwards each to the <code class="docutils literal notranslate"><span class="pre">grading_expose</span></code> NLP service</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">waitForNlpResult()</span></code> polls until result arrives: <code class="docutils literal notranslate"><span class="pre">{&quot;assessment&quot;:</span> <span class="pre">[&quot;name&quot;:</span> <span class="pre">&quot;Language</span> <span class="pre">quality&quot;,</span> <span class="pre">&quot;score&quot;:</span> <span class="pre">1,</span> <span class="pre">...]}</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">saveNlpResult()</span></code> stores one <code class="docutils literal notranslate"><span class="pre">document_data</span></code> records to the submission’s PDF document:
+- <code class="docutils literal notranslate"><span class="pre">nlpRequest_grading_expose_assessment</span></code> -&gt; [“name”: “Language quality”, “score”: 1, …]</p></li>
+<li><p>Frontend receives <code class="docutils literal notranslate"><span class="pre">backgroundTaskUpdate</span></code> broadcast showing progress, final completion</p></li>
+</ol>
+</section>
+<section id="extending-the-service">
+<h2>Extending the Service<a class="headerlink" href="#extending-the-service" title="Link to this heading"></a></h2>
+<p>To add support for new parameter types:</p>
+<ol class="arabic simple">
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">InputMap.vue</span></code> to show the new data source in available options</p></li>
+<li><p>Add a <code class="docutils literal notranslate"><span class="pre">load&lt;fileType&gt;()</span></code> method in <code class="docutils literal notranslate"><span class="pre">BackgroundTaskService</span></code> to fetch and prepare the data</p></li>
+<li><p>Add a new case to the <code class="docutils literal notranslate"><span class="pre">prepareNlpInput()</span></code> switch statement</p></li>
+</ol>
+<p>To modify timeout or polling behavior:</p>
+<ol class="arabic simple">
+<li><p>Adjust <code class="docutils literal notranslate"><span class="pre">intervalMs</span></code> parameter in <code class="docutils literal notranslate"><span class="pre">waitForNlpResult()</span></code> (default 200ms)</p></li>
+<li><p>Configure NLP service timeout in settings (typically 5-30 seconds)</p></li>
+<li><p>Logs are written to the backend logger for debugging</p></li>
+</ol>
+<p>To add support for mutiple table-based selections:
+1. Modify <code class="docutils literal notranslate"><span class="pre">InputFiles.vue</span></code> to allow multi-parameter table selections
+2. Update <code class="docutils literal notranslate"><span class="pre">prepareProcessingItems()</span></code> to compute Cartesian product (or other suitable combination) across multiple table-based selections;
+Take care that this can generate arbitrarly large number of combinations, which might need some anchor points to limit the purpose and combinations</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="study.html" class="btn btn-neutral float-left" title="Study" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../plugins.html" class="btn btn-neutral float-right" title="Plugins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

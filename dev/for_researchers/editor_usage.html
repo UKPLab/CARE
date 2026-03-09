@@ -1,0 +1,249 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quill Editor &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Validation Schemas" href="validation_schemas.html" />
+    <link rel="prev" title="Revision Workflow Study Example" href="study/study_with_nlp.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quill Editor</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#accessing-the-editor">Accessing the Editor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#editor-settings">Editor Settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#autosaving-and-versioning">Autosaving and Versioning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#toolbar-and-formatting-options">Toolbar and Formatting Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#document-controls">Document Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#viewing-edit-history">Viewing Edit History</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quill Editor</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/editor_usage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quill-editor">
+<h1>Quill Editor<a class="headerlink" href="#quill-editor" title="Link to this heading"></a></h1>
+<p>This section explains how to use the text editor within the CARE platform for writing, reviewing, or revising documents. It also describes how the editor works behind the scenes, how versions are handled, and how settings can be customized.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The CARE text editor is built using <a class="reference external" href="https://quilljs.com">Quill</a>, a modern open-source rich-text editor. It supports writing and formatting plain text documents directly in your browser.</p>
+<p>All content is saved using the <strong>Quill Delta format</strong> – a structured JSON format that captures both the text and its formatting. This allows the system to:</p>
+<ul class="simple">
+<li><p>Efficiently store document history</p></li>
+<li><p>Reconstruct any version of the document</p></li>
+<li><p>Track edits made by users during studies</p></li>
+</ul>
+</section>
+<section id="accessing-the-editor">
+<h2>Accessing the Editor<a class="headerlink" href="#accessing-the-editor" title="Link to this heading"></a></h2>
+<p>To begin editing a document:</p>
+<ol class="arabic simple">
+<li><p>Open the <strong>Documents</strong> section in the dashboard</p></li>
+<li><p>Click on the <code class="docutils literal notranslate"><span class="pre">Create</span></code> button to start a new document</p></li>
+<li><p>There you can choose between an <code class="docutils literal notranslate"><span class="pre">General</span> <span class="pre">Document</span></code> or a <code class="docutils literal notranslate"><span class="pre">Study</span> <span class="pre">Modal</span> <span class="pre">Document</span></code></p>
+<ul class="simple">
+<li><p>In a <strong>General Document</strong>, you can write freely without any study context.</p></li>
+<li><p>In a <strong>Study Modal Document</strong>, you can write within the context of a specific study, which means that this document is then meant to be used as one step within a study. More information about studies can be found in the <a class="reference internal" href="study/study.html"><span class="doc">Studies documentation</span></a>.</p></li>
+</ul>
+</li>
+<li><p>Enter the name of the document and click on <strong>Create</strong></p></li>
+<li><p>Now your document is available in the dashboard <strong>Documents</strong> section, and you can click on <code class="docutils literal notranslate"><span class="pre">Access</span> <span class="pre">document</span></code> to open the editor.</p></li>
+</ol>
+<p>Edits are saved automatically in the background. There’s no need to manually click a save button.</p>
+</section>
+<section id="editor-settings">
+<span id="editor-settings-ref"></span><h2>Editor Settings<a class="headerlink" href="#editor-settings" title="Link to this heading"></a></h2>
+<p>The CARE editor can be customized through a range of settings available to administrators. These control autosave behavior, toolbar visibility, and document-related actions. All editor-related settings can be accessed from:</p>
+<p><strong>Dashboard → Settings → Editor</strong></p>
+<section id="autosaving-and-versioning">
+<h3>Autosaving and Versioning<a class="headerlink" href="#autosaving-and-versioning" title="Link to this heading"></a></h3>
+<p><strong>Autosave configuration:</strong></p>
+<p>The editor uses a built-in <strong>save buffer</strong> (debounce mechanism). After you stop typing, the system waits briefly before saving your input, which reduces unnecessary processing and database writes.</p>
+<p>You can control this behavior via:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.edits.debounceTime</span></code> – Delay (in milliseconds) after the <strong>last keystroke</strong> before sending edits to the backend.</p></li>
+</ul>
+<p><strong>What happens when you change the debounce time?</strong></p>
+<ul class="simple">
+<li><p><strong>Increasing</strong> the debounce time (e.g., from 150ms to 1000ms):
+- Reduces how often edits are sent to the backend.
+- Other tabs/users will see delayed updates.
+- Fewer entries are saved in the database, but each entry may contain more characters.</p></li>
+<li><p><strong>Decreasing</strong> the debounce time (e.g., to 50ms):
+- Sends updates more frequently, possibly after <strong>every keystroke</strong>.
+- Other users will see nearly real-time updates.
+- Can generate a <strong>large number of DB writes</strong>, potentially impacting performance.</p></li>
+</ul>
+<p>Adjust these settings based on your application’s needs for real-time collaboration vs. backend load efficiency.</p>
+<p><strong>Edit history configuration:</strong></p>
+<p>You can control this behavior via:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.edits.historyGroupTime</span></code> – Groups edits into a single history block if they occur within this time window.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.edits.showHistoryForUser</span></code> – Allow non-admin users to view the edit history.</p></li>
+</ul>
+<p>These settings are useful for providing transparency over changes, simplifying version tracking, and enabling collaborative review of document edits.</p>
+</section>
+<section id="toolbar-and-formatting-options">
+<h3>Toolbar and Formatting Options<a class="headerlink" href="#toolbar-and-formatting-options" title="Link to this heading"></a></h3>
+<p>The editor includes a formatting toolbar that supports:</p>
+<ul class="simple">
+<li><p>Basic formatting (bold, italic, underline)</p></li>
+<li><p>Structural elements (headings, lists, block quotes)</p></li>
+<li><p>Utility tools (clean formatting, code blocks)</p></li>
+</ul>
+<p>To configure toolbar visibility and tools:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.toolbar.visibility</span></code> – Toggles the entire toolbar</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.toolbar.showHTMLDownload</span></code> – Toggles download button of HTML documents in the editor</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.toolbar.tools.*</span></code> – Enable or disable individual tools such as bold, italic, lists, etc.</p></li>
+</ul>
+</section>
+<section id="document-controls">
+<h3>Document Controls<a class="headerlink" href="#document-controls" title="Link to this heading"></a></h3>
+<p>Dashboard-level settings determine what users can do with documents. These include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.document.showButtonCreate</span></code> – Toggles “Create Document” button in the dashboard</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.document.showButtonHTMLDownload</span></code> – Toggles download button of HTML documents in the dashboard</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">editor.document.showButtonDeltaDownload</span></code> – Toggles download button of raw delta changes</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>For more technical details on configuring these settings, see the
+<span class="xref std std-doc">Frontend Settings documentation</span>.</p>
+</div>
+</section>
+</section>
+<section id="viewing-edit-history">
+<h2>Viewing Edit History<a class="headerlink" href="#viewing-edit-history" title="Link to this heading"></a></h2>
+<p>For documents used in studies, you may see a <strong>Show History</strong> button in the editor’s top bar. This feature lets you:</p>
+<ul class="simple">
+<li><p>Compare current edits to the original version</p></li>
+<li><p>Understand how a document evolved during a study</p></li>
+<li><p>Restore earlier versions (depending on permissions)</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, edit history is only visible to administrators. To allow all users to view history, enable <code class="docutils literal notranslate"><span class="pre">editor.edits.showHistoryForUser</span></code> in the settings.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="study/study_with_nlp.html" class="btn btn-neutral float-left" title="Revision Workflow Study Example" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="validation_schemas.html" class="btn btn-neutral float-right" title="Validation Schemas" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

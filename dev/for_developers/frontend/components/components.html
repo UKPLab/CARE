@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Components &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Annotator" href="annotator.html" />
+    <link rel="prev" title="NLPService" href="../basic/service.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../basic/basic.html">Basic</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#code-structure-overview">Code Structure Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="annotator.html">Annotator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stepmodal.html">Step Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="study.html">Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#dashboard">Dashboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#document">Document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#study">Study</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+      <li class="breadcrumb-item active">Components</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/components/components.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="components">
+<h1>Components<a class="headerlink" href="#components" title="Link to this heading"></a></h1>
+<p>While <a class="reference internal" href="#"><span class="doc">Basic</span></a> contains reusable UI building blocks,
+the <code class="docutils literal notranslate"><span class="pre">frontend/src/components</span></code> folder contains <strong>application-level components</strong>.
+These components orchestrate workflows like document annotation, study execution, and the main dashboard.</p>
+<p>They integrate multiple base components and Vuex/socket logic to provide full functionality.
+These are the components that are opened by the Vue routes defined in <code class="docutils literal notranslate"><span class="pre">frontend/src/router.js</span></code>, e.g.:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">routes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dashboard/:catchAll(.*)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;dashboard&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">props</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="s2">&quot;@/components/Dashboard.vue&quot;</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">meta</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">requireAuth</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">toggleSidebar</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/document/:documentHash&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="s2">&quot;@/components/Document.vue&quot;</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">props</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">meta</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">requireAuth</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="p">];</span>
+</pre></div>
+</div>
+<section id="code-structure-overview">
+<h2>Code Structure Overview<a class="headerlink" href="#code-structure-overview" title="Link to this heading"></a></h2>
+<p>Below are the <strong>main components</strong> you’ll find under <code class="docutils literal notranslate"><span class="pre">frontend/src/components</span></code>.
+Each entry links to its dedicated documentation page:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="annotator.html">Annotator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="annotator.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="annotator.html#implementing-the-annotator">Implementing the Annotator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="annotator.html#collaboration-and-websockets">Collaboration and WebSockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="annotator.html#study-mode-vs-regular-mode">Study Mode vs Regular Mode</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dashboard.html">Dashboard</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html#dashboard-structure">Dashboard Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html#adding-a-new-dashboard-component">Adding a New Dashboard Component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html#populating-a-dashboard-component">Populating a Dashboard Component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html#table">Table</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="editor.html">Quill Editor</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="editor.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="editor.html#implementing-the-editor">Implementing the Editor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="editor.html#editor-deltas-and-code-integration">Editor-Deltas and Code Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="editor.html#testing-the-editor">Testing the Editor</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="stepmodal.html">Step Modal</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="stepmodal.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stepmodal.html#implementing-the-stepmodal">Implementing the StepModal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stepmodal.html#placeholders">Placeholders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stepmodal.html#nlp-integration">NLP Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="study.html">Study</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="study.html#studymodal">StudyModal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="study.html#finishmodal">FinishModal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="study.html#reviewmodal">ReviewModal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="study.html#reportmodal-reportitem">ReportModal (+ ReportItem)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="apply_skill_preprocessing.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apply_skill_preprocessing.html#component-architecture">Component Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apply_skill_preprocessing.html#backend-integration">Backend Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apply_skill_preprocessing.html#data-flow-example">Data Flow Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apply_skill_preprocessing.html#extending-the-service">Extending the Service</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<hr class="docutils" />
+<section id="dashboard">
+<h2>Dashboard<a class="headerlink" href="#dashboard" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="dashboard.html"><span class="doc">Dashboard</span></a> is the central landing view after login.
+It loads navigation entries from the store (<code class="docutils literal notranslate"><span class="pre">nav_element</span></code>; see <a class="reference internal" href="../vuex_store.html"><span class="doc">Vuex Store</span></a>) and dynamically renders the active module into the main viewer pane.</p>
+<ul class="simple">
+<li><p>The <strong>sidebar</strong> provides navigation based on Vuex-managed entries.</p></li>
+<li><p>The <strong>viewer</strong> dynamically loads the selected component (via <code class="docutils literal notranslate"><span class="pre">defineAsyncComponent</span></code>).</p></li>
+<li><p>Default modules can be configured via <code class="docutils literal notranslate"><span class="pre">dashboard.navigation.component.default</span></code> in the <a class="reference internal" href="../../examples/settings.html"><span class="doc">Settings</span></a>.</p></li>
+</ul>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;dashboard-wrapper&quot;</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">Sidebar</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nt">component</span> <span class="na">:is</span><span class="o">=</span><span class="s">&quot;currentComponent&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<p>This makes the Dashboard the entry point to most of CARE’s functionality.</p>
+</section>
+<hr class="docutils" />
+<section id="document">
+<h2>Document<a class="headerlink" href="#document" title="Link to this heading"></a></h2>
+<p>The Document decides whether to show the <a class="reference internal" href="annotator.html"><span class="doc">Annotator</span></a> or the <a class="reference internal" href="editor.html"><span class="doc">Editor</span></a>
+based on the document type stored in Vuex.</p>
+<ul class="simple">
+<li><p><strong>Annotator</strong>: For document type 0 (DOC_TYPE_PDF).</p></li>
+<li><p><strong>Editor</strong>: For document types 1 (DOC_TYPE_HTML) and 2 (DOC_TYPE_MODAL).</p></li>
+</ul>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;doc.type === 1&quot;</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">v-else</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>This route provides the foundation for all document interactions outside of studies.</p>
+</section>
+<hr class="docutils" />
+<section id="study">
+<h2>Study<a class="headerlink" href="#study" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="study.html"><span class="doc">Study</span></a> component organizes <strong>full study execution</strong>.
+It combines annotation, editing, and step-based tasks into a coherent workflow:</p>
+<ul class="simple">
+<li><p>Prompts the user to <strong>start or resume</strong> a study with a <span class="xref std std-ref">StudyModal</span>.</p></li>
+<li><p>Displays the correct step type:</p>
+<ul>
+<li><p><a class="reference internal" href="annotator.html"><span class="doc">Annotator</span></a> (stepType 1)</p></li>
+<li><p><a class="reference internal" href="editor.html"><span class="doc">Editor</span></a> (stepType 2)</p></li>
+<li><p><a class="reference internal" href="stepmodal.html"><span class="doc">StepModal</span></a> (stepType 3)</p></li>
+</ul>
+</li>
+<li><p>Manages <strong>step navigation</strong> (previous/next buttons in the topbar).</p></li>
+<li><p>Tracks <strong>timing and deadlines</strong>.</p></li>
+<li><p>Provides a <a class="reference internal" href="study.html#finish-modal"><span class="std std-ref">FinishModal</span></a> for submission and study closure.</p></li>
+</ul>
+<p><strong>Key integrations:</strong> Vuex (study, study_step, study_session tables), socket events, topbar controls.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;step.type === 1&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;step.type === 2&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">StepModal</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;step.type === 3&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>The Study component is the <strong>core container for study mode</strong>, turning individual base components into a guided workflow.</p>
+</section>
+<hr class="docutils" />
+<section id="study-session">
+<h2>Study Session<a class="headerlink" href="#study-session" title="Link to this heading"></a></h2>
+<p>The StudySession component is a <strong>specialized wrapper</strong> around <a class="reference internal" href="study.html"><span class="doc">Study</span></a>.
+Its purpose is to <strong>resume existing sessions</strong> (via <code class="docutils literal notranslate"><span class="pre">studySessionHash</span></code>).</p>
+<ul class="simple">
+<li><p>Fetches the study session object from the backend (via sockets).</p></li>
+<li><p>Passes the resolved <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> into the Study component.</p></li>
+<li><p>Handles error cases (e.g., invalid or expired session hashes) and shows appropriate toasts.</p></li>
+<li><p>Ensures consistent state restoration when a user re-opens a session.</p></li>
+</ul>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Study</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
+  <span class="na">:init-study-session-id</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
+  <span class="na">:read-only</span><span class="o">=</span><span class="s">&quot;readOnly&quot;</span>
+  <span class="na">:study-hash</span><span class="o">=</span><span class="s">&quot;studyHash&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>By separating session resumption into its own component, CARE cleanly distinguishes between:</p>
+<ul class="simple">
+<li><p><strong>Starting or creating a new study session</strong> → handled in <a class="reference internal" href="study.html"><span class="doc">Study</span></a>.</p></li>
+<li><p><strong>Resuming an existing session</strong> → handled in <strong>StudySession</strong>.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="nlp-skill-preprocessing">
+<h2>NLP Skill Preprocessing<a class="headerlink" href="#nlp-skill-preprocessing" title="Link to this heading"></a></h2>
+<p>The <span class="xref std std-doc">NLP Skill Preprocessing Modal</span> enables batch processing of documents and submissions
+using connected NLP skills. This modal provides a complete workflow for:</p>
+<ul class="simple">
+<li><p>Selecting NLP skills and mapping inputs to data sources</p></li>
+<li><p>Configuring which files to preprocess</p></li>
+<li><p>Specifying where to store results</p></li>
+<li><p>Monitoring real-time progress of background processing tasks</p></li>
+</ul>
+<p><strong>Architecture:</strong> The modal uses a <strong>two-phase workflow</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Setup Phase</strong> (<code class="docutils literal notranslate"><span class="pre">ApplySkillSetupStepper</span></code>): Multi-step selection for configuring and selecting the preprocessing task</p></li>
+<li><p><strong>Processing Phase</strong> (<code class="docutils literal notranslate"><span class="pre">ApplySkillProcessStepper</span></code>): Real-time progress monitoring with time estimates and to-be-processed file queue</p></li>
+</ol>
+<p><strong>Key integrations:</strong></p>
+<ul class="simple">
+<li><p><strong>BackgroundTaskService</strong> (backend): Orchestrates preprocessing workflow, prepares NLP inputs, manages NLP requests, stores results</p></li>
+<li><p><strong>NLPService</strong>: Receives prepared input data and returns NLP results</p></li>
+<li><p><strong>document_data</strong>: Stores the NLP results</p></li>
+</ul>
+<p><strong>Child Components:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SkillSelector</span></code>: Dropdown to select NLP skills</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InputMap</span></code>: Skill parameter mapping interface</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InputFiles</span></code>: File(s) selection</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InputGroup</span></code>: Base file selection for validation (case: submission)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InputConfirm</span></code>: Configuration review</p></li>
+</ul>
+<p>For detailed architecture and backend integration, see <span class="xref std std-doc">nlp_preprocessing</span>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../basic/service.html" class="btn btn-neutral float-left" title="NLPService" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="annotator.html" class="btn btn-neutral float-right" title="Annotator" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

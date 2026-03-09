@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Applying NLP Skills to Documents &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Exporting Data" href="exporting.html" />
+    <link rel="prev" title="Basics" href="basics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Applying NLP Skills to Documents</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#when-to-use-skill-application">When to Use Skill Application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#accessing-skill-application">Accessing Skill Application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-steps">Configuration Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-select-base-files-submission-based-parameter-selections-only">Step 4: Select Base Files (submission-based parameter selections only)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#monitoring-and-results">Monitoring and Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Applying NLP Skills to Documents</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/apply_skill_preprocessing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="applying-nlp-skills-to-documents">
+<h1>Applying NLP Skills to Documents<a class="headerlink" href="#applying-nlp-skills-to-documents" title="Link to this heading"></a></h1>
+<p>CARE allows administrators to apply NLP skills to files (currently, documents and submissions) as batches with same configurations.
+This feature enables preprocessing of large file collections with configured NLP models
+and automatic storage of results for further analysis.</p>
+<section id="when-to-use-skill-application">
+<h2>When to Use Skill Application<a class="headerlink" href="#when-to-use-skill-application" title="Link to this heading"></a></h2>
+<p>Use the skill application feature to:</p>
+<ul class="simple">
+<li><p><strong>Preprocess submissions</strong> with NLP models before study participants begin, to avoid latency during interaction</p></li>
+<li><p><strong>Validate NLP model outputs</strong> for different inputs and scenarios</p></li>
+<li><p><strong>Prepare ground truth data</strong> for model evaluation studies</p></li>
+<li><p><strong>Generate baseline predictions</strong> for human-in-the-loop workflows (eg., Peer Review Workflow with AI)</p></li>
+<li><p>If annotations for documents are created, <strong>pre-generate NLP results</strong> to compare human vs. model annotations</p></li>
+<li><p><strong>Comparison studies</strong> with and without NLP support can be facilitated using the same platform, avoiding external factors affecting separate setups</p></li>
+</ul>
+</section>
+<section id="accessing-skill-application">
+<h2>Accessing Skill Application<a class="headerlink" href="#accessing-skill-application" title="Link to this heading"></a></h2>
+<p>Skill application is available in the <strong>Dashboard</strong> under the <strong>Submissions</strong> component.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only administrators can access the selection of skill application, displays NLP skills that are online only, if there are no online skills then the fallback will be activated.
+Regular users cannot initiate or monitor preprocessing tasks.</p>
+</div>
+<p><strong>To open the skill application interface:</strong></p>
+<ol class="arabic simple">
+<li><p>Log in as an administrator</p></li>
+<li><p>Navigate to the <strong>Dashboard</strong></p></li>
+<li><p>In the left sidebar, click <strong>Submissions</strong></p></li>
+<li><p>Click on <strong>Apply Skills</strong></p></li>
+</ol>
+<p>The <strong>Apply Skills</strong> modal will open with a step-by-step wizard.</p>
+</section>
+<section id="configuration-steps">
+<h2>Configuration Steps<a class="headerlink" href="#configuration-steps" title="Link to this heading"></a></h2>
+<p><strong>Step 1: Select Skill</strong></p>
+<p>Choose an NLP skill from the dropdown. The available skills are shown with their status (online/offline) .
+To understand what a skill does before selecting it, check the <strong>NLP Skills</strong> component in the dashboard, which shows:</p>
+<ul class="simple">
+<li><p>Input parameters and expected input formats</p></li>
+<li><p>Output fields and their meanings</p></li>
+<li><p>Full configuration details</p></li>
+</ul>
+<p><strong>Step 2: Map Parameters to Data Sources</strong></p>
+<p>For each skill input parameter, select a data source:</p>
+<ul class="simple">
+<li><p><strong>Submission</strong>: All documents from a submission (for multi-document analysis saved as a submission)</p></li>
+<li><p><strong>Document</strong>: A specific individual document</p></li>
+<li><p><strong>Configuration</strong>: A configuration of type <code class="docutils literal notranslate"><span class="pre">assessment</span></code></p></li>
+</ul>
+<p>..note:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">You</span> <span class="n">can</span> <span class="n">select</span> <span class="n">only</span> <span class="n">one</span> <span class="n">table</span><span class="o">-</span><span class="n">based</span> <span class="n">data</span> <span class="n">source</span><span class="p">(</span><span class="n">submission</span> <span class="ow">or</span> <span class="n">document</span><span class="p">)</span> <span class="ow">in</span> <span class="n">total</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">parameters</span><span class="o">.</span>
+</pre></div>
+</div>
+<p><strong>Step 3: Select Files to Process</strong></p>
+<p>Choose which specific files (submissions or documents) to apply the skill to.
+The selection interface shows available files grouped by validation configuration.
+You must select at least one file.</p>
+</section>
+<section id="step-4-select-base-files-submission-based-parameter-selections-only">
+<h2>Step 4: Select Base Files (submission-based parameter selections only)<a class="headerlink" href="#step-4-select-base-files-submission-based-parameter-selections-only" title="Link to this heading"></a></h2>
+<p>If the skill operates on submissions (not individual documents), you must specify which document type
+to save results to, since submissions contain multiple documents.</p>
+<p>For each group ( groups are based on shared validation configuration ), choose the target document type for that specific submission-group (pdf, html, modal, etc.).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This step only appears for submission-based skills.
+Document-based skills save directly to the selected document.</p>
+</div>
+<p><strong>Step 5: Review and Confirm</strong></p>
+<p>Review the configuration summary showing:</p>
+<ul class="simple">
+<li><p>Selected skill and parameters</p></li>
+<li><p>Number of files selected</p></li>
+<li><p>Total number of requests to be created</p></li>
+</ul>
+<p>Click <strong>Apply Skills</strong> to submit.</p>
+</section>
+<section id="monitoring-and-results">
+<h2>Monitoring and Results<a class="headerlink" href="#monitoring-and-results" title="Link to this heading"></a></h2>
+<p><strong>During Processing:</strong></p>
+<p>After submission, the modal shows real-time progress:</p>
+<ul class="simple">
+<li><p>Progress bar (X / Y requests completed)</p></li>
+<li><p>Current request elapsed time</p></li>
+<li><p>Estimated time remaining</p></li>
+<li><p>Queue of submissions still waiting</p></li>
+</ul>
+<p>You can close the modal; processing continues in the background.
+Re-open “Apply Skills” anytime to check progress.</p>
+<p><strong>Cancelling Pre-processing:</strong></p>
+<p>Click <strong>Cancel Preprocess</strong> to stop remaining requests.
+Already-completed requests remain saved in the database.</p>
+<p><strong>Reviewing Results:</strong></p>
+<p>Results are automatically saved to documents in the <code class="docutils literal notranslate"><span class="pre">document_data</span></code> table with keys like:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>nlpRequest_grading_expose_assessment
+</pre></div>
+</div>
+<p>Access results by:</p>
+<p>Looking at the <code class="docutils literal notranslate"><span class="pre">document_data</span></code> table for the corresponding combination of <code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>, <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code> and <code class="docutils literal notranslate"><span class="pre">key</span></code>.
+If this is integrated into a study, results can be accessed via the component’s data sources while configuring the study.</p>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p><strong>If processing fails for specific items:</strong></p>
+<ul class="simple">
+<li><p>Error is logged to backend; processing continues with next item</p></li>
+<li><p>Check backend logs for details</p></li>
+</ul>
+<p><strong>Common issues:</strong></p>
+<ul class="simple">
+<li><p><strong>Files missing</strong>: File deleted from disk or database</p></li>
+<li><p><strong>Processing latency</strong>: Skill took too long; check the cancellation view or backend logs for details</p></li>
+<li><p><strong>NLP timeout</strong>: Skill took too long; increase timeout in settings</p></li>
+<li><p><strong>Skill offline</strong>: Check NLP Skills component for status</p></li>
+<li><p><strong>No results stored</strong>: Verify base file selection was correct</p></li>
+</ul>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Correct selections</strong>: Ensure the skill name, input parameters are mapped to correct data sources, correct files and base files are chosen appropriately</p></li>
+<li><p><strong>Start small</strong>: Test with 1-5 submissions first to verify skill configuration and its functionality before running large batches</p></li>
+<li><p><strong>Review results</strong>: Always manually check initial results to assess model quality and correct functionality in CARE</p></li>
+<li><p><strong>Monitor time</strong>: Watch elapsed time; if requests exceeds the expected duration, something may be wrong</p></li>
+<li><p><strong>Document your runs</strong>: Note which skills ran on which submissions and when, for reproducibility</p></li>
+<li><p><strong>Check permissions</strong>: Only admins can run skill application; results are stored under your userId</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>No skills appear in dropdown</strong></dt><dd><ul class="simple">
+<li><p>Skill Broker is either offline or no models connected (fallbacks are visible).</p></li>
+<li><p>Check <code class="docutils literal notranslate"><span class="pre">NLP</span> <span class="pre">Skills</span></code> component.</p></li>
+</ul>
+</dd>
+<dt><strong>Can’t proceed past Step 1</strong></dt><dd><ul class="simple">
+<li><p>You must map at least one parameter to a table-based source (submission or document).</p></li>
+</ul>
+</dd>
+<dt><strong>Error during processing</strong></dt><dd><ul class="simple">
+<li><p>Make sure, that the inputs selected match the requirement for the skill.</p></li>
+<li><p>Check backend logs for specific error messages related to the skill or data.</p></li>
+</ul>
+</dd>
+<dt><strong>Processing takes very long</strong></dt><dd><ul class="simple">
+<li><p>Skill may be slow or offline.</p></li>
+<li><p>Check cancellation view, backend logs or the broker for errors. Cancel and retry if needed.</p></li>
+</ul>
+</dd>
+<dt><strong>Results don’t appear in document_data</strong></dt><dd><ul class="simple">
+<li><p>Verify base file selection was correct.</p></li>
+<li><p>Check that the documentId exists in the database.</p></li>
+</ul>
+</dd>
+<dt><strong>Results look incorrect</strong></dt><dd><ul class="simple">
+<li><p>Test the skill manually using the NLP Skills message interface. Compare against expected output.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basics.html" class="btn btn-neutral float-left" title="Basics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="exporting.html" class="btn btn-neutral float-right" title="Exporting Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

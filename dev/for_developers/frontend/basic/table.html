@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Table &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="NLPService" href="service.html" />
+    <link rel="prev" title="Navigation" href="navigation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="basic.html">Basic</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="basic.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="download.html">Download</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="form.html">Form</a></li>
+<li class="toctree-l4"><a class="reference internal" href="icon.html">Icon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modal.html">Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="navigation.html">Navigation</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="service.html">NLPService</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#button">Button</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#form">Form</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#icon">Icon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#loading">Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#modal">Modal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#table">Table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#timer">Timer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#toast">Toast</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../components/components.html">Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="basic.html">Basic</a></li>
+      <li class="breadcrumb-item active">Table</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/basic/table.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="table">
+<h1>Table<a class="headerlink" href="#table" title="Link to this heading"></a></h1>
+<p>The basic table component allows you to render corporate design tables using a dictionary-based configuration.
+Two dictionaries are required: the <code class="docutils literal notranslate"><span class="pre">columns</span></code> description and the <code class="docutils literal notranslate"><span class="pre">options</span></code> for the table.
+After these are defined, any data can be passed and the table will render accordingly.</p>
+<p><strong>Columns</strong></p>
+<p>The columns are described in the <code class="docutils literal notranslate"><span class="pre">columns</span></code> dictionary.
+The dictionary contains the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: The name of the column, which will be displayed in the table header.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>: The key of the data, which will be displayed in the table body.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: How the data is displayed. Available types: <code class="docutils literal notranslate"><span class="pre">icon</span></code>, <code class="docutils literal notranslate"><span class="pre">button</span></code>, <code class="docutils literal notranslate"><span class="pre">button-group</span></code>, <code class="docutils literal notranslate"><span class="pre">toggle</span></code>, <code class="docutils literal notranslate"><span class="pre">badge</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime</span></code>, <code class="docutils literal notranslate"><span class="pre">icon-selector</span></code>.
+Defaults to text.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sortable</span></code>: If true, a sort icon will be shown and the column can be sorted.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sortKey</span></code>: Optional key for sorting. If not set, the <code class="docutils literal notranslate"><span class="pre">key</span></code> is used.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter</span></code>: If defined, the column can be filtered using the provided array.</p></li>
+</ul>
+<p><strong>Types</strong></p>
+<p><cite>Icon</cite>: Displays a field value as an icon.
+The value must be a valid icon name.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableIcon</span> <span class="na">:value</span><span class="o">=</span><span class="s">&quot;row.typeIcon&quot;</span> <span class="na">:color</span><span class="o">=</span><span class="s">&quot;row.iconColor&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Props:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">value</span></code> – Icon name (string, required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">color</span></code> – Optional color string</p></li>
+</ul>
+<hr class="docutils" />
+<p><cite>Button</cite>: Displays a field value as a clickable button.
+Actions, icons, and titles can be defined and emitted on click.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableButton</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Edit&quot;</span>
+    <span class="na">icon</span><span class="o">=</span><span class="s">&quot;pencil&quot;</span>
+    <span class="na">action</span><span class="o">=</span><span class="s">&quot;edit&quot;</span>
+    <span class="na">:params</span><span class="o">=</span><span class="s">&quot;row&quot;</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;{ specifiers: &#39;btn-outline-primary btn-sm&#39; }&quot;</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onRowAction&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Props:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">title</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">action</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">icon</span></code> (optional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params</span></code> (optional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">options</span></code> – supports <code class="docutils literal notranslate"><span class="pre">iconOnly</span></code> and <code class="docutils literal notranslate"><span class="pre">specifiers</span></code></p></li>
+</ul>
+<p>Emits: <code class="docutils literal notranslate"><span class="pre">&#64;action</span></code> → <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">action,</span> <span class="pre">params,</span> <span class="pre">stats</span> <span class="pre">}</span></code></p>
+<hr class="docutils" />
+<p><cite>Button Group</cite>: Displays multiple buttons as a group.
+Each entry follows the same schema as a button.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ButtonGroup</span>
+    <span class="na">:buttons</span><span class="o">=</span><span class="s">&quot;[</span>
+<span class="s">      { title: &#39;Edit&#39;,   action: &#39;edit&#39;,   icon: &#39;pencil&#39; },</span>
+<span class="s">      { title: &#39;Delete&#39;, action: &#39;delete&#39;, icon: &#39;trash&#39;  }</span>
+<span class="s">    ]&quot;</span>
+    <span class="na">:params</span><span class="o">=</span><span class="s">&quot;row&quot;</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onRowAction&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Props:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">buttons</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params</span></code> (optional)</p></li>
+</ul>
+<p>Emits: <code class="docutils literal notranslate"><span class="pre">&#64;action</span></code></p>
+<hr class="docutils" />
+<p><cite>Badge</cite>: Renders a colored badge with optional tooltip.
+Class and label mappings can be provided via <code class="docutils literal notranslate"><span class="pre">options</span></code>.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableColumnBadge</span>
+    <span class="na">:value</span><span class="o">=</span><span class="s">&quot;row.status&quot;</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;{</span>
+<span class="s">      classMapping: { active:&#39;bg-success&#39;, pending:&#39;bg-warning&#39;, default:&#39;bg-secondary&#39; },</span>
+<span class="s">      keyMapping:   { active:&#39;Active&#39;,     pending:&#39;Pending&#39;,     default:&#39;Unknown&#39; },</span>
+<span class="s">      tooltip: &#39;Current status&#39;</span>
+<span class="s">    }&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Props:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">value</span></code> – string or object (<code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">text,</span> <span class="pre">class,</span> <span class="pre">tooltip</span> <span class="pre">}</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">options</span></code> – mappings (<code class="docutils literal notranslate"><span class="pre">classMapping</span></code>, <code class="docutils literal notranslate"><span class="pre">keyMapping</span></code>, <code class="docutils literal notranslate"><span class="pre">tooltip</span></code>)</p></li>
+</ul>
+<hr class="docutils" />
+<p><cite>Toggle</cite>: Displays a boolean value as a switch input.
+Emits an action whenever the state changes.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableToggle</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Active&quot;</span>
+    <span class="na">action</span><span class="o">=</span><span class="s">&quot;toggle-active&quot;</span>
+    <span class="na">:value</span><span class="o">=</span><span class="s">&quot;row.active&quot;</span>
+    <span class="na">:params</span><span class="o">=</span><span class="s">&quot;row&quot;</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onRowAction&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Props:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">title</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">action</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">value</span></code> (boolean, required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params</span></code> (optional)</p></li>
+</ul>
+<p>Emits: <code class="docutils literal notranslate"><span class="pre">&#64;action</span></code> → <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">action,</span> <span class="pre">params,</span> <span class="pre">value</span> <span class="pre">}</span></code></p>
+<hr class="docutils" />
+<p><cite>Datetime</cite>: Displays the value as a datetime string.
+The value must be a valid datetime.</p>
+<hr class="docutils" />
+<p><cite>Icon Selector</cite>: Displays the value as an icon selector.
+The value must be a valid icon name.
+Also supports emitting actions.</p>
+<hr class="docutils" />
+<p><cite>Options</cite>: The options are described in the <code class="docutils literal notranslate"><span class="pre">options</span></code> dictionary.
+The dictionary contains the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">striped</span></code> – striped rows</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hover</span></code> – hoverable rows</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bordered</span></code> – bordered table</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">borderless</span></code> – borderless table</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">small</span></code> – compact rows</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pagination</span></code> – enable pagination (<code class="docutils literal notranslate"><span class="pre">false</span></code> or number)</p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Pagination</strong></p>
+<p>Pagination is handled by the <code class="docutils literal notranslate"><span class="pre">BasicTablePagination</span></code> component.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicTablePagination</span>
+    <span class="na">:pages</span><span class="o">=</span><span class="s">&quot;pages&quot;</span>
+    <span class="na">:current-page</span><span class="o">=</span><span class="s">&quot;currentPage&quot;</span>
+    <span class="na">:items-per-page</span><span class="o">=</span><span class="s">&quot;limit&quot;</span>
+    <span class="na">:items-per-page-list</span><span class="o">=</span><span class="s">&quot;[10,25,50,100]&quot;</span>
+    <span class="na">:show-pages</span><span class="o">=</span><span class="s">&quot;3&quot;</span>
+    <span class="err">@</span><span class="na">updatePage</span><span class="o">=</span><span class="s">&quot;p =&gt; currentPage = p&quot;</span>
+    <span class="err">@</span><span class="na">updateItemsPerPage</span><span class="o">=</span><span class="s">&quot;n =&gt; limit = n&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>Props:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pages</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">currentPage</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">itemsPerPage</span></code> (default: 10)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">itemsPerPageList</span></code> (default: [10,25,50,100])</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">showPages</span></code> (default: 3)</p></li>
+</ul>
+<p>Emits:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;updatePage(newPage)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;updateItemsPerPage(n)</span></code></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="navigation.html" class="btn btn-neutral float-left" title="Navigation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="service.html" class="btn btn-neutral float-right" title="NLPService" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

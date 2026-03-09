@@ -1,0 +1,1150 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Stories &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Frontend Development" href="../frontend/frontend.html" />
+    <link rel="prev" title="Frameworks" href="frameworks.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="basics.html">Basics</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="conventions.html">Conventions and Paradigms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frameworks.html">Frameworks</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">User Stories</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#landing-and-authentication">Landing and Authentication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#landing-page">Landing Page</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#guest-login">Guest Login</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#registration">Registration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-login">User Login</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#consent-and-terms">Consent and Terms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#dashboard">Dashboard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pdf-documents">PDF Documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#html-documents">HTML Documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#document-upload">Document Upload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#renaming-documents">Renaming documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#export-project-data">Export Project Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pdf-viewer">PDF Viewer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#color-coding">Color Coding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sidebar">Sidebar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-annotations">Creating annotations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modifying-annotations">Modifying annotations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#annotation-navigation">Annotation Navigation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#document-note">Document Note</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#comment-replying">Comment Replying</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#annotator-collaboration">Annotator Collaboration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configure-assessment-in-study-creation">Configure Assessment in Study Creation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nlp-skill-integration-for-assessment">NLP Skill Integration for Assessment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sidebar-switching-between-assessment-and-comments">Sidebar Switching Between Assessment and Comments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assessment-sidebar-interaction">Assessment Sidebar Interaction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#criterion-information-popup">Criterion Information Popup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#comment-voting">Comment Voting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mark-annotation-as-completed-hide-annotation">Mark Annotation as Completed (Hide Annotation)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Creating Annotations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Modifying Annotations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#study-participation">Study Participation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#study-view">Study View</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#study-coordinator">Study Coordinator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#study-session-view">Study Session View</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#close-study">Close Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#time-limit-crossed-for-study-session">Time Limit Crossed for Study Session</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#limit-study-sessions">Limit Study Sessions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resumable-study-sessions">Resumable Study Sessions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">Close Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nlp-skill-for-automated-review-generation-after-assessment">NLP Skill for Automated Review Generation After Assessment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#switch-between-workflow-steps-in-study-sessions">Switch Between Workflow Steps in Study Sessions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#view-study-sessions-read-only-mode">View Study Sessions (Read-Only Mode)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-real-names">Display Real Names</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#admin-features">Admin Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#admin-view">Admin View</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#admin-settings">Admin Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#admin-logs">Admin Logs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-statistics">User Statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#submissions-import-via-moodle">Submissions Import via Moodle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-student-accounts-from-moodle">Import Student Accounts from Moodle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-submissions-from-moodle">Import Submissions from Moodle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assign-a-group-and-or-copy-submissions">Assign a Group and/or Copy Submissions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-study-templates">Create Study Templates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-create-study-sessions">Bulk Create Study Sessions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-single-study-session">Add Single Study Session</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manual-submission-upload">Manual Submission Upload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assessment-and-validation-configurations">Assessment and Validation Configurations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#preprocessing-nlp-skills-on-submissions">Preprocessing NLP Skills on Submissions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#publish-sessions-links">Publish Sessions Links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#export-assignment-results">Export Assignment Results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-reviewer-to-existing-study">Add Reviewer to Existing Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#check-completion-of-grading-and-reviews">Check Completion of Grading and Reviews</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">Admin View</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ui-elements">UI Elements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#topbar">Topbar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#form-input-validation">Form input validation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#nlp-features">NLP Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nlp-integration">NLP Integration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nlp-skills">NLP Skills</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nlp-skill-debugging">NLP Skill debugging</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="basics.html">Basics</a></li>
+      <li class="breadcrumb-item active">User Stories</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/basics/user_stories.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-stories">
+<h1>User Stories<a class="headerlink" href="#user-stories" title="Link to this heading"></a></h1>
+<p>Here you will find a list of the user stories to test the platform and developments, especially for deploying a new version.</p>
+<section id="landing-and-authentication">
+<h2>Landing and Authentication<a class="headerlink" href="#landing-and-authentication" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="landing-page">
+<h3>Landing Page<a class="headerlink" href="#landing-page" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user, open the webpage localhost:3000 and see a landing page.
+The landing page includes a login/registration and pointers to the documentation.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>I access URL a page loads and some component loads and I can see an option
+to login/register/access documentation.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="guest-login">
+<h3>Guest Login<a class="headerlink" href="#guest-login" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user, open the webpage and can login as a guest to have basic user functionalities available.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>There is a “Login as guest” button on the login page. When I click on the button I am logged in as a guest user with all their rights and their specific view of the app.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="registration">
+<h3>Registration<a class="headerlink" href="#registration" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user, find a registration button on the login/landing page and can register as an individual user of the service specifying my credentials. I get feedback when my inputs are invalid.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>There is a registration button on the login/landing page. When I click on the login button I see a form, where I enter my first name, last name, email, user name, password etc. During entering of my information, I get feedback whether my inputs are valid (e.g. valid email format, password criterias). I am able to open/read/accept the consent and optional the behaviour logging. Upon clicking register, a user account is created in the database. I get a response, if registration was successful or unsuccessful.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="user-login">
+<h3>User Login<a class="headerlink" href="#user-login" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user, find a login button on the login/landing page. When I enter my username or email address and my password, I am logged in. I can see the webpage from my individual user’s perspective.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>There is a login button on the login/landing page. I see a form where I can enter my credentials, either username or email with a password. When I click login, I get feedback that I am logged in. In case I use wrong credentials, I get a negative response and am not logged in. I am forwarded to my individual user dashboard. I now see the option to logout. When I click on logout, I am redirected to the login/landing page and am not logged in anymore.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="consent-and-terms">
+<h3>Consent and Terms<a class="headerlink" href="#consent-and-terms" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can review and accept the platform terms, optionally enabling behavior statistics and data sharing.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>On first login or when required, a modal shows the terms with checkboxes for optional tracking and data sharing. Accepting stores my preferences and grants access to the app. Declining logs me out and returns me to the login page. I can later update my consent via the model.</p>
+</dd>
+</dl>
+</div>
+</section>
+</section>
+<section id="dashboard">
+<h2>Dashboard<a class="headerlink" href="#dashboard" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="pdf-documents">
+<h3>PDF Documents<a class="headerlink" href="#pdf-documents" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user, when logged in, see my individual dashboard including a view of my created documents, can upload new papers and delete existing papers and visit each paper.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>There is a of documents visible in the dashboard. It shows the most important meta information including a title and creation timestamp. If there are no documents, the absence of documents is indicated by a message. For each document, I can press on a button to visit this specific document. For each document, I can press a button to delete it from the of documents. When I press on the upload button, I can select a file from disc, it is added to the with the respective filename and I can access it via the respective button. I can upload any type of textual PDF up to a roughly 50 pages and with many figures.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="html-documents">
+<h3>HTML Documents<a class="headerlink" href="#html-documents" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can create an HTML document within the application. I can edit this document using an editor component. My changes persist and are visible when I revisit the application. I can also download the HTML document as a .html file to my local device.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>I can create a new HTML document through a UI action. I can make edits using an HTML editor component. My edits persist across sessions. I can download the document as a .html file. When I revisit the document later, it reflects the last saved version.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="document-upload">
+<h3>Document Upload<a class="headerlink" href="#document-upload" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user want to have feedback on the success of uploading a new document.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the dashboard, I can clearly see if the PDF was successfully uploaded to the server. I receive a clear message if this failed and a clear message if this was successful. Uploading multiple different documents pushes multiple different documents to the server.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="renaming-documents">
+<h3>Renaming documents<a class="headerlink" href="#renaming-documents" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a regular user can change a document’s name in the dashboard component.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, I see a button to edit the name of a document in the document for each entry. When I click on this button I am prompted to add a new name. This change takes effect immediately and is stored on the server.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="export-project-data">
+<h3>Export Project Data<a class="headerlink" href="#export-project-data" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can export data from any project listed in the “Projects” Dashboard. By clicking on “Export Data” in a specific project row, I can choose between different export types and download the corresponding data after confirming my selection.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user, I can navigate to the “Projects” section in the Dashboard, where I see a table listing all available projects. In each project row, there is an “Export Data” button. When I click on this button, a modal opens allowing me to select an export type from a predefined list (e.g., document data, study data, or assignment results). After choosing an export type, I confirm my selection, and the system generates the export in the appropriate format (e.g., CSV or JSON). A download link or button appears once the export is completed, enabling me to download the data file to my local device.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="pdf-viewer">
+<h3>PDF Viewer<a class="headerlink" href="#pdf-viewer" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can visit the URL of a specific PDF document. I see the PDF document in a standard PDF viewer and the sidebar is present.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a given document by URL, the PDF loads as I uploaded it. It is shown in the PDF reader and rendered properly. I can select texts in the PDF (if it had text in the first place). The basic PDF functionalities are available. Loading takes no more than 1s or so, depending on the size. I see a progress bar during loading, if it should take longer.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="color-coding">
+<h3>Color Coding<a class="headerlink" href="#color-coding" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a reviewer want to select different predefined tags for my annotations</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the annotator view, I can select a span of text and now select from a range of color-coded categories to assign to my highlight and annotations. After selecting a category, the annotation with the associated tag shows up in the sidebar. The highlight color matches the tag color.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="sidebar">
+<h3>Sidebar<a class="headerlink" href="#sidebar" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can visit the URL of a specific document, where next to the PDF I can see the sidebar on the right. It opens and it shows all annotations on that page.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a given document page, the sidebar is loaded next to the PDF document. The sidebar is open. If I created any annotations on this document beforehand, I can see them again. They are ordered by occurrence in the PDF. I see all tags and comments previously created. I can toggle the sidebar between show and hide.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="creating-annotations">
+<h3>Creating annotations<a class="headerlink" href="#creating-annotations" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user in the annotator view, can select a span of text in the PDF and store an annotation persistently.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a loaded annotator view, I can scroll through the PDF and select any text of reasonable length. The text is highlighted while doing so and a tag selection field pops up. Clicking on one of the buttons creates the annotation in the sidebar. My view scrolls automatically to this new annotation in the sidebar. If my selection was erroneous I see an error and the annotation is not created. In the sidebar I can add a comment and tags. After submitting the annotation it is stored persistently. If I abort the creation, it is discarded and not stored. If I do not interact with the sidecard, it is stored by default.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="modifying-annotations">
+<h3>Modifying annotations<a class="headerlink" href="#modifying-annotations" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user in the annotator view, can change any annotation in the sidebar.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a loaded annotator view, I can scroll through the sidebar and click on a delete and edit button for any annotation. Pressing delete discards the annotation and it is removed (together with its highlight) from the sidebar and the database. When pressing “edit”, I can change the comments and tags of that annotation. Saving these changes stores them persistently.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="annotation-navigation">
+<h3>Annotation Navigation<a class="headerlink" href="#annotation-navigation" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user in the annotator view, can navigate through annotations and highlights dynamically.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a loaded annotator view, I can click on any annotation in the sidebar and the PDF view automatically scrolls to the right highlight. The highlight of the selected annotation becomes visually clear. When clicking on a highlight, the sidebar scrolls to the respective annotation in the sidebar.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="document-note">
+<h3>Document Note<a class="headerlink" href="#document-note" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a reviewer want to have the option to leave comments that are not anchored in the text.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the annotator view, I see a button to add a document note. When I click this button a new comment is added to the sidebar. I can add tags and text to it and submit it as for regular annotations. The document note is not anchored in text and it becomes clear that this note is different from the other annotations.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="comment-replying">
+<h3>Comment Replying<a class="headerlink" href="#comment-replying" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a regular user can reply to my or other user’s comments.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, I can press a reply button on a comment in the sidebar. This creates a new comment in a reply thread and opens the thread to open information. When submitting the reply it becomes visible (in real time) to all users. I can reply to replies creating whole reply trees.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="annotator-collaboration">
+<h3>Annotator Collaboration<a class="headerlink" href="#annotator-collaboration" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a regular user can collaborate with other users on a document and see their comments and highlights and edits in close to real time.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, I can access publish a document and share the link with other users. When we access the document in parallel and created highlights and comments in parallel, the changes are pushed to everyone that is accessing this document at the moment. Editing an existing comment shows an indication that the comment is currently edited.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="configure-assessment-in-study-creation">
+<h3>Configure Assessment in Study Creation<a class="headerlink" href="#configure-assessment-in-study-creation" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can configure an Assessment component in a study workflow by selecting a predefined assessment configuration and optionally enforcing completion before the workflow can continue.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user creating a new study with a selected workflow integrating the Assessment module in one of the steps, an icon appears to configure that step. In that modal I can select from the list of available assessment configurations defined in the Admin Dashboard. In the same modal, there is a checkbox labeled “Require full assessment completion before continuing.” When this checkbox is activated, the workflow enforces that every criterion in the selected assessment must be graded and justified before the next step can start. If any criterion remains unfilled, a message is shown indicating which elements are incomplete. When I save the workflow, the selected configuration and completion requirement are stored as part of the study definition. During study execution, this enforcement is reflected in the annotator view, preventing progress until the assessment is fully completed.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="nlp-skill-integration-for-assessment">
+<h3>NLP Skill Integration for Assessment<a class="headerlink" href="#nlp-skill-integration-for-assessment" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can integrate NLP Skills into the Assessment component during study configuration, allowing model-generated suggestions to prefill assessment fields.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user in the study creation modal, when adding assessment configuration, I can enable NLP Skill integration. A dropdown allows me to select one or multiple NLP Skills registered in the system. When enabled, these skills can automatically generate prefilled suggestions for assessment fields, such as predicted grades or justification text. These suggestions are shown in the assessment interface as “model suggestions.” The user can review, edit, or accept each suggestion. If the “Require full completion before continuing” option is active, all NLP-generated content must still be manually confirmed or edited before the workflow can proceed. When a session starts, the NLP request is sent or preprocessed data is used. Until the NLP results are calculated, an information is displayed.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="sidebar-switching-between-assessment-and-comments">
+<h3>Sidebar Switching Between Assessment and Comments<a class="headerlink" href="#sidebar-switching-between-assessment-and-comments" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can continue annotating a PDF while using the Assessment sidebar. When I create a new highlight, the sidebar automatically switches back to the Comment view without losing any entered assessment data.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user performing an assessment in the annotator view, I see the Assessment sidebar open on the right side. If I select a text span in the PDF to create a new annotation, the sidebar automatically switches to the Comments tab, where I can add a comment or tag to the highlight. Any data I have already entered in the Assessment sidebar remains saved, and when I switch back to the Assessment tab, all previously entered grades and justifications are still there. This ensures seamless workflow between assessing and annotating without data loss. Both the comment creation and assessment functionalities operate smoothly in this integrated interface.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="assessment-sidebar-interaction">
+<h3>Assessment Sidebar Interaction<a class="headerlink" href="#assessment-sidebar-interaction" title="Link to this heading"></a></h3>
+</section>
+<hr class="docutils" />
+<section id="criterion-information-popup">
+<h3>Criterion Information Popup<a class="headerlink" href="#criterion-information-popup" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can view detailed information about each criterion in the assessment by opening an information window that explains its scoring rules and descriptions.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user in the Assessment sidebar, each criterion includes an information icon. When I click this icon, an information modal or tooltip opens, displaying the criterion’s description and a breakdown of what each point level represents (e.g., what qualifies for 0, 1, or maximum points). The popup also includes contextual text from the JSON configuration, helping me understand the grading standard. This functionality works consistently across all criteria and ensures that users can assess documents accurately according to the configured rubrics.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="comment-voting">
+<h3>Comment Voting<a class="headerlink" href="#comment-voting" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can upvote or downvote comments in the annotator sidebar to indicate their helpfulness. The voting system works for all comments in document and study session annotators, following the configuration of whether voting or only-upvote mode is enabled.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user, when I open a document or study session in the annotator view, I can see the comments listed in the right sidebar. Each comment displays voting controls: an upvote and a downvote button, unless the system is configured for only-upvote mode. In that case, the downvote button is hidden. Only comments from another user can be voted. When I click on the upvote or downvote button, my vote is registered immediately, and the badge showing the number of helpful (up) votes updates in real time. If I click the same button again, my vote toggles off, reverting to its previous state. The upvote badge shows the total count of helpful votes, and the interface clearly indicates which button I have currently selected. Voting works consistently across both standard document annotation views and study session annotator views.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="mark-annotation-as-completed-hide-annotation">
+<h3>Mark Annotation as Completed (Hide Annotation)<a class="headerlink" href="#mark-annotation-as-completed-hide-annotation" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can mark annotations as completed in the annotator by hiding them from view. This allows me to keep my workspace organized by collapsing finished or resolved annotations. The completion state is user-specific and persists across sessions and page reloads.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user in the annotator view (either for a regular document or a study session), I can see a checkbox labeled “Completed” (or an equivalent icon toggle) on each annotation card in the right sidebar. When I check this box, the annotation is marked as completed. The corresponding highlight in the PDF viewer immediately becomes hidden, and the annotation card collapses or becomes visually faded to indicate that it is completed. An icon on the annotation card clearly shows the completed status, such as a checkmark or similar indicator. The completion state is stored individually for each user, meaning that marking an annotation as completed affects only my view, not that of other collaborators. When I reload the page or revisit the annotator later, the completion settings are restored exactly as I left them. If I uncheck the “Completed” box, the annotation and its highlight reappear immediately.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="id1">
+<h3>Creating Annotations<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user in the annotator view, can select a span of text in the PDF and store an annotation persistently.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a loaded annotator view, I can scroll through the PDF and select any text of reasonable length. The text is highlighted while doing so and a tag selection field pops up. Clicking on one of the buttons creates the annotation in the sidebar. My view scrolls automatically to this new annotation in the sidebar. If my selection was erroneous I see an error and the annotation is not created. In the sidebar I can add a comment and tags. After submitting the annotation it is stored persistently. If I abort the creation, it is discarded and not stored. If I do not interact with the sidecard, it is stored by default.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="id2">
+<h3>Modifying Annotations<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user in the annotator view, can change any annotation in the sidebar.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>For a loaded annotator view, I can scroll through the sidebar and click on a delete and edit button for any annotation. Pressing delete discards the annotation and it is removed (together with its highlight) from the sidebar and the database. When pressing “edit”, I can change the comments and tags of that annotation. Saving these changes stores them persistently.</p>
+</dd>
+</dl>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="study-participation">
+<h2>Study Participation<a class="headerlink" href="#study-participation" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="study-view">
+<h3>Study View<a class="headerlink" href="#study-view" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a regular user want to be able to access a document, start and participate in a study</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>After receiving an invitation link to a study, I can access a paper via this link, where I have the option to join the study, or (if applicable) resume a previous session. In the annotator view, I can make my regular annotations. There is an easily visible review submission button. After confirming my decision to submit, I am lead back to the document overview showing me now a completed review. The study can also be accessed by any other regular user via the link.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="study-coordinator">
+<h3>Study Coordinator<a class="headerlink" href="#study-coordinator" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a study coordinator want to be able to create an annotation study on top of a document, where users can join and realize their annotations in a controlled setting.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, I see the Study component in the navigation sidebar. Here I see a list of all ongoing studies and create new ones. I can also create a new study in the Documents component of the dashboard for a specific document. When creating a study I can configure the study title, description, collaboration settings and timings. After starting a study I can share a link with the participants, which I can copy from the, and users can access this study.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="study-session-view">
+<h3>Study Session View<a class="headerlink" href="#study-session-view" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a study participant want to be able to see all ongoing study sessions to pick them up again at a later point in time.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, I see the Study Session component in the navigation sidebar, where I find a list of all study sessions I have started and finished, separated with clear titles. For each session, I can view its meta-information, and get live updates on the status of the session. I can access a session to resume it if it is resumable, or open it in read-only mode if it is already closed. When permitted, I can delete a study session; once deleted or after finishing a session, it no longer appears in my list. All interactions and status changes update instantly, keeping my view organized and current.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="close-study">
+<h3>Close Study<a class="headerlink" href="#close-study" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can close a study, marking it as inactive. This prevents new study sessions from being created. Any active study sessions are automatically closed.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>I can trigger a close action on a study. The study is marked as inactive. New sessions cannot be created under the closed study. Existing active sessions are terminated or marked as closed. The UI indicates that the study is now closed.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="time-limit-crossed-for-study-session">
+<h3>Time Limit Crossed for Study Session<a class="headerlink" href="#time-limit-crossed-for-study-session" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user am notified when the time limit for a study session is exceeded. The session is automatically marked as expired, and I can no longer continue but only review or finish it.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>Each study session with a time limit: When this limit is exceeded, the session is marked expired. A message is shown stating that the time has expired. The interface reflects this state and restricts further editing or annotation.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="limit-study-sessions">
+<h3>Limit Study Sessions<a class="headerlink" href="#limit-study-sessions" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a study creator can define the total number of allowed sessions for a study and also limit how many sessions each individual user can create. Once limits are reached, session creation is blocked and a message is shown.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a study creator, I can set a maximum number of sessions for the study and per user. The system enforces these limits. If exceeded, users are shown an informative message and prevented from creating additional sessions. The UI reflects that limits have been reached.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="resumable-study-sessions">
+<h3>Resumable Study Sessions<a class="headerlink" href="#resumable-study-sessions" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can resume a study session after closing or reloading the browser, returning to the exact same state, including the assessment data, comments, and current workflow step.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user participating in a study session that is configured as resumable, I can close the browser or lose the connection without losing my progress. When I reopen the study session later, all my previous data is reloaded: completed or partial assessment grades and justifications, written comments, created highlights, and my position within the study workflow. The system restores which sidebar tab (Comments or Assessment) was last active and ensures that all local changes have been synced and persistently stored. This behavior guarantees that I can continue my review or assessment exactly where I left off without needing to redo prior work.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="id3">
+<h3>Close Study<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can close a study, marking it as inactive. This prevents new study sessions from being created. Any active study sessions are automatically closed.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>I can trigger a close action on a study. The study is marked as inactive. New sessions cannot be created under the closed study. Existing active sessions are terminated or marked as closed. The UI indicates that the study is now closed.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="nlp-skill-for-automated-review-generation-after-assessment">
+<h3>NLP Skill for Automated Review Generation After Assessment<a class="headerlink" href="#nlp-skill-for-automated-review-generation-after-assessment" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can automatically generate a written review based on my completed assessment and inline comments using an NLP Skill. The generated text is inserted into the review section automatically, but only once per session.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user participating in a study that includes a workflow step with an editor configured a NLP skill, once I have completed all grading criteria and added my inline comments, the system automatically triggers the configured NLP Skill (review generation). If one has been set up for this workflow step. When the next step in a study session triggers the skill, a modal appears with a progress indicator and motivational waiting messages (e.g., “Creating your review…”, “Almost there…”, “This will only take a moment…”). While the model request is processing, the user cannot make new edits, ensuring data consistency. When the response from the NLP Skill is received, a complete review text is automatically inserted into the review text field or summary section. This generation happens only once per session, if the user edits or removes the generated review, no automatic regeneration occurs. The user can freely edit or refine the inserted text afterward. If the NLP request fails, a message is displayed indicating the issue, and the review text remains empty.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="switch-between-workflow-steps-in-study-sessions">
+<h3>Switch Between Workflow Steps in Study Sessions<a class="headerlink" href="#switch-between-workflow-steps-in-study-sessions" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can move back and forth between the workflow steps of a study session, as long as the configuration of the workflow allows it. When blocking mechanisms (such as enforced assessment completion) are active, forward navigation is restricted until the required step is completed.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user participating in a study session, I can navigate between workflow steps using navigation controls (e.g., “Previous” and “Next” buttons) displayed in the top bar of the study interface. This navigation feature is enabled when the study creator has allowed switching back in workflow steps. If a blocking mechanism is defined, for example, when a specific step such as the Assessment requires full completion before continuing, the “Next” button is disabled until all mandatory fields are filled in and the step is validated as complete. Once the blocking condition is resolved, I can freely move forward or backward between workflow steps. When switching steps, all entered data (including annotations, comments, assessments, and other inputs) remains saved and persistent. The system ensures that the interface restores exactly the same view as last left, no automatic scrolling or repositioning occurs when returning to a previous step.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="view-study-sessions-read-only-mode">
+<h3>View Study Sessions (Read-Only Mode)<a class="headerlink" href="#view-study-sessions-read-only-mode" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user with the teacher role can access all study sessions in a read-only mode, allowing me to review participant progress and results without being able to modify the content.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user with the role teacher, I can open any study from the “Studies” section in the Dashboard of the published project. In the study overview, I see a button labeled “Study Sessions.” When I access this section, a table lists all sessions that have been created for this study, including meta-information. When I select a session, it opens in a read-only view. In this mode, I can scroll through the document, see highlights, comments, and assessment inputs, but all editing options (adding, modifying, or deleting) are disabled. This allows me to review the participant’s work exactly as they submitted it while maintaining data integrity.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="display-real-names">
+<h3>Display Real Names<a class="headerlink" href="#display-real-names" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a study creator with the role Teacher can see the real names of users participating in the study sessions, while regular users only see anonymized identifiers.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a teacher with access rights to a study, when I open the study’s “Study Sessions” table, I can see the participants listed with their real names (first name, last name). If I am not a teacher or lack the necessary permissions, the columns are not displayed and in the network protocol not transmitted. This visibility is role-based, only users with the Teacher role and explicit access to the study can see real participant information. The interface clearly differentiates user roles and ensures that privacy rules are followed.</p>
+</dd>
+</dl>
+</div>
+</section>
+</section>
+<section id="admin-features">
+<h2>Admin Features<a class="headerlink" href="#admin-features" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="admin-view">
+<h3>Admin View<a class="headerlink" href="#admin-view" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin have an admin dashboard in addition to my regular user dashboard.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the dashboard, I see the additional navigation components on the sidebar that are only visible to admins. Clicking on them leads me to these components and allows to render their contents.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="admin-settings">
+<h3>Admin Settings<a class="headerlink" href="#admin-settings" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin user want to access and modify the settings of the system in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can see the Settings componentn in the navigation sidebar. When I access this, I can see the list of settings, reload them from the server backend, make changes and save these on the server. The changes have immediate effect on the behavior of the application.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="admin-logs">
+<h3>Admin Logs<a class="headerlink" href="#admin-logs" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As an admin user, I can see the server logs in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can see the Logs component in the navigation sidebar. When I access this, I can see the list of logs with meta information uncluding timestamps.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="user-statistics">
+<h3>User Statistics<a class="headerlink" href="#user-statistics" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin user can view the users and user behavior statistics in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin user, I can see the User Statistics component in the navigation sidebar. When accessing the component I can see a list of all registered users. For each user, I can view the last login time. When selecting a user another shows me the list of behavior logs. I can export all behavior logs of all users via a button click. All user behaviour statistics can be downloaded as csv or json.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="submissions-import-via-moodle">
+<h3>Submissions Import via Moodle<a class="headerlink" href="#submissions-import-via-moodle" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can import assignment submissions via the Moodle API into CARE and assign a group id to the submissions when importing.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the Submissions module, I see an option “Import via Moodle”. When I select it, I can enter the API URL, API key, course ID, and assignment ID. I can also select a validation file that defines the validation rules. When I start the import, submissions are fetched from Moodle and validated against the rules. Only submissions that pass validation are imported into CARE, each being assigned a groupId based on the import configuration. At the end of the process, I can download a CSV file containing all failed or invalid submissions. After successful import, all valid submissions appear in the Submissions table and are ready for further processing.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="import-student-accounts-from-moodle">
+<h3>Import Student Accounts from Moodle<a class="headerlink" href="#import-student-accounts-from-moodle" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can import a selection of user accounts from a specific Moodle course into CARE. Usernames and passwords are generated randomly. After importing, I can either send the credentials directly to the Moodle users via the Moodle API or download them as a CSV file for later sharing through CARE.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can access the “Import Users via Moodle” in the Admin Dashboard “Users” to import users from Moodle. When selecting this option, a stepper modal opens guiding me through the process. In step 1, I enter my Moodle credentials and course ID to connect to the Moodle API. In step 2, I see a list of all users from the specified Moodle course and can select which users to import. The system allows to filter out duplicates and marks already existing CARE users. In step 3, I am shown an overview of the selected users and can confirm the import. In step 4, the process completes and I receive a summary showing which users were successfully imported and which failed, including possible error messages. For each newly imported user, a unique username and random password are generated automatically. I can choose to send login credentials directly to the corresponding Moodle users via the API or download the credentials as a CSV file. The interface clearly indicates success or failure of each action, and the new users appear in the CARE user database immediately after successful import.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="import-submissions-from-moodle">
+<h3>Import Submissions from Moodle<a class="headerlink" href="#import-submissions-from-moodle" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can import uploaded student submissions from Moodle into CARE. The import process is guided through a stepper modal where I connect to Moodle, select submissions, assign a group ID, set a validation file, and finally complete the import with feedback on the results.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can access the “Import via Moodle” option in the Admin Dashboard under the “Submissions” section. When I click on it, a stepper modal opens to guide me through the import process. In step 1, I enter my Moodle API credentials. In step 2, a list of all available student submissions for the selected Moodle course is displayed. I can select one or multiple submissions to import. In step 3, I can assign a group ID to the selected submissions, allowing me to distinguish between different Moodle assignments after import, and I can also define a validation file to be used to verify the correctness or completeness of each submission. When proceeding to the final step, the import process begins and the system provides detailed feedback on the results. Each submission that passes validation is imported into CARE and linked with the assigned group ID. If validation fails for any submission, it is skipped from import, and clear error messages are displayed indicating the cause of the failure.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="assign-a-group-and-or-copy-submissions">
+<h3>Assign a Group and/or Copy Submissions<a class="headerlink" href="#assign-a-group-and-or-copy-submissions" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can manually assign a new group ID to one or multiple submissions from the Admin Dashboard. I can also choose to duplicate the selected submissions instead of just updating them, keeping the originals unchanged while assigning the new group ID to the copies.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can access the “Submissions” section in the Admin Dashboard and click on the “Assign Group” option. A stepper modal opens where I first select one or multiple submissions from the existing list. In the next step, I can enter or select a new group ID that should be applied to the chosen submissions. A visible checkbox allows me to decide whether I want to copy the submissions or only update their existing records. When the copy option is selected, each chosen submission is duplicated completely, including all associated files, while the original submissions remain unchanged. The duplicated submissions receive the newly assigned group ID and are added to the database as separate entities. If the copy option is not selected, the selected submissions are directly updated with the new group ID. After the process completes, a confirmation message is displayed.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="create-study-templates">
+<h3>Create Study Templates<a class="headerlink" href="#create-study-templates" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can create, view, edit, and delete study templates in the Dashboard under “Studies.” These templates store preconfigured study setups that can later be reused when creating new studies.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user, I can navigate to the “Studies” section in my Dashboard and click on the “Saved Templates” button. A modal opens showing a list of all existing study templates with their basic information. Within this modal, I can click on the “Add” button to create a new study template. When I create a template, the same Study Coordinator interface as for a regular study opens, allowing me to configure all available options including workflow steps, timing, collaboration settings, and metadata. For annotator and HTML documents, I can select placeholder entries instead of real documents. After completing the configuration and confirming the creation, the system saves the setup as a template only. The new template then appears in the overview list, where I can view its configuration, edit its parameters, or delete it entirely. Changes are immediately reflected in the overview.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="bulk-create-study-sessions">
+<h3>Bulk Create Study Sessions<a class="headerlink" href="#bulk-create-study-sessions" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can create multiple study sessions at once using a previously defined study template. Through a guided modal, I can select documents or submissions, assign users, and define a distribution strategy for automatically generating and assigning the study sessions.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user, I can open the “Studies” section in the Dashboard and click on the “Add Bulk Assignments” button. A stepper modal opens guiding me through the bulk study session creation process. In the first step, I select one of the previously created study templates as the basis for the new sessions. In the second step, depending on the workflow type defined in the template, I can select either documents or submissions to use as placeholders for the study template. When selecting submissions, I can filter them by group ID to limit the selection. For each chosen document or submission, a separate study will later be created. In step three, I select the users who will participate in these studies, with filtering options for roles and number of documents to be assigned per user. In step four, I define the distribution logic for the bulk creation. I can choose either a role-based selection, where documents or submissions are distributed among users according to their assigned roles and the specified number of reviews per role, or a reviewer-based selection, where documents or submissions are directly distributed among the selected reviewers. In the final step, I see a confirmation overview. When I confirm, the system automatically creates and assigns all study sessions according to the selected distribution method. The assignments are randomized to ensure even distribution, and a completion message is displayed listing successful and failed creations. All newly created studies and sessions become immediately visible in the Studies overview.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="add-single-study-session">
+<h3>Add Single Study Session<a class="headerlink" href="#add-single-study-session" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can create a single study session based on an existing study template. Using a guided modal, I can select one document or submission and assign multiple users to create individual sessions within the same study.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user, I can open the “Studies” section in the Dashboard and click on the “Add Single Assignment” button. A stepper modal opens guiding me through the process of creating a single study session. In the first step, I select a previously created study template that defines the study configuration and workflow. In the second step, I select exactly one document or one submission to be used for the study. If submissions are available, I can optionally filter them by group ID to simplify selection. In the third step, I select one or multiple users who will participate in the study session. For each selected user a study session will automatically created and assigned to the created study. In the final step, I see a confirmation summary listing the selected template, document or submission, and the assigned users. After confirming, the system creates the new study and corresponding sessions based on the template configuration. A confirmation message indicates the success or failure, and the new study and its sessions appear immediately in the “Studies” overview.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="manual-submission-upload">
+<h3>Manual Submission Upload<a class="headerlink" href="#manual-submission-upload" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can manually upload a submission files directly into CARE. During the upload process, I can assign the submissions to a specific group, apply validation rules through a selected validation file, and link each submission to an existing user.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can access the “Submissions” section in the Admin Dashboard, where I see an option “Manual Import.” When I click on this button, a stepper modal opens guiding me through the upload process. In the first step, choose a group ID to which the new submissions will be assigned and I can assign the submission to a specific existing user from a searchable user list. In the Second step I can Assign Group Number and Select JSON Validator. In the third step, I can then upload one or multiple files (based on the selected validation file). After confirming my selections, the system performs a validation check. The uploaded submission immediately appear in the Submissions table.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="assessment-and-validation-configurations">
+<h3>Assessment and Validation Configurations<a class="headerlink" href="#assessment-and-validation-configurations" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can manage configuration files for Assessments and Validations in the Admin Dashboard. These configurations are stored as JSON and can be added, updated, or deleted directly from the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can navigate to the “Configurations” section in the Admin Dashboard. Here I see a list of all saved configurations displayed in a table with their names, types (Assessment or Validation), creation timestamps, and last update times. I can add a new configuration by clicking “Upload Configuration,” where I upload or paste a JSON file. Once saved, the configuration appears immediately in the list. I can edit an existing configuration by opening it in a modal, where I can update the JSON content or rename it. Deleting a configuration removes it from the list after confirmation. The system validates the JSON structure before saving, and clear feedback messages are shown for success or failure. Updated configurations are instantly available for selection in other modules such as Study Creation or Validation workflows.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="preprocessing-nlp-skills-on-submissions">
+<h3>Preprocessing NLP Skills on Submissions<a class="headerlink" href="#preprocessing-nlp-skills-on-submissions" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can start preprocessing submissions with a selected NLP Skill to prepare data for later study or assessment use. The preprocessing process can be tracked, canceled, and resumed, with each submission showing its processing status in the table.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can open the “Submissions” section in the Admin Dashboard and click the “Apply Skill” button. A stepper modal opens guiding me through the process. In the first step, I select one or multiple submissions from the table. In the second step, I choose the NLP Skill to apply from a dropdown list. In the third step, I confirm and start preprocessing. The modal then displays the ongoing process with meta-information such as start time, progress, and current submission being processed. During this time, a status indicator appears next to each submission showing “Preprocessing,” “Completed,” or “Failed.” Only one preprocessing task can be active at a time, and I can cancel it at any moment. The preprocessing results are saved on the associated document file within each submission, that is defined in the third step of the modal for each unique validation configuration. When I refresh the page, the table still displays the most recent preprocessing status for each submission. Successfully processed submissions show an indication that preprocessed data is available, and the data is available for later assessment use or review automation.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="publish-sessions-links">
+<h3>Publish Sessions Links<a class="headerlink" href="#publish-sessions-links" title="Link to this heading"></a></h3>
+</section>
+<hr class="docutils" />
+<section id="export-assignment-results">
+<h3>Export Assignment Results<a class="headerlink" href="#export-assignment-results" title="Link to this heading"></a></h3>
+</section>
+<hr class="docutils" />
+<section id="add-reviewer-to-existing-study">
+<h3>Add Reviewer to Existing Study<a class="headerlink" href="#add-reviewer-to-existing-study" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can add one or multiple reviewers to an existing study directly from its session list. By selecting users in a modal, new sessions are automatically created and linked to the chosen study.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a user, I can open the “Studies” section in the Dashboard and navigate to the session list of an existing study. In the session list view, I see an “Add” button that allows me to add additional reviewers. When I click on this button, a modal opens displaying a searchable list of all available users. I can select one or multiple users from this list to be added as reviewers. After confirming my selection, the system automatically creates new sessions for each selected user and assigns them to the current study, inheriting the study’s configuration and settings. A confirmation message is displayed after the creation process, showing how many sessions were successfully created and if any failed. The newly added reviewer sessions immediately appear in the session list of the study, reflecting their assigned users and current session status.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="check-completion-of-grading-and-reviews">
+<h3>Check Completion of Grading and Reviews<a class="headerlink" href="#check-completion-of-grading-and-reviews" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As a course admin, I can check whether all grading and student reviews have been completed.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dashboard or table shows completion status (Closed/Running/Ended) for each study and study session. Incomplete items are highlighted.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="id4">
+<h3>Admin View<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin have an admin dashboard in addition to my regular user dashboard.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the dashboard, I see the additional navigation components on the sidebar that are only visible to admins. Clicking on them leads me to these components and allows to render their contents.</p>
+</dd>
+</dl>
+</div>
+</section>
+</section>
+<section id="ui-elements">
+<h2>UI Elements<a class="headerlink" href="#ui-elements" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="topbar">
+<h3>Topbar<a class="headerlink" href="#topbar" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user want to see a topbar in the annotator view that grants me context-dependent functionalities and allows me to return to my dashboard.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the annotator/reviewer/editor view, there is a topbar on the page. It remains at the top while scrolling. There is a button to return to the user dashboard. There are potentially more buttons depending on the context of the current view of the document.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="form-input-validation">
+<h3>Form input validation<a class="headerlink" href="#form-input-validation" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a regular user get feedback for all inputs on any form of CARE. This includes at least the registration, login, document edit modal, study edit modal and tagset edit modal.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, when I open a form to enter or change information on some data entity (e.g. a study), I receive direct feedback which fields are mandatory and which are not. I receive feedback if my input is ill-formed and can correct it right away.</p>
+</dd>
+</dl>
+</div>
+</section>
+</section>
+<section id="nlp-features">
+<h2>NLP Features<a class="headerlink" href="#nlp-features" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="nlp-integration">
+<h3>NLP Integration<a class="headerlink" href="#nlp-integration" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as a user can request NLP support as an example for summarization and sentiment analysis.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As a regular user, in the annotator view I see when NLP models are connected. I can turn on and off NLP support. When submitting a commentary, it is automatically evaluated by a sentiment model; I see the result next to my comment. Below each highlight/annotation of sufficient length, I can request a summary from an NLP model. The result is shown as a response in the sidebar.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="nlp-skills">
+<h3>NLP Skills<a class="headerlink" href="#nlp-skills" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin user can see the available NLP skills in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin user, I can see the NLP Skills component in the navigation sidebar. After accessing the component, I can see a of all connected NLP skills with the number of nodes supporting them. I can click on a button to see the details of the skill configuration for each of them.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="nlp-skill-debugging">
+<h3>NLP Skill debugging<a class="headerlink" href="#nlp-skill-debugging" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Description<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin user can view the status of the broker, check the configurations of each skill that is online and send test messages to all available models.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin user, when accessing the NLP dashboard component there is a status flag for the broker. If NLP endpoints are offline, this is clearly indicated. I also see a list of all skills, whether they are just fallback skills. For each skill, I can open the details on the configuration, copy the configuration and download it for re-use out of CARE. I can also send messages to a specific skill to test the respective model directly. I can view the responses and a history of messages for debugging.</p>
+</dd>
+</dl>
+</div>
+<style>
+.user-story dl.field-list {
+  display: grid;
+  grid-template-columns: 22ch 1fr;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 1em;
+}
+.user-story dl.field-list > dt,
+.user-story dl.field-list > dd {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid #eee;
+}
+.user-story dl.field-list > dt {
+  background: #f7f7f9;
+  font-weight: 600;
+  border-right: 1px solid #eee;
+}
+.user-story dl.field-list > dd {
+  white-space: normal !important;
+  word-break: break-word;
+}
+.user-story dl.field-list > dt:last-of-type,
+.user-story dl.field-list > dd:last-of-type {
+  border-bottom: none;
+}
+@media (max-width: 640px) {
+  .user-story dl.field-list {
+    grid-template-columns: 1fr;
+  }
+  .user-story dl.field-list > dt {
+    border-right: none;
+    border-bottom: 1px solid #eee;
+  }
+}
+</style></section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="frameworks.html" class="btn btn-neutral float-left" title="Frameworks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../frontend/frontend.html" class="btn btn-neutral float-right" title="Frontend Development" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

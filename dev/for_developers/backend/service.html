@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Services &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Sockets" href="socket.html" />
+    <link rel="prev" title="RPC Service" href="rpc.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Services</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-service-architecture-in-care">The Service Architecture in CARE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-new-service-class">Adding a New Service Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-dummy-service-for-testing">Adding a Dummy Service for Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#coupling-an-external-service-forwarding">Coupling an External Service (Forwarding)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Services</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/service.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="services">
+<h1>Services<a class="headerlink" href="#services" title="Link to this heading"></a></h1>
+<p>You can couple any external, event-based service into the infrastructure of CARE; e.g. you may couple your own data
+processing pipeline or even a search query interface. Read this chapter to learn how to add your own services and
+couple the frontend to them.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do not use this mechanism for coupling NLP models, as we already provide a ready-to-use service with a flexible
+API for this purpose. Check out the <a class="reference internal" href="../../for_researchers/basics.html"><span class="doc">For Researchers</span></a> chapter for more details on how
+to couple your own models.</p>
+</div>
+<section id="the-service-architecture-in-care">
+<h2>The Service Architecture in CARE<a class="headerlink" href="#the-service-architecture-in-care" title="Link to this heading"></a></h2>
+<p>The service architecture is realized in the backend; in the following all paths are provided relative to the
+directory <code class="docutils literal notranslate"><span class="pre">backend/webserver</span></code> including all relevant components.</p>
+<p>During start-up of the webserver all services specified in the <code class="docutils literal notranslate"><span class="pre">services</span></code> directory extends the <code class="docutils literal notranslate"><span class="pre">Service</span></code> base class are loaded.
+Each service is specified in an individual <code class="docutils literal notranslate"><span class="pre">.js</span></code>-file exporting a class that extends the <code class="docutils literal notranslate"><span class="pre">Service</span></code> base class. Hence, adding
+a service means creating such a new file and overriding the abstract class.</p>
+<p>This base class (specified in <code class="docutils literal notranslate"><span class="pre">Service.js</span></code>) defines the interface methods towards the frontend clients that you can
+use and override for your specific purpose. In the following sections we elaborate which methods and attributes
+you should use or override to realize your own service. Conceptually, for each client a socket connection permits the
+communication with a service through a pre-defined message interface, while the service may respond to each client
+individually or broadcast messages.</p>
+<p>This architectural patterns decouples the core code base from additional services. Generally, the service logic in the
+backend should be kept lean and with low computational requirements; instead, the necessary data and requests should
+be forwarded to an external service that carries the computational load.</p>
+</section>
+<section id="adding-a-new-service-class">
+<h2>Adding a New Service Class<a class="headerlink" href="#adding-a-new-service-class" title="Link to this heading"></a></h2>
+<p>Let’s say we want to add a new service called <code class="docutils literal notranslate"><span class="pre">TestService</span></code> to CARE. First, we add a new file <code class="docutils literal notranslate"><span class="pre">test.js</span></code> to the
+<code class="docutils literal notranslate"><span class="pre">backend/webserver/services</span></code> directory that exports the new service class:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">Service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../Service.js&quot;</span><span class="p">);</span>
+<span class="cm">/**</span>
+<span class="cm"> * &lt;documentation&gt;</span>
+<span class="cm"> */</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">TestService</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">Service</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="p">(</span><span class="nx">server</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">super</span><span class="p">(</span><span class="nx">server</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>That’s it! From now on the test service will be loaded by the webserver on start-up. While it is not functional
+yet, you could already re-start the webserver and have it running and reachable from the frontend.
+We add the actual functionality now.</p>
+</section>
+<section id="adding-a-dummy-service-for-testing">
+<h2>Adding a Dummy Service for Testing<a class="headerlink" href="#adding-a-dummy-service-for-testing" title="Link to this heading"></a></h2>
+<p>The frontend clients communicate with all services via the service socket (<code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/service.js</span></code>),
+which realizes the routing of messages to the different services depending on the client-provided service name. A service
+may receive four types of messages from clients (connect, disconnect, request, command) and may respond to them.</p>
+<p>We first need to extend the <code class="docutils literal notranslate"><span class="pre">TestService</span></code> to process incoming requests and commands. Requests by clients are the standard
+message for requesting a simple result in the style of a remote procedure call of one predefined function. For a simple
+stateless service this is the most important message type. To allow for more complex and stateful services, clients may
+also send commands that may be used to realize different function calls.</p>
+<p>In the following code example, we respond to client requests and commands by a dummy response. For the broadcast
+command, we broadcast a dummy response to all connected clients.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * ... HEADER BOILERPLATE</span>
+<span class="cm"> */</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">TestService</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">Service</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="p">(</span><span class="nx">server</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">super</span><span class="p">(</span><span class="nx">server</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">close</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// called by the server on shut-down, add any teardown logic here -- not necessary here</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">connectClient</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// no need to store anything for this service</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">disconnectClient</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// no need to delete anything upon disconnect</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">request</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dummyResult&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="nx">True</span><span class="p">,</span><span class="w"> </span><span class="nx">msg</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;dummy&quot;</span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">command</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="nx">command</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="nx">command</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s2">&quot;broadcast&quot;</span><span class="p">){</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">sendAll</span><span class="p">(</span><span class="s2">&quot;dummyResult&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="nx">True</span><span class="p">,</span><span class="w"> </span><span class="nx">msg</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;dummy broadcast&quot;</span><span class="p">});</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After restarting the server, we could already send service request messages to this service.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please refer to the API documentation for the details of the message format of requesting a service. Also
+checkout the <a class="reference internal" href="../examples/examples.html"><span class="doc">examples</span></a> for a reference on how to reach a service from the frontend.</p>
+</div>
+</section>
+<section id="coupling-an-external-service-forwarding">
+<h2>Coupling an External Service (Forwarding)<a class="headerlink" href="#coupling-an-external-service-forwarding" title="Link to this heading"></a></h2>
+<p>By the described paradigm, the service class should be kept lean and without high computational demands. To realize
+complex computation, you should couple an external service. In principle, you can connect any service as long as
+you add the required communication logic to your service class. We highly recommend using web sockets, as they are
+used throughout the rest of the CARE tool.</p>
+<p>Realizing forwarding of client messages using websockets is quite simple. You first need to open a client socket
+towards your web server running a socketio server or client and then you cache and forward all client requests to
+this client.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For an example on how to realize the socketio server in Python on the other end of the service, please refer
+to the repository of NLP broker, which uses flask and socketio to realize this functionality. For an example
+of a socketio client realized in Python checkout the NLP model repository.</p>
+</div>
+<p>To implement this, we initialize a connection to the external service and listen on result messages. We assume
+that we provide client Ids that are copied for the response by the external service. We forward messages by the
+clients directly to the service replacing the dummy logic.</p>
+<p>The given example implements no mechanisms for error recovery or connection issues and should serve only as a
+starting point.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * ... HEADER BOILERPLATE</span>
+<span class="cm"> */</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">TestService</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">Service</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="p">(</span><span class="nx">server</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">super</span><span class="p">(</span><span class="nx">server</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">toService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">#init</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">#init</span><span class="p">(){</span>
+<span class="w">        </span><span class="kd">const</span><span class="w"> </span><span class="nx">self</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+
+<span class="w">        </span><span class="nx">self</span><span class="p">.</span><span class="nx">toService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">io_client</span><span class="p">(</span><span class="s2">&quot;http://localhost:1234&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">auth</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">token</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;random_token&quot;</span><span class="p">},</span>
+<span class="w">                </span><span class="nx">reconnection</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">timeout</span><span class="o">:</span><span class="w"> </span><span class="mf">5000</span><span class="p">,</span><span class="w"> </span><span class="c1">//timeout between connection attempts</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">);</span>
+<span class="w">        </span><span class="nx">self</span><span class="p">.</span><span class="nx">toService</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">self</span><span class="p">.</span><span class="n">#getClient</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">clientId</span><span class="p">);</span>
+<span class="w">            </span><span class="ow">delete</span><span class="w"> </span><span class="nx">data</span><span class="p">.</span><span class="nx">clientId</span><span class="p">;</span>
+<span class="w">            </span><span class="nx">self</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;result&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">);</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">#getClient</span><span class="p">(</span><span class="nx">clientId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">server</span><span class="p">.</span><span class="nx">availSockets</span><span class="p">[</span><span class="nx">clientId</span><span class="p">][</span><span class="s2">&quot;ServiceSocket&quot;</span><span class="p">];</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">close</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">toService</span><span class="p">){</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">toService</span><span class="p">.</span><span class="nx">disconnect</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">request</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">data</span><span class="p">[</span><span class="s2">&quot;clientId&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">toService</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;request&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">//... other methods ommitted for brevity</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This completes the extension of CARE by a new service called Test forwarding requests to the an external service
+running on localhost.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="rpc.html" class="btn btn-neutral float-left" title="RPC Service" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="socket.html" class="btn btn-neutral float-right" title="Sockets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
