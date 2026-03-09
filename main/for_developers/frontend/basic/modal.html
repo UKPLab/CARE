@@ -1,0 +1,547 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modal &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Navigation" href="navigation.html" />
+    <link rel="prev" title="Icon" href="icon.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="basic.html">Basic</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="basic.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="download.html">Download</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="form.html">Form</a></li>
+<li class="toctree-l4"><a class="reference internal" href="icon.html">Icon</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="navigation.html">Navigation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="table.html">Table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="service.html">NLPService</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#button">Button</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#form">Form</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#icon">Icon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#loading">Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#modal">Modal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#table">Table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#timer">Timer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#toast">Toast</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../components/components.html">Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="basic.html">Basic</a></li>
+      <li class="breadcrumb-item active">Modal</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/basic/modal.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="modal">
+<h1>Modal<a class="headerlink" href="#modal" title="Link to this heading"></a></h1>
+<p>This section summarizes the modal components available in CARE, when to use them, and their key APIs.
+All of them are built on top of <a class="reference internal" href="#modal"><span class="std std-ref">BasicModal</span></a> and support open/close via a template ref.</p>
+<p><cite>StepperModal</cite></p>
+<p>Import this component if you need a modal that guides users through a sequence of steps, with validation and feedback.
+Ideal for configuration workflows, uploads, or integrations like Moodle (see <a class="reference internal" href="#steppermodal-usage"><span class="std std-ref">usage section</span></a>).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><cite>StepperModal</cite> supports per-step validation and can also be connected to socket events for multi-step backend processes
+with progress tracking and user feedback.</p>
+</div>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StepperModal</span>
+    <span class="na">ref</span><span class="o">=</span><span class="s">&quot;uploadStepper&quot;</span>
+    <span class="na">:steps</span><span class="o">=</span><span class="s">&quot;steps&quot;</span>
+    <span class="na">:validation</span><span class="o">=</span><span class="s">&quot;stepValid&quot;</span>
+    <span class="err">@</span><span class="na">submit</span><span class="o">=</span><span class="s">&quot;uploadDocument&quot;</span>
+<span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">title</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h5</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;modal-title&quot;</span><span class="p">&gt;</span>Upload Assignment<span class="p">&lt;/</span><span class="nt">h5</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+
+    <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">step-1</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">BasicTable</span>
+            <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;selectedUser&quot;</span>
+            <span class="na">:columns</span><span class="o">=</span><span class="s">&quot;selectionTable&quot;</span>
+            <span class="na">:options</span><span class="o">=</span><span class="s">&quot;selectionTableOptions&quot;</span>
+            <span class="na">:data</span><span class="o">=</span><span class="s">&quot;users&quot;</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+
+    <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">step-2</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">BasicForm</span>
+            <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
+            <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fileFields&quot;</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">StepperModal</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">StepperModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/modal/StepperModal.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ReviewUploadModal&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">StepperModal</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">steps</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Select User&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">                </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Upload File&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nx">selectedUser</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">stepValid</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="k">this</span><span class="p">.</span><span class="nx">selectedUser</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">                </span><span class="k">this</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">file</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">            </span><span class="p">];</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">uploadDocument</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// handle document upload</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><strong>Component Properties:</strong> <cite>StepperModal</cite> requires two essential props: <code class="docutils literal notranslate"><span class="pre">steps</span></code> and <code class="docutils literal notranslate"><span class="pre">validation</span></code>. These drive the navigation and determine if each step is allowed to proceed.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">StepperModal properties</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prop</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>steps</p></td>
+<td><p>List of step definitions (must include <code class="docutils literal notranslate"><span class="pre">title</span></code>)</p></td>
+<td><p>None</p></td>
+<td><p>Array</p></td>
+<td><p>True</p></td>
+</tr>
+<tr class="row-odd"><td><p>validation</p></td>
+<td><p>Array of boolean values indicating if each step is valid</p></td>
+<td><p>[]</p></td>
+<td><p>Array</p></td>
+<td><p>True</p></td>
+</tr>
+<tr class="row-even"><td><p>submitText</p></td>
+<td><p>Text for the final submit button</p></td>
+<td><p>“Submit”</p></td>
+<td><p>String</p></td>
+<td><p>False</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The number and order of elements in <code class="docutils literal notranslate"><span class="pre">validation</span></code> must match the number of items in <code class="docutils literal notranslate"><span class="pre">steps</span></code>.
+Whenever possible, <code class="docutils literal notranslate"><span class="pre">validation</span></code> should be provided via a computed property to ensure it stays in sync automatically.</p>
+</div>
+<p><strong>Slots:</strong> Each step must have a corresponding named slot using the syntax <code class="docutils literal notranslate"><span class="pre">#step-n</span></code> where <code class="docutils literal notranslate"><span class="pre">n</span></code> is the 1-based index. You can also customize the modal’s title and footer.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">StepperModal slots</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Slot</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">#title</span></code></p></td>
+<td><p>Header section of the modal</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">#step-n</span></code></p></td>
+<td><p>Content for step <cite>n</cite>, e.g. <code class="docutils literal notranslate"><span class="pre">#step-1</span></code>, <code class="docutils literal notranslate"><span class="pre">#step-2</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">#error</span></code></p></td>
+<td><p>Optional error view if something goes wrong</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">#footer</span></code></p></td>
+<td><p>Optional custom footer. Use this to override default button layout</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Events:</strong> StepperModal emits lifecycle and state events:</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">StepperModal events</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Event</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;submit</span></code></p></td>
+<td><p>Triggered on the final step when the user clicks submit</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;step-change</span></code></p></td>
+<td><p>Triggered whenever the step index changes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;hide</span></code></p></td>
+<td><p>Emitted when modal is hidden</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Public Methods (via `ref`):</strong> You can interact with the modal directly via its ref (e.g., <code class="docutils literal notranslate"><span class="pre">this.$refs.uploadStepper</span></code>).</p>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">StepperModal methods</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">open()</span></code></p></td>
+<td><p>Opens the modal and resets to the first step</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">close()</span></code></p></td>
+<td><p>Closes the modal</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">show()</span></code></p></td>
+<td><p>Displays the modal without resetting the step</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hide()</span></code></p></td>
+<td><p>Hides the modal (soft close)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">reset()</span></code></p></td>
+<td><p>Resets step to index 0</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">setWaiting(true|false)</span></code></p></td>
+<td><p>Toggles a loading indicator on the modal</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">startProgress()</span></code></p></td>
+<td><p>Starts an animated progress bar (used during backend jobs)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">stopProgress()</span></code></p></td>
+<td><p>Stops the progress bar</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">getProgressId()</span></code></p></td>
+<td><p>Returns a progress identifier to be sent with socket events</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Advanced Use Case: Multi-Request Workflows with Progress Feedback</strong></p>
+<p>The <cite>StepperModal</cite> is designed to support advanced workflows where multiple asynchronous requests are performed in a single step, and the user is informed about intermediate progress.</p>
+<p>This is commonly used in Moodle integration scenarios (see: <code class="docutils literal notranslate"><span class="pre">ImportModal.vue</span></code>) where:</p>
+<ul class="simple">
+<li><p>A progress bar is shown using <code class="docutils literal notranslate"><span class="pre">startProgress()</span></code></p></li>
+<li><p>A server emits partial updates using the returned <cite>progressId</cite></p></li>
+<li><p>A loader is shown using <code class="docutils literal notranslate"><span class="pre">setWaiting(true)</span></code></p></li>
+</ul>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleStepOne</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">setWaiting</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;documentGetMoodleSubmissions&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">moodleOptions</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">setWaiting</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">res</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Failed&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="p">});</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+
+<span class="nx">handleStepTwo</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;documentDownloadMoodleSubmissions&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">files</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">selectedAssignments</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">moodleOptions</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">progressId</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">startProgress</span><span class="p">(),</span>
+<span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">stopProgress</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">importedAssignments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">res</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">];</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Failed to import submission from Moodle&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="p">});</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This feature is especially useful for bulk operations like:</p>
+<ul class="simple">
+<li><p>Importing files or documents</p></li>
+<li><p>Creating or updating users</p></li>
+<li><p>Interacting with external APIs that return partial responses (e.g., Moodle)</p></li>
+</ul>
+</div>
+<p id="steppermodal-usage"><strong>Where It Is Used</strong></p>
+<p>You can find som usage examples of <cite>StepperModal</cite> in the following components:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dashboard/modal/ReviewUploadModal.vue</span></code> – A simple two-step modal for uploading documents.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dashboard/modal/ConfigurationModal.vue</span></code> – A dynamic modal to configure services and placeholders with step validation logic.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dashboard/modal/ImportModal.vue</span></code> – A multi-step modal that handles external data from Moodle, with live progress tracking and advanced backend interactions.</p></li>
+</ul>
+<p>These can serve as reference implementations when building your own <cite>StepperModal</cite> flows.</p>
+<hr class="docutils" />
+<p><cite>ConfigurationModal</cite></p>
+<ul class="simple">
+<li><p><strong>What it is:</strong> A specialized modal that guides the user through service and placeholder configuration.</p></li>
+<li><p><strong>Use it for:</strong> NLP service setup, linking inputs/outputs, and mapping placeholders inside study workflows.</p></li>
+</ul>
+<p>It is built on top of <a class="reference internal" href="#steppermodal-usage"><span class="std std-ref">StepperModal</span></a>, adding two predefined steps:</p>
+<ol class="arabic simple">
+<li><p><strong>Services</strong> – Select NLP skills for each service and configure their inputs.</p></li>
+<li><p><strong>Placeholders</strong> – Bind placeholders (<code class="docutils literal notranslate"><span class="pre">~text~</span></code>, <code class="docutils literal notranslate"><span class="pre">~chart~</span></code>, <code class="docutils literal notranslate"><span class="pre">~comparison~</span></code>) to actual data sources.</p></li>
+</ol>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfigurationModal</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;configData&quot;</span>
+    <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;documentId&quot;</span>
+    <span class="na">:study-step-id</span><span class="o">=</span><span class="s">&quot;stepId&quot;</span>
+    <span class="na">:workflow-steps</span><span class="o">=</span><span class="s">&quot;steps&quot;</span>
+    <span class="na">ref</span><span class="o">=</span><span class="s">&quot;configModal&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">ConfigurationModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/modal/ConfigurationModal.vue&#39;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ConfigurationModal</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">documentId</span><span class="o">:</span><span class="w"> </span><span class="mf">42</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">stepId</span><span class="o">:</span><span class="w"> </span><span class="mf">3</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">steps</span><span class="o">:</span><span class="w"> </span><span class="p">[...],</span>
+<span class="w">            </span><span class="nx">configData</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">openConfig</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">configModal</span><span class="p">.</span><span class="nx">openModal</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><strong>API:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">openModal(evt)</span></code> – Opens the modal if a document is selected.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">close()</span></code> – Closes the modal.</p></li>
+<li><p>Emits <code class="docutils literal notranslate"><span class="pre">update:modelValue</span></code> with the assembled configuration object.</p></li>
+</ul>
+<p>The modal also shows <strong>short previews</strong> of placeholders with colored highlights and validates that all inputs are properly bound before submission.</p>
+<hr class="docutils" />
+<p><cite>ConfigurationPlaceholder</cite></p>
+<ul class="simple">
+<li><p><strong>What it is:</strong> A helper component rendered inside ConfigurationModal for editing individual placeholders.</p></li>
+<li><p><strong>Use it for:</strong> Providing per-placeholder input fields (e.g., select NLP skill, map outputs, enter labels).</p></li>
+</ul>
+<p><strong>Props:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">placeholder</span></code> – The placeholder metadata (type, number).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code> – List of input fields to render.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">index</span></code> – Position of the placeholder.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">formData</span></code> – Reactive object bound to the user’s selections.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">placeholderColor</span></code> – Display color for consistent previews.</p></li>
+</ul>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfigurationPlaceholder</span>
+    <span class="na">:placeholder</span><span class="o">=</span><span class="s">&quot;placeholder&quot;</span>
+    <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fieldDefs&quot;</span>
+    <span class="na">:index</span><span class="o">=</span><span class="s">&quot;i&quot;</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;formData[i]&quot;</span>
+    <span class="na">:placeholder-color</span><span class="o">=</span><span class="s">&quot;colors[i]&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>This component integrates with Vuex-provided NLP skills and ensures placeholders are configured consistently across steps.</p>
+<hr class="docutils" />
+<p><cite>ConfirmModal</cite></p>
+<ul class="simple">
+<li><p><strong>What it is:</strong> A ready-to-use confirmation dialog.</p></li>
+<li><p><strong>Use it for:</strong> Destructive actions (delete, reset) or explicit user confirmation.</p></li>
+</ul>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;confirmModal&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">confirmModal</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span>
+<span class="w">    </span><span class="s2">&quot;Delete User&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Are you sure you want to delete this user?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;This action cannot be undone.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Confirmed:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">res</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>API:</strong> <code class="docutils literal notranslate"><span class="pre">open(title,</span> <span class="pre">message,</span> <span class="pre">warning?,</span> <span class="pre">callback)</span></code>; emits <code class="docutils literal notranslate"><span class="pre">&#64;response</span></code> with <code class="docutils literal notranslate"><span class="pre">true/false</span></code>.</p>
+<hr class="docutils" />
+<p><cite>ConsentUpdateModal</cite></p>
+<ul class="simple">
+<li><p><strong>What it is:</strong> A user consent update dialog.</p></li>
+<li><p><strong>Use it for:</strong> Asking users to confirm data sharing and statistics collection.</p></li>
+</ul>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConsentUpdateModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;consentModal&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">consentModal</span><span class="p">.</span><span class="nx">open</span><span class="p">();</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><cite>InformationModal</cite></p>
+<ul class="simple">
+<li><p><strong>What it is:</strong> A read-only, nicely formatted detail view for an object.</p></li>
+<li><p><strong>Use it for:</strong> Inspecting row details from a table, showing metadata, etc.</p></li>
+</ul>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">InformationModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;info&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">info</span><span class="p">.</span><span class="nx">open</span><span class="p">({</span><span class="w"> </span><span class="nx">username</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="w"> </span><span class="p">});</span>
+</pre></div>
+</div>
+<p><strong>API:</strong> <code class="docutils literal notranslate"><span class="pre">open(data)</span></code>, <code class="docutils literal notranslate"><span class="pre">close()</span></code>.
+<strong>Rendering:</strong> Formats keys (camelCase / snake_case → labels) and prints nested objects as labeled lists.</p>
+<hr class="docutils" />
+<p><cite>PasswordModal</cite></p>
+<ul class="simple">
+<li><p><strong>What it is:</strong> A small form-in-a-modal for updating a user’s password.</p></li>
+<li><p><strong>Use it for:</strong> Admin or account flows where a single field must be validated and submitted.</p></li>
+</ul>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">PasswordModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;pwdModal&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">pwdModal</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="nx">userId</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="icon.html" class="btn btn-neutral float-left" title="Icon" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="navigation.html" class="btn btn-neutral float-right" title="Navigation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

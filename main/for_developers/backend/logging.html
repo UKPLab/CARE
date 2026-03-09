@@ -1,0 +1,237 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logging &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Right Management" href="right_management.html" />
+    <link rel="prev" title="Database" href="database.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Logging</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-log">How to log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#where-are-the-logs-stored">Where are the logs stored?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-with-user-information">Logging with user information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-through-websocket">Logging through websocket</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Logging</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/logging.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="logging">
+<h1>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h1>
+<p>Here is a little help on how the logging works and what should be taken into account during development to detect at any time if something goes wrong.</p>
+<p>Logging framework: <a class="reference external" href="https://github.com/winstonjs/winston">Winston</a></p>
+<section id="how-to-log">
+<h2>How to log<a class="headerlink" href="#how-to-log" title="Link to this heading"></a></h2>
+<p>Central entry point of each logging is the file in the backend <cite>./backend/utils/logger.js</cite>.
+This should generally be integrated into each file with adapting the <strong>service-field</strong> to allow an assignment of the log:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../utils/logger.js&quot;</span><span class="p">)(</span><span class="s2">&quot;service&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Within the code all information can now be logged directly via the <em>logger</em> variable.
+The logging levels are based on the <a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc5424">RFC5424</a> standard and can be used as followed:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">logger</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;warn&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://github.com/winstonjs/winston#using-logging-levels">Using Logging Levels</a> for more information.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For socket and service classes the logger is already integrated and can be used directly with <code class="code highlight javascript docutils literal highlight-javascript"><span class="k">this</span><span class="p">.</span><span class="nx">logger</span></code>.</p>
+</div>
+</section>
+<section id="where-are-the-logs-stored">
+<h2>Where are the logs stored?<a class="headerlink" href="#where-are-the-logs-stored" title="Link to this heading"></a></h2>
+<p>The logs are saved as a file, entered into the database, and also output to the console (if set in .env).
+For this purpose the environment variables can be adjusted:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Logging</span>
+<span class="nv">LOGGING_PATH</span><span class="o">=</span>./logs
+<span class="nv">LOGGING_LEVEL</span><span class="o">=</span>info
+<span class="nv">LOGGING_ALLOW_FRONTEND</span><span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+<p>See the <strong>.env</strong> file in the root directory more information!</p>
+<p>During logging, three files are created in the specified folder:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>File</p></td>
+<td><p>Description</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>activity.log</strong></p></td>
+<td><p>Contains all logs (by app log level)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>error.log</strong></p></td>
+<td><p>Only errors are saved here.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>complete.log</strong></p></td>
+<td><p>Contains all logs (by log level ENV <em>LOGGING_LEVEL</em>)</p></td>
+</tr>
+</tbody>
+</table>
+<p>In addition, all logs based on the environment variable <em>LOGGING_LEVEL</em> are entered into the database.</p>
+</section>
+<section id="logging-with-user-information">
+<h2>Logging with user information<a class="headerlink" href="#logging-with-user-information" title="Link to this heading"></a></h2>
+<p>Currently, the database also supports logging with user information already contained in the database.
+For this purpose, additional meta data must be added to the logger, for which there are two ways:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Adding meta data directly during logging</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">&quot;Just a info message with user information&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">uid</span><span class="o">&gt;</span><span class="w"> </span><span class="p">});</span>
+
+<span class="c1">// or using a child logger</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">child_logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">logger</span><span class="p">.</span><span class="nx">child</span><span class="p">({</span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">uid</span><span class="o">&gt;</span><span class="p">});</span>
+<span class="nx">child_logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">&quot;Just a info message with user information&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The User ID &lt;uid&gt; must exists in the database table user!</p>
+</div>
+</section>
+<section id="logging-through-websocket">
+<h2>Logging through websocket<a class="headerlink" href="#logging-through-websocket" title="Link to this heading"></a></h2>
+<p>There is also the possibility to log information directly from the frontend through the websocket.
+After that, logs can be easily emitted to the websocket in each vue component with:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">level</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;info&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Just a info message from the frontend!&#39;</span><span class="p">})</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For this the environment variable <strong>LOGGING_ALLOW_FRONTEND</strong> must be explicitly set to <strong>true</strong>!</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="database.html" class="btn btn-neutral float-left" title="Database" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="right_management.html" class="btn btn-neutral float-right" title="Right Management" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

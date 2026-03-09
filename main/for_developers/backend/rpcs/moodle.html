@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moodle API &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Examples" href="../../examples/examples.html" />
+    <link rel="prev" title="Validation" href="../validation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../validation.html">Validation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Moodle API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-structure">General structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#user-import-integration">User Import Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#configure-moodle">Configure Moodle</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#administrator-configuration">Administrator configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assignment-creation">Assignment creation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#findind-the-course-and-assignment-ids">Findind the course and assignment IDs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#implementing-new-functionality">Implementing new functionality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#rebuild-the-docker-container">Rebuild the docker container</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#extending-the-moodle-api-integration">Extending the Moodle API Integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Moodle API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/backend/rpcs/moodle.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="moodle-api">
+<h1>Moodle API<a class="headerlink" href="#moodle-api" title="Link to this heading"></a></h1>
+<p>If you want to work with the Moodle API, please take a look at this document to get an overview of the API integration and how to use it.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For guidance on using the Moodle API through the CARE platform (e.g., to import documents, manage assignments, or publish feedback), refer to the <a class="reference internal" href="../../../for_researchers/moodle_usage.html"><span class="doc">Moodle API usage guide</span></a>.</p>
+</div>
+<section id="general-structure">
+<h2>General structure<a class="headerlink" href="#general-structure" title="Link to this heading"></a></h2>
+<p>All Moodle API calls are made via an rpc call and therefore run on a dedicated docker container.
+The <code class="docutils literal notranslate"><span class="pre">main.py</span></code> file in the moodleAPI folder <code class="docutils literal notranslate"><span class="pre">./utils/rpcs/moodleAPI</span></code> is responsible for the execution of the Moodle API commands.
+The result is then returned to the socket and can be used in the backend.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Take a look at the <a class="reference external" href="docs/source/for_developers/backend/rpc.rst">rpc.rst</a> to get an overview on how the rpc calls work in general.</p>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<p>The following functions can by called from the backend:</p>
+<p><strong>getUsersFromCourse</strong>: This method retrieves all users from a given course. It then creates an array of dictionaries, containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+parameters: {courseID: int, options{url: string, apiKey: string}}</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="nx">courseID</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{...}}</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;MoodleRPC&quot;</span><span class="p">].</span><span class="nx">getUsersFromCourse</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// handle error</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>getUsersFromAssignment</strong>: This method retrieves all users from a given assignment. It then creates an array of dictionaries, containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="nx">courseID</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">assignmentID</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{...}}</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;MoodleRPC&quot;</span><span class="p">].</span><span class="nx">getUsersFromAssignment</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// handle error</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>getSubmissionsInfosFromAssignment</strong>: This method retrieves all submissions from a given assignment. It then returns a list of dictionaries containing the user IDs and their corresponding submission file names and urls. This method should be used in preperation for downloading the submissions.
+parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="nx">courseID</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">assignmentID</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{...}}</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;MoodleRPC&quot;</span><span class="p">].</span><span class="nx">getSubmissionsInfosFromAssignment</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// handle error</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>downloadSubmissionsFromUser</strong>: This method downloads all submissions from the provided urls. It then returns a list of the files in binary format. The urls for the files can be obtained by calling the getSubmissionsInfosFromAssignment method.
+parameters: submission_infos: list with urls: string</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="nx">submission_infos</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;url1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;url2&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">...]}</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;MoodleRPC&quot;</span><span class="p">].</span><span class="nx">downloadSubmissionsFromUser</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// handle error</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>publishAssignmentTextFeedback</strong>: This functions publishes the feedback text to the assignment per user.
+parameters: {, feedback_data: list: {extId: int, text: string}, options{apiKey: string, apiUrl: string, courseID: int, assignmentID: int}}</p>
+<section id="user-import-integration">
+<h3>User Import Integration<a class="headerlink" href="#user-import-integration" title="Link to this heading"></a></h3>
+<p>CARE supports importing user data from Moodle courses using the <cite>getUsersFromCourse</cite> RPC function. This function retrieves enrolled users from a given course and returns metadata including user IDs, roles, and email addresses.</p>
+<p>The actual logic for user matching and account creation is handled by CARE’s backend service layer, not Moodle. This logic is important to be aware of when maintaining the integration.</p>
+<p>CARE distinguishes Moodle-imported users based on email matching:</p>
+<ul class="simple">
+<li><p><strong>New users</strong>: Created when the email from Moodle does not exist in CARE.</p></li>
+<li><p><strong>Duplicate users</strong>: If the email already exists, the existing CARE account is updated with the Moodle <cite>extId</cite>.</p></li>
+<li><p><strong>Unverified users</strong>: If the email is different but represents the same user (e.g., different domains), manual verification may be required.</p></li>
+</ul>
+<p>The <cite>extId</cite> (external ID) is stored in CARE to represent the user’s Moodle ID. It is required for feedback publishing and user association during review workflows.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Deleting a CARE user with a stored <cite>extId</cite> may cause sync issues. Due to ID constraints, re-importing the same user may fail unless cleaned manually.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This RPC (<cite>getUsersFromCourse</cite>) provides raw data only. Matching, duplication checks, and user persistence happen entirely on the CARE backend and are not part of the Moodle RPC logic itself.</p>
+</div>
+</section>
+</section>
+<section id="configure-moodle">
+<h2>Configure Moodle<a class="headerlink" href="#configure-moodle" title="Link to this heading"></a></h2>
+<section id="administrator-configuration">
+<span id="moodle-admin-setup"></span><h3>Administrator configuration<a class="headerlink" href="#administrator-configuration" title="Link to this heading"></a></h3>
+<p>If your Moodle Service is not yet configured to use the API, please follow the steps:</p>
+<ul>
+<li><p>The administrator of the Moodle service needs to enable access to the API (web services). Each user who wants to use the API needs to have a token.</p>
+<p>Instructions on how to do this can be found in the
+<a class="reference external" href="https://docs.moodle.org/404/en/Using_web_services">Moodle documentation:</a></p>
+<p>Keep in mind that every api function needs to be activated separately. The function you need to enable in moodle are:</p>
+<ol class="arabic simple">
+<li><p><strong>core_enrol_get_enrolled_users</strong></p></li>
+<li><p><strong>mod_assign_save_grade</strong></p></li>
+<li><p><strong>mod_assign_get_assignments</strong></p></li>
+<li><p><strong>mod_assign_get_user_mappings</strong></p></li>
+<li><p><strong>mod_assign_get_submissions</strong></p></li>
+</ol>
+</li>
+<li><p>To use any functionality that includes downloading submissions files, the administrator needs to enable “Can Download File” in the Active External Web Service. This includes the following steps:</p>
+<ol class="arabic">
+<li><p><strong>Navigate to Moodle Site Admin</strong></p>
+<p>Log in to your Moodle site as an administrator and go to the “Site Administration” page.</p>
+</li>
+<li><p><strong>Search for External Services</strong></p>
+<p>On the “Site Administration” page, use the search bar to look for “External Services.” Click on it to access the External Services section.</p>
+</li>
+<li><p><strong>Edit Active External Services</strong></p>
+<p>In the External Services section, find the active external service used for syncing course images. Click the “Edit” button next to it.</p>
+</li>
+<li><p><strong>Expand the Page</strong></p>
+<p>Once on the Active External Service page, expand the options by clicking the “Show more” button at the bottom of the page.</p>
+</li>
+<li><p><strong>Enable “Can Download Files” Setting</strong></p>
+<p>Check the box next to “Can download files” to enable this setting.</p>
+</li>
+<li><p><strong>Save Changes</strong></p>
+<p>After enabling the “Can download files” option, click on the “Save changes” button at the bottom of the page to apply your updates.</p>
+</li>
+</ol>
+<p>The information was taken from this <a class="reference external" href="https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service">website</a>. You can also find a visual guide there.</p>
+</li>
+</ul>
+<p>If you want to add new functionality to the Moodle API, these links might be helpful:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://docs.moodle.org/310/en/Web_services_API">Moodle API Documentation</a>: This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. ‘submission’, you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.</p></li>
+<li><p><a class="reference external" href="https://github.com/moodle/moodle">Moodle Github Repository</a>: This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the ‘exterballib.php’ file of the module. Next to the function you can find another function with the same name but with the suffix ‘parameters’. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You need an <strong>API key</strong> and the <strong>API url</strong> to access the Moodle API. The API key can be generated in the Moodle settings for a specific user.
+The API key is used to authenticate the user and to ensure that the user has the necessary permissions to access the API.
+The API url is usually the standard moodle url.</p>
+</div>
+</section>
+<section id="assignment-creation">
+<span id="assignment-config-moodle"></span><h3>Assignment creation<a class="headerlink" href="#assignment-creation" title="Link to this heading"></a></h3>
+<p>Creating an assignment that is compatible with functionalities like downloading submissions or uploading login data as feedback, is really simple. Just follow these steps:</p>
+<ol class="arabic">
+<li><p><strong>Navigate to the right course in Moodle</strong></p>
+<blockquote>
+<div><p>Login to your Moodle account and click on ‘My courses’.
+Click on the course you want to create the assignment in.
+If you can’t see the course, you can use the search bar at the top.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Activate the edit mode</strong></p>
+<blockquote>
+<div><p>Now you should be on the homepage of the course.
+Make sure that you have the right to edit the course.
+To find out, look at the upper right corner and check if you see ‘Edit mode’ and a switch next to it.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Create an assignment</strong></p>
+<blockquote>
+<div><p>With ‘edit mode’ activated, navigate to the right section (e.g. ‘General’) where you want to create the assignment.
+Click on ‘+ Add an activity or resource’ and add an ‘Assignment’ or ‘Aufgabe’ (if you are using the German version).</p>
+</div></blockquote>
+</li>
+<li><p><strong>Configure the assignment</strong></p>
+<blockquote>
+<div><p>Recommended settings for the feedback assignment are:</p>
+<ul class="simple">
+<li><p>Name: Choose a name for the assignment.</p></li>
+<li><p>Description: Write a description if needed.</p></li>
+<li><p>Availability: Deactivate all options.</p></li>
+<li><p>Submission types: Deactivate all options.</p></li>
+<li><p>Feedback types: Activate ‘Feedback comments’ and set ‘Inline comments’ to ‘Yes’.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+<p><strong>Submissions allowed</strong>
+If you want students to be able to make submission and download them afterwards, make sure that the ‘Submission types’ are set to ‘File submissions’ and the ‘Feedback types’ are set to ‘Feedback comments’. If you want students to be able to submit multiple files, just increase ‘Maximum number of uploaded files’ under ‘Submission types’.
+If you download the submissions of a student, all files will be retrieved.</p>
+<p>Other settings can be adjusted as needed.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can change your role by clicking on your name in the upper right corner and then on ‘Switch role to…’.</p>
+</div>
+</section>
+<section id="findind-the-course-and-assignment-ids">
+<h3>Findind the course and assignment IDs<a class="headerlink" href="#findind-the-course-and-assignment-ids" title="Link to this heading"></a></h3>
+<p>For almost all functionalities, you need the course ID and the assignment ID. This is how you can find them:</p>
+<p><strong>Course ID</strong>
+To get the course ID from a moodle course, just navigate to the homepage of the course and you will see ‘id=xxxx’ in the URL.
+The number after the ‘id=’ is the course ID.</p>
+<p><strong>Assignment ID</strong>
+To get the assignment ID from a moodle assignment,
+just navigate to the assignment page and you will see ‘id=xxxx’ in the URL.
+The number after the ‘id=’ is the assignment ID.</p>
+</section>
+</section>
+<section id="implementing-new-functionality">
+<h2>Implementing new functionality<a class="headerlink" href="#implementing-new-functionality" title="Link to this heading"></a></h2>
+<p>Keep attention to the following steps to implement new functionality in the Moodle API:</p>
+<section id="rebuild-the-docker-container">
+<h3>Rebuild the docker container<a class="headerlink" href="#rebuild-the-docker-container" title="Link to this heading"></a></h3>
+<p>If you modify <code class="docutils literal notranslate"><span class="pre">main.py</span></code> or any other Python file in the Moodle RPC module, the docker container needs to be rebuilt.
+This can be done by running the following command:</p>
+<ol class="arabic simple">
+<li><p>Delete the moodle container in docker</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>build<span class="w"> </span>rpc_moodle
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>run<span class="w"> </span>rpc_moodle
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>docker
+</pre></div>
+</div>
+<p>After the <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker</span></code> command, you should see ‘moodle…container recreated’ in the console.</p>
+</section>
+</section>
+<section id="extending-the-moodle-api-integration">
+<h2>Extending the Moodle API Integration<a class="headerlink" href="#extending-the-moodle-api-integration" title="Link to this heading"></a></h2>
+<p>If you want to extend the Moodle API integration (e.g. by adding new endpoints or logic), follow these steps:</p>
+<ol class="arabic simple">
+<li><p>Edit or add functions in the RPC module, typically in <code class="docutils literal notranslate"><span class="pre">main.py</span></code> or <code class="docutils literal notranslate"><span class="pre">Moodle.py</span></code>, both located in <code class="docutils literal notranslate"><span class="pre">utils/rpcs/moodleAPI/</span></code>.</p></li>
+<li><p>Follow the existing function structure using RPC-compatible patterns</p></li>
+<li><p>If new API endpoints are added, ensure:</p>
+<ul class="simple">
+<li><p>The corresponding Moodle functions are enabled in the external service</p></li>
+<li><p>The service account has the required permissions</p></li>
+</ul>
+</li>
+<li><p>Add or update the frontend call in the corresponding service layer (if applicable)</p></li>
+<li><p>Rebuild the Docker container (see previous section)</p></li>
+<li><p>Update this documentation with any new or changed RPC methods</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do not hardcode course IDs, API keys, or URLs. These must be passed via configuration or backend RPC call parameters.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../validation.html" class="btn btn-neutral float-left" title="Validation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../examples/examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

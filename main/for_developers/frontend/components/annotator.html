@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Annotator &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Dashboard" href="dashboard.html" />
+    <link rel="prev" title="Components" href="components.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../basic/basic.html">Basic</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="components.html">Components</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="components.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Annotator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stepmodal.html">Step Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="study.html">Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#dashboard">Dashboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#document">Document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study">Study</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="components.html">Components</a></li>
+      <li class="breadcrumb-item active">Annotator</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/components/annotator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="annotator">
+<h1>Annotator<a class="headerlink" href="#annotator" title="Link to this heading"></a></h1>
+<p>The <strong>Annotator component</strong> (<code class="docutils literal notranslate"><span class="pre">frontend/src/components/annotator/Annotator.vue</span></code>) is CARE’s PDF-based annotation system.
+It allows users to highlight, tag, and comment directly on PDF documents, with full integration into studies, sessions, and collaborative workflows.</p>
+<dl class="simple">
+<dt>Key features include:</dt><dd><ul class="simple">
+<li><p>Rendering PDFs with zoom, scrolling, and dynamic page loading</p></li>
+<li><p>Selecting text spans and creating new annotations</p></li>
+<li><p>Highlighting annotations across sessions and users</p></li>
+<li><p>Sidebar with threaded comments, tags, and voting</p></li>
+<li><p>Integration with NLP services (summarization, sentiment)</p></li>
+<li><p>Exporting annotations and restoring scroll/session state</p></li>
+</ul>
+</dd>
+</dl>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This documentation is intended to help understand the Annotator’s codebase and behavior.
+It outlines how PDFs are displayed, how annotations are anchored and highlighted, how comments are organized in the sidebar, and how the Annotator integrates into studies and document workflows.</p>
+</section>
+<section id="implementing-the-annotator">
+<h2>Implementing the Annotator<a class="headerlink" href="#implementing-the-annotator" title="Link to this heading"></a></h2>
+<p>To implement and use the Annotator, follow the existing integrations in the codebase.
+The Annotator is typically used in document routes or in <strong>study steps</strong> (step type = 1).</p>
+<p><strong>Basic example in a document route:</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;documentId&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">Annotator</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/components/annotator/Annotator.vue&quot;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">Annotator</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">props</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">documentId</span><span class="o">:</span><span class="w"> </span><span class="nb">Number</span><span class="w"> </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><strong>Example in a study workflow:</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Annotator</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;currentStep.stepType === 1&quot;</span>
+  <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;currentStep.documentId&quot;</span>
+  <span class="na">:study-step-id</span><span class="o">=</span><span class="s">&quot;currentStep.id&quot;</span>
+  <span class="na">:active</span><span class="o">=</span><span class="s">&quot;true&quot;</span>
+  <span class="err">@</span><span class="na">update:data</span><span class="o">=</span><span class="s">&quot;updateStudyData($event)&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<section id="pdf-rendering-and-selection">
+<h3>PDF Rendering and Selection<a class="headerlink" href="#pdf-rendering-and-selection" title="Link to this heading"></a></h3>
+<p>PDF rendering is handled by the <strong>pdfViewer subfolder</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PDFViewer.vue</span></code>: Central component that loads the PDF (via pdf.js) and provides zoom controls.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PDFPage.vue</span></code>: Responsible for rendering each page (canvas + text layer) and maintaining anchors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Adder.vue</span></code>: Appears after selecting text; shows available tags and allows creating a new annotation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Highlights.vue</span></code>: Displays highlights for all annotations using SVG overlays.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdfStore.js</span></code>: Manages caching of PDF pages and text content to improve performance.</p></li>
+</ul>
+<p><strong>Flow of creating an annotation:</strong></p>
+<ol class="arabic simple">
+<li><p>User selects text → <code class="docutils literal notranslate"><span class="pre">Adder.vue</span></code> detects selection.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Adder.vue</span></code> displays tag buttons → on click, annotation is created via WebSocket.</p></li>
+<li><p>Backend stores annotation and broadcasts to connected clients.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Highlights.vue</span></code> re-renders highlights on the affected page.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sidebar.vue</span></code> updates with a new annotation card.</p></li>
+</ol>
+</section>
+<section id="sidebar-and-comments">
+<h3>Sidebar and Comments<a class="headerlink" href="#sidebar-and-comments" title="Link to this heading"></a></h3>
+<p>The <strong>sidebar</strong> organizes all annotation threads:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Sidebar.vue</span></code>: Container that can be resized or hidden. Handles scrolling to/from highlights.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AnnoCard.vue</span></code>: Root annotation card, showing tag, author, and first comment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Comment.vue</span></code>: Displays replies with inline editing.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TagSelector.vue</span></code>: Allows changing or assigning tags.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">VoteButtons.vue</span></code>: Provides upvote/downvote interaction on comments.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Collaboration.vue</span></code>: Manages real-time synchronization of comments and annotations, ensuring that all user interactions on documents are shared across clients.</p></li>
+</ul>
+<p>Sidebar state (open/hidden, width, fixed mode) is saved in Vuex and restored on reload.
+In study mode, additional checks enforce whether comments are visible or hidden, depending on study/session settings.</p>
+</section>
+<section id="nlp-integration">
+<h3>NLP Integration<a class="headerlink" href="#nlp-integration" title="Link to this heading"></a></h3>
+<p>If enabled, the Annotator can integrate with NLP services:</p>
+<ul class="simple">
+<li><p>Summarization of annotations or threads</p></li>
+<li><p>Sentiment analysis of comments</p></li>
+<li><p>Configurable thresholds (min/max text length, required skills)</p></li>
+</ul>
+<p>These are toggled via the Annotator’s top-bar and configured in <code class="docutils literal notranslate"><span class="pre">settings</span></code>:
+- <code class="docutils literal notranslate"><span class="pre">service.nlp.enabled</span></code>
+- <code class="docutils literal notranslate"><span class="pre">annotator.nlp.activated</span></code>
+- <code class="docutils literal notranslate"><span class="pre">annotator.nlp.summarization.*</span></code></p>
+</section>
+<section id="export-and-persistence">
+<h3>Export and Persistence<a class="headerlink" href="#export-and-persistence" title="Link to this heading"></a></h3>
+<p>Users can export all annotations and comments for a document:</p>
+<ul class="simple">
+<li><p><strong>Export format:</strong> JSON (annotations + comment threads merged)</p></li>
+<li><p><strong>Access control:</strong> controlled by <code class="docutils literal notranslate"><span class="pre">annotator.download.enabledBeforeStudyClosing</span></code> and study state</p></li>
+</ul>
+<p>The Annotator also persists user state:
+- <strong>Scroll position and open page</strong> are saved in <code class="docutils literal notranslate"><span class="pre">user_environment</span></code> when leaving the view.
+- <strong>Sidebar width and visibility</strong> are restored from saved settings.</p>
+</section>
+</section>
+<section id="collaboration-and-websockets">
+<h2>Collaboration and WebSockets<a class="headerlink" href="#collaboration-and-websockets" title="Link to this heading"></a></h2>
+<p>The Annotator relies heavily on real-time synchronization:</p>
+<ul class="simple">
+<li><p><strong>Events used:</strong>
+- <code class="docutils literal notranslate"><span class="pre">annotationUpdate</span></code> – create/update annotations
+- <code class="docutils literal notranslate"><span class="pre">commentUpdate</span></code> – create/update comments
+- <code class="docutils literal notranslate"><span class="pre">commentGet</span></code> / <code class="docutils literal notranslate"><span class="pre">annotationGet</span></code> – initial fetch
+- <code class="docutils literal notranslate"><span class="pre">appDataUpdate</span></code> – update comment states, votes, etc.
+- <code class="docutils literal notranslate"><span class="pre">documentSubscribe</span></code> – join/leave a document’s update stream</p></li>
+<li><p><strong>Store integration:</strong>
+All annotations, comments, and votes are normalized in Vuex tables (<code class="docutils literal notranslate"><span class="pre">table/*</span></code>).
+The Annotator listens to store updates and re-renders UI elements automatically.</p></li>
+</ul>
+</section>
+<section id="study-mode-vs-regular-mode">
+<h2>Study Mode vs Regular Mode<a class="headerlink" href="#study-mode-vs-regular-mode" title="Link to this heading"></a></h2>
+<p>The Annotator behaves differently depending on context:</p>
+<ul class="simple">
+<li><p><strong>Regular mode:</strong> annotations are global to the document and visible to all users.</p></li>
+<li><p><strong>Study mode:</strong> annotations and comments are scoped by <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> and <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>.
+This allows isolated workflows per participant and per step.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">showAllComments</span></code> is enabled in <span class="xref std std-doc">the settings</span>, users may see comments from other sessions,
+but restrictions apply depending on whether the study is still active or closed.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="components.html" class="btn btn-neutral float-left" title="Components" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dashboard.html" class="btn btn-neutral float-right" title="Dashboard" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

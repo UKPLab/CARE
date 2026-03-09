@@ -1,0 +1,322 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Step Modal &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Study" href="study.html" />
+    <link rel="prev" title="Quill Editor" href="editor.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../basic/basic.html">Basic</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="components.html">Components</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="components.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="annotator.html">Annotator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Step Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="study.html">Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#dashboard">Dashboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#document">Document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study">Study</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="components.html">Components</a></li>
+      <li class="breadcrumb-item active">Step Modal</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/components/stepmodal.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="step-modal">
+<h1>Step Modal<a class="headerlink" href="#step-modal" title="Link to this heading"></a></h1>
+<p>The <strong>StepModal component</strong> (<code class="docutils literal notranslate"><span class="pre">frontend/src/components/stepmodal/StepModal.vue</span></code>) is a <strong>config-driven modal</strong> shown at <em>Step Type = 3</em> in a study.
+It can render formatted feedback, dynamic placeholders (text, charts, comparisons), and optionally run <strong>NLP service requests</strong> to compute results before showing the content.</p>
+<dl class="simple">
+<dt>Key features include:</dt><dd><ul class="simple">
+<li><p>Modal UI fully controlled by the <strong>study step configuration</strong> (title, colors, size, buttons)</p></li>
+<li><p><strong>Placeholder pipeline</strong> that renders content from <cite>studyData</cite> (Text / Chart / Comparison)</p></li>
+<li><p><strong>NLP orchestration</strong>: send multiple skill requests, wait for results, persist them, handle timeouts &amp; retries</p></li>
+<li><p>Read-only and last-step behaviors (finish/back/export)</p></li>
+<li><p>Emits updates back to the study route (<code class="docutils literal notranslate"><span class="pre">&#64;update:data</span></code>) as the underlying data changes</p></li>
+</ul>
+</dd>
+</dl>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The StepModal is opened by the study route when a step with <code class="docutils literal notranslate"><span class="pre">stepType</span> <span class="pre">===</span> <span class="pre">3</span></code> becomes active.
+It fetches the step’s source document (to display descriptive HTML mixed with placeholders), optionally executes NLP jobs, waits for their results, and renders the final structured output.
+All intermediate and final values are persisted in <code class="docutils literal notranslate"><span class="pre">table/document_data</span></code> so later steps can reference them.</p>
+</section>
+<section id="implementing-the-stepmodal">
+<h2>Implementing the StepModal<a class="headerlink" href="#implementing-the-stepmodal" title="Link to this heading"></a></h2>
+<p>To use StepModal in the study flow:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StepModal</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;currentStep.stepType === 3 &amp;&amp; studyTrajectory.includes(currentStep.id)&quot;</span>
+  <span class="na">:study-step-id</span><span class="o">=</span><span class="s">&quot;currentStep.id&quot;</span>
+  <span class="na">:is-last-step</span><span class="o">=</span><span class="s">&quot;currentStep.id === lastStep.id&quot;</span>
+  <span class="err">@</span><span class="na">close</span><span class="o">=</span><span class="s">&quot;handleModalClose&quot;</span>
+  <span class="err">@</span><span class="na">update:data</span><span class="o">=</span><span class="s">&quot;studyData[studySteps.findIndex(s =&gt; s.id === currentStep.id) + 1] = $event&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">StepModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/components/stepmodal/StepModal.vue&quot;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">StepModal</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="c1">// Pass studyData down via provide/inject, just like other steps</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<section id="initialization-configuration">
+<h3>Initialization &amp; Configuration<a class="headerlink" href="#initialization-configuration" title="Link to this heading"></a></h3>
+<p>When mounted, StepModal:</p>
+<ol class="arabic simple">
+<li><p><strong>Loads the step configuration</strong> from <code class="docutils literal notranslate"><span class="pre">table/study_step</span></code> via the provided <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>.</p></li>
+<li><p><strong>Fetches the document HTML</strong> behind the step (via WebSocket <code class="docutils literal notranslate"><span class="pre">documentGet</span></code>).
+The delta is rendered with Quill into HTML that may contain <strong>placeholders</strong> delimited by <code class="docutils literal notranslate"><span class="pre">~...~</span></code>.</p></li>
+<li><p><strong>Parses placeholders</strong> and transforms the HTML into <strong>segments</strong>:
+- <code class="docutils literal notranslate"><span class="pre">plainText</span></code> (raw HTML between placeholders)
+- <code class="docutils literal notranslate"><span class="pre">text</span></code> (<code class="docutils literal notranslate"><span class="pre">Text.vue</span></code>)
+- <code class="docutils literal notranslate"><span class="pre">chart</span></code> (<code class="docutils literal notranslate"><span class="pre">Chart.vue</span></code>)
+- <code class="docutils literal notranslate"><span class="pre">comparison</span></code> (<code class="docutils literal notranslate"><span class="pre">Comparison.vue</span></code>)</p></li>
+</ol>
+<p>Basic structure:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicModal</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;modal&quot;</span>
+  <span class="na">:name</span><span class="o">=</span><span class="s">&quot;studyStep?.configuration?.name || &#39;Modal&#39;&quot;</span>
+  <span class="na">:class</span><span class="o">=</span><span class="s">&quot;modalClasses&quot;</span>
+  <span class="na">:style</span><span class="o">=</span><span class="s">&quot;{ backgroundColor: studyStep?.configuration?.backgroundColor || &#39;&#39; }&quot;</span>
+  <span class="na">disableKeyboard</span>
+  <span class="na">removeClose</span>
+<span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">title</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">h5</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;modal-title&quot;</span> <span class="na">:class</span><span class="o">=</span><span class="s">&quot;studyStep?.configuration?.titleClass || &#39;text-primary&#39;&quot;</span><span class="p">&gt;</span>
+      {{ studyStep?.configuration?.title || &#39;Feedback&#39; }}
+    <span class="p">&lt;/</span><span class="nt">h5</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+
+  <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">body</span><span class="p">&gt;</span>
+    <span class="cm">&lt;!-- either spinner while waiting for NLP OR the resolved segments --&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+
+  <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">footer</span><span class="p">&gt;</span>
+    <span class="cm">&lt;!-- Next / Finish / Export / Back to Studies depending on flags --&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">BasicModal</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="modal-look-configuration">
+<h3>Modal Look Configuration<a class="headerlink" href="#modal-look-configuration" title="Link to this heading"></a></h3>
+<p>From <code class="docutils literal notranslate"><span class="pre">studyStep.configuration</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">modalSize</span></code>: bootstrap modal size (e.g., <code class="docutils literal notranslate"><span class="pre">xl</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: modal title in the chrome</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">title</span></code> / <code class="docutils literal notranslate"><span class="pre">titleClass</span></code>: headline content and color class</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backgroundColor</span></code> / <code class="docutils literal notranslate"><span class="pre">textColor</span></code>: body styling</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nextButtonText</span></code> / <code class="docutils literal notranslate"><span class="pre">finishButtonText</span></code> / <code class="docutils literal notranslate"><span class="pre">finishButtonClass</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="placeholders">
+<h2>Placeholders<a class="headerlink" href="#placeholders" title="Link to this heading"></a></h2>
+<p>StepModal’s document HTML can embed placeholders: <code class="docutils literal notranslate"><span class="pre">~text~</span></code>, <code class="docutils literal notranslate"><span class="pre">~chart~</span></code>, or <code class="docutils literal notranslate"><span class="pre">~comparison~</span></code>.
+They are resolved against <strong>studyData</strong> (the aggregated per-step data array shared across steps):</p>
+<ul class="simple">
+<li><p><strong>Text.vue</strong>
+Looks up <code class="docutils literal notranslate"><span class="pre">config.input</span> <span class="pre">=</span> <span class="pre">{</span> <span class="pre">stepId,</span> <span class="pre">dataSource</span> <span class="pre">}</span></code> inside <code class="docutils literal notranslate"><span class="pre">studyData[stepId]</span></code> and prints the value.</p></li>
+<li><p><strong>Chart.vue</strong>
+Either takes a full Chart.js config or builds one from a data object in <code class="docutils literal notranslate"><span class="pre">studyData</span></code>:
+<code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">labels:</span> <span class="pre">[...],</span> <span class="pre">values:</span> <span class="pre">[...]</span> <span class="pre">}</span></code> → produces a horizontal bar chart.</p></li>
+<li><p><strong>Comparison.vue</strong>
+Reads two inputs and renders a stacked bar chart to compare the two datasets.</p></li>
+</ul>
+<p>Example placeholder configuration inside the step:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;placeholders&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;summary_text&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;chart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;frequency_chart&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Edits by Type&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;comparison&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revisionA&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revisionB&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;R1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;R2&quot;</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Revisions Compared&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="nlp-integration">
+<h2>NLP Integration<a class="headerlink" href="#nlp-integration" title="Link to this heading"></a></h2>
+<p>If the step’s configuration contains a <code class="docutils literal notranslate"><span class="pre">services</span></code> array with entries of <code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;nlpRequest&quot;</span></code>, StepModal will:</p>
+<ol class="arabic simple">
+<li><p><strong>Prepare requests</strong>: build inputs from <code class="docutils literal notranslate"><span class="pre">studyData</span></code> using the mapping in <code class="docutils literal notranslate"><span class="pre">service.inputs</span></code>.</p></li>
+<li><p><strong>Send requests</strong> via WebSocket <code class="docutils literal notranslate"><span class="pre">serviceRequest</span></code> with a generated <code class="docutils literal notranslate"><span class="pre">requestId</span></code> (UUID).</p></li>
+<li><p><strong>Wait</strong> until results arrive or a timeout occurs (configured via setting <strong>``modal.nlp.request.timeout``</strong>).</p></li>
+<li><p><strong>Persist</strong> each key of the result into <code class="docutils literal notranslate"><span class="pre">document_data</span></code>:
+- Keys are namespaced as <code class="docutils literal notranslate"><span class="pre">&lt;uniqueId&gt;_&lt;resultKey&gt;</span></code>
+- This makes the data addressable by later steps and by placeholders.</p></li>
+</ol>
+<p>Minimal example of a service entry in <code class="docutils literal notranslate"><span class="pre">studyStep.configuration</span></code>:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;services&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nlpRequest&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qualityCheck&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;skill&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quality_assessment&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;inputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;final_text&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;meta_info&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="timeouts-errors-retries">
+<h3>Timeouts, Errors, Retries<a class="headerlink" href="#timeouts-errors-retries" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>If a request times out, the modal shows an <strong>inline error</strong> with actions:
+- <strong>Try Again</strong> → re-send only the missing result requests
+- <strong>Skip NLP Support</strong> → proceed without the NLP output</p></li>
+<li><p>Completed requests are cleaned from the local <code class="docutils literal notranslate"><span class="pre">requests</span></code> map and their results removed from the service store after persisting.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="editor.html" class="btn btn-neutral float-left" title="Quill Editor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="study.html" class="btn btn-neutral float-right" title="Study" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,330 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPC Service &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Services" href="service.html" />
+    <link rel="prev" title="Right Management" href="right_management.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">RPC Service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#implementing-a-new-rpc-service">Implementing a new RPC service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#docker-container">Docker Container</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend-service">Backend Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#environment">Environment</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-call-the-rpc-service">How to call the RPC service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">RPC Service</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/rpc.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="rpc-service">
+<h1>RPC Service<a class="headerlink" href="#rpc-service" title="Link to this heading"></a></h1>
+<p>Remote Procedure Call services (RPCs) are used to execute resource-intensive or different language code in a separate process.
+This is done to prevent the main server (node.js backend) from being blocked by the execution of such code.
+Therefore we introduce a standardized interface and protocol for RPCs to allow seamless switching and addition of new RPCs regardless of functionality and underlying platforms.
+Communication between the main server and the RPCs is done via a websocket connection, to ensure persistent communication and low latency.
+The external code is executed in a Docker container, and usually started with the rest of CARE.</p>
+<section id="implementing-a-new-rpc-service">
+<h2>Implementing a new RPC service<a class="headerlink" href="#implementing-a-new-rpc-service" title="Link to this heading"></a></h2>
+<p>To implement a new RPC service, you can orient yourself on the existing test RPC service example.
+Here you can find a simple python script that provides a scalable <a class="reference external" href="https://python-socketio.readthedocs.io/en/latest/server.html">python-socketio</a> server implementation for answering RPC calls.</p>
+<p>The example consists of the following components:</p>
+<ul class="simple">
+<li><p>Docker Container</p></li>
+<li><p>Backend Service</p></li>
+<li><p>Environment</p></li>
+</ul>
+<section id="docker-container">
+<h3>Docker Container<a class="headerlink" href="#docker-container" title="Link to this heading"></a></h3>
+<p>The Docker container is responsible for executing the external code.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>utils/rpcs/test/
+├──<span class="w"> </span>Dockerfile
+├──<span class="w"> </span>main.py
+└──<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> is used to build the Docker container and install the necessary packages.
+The <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> file contains the necessary packages that are installed in the Docker container.
+The <code class="docutils literal notranslate"><span class="pre">main.py</span></code> file contains the websocket interface and the code that is executed when the RPC is called.</p>
+<p>For a new RPC service, you can copy the <code class="docutils literal notranslate"><span class="pre">utils/rpcs/test/</span></code> folder and adjust the files to your needs.
+If you want to extend the RPC service with more complex features, you can just add a <a class="reference external" href="https://python-socketio.readthedocs.io/en/latest/server.html#listening-to-events">listening socket</a> to the <code class="docutils literal notranslate"><span class="pre">main.py</span></code> file like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@sio</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;my custom event&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">event</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received call: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">sid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Do something with the data</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="n">response</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>To be able to use the RPC service, the Docker container must be started with the rest of CARE.
+Therefore, you have to add the Docker container to the <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> and <code class="docutils literal notranslate"><span class="pre">docker-dev.yml</span></code> file in the root folder.
+See <cite>rpc_test</cite> as an example or read the <a class="reference internal" href="#environment">Environment</a> section.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>To build the Docker container, you can use the <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">-f</span> <span class="pre">docker-compose.yml</span> <span class="pre">build</span> <span class="pre">&lt;rpc_service_name&gt;</span></code> command.
+To run the Docker container, you can use the <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">-f</span> <span class="pre">docker-compose.yml</span> <span class="pre">run</span> <span class="pre">&lt;rpc_service_name&gt;</span></code> command.</p>
+</div>
+</section>
+<section id="backend-service">
+<h3>Backend Service<a class="headerlink" href="#backend-service" title="Link to this heading"></a></h3>
+<p>The backend service is responsible for managing the RPC services and executing the RPC calls.
+All RPC services need to be added to the <code class="docutils literal notranslate"><span class="pre">backend/webserver/rpcs/</span></code> folder. The Example RPC service file is called <code class="docutils literal notranslate"><span class="pre">test.js</span></code>.
+It holds a class that is extended from the <code class="docutils literal notranslate"><span class="pre">RPC</span></code> class and implements additional methods, but at least the connection url with the environment variables (see <a class="reference internal" href="#environment">Environment</a> section).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The class name of your RPC service will be the name for calling your RPC service in the backend later.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">RPC</span></code> class usually handles all the communication with the RPC service and provides a standard method to call the RPC service.
+Please look at the <code class="docutils literal notranslate"><span class="pre">backend/webserver/RPC.js</span></code> file for a detailed implementation. To provide extended functionality, you can just add more methods to the RPC service class.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">RPC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../RPC.js&quot;</span><span class="p">);</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">RPC</span><span class="o">&lt;</span><span class="nx">rpc_service_name</span><span class="o">&gt;</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">RPC</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="p">(</span><span class="nx">server</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">const</span><span class="w"> </span><span class="nx">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ws://&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">RPC_</span><span class="o">&lt;</span><span class="nx">rpc_service_name</span><span class="o">&gt;</span><span class="nx">_HOST</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">&quot;:&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">RPC_</span><span class="o">&lt;</span><span class="nx">rpc_service_name</span><span class="o">&gt;</span><span class="nx">_PORT</span><span class="p">;</span>
+<span class="w">        </span><span class="k">super</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span><span class="w"> </span><span class="nx">url</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">    * Simplest method to call your RPC service function and return a promise with the response</span>
+<span class="cm">    * @param {Object} data - The data that is sent to the RPC service</span>
+<span class="cm">    * @returns {Promise} - The response from the RPC service</span>
+<span class="cm">    */</span>
+<span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">rpc_service_function_name</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;&lt;rpc_service_function_event_in_docker&gt;&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="nx">err</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="environment">
+<h3>Environment<a class="headerlink" href="#environment" title="Link to this heading"></a></h3>
+<p>The environment variables are used to configure the RPC service.
+With the environment variables, we make sure that the RPC service could run easily on different machines without changing the code.
+Therefore, you have to add the environment variables to all <code class="docutils literal notranslate"><span class="pre">*.env</span></code> files in the root folder.</p>
+<p><strong>.env</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># RPCs</span>
+<span class="nv">RPC_TEST_HOST</span><span class="o">=</span><span class="m">127</span>.0.0.1
+<span class="nv">RPC_TEST_PORT</span><span class="o">=</span><span class="m">3010</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.env</span></code> file is used for development, so the IP address is set to localhost and <code class="docutils literal notranslate"><span class="pre">docker-dev.yaml</span></code> publishes the ports to the host machine.
+The <code class="docutils literal notranslate"><span class="pre">*.env</span></code> files are used to build the fully docker environment, so the IP address is set to the docker network (i.e. the name of the machine defined in the <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> file).</p>
+</div>
+<p>Furthermore, we want to make sure that the RPC service is started with the CARE environment.
+Here we need to add the environment variables to the <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> and <code class="docutils literal notranslate"><span class="pre">docker-dev.yml</span></code> file in the root folder.</p>
+<p><strong>docker-compose.yml</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rpc_test</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">build</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./utils/rpcs/test</span>
+<span class="w">    </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile</span>
+<span class="w">  </span><span class="nt">command: command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8080 &#39;main:create_app()&#39;</span>
+<span class="w">  </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+</pre></div>
+</div>
+<p><strong>docker-dev.yml</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rpc_test</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${RPC_TEST_PORT}:8080</span>
+</pre></div>
+</div>
+<p>Lastly, we need to adapt the <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> to build the Docker container.
+By adding the docker machine name to the <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker</span></code> command,
+the Docker container is built and started with the CARE environment.</p>
+</section>
+</section>
+<section id="how-to-call-the-rpc-service">
+<h2>How to call the RPC service<a class="headerlink" href="#how-to-call-the-rpc-service" title="Link to this heading"></a></h2>
+<p>To call the RPC service, you have to use the RPC service class that you implemented in the backend.
+The RPC service class provides a method to call the RPC service and return a promise with the response.
+The RPC service class name is the identifier for the RPC service.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s1">&#39;&lt;rpc_service_name&gt;&#39;</span><span class="p">].</span><span class="o">&lt;</span><span class="nx">rpc_service_function_name</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="w">    </span><span class="c1">// Do something with the response</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Handle the error</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="unit-tests">
+<h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
+<p>It is always a good idea to write unit tests during the implementation of a new RPC service.
+The unit tests should cover the most important parts of the RPC service. The tests are located in the <code class="docutils literal notranslate"><span class="pre">backend/tests/rpcs</span></code> folder.
+Each RPC service has its own test file, which is named after the RPC service class.
+Here you can add simple tests to check if the RPC service is working as expected.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">Server</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../../webserver/Server.js&quot;</span><span class="p">);</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="s1">&#39;&lt;RPC service name&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * Test your RPC function</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="nx">test</span><span class="p">(</span><span class="s1">&#39;&lt;your rpc function name&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="nx">server</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Server</span><span class="p">();</span>
+
+<span class="w">        </span><span class="c1">// wait until RPC service is connected</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;&lt;RPC service name&gt;&quot;</span><span class="p">].</span><span class="nx">wait</span><span class="p">();</span>
+
+<span class="w">        </span><span class="c1">// check status</span>
+<span class="w">        </span><span class="nx">expect</span><span class="p">(</span><span class="k">await</span><span class="w"> </span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;&lt;RPC service name&gt;&quot;</span><span class="p">].</span><span class="nx">isOnline</span><span class="p">()).</span><span class="nx">toEqual</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// call rpc and check response</span>
+<span class="w">        </span><span class="kd">const</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">server</span><span class="p">.</span><span class="nx">rpcs</span><span class="p">[</span><span class="s2">&quot;&lt;RPC service name&gt;&quot;</span><span class="p">].</span><span class="o">&lt;</span><span class="nx">your</span><span class="w"> </span><span class="nx">rpc</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">name</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">test</span><span class="w"> </span><span class="nx">object</span><span class="o">&gt;</span><span class="p">);</span>
+<span class="w">        </span><span class="nx">expect</span><span class="p">(</span><span class="nx">response</span><span class="p">).</span><span class="nx">toEqual</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">response</span><span class="w"> </span><span class="nx">object</span><span class="o">&gt;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="p">})</span>
+
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>Now you can run the unit tests with <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test-rpc</span></code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When running the unit tests locally, make sure your RPC service is running (e.g., <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker</span></code> or <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">-f</span> <span class="pre">docker-compose.yml</span> <span class="pre">-f</span> <span class="pre">docker-dev.yml</span> <span class="pre">up</span> <span class="pre">&lt;rpc_service_docker_name&gt;</span></code>).</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="right_management.html" class="btn btn-neutral float-left" title="Right Management" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="service.html" class="btn btn-neutral float-right" title="Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

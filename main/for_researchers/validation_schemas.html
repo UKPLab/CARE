@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validation Schemas &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Moodle API" href="moodle_usage.html" />
+    <link rel="prev" title="Quill Editor" href="editor_usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Validation Schemas</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-validation-schema">Creating a Validation Schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-pdf-only-validation">Example: PDF Only Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-pdf-latex-zip-validation">Example: PDF + LaTeX ZIP Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#uploading-validation-schemas">Uploading Validation Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation-behavior">Validation Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Validation Schemas</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/validation_schemas.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="validation-schemas">
+<h1>Validation Schemas<a class="headerlink" href="#validation-schemas" title="Link to this heading"></a></h1>
+<p>CARE allows administrators and researchers to define custom validation schemas
+that enforce specific file format requirements for submissions. This enables
+project-specific or assignment-specific validation rules (e.g., “PDF + LaTeX ZIP” for exposés)
+to ensure submissions meet your study’s requirements.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For developers working with the validation code, see <a class="reference internal" href="../for_developers/backend/validation.html"><span class="doc">Validation</span></a>.</p>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Validation schemas are JSON configuration files that define:</p>
+<ul class="simple">
+<li><p>Which files are required in a submission</p></li>
+<li><p>File naming patterns (using regular expressions)</p></li>
+<li><p>ZIP archive content requirements</p></li>
+<li><p>Allowed additional file types</p></li>
+</ul>
+<p>When users upload submissions, CARE validates them against the selected schema
+before accepting them into the system. This prevents broken or incomplete
+submissions and ensures consistent submission formats across your study.</p>
+</section>
+<section id="creating-a-validation-schema">
+<h2>Creating a Validation Schema<a class="headerlink" href="#creating-a-validation-schema" title="Link to this heading"></a></h2>
+<p>A Validation schemas is structured as follows:</p>
+<p><strong>Top-level attributes</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">version</span></code>: Schema version (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;0.0.1&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: Schema name (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;UKP</span> <span class="pre">Exposé</span> <span class="pre">Submission</span> <span class="pre">Validator&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code>: Description of this schema</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: Must be set to <code class="docutils literal notranslate"><span class="pre">&quot;validation&quot;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rules</span></code>: Object containing validation rules (see below)</p></li>
+</ul>
+<p><strong>Rules object</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">additionalFilesAreAllowed</span></code>: Boolean indicating if unspecified files are accepted
+at the root level. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to enforce strict file requirements.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">requiredFiles</span></code>: A list of required file definitions (see below)</p></li>
+</ul>
+<p><strong>Each</strong> <code class="docutils literal notranslate"><span class="pre">requiredFiles</span></code> <strong>entry supports</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: Name identifier for this file type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pattern</span></code>: Regex pattern matched against the filename (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;.*\\.pdf$&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code>: Description of the file’s purpose</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">required</span></code>: Boolean indicating whether the file must be present</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">includeFiles</span></code> <em>(optional)</em>: A list of validation rules for ZIP archive contents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allowAdditionalFiles</span></code> <em>(optional)</em>: A list of allowed file extensions inside ZIP archives (e.g., <code class="docutils literal notranslate"><span class="pre">[&quot;jpg&quot;,</span> <span class="pre">&quot;png&quot;,</span> <span class="pre">&quot;pdf&quot;]</span></code>)</p></li>
+</ul>
+<p><strong>ZIP validation rules inside</strong> <code class="docutils literal notranslate"><span class="pre">includeFiles</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: Name identifier for this file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pattern</span></code>: Regex pattern for ZIP entries (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Expose\\.tex$&quot;</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code>: Description of the expected file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">required</span></code>: Boolean indicating whether the file must be present</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxMatches</span></code> <em>(optional)</em>: Maximum number of allowed matches</p></li>
+</ul>
+</section>
+<section id="example-pdf-only-validation">
+<h2>Example: PDF Only Validation<a class="headerlink" href="#example-pdf-only-validation" title="Link to this heading"></a></h2>
+<p><strong>Goal:</strong> Ensure a required PDF is present with no additional files.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.0.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PDF Only Validator&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Validates that exactly one PDF file is present&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;validation&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;rules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;additionalFilesAreAllowed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;requiredFiles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PDF&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Main PDF document&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.*\\.pdf$&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="example-pdf-latex-zip-validation">
+<h2>Example: PDF + LaTeX ZIP Validation<a class="headerlink" href="#example-pdf-latex-zip-validation" title="Link to this heading"></a></h2>
+<p><strong>Goal:</strong> Require one PDF and one ZIP archive containing LaTeX sources with specific files.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.0.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Exposé Submission Validator&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Validation schema for Exposé LaTeX submissions&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;validation&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;rules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;additionalFilesAreAllowed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;requiredFiles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PDF&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Main PDF of the Exposé&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.*\\.pdf$&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ZIP&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Raw Latex Files for the Exposé&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.*\\.zip$&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;allowAdditionalFiles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;jpeg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;jpg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;png&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;cls&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;includeFiles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;expose&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Main expose LaTeX document&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Expose\\.tex$&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;maxMatches&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bibliography&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bibliography file for the exposé&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ExposeBibliography\\.bib$&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;maxMatches&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;config&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TUDa thesis configuration file&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tudathesis\\.cfg$&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;maxMatches&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="uploading-validation-schemas">
+<h2>Uploading Validation Schemas<a class="headerlink" href="#uploading-validation-schemas" title="Link to this heading"></a></h2>
+<p>Validation schemas can be uploaded via the Configuration Dashboard:</p>
+<ol class="arabic simple">
+<li><p>Log in to CARE with an admin account</p></li>
+<li><p>Navigate to the <strong>Configuration</strong> section in the dashboard</p></li>
+<li><p>Upload your validation schema JSON file</p></li>
+<li><p>The schema will be available for selection during submission uploads</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Default validation schemas are stored in the database via migrations.
+Example: <code class="docutils literal notranslate"><span class="pre">backend/db/migrations/20250919125851-basic-configuration-expose_validation.json</span></code></p>
+</div>
+</section>
+<section id="validation-behavior">
+<h2>Validation Behavior<a class="headerlink" href="#validation-behavior" title="Link to this heading"></a></h2>
+<p>The validator automatically handles several common scenarios:</p>
+<ul class="simple">
+<li><p><strong>System files</strong>: Filters out system metadata files such as:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">.DS_Store</span></code> (macOS)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">__MACOSX/</span></code> (macOS metadata directory)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Thumbs.db</span></code>, <code class="docutils literal notranslate"><span class="pre">desktop.ini</span></code> (Windows)</p></li>
+<li><p>Files starting with <code class="docutils literal notranslate"><span class="pre">._</span></code> (macOS resource forks)</p></li>
+</ul>
+</li>
+<li><p><strong>ZIP folder structure</strong>: If a ZIP contains a single top-level folder, this folder
+is automatically stripped during validation. Files must be located either at the ZIP
+root or within a single top-level directory.</p></li>
+<li><p><strong>Error reporting</strong>: The validator stops at the first error encountered and reports
+it to the user. It does not exhaustively check all possible errors.</p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="../for_developers/backend/validation.html"><span class="doc">Validation</span></a> (developer documentation for the validation system)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/db/migrations/20250919125851-basic-configuration-expose_validation.json</span></code> (example schema file)</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="editor_usage.html" class="btn btn-neutral float-left" title="Quill Editor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="moodle_usage.html" class="btn btn-neutral float-right" title="Moodle API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,525 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Revision Workflow Study Example &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Quill Editor" href="../editor_usage.html" />
+    <link rel="prev" title="Study Deployment" href="study_deployment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../exporting.html">Exporting Data</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="study.html">Studies</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="study_basics.html">What is a Study?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="study_deployment.html">Study Deployment</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Revision Workflow Study Example</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prepare-external-gpu-provider">Prepare external GPU Provider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prepare-the-care-instance">Prepare the CARE Instance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing">Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#leaf-cloud">Leaf.Cloud</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prepare-leaf-cloud">Prepare Leaf.Cloud</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-instance">Create Instance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#working-with-the-instance">Working with the Instance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#install-broker-for-testing">Install broker for testing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#important-shelve-instance">IMPORTANT! Shelve Instance</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="study.html">Studies</a></li>
+      <li class="breadcrumb-item active">Revision Workflow Study Example</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_researchers/study/study_with_nlp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="revision-workflow-study-example">
+<span id="ruhr-uni-bochum-project"></span><h1>Revision Workflow Study Example<a class="headerlink" href="#revision-workflow-study-example" title="Link to this heading"></a></h1>
+<p>This example demonstrates how CARE can support a structured revision workflow to study how users revise and respond to AI-generated feedback. It enables natural editing of a given document, tracks changes, and summarizes them for further analysis.</p>
+<p>The workflow follows a four-step process:</p>
+<ol class="arabic simple">
+<li><p><strong>Initial Revision</strong> – users revise a pre-written text.</p></li>
+<li><p><strong>LLM Feedback</strong> – model-generated suggestions are shown.</p></li>
+<li><p><strong>Second Revision</strong> – users revise again, now with feedback.</p></li>
+<li><p><strong>Final Summary with LLM Feedback</strong> – feedback and changes are presented in a modal.</p></li>
+</ol>
+<p>This workflow is available in the CARE interface under the name <strong>“Ruhr-Uni-Bochum-Project”</strong>.</p>
+<section id="prepare-external-gpu-provider">
+<h2>Prepare external GPU Provider<a class="headerlink" href="#prepare-external-gpu-provider" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Use <a class="reference internal" href="#gpu-provider-setup"><span class="std std-ref">Leaf.Cloud</span></a> setup guide</p></li>
+</ul>
+</section>
+<section id="prepare-the-care-instance">
+<h2>Prepare the CARE Instance<a class="headerlink" href="#prepare-the-care-instance" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Ask Sysadmin Team to add A-Record for new domain (in this case rub.ukp.informatik.tu-darmstadt.de)</p></li>
+<li><p>Clone branch into subfolder and install CARE instance</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">deployer</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">git</span><span class="o">.</span><span class="n">ukp</span><span class="o">.</span><span class="n">informatik</span><span class="o">.</span><span class="n">tu</span><span class="o">-</span><span class="n">darmstadt</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">zyska</span><span class="o">/</span><span class="n">care</span><span class="o">.</span><span class="n">git</span> <span class="n">my_care</span>
+<span class="n">cd</span> <span class="n">my_care</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">&lt;</span><span class="n">project</span><span class="o">-</span><span class="n">branch</span><span class="o">&gt;</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">deploy</span><span class="o">-&lt;</span><span class="n">your</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
+<span class="n">nano</span> <span class="o">.</span><span class="n">env</span>
+<span class="n">git</span> <span class="n">add</span> <span class="o">.</span><span class="n">env</span>
+<span class="n">git</span> <span class="n">commit</span>
+<span class="n">git</span> <span class="n">push</span> <span class="o">--</span><span class="nb">set</span><span class="o">-</span><span class="n">upstream</span> <span class="n">origin</span> <span class="n">deploy</span><span class="o">-&lt;</span><span class="n">your</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
+<span class="n">make</span> <span class="n">build</span>
+</pre></div>
+</div>
+<p>.env:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PROJECT_NAME</span><span class="o">=</span><span class="n">my_care</span>
+<span class="n">PUBLISHED_PORT</span><span class="o">=</span><span class="mi">8992</span>
+<span class="n">POSTGRES_URL</span><span class="o">=</span><span class="n">postgres</span>
+<span class="n">RPC_MOODLE_HOST</span><span class="o">=</span><span class="n">rpc_moodle</span>
+<span class="n">RPC_MOODLE_PORT</span><span class="o">=</span><span class="mi">8081</span>
+<span class="n">ADMIN_PWD</span><span class="o">=</span><span class="n">PjGcbLEUDEH93PY</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Update NGINX and Certificates</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure that the DNS Entry is available outside of the TuDa (may need some time)</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">nginx</span><span class="o">-</span><span class="n">certbot</span>
+<span class="n">sudo</span> <span class="n">nano</span> <span class="n">init</span><span class="o">-</span><span class="n">letsencrypt</span><span class="o">.</span><span class="n">sh</span> <span class="c1"># add domain here</span>
+<span class="n">sudo</span> <span class="o">./</span><span class="n">init</span><span class="o">-</span><span class="n">letsencrypt</span><span class="o">.</span><span class="n">sh</span> <span class="c1"># reinit</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">nginx</span><span class="o">-</span><span class="n">certbot</span>
+<span class="n">sudo</span> <span class="n">nano</span> <span class="n">data</span><span class="o">/</span><span class="n">nginx</span><span class="o">/</span><span class="n">app</span><span class="o">.</span><span class="n">conf</span>
+<span class="n">docker</span> <span class="n">compose</span> <span class="n">restart</span>
+</pre></div>
+</div>
+<p>data/nginx/app.conf:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># For your instance
+server {
+    listen 80;
+    server_name rub.ukp.informatik.tu-darmstadt.de;
+    server_tokens off;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name rub.ukp.informatik.tu-darmstadt.de;
+    server_tokens off;
+
+    ssl_certificate /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # if some service is not available
+    error_page 501 502 503 /maintenance.html;
+    location = /maintenance.html {
+        root /var/www/html;
+    }
+}
+</pre></div>
+</div>
+<p>For deployment and server configuration (e.g., NGINX, certificates), please refer to the general CARE installation guide: <span class="xref std std-doc">../getting_started/installation</span>.</p>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Make sure the leaf.cloud server is running.</p></li>
+<li><p>Connect to VPN</p></li>
+<li><p>Run CARE locally with the latest branch</p></li>
+<li><p>Update the settings (<code class="docutils literal notranslate"><span class="pre">service</span> <span class="pre">→</span> <span class="pre">url</span></code>) with your <strong>public broker URL</strong></p></li>
+<li><p>Restart backend</p></li>
+</ol>
+<hr class="docutils" />
+</section>
+<section id="leaf-cloud">
+<span id="gpu-provider-setup"></span><h2>Leaf.Cloud<a class="headerlink" href="#leaf-cloud" title="Link to this heading"></a></h2>
+<p>There are many external service providers for conducting studies with GPU resources, but only a few provide server capacities inside the EU allow accounting according to time of use. One of them is:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://leaf.cloud/">https://leaf.cloud/</a> (up to four Nvidia V100)</p>
+</div></blockquote>
+<p>This tutorial provides only the basics for using a GPU with CARE. For additional functionality, see the documentation of Leaf.Cloud under <a class="reference external" href="https://docs.leaf.cloud/en/latest/">https://docs.leaf.cloud/en/latest/</a>. For price calculation, see <a class="reference external" href="https://www.leaf.cloud/pricing/">https://www.leaf.cloud/pricing/</a>.</p>
+<section id="prepare-leaf-cloud">
+<h3>Prepare Leaf.Cloud<a class="headerlink" href="#prepare-leaf-cloud" title="Link to this heading"></a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is assumed that an account already exists and money has been transferred to it.</p>
+</div>
+<p>For all steps, login to the OpenStack Dashboard (<a class="reference external" href="https://create.leaf.cloud/">https://create.leaf.cloud/</a>) first.</p>
+<p><strong>Change language of the Dashboard</strong></p>
+<p>Click on <em>Settings</em> on the top right and change the Language to <em>English (en)</em>. Click on <em>Save</em> to apply the change.</p>
+<p><strong>Create Key Pairs for Server Login</strong></p>
+<ol class="arabic simple">
+<li><p>Click on <em>Compute</em> → <em>Key Pairs</em> → <em>Create Key Pair</em></p></li>
+<li><p>Fill out the form:</p></li>
+</ol>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Key Pair Name</p></td>
+<td><p>Name of the key pairs</p></td>
+<td><p>Login</p></td>
+</tr>
+<tr class="row-odd"><td><p>Key Type</p></td>
+<td><p>Type of the key pairs</p></td>
+<td><p>SSH Key</p></td>
+</tr>
+</tbody>
+</table>
+<ol class="arabic simple" start="3">
+<li><p>After clicking <em>Create Key Pair</em>, a <cite>.pem</cite> file should download.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Of course, you can also create the key pairs externally and upload the public key using <em>Import Public Key</em>.</p>
+</div>
+</section>
+<section id="create-instance">
+<h3>Create Instance<a class="headerlink" href="#create-instance" title="Link to this heading"></a></h3>
+<p><strong>Create Volume</strong></p>
+<p>Create a new disk under <em>Volumes</em> → <em>Volumes</em> → <em>Create Volume</em></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Volume Name</p></td>
+<td><p>Name of the disk</p></td>
+<td><p>Study Data</p></td>
+</tr>
+<tr class="row-odd"><td><p>Description</p></td>
+<td><p>Description of the disk</p></td>
+<td><p>Space for LLM Model and
+Study Data</p></td>
+</tr>
+<tr class="row-even"><td><p>Volume Source</p></td>
+<td><p>Where to copy the disk from</p></td>
+<td><p>No source, empty volume</p></td>
+</tr>
+<tr class="row-odd"><td><p>Type</p></td>
+<td><p>Type of the disk</p></td>
+<td><p>encrypted</p></td>
+</tr>
+<tr class="row-even"><td><p>Size</p></td>
+<td><p>Size of the disk</p></td>
+<td><p>150 GiB</p></td>
+</tr>
+<tr class="row-odd"><td><p>Availability Zone</p></td>
+<td><p>Where the disk should be placed</p></td>
+<td><p>europe-nl-ams1</p></td>
+</tr>
+<tr class="row-even"><td><p>Group</p></td>
+<td></td>
+<td><p>No Group</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Create Instance</strong></p>
+<p>Create an instance under <em>Compute</em> → <em>Instances</em> → <em>Launch Instance</em></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Instance Name</p></td>
+<td><p>Name of the instance</p></td>
+<td><p>Study Server</p></td>
+</tr>
+<tr class="row-odd"><td><p>Volume Size (GB)</p></td>
+<td><p>Size of the disk</p></td>
+<td><p>20</p></td>
+</tr>
+<tr class="row-even"><td><p>Source Allocated</p></td>
+<td><p>Operation System</p></td>
+<td><p>Debian-12</p></td>
+</tr>
+<tr class="row-odd"><td><p>Networks</p></td>
+<td><p>Communication channel</p></td>
+<td><p>external</p></td>
+</tr>
+<tr class="row-even"><td><p>Flavor</p></td>
+<td><p>Server Capacity</p></td>
+<td><p>eg1.a100x1.V12-84</p></td>
+</tr>
+<tr class="row-odd"><td><p>Key Pair</p></td>
+<td><p>Key Pair for SSH access</p></td>
+<td><p>Server-Login</p></td>
+</tr>
+</tbody>
+</table>
+<p>With <em>Launch Instance</em> the instance will be created. This takes around two minutes.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Note down the IP address.</p>
+</div>
+<p><strong>Attach Volume</strong></p>
+<p>Click on the previously created instance, <strong>Attach Volume</strong>, and select the volume with the study data.</p>
+</section>
+<section id="working-with-the-instance">
+<h3>Working with the Instance<a class="headerlink" href="#working-with-the-instance" title="Link to this heading"></a></h3>
+<p>You need the private key file (<code class="docutils literal notranslate"><span class="pre">login.pem</span></code>) and the IP address of the instance.</p>
+<p><strong>Login per SSH</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chmod</span> <span class="mi">0600</span> <span class="n">login</span><span class="o">.</span><span class="n">pem</span>
+<span class="n">ssh</span> <span class="o">-</span><span class="n">i</span> <span class="n">login</span><span class="o">.</span><span class="n">pem</span> <span class="n">debian</span><span class="o">@&lt;</span><span class="n">ip</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p><strong>Mount Volume</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">update</span>
+<span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">fdisk</span>
+<span class="n">sudo</span> <span class="n">fdisk</span> <span class="o">-</span><span class="n">l</span>
+<span class="c1"># sudo fdisk /dev/vdb</span>
+<span class="n">sudo</span> <span class="n">mkfs</span><span class="o">.</span><span class="n">ext4</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">vdb</span>  <span class="c1"># only once when the volume is created</span>
+<span class="n">sudo</span> <span class="n">mount</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">vdb</span> <span class="o">/</span><span class="n">srv</span>
+
+<span class="c1"># Mount on boot</span>
+<span class="n">sudo</span> <span class="n">blkid</span>  <span class="c1"># copy UUID from /dev/vdb</span>
+<span class="n">sudo</span> <span class="n">nano</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">fstab</span>
+<span class="c1"># Add: UUID=&lt;copied UUID&gt; /srv ext4 defaults 0 0</span>
+</pre></div>
+</div>
+<p><strong>Install NVIDIA Driver</strong></p>
+<p>Add to <code class="docutils literal notranslate"><span class="pre">/etc/apt/sources.list</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deb</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">deb</span><span class="o">.</span><span class="n">debian</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">debian</span><span class="o">/</span> <span class="n">bookworm</span> <span class="n">main</span> <span class="n">contrib</span> <span class="n">non</span><span class="o">-</span><span class="n">free</span> <span class="n">non</span><span class="o">-</span><span class="n">free</span><span class="o">-</span><span class="n">firmware</span>
+</pre></div>
+</div>
+<p>and execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">update</span>
+<span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">nvidia</span><span class="o">-</span><span class="n">driver</span> <span class="n">firmware</span><span class="o">-</span><span class="n">misc</span><span class="o">-</span><span class="n">nonfree</span>
+<span class="n">sudo</span> <span class="n">reboot</span>
+<span class="n">nvidia</span><span class="o">-</span><span class="n">smi</span>  <span class="c1"># check if GPU is available</span>
+</pre></div>
+</div>
+<p>This should look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Fri</span> <span class="n">Feb</span>  <span class="mi">7</span> <span class="mi">08</span><span class="p">:</span><span class="mi">43</span><span class="p">:</span><span class="mi">10</span> <span class="mi">2025</span>
+<span class="o">+---------------------------------------------------------------------------------------+</span>
+<span class="o">|</span> <span class="n">NVIDIA</span><span class="o">-</span><span class="n">SMI</span> <span class="mf">535.216.01</span>             <span class="n">Driver</span> <span class="n">Version</span><span class="p">:</span> <span class="mf">535.216.01</span>   <span class="n">CUDA</span> <span class="n">Version</span><span class="p">:</span> <span class="mf">12.2</span>     <span class="o">|</span>
+<span class="o">|-----------------------------------------+----------------------+----------------------+</span>
+<span class="o">|</span> <span class="n">GPU</span>  <span class="n">Name</span>                 <span class="n">Persistence</span><span class="o">-</span><span class="n">M</span> <span class="o">|</span> <span class="n">Bus</span><span class="o">-</span><span class="n">Id</span>        <span class="n">Disp</span><span class="o">.</span><span class="n">A</span> <span class="o">|</span> <span class="n">Volatile</span> <span class="n">Uncorr</span><span class="o">.</span> <span class="n">ECC</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">Fan</span>  <span class="n">Temp</span>   <span class="n">Perf</span>          <span class="n">Pwr</span><span class="p">:</span><span class="n">Usage</span><span class="o">/</span><span class="n">Cap</span> <span class="o">|</span>         <span class="n">Memory</span><span class="o">-</span><span class="n">Usage</span> <span class="o">|</span> <span class="n">GPU</span><span class="o">-</span><span class="n">Util</span>  <span class="n">Compute</span> <span class="n">M</span><span class="o">.</span> <span class="o">|</span>
+<span class="o">|</span>                                         <span class="o">|</span>                      <span class="o">|</span>               <span class="n">MIG</span> <span class="n">M</span><span class="o">.</span> <span class="o">|</span>
+<span class="o">|=========================================+======================+======================|</span>
+<span class="o">|</span>   <span class="mi">0</span>  <span class="n">NVIDIA</span> <span class="n">A100</span> <span class="mi">80</span><span class="n">GB</span> <span class="n">PCIe</span>          <span class="n">On</span>  <span class="o">|</span> <span class="mi">00000000</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">05.0</span> <span class="n">Off</span> <span class="o">|</span>                    <span class="mi">0</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">N</span><span class="o">/</span><span class="n">A</span>   <span class="mi">48</span><span class="n">C</span>    <span class="n">P0</span>              <span class="mi">49</span><span class="n">W</span> <span class="o">/</span> <span class="mi">300</span><span class="n">W</span> <span class="o">|</span>      <span class="mi">0</span><span class="n">MiB</span> <span class="o">/</span> <span class="mi">81920</span><span class="n">MiB</span> <span class="o">|</span>      <span class="mi">0</span><span class="o">%</span>      <span class="n">Default</span> <span class="o">|</span>
+<span class="o">|</span>                                         <span class="o">|</span>                      <span class="o">|</span>             <span class="n">Disabled</span> <span class="o">|</span>
+<span class="o">+-----------------------------------------+----------------------+----------------------+</span>
+<span class="o">+---------------------------------------------------------------------------------------+</span>
+<span class="o">|</span> <span class="n">Processes</span><span class="p">:</span>                                                                            <span class="o">|</span>
+<span class="o">|</span>  <span class="n">GPU</span>   <span class="n">GI</span>   <span class="n">CI</span>        <span class="n">PID</span>   <span class="n">Type</span>   <span class="n">Process</span> <span class="n">name</span>                            <span class="n">GPU</span> <span class="n">Memory</span> <span class="o">|</span>
+<span class="o">|</span>        <span class="n">ID</span>   <span class="n">ID</span>                                                             <span class="n">Usage</span>      <span class="o">|</span>
+<span class="o">|=======================================================================================|</span>
+<span class="o">|</span>  <span class="n">No</span> <span class="n">running</span> <span class="n">processes</span> <span class="n">found</span>                                                           <span class="o">|</span>
+<span class="o">+---------------------------------------------------------------------------------------+</span>
+</pre></div>
+</div>
+<p><strong>Install Conda</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">srv</span>
+<span class="n">sudo</span> <span class="n">curl</span> <span class="o">-</span><span class="n">O</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">repo</span><span class="o">.</span><span class="n">anaconda</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">miniconda</span><span class="o">/</span><span class="n">Miniconda3</span><span class="o">-</span><span class="n">latest</span><span class="o">-</span><span class="n">Linux</span><span class="o">-</span><span class="n">x86_64</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">sudo</span> <span class="n">chmod</span> <span class="o">+</span><span class="n">x</span> <span class="n">Miniconda3</span><span class="o">-</span><span class="n">latest</span><span class="o">-</span><span class="n">Linux</span><span class="o">-</span><span class="n">x86_64</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">sudo</span> <span class="n">bash</span> <span class="n">Miniconda3</span><span class="o">-</span><span class="n">latest</span><span class="o">-</span><span class="n">Linux</span><span class="o">-</span><span class="n">x86_64</span><span class="o">.</span><span class="n">sh</span>
+<span class="c1"># change location to /srv/miniconda3</span>
+<span class="n">sudo</span> <span class="n">su</span> <span class="o">-</span>
+<span class="n">conda</span> <span class="n">info</span>
+</pre></div>
+</div>
+</section>
+<section id="install-broker-for-testing">
+<h3>Install broker for testing<a class="headerlink" href="#install-broker-for-testing" title="Link to this heading"></a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For security, configure the firewall to only allow inbound requests from specific IP addresses,
+especially before starting any network services like the broker.</p>
+</div>
+<p><strong>Install Docker</strong></p>
+<p>From <a class="reference external" href="https://docs.docker.com/engine/install/debian/#install-using-the-repository">https://docs.docker.com/engine/install/debian/#install-using-the-repository</a> :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo &quot;deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+https://download.docker.com/linux/debian \
+$(. /etc/os-release &amp;&amp; echo &quot;$VERSION_CODENAME&quot;) stable&quot; | \
+sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo docker run hello-world
+</pre></div>
+</div>
+<p><strong>Install BrokerIO</strong></p>
+<p><strong>Using PyPI</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">brokerio</span>
+</pre></div>
+</div>
+<p>And run it using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brokerio</span> <span class="n">broker</span> <span class="n">start</span> <span class="o">--</span><span class="n">db_url</span> <span class="s2">&quot;http://localhost:8529&quot;</span> <span class="o">--</span><span class="n">redis_url</span> <span class="s2">&quot;redis://localhost:6379&quot;</span> <span class="o">--</span><span class="n">port</span> <span class="mi">4852</span>
+</pre></div>
+</div>
+<p>For more info run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brokerio</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p><strong>Or manually install it yourself</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">git</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">UKPLab</span><span class="o">/</span><span class="n">CARE_broker</span><span class="o">.</span><span class="n">git</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">brokerio</span>
+<span class="n">cd</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">brokerio</span>
+<span class="n">docker</span> <span class="n">compose</span> <span class="o">-</span><span class="n">f</span> <span class="n">docker</span><span class="o">-</span><span class="n">compose</span><span class="o">.</span><span class="n">yml</span> <span class="o">-</span><span class="n">p</span> <span class="s2">&quot;brokerio&quot;</span> <span class="n">up</span> <span class="o">--</span><span class="n">build</span> <span class="o">-</span><span class="n">d</span>
+<span class="n">docker</span> <span class="n">ps</span>
+</pre></div>
+</div>
+<p>The broker should now be running on <code class="docutils literal notranslate"><span class="pre">127.0.0.1:4852</span></code>.</p>
+</section>
+<section id="important-shelve-instance">
+<h3>IMPORTANT! Shelve Instance<a class="headerlink" href="#important-shelve-instance" title="Link to this heading"></a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>To save money, after usage the server shut be shelved.</p>
+</div>
+<ol class="arabic simple">
+<li><p>Open the OpenStack Dashboard (<cite>https://create.leaf.cloud/</cite>)</p></li>
+<li><p>Click on <strong>Compute → Instances</strong> and select the <strong>Study Server</strong></p></li>
+<li><p>On the right is the <strong>Actions Panel</strong>, click the small arrow</p></li>
+<li><p>Click on <strong>Shelve Instance</strong></p></li>
+</ol>
+<p>The instance status should be <strong>Shelved Offloaded</strong> now! Make sure this is the status.</p>
+<p>If you want to use the instance again, click in the same <strong>Actions</strong> panel on  <strong>Unshelve Instance</strong>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="study_deployment.html" class="btn btn-neutral float-left" title="Study Deployment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../editor_usage.html" class="btn btn-neutral float-right" title="Quill Editor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
