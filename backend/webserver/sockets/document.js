@@ -9,6 +9,7 @@ const {enqueueDocumentTask} = require("../../utils/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
 const {Op} = require('sequelize');
+const {generateError} = require("../../utils/generic.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -95,20 +96,12 @@ class DocumentSocket extends Socket {
 
         // Check if document exists in database (deleted or never existed)
         if (!document || document.deleted) {
-            errorCode = "DOCUMENT_NOT_FOUND";
-            errorMessage = "The document does not exist or has been deleted."
-            const error = new Error(`${errorMessage}`)
-            error.code = errorCode;
-            throw error;
+            throw generateError("DOCUMENT_NOT_FOUND", "The document does not exist or has been deleted.");
         }
 
         // Check user access permission
         if (!(await this.checkDocumentAccess(document.id))) {
-            errorCode = "ACCESS_DENIED";
-            errorMessage = "You do not have access to this document."
-            const error = new Error(`${errorMessage}`)
-            error.code = errorCode;
-            throw error;
+            throw generateError("ACCESS_DENIED", "You do not have access to this document.");
         }
 
         // Check if file exists on disk (optional, skip for metadata-only operations)
@@ -116,11 +109,7 @@ class DocumentSocket extends Socket {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             const filename = filePath.split("/").pop();
             if (!fs.existsSync(filePath)) {
-                errorCode = "FILE_MISSING";
-                errorMessage = `The document file ${filename} is missing from the server.`
-                const error = new Error(`${errorMessage}`)
-                error.code = errorCode;
-                throw error;
+                throw generateError("FILE_MISSING", `The document file ${filename} is missing from the server.`)
             }
         }
         return document;

@@ -4,6 +4,7 @@ const database = require("../../db");
 const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/data.js");
 const {mergeInjects} = require("../../utils/data");
+const {generateError} = require("../../utils/generic.js");
 
 /**
  * Send data for building the frontend app
@@ -295,11 +296,7 @@ class AppSocket extends Socket {
 
         if (!record) {
             // Record doesn't exist or was deleted
-            errorCode = "NOT_FOUND";
-            errorMessage = "The requested resource does not exist or has been deleted.";
-            const error = new Error(`${errorMessage}`);
-            error.code = errorCode;
-            throw error;
+            throw generateError("NOT_FOUND", "The requested resource does not exist or has been deleted.");
         }
 
         // Now check permissions by attempting to send via filtered sendTable
@@ -310,11 +307,7 @@ class AppSocket extends Socket {
 
         if (result.length === 0) {
             // Record exists but user doesn't have permission
-            errorCode = "ACCESS_DENIED";
-            errorMessage = "You do not have rights to access this data.";
-            const error = new Error(`${errorMessage}`);
-            error.code = errorCode;
-            throw error;
+            throw generateError("ACCESS_DENIED", "You do not have rights to access this data.");
         }
     }
 
