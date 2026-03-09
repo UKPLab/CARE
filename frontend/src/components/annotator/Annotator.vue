@@ -8,7 +8,7 @@
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="d-flex flex-grow-1 overflow-hidden top-padding">
         <div
-            id="viewerContainer"
+            :id="'viewerContainer-' + documentId"
             ref="viewer"
             class="flex-grow-1 border mh-100 justify-content-center p-3"
             style="overflow-y: scroll;"
@@ -123,7 +123,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
-      showAllDocumentAnnotations: computed(() => this.showAllDocumentAnnotations),
+      showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
   },
   inject: {
@@ -210,7 +210,10 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    showAllDocumentAnnotations(){
+    computedReadOnly() {
+      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+    },
+    showDefaultAllAnnotations(){
       return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
@@ -482,7 +485,8 @@ export default {
       //Todo get current page in a better way
       const container = this.$refs.viewer;
       if (!container) return 1;
-      const pages = container.querySelectorAll('.scrolling-page');
+      const pages = container.querySelectorAll('.scrolling-page' );
+      console.log("pages", pages);
       if (!pages || pages.length === 0) return 1;
       let bestIndex = 0;
       let bestDist = Infinity;
@@ -498,7 +502,7 @@ export default {
       return bestIndex + 1; // pages are 1-based
     },
     isPdfPageLoaded(pageNumber) {
-      const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+      const canvas = document.getElementById('pdf-canvas-' + pageNumber + '-' + this.documentId);
       const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
       const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
       const loaded = (visible && hasDimensions);
@@ -526,7 +530,7 @@ export default {
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['table/annotation/get'](annotationId);
-      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer');
+      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer-' + this.documentId);
       const hasAnchors = Array.isArray(annotation.anchors) && annotation.anchors.length > 0;
       if (hasAnchors) {
         const anchor = annotation.anchors[0];
@@ -589,7 +593,7 @@ export default {
         return null;
       }
       const highlight = anchor.highlights[0];
-      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
+      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer' + '-' + this.documentId));
     },
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();

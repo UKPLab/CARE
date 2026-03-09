@@ -130,7 +130,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, BasicButton, BasicForm, ValidatorSelector, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}],
   data() {
     return {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Configure" }, { title: "Confirm" }, { title: "Result" }],
@@ -192,6 +192,10 @@ export default {
   computed: {
     stepValid() {
       return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, true];
+    },
+    currentProject() {
+      console.log("current project id", this.$store.getters["settings/getValueAsInt"]("projects.default"));
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
@@ -289,6 +293,7 @@ export default {
         {
           submissions: this.selectedSubmissions.map((s) => ({
             submissionId: s.submissionId,
+            projectId: this.currentProject,
             userId: s.userId,
             userExtId: s.userExtId,
             firstName: s.firstName,

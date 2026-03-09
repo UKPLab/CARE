@@ -48,10 +48,19 @@ class DocumentSocket extends Socket {
             return true;
         }
 
-        // check if the document is used in a study where the user is a participant
         const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
-        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_steps.map(step => step.studyId));
+        const study_ids = study_steps.map(step => step.studyId);
+        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_ids );
+        const studies = await this.models['study'].getAllByKey('id',study_ids);
 
+        // check if the document is used in a study where the user is the owner of the study
+        for (const study of studies) {
+            if (study.userId === this.userId) {
+                return true;
+            }
+        }
+        
+        // check if the document is used in a study where the user is a participant
         for (const session of study_sessions) {
             if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
                 return true;
@@ -815,13 +824,16 @@ class DocumentSocket extends Socket {
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
-
-                // 3. Only if validation passes, create submission and save documents
+                // 3. Get previous submission for the user and project to link the new submission (if exists)
+                const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+                // 4. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
+                        previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                        projectId: submission.projectId,
                         group: data.group,
                         validationConfigurationId: data.validationConfigurationId,
                     },
@@ -889,7 +901,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId} = data;
+        const {files, userId, group, validationConfigurationId, projectId} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -897,12 +909,14 @@ class DocumentSocket extends Socket {
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
             }
+            const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
 
             const submission = await this.models["submission"].add({
                 userId,
                 group,
                 validationConfigurationId,
-                createdByUserId: this.userId
+                createdByUserId: this.userId,
+                previousSubmissionId: previousSubmission ? previousSubmission.id : null,
             }, {transaction});
             for (const file of files) {
                 await this.addDocument(

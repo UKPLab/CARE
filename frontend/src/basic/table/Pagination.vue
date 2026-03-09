@@ -1,6 +1,6 @@
 <template>
   <div class="container ">
-    <div class="row justify-content-md-end mb-2">
+    <div class="row justify-content-md-end align-items-center">
       <div
         v-if="totalItems > 0"
         class="col-md-auto"
@@ -9,8 +9,6 @@
           {{ rangeText }}
         </span>
       </div>
-    </div>
-    <div class="row justify-content-md-end">
       <div
         v-if="itemsPerPageListSelect.length > 0"
         class="col-md-auto">

@@ -74,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
          * ], transaction);
          */
         static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, filters = null, transaction) {
-            
+
             // Build where clause: start with documentId
             const whereClause = {
                 documentId: originalDocumentId,
@@ -110,7 +110,12 @@ module.exports = (sequelize, DataTypes) => {
                 const newDataEntries = originalDataEntries.map(entry => ({
                     ...entry,
                     documentId: duplicateDocumentId, // Set to the new duplicated document ID
-                    updatedAt: new Date()
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    studySessionId: null,
+                    studyStepId: null,
+                    id: undefined,
+                    deletedAt: undefined,
                 }));
                 await this.bulkCreate(newDataEntries, {transaction});
             }
