@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - main
+      - fix-114-documentation
   pull_request:
 
 env:
@@ -46,7 +47,7 @@ jobs:
   deploy_docs:
     runs-on: ubuntu-latest
     needs: build
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/fix-114-documentation') && github.event_name == 'push'
     permissions:
       contents: read
       pages: write
