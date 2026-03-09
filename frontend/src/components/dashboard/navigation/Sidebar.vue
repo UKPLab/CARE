@@ -1,7 +1,6 @@
 <template>
   <Loading v-if="sidebarElements > 0 || sidebarGroups > 0 "/>
-  <div
-v-else
+  <div v-else
     id="wrapper"
     class="nav-container"
   >

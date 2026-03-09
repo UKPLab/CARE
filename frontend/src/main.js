@@ -15,7 +15,7 @@ const app = Vue.createApp({
 });
 
 // activate devtools in development mode
- 
+// eslint-disable-next-line no-undef
 if (process.env.NODE_ENV !== 'production') {
     app.config.devtools = true;
 }
@@ -37,7 +37,7 @@ app.use(BToastPlugin);
 import getServerURL from '@/assets/serverUrl.js';
 
 const socketio = new VueSocketIO({
-     
+    // eslint-disable-next-line no-undef
     debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),
         {

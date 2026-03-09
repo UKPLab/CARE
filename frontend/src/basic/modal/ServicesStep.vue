@@ -58,6 +58,16 @@ export default {
     SkillSelector,
     InputMap,
   },
+  props: {
+    modelValue: {
+      type: Object,
+      required: true,
+    },
+    currentStepperStep: {
+      type: Number,
+      required: true,
+    },
+  },
   inject: {
     studyStepId: {
       type: Number,
@@ -77,17 +87,6 @@ export default {
       default: false,
     },
   },
-  props: {
-    modelValue: {
-      type: Object,
-      required: true,
-    },
-    currentStepperStep: {
-      type: Number,
-      required: true,
-    },
-  },
-  emits: ["update:form-data", "validation-change"],
   data() {
     return {
       selectedSkills: this.modelValue?.services?.map((service) => {
@@ -108,6 +107,7 @@ export default {
       })
     };
   },
+  emits: ["update:form-data", "validation-change"],
   computed: {
 
     hasConfigServices() {

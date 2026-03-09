@@ -58,12 +58,6 @@ import {computed} from "vue";
 export default {
   name: "SideCard",
   components: {Loader},
-  provide() {
-    return {
-      listenOnActive: computed(() => this.checkFocus),
-      unlistenOnActive: computed(() => this.uncheckFocus),
-    }
-  },
   props: {
     collapsed: {
       type: Boolean,
@@ -79,6 +73,12 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    }
+  },
+  provide() {
+    return {
+      listenOnActive: computed(() => this.checkFocus),
+      unlistenOnActive: computed(() => this.uncheckFocus),
     }
   },
   data() {

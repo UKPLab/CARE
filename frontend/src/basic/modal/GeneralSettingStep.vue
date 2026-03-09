@@ -19,6 +19,13 @@ import BasicForm from "@/basic/Form.vue";
 export default {
   name: "GeneralStep",
   components: { BasicForm },
+  props: {
+    modelValue: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    }
+  },
   inject: {
     studyStepId: {
       type: Number,
@@ -38,19 +45,7 @@ export default {
       default: false
     }
   },
-  props: {
-    modelValue: {
-      type: Object,
-      required: true,
-      default: () => ({})
-    }
-  },
   emits: ['update:formData', 'validation-change'],
-  data() {
-    return {
-      formData: this.modelValue?.settings || {}
-    };
-  },
   computed: {
     settings() {
       return this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings || [];
@@ -70,6 +65,11 @@ export default {
       });
       return fieldsValid;
     },
+  },
+  data() {
+    return {
+      formData: this.modelValue?.settings || {}
+    };
   },
   watch: {
     'modelValue.settings': {

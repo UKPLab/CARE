@@ -102,6 +102,18 @@ export default {
       currentData: [],
     }
   },
+  watch: {
+    currentData: {
+      handler() {
+        this.$emit("update:modelValue", this.currentData);
+      }, deep: true
+    },
+    modelValue: {
+      handler() {
+        this.currentData = (this.modelValue) ? this.modelValue : [];
+      }, deep: true
+    }
+  },
   computed: {
     fields() {
       return this.$store.getters["table/" + this.options.options.table + "/getFields"];
@@ -120,18 +132,6 @@ export default {
         d => d[this.options.options.id] === this.options.options.value
       );
     },
-  },
-  watch: {
-    currentData: {
-      handler() {
-        this.$emit("update:modelValue", this.currentData);
-      }, deep: true
-    },
-    modelValue: {
-      handler() {
-        this.currentData = (this.modelValue) ? this.modelValue : [];
-      }, deep: true
-    }
   },
   mounted() {
     this.currentData = (this.modelValue) ? this.modelValue : [];

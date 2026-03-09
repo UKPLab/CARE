@@ -7,7 +7,7 @@
       <BasicSidebar
           v-if="!sidebarDisabled"
           ref="sidebar"
-          :is-shown="isShown"
+          :isShown="isShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"

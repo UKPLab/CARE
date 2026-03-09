@@ -155,9 +155,6 @@ export default {
   name: "StudyModal",
   subscribeTable: ["study_session"],
   components: {Loader, BasicTable, Modal, Editor},
-  inject: {
-    acceptStats: {default: () => false},
-  },
   props: {
     studyId: {
       type: Number,
@@ -174,6 +171,9 @@ export default {
     }
   },
   emits: ["start", "finish"],
+  inject: {
+    acceptStats: {default: () => false},
+  },
   data() {
     return {
       hash: null,

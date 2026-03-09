@@ -180,12 +180,6 @@ export default {
       return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
   },
-  mounted() {
-    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
-  },
-  beforeUnmount() {
-    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
-  },
   methods: {
     selectProject(projectId) {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
@@ -227,6 +221,12 @@ export default {
         dropdownElement.classList.add("show");
       }
     },
+  },
+  mounted() {
+    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
 }
 
