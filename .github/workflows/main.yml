@@ -60,6 +60,22 @@ jobs:
         run: |
           mkdir -p publish/${{ github.ref_name }}
           cp -r docs/build/html/. publish/${{ github.ref_name }}/
+          cat > publish/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=./main/">
+            <title>Redirecting to CARE documentation</title>
+            <script>
+              window.location.replace("./main/");
+            </script>
+          </head>
+          <body>
+            <p>Redirecting to <a href="./main/">main documentation</a>...</p>
+          </body>
+          </html>
+          EOF
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
