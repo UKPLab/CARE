@@ -61,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
             key: "configuration",
             label: "Configuration:",
             placeholder: "Enter JSON configuration for this step",
-            type: "editor",
+            type: "json",
             required: false,
             default: "",
             help: "Additional configuration settings for this workflow step in JSON format."
