@@ -11,21 +11,21 @@
       <div class="d-grid gap-2">
         <BasicButton
           class="btn btn-outline-primary"
-            title="JSON Format"
-            iconName="filetype-json"
+          title="JSON Format"
+          text="JSON Format"
+          icon="filetype-json"
           @click="selectFormat('json')"
         >
-          <LoadIcon icon-name="filetype-json" class="me-2" />
           JSON Format
           <small class="d-block text-muted">Standard JSON format with proper formatting</small>
         </BasicButton>
         <BasicButton
           class="btn btn-outline-primary"
           title="YAML Format"
-          iconName="filetype-yml"
+          text="YAML Format"
+          icon="filetype-yml"
           @click="selectFormat('yaml')"
         >
-          <LoadIcon icon-name="filetype-yml" class="me-2" />
           YAML Format  
           <small class="d-block text-muted">Human-readable YAML format</small>
         </BasicButton>
@@ -58,8 +58,14 @@ export default {
   name: "ExportFormatModal",
   components: { BasicModal, BasicButton, LoadIcon },
   emits: ['formatSelected'],
+  data() {
+    return {
+      workflowId: null,
+    };
+  },
   methods: {
-    open() {
+    open(id = null) {
+      this.workflowId = id;
       this.$refs.modal.open();
     },
     close() {
@@ -81,7 +87,7 @@ export default {
       ];
       
       const workflows = this.$store.getters["table/workflow/getFiltered"](
-        (w) => !w.deleted
+        (w) => !w.deleted && (this.workflowId === null || w.id === this.workflowId)
       ).map(w => {
             return Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key)));
       });
@@ -100,11 +106,13 @@ export default {
         };
       });
 
-      const filename = `workflows_${Date.now()}`;
+      const filename = this.workflowId
+        ? `workflow_${this.workflowId}_${Date.now()}`
+        : `workflows_${Date.now()}`;
       downloadObjectsAs(workflowsWithSteps, filename, format);
       this.eventBus.emit("toast", {
         title: "Export Successful",
-        message: `Workflows exported successfully in ${format.toUpperCase()} format`,
+        message: `Workflow${this.workflowId ? '' : 's'} exported successfully in ${format.toUpperCase()} format`,
         variant: "success",
       });
     },

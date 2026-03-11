@@ -47,7 +47,6 @@
   />
   <ExportFormatModal
     ref="exportFormatModal"
-    @formatSelected="downloadWorkflowsWithFormat"
   />
   <ImportFormatModal
     ref="importFormatModal"
@@ -178,6 +177,18 @@ export default {
           },
         },
         {
+          title: "export Workflow",
+          action: "exportWorkflow",
+          stats: { workflowId: "id" },
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-primary": true,
+            },
+          },
+        },
+        {
           title: "Toggle Hidden",
           action: "toggleHidden",
           stats: { workflowId: "id" },
@@ -225,6 +236,9 @@ export default {
           break;
         case "copyWorkflow":
           this.$refs.workflowCreateModal.copy(data.params.id);
+          break;
+        case "exportWorkflow":
+          this.$refs.exportFormatModal.open(data.params.id);
           break;
         case "toggleHidden":
           this.toggleHidden(data.params);
