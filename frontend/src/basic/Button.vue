@@ -1,6 +1,6 @@
 <template>
   <button
-    :title="title"
+    :title="tooltip || title"
     :disabled="disabled"
     class="btn"
     type="button"
@@ -37,6 +37,11 @@ export default {
       default: null
     },
     title: {
+      type: String,
+      required: false,
+      default: null
+    },
+    tooltip: {
       type: String,
       required: false,
       default: null

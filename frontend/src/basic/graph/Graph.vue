@@ -8,14 +8,14 @@
             <BasicButton
               class="btn border-0"
               icon="info-circle"
-              title="Inspect node"
+              tooltip="Inspect node"
               :disabled="!activateEditNode"
               @click="inspectNode(selectedNodes[0])"
             />
             <BasicButton
               class="btn border-0"
               icon="copy"
-              title="Copy node"
+              tooltip="Copy node"
               :disabled="!activateEditNode"
               @click="copyNode(selectedNodes[0])"
             />
@@ -25,7 +25,7 @@
                 class="btn border-0"
                 :rotate-icon="180"
                 icon="node-plus"
-                title="Add node before"
+                tooltip="Add node before"
                 :disabled="!activateAddNode"
                 @click="addNodePrevious(selectedNodes[0])"
               />
@@ -33,20 +33,20 @@
                 class="btn border-0"
                 :disabled="!activateAddNode"
                 icon="node-plus"
-                title="Add node after"
+                tooltip="Add node after"
                 @click="addNodeAfter(selectedNodes[0])"
               />
               <BasicButton
                 class="btn border-0"
                 icon="dash-circle"
-                title="Remove node"
+                tooltip="Remove node"
                 :disabled="!activateRemoveNode"
                 @click="removeNode(selectedNodes[0])"
               />
               <BasicButton
                 class="btn border-0"
                 icon="pencil"
-                title="Edit node"
+                tooltip="Edit node"
                 :disabled="!activateEditNode"
                 @click="editNode(selectedNodes[0])"
               />
@@ -55,7 +55,7 @@
                   class="btn border-0"
                   :disabled="!activatePasteNode"
                   icon="clipboard"
-                  title="Paste copied node"
+                  tooltip="Paste copied node"
                   @click="togglePasteOptions"
                 />
                 <!-- Paste Options Modal -->
@@ -64,13 +64,13 @@
                     class="btn border-0"
                     :rotate-icon="180"
                     icon="node-plus"
-                    title="Paste before selected node"
+                    tooltip="Paste before selected node"
                     @click="pasteNodeBefore(selectedNodes[0])"
                   />
                   <BasicButton
                     class="btn border-0"
                     icon="node-plus"
-                    title="Paste after selected node"
+                    tooltip="Paste after selected node"
                     @click="pasteNodeAfter(selectedNodes[0])"
                   />
                 </div>
