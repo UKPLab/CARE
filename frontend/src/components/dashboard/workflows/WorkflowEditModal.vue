@@ -58,6 +58,15 @@ import Graph from "@/basic/graph/Graph.vue";
 import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
 import WorkflowStepInspectModal from "@/basic/graph/WorkflowStepInspectModal.vue";
 
+function getColorForStepType(stepType) {
+  switch (stepType) {
+    case 1: return '#4e79a7'; // Annotater - blue
+    case 2: return '#59a14f'; // Editor - green
+    case 3: return '#f28e2b'; // Modal - orange
+    default: return '#6c757d';
+  }
+}
+
 /**
  * Workflow Edit Modal Component
  * 
@@ -164,6 +173,7 @@ export default {
           name: step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`,
           next: sortedSteps[index + 1] || null,
           previous: sortedSteps[index - 1] || null,
+          color: getColorForStepType(step.stepType),
           data: {
             id: step.id,
             name: step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`,

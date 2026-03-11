@@ -177,7 +177,10 @@ export default {
         node: {
           selectable: 1,
           draggable: false,
-          normal: { radius: nodeSize / 2 },
+          normal: {
+            radius: nodeSize / 2,
+            color: (node) => node.color || '#6c757d',
+          },
         },
         edge: {
           marker: {
