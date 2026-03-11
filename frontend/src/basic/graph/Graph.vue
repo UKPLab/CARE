@@ -3,60 +3,84 @@
     <template #element>
       <div class="card border-1 text-start rounded-0 w-100">
         <div class="d-flex justify-content-between align-items-center p-1 card-header">
-          <span v-if="editable" class="text-start">
+          <span class="text-start">
+            <!-- Always visible: inspect and copy -->
             <BasicButton
               class="btn border-0"
-              :rotate-icon="180"
-              icon="node-plus"
-              :disabled="!activateAddNode"
-              @click="addNodePrevious(selectedNodes[0])"
-            />
-            <BasicButton
-              class="btn border-0"
-              :disabled="!activateAddNode"
-              icon="node-plus"
-              @click="addNodeAfter(selectedNodes[0])"
-            />
-            <BasicButton
-              class="btn border-0"
-              icon="dash-circle"
-              :disabled="!activateRemoveNode"
-              @click="removeNode(selectedNodes[0])"
-            />
-            <BasicButton
-              class="btn border-0"
-              icon="pencil"
+              icon="info-circle"
+              title="Inspect node"
               :disabled="!activateEditNode"
-              @click="editNode(selectedNodes[0])"
+              @click="inspectNode(selectedNodes[0])"
             />
             <BasicButton
               class="btn border-0"
               icon="copy"
+              title="Copy node"
               :disabled="!activateEditNode"
               @click="copyNode(selectedNodes[0])"
             />
-            <div class="position-relative d-inline-block" v-if="activatePasteNode">
+            <!-- Edit mode buttons -->
+            <template v-if="editable">
               <BasicButton
                 class="btn border-0"
-                :disabled="!activatePasteNode"
-                icon="clipboard"
-                @click="togglePasteOptions"
+                :rotate-icon="180"
+                icon="node-plus"
+                title="Add node before"
+                :disabled="!activateAddNode"
+                @click="addNodePrevious(selectedNodes[0])"
               />
-              <!-- Paste Options Modal -->
-              <div v-if="showPasteOptions" class="paste-options-modal">
+              <BasicButton
+                class="btn border-0"
+                :disabled="!activateAddNode"
+                icon="node-plus"
+                title="Add node after"
+                @click="addNodeAfter(selectedNodes[0])"
+              />
+              <BasicButton
+                class="btn border-0"
+                icon="dash-circle"
+                title="Remove node"
+                :disabled="!activateRemoveNode"
+                @click="removeNode(selectedNodes[0])"
+              />
+              <BasicButton
+                class="btn border-0"
+                icon="pencil"
+                title="Edit node"
+                :disabled="!activateEditNode"
+                @click="editNode(selectedNodes[0])"
+              />
+              <div class="position-relative d-inline-block" v-if="activatePasteNode">
                 <BasicButton
                   class="btn border-0"
-                  :rotate-icon="180"
-                  icon="node-plus"
-                  @click="pasteNodeBefore(selectedNodes[0])"
+                  :disabled="!activatePasteNode"
+                  icon="clipboard"
+                  title="Paste copied node"
+                  @click="togglePasteOptions"
                 />
-                <BasicButton
-                  class="btn border-0"
-                  icon="node-plus"
-                  @click="pasteNodeAfter(selectedNodes[0])"
-                />
+                <!-- Paste Options Modal -->
+                <div v-if="showPasteOptions" class="paste-options-modal">
+                  <BasicButton
+                    class="btn border-0"
+                    :rotate-icon="180"
+                    icon="node-plus"
+                    title="Paste before selected node"
+                    @click="pasteNodeBefore(selectedNodes[0])"
+                  />
+                  <BasicButton
+                    class="btn border-0"
+                    icon="node-plus"
+                    title="Paste after selected node"
+                    @click="pasteNodeAfter(selectedNodes[0])"
+                  />
+                </div>
               </div>
-            </div>
+            </template>
+            <!-- Readonly indicator -->
+            <span v-else class="badge text-bg-secondary ms-1 align-middle d-inline-flex align-items-center gap-1">
+              <BasicIcon icon-name="lock-fill" :size="12" color="#fff" />
+              You cannot edit this graph
+            </span>
           </span>
         </div>
         <div class="card-body">
@@ -140,7 +164,7 @@ export default {
       default: true,
     }
   },
-  emits: ["update:node", "delete:node", "add:nodeAfter", "add:nodePrevious", "copy:node", "paste:nodeBefore", "paste:nodeAfter"],
+  emits: ["update:node", "delete:node", "add:nodeAfter", "add:nodePrevious", "copy:node", "paste:nodeBefore", "paste:nodeAfter", "inspect:node"],
   data() {
     return {
       selectedNodes: [],
@@ -298,6 +322,9 @@ export default {
     },
     editNode(id) {
       this.$emit("update:node", id);
+    },
+    inspectNode(id) {
+      this.$emit("inspect:node", id);
     },
     copyNode(id) {
       this.$emit("copy:node", id);
