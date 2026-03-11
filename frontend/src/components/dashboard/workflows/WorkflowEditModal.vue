@@ -19,12 +19,14 @@
           @delete:node="deleteWorkflowStep"
           @add:nodeAfter="addWorkflowStepAfter"
           @add:nodePrevious="addWorkflowStepPrevious"
-          @copy:node="copyWorkflowStep">
+          @copy:node="copyWorkflowStep"
+          @inspect:node="inspectWorkflowStep">
           <template #nodeEditor>
             <WorkflowStepEditor 
               ref="nodeEditor"
               @update:node="success"
             />
+            <WorkflowStepInspectModal ref="stepInspectModal" />
           </template>
         </Graph>
 
@@ -54,6 +56,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Graph from "@/basic/graph/Graph.vue";
 import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
+import WorkflowStepInspectModal from "@/basic/graph/WorkflowStepInspectModal.vue";
 
 /**
  * Workflow Edit Modal Component
@@ -71,6 +74,7 @@ export default {
     BasicButton,
     Graph,
     WorkflowStepEditor,
+    WorkflowStepInspectModal,
   },
   data() {
     return {
@@ -215,6 +219,11 @@ export default {
         default:
           return "Annotater"; // Default to annotater
       }
+    },
+    inspectWorkflowStep(id) {
+      const node = this.workflowGraphData?.nodes?.[id];
+      if (!node) return;
+      this.$refs.stepInspectModal.open(node.data, this.workflowGraphData.nodes);
     },
     copyWorkflowStep(id) {
       const selectedNode = this.workflowGraphData.nodes[id];
