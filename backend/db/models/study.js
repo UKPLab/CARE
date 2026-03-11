@@ -42,9 +42,9 @@ module.exports = (sequelize, DataTypes) => {
                 name: "name",
                 value: "id",
                 filter: [
-                    {
-                        key: "hideInFrontend", value: false
-                    }
+                    {key: "hideInFrontend", value: false },
+                    {key: "userId", value: null},
+                    {type: "byUserId", key: "userId"}
                 ]
             },
             icon: "list",
