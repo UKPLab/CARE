@@ -1,9 +1,5 @@
 <template>
-  <BasicCoordinator ref="coordinator" table="workflow_step" title="Workflow Step" @success="success">
-    <template #success>
-      The workflow step has been successfully saved.
-    </template>
-  </BasicCoordinator>
+  <BasicCoordinator ref="coordinator" table="workflow_step" title="Workflow Step" no-success-message @success="success" />
 </template>
 
 <script>
