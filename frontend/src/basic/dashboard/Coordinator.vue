@@ -136,6 +136,11 @@ export default {
       required: false,
       default: false,
     },
+    noSuccessMessage: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["submit", "success"],
   data() {
@@ -241,8 +246,12 @@ export default {
       this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
-      this.success = true;
       this.$refs.coordinatorModal.waiting = false;
+      if (this.noSuccessMessage) {
+        this.$refs.coordinatorModal.close();
+      } else {
+        this.success = true;
+      }
     },
     reset() {
       this.$refs.coordinatorModal.waiting = false;
