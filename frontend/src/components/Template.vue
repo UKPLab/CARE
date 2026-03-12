@@ -24,6 +24,7 @@
   
   export default {
     name: "TemplateRoute",
+    subscribeTable: ["template"],
     components: {Loader, Editor},
     props: {
       'templateId': {
