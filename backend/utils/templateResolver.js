@@ -40,7 +40,7 @@ function textToDelta(text) {
 
 /**
  * Build replacement map from context data. When context.templateType is set,
- * queries the template_placeholder_mapping table to determine which placeholders are allowed for that type.
+ * queries the placeholder table to determine which placeholders are allowed for that type.
  *
  * @param {Object} context - Context object (userId, creatorId, studyId, studySessionId, studySessionHash, baseUrl, link, assignmentType, assignmentName, templateType)
  * @param {Object} models - Database models
@@ -53,7 +53,7 @@ async function buildReplacementMap(context, models, options = {}) {
 
     let allowed = null;
     if (templateType != null) {
-        const rows = await models["template_placeholder_mapping"].getAllByKey("templateType", templateType, options);
+        const rows = await models["placeholder"].getAllByKey("type", templateType, options);
         allowed = rows.map(row => row.placeholderKey);
     }
 
@@ -129,7 +129,7 @@ async function shouldAnonymize(studyId, models, options = {}) {
 }
 
 /**
- * Get template content (Delta) for a given template and language from template_language_content.
+ * Get template content (Delta) for a given template and language from template_content.
  * Falls back to template.defaultLanguage if the requested language has no row.
  *
  * @param {number} templateId - Template ID
@@ -139,7 +139,7 @@ async function shouldAnonymize(studyId, models, options = {}) {
  * @returns {Promise<Object>} Content object with ops array, or null if no row exists
  */
 async function getTemplateContentForLanguage(templateId, language, models, options = {}) {
-    const Tlc = models["template_language_content"];
+    const Tlc = models["template_content"];
     if (!Tlc) {
         return null;
     }
@@ -153,7 +153,7 @@ async function getTemplateContentForLanguage(templateId, language, models, optio
 
 /**
  * Resolve template placeholders and return HTML string
- * Content is loaded from template_language_content by (templateId, context.language or template.defaultLanguage).
+ * Content is loaded from template_content by (templateId, context.language or template.defaultLanguage).
  *
  * @param {number} templateId - Template ID to resolve
  * @param {Object} context - Context object containing:
@@ -166,7 +166,7 @@ async function getTemplateContentForLanguage(templateId, language, models, optio
  * @throws {Error} If template not found or resolution fails
  * @todo Localize resolved content per recipient: at call sites (emailHelper, auth, study_session, assignment, study),
  *       set context.language from the recipient's preferred language or study/session locale so the resolver picks
- *       the matching template_language_content row (e.g. send German template to German users). Currently call sites
+ *       the matching template_content row (e.g. send German template to German users). Currently call sites
  *       do not set context.language, so everyone receives template.defaultLanguage.
  */
 async function resolveTemplate(templateId, context, models, options = {}) {
@@ -232,7 +232,7 @@ async function resolveTemplate(templateId, context, models, options = {}) {
 
 /**
  * Resolve template placeholders and return Quill Delta object
- * Content is loaded from template_language_content by (templateId, context.language or template.defaultLanguage).
+ * Content is loaded from template_content by (templateId, context.language or template.defaultLanguage).
  *
  * @param {number} templateId - Template ID to resolve
  * @param {Object} context - Context object (same as resolveTemplate; may include language)
@@ -324,7 +324,7 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
  * @returns {Promise<string[]>} Array of missing required placeholder keys (e.g. ['link'])
  */
 async function getMissingRequiredPlaceholders(content, templateType, models, options = {}) {
-    const rows = await models["template_placeholder_mapping"].getAllByKey("templateType", templateType, options);
+    const rows = await models["placeholder"].getAllByKey("type", templateType, options);
     const requiredKeys = rows.filter((r) => r.required === true).map((r) => r.placeholderKey);
     if (requiredKeys.length === 0) return [];
 

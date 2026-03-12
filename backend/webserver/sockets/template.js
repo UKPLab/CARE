@@ -49,7 +49,7 @@ class TemplateSocket extends Socket {
 
     const template = await this.models["template"].add(templatePayload, { transaction: options.transaction });
 
-    await this.models["template_language_content"].add(
+    await this.models["template_content"].add(
       {
         templateId: template.id,
         language: defaultLanguage,
@@ -65,7 +65,7 @@ class TemplateSocket extends Socket {
    * Get template content (deltas) for editor
    *
    * Fetches the template and returns its content as Quill Delta format for the given language.
-   * - For owners: returns stable content from template_language_content composed with draft edits (like documents)
+   * - For owners: returns stable content from template_content composed with draft edits (like documents)
    * - For non-owners: returns only stable content (no drafts)
    *
    * @socketEvent templateGetContent
@@ -92,7 +92,7 @@ class TemplateSocket extends Socket {
       throw new Error("You can only view templates that you own or published templates from others");
     }
 
-    const langRow = await this.models["template_language_content"].findOne({
+    const langRow = await this.models["template_content"].findOne({
       where: { templateId: data.templateId, language: data.language, deleted: false },
       raw: true,
       ...options,
@@ -128,7 +128,7 @@ class TemplateSocket extends Socket {
    * Save template content edits (deltas) to template_edit table
    *
    * Saves content edits as draft edits in template_edit table for the given language.
-   * Drafts are merged into template_language_content when the editor is closed.
+   * Drafts are merged into template_content when the editor is closed.
    * Users can only edit content of their own templates.
    *
    * @socketEvent templateEditContent
@@ -261,14 +261,14 @@ class TemplateSocket extends Socket {
     }
 
     const payload = {
-      templateType: data.templateType,
+      type: data.templateType,
       placeholderKey: data.placeholderKey,
       placeholderLabel: data.placeholderLabel,
       placeholderType: data.placeholderType,
       required: data.required ?? false,
     };
 
-    return await this.models["template_placeholder_mapping"].add(
+    return await this.models["placeholder"].add(
       payload,
       { transaction: options.transaction }
     );
@@ -300,7 +300,7 @@ class TemplateSocket extends Socket {
       throw new Error("No fields to update");
     }
 
-    return await this.models["template_placeholder_mapping"].updateById(
+    return await this.models["placeholder"].updateById(
       data.id,
       updateData,
       { transaction: options.transaction }
@@ -334,8 +334,8 @@ class TemplateSocket extends Socket {
       throw new Error("Access denied: You can only view placeholders for templates that you own or published templates from others");
     }
 
-    return await this.models["template_placeholder_mapping"].getAllByKey(
-      "templateType",
+    return await this.models["placeholder"].getAllByKey(
+      "type",
       template.type,
       { transaction: options.transaction }
     );
@@ -365,7 +365,7 @@ class TemplateSocket extends Socket {
       throw new Error("You can only view templates that you own or published templates from others");
     }
 
-    const rows = await this.models["template_language_content"].findAll({
+    const rows = await this.models["template_content"].findAll({
       where: { templateId: data.templateId, deleted: false },
       attributes: ["language"],
       raw: true,
@@ -378,7 +378,7 @@ class TemplateSocket extends Socket {
   /**
    * Create or ensure a language content row for a template (for "add language" in editor)
    *
-   * When the user adds a new language, creates a row in template_language_content.
+   * When the user adds a new language, creates a row in template_content.
    * If content is provided (copy-from-current case), uses that content; otherwise creates empty content.
    *
    * @socketEvent templateAddLanguageContent
@@ -402,7 +402,7 @@ class TemplateSocket extends Socket {
       throw new Error("You can only add language content to templates that you own");
     }
 
-    const Tlc = this.models["template_language_content"];
+    const Tlc = this.models["template_content"];
     const existing = await Tlc.findOne({
       where: { templateId: data.templateId, language: data.language, deleted: false },
       raw: true,
@@ -427,7 +427,7 @@ class TemplateSocket extends Socket {
    * Resolve template placeholders with context data
    *
    * Resolves all placeholders in a template using the provided context data.
-   * Uses context.language or template.defaultLanguage to pick content from template_language_content.
+   * Uses context.language or template.defaultLanguage to pick content from template_content.
    * Returns resolved content as HTML string or Quill Delta object.
    *
    * @socketEvent templateResolve
@@ -481,10 +481,10 @@ class TemplateSocket extends Socket {
   }
 
   /**
-   * Save template by merging draft edits into template_language_content for the given language
+   * Save template by merging draft edits into template_content for the given language
    *
    * Merges all draft edits (draft=true) from template_edit for (templateId, language) into
-   * the content row in template_language_content, then marks edits as draft=false.
+   * the content row in template_content, then marks edits as draft=false.
    * Called when the editor is closed or when switching language.
    *
    * @param {number} templateId            Template ID to save
@@ -512,7 +512,7 @@ class TemplateSocket extends Socket {
 
     if (edits.length === 0) {
       if ([1, 2, 3, 6].includes(template.type)) {
-        const Tlc = this.models["template_language_content"];
+        const Tlc = this.models["template_content"];
         const langRow = await Tlc.findOne({
           where: { templateId, language, deleted: false },
           raw: true,
@@ -538,7 +538,7 @@ class TemplateSocket extends Socket {
       return;
     }
 
-    const Tlc = this.models["template_language_content"];
+    const Tlc = this.models["template_content"];
     const langRow = await Tlc.findOne({
       where: { templateId, language, deleted: false },
       raw: true,
