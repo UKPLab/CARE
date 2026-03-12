@@ -159,7 +159,7 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Copy a published template for a different user.
          * Creates a new template row with sourceId linking to the original,
-         * and copies all template_language_content rows.
+         * and copies all template_content rows.
          *
          * @param {number} sourceTemplateId - The ID of the source template to copy
          * @param {number} userId - The ID of the user creating the copy
@@ -216,8 +216,11 @@ module.exports = (sequelize, DataTypes) => {
                 { transaction }
             );
 
-            // Copy all template_language_content rows
+            // Copy all template_content rows
             await Template.copyLanguageContent(source.id, copiedTemplate.id, options);
+
+            // Copy full edit history snapshot from source into the new copy
+            await Template.copyEditHistory(source.id, copiedTemplate.id, options);
 
             // When force=true ("Make new copy"), bump updatedAt on existing copies of this source
             // so their status goes back to "Copy" (no longer "Update available")
@@ -250,19 +253,52 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<void>}
          */
         static async copyLanguageContent(sourceTemplateId, targetTemplateId, options = {}) {
-            const rows = await sequelize.models.template_language_content.findAll({
+            const rows = await sequelize.models.template_content.findAll({
                 where: { templateId: sourceTemplateId, deleted: false },
                 raw: true,
                 transaction: options.transaction,
             });
 
             for (const row of rows) {
-                await sequelize.models.template_language_content.add({
+                await sequelize.models.template_content.add({
                     templateId: targetTemplateId,
                     language: row.language,
                     content: row.content,
                 }, { transaction: options.transaction });
             }
+        }
+
+        /**
+         * Copy all template_edit history rows from one template to another.
+         *
+         * Clones non-deleted template edit rows so that the target template has the same
+         * edit history snapshot as the source at the time of copying.
+         *
+         * @param {number} sourceTemplateId - Source template ID
+         * @param {number} targetTemplateId - Target template ID
+         * @param {Object} options 
+         * @returns {Promise<void>}
+         */
+        static async copyEditHistory(sourceTemplateId, targetTemplateId, options = {}) {
+            const transaction = options.transaction;
+
+            const rows = await sequelize.models.template_edit.findAll({
+                where: { templateId: sourceTemplateId, deleted: false },
+                raw: true,
+                transaction,
+            });
+
+            if (!rows || rows.length === 0) {
+                return;
+            }
+
+            const newRows = rows.map((row) => ({
+                ...row,
+                id: undefined,
+                templateId: targetTemplateId,
+            }));
+
+            await sequelize.models.template_edit.bulkCreate(newRows, { transaction });
         }
 
         /**
@@ -276,7 +312,7 @@ module.exports = (sequelize, DataTypes) => {
         static async updateFromSource(copyId, options = {}) {
             const { Op } = require("sequelize");
             const transaction = options.transaction;
-            const Tlc = sequelize.models.template_language_content;
+            const Tlc = sequelize.models.template_content;
 
             const copy = await Template.findByPk(copyId, { transaction });
             if (!copy || !copy.sourceId) {
@@ -337,6 +373,8 @@ module.exports = (sequelize, DataTypes) => {
                 { where: { templateId: copyId }, transaction }
             );
 
+            await Template.copyEditHistory(source.id, copyId, options);
+
             // 5. Sync metadata and touch updatedAt — use instance-level save to ensure DB persistence and hook trigger
             const copyInstance = await Template.findByPk(copyId, { transaction });
             copyInstance.defaultLanguage = source.defaultLanguage;
@@ -374,9 +412,9 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         static associate(models) {
-            Template.hasMany(models["template_language_content"], {
+            Template.hasMany(models["template_content"], {
                 foreignKey: "templateId",
-                as: "template_language_contents",
+                as: "template_contents",
             });
         }
     }
