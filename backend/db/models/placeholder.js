@@ -3,10 +3,10 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
   /**
-   * Template Placeholder Mapping model
-   * Stores placeholder definitions for template types
+   * Placeholder model
+   * Stores placeholder definitions for different placeholders (e.g. template placeholders).
    */
-  class TemplatePlaceholderMapping extends MetaModel {
+  class Placeholder extends MetaModel {
     static autoTable = true;
 
     /**
@@ -19,9 +19,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  TemplatePlaceholderMapping.init(
+  Placeholder.init(
     {
-      templateType: DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       placeholderKey: DataTypes.STRING,
       placeholderLabel: DataTypes.STRING,
       placeholderDescription: DataTypes.TEXT,
@@ -34,10 +34,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "template_placeholder_mapping",
-      tableName: "template_placeholder_mapping",
+      modelName: "placeholder",
+      tableName: "placeholder",
     }
   );
 
-  return TemplatePlaceholderMapping;
+  return Placeholder;
 };
+

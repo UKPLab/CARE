@@ -2,24 +2,24 @@
 const MetaModel = require("../MetaModel.js");
 
 /**
- * TemplateLanguageContent model for storing template content per language.
+ * TemplateContent model for storing template content per language.
  * Each row holds content for one (templateId, language) pair.
  * Draft edits for a language are merged into this content when the editor is closed.
  *
  */
 module.exports = (sequelize, DataTypes) => {
-  class TemplateLanguageContent extends MetaModel {
+  class TemplateContent extends MetaModel {
     static autoTable = false;
 
     static associate(models) {
-      TemplateLanguageContent.belongsTo(models["template"], {
+      TemplateContent.belongsTo(models["template"], {
         foreignKey: "templateId",
         as: "template",
       });
     }
   }
 
-  TemplateLanguageContent.init(
+  TemplateContent.init(
     {
       templateId: DataTypes.INTEGER,
       language: DataTypes.STRING,
@@ -31,10 +31,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "template_language_content",
-      tableName: "template_language_content",
+      modelName: "template_content",
+      tableName: "template_content",
     }
   );
 
-  return TemplateLanguageContent;
+  return TemplateContent;
 };
+

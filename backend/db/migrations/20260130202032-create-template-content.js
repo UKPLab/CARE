@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Create template_language_content table for multi-language template content.
+ * Create template_content table for multi-language template content.
  *
  * @type {import('sequelize-cli').Migration}
  */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('template_language_content', {
+    await queryInterface.createTable('template_content', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -51,17 +51,17 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('template_language_content', ['templateId', 'language'], {
+    await queryInterface.addIndex('template_content', ['templateId', 'language'], {
       unique: true,
-      name: 'template_language_content_template_id_language_unique',
+      name: 'template_content_template_id_language_unique',
     });
   },
 
   async down(queryInterface) {
     await queryInterface.removeIndex(
-      'template_language_content',
-      'template_language_content_template_id_language_unique'
+      'template_content',
+      'template_content_template_id_language_unique'
     );
-    await queryInterface.dropTable('template_language_content');
+    await queryInterface.dropTable('template_content');
   },
 };
