@@ -183,7 +183,9 @@ export default {
               [nameKey]: `${t.name} (document template)`,
               id: `template:${t.id}`,
               name: `${t.name} (document template)`,
-              value: `template:${t.id}`
+              value: `template:${t.id}`,
+              isTemplateOption: true,
+              templateId: t.id,
             };
           });
         

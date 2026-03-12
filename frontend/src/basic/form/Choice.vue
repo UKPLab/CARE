@@ -311,10 +311,45 @@ export default {
       if (index >= 0 && index < this.currentData.length) {
         // Create a new array to trigger the watcher
         const updatedCurrentData = [...this.currentData];
-        updatedCurrentData[index] = {
-          ...updatedCurrentData[index],
-          [fieldKey]: value,
-        };
+
+        const currentEntry = updatedCurrentData[index] || {};
+        const currentConfig = currentEntry.configuration || {};
+
+        // Special handling for documentId field: detect document templates and
+        // store the selected template ID in the per-step configuration while
+        // keeping documentId null so the backend creates a new document from a template.
+        if (fieldKey === 'documentId') {
+          let nextDocumentId = value;
+          let nextConfig = { ...currentConfig };
+
+          if (typeof value === 'string' && value.startsWith('template:')) {
+            const templateId = parseInt(value.replace('template:', ''), 10);
+            if (!Number.isNaN(templateId)) {
+              nextConfig = {
+                ...nextConfig,
+                documentTemplateId: templateId,
+              };
+            }
+            nextDocumentId = null;
+          } else {
+            // Non-template selection: clear any previous template reference in configuration.
+            if ('documentTemplateId' in nextConfig) {
+              const { documentTemplateId, ...rest } = nextConfig;
+              nextConfig = rest;
+            }
+          }
+
+          updatedCurrentData[index] = {
+            ...currentEntry,
+            documentId: nextDocumentId,
+            configuration: nextConfig,
+          };
+        } else {
+          updatedCurrentData[index] = {
+            ...currentEntry,
+            [fieldKey]: value,
+          };
+        }
 
         this.currentData = updatedCurrentData;
       }
