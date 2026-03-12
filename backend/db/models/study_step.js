@@ -2,7 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
-const {resolveTemplateToDelta} = require("../../utils/templateResolver");
+const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
@@ -106,15 +106,6 @@ module.exports = (sequelize, DataTypes) => {
                     ? sequelize.models.document.docTypes.DOC_TYPE_HTML
                     : sequelize.models.document.docTypes.DOC_TYPE_MODAL;
 
-                // Check if documentId is a template selection (format: "template:123")
-                if (typeof data.documentId === 'string' && data.documentId.startsWith('template:')) {
-                    const stepTemplateId = parseInt(data.documentId.replace('template:', ''));
-                    data.documentId = null;
-                    if (options.context) {
-                        options.context.documentTemplateId = stepTemplateId;
-                    }
-                }
-
                 if (data.documentId === null) { // Create a new document
 
                     const newDocument = await sequelize.models.document.add({
@@ -188,23 +179,17 @@ module.exports = (sequelize, DataTypes) => {
                     }
 
                     // Resolve Type 5 template at study creation time (per-step template selection)
-                    if (!documentCopied && options.context && options.context.documentTemplateId) {
-                        try {
-                            const baseUrl = await sequelize.models.setting.get("system.baseUrl") || "localhost:3000";
-                            
-                            const resolvedDelta = await resolveTemplateToDelta(
-                                options.context.documentTemplateId,
-                                {
-                                    baseUrl: baseUrl
-                                },
-                                sequelize.models,
-                                options
-                            );
-                            const deltaFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
-                            await fs.writeFile(deltaFilePath, JSON.stringify(resolvedDelta, null, 2));
-                        } catch (error) {
-                            console.error(`Failed to resolve template for study document creation:`, error);
-                        }
+                    const configuredTemplateId = data.configuration && data.configuration.documentTemplateId
+                        ? data.configuration.documentTemplateId
+                        : null;
+
+                    if (!documentCopied && configuredTemplateId) {
+                        await applyTemplateToDocument(
+                            newDocument,
+                            configuredTemplateId,
+                            sequelize.models,
+                            {transaction: options.transaction}
+                        );
                     }
 
                     data.documentId = newDocument.id;

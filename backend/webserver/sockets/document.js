@@ -9,7 +9,7 @@ const {enqueueDocumentTask} = require("../../utils/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
 const {Op} = require('sequelize');
-const {resolveTemplateToDelta} = require("../../utils/templateResolver");
+const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -309,31 +309,12 @@ class DocumentSocket extends Socket {
 
         // If templateId provided and document is HTML/MODAL type, resolve template and write content
         if (data.templateId && (doc.type === docTypes.DOC_TYPE_HTML || doc.type === docTypes.DOC_TYPE_MODAL)) {
-            try {
-                // Get baseUrl from settings for template resolution
-                const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
-                
-                // Resolve template to Delta
-                const resolvedDelta = await resolveTemplateToDelta(
-                    data.templateId,
-                    {
-                        baseUrl: baseUrl
-                    },
-                    this.models,
-                    options
-                );
-
-                // Overwrite the empty delta file with resolved content
-                const deltaFilePath = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
-                fs.writeFileSync(deltaFilePath, JSON.stringify(resolvedDelta, null, 2));
-
-                // Note: For Type 4 documents, the resolved template content is written to the delta file.
-                // No document_edit entry is needed - the delta file IS the base content.
-                // User edits will be stored as draft:true edits and composed on top of this delta file.
-            } catch (error) {
-                this.server.logger.error(`Failed to resolve template for document creation:`, error);
-                // Continue with empty document if template resolution fails
-            }
+            await applyTemplateToDocument(
+                doc,
+                data.templateId,
+                this.models,
+                {transaction: options.transaction, logger: this.server.logger}
+            );
         } 
 
         options.transaction.afterCommit(() => {
