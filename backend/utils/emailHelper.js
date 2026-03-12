@@ -5,6 +5,8 @@ const { resolveTemplate } = require("./templateResolver");
  * Get email content from template or fallback to hardcoded text
  * (Same pattern as auth.js getEmailContent)
  *
+ * @author Mohammad Elwan
+ *
  * @param {string} settingKey - Setting key for template ID (e.g., "email.template.sessionStart")
  * @param {string} fallbackSubject - Fallback email subject
  * @param {string} fallbackBody - Fallback email body (HTML/text)
