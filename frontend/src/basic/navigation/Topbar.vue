@@ -1,7 +1,7 @@
 <template>
   <div
-    ref="topbar"
     id="wrapper"
+    ref="topbar"
     class="nav-container"
   >
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
@@ -45,9 +45,9 @@
               "
             >
               <div
-                @click.stop="toggleProjectDropdown"
                 class="project-box"
                 :title="`Project: ${currentProjectName}`"
+                @click.stop="toggleProjectDropdown"
               >
                 <span class="project-text">Project: {{ currentProjectName }}</span>
               </div>

@@ -21,7 +21,7 @@
             Please select a valid document type.
           </div>
           <label class="form-label mt-3">Name of the document:</label>
-          <input class="form-control" name="file" type="text" v-model="name"
+          <input v-model="name" class="form-control" name="file" type="text"
                  @keyup.enter="create"/>
         </div>
       </div>
