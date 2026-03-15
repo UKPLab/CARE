@@ -29,7 +29,7 @@
             class="form-select form-select-sm"
             name="templateId"
           >
-            <option value="">None (create empty document)</option>
+            <option :value="0">None (create empty document)</option>
             <option 
               v-for="template in documentTemplates" 
               :key="template.id" 
@@ -70,11 +70,12 @@ import Modal from "@/basic/Modal.vue";
 export default {
   name: "DocumentCreateModal",
   components: {Modal},
+  subscribeTable: ["template"],
   data() {
     return {
       name: "",
       documentType: 1, // Default for General HTML document type
-      templateId: "", // Optional template ID
+      templateId: 0, // 0 = no template
     };
   },
   computed: {
@@ -96,7 +97,7 @@ export default {
     open() {
       this.name = "";
       this.documentType = 1; // Reset to default type
-      this.templateId = ""; // Reset template selection
+      this.templateId = 0; // Reset template selection
       this.$refs.createModal.openModal();
     },
     create() {
@@ -112,15 +113,11 @@ export default {
       this.$refs.createModal.waiting = true;
 
       const createData = {
-        type: this.documentType, 
+        type: this.documentType,
         name: this.name,
         projectId: this.selectedProjectId,
+        templateId: this.templateId,
       };
-
-      // Add templateId only if selected
-      if (this.templateId && this.templateId !== "") {
-        createData.templateId = parseInt(this.templateId);
-      }
 
       this.$socket.emit("documentCreate", createData, (res) => {
         if (res.success) {

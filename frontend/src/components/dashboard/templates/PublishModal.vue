@@ -65,6 +65,7 @@ Author: Mohammad Elwan
 export default {
   name: "PublishModal",
   components: {Modal, BasicButton},
+  subscribeTable: ["template"],
   inject: {
     acceptStats: {
       default: () => false

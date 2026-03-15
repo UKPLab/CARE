@@ -66,6 +66,7 @@ import EditorModal from "@/basic/editor/Modal.vue";
 export default {
   name: "SettingItem",
   components: { LoadIcon, EditorModal },
+  subscribeTable: ["template"],
   props: {
     group: Object,
     title: String

@@ -41,6 +41,7 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "PublicTemplatesModal",
   components: { Modal, BasicTable, BasicButton },
+  subscribeTable: ["template"],
   data() {
     return {
       tableOptions: {
