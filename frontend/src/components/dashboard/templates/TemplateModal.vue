@@ -134,9 +134,22 @@
             });
             this.$refs.coordinator.close();
             
-            // Route to editor after creation
+            // Route to editor after creation. Wait for templateRefresh to be applied so the editor has the template in the store when it mounts.
             if (!isEdit && result.data && result.data.id) {
-              this.$router.push(`/template/${result.data.id}`);
+              const id = result.data.id;
+              const get = () => this.$store.getters["table/template/get"](id);
+              const go = () => this.$router.push(`/template/${id}`);
+              if (get()) {
+                go();
+                return;
+              }
+              const deadline = Date.now() + 2000;
+              const waitThenGo = () => {
+                if (get()) { go(); return; }
+                if (Date.now() < deadline) setTimeout(waitThenGo, 25);
+                else go();
+              };
+              this.$nextTick(() => setTimeout(waitThenGo, 0));
             }
           } else {
             this.$refs.coordinator.waiting = false;
