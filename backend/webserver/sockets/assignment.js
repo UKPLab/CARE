@@ -613,15 +613,7 @@ class AssignmentSocket extends Socket {
         // Get email content from template or fallback. Set context.link so ~link~ resolves to /session/ for the reviewer.
         const emailContent = await getEmailContent(
             "email.template.assignment",
-            "CARE - New Review Assignment",
-            `Hello,
-
-You have been assigned a new review task: ${assignmentContext.assignmentName || study.name}
-
-Click here to start: ${assignmentLink}
-
-Best regards,
-The CARE Team`,
+            "assignment",
             {
                 userId: studySession.userId,
                 creatorId: study.userId,

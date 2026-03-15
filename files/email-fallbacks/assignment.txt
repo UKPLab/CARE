@@ -1,0 +1,10 @@
+CARE - New Review Assignment
+
+Hello,
+
+You have been assigned a new review task: {{assignmentName}}
+
+Click here to start: {{link}}
+
+Best regards,
+The CARE Team

@@ -9,6 +9,7 @@
 const passport = require('passport');
 const { generateToken, decodeToken } = require('../../utils/auth');
 const { resolveTemplate } = require('../../utils/templateResolver');
+const { getEmailFallbackContent } = require('../../utils/emailHelper');
 
 
 /**
@@ -88,26 +89,20 @@ module.exports = function (server) {
      * @param {string} context.link - Link for placeholder resolution
      * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML
      */
-    async function getEmailContent(settingKey, fallbackSubject, fallbackBody, context) {
+    async function getEmailContent(settingKey, fallbackKey, context) {
         try {
             const templateIdStr = await server.db.models['setting'].get(settingKey);
-            
-            // If no template configured or empty, use fallback
+
+            // If no template configured or empty, use fallback from disk
             if (!templateIdStr || templateIdStr === "" || templateIdStr === "0") {
-                return {
-                    subject: fallbackSubject,
-                    body: fallbackBody,
-                    isHtml: false
-                };
+                const fallback = await getEmailFallbackContent(fallbackKey, context);
+                return { subject: fallback.subject, body: fallback.body, isHtml: false };
             }
             
             const templateId = parseInt(templateIdStr);
             if (isNaN(templateId) || templateId <= 0) {
-                return {
-                    subject: fallbackSubject,
-                    body: fallbackBody,
-                    isHtml: false
-                };
+                const fallback = await getEmailFallbackContent(fallbackKey, context);
+                return { subject: fallback.subject, body: fallback.body, isHtml: false };
             }
             
             // Resolve template
@@ -120,22 +115,19 @@ module.exports = function (server) {
                     link: context.link 
                 },
                 server.db.models,
-                context.options || {} 
+                context.options || {}
             );
-            
-            return {
-                subject: fallbackSubject, // Keep same subject for now (could be from template later)
-                body: resolvedHtml,
-                isHtml: true
-            };
+            const fallback = await getEmailFallbackContent(fallbackKey, context);
+            return { subject: fallback.subject, body: resolvedHtml, isHtml: true };
         } catch (error) {
             server.logger.error(`Failed to resolve template for ${settingKey}:`, error);
-            // Fallback to hardcoded text on error
-            return {
-                subject: fallbackSubject,
-                body: fallbackBody,
-                isHtml: false
-            };
+            try {
+                const fallback = await getEmailFallbackContent(fallbackKey, context);
+                return { subject: fallback.subject, body: fallback.body, isHtml: false };
+            } catch (fallbackError) {
+                server.logger.error(`Failed to read email fallback ${fallbackKey}:`, fallbackError);
+                throw error;
+            }
         }
     }
 
@@ -302,21 +294,14 @@ module.exports = function (server) {
                 
                 const emailContent = await getEmailContent(
                     "email.template.registration",
-                    "Welcome to CARE - Please verify your email address", 
-                    `Welcome to CARE, ${data.userName}! You've successfully registered a new account.
-
-To complete your registration, please verify your email address by clicking the link below:
-${verificationLink}
-
-This link will expire in ${tokenExpiry} hours. If you didn't create a CARE account, you can safely ignore this email.
-
-Thanks,
-The CARE Team`,
+                    "registration",
                     {
                         userId: newUser.id,
                         baseUrl: baseUrl,
                         link: verificationLink,
-                        options: { transaction: transaction } 
+                        userName: data.userName,
+                        tokenExpiry,
+                        options: { transaction: transaction },
                     }
                 );
                 
@@ -381,22 +366,13 @@ The CARE Team`,
             
             const emailContent = await getEmailContent(
                 "email.template.passwordReset",
-                "CARE Password Reset Request",
-                `Hello ${user.userName},
-
-We received a request to reset the password for your CARE account.
-
-To set a new password, please click the link below:
-${resetLink}
-
-This link will expire in ${tokenExpiry} hours. If you didn't request a password reset, you can safely ignore this email and your account will remain secure.
-
-Thanks,
-The CARE Team`,
+                "passwordReset",
                 {
                     userId: user.id,
                     baseUrl: baseUrl,
-                    link: resetLink
+                    link: resetLink,
+                    userName: user.userName,
+                    tokenExpiry,
                 }
             );
             
@@ -593,20 +569,13 @@ The CARE Team`);
             
             const emailContent = await getEmailContent(
                 "email.template.verification",
-                "CARE - Please verify your email address",
-                `Welcome back to CARE, ${user.userName}!
-
-To complete your email verification, please click the link below:
-${verificationLink}
-
-This link will expire in ${tokenExpiry} hours. If you didn't request this verification email, you can safely ignore this email.
-
-Thanks,
-The CARE Team`,
+                "verification",
                 {
                     userId: user.id,
                     baseUrl: baseUrl,
-                    link: verificationLink
+                    link: verificationLink,
+                    userName: user.userName,
+                    tokenExpiry,
                 }
             );
             

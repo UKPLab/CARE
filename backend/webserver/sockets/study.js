@@ -108,13 +108,7 @@ class StudySocket extends Socket {
 
                     const emailContent = await getEmailContent(
                         "email.template.studyClosed",
-                        "CARE - Study Closed",
-                        `Hello,
-
-The study "${study.name}" has been closed.
-
-Best regards,
-The CARE Team`,
+                        "studyClosed",
                         {
                             userId: sessionOwnerId,
                             studyId: study.id,

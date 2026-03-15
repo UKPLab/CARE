@@ -100,15 +100,7 @@ class StudySessionSocket extends Socket {
         const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
         const emailContent = await getEmailContent(
             "email.template.sessionStart",
-            "CARE - Review Session Started",
-            `Hello,
-
-A review session has started for your submission.
-
-You will be notified when the review is complete.
-
-Best regards,
-The CARE Team`,
+            "sessionStart",
             {
                 userId: study.userId,
                 creatorId: study.userId,
@@ -154,22 +146,15 @@ The CARE Team`,
         // Get email content from template or fallback
         const emailContent = await getEmailContent(
             "email.template.sessionFinish",
-            "CARE - Review Session Completed",
-            `Hello,
-
-A review session has been completed for your submission.
-
-You can view the review here: ${reviewLink}
-
-Best regards,
-The CARE Team`,
+            "sessionFinish",
             {
                 userId: study.userId,
                 creatorId: study.userId,
                 studyId: study.id,
                 studySessionId: studySession.id,
                 studySessionHash: studySession.hash,
-                baseUrl: baseUrl
+                baseUrl: baseUrl,
+                reviewLink
             },
             this.models,
             this.logger
