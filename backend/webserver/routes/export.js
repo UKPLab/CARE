@@ -10,24 +10,31 @@ module.exports = function (server) {
         if (!currentUserId) {
             return res.status(401).send("Log in required");
         }
+        const currentUser = await server.db.models.user.findByPk(currentUserId);
+        if (!currentUser) return res.status(401).send("User not found");
+
+        let isAdmin = false;
+        try {
+            const roleIds = await server.db.models["user_role_matching"].getUserRolesById(currentUserId);
+            isAdmin = await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
+        } catch (error) {
+            console.warn(`Could not check admin status for user ${currentUserId}:`, error);
+        }
+        if (!isAdmin) {
+            parsedUserIds = [currentUserId];
+        }
 
         try {
-            const currentUser = await server.db.models.user.findByPk(currentUserId);
-            if (!currentUser) return res.status(401).send("User not found");
-
             const { projectId, exportType, userIds = [] } = req.body;
-            
-            let parsedUserIds = Array.isArray(userIds) ? userIds : [];
-
-            let isAdmin = false;
-            try {
-                const roleIds = await server.db.models["user_role_matching"].getUserRolesById(currentUserId);
-                isAdmin = await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
-            } catch (error) {
-                console.warn(`Could not check admin status for user ${userId}:`, error);
-            }
-            if (!isAdmin) {
-                parsedUserIds = [currentUserId];
+            let parsedUserIds = [];
+            if (userIds) {
+                try {
+                    parsedUserIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
+                    if (!Array.isArray(parsedUserIds)) parsedUserIds = [];
+                } catch (e) {
+                    console.warn("Could not parse userIds:", userIds);
+                    parsedUserIds = [];
+                }
             }
 
             const projectCheck = await server.db.models.project.findOne({
@@ -37,16 +44,28 @@ module.exports = function (server) {
             });
 
             if (!projectCheck) {
-                console.warn(`User ${userId} tried to export Project ${projectId} without access.`);
+                console.warn(`User ${currentUserId} tried to export Project ${projectId} without access.`);
                 return res.status(403).send("Forbidden: You do not have access to this project.");
             }
 
-            const filename = `${exportType}_${new Date().getTime()}.zip`;
-            res.attachment(filename);
-            
-            res.set('Access-Control-Expose-Headers', 'Content-Disposition');
+            const users = await server.db.models['user'].findAll({
+                where: { id: parsedUserIds }
+            });
 
-            const archive = archiver('zip', { zlib: { level: 9 } });
+            const allowedUsers = users.filter(u => 
+                isAdmin || u.id === currentUserId
+            );
+            
+            const allowedUserIds = allowedUsers.map(u => u.id);
+            if (allowedUserIds.length === 0) {
+                console.warn(`Export aborted: None of the requested users have accepted data sharing.`);
+                return;
+            }
+
+            const exportFolderName = `${exportType}_${new Date().getTime()}.zip`;
+            res.attachment(exportFolderName);
+
+            const archive = archiver('zip', { zlib: { level: 5 } });
 
             archive.on('error', function(err) {
                 console.error("Archiver Error:", err);
@@ -57,29 +76,25 @@ module.exports = function (server) {
 
             switch (exportType) {
                 case 'submissions': { 
-                    const users = await server.db.models['user'].findAll({
-                        where: { id: parsedUserIds }
-                    });
-
-                    const allowedUsers = users.filter(u => 
-                        u.acceptDataSharing === true || u.id === userId
-                    );
-
-                    const allowedUserIds = allowedUsers.map(u => u.id);
-
-                    if (allowedUserIds.length === 0) {
-                        console.warn(`Export aborted: None of the requested users have accepted data sharing.`);
-                        archive.append('No users matched the criteria or consented to data sharing.', { name: 'export_info.txt' });
-                        break; 
-                    }
-
-                    const docs = await server.db.models['document'].findAll({
+                    const subs = await server.db.models['submission'].findAll({
                         where: { 
                             projectId, 
                             userId: allowedUserIds, 
-                            submissionId: { [server.db.Sequelize.Op.ne]: null }
+                            parentSubmissionId: { [server.db.Sequelize.Op.is]: null }
                         },
+                        include: [{
+                            model: server.db.models['document'],
+                            as: 'documents'
+                        }]
                     });
+
+                    const configIds = [...new Set(subs.map(s => s.validationConfigurationId).filter(id => id))];
+                    const configs = await server.db.models['configuration'].findAll({
+                        where: { id: configIds }
+                    });
+
+                    const configMap = new Map(configs.map(c => [c.id, c.content ? c.content.rules : null]));
+                    const subMap = new Map(subs.map(d => [d.id, d]));
 
                     const extensionMap = {
                         0: ".pdf",
@@ -87,17 +102,43 @@ module.exports = function (server) {
                         4: ".zip"
                     };
 
-                    for (const doc of docs) {
-                        const student = allowedUsers.find(u => u.id === doc.userId);
-                        if (student) {
+                    for (const sub of subs) {
+                        const student = allowedUsers.find(u => u.id === sub.userId);
+                        if (!student) continue;
+
+                        const validationRules = configMap.get(sub.validationConfigurationId);
+
+                        for (const doc of sub.documents) {
+                            let version = 1;
+                            let currentSub = sub;
+
+                            while(currentSub && currentSub.previousSubmissionId) {
+                                const prevSub = subMap.get(currentSub.previousSubmissionId);
+                                if (!prevSub) break;
+                                version++;
+                                currentSub = prevSub;
+                            }
+
                             const folderName = `${student.firstName} ${student.lastName}`;
                             const storageDir = path.join(__dirname, "..", "..", "..", "files");
                             const extension = extensionMap[doc.type] || "";
                             const filePath = path.join(storageDir, `${doc.hash}${extension}`);
 
+                            let exportName = doc.hash;
+                            const originalName = doc.originalFilename || `${doc.name}${extension}` || "";
+
+                            if (validationRules && validationRules.requiredFiles) {
+                                for (const rule of validationRules.requiredFiles) {
+                                    if (rule.exportName && new RegExp(rule.pattern, 'i').test(originalName)) {
+                                        exportName = rule.exportName;
+                                        break; 
+                                    }
+                                }
+                            }
+
                             if (fs.existsSync(filePath)) {
-                                const fileName = `${doc.name}${extension}`;
-                                archive.file(filePath, { name: `${folderName}/${fileName}` });
+                                const fileName = `${exportName}${extension}`;
+                                archive.file(filePath, { name: `${exportFolderName}/${folderName}/version_${version}/${fileName}` });
                             } else {
                                 console.error(`[NOT FOUND] Looking for: ${doc.hash} at ${filePath}`);
                             }

@@ -65,17 +65,30 @@
       </div>
       <div v-else-if="dataSelection.exportType === 'submissions'">
         <h6>Select Submissions to Download:</h6>
-    
+
+        <div v-if="submissionTableData.length > 0" class="mb-3" style="max-width: 300px;">
+          <b-form-select 
+            v-model="sharingFilter" 
+            :options="filterOptions"
+            size="sm"
+          ></b-form-select>
+        </div>
+
         <BasicTable
-          v-if="submissionTableData.length > 0"
+          v-if="filteredSubmissionTableData.length > 0"
           v-model="submissionSelection" 
           :columns="submissionTable.columns"
-          :data="submissionTableData"
+          :data="filteredSubmissionTableData"
           :options="submissionTable.options"
         />
 
         <div v-else class="alert alert-warning">
-          No submissions found for this project.
+          <span v-if="submissionTableData.length === 0">
+            No submissions found for this project.
+          </span>
+          <span v-else>
+            No submissions match your current filter.
+          </span>
         </div>
 
         <small class="text-muted">
@@ -144,7 +157,7 @@ import BasicLoading from "@/basic/Loading.vue";
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Mélissa Loew
  */
 export default {
   name: "ExportProjectModal",
@@ -182,7 +195,16 @@ export default {
       },
       filter: [],
       wait: false,
+
+      sharingFilter: 'all',
+      filterOptions: [
+        { value: 'all', text: 'Show All Students' },
+        { value: 'accepted', text: 'Only Accepted Data Sharing' },
+        { value: 'declined', text: 'Only Declined Data Sharing' }
+      ],
+
       submissionSelection: [],
+
       submissionTable: {
         options: {
           selectableRows: true,
@@ -194,7 +216,8 @@ export default {
         columns: [
           { name: "Student Name", key: "studentName", sortable: true },
           { name: "Files", key: "fileCount", sortable: true },
-          { name: "Submitted", key: "submissionDate", sortable: true }
+          { name: "Accepted Data Sharing", key: "acceptDataSharing", sortable: true },
+          { name: "Last Submitted", key: "lastSubmissionDate", sortable: true }
         ]
       }
     };
@@ -312,33 +335,54 @@ export default {
         return [];
       }
 
-      const projectDocs = this.documents.filter(doc => doc.projectId == this.dataSelection.projectId && doc.submissionId);
+      const projectDocs = this.documents.filter(doc => doc.projectId == this.dataSelection.projectId && doc.submissionId && !doc.parentSubmissionId);
       const submissionsByUser = {};
       projectDocs.forEach(doc => {
         const uid = doc.userId;
         if (!uid) return;
-        console.log(uid);
 
         let student = this.users.find(u => u.id === uid);
-
         if (!student && currentUser && currentUser.id === uid) {
           student = currentUser;
         }
 
-        if (student && student.acceptDataSharing) {
+        if (student) {
+          const currentDocDate = new Date(doc.createdAt);
+
           if (!submissionsByUser[uid]) {
             submissionsByUser[uid] = {
               userId: uid,
               studentName: `${student.firstName} ${student.lastName}`,
               fileCount: 0,
-              submissionDate: new Date(doc.createdAt).toISOString().slice(0, 19).replace('T', ' ')
+              acceptDataSharing: student.acceptDataSharing,
+              lastSubmissionDate: currentDocDate
             };
           }
           submissionsByUser[uid].fileCount++;
+
+          if (currentDocDate > submissionsByUser[uid].lastSubmissionDate) {
+            submissionsByUser[uid].lastSubmissionDate = currentDocDate;
+          }
         }
       });
-      return Object.values(submissionsByUser);
+      return Object.values(submissionsByUser).map(submission => ({
+        ...submission,
+        lastSubmissionDate: submission.lastSubmissionDate.toISOString().split('T')[0]
+      }));
     },
+    filteredSubmissionTableData() {
+      let data = this.submissionTableData;
+
+      if (this.sharingFilter === 'accepted') {
+        return data.filter(row => row.acceptDataSharing === true);
+      } 
+      
+      if (this.sharingFilter === 'declined') {
+        return data.filter(row => row.acceptDataSharing === false);
+      }
+
+      return data;
+    }
   },
   methods: {
     open(projectId) {
@@ -419,35 +463,11 @@ export default {
       try {
         const selectedUserIds = this.submissionSelection.map(row => row.userId);
 
-        const serverUrl = import.meta.env.VITE_APP_SERVER_URL || "";
-
-        const response = await fetch(`${serverUrl}/export/project/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', 
-          body: JSON.stringify({
-            projectId: this.dataSelection.projectId,
-            exportType: "submissions",
-            userIds: selectedUserIds
-          })
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'submissions',
+          userIds: selectedUserIds
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Server responded with ${response.status}: ${errorText}`);
-        }
-
-        const blob = await response.blob();
-
-        const disposition = response.headers.get('Content-Disposition');
-        let filename = 'submissions.zip';
-        if (disposition && disposition.includes('filename=')) {
-            filename = disposition.split('filename=')[1].replace(/"/g, '');
-        }
-
-        FileSaver.saveAs(blob, filename);
 
         this.wait = false;
         this.$refs.exportStepper.close();
@@ -563,6 +583,30 @@ export default {
 
       this.wait = false;
       this.$refs.exportStepper.close();
+    },
+    triggerStreamDownload(payload) {
+      const serverUrl = import.meta.env.VITE_APP_SERVER_URL || "";
+    
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `${serverUrl}/export/project/stream`;
+      form.style.display = 'none';
+
+      for (const [key, value] of Object.entries(payload)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        
+        input.value = (typeof value === 'object' && value !== null) 
+          ? JSON.stringify(value) 
+          : value;
+          
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
     }
   }
 }
