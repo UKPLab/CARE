@@ -139,11 +139,11 @@ async function shouldAnonymize(studyId, models, options = {}) {
  * @returns {Promise<Object>} Content object with ops array, or null if no row exists
  */
 async function getTemplateContentForLanguage(templateId, language, models, options = {}) {
-    const Tlc = models["template_content"];
-    if (!Tlc) {
+    const templateContentModel = models["template_content"];
+    if (!templateContentModel) {
         return null;
     }
-    const row = await Tlc.findOne({
+    const row = await templateContentModel.findOne({
         where: { templateId, language, deleted: false },
         raw: true,
         ...options,

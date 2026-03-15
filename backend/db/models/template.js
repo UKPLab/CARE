@@ -312,7 +312,7 @@ module.exports = (sequelize, DataTypes) => {
         static async updateFromSource(copyId, options = {}) {
             const { Op } = require("sequelize");
             const transaction = options.transaction;
-            const Tlc = sequelize.models.template_content;
+            const templateContentModel = sequelize.models.template_content;
 
             const copy = await Template.findByPk(copyId, { transaction });
             if (!copy || !copy.sourceId) {
@@ -325,7 +325,7 @@ module.exports = (sequelize, DataTypes) => {
             }
 
             // 1. Get all source language content
-            const sourceRows = await Tlc.findAll({
+            const sourceRows = await templateContentModel.findAll({
                 where: { templateId: source.id, deleted: false },
                 raw: true,
                 transaction,
@@ -333,17 +333,17 @@ module.exports = (sequelize, DataTypes) => {
 
             // 2. Update or add each language for the copy (avoids UNIQUE(templateId, language) violation)
             for (const row of sourceRows) {
-                const existing = await Tlc.findOne({
+                const existing = await templateContentModel.findOne({
                     where: { templateId: copyId, language: row.language },
                     transaction,
                 });
                 if (existing) {
-                    await Tlc.update(
+                    await templateContentModel.update(
                         { content: row.content, deleted: false, deletedAt: null },
                         { where: { id: existing.id }, transaction }
                     );
                 } else {
-                    await Tlc.add({
+                    await templateContentModel.add({
                         templateId: copyId,
                         language: row.language,
                         content: row.content,
@@ -354,7 +354,7 @@ module.exports = (sequelize, DataTypes) => {
             // 3. Mark copy rows for languages no longer in source as deleted
             const sourceLanguages = sourceRows.map((r) => r.language);
             if (sourceLanguages.length > 0) {
-                await Tlc.update(
+                await templateContentModel.update(
                     { deleted: true, deletedAt: new Date() },
                     {
                         where: {
