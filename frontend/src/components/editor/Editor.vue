@@ -198,7 +198,7 @@ export default {
     },
     template() {
       if (this.templateId && this.templateId > 0) {
-        return this.$store.getters["table/template/get"](this.templateId);
+        return this.$store.getters["table/template/get"](Number(this.templateId));
       }
       return null;
     },

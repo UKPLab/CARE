@@ -98,7 +98,7 @@
     },
     computed: {
       template() {
-        return this.$store.getters["table/template/get"](this.templateId);
+        return this.$store.getters["table/template/get"](Number(this.templateId));
       },
       templateType() {
         return this.template?.type || null;
