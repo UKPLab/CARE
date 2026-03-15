@@ -175,7 +175,7 @@ class TemplateSocket extends Socket {
       transaction: options.transaction,
     });
 
-    return { success: true };
+    return;
   }
 
 
@@ -402,8 +402,8 @@ class TemplateSocket extends Socket {
       throw new Error("You can only add language content to templates that you own");
     }
 
-    const Tlc = this.models["template_content"];
-    const existing = await Tlc.findOne({
+    const templateContentModel = this.models["template_content"];
+    const existing = await templateContentModel.findOne({
       where: { templateId: data.templateId, language: data.language, deleted: false },
       raw: true,
       ...options,
@@ -416,7 +416,7 @@ class TemplateSocket extends Socket {
       ? data.content
       : { ops: [{ insert: "\n" }] };
 
-    await Tlc.add(
+    await templateContentModel.add(
       { templateId: data.templateId, language: data.language, content },
       { transaction: options.transaction }
     );
@@ -512,8 +512,8 @@ class TemplateSocket extends Socket {
 
     if (edits.length === 0) {
       if ([1, 2, 3, 6].includes(template.type)) {
-        const Tlc = this.models["template_content"];
-        const langRow = await Tlc.findOne({
+        const templateContentModel = this.models["template_content"];
+        const langRow = await templateContentModel.findOne({
           where: { templateId, language, deleted: false },
           raw: true,
           ...options,
@@ -538,8 +538,8 @@ class TemplateSocket extends Socket {
       return;
     }
 
-    const Tlc = this.models["template_content"];
-    const langRow = await Tlc.findOne({
+    const templateContentModel = this.models["template_content"];
+    const langRow = await templateContentModel.findOne({
       where: { templateId, language, deleted: false },
       raw: true,
       ...options,
@@ -570,12 +570,12 @@ class TemplateSocket extends Socket {
 
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {
-      await Tlc.update(contentPayload, {
+      await templateContentModel.update(contentPayload, {
         where: { id: langRow.id },
         transaction: options.transaction,
       });
     } else {
-      await Tlc.add(
+      await templateContentModel.add(
         { templateId, language, content: contentPayload.content },
         { transaction: options.transaction }
       );
