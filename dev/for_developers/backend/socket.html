@@ -1922,6 +1922,31 @@ or a “toast” error message to the client.</p>
 </dl>
 </dd></dl>
 
+<dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.validateDocument">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">validateDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifierType=&quot;id&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkFile=true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.validateDocument" title="Link to this definition"></a></dt>
+<dd><p>Validate document existence and access
+Unified check for: 1) database record exists  2) user has access  3) file exists on disk</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>identifier</strong> (<strong>number|string</strong>) – documentId or documentHash</p></li>
+<li><p><strong>identifierType</strong> (<strong>string</strong>) – ‘id’ or ‘hash’</p></li>
+<li><p><strong>checkFile</strong> (<strong>boolean</strong>) – whether to check file existence (default: true)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – <ul class="simple">
+<li><p>if validation fails, with error.code set to the error code</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – - validated document object</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
