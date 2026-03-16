@@ -92,7 +92,7 @@ module.exports = function (server) {
             }
             
             // Check if email verification is required and if user has verified their email
-            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            const emailVerificationEnabled = String(await server.db.models['setting'].get("app.register.emailVerification")) === "true";
             if (emailVerificationEnabled && !user.emailVerified) {
                 return res.status(401).json({
                     message: "Please verify your email address before logging in.",
@@ -212,7 +212,7 @@ module.exports = function (server) {
             transaction = await server.db.models['user'].sequelize.transaction();
             
             // Check if email verification is enabled
-            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            const emailVerificationEnabled = String(await server.db.models['setting'].get("app.register.emailVerification")) === "true";
             
             const userData = {
                 firstName: data.firstName,
@@ -407,7 +407,7 @@ The CARE Team`);
     server.app.get('/verify-email', async function (req, res) {
         const {token} = req.query;
               
-        if(await server.db.models['setting'].get("app.register.emailVerification") !== "true") {
+        if(String(await server.db.models['setting'].get("app.register.emailVerification")) !== "true") {
             return res.status(400).send({message:"Email verification is disabled."});
         }
         if (!token) {
@@ -461,7 +461,7 @@ The CARE Team`);
         
         try {
             // Check if email verification is enabled
-            const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
+            const emailVerificationEnabled = String(await server.db.models['setting'].get("app.register.emailVerification")) === "true";
             if (!emailVerificationEnabled) {
                 return res.status(400).json({message: "Email verification is disabled."});
             }
