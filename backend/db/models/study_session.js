@@ -153,8 +153,11 @@ module.exports = (sequelize, DataTypes) => {
         sequelize: sequelize, modelName: 'study_session', tableName: 'study_session', hooks: {
             beforeCreate: async (studySession, options) => {
 
-                // check for study session availability
-                await StudySession.checkSessionAvailability(studySession.studyId, studySession.userId, options);
+                
+                if(studySession.parentStudySessionId === null){
+                    // check for study session availability
+                    await StudySession.checkSessionAvailability(studySession.studyId, studySession.userId, options);
+                }
 
                 // get first step
                 const firstStep = await sequelize.models.study_step.getFirstStep(studySession.studyId, {transaction:options.transaction});
@@ -167,8 +170,9 @@ module.exports = (sequelize, DataTypes) => {
             beforeUpdate: async (studySession, options) => {
                 // Check if study step changed
                 if (studySession._previousDataValues.studyStepId !== studySession.studyStepId) {
-                    await sequelize.models.study.checkStudyOpen(studySession.studyId);
-
+                    if(studySession.parentStudySessionId === null){
+                        await sequelize.models.study.checkStudyOpen(studySession.studyId, options);
+                    }
                     const studySteps = await sequelize.models.study_step.getAllByKey("studyId", studySession.studyId);
 
                     let stepInPreviousStepPath = false;
