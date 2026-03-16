@@ -323,21 +323,7 @@
                 message: "You can now edit this template",
                 variant: "success",
               });
-              const id = t.id;
-              const get = () => this.$store.getters["table/template/get"](id);
-              const go = () => this.$router.push(`/template/${id}`);
-              const isDetached = () => { const row = get(); return row && row.sourceId == null; };
-              if (isDetached()) {
-                go();
-                return;
-              }
-              const deadline = Date.now() + 2000;
-              const waitThenGo = () => {
-                if (isDetached()) { go(); return; }
-                if (Date.now() < deadline) setTimeout(waitThenGo, 25);
-                else go();
-              };
-              this.$nextTick(() => setTimeout(waitThenGo, 0));
+              this.$router.push(`/template/${t.id}`);
             } else {
               this.eventBus.emit("toast", {
                 title: "Detach failed",

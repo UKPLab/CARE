@@ -1,13 +1,13 @@
 <template>
-    <Loader
-      v-if="templateId === 0"
-      :loading="true"
-      class="pageLoader"
-    />
-    <span v-else>
-      <Editor ref="editor" :template-id="templateId"/>
-    </span>
-  </template>
+  <Loader
+    v-if="!template"
+    :loading="true"
+    class="pageLoader"
+  />
+  <span v-else>
+    <Editor ref="editor" :template-id="templateIdNum"/>
+  </span>
+</template>
   
   <script>
   /**
