@@ -184,8 +184,14 @@ export default {
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
     }
     if (this.modal) {
-      this.modal.hide();
+      try {
+        this.modal.dispose();
+      } catch (e) {
+        // Ignore errors during dispose - the modal may already be in an invalid state
+        console.error('[BasicModal] Error during modal dispose:', e.message);
+      }
     }
+    this.resumeParentModal();
   },
   sockets: {
     progressUpdate: function (data) {
