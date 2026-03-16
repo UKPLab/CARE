@@ -38,6 +38,8 @@ import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
 
+const dashboardModules = import.meta.glob("./dashboard/*.vue");
+
 export default {
   name: "DashboardRoute",
   subscribeTable: ["nav_element"],
@@ -78,9 +80,15 @@ export default {
         if (!hasAccess) {
           return NotFoundPage;
         }
-        
+
+        const modulePath = `./dashboard/${component.component}.vue`;
+        const loader = dashboardModules[modulePath];
+        if (!loader) {
+          return NotFoundPage;
+        }
+
         return defineAsyncComponent({
-          loader: () => import("./dashboard/" + component.component + ".vue"),
+          loader,
           loadingComponent: Loading,
           errorComponent: NotFoundPage,
         });

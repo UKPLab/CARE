@@ -153,22 +153,22 @@
     </span>
     <div class="btn-group">
       <button
-        class="btn btn-light btn-sm"
         v-if="showExtenderButton"
+        class="btn btn-light btn-sm"
         @click="maxComments+=5"
       >
         Show more
       </button>
       <button
-        class="btn btn-light btn-sm"
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
+        class="btn btn-light btn-sm"
         @click="maxComments=defaultNumComments"
       >
         Show less
       </button>
       <button
-        class="btn btn-light btn-sm"
         v-if="maxComments > defaultNumComments"
+        class="btn btn-light btn-sm"
         @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
       >
         Hide replies

@@ -140,8 +140,8 @@
             </Annotator>
 
             <Editor
-                ref="editor"
                 v-if="step.stepType === 2"
+                ref="editor"
                 :document-id="step.documentId"
                 :isShown="currentStudyStepId === step.id"
                 :study-step-id="step.id"

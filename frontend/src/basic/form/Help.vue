@@ -1,9 +1,9 @@
 <template>
   <span
     v-if="help"
+    ref="tooltip"
     class="btn btn-sm mt-0 pt-0"
     :title="help"
-    ref="tooltip"
     data-bs-html="true"
     data-bs-placement="top"
     data-bs-toggle="tooltip"
@@ -17,8 +17,6 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
-// as directive
-import { VBTooltip } from 'bootstrap-vue-3';
 
 /**
  * Show help icon with tooltip if help is provided.
