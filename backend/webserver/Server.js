@@ -436,7 +436,7 @@ module.exports = class Server {
                         if (email) {
                             user = await this.db.models['user'].findOne({ where: { email }, raw: true });
                             if (user) {
-                                await this.db.models['user'].update({ samlNameId: nameId }, { where: { id: user.id } });
+                                await this.db.models['user'].update({ samlNameId: nameId, email }, { where: { id: user.id } });
                                 user.samlNameId = nameId;
                             }
                         }
