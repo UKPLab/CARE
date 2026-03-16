@@ -385,6 +385,9 @@ export default {
     },
     studyClosed() {
       if (this.study) {
+        if(this.studySession?.parentStudySessionId !== null && this.studySession?.end === null){
+          return false;
+        }
         if (this.study.closed) {
           return true;
         }
