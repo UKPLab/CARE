@@ -32,7 +32,7 @@
         </div>
         <div v-else class="alert alert-success">
           <i class="bi bi-shield-check"></i>
-          <strong>Status:</strong> {{ enabledMethods.length }} method(s) enabled
+          Status: {{ enabledMethods.length }} method(s) enabled
         </div>
         <!-- Email 2FA Section -->
         <div class="method-section mb-4">

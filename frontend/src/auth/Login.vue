@@ -112,7 +112,7 @@
                   class="btn btn-outline-success btn-block"
                   @click="loginWithOrcid"
                 >
-                  Sign in with ORCID
+                  ORCID
                 </button>
                 <button
                   v-if="showLdapLogin"
@@ -120,7 +120,7 @@
                   class="btn btn-outline-secondary btn-block"
                   @click="toLdapLogin"
                 >
-                  Institutional login (LDAP)
+                  LDAP
                 </button>
                 <button
                   v-if="showSamlLogin"
@@ -128,7 +128,7 @@
                   class="btn btn-outline-dark btn-block"
                   @click="loginWithSaml"
                 >
-                  Sign in with SAML
+                  SSO
                 </button>
               </div>
             </div>
