@@ -1086,7 +1086,8 @@ export default {
       this.workflowMapping = {};
     },
     createAssignments() {
-      this.$refs.assignmentStepper.setWaiting(true);
+      // Start progress tracking with a unique ID
+      const progressId = this.$refs.assignmentStepper.startProgress();
 
       const socketData = {
         template: this.template,
@@ -1097,6 +1098,7 @@ export default {
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
         assignmentType: this.assignmentType,
+        progressId: progressId, // Pass progress ID to backend for progress updates
       };
 
       // Add workflowMapping for study_session, documents for others
@@ -1108,7 +1110,7 @@ export default {
       }
 
       this.$socket.emit("assignmentCreateBulk", socketData, (res) => {
-        this.$refs.assignmentStepper.setWaiting(false);
+        this.$refs.assignmentStepper.stopProgress();
         if (res.success) {
           if (this.reviewerSelectionMode.mode === 'role') {
 

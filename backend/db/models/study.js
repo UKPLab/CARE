@@ -405,6 +405,14 @@ module.exports = (sequelize, DataTypes) => {
                 await Study.createStudySteps(study, options);
             }, 
             beforeUpdate: async (study, options) => {
+                // Keep close metadata in model layer to avoid transport-specific logic.
+                if (study.changed("closed") && study.closed && !study.userIdClosed) {
+                    const closingUserId = options.context?.currentUserId;
+                    if (closingUserId) {
+                        study.setDataValue("userIdClosed", closingUserId);
+                    }
+                }
+
                 // If this is a study update (not a close operation) and we have stepDocuments
                 if (options.context?.stepDocuments && !study.closed) {
                     await Study.updateStudy(study, options);

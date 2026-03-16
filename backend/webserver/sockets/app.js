@@ -70,7 +70,10 @@ class AppSocket extends Socket {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction}
+                {
+                    context: {...data.data, currentUserId: this.userId},
+                    transaction: transaction
+                }
             );
             return newEntry.id;
         }
@@ -107,12 +110,18 @@ class AppSocket extends Socket {
             if (!("userId" in data.data)) {
                 data.data.userId = this.userId;
             }
-            newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
+            newEntry = await this.models[data.table].add(data.data, {
+                context: {...data.data, currentUserId: this.userId},
+                transaction: transaction
+            });
         } else {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction}
+                {
+                    context: {...data.data, currentUserId: this.userId},
+                    transaction: transaction
+                }
             );
         }
 
