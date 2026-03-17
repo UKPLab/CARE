@@ -47,6 +47,7 @@
         :data="filteredStudySessions"
         :options="tableOptions"
         @action="handleAction"
+        :max-table-height="'60vh'"
       />
     </template>
     <template #footer>

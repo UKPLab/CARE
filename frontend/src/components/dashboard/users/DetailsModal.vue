@@ -19,6 +19,7 @@
             :columns="columns"
             :data="[userInfo]"
             :options="options"
+            :max-table-height="'60vh'"
         />
       </div>
     </template>

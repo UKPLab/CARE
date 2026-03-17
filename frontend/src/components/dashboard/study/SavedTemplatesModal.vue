@@ -16,6 +16,7 @@
         :options="tableOptions"
         :buttons="tableButtons"
         @action="handleAction"
+        :max-table-height="'60vh'"
       />
     </template>
     <template #footer>

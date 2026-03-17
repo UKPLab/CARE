@@ -29,6 +29,7 @@
             :data="allRights"
             v-model="roleRights"
             :options="rightsTableOptions"
+            :max-table-height="'60vh'"
         />
       </div>
     </template>
