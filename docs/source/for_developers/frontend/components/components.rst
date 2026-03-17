@@ -148,7 +148,23 @@ Templates
 The :doc:`Templates <templates>` component provides **email and document content templates** available from the Dashboard.  
 Templates are used for system emails (e.g. password reset, verification, registration), session start/finish and assignment emails, study-closed notifications, and pre-filled document content.
 
-- **Template types** 1–6: Email - General, Email - Study Session, Email - Assignment, Document - General, Document - Study, Email - Study Close.  
+Template types (see :doc:`Templates <templates>` for details):
+
++--------------------------+--------+
+| Template type            | Value  |
++==========================+========+
+| Email - General          | 1      |
++--------------------------+--------+
+| Email - Study Session    | 2      |
++--------------------------+--------+
+| Email - Assignment       | 3      |
++--------------------------+--------+
+| Document - General       | 4      |
++--------------------------+--------+
+| Document - Study         | 5      |
++--------------------------+--------+
+| Email - Study Close      | 6      |
++--------------------------+--------+
 - Placeholders (e.g. ``~username~``, ``~link~``) are resolved per type by the backend (``backend/utils/templateResolver.js``).  
 - Content is stored per language in ``template_language_content``; the Editor shows TemplateEditor and, for email types, a **Placeholders** sidebar (TemplateConfigurator) when editing a template (``templateId`` provided).
 

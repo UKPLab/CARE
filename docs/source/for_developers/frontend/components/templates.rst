@@ -6,15 +6,15 @@ Templates are edited in the same Quill-based Editor as documents; placeholder re
 
 Key features include:
 
-  - **Template types** 1–6 (Email - General, Study Session, Assignment, Document - General, Document - Study, Email - Study Close), each with a fixed set of placeholders resolved at runtime.
-  - **Multi-language content** stored in ``template_language_content``; default language on the ``template`` row.
+  - **Template types** with fixed placeholder sets and usage locations (see table below).
+  - **Multi-language content** stored in ``template_content``; default language on the ``template`` row.
   - **TemplateEditor** and **TemplateConfigurator** (Placeholders sidebar) shown when the Editor is opened with a template (``templateId`` provided).
   - **Toolbar and editor behavior** controlled by the same settings as the document editor (see :ref:`Editor Settings <editor-settings-ref>`).
 
 Overview
 --------
 
-Templates are listed and created from **Dashboard → Templates** (nav from ``nav_element``; see migration ``extend-nav_element-templates``).
+Templates are listed and created from **Dashboard → Templates**. See the :doc:`dashboard <dashboard>` documentation for navigation details.
 
 Location: ``frontend/src/components/dashboard/Templates.vue``
 
@@ -24,10 +24,10 @@ Location: ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
 
 Backend storage:
 
-- **template** — name, type, published, defaultLanguage, userId.  
-- **template_language_content** — content (Quill Delta) per template and language.  
+- **template** — name, type, public, defaultLanguage, userId.  
+- **template_content** — content (Quill Delta) per template and language.  
 - **template_edit** — draft edits per template and language.  
-- **template_placeholder_mapping** — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).
+- **placeholder** — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).
 
 Location: ``backend/utils/templateResolver.js``
 
@@ -38,7 +38,8 @@ Implementing the Template Editor
 ---------------------------------
 
 The main Editor provides ``templateId`` via ``provide`` and conditionally shows the Placeholders sidebar when the document is a template with placeholders.  
-TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template.
+TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template. When the user saves and closes the editor, draft edits are merged from
+``template_edit`` into ``template_content`` so that the next resolution uses the latest saved content.
 
 Location:
 
@@ -54,45 +55,84 @@ Location:
     </template>
 
 
-Template Types and Placeholders Resolved at Runtime
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Template Types, Placeholders, and Usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-At resolution time, only the following placeholder keys are substituted (source: ``PLACEHOLDERS_BY_TYPE`` in ``backend/utils/templateResolver.js``).
+At resolution time, only the placeholder keys listed in the following table are substituted.
 
-- **Type 1 (Email - General):** ``username``, ``firstName``, ``lastName``, ``link``  
-- **Type 2 (Email - Study Session):** ``username``, ``link``  
-- **Type 3 (Email - Assignment):** ``username``, ``assignmentType``, ``assignmentName``, ``link``  
-- **Type 4 (Document - General):** none  
-- **Type 5 (Document - Study):** none  
-- **Type 6 (Email - Study Close):** ``username``, ``studyName``
-
-Where Each Type Is Used
-~~~~~~~~~~~~~~~~~~~~~~~
-
-- **Type 1** — Auth/system emails: settings ``email.template.passwordReset``, ``email.template.verification``, ``email.template.registration``. Location: ``auth.js``  
-- **Type 2** — Session start/finish emails: settings ``email.template.sessionStart``, ``email.template.sessionFinish``. Location: ``study_session.js``  
-- **Type 3** — Assignment emails: setting ``email.template.assignment``. Location: ``assignment.js``  
-- **Type 4** — Pre-fill document content when creating a document with ``templateId`` (``createDocument``). Location: ``document.js``  
-- **Type 5** — Document template for a study step (when creating document from template). Location: ``study_step.js``  
-- **Type 6** — Study-closed emails: setting ``email.template.studyClosed`` (``sendStudyClosedEmails``). Location: ``study.js``
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+| Template type            | Value  | Placeholders                         | Where used                                                 |
++==========================+========+======================================+============================================================+
+| Email - General          | 1      | ``username``, ``firstName``,        | Auth/system emails: settings                               |
+|                          |        | ``lastName``, ``link``\*            | ``email.template.passwordReset``,                          |
+|                          |        |                                      | ``email.template.verification``,                           |
+|                          |        |                                      | ``email.template.registration`` in ``auth.js``.            |
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+| Email - Study Session    | 2      | ``username``, ``link``\*            | Session start/finish emails: settings                      |
+|                          |        |                                      | ``email.template.sessionStart``,                           |
+|                          |        |                                      | ``email.template.sessionFinish`` in ``study_session.js``.  |
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+| Email - Assignment       | 3      | ``username``, ``assignmentType``,   | Assignment emails: setting ``email.template.assignment``   |
+|                          |        | ``assignmentName``, ``link``\*      | in ``assignment.js``.                                      |
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+| Document - General       | 4      | none                                 | Pre-fill document content when creating a document with    |
+|                          |        |                                      | ``templateId`` in ``document.js``.                         |
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+| Document - Study         | 5      | none                                 | Document templates for study steps (create from template)  |
+|                          |        |                                      | in ``study_step.js``.                                      |
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+| Email - Study Close      | 6      | ``username``, ``studyName``\*        | Study-closed emails: setting                               |
+|                          |        |                                      | ``email.template.studyClosed`` (``sendStudyClosedEmails``) |
+|                          |        |                                      | in ``study.js``.                                           |
++--------------------------+--------+--------------------------------------+------------------------------------------------------------+
 
 Adding a New Template Type or Placeholder
 -----------------------------------------
 
-1. **Backend:** Add or extend rows in ``template_placeholder_mapping`` via a migration (template type and placeholder key).  
-   Update ``PLACEHOLDERS_BY_TYPE`` and ``buildReplacementMap`` in ``backend/utils/templateResolver.js`` so the new key is filled from context.  
-   If the new type is used from a specific feature (e.g. study close uses type 6), add or adjust the call site to pass the correct context.
+.. note::
 
-2. **Frontend:** Add the type label and any placeholder descriptions (e.g. ``templateTypeName``, ``placeholderConfigs``, ``longDescriptions``). For the type to appear in the create flow, add it to the type dropdown.
+   Placeholders marked with ``*`` in the table above are **required** for that type.
+   If a required placeholder is missing from the template text, validation will fail
+   (e.g. publishing or using the template) until it is added. The set of required
+   placeholders is defined in the ``placeholder`` table (``required: true``) and
+   enforced via ``getMissingRequiredPlaceholders`` in ``backend/utils/templateResolver.js``.
 
-   Location:
+Here is a concrete example for adding a new placeholder (e.g. ``studyEndDate`` for type 6):
 
-   - ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
-   - ``frontend/src/components/dashboard/templates/TemplateModal.vue``
+1. **Backend (DB + resolver):**
 
-3. **Access:** Ensure ``getUserFilter`` allows the right visibility for the new type (e.g. admin-only for email types, or document types for non-admins).
+   - Add a row to the ``placeholder`` table via a migration:
 
-   Location: ``backend/db/models/template.js``
+     - ``type``: ``6`` (Email - Study Close)
+     - ``placeholderKey``: ``studyEndDate``
+     - other metadata as needed (label, required, etc.)
+
+   - Update ``PLACEHOLDERS_BY_TYPE`` / ``buildReplacementMap`` in
+     ``backend/utils/templateResolver.js`` to fill ``studyEndDate`` from context, for example:
+
+     - In the resolver, when ``context.templateType === 6``, set
+       ``replacements["~studyEndDate~"] = <value from study or session>``.
+
+   - If the new placeholder is driven by a specific feature (e.g. study close emails),
+     ensure the call site (e.g. ``sendStudyClosedEmails`` in ``study.js``) passes
+     whatever additional data is needed into the resolver context.
+
+2. **Frontend (editor + sidebar):**
+
+   - Add the placeholder to the template configurator configuration so it appears in the
+     Placeholders sidebar with a name/description (e.g. update
+     ``placeholderConfigs`` / ``longDescriptions`` in
+     ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``).
+
+
+
+3. **Access / type visibility:**
+
+   - If the new placeholder is tied to a new template type, also update:
+
+     - The template type dropdown in ``frontend/src/components/dashboard/templates/TemplateModal.vue``.
+     - ``getUserFilter`` in ``backend/db/models/template.js`` so that only the correct
+       users (e.g. admins) see or can use that type.
 
 Settings
 --------

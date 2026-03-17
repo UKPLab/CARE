@@ -61,23 +61,54 @@ For template-based emails to be sent, the relevant option must be enabled:
 Where Templates Are Used
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **System/auth emails** — Settings (password reset, verification, registration).  
-- **Session start and session finish emails** — Sent when a participant starts or finishes a session; template set in Settings; study must have **Enable Email Notifications** on.  
-- **Assignment emails** — Sent when a reviewer is assigned; template set in Settings; checkbox in Single/Bulk Assignment modal must be checked when creating the assignment.  
-- **Study closed emails** — Sent when a study is closed to participants with open sessions; template set in Settings; study must have **Enable Study Close Email Notifications** on.  
-- **Document creation** — When creating a document, you can select a document template (type 4 or 5) to pre-fill the content.
++--------------------------+--------------------+----------------------------------------------+
+| Template type            | Where it is used   | Notes                                        |
++==========================+====================+==============================================+
+| Email - General (type 1) | Auth/system emails | Password reset, verification, registration;  |
+|                          |                    | configured via ``email.template.*`` settings |
+|                          |                    | in Dashboard → Settings.                     |
++--------------------------+--------------------+----------------------------------------------+
+| Email - Study Session    | Session start /    | Used when a study session is started or      |
+| (type 2)                 | finish emails      | finished; study must have **Enable Email     |
+|                          |                    | Notifications** turned on.                   |
++--------------------------+--------------------+----------------------------------------------+
+| Email - Assignment       | Assignment emails  | Used when a reviewer is assigned; checkbox  |
+| (type 3)                 |                    | in Single/Bulk Assignment modal must be      |
+|                          |                    | checked to send emails.                      |
++--------------------------+--------------------+----------------------------------------------+
+| Document - General       | Document creation  | When creating a document, you can select a   |
+| (type 4)                 |                    | template to pre-fill the content.            |
++--------------------------+--------------------+----------------------------------------------+
+| Document - Study         | Study-related      | Used for study documents created from a      |
+| (type 5)                 | documents          | template.                                    |
++--------------------------+--------------------+----------------------------------------------+
+| Email - Study Close      | Study-closed       | Sent when a study is closed to participants  |
+| (type 6)                 | emails             | with open sessions; study must have         |
+|                          |                    | **Enable Study Close Email Notifications**   |
+|                          |                    | turned on.                                   |
++--------------------------+--------------------+----------------------------------------------+
 
 Publishing and Deletion
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-**Publishing** makes an email template (types 1, 2, 3, 6) visible to other users.  
-**Once a template is published:**
+**Publishing** (making a template *public*) makes an email template (types 1, 2, 3, 6) visible to other users.  
+**Once a template is public:**
 
 - It **cannot be unpublished**.  
 - It **cannot be deleted**.
 
 This is enforced so that templates already in use (e.g. referenced in Settings or in studies) are not removed, which would break those features.  
 If you need a different version, create a new template or duplicate an existing one, and avoid publishing until the content is final.
+
+Update-from-Source for Copies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you copy someone else's public template into your own list, CARE keeps track of the
+relationship between your copy and the original (the "source template"). When the source
+is changed, your copy will show **Update available** in the Templates table. You can then
+open the update modal and choose whether to update your existing copy with the latest
+content from the source, or to create a new copy that contains the updates while keeping
+the old copy unchanged and independent of future source changes.
 
 Errors and Placeholders Not Replaced
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
