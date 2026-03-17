@@ -376,10 +376,12 @@ class TemplateSocket extends Socket {
   }
 
   /**
-   * Create or ensure a language content row for a template (for "add language" in editor)
+   * Add template content for a given language (for "add language" in editor).
    *
-   * When the user adds a new language, creates a row in template_content.
-   * If content is provided (copy-from-current case), uses that content; otherwise creates empty content.
+   * When the user adds a new language, this ensures there is a corresponding row
+   * in the template_content table for (templateId, language). If content is
+   * provided (copy-from-current case), it is used; otherwise minimal empty
+   * content is created.
    *
    * @socketEvent templateAddLanguageContent
    * @param {Object} data                  The data object
@@ -390,7 +392,7 @@ class TemplateSocket extends Socket {
    * @param {Object} options.transaction
    * @returns {Promise<Object>}
    */
-  async addLanguageContent(data, options) {
+  async addContent(data, options) {
     if (!data.templateId) throw new Error("Template ID is required");
     if (!data.language) throw new Error("Language is required");
 
@@ -762,7 +764,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templateGetContent", this.getContent, {}, false);
     this.createSocket("templateGetLanguages", this.getLanguages, {}, false);
     this.createSocket("templateEditContent", this.editContent, {}, true);
-    this.createSocket("templateAddLanguageContent", this.addLanguageContent, {}, true);
+    this.createSocket("templateAddLanguageContent", this.addContent, {}, true);
     this.createSocket("templateClose", this.closeTemplate, {}, true);
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
