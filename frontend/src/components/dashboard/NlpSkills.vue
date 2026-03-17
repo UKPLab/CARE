@@ -24,6 +24,7 @@
           :options="options"
           :buttons="buttons"
           @action="action"
+          :max-table-height="'65vh'"
       />
     </template>
   </Card>

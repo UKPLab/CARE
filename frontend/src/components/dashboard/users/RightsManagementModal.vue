@@ -29,6 +29,7 @@
             :columns="rightsColumns"
             :data="allRights"
             :options="rightsTableOptions"
+            :max-table-height="'60vh'"
         />
       </div>
     </template>

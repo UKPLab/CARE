@@ -16,7 +16,8 @@
         v-model="currentData.selected"
         :columns="dataTableColumns"
         :data="dataTable"
-        :options="dataTableOptions"/>
+        :options="dataTableOptions"
+        :max-table-height="'60vh'" />
       </div>
     </template>
 

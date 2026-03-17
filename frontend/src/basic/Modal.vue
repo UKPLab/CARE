@@ -313,4 +313,16 @@ export default {
   visibility: hidden;
   pointer-events: none;
 }
+
+.modal-content {
+  max-height: calc(100vh - 3.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 </style>
