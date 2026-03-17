@@ -2,28 +2,46 @@
 
 const settings = [
     {
-        key: "system.auth.2fa.required",
-        type: "boolean",
-        value: false,
-        description: "Require all users to configure at least one 2FA method before using the platform"
-    },
-    {
-        key: "system.auth.loginMethods.orcid.enabled",
+        key: "system.auth.orcid.enabled",
         type: "boolean",
         value: false,
         description: "Enable ORCID login flow"
     },
     {
-        key: "system.auth.loginMethods.ldap.enabled",
+        key: "system.auth.ldap.enabled",
         type: "boolean",
         value: false,
         description: "Enable LDAP login flow"
     },
     {
-        key: "system.auth.loginMethods.saml.enabled",
+        key: "system.auth.saml.enabled",
         type: "boolean",
         value: false,
         description: "Enable SAML login flow"
+    },
+    {
+        key: "system.auth.local.2fa.required",
+        type: "boolean",
+        value: false,
+        description: "Require 2FA setup for local login users"
+    },
+    {
+        key: "system.auth.orcid.2fa.required",
+        type: "boolean",
+        value: false,
+        description: "Require 2FA setup for ORCID login users"
+    },
+    {
+        key: "system.auth.ldap.2fa.required",
+        type: "boolean",
+        value: false,
+        description: "Require 2FA setup for LDAP login users"
+    },
+    {
+        key: "system.auth.saml.2fa.required",
+        type: "boolean",
+        value: false,
+        description: "Require 2FA setup for SAML login users"
     },
     {
         key: "system.auth.redirect.baseUrl",
