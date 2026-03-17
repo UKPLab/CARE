@@ -63,7 +63,7 @@ module.exports = (sequelize, DataTypes) => {
             placeholder: "Enter JSON configuration for this step",
             type: "json",
             required: false,
-            default: "",
+            default: {},
             help: "Additional configuration settings for this workflow step in JSON format."
         }];
 
