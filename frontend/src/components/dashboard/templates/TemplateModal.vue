@@ -4,6 +4,7 @@
       table="template"
       title="Template"
       :custom-submit="true"
+      :fields-override="coordinatorFields"
       @submit="update"
     />
   </template>
@@ -33,25 +34,56 @@
     data() {
       return {
         isEdit: false,
+        languagesWithContent: [],
       };
     },
     computed: {
       isAdmin() {
         return this.$store.getters["auth/isAdmin"];
       },
+      /**
+       * Fields configuration for the coordinator, derived from the store
+       * but filtered locally for:
+       * - type: non-admins can only create document templates (4, 5)
+       * - defaultLanguage: limited to languages that have content when editing
+       */
+      coordinatorFields() {
+        const baseFields =
+          this.$store.getters["table/template/getFields"] || [];
+
+        return baseFields.map((field) => {
+          const f = { ...field };
+
+          if (f.key === "type" && !this.isAdmin) {
+            if (Array.isArray(f.options)) {
+              f.options = f.options.filter(
+                (opt) => opt.value === null || [4, 5].includes(opt.value)
+              );
+            }
+          }
+
+          if (f.key === "defaultLanguage") {
+            const langs = this.languagesWithContent || [];
+            if (langs.length > 0) {
+              f.options = SUPPORTED_LANGUAGES.filter((opt) =>
+                langs.includes(opt.value)
+              );
+            } else {
+              f.options = [...SUPPORTED_LANGUAGES];
+            }
+          }
+
+          return f;
+        });
+      },
     },
     methods: {
       open(templateId = null, defaultValues = {}) {
         const id = templateId ? Number(templateId) : 0;
         this.isEdit = id > 0;
-        
-        // Filter type options for non-admins: only document types (4, 5) in dropdown
-        if (!this.isAdmin) {
-          this.filterTypeOptionsInStore();
-        }
 
         if (id === 0) {
-          this.filterDefaultLanguageOptions([]);
+          this.languagesWithContent = [];
           this.$nextTick(() => this.$refs.coordinator.open(id, defaultValues));
           return;
         }
@@ -59,38 +91,15 @@
         // For edit: restrict default language to languages that have content
         this.$socket.emit("templateGetLanguages", { templateId: id }, (res) => {
           const data = res.success && res.data ? res.data : {};
-          const languagesArray = Array.isArray(data) ? data : (data.languages || []);
+          const languagesArray = Array.isArray(data)
+            ? data
+            : data.languages || [];
 
-          this.filterDefaultLanguageOptions(languagesArray);
+          this.languagesWithContent = languagesArray;
 
           this.$nextTick(() => this.$refs.coordinator.open(id, defaultValues));
         });
       },
-
-      filterDefaultLanguageOptions(languagesWithContent) {
-        const fields = this.$store.getters["table/template/getFields"];
-        if (!fields) return;
-        const defaultLangField = fields.find((f) => f.key === "defaultLanguage");
-        if (!defaultLangField || !defaultLangField.options) return;
-        defaultLangField.options = languagesWithContent.length > 0
-          ? SUPPORTED_LANGUAGES.filter((opt) => languagesWithContent.includes(opt.value))
-          : [...SUPPORTED_LANGUAGES];
-      },
-
-      filterTypeOptionsInStore() {
-        // Filter type field options directly in the store-derived fields
-        // This ensures options are filtered before the modal opens
-        const fields = this.$store.getters["table/template/getFields"];
-        if (fields) {
-          const typeField = fields.find(f => f.key === 'type');
-          if (typeField && typeField.options) {
-            typeField.options = typeField.options.filter(opt => 
-              opt.value === null || [4, 5].includes(opt.value)
-            );
-          }
-        }
-      },
-      
       update(data) {
         const isEdit = this.isEdit;
         const payload = { ...data };

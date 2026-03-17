@@ -136,6 +136,11 @@ export default {
       required: false,
       default: false,
     },
+    fieldsOverride: {
+      type: Array,
+      required: false,
+      default: null,
+    },
   },
   emits: ["submit", "success"],
   data() {
@@ -148,11 +153,17 @@ export default {
   },
   computed: {
     fields() {
-      return this.$store.getters["table/" + this.table + "/getFields"].map((f) => {
-        if (this.readOnlyFields.includes(f.key)) {
-          f.readOnly = true;
+      const baseFields =
+        this.fieldsOverride ||
+        this.$store.getters["table/" + this.table + "/getFields"] ||
+        [];
+
+      return baseFields.map((f) => {
+        const field = { ...f };
+        if (this.readOnlyFields.includes(field.key)) {
+          field.readOnly = true;
         }
-        return f;
+        return field;
       });
     },
     userId() {
