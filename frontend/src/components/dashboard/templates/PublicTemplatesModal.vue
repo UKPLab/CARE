@@ -71,7 +71,7 @@ export default {
     },
     publicTemplates() {
       return this.$store.getters["table/template/getAll"]
-        .filter(t => t.published && t.userId !== this.userId && !t.deleted)
+        .filter(t => t.public && t.userId !== this.userId && !t.deleted)
         .map(t => {
           const alreadyCopied = this.ownTemplates.some(
             own => own.sourceId === t.id

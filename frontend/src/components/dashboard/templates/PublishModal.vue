@@ -94,7 +94,7 @@ export default {
     open(id) {
       this.id = id;
       this.success = false;
-      if (this.template && this.template.published) {
+      if (this.template && this.template.public) {
         this.success = true;
       }
       this.$refs.publishModal.openModal();
@@ -108,7 +108,7 @@ export default {
     publish() {
       this.$socket.emit("templateUpdate", {
         id: this.id,
-        published: true,
+        public: true,
       }, (res) => {
           if (!res.success) {
             this.$refs.publishModal.close();

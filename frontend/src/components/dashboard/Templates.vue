@@ -98,12 +98,12 @@
             return {
               ...t,
               typeName: this.typeName(t.type),
-              // Published email templates (types 1, 2, 3, 6) cannot be deleted
-              canDelete: !(t.published && [1, 2, 3, 6].includes(t.type)),
+              // Public email templates (types 1, 2, 3, 6) cannot be deleted
+              canDelete: !(t.public && [1, 2, 3, 6].includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,
-              statusBadge: this.getStatusBadge(isCopy, sourceStatus, t.published),
+              statusBadge: this.getStatusBadge(isCopy, sourceStatus, t.public),
             };
           });
       },
@@ -169,7 +169,7 @@
             title: "View content (read-only)",
             action: "viewContent",
           },
-          // Publish - own non-copy unpublished templates only
+          // Publish - own non-copy non-public templates only
           {
             icon: "cloud-arrow-up",
             options: {
@@ -179,7 +179,7 @@
               },
             },
             filter: [
-              { key: "published", value: false },
+              { key: "public", value: false },
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
             ],
@@ -187,7 +187,7 @@
             title: "Publish template",
             action: "togglePublished",
           },
-          // Published badge - own non-copy published templates only
+          // Published badge - own non-copy public templates only
           {
             icon: "check-circle",
             options: {
@@ -198,7 +198,7 @@
               },
             },
             filter: [
-              { key: "published", value: true },
+              { key: "public", value: true },
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
             ],
@@ -273,14 +273,14 @@
        * Get the status badge value for a template row.
        * @param {boolean} isCopy
        * @param {string|null} sourceStatus
-       * @param {boolean} published
+       * @param {boolean} isPublic
        * @returns {string}
        */
-      getStatusBadge(isCopy, sourceStatus, published) {
+      getStatusBadge(isCopy, sourceStatus, isPublic) {
         // TBadge expects value with .text (and optional .class)
         if (!isCopy) {
-          const text = published ? "Published" : "Draft";
-          return { text, class: published ? "bg-success" : "bg-secondary" };
+          const text = isPublic ? "Published" : "Draft";
+          return { text, class: isPublic ? "bg-success" : "bg-secondary" };
         }
         if (sourceStatus === "updated") return { text: "Update available", class: "bg-info" };
         if (sourceStatus === "unavailable") return { text: "Source unavailable", class: "bg-warning text-dark" };

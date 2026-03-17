@@ -97,8 +97,8 @@
 
         // Remove content field - content editing happens in editor, not modal
         delete payload.content;
-        // Remove published field - publishing happens via table action buttons, not modal
-        delete payload.published;
+        // Remove public field - publishing happens via table action buttons, not modal
+        delete payload.public;
 
         if (
           !isEdit &&

@@ -223,8 +223,8 @@ export default {
         }
         const currentUserId = this.$store.getters["auth/getUser"]?.id;
         const isOwner = this.template.userId === currentUserId;
-        const isPublishedFromOthers = this.template.published === true && !isOwner;
-        if (isPublishedFromOthers) {
+        const isPublicFromOthers = this.template.public === true && !isOwner;
+        if (isPublicFromOthers) {
           return true; 
         }
       }
