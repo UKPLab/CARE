@@ -27,7 +27,7 @@ module.exports = {
         },
         onUpdate: 'CASCADE',
       },
-      published: {
+      public: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,

@@ -24,7 +24,7 @@ class TemplateSocket extends Socket {
    * @param {number} data.type             Template type (required, immutable later)
    * @param {Object} data.content          Initial template content for default language (JSON, required)
    * @param {string} [data.defaultLanguage='en']  Default language code
-   * @param {boolean} [data.published=false]  Publish template (makes it visible to all users, cannot be undone)
+   * @param {boolean} [data.public=false]  Make template public (visible to all users, cannot be undone)
    * @param {Object} options               
    * @param {Object} options.transaction   
    * @returns {Promise<Object>}            
@@ -43,7 +43,7 @@ class TemplateSocket extends Socket {
       description: data.description,
       type: data.type,
       defaultLanguage,
-      published: data.published ?? false,
+      public: data.public ?? false,
       userId: this.userId,
     };
 
@@ -86,10 +86,10 @@ class TemplateSocket extends Socket {
     }
     
     const isOwner = template.userId === this.userId;
-    const isPublishedFromOthers = template.published === true && !isOwner;
+    const isPublicFromOthers = template.public === true && !isOwner;
     
-    if (!isOwner && !isPublishedFromOthers) {
-      throw new Error("You can only view templates that you own or published templates from others");
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("You can only view templates that you own or public templates from others");
     }
 
     const langRow = await this.models["template_content"].findOne({
@@ -188,7 +188,7 @@ class TemplateSocket extends Socket {
    * @param {string} [data.name]           New name
    * @param {string} [data.description]    New description
    * @param {string} [data.defaultLanguage] Default language code
-   * @param {boolean} [data.published]     New published flag (can only be set to true, cannot be unpublished)
+   * @param {boolean} [data.public]        New public flag (can only be set to true, cannot be unpublished)
    * @param {Object} options
    * @param {Object} options.transaction
    * @returns {Promise<Object>}
@@ -212,14 +212,14 @@ class TemplateSocket extends Socket {
       throw new Error("Copied templates cannot be edited");
     }
     
-    // Prevent editing published templates from others (view-only)
-    if (currentTemplate.published === true && currentTemplate.userId !== this.userId) {
-      throw new Error("Published templates from other users are view-only and cannot be edited");
+    // Prevent editing public templates from others (view-only)
+    if (currentTemplate.public === true && currentTemplate.userId !== this.userId) {
+      throw new Error("Public templates from other users are view-only and cannot be edited");
     }
 
-    // Prevent unpublishing: if template is published, cannot set to false
-    if (currentTemplate.published === true && data.published === false) {
-      throw new Error("Cannot unpublish a template once it has been published");
+    // Prevent unpublishing: if template is public, cannot set to false
+    if (currentTemplate.public === true && data.public === false) {
+      throw new Error("Cannot make a template non-public once it has been made public");
     }
 
     const updateData = {};
@@ -227,7 +227,7 @@ class TemplateSocket extends Socket {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.defaultLanguage !== undefined) updateData.defaultLanguage = data.defaultLanguage;
-    if (data.published !== undefined) updateData.published = data.published;
+    if (data.public !== undefined) updateData.public = data.public;
 
     return await this.models["template"].updateById(
         data.id,
@@ -326,12 +326,12 @@ class TemplateSocket extends Socket {
       throw new Error("Template not found");
     }
     
-    // Check access: users (including admins) can view placeholders for their own templates or published templates from others
+    // Check access: users (including admins) can view placeholders for their own templates or public templates from others
     const isOwner = template.userId === this.userId;
-    const isPublishedFromOthers = template.published === true && !isOwner;
+    const isPublicFromOthers = template.public === true && !isOwner;
     
-    if (!isOwner && !isPublishedFromOthers) {
-      throw new Error("Access denied: You can only view placeholders for templates that you own or published templates from others");
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
     }
 
     return await this.models["placeholder"].getAllByKey(
@@ -360,9 +360,9 @@ class TemplateSocket extends Socket {
       throw new Error("Template not found");
     }
     const isOwner = template.userId === this.userId;
-    const isPublishedFromOthers = template.published === true && !isOwner;
-    if (!isOwner && !isPublishedFromOthers) {
-      throw new Error("You can only view templates that you own or published templates from others");
+    const isPublicFromOthers = template.public === true && !isOwner;
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("You can only view templates that you own or public templates from others");
     }
 
     const rows = await this.models["template_content"].findAll({
@@ -650,7 +650,7 @@ class TemplateSocket extends Socket {
   }
 
   /**
-   * Copy a published template to the current user's template list
+   * Copy a public template to the current user's template list
    *
    * @socketEvent templateCopy
    * @param {Object} data
@@ -734,8 +734,8 @@ class TemplateSocket extends Socket {
       throw new Error("You can only delete templates that you own");
     }
 
-    if (template.published && [1, 2, 3, 6].includes(template.type)) {
-      throw new Error("Published email templates cannot be deleted");
+    if (template.public && [1, 2, 3, 6].includes(template.type)) {
+      throw new Error("Public email templates cannot be deleted");
     }
 
     if ([1, 2, 3, 6].includes(template.type)) {

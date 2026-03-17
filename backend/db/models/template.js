@@ -20,23 +20,52 @@ module.exports = (sequelize, DataTypes) => {
             const {Op} = require("sequelize");
             
             if (isAdmin) {
-                // Admins: own templates (all types) OR published templates from others
-                return {[Op.or]: [{userId: userId}, {published: true}]};
+                // Admins: own templates (all types) OR public templates from others
+                return {[Op.or]: [{userId: userId}, {public: true}]};
             } else {
-                // Non-admins: own templates (types 4, 5 only) OR published templates from others (types 4, 5 only)
+                // Non-admins: own templates (types 4, 5 only) OR public templates from others (types 4, 5 only)
                 // Email templates (types 1, 2, 3, 6) are admin-only
                 return {
                     [Op.or]: [
                         {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5]}}]},
-                        {[Op.and]: [{published: true}, {type: {[Op.in]: [4, 5]}}]}
+                        {[Op.and]: [{public: true}, {type: {[Op.in]: [4, 5]}}]}
                     ]
                 };
             }
         }
 
         /**
+         * Optionally expand the broadcast filter for a given user.
+         * For templates, non-admins should also receive updates to
+         * templates that are the source of their copies (for "Update available").
+         *
+         * @param {Object} baseFilter - The filter produced by Socket.js for this user/table
+         * @param {number} userId - The user ID
+         * @param {boolean} isAdmin - Whether the user is an admin
+         * @returns {Promise<Object>} 
+         */
+        static async expandBroadcastFilter(baseFilter, userId, isAdmin) {
+            const {Op} = require("sequelize");
+            if (isAdmin || !baseFilter[Op.or]) {
+                return baseFilter;
+            }
+            const copies = await Template.findAll({
+                where: { userId, sourceId: { [Op.ne]: null }, deleted: false },
+                attributes: ["sourceId"],
+                raw: true,
+            });
+            const sourceIds = copies.map((c) => c.sourceId).filter(Boolean);
+            if (sourceIds.length === 0) {
+                return baseFilter;
+            }
+            const orList = Array.isArray(baseFilter[Op.or]) ? [...baseFilter[Op.or]] : [baseFilter[Op.or]];
+            orList.push({ id: { [Op.in]: sourceIds } });
+            return { ...baseFilter, [Op.or]: orList };
+        }
+
+        /**
          * Override getAutoTable to apply custom filtering for templates:
-         * - All users (including admins): own templates OR published templates from others
+         * - All users (including admins): own templates OR public templates from others
          * - Non-admins: exclude email templates (types 1, 2, 3, 6) - admin-only
          */
         static async getAutoTable(filterList = [], userId = null, attributes = null) {
@@ -68,20 +97,6 @@ module.exports = (sequelize, DataTypes) => {
                 }
                 
                 const userFilter = this.getUserFilter(userId, isAdmin);
-                // Non-admins: also include templates that are the source of their copies (so "Update available" works)
-                if (!isAdmin && userFilter[Op.or]) {
-                    const copies = await Template.findAll({
-                        where: { userId, sourceId: { [Op.ne]: null }, deleted: false },
-                        attributes: ["sourceId"],
-                        raw: true,
-                    });
-                    const sourceIds = copies.map((c) => c.sourceId).filter(Boolean);
-                    if (sourceIds.length > 0) {
-                        userFilter[Op.or] = Array.isArray(userFilter[Op.or])
-                            ? [...userFilter[Op.or], { id: { [Op.in]: sourceIds } }]
-                            : [{ id: { [Op.in]: sourceIds } }];
-                    }
-                }
                 Object.assign(filter, userFilter);
             }
             
@@ -157,7 +172,7 @@ module.exports = (sequelize, DataTypes) => {
             },
         ];
         /**
-         * Copy a published template for a different user.
+         * Copy a public template for a different user.
          * Creates a new template row with sourceId linking to the original,
          * and copies all template_content rows.
          *
@@ -174,8 +189,8 @@ module.exports = (sequelize, DataTypes) => {
             if (!source) {
                 throw new Error(`Template with id ${sourceTemplateId} not found`);
             }
-            if (!source.published) {
-                throw new Error("Only published templates can be copied");
+            if (!source.public) {
+                throw new Error("Only public templates can be copied");
             }
             if (source.userId === userId) {
                 throw new Error("Cannot copy your own template");
@@ -207,7 +222,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: source.type,
                 defaultLanguage: source.defaultLanguage,
                 userId: userId,
-                published: false,
+                public: false,
                 sourceId: sourceTemplateId,
             };
 
@@ -423,7 +438,7 @@ module.exports = (sequelize, DataTypes) => {
             name: DataTypes.STRING,
             description: DataTypes.TEXT,
             userId: DataTypes.INTEGER,
-            published: DataTypes.BOOLEAN,
+            public: DataTypes.BOOLEAN,
             type: DataTypes.INTEGER,
             sourceId: DataTypes.INTEGER,
             defaultLanguage: DataTypes.STRING,
@@ -438,14 +453,14 @@ module.exports = (sequelize, DataTypes) => {
             tableName: "template",
             hooks: {
                 beforeUpdate: async (template, options) => {
-                    // Prevent unpublishing: if template was published, cannot be set to false
+                    // Prevent unpublishing: if template was public, cannot be set to false
                     if (
                         template._previousDataValues &&
-                        template._previousDataValues.published === true &&
-                        template.published === false
+                        template._previousDataValues.public === true &&
+                        template.public === false
                     ) {
                         throw new Error(
-                            "Cannot unpublish a template once it has been published"
+                            "Cannot make a template non-public once it has been made public"
                         );
                     }
                 }

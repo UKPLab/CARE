@@ -441,26 +441,24 @@ module.exports = class Socket {
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
-        // Special handling for templates: even admins should see filtered results (own + published from others)
-        const isTemplateTable = tableName === "template";
-        if ((await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) && !isTemplateTable) { // is allowed to see everything (except templates)
+        const model = this.models[tableName];
+        const hasModelUserFilter = typeof model.getUserFilter === "function";
+        const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+
+        if ((isAdmin || model.publicTable) && !hasModelUserFilter) { // is allowed to see everything
             // no adaption of the filter or attributes needed
-        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
-            // is allowed to see only his data and possible if there is a public or published attribute
+        } else if (hasModelUserFilter) {
+            const userFilter = model.getUserFilter(userId, isAdmin);
+            allFilter = {[Op.and]: [allFilter, userFilter]};
+        } else if (model.autoTable && 'userId' in model.getAttributes() && accessRights.length === 0) {
+            // is allowed to see only his data and possible if there is a public attribute
             const userFilter = {};
-            if ("public" in this.models[tableName].getAttributes()) {
+            if ("public" in model.getAttributes()) {
                 userFilter[Op.or] = [{userId: userId}, {public: true}];
-            } else if ("published" in this.models[tableName].getAttributes()) {
-                if (tableName === "template" && typeof this.models[tableName].getUserFilter === "function") {
-                    const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
-                    Object.assign(userFilter, this.models[tableName].getUserFilter(userId, isAdmin));
-                } else {
-                    userFilter[Op.or] = [{userId: userId}, {published: true}];
-                }
             } else {
                 userFilter['userId'] = userId;
             }
-            allFilter = {[Op.and]: [allFilter, userFilter]}
+            allFilter = {[Op.and]: [allFilter, userFilter]};
         } else {
 
             if (accessRights.length > 0) {
@@ -869,13 +867,14 @@ module.exports = class Socket {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
-            const isTemplateTable = tableName === "template" && 
-                                    typeof this.models[tableName].getUserFilter === "function";
+            const model = this.models[tableName];
+            const hasModelUserFilter = typeof model.getUserFilter === "function";
+            const hasBroadcastExpander = typeof model.expandBroadcastFilter === "function";
             const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
-            const isPublicTable = this.models[tableName].publicTable;
+            const isPublicTable = model.publicTable;
             
-            // For template table, apply filtering
-            if (!isTemplateTable && (isAdmin || isPublicTable)) {
+            // if socket is admin or table is public, also just send (unless model requires per-user filtering/expansion)
+            if (!hasModelUserFilter && !hasBroadcastExpander && (isAdmin || isPublicTable)) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
@@ -886,19 +885,9 @@ module.exports = class Socket {
                 continue;
             }
             allFilter = filtersAndAttributes.filter;
-            // For template table, non-admins must also receive updates to templates that are the source of their copies
-            if (isTemplateTable && !isAdmin && allFilter[Op.or]) {
-                const copies = await this.models[tableName].findAll({
-                    where: { userId, sourceId: { [Op.ne]: null }, deleted: false },
-                    attributes: ["sourceId"],
-                    raw: true,
-                });
-                const sourceIds = copies.map((c) => c.sourceId).filter(Boolean);
-                if (sourceIds.length > 0) {
-                    const orList = Array.isArray(allFilter[Op.or]) ? [...allFilter[Op.or]] : [allFilter[Op.or]];
-                    orList.push({ id: { [Op.in]: sourceIds } });
-                    allFilter = { ...allFilter, [Op.or]: orList };
-                }
+            // Allow models to expand the broadcast filter (e.g. templates: source templates of user's copies)
+            if (hasBroadcastExpander) {
+                allFilter = await model.expandBroadcastFilter(allFilter, userId, isAdmin);
             }
             const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
             this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
