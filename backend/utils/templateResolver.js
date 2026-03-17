@@ -7,6 +7,7 @@
  * @author Mohammad Elwan
  */
 const Delta = require("quill-delta");
+const {deltaToPlainText} = require("editor-delta-conversion");
 
 /**
  * Extract plain text from Quill Delta operations
@@ -197,11 +198,7 @@ async function resolveTemplate(templateId, context, models, options = {}) {
 
     const replacements = await buildReplacementMap(context, models, options);
     
-    let text = "";
-    if (content && content.ops) {
-        text = extractTextFromDelta(content);
-    }
-    
+    const text = deltaToPlainText(content);
     let resolvedText = text;
     for (const [placeholder, value] of Object.entries(replacements)) {
         const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -328,7 +325,7 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
     const requiredKeys = rows.filter((r) => r.required === true).map((r) => r.placeholderKey);
     if (requiredKeys.length === 0) return [];
 
-    const text = extractTextFromDelta(content && content.ops ? { ops: content.ops } : content);
+    const text = deltaToPlainText(content && content.ops ? { ops: content.ops } : content);
     const missing = [];
     for (const key of requiredKeys) {
         const token = `~${key}~`;
