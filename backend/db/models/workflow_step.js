@@ -43,21 +43,7 @@ module.exports = (sequelize, DataTypes) => {
             type: "switch",
             default: false,
             help: "Allow users to navigate back to this step."
-        }, {
-            key: "workflowStepDocument",
-            label: "Document Step Reference:",
-            type: "select",
-            options: {
-                table: "workflow_step",
-                name: "name",
-                value: "id",
-                filter: [
-                    {type: "formData", key: "workflowId", value: "workflowId"}
-                ]
-            },
-            required: false,
-            help: "Reference to another workflow step for document handling."
-        }, {
+        },{
             key: "configuration",
             label: "Configuration:",
             placeholder: "Enter JSON configuration for this step",
