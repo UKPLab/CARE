@@ -10,7 +10,7 @@
       <BasicButton
         class="btn btn-secondary btn-sm ms-2"
         title="export Workflows"
-        text="Export"
+        text="Export All"
         icon="download"
         @click="exportWorkflows"
       />
@@ -108,8 +108,18 @@ export default {
       columns: [
         { name: "ID", key: "id", sortable: true },
         { name: "Name", key: "name", sortable: true },
+        {
+          name: "Type",
+          key: "workflowType",
+          type: "badge",
+          typeOptions: {
+            keyMapping: { system: "System", user: "User" },
+            classMapping: { system: "bg-info", user: "bg-secondary" },
+          },
+        },
         { name: "Hidden", key: "hidden", type: "badge" },
         { name: "Created", key: "createdAt", sortable: true },
+        { name: "Last Update", key: "updatedAt", sortable: true},
       ],
     };
   },
@@ -119,6 +129,7 @@ export default {
           (workflow) => workflow.userId === null || workflow.userId === this.userId
         ).map(workflow => ({
           ...workflow,
+          workflowType: workflow.userId === null ? "system" : "user",
           isEditable: this.isAdmin || workflow.userId === this.userId,
           hidden: {
             text: workflow.hideInFrontend ? "Yes" : "No",

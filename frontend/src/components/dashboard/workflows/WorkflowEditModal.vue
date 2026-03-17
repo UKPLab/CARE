@@ -169,14 +169,16 @@ export default {
       // Create nodes with proper positioning using sorted steps
       for (let index = 0; index < sortedSteps.length; index++) {
         const step = sortedSteps[index];
+        const stepName = step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`;
+        const nodeLabel = `${stepName}\n(${this.getStepTypeString(step.stepType)})`;
         nodes[step.id] = {
-          name: step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`,
+          name: nodeLabel,
           next: sortedSteps[index + 1] || null,
           previous: sortedSteps[index - 1] || null,
           color: getColorForStepType(step.stepType),
           data: {
             id: step.id,
-            name: step.name || `${this.getStepTypeString(step.stepType)} ${index + 1}`,
+            name: stepName,
             description: step.description || "",
             stepType: step.stepType,
             workflowStepPrevious: step.workflowStepPrevious,
