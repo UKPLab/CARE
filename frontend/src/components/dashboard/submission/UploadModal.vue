@@ -66,6 +66,7 @@ export default {
       selectedValidatorId: 0,
       selectedValidatorData: null,
       files: null,
+      assignmentId: null,
       steps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
       selectionTable: [
         { name: "ID", key: "id", sortable: true },
@@ -132,11 +133,12 @@ export default {
     },
   },
   methods: {
-    open() {
+    open(assignmentId = null) {
       this.files = null;
       this.selectedUser = [];
       this.selectedValidatorId = 0;
       this.formData = {};
+      this.assignmentId = assignmentId;
       this.$refs.uploadStepper.open();
     },
     handleValidatorChange(validatorData) {
@@ -167,7 +169,8 @@ export default {
         userId: this.selectedUser[0].id,
         group: this.formData.group,
         validationConfigurationId: this.selectedValidatorId,
-        projectId: this.projectId, 
+        projectId: this.projectId,
+        assignmentId: this.assignmentId,
         files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
       };
       this.$refs.uploadStepper.setWaiting(true);
