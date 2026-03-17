@@ -18,6 +18,11 @@ module.exports = (sequelize, DataTypes) => {
                 as: "documents",
             });
 
+            Submission.belongsTo(models["assignment"], {
+                foreignKey: "assignmentId",
+                as: "assignment",
+            });
+
             Submission.belongsTo(models["submission"], {
                 foreignKey: "parentSubmissionId",
                 as: "parentSubmission",
@@ -142,6 +147,7 @@ module.exports = (sequelize, DataTypes) => {
                     userId: originalSubmission.userId,
                     createdByUserId: createdByUserId,
                     projectId: originalSubmission.projectId || null,
+                    assignmentId: originalSubmission.assignmentId || null,
                     parentSubmissionId: originalSubmissionId, // Link to parent
                     extId: originalSubmission.extId || null,
                     group: originalSubmission.group,
@@ -235,6 +241,7 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.INTEGER,
             createdByUserId: DataTypes.INTEGER,
             projectId: DataTypes.INTEGER,
+            assignmentId: DataTypes.INTEGER,
             parentSubmissionId: DataTypes.INTEGER,
             previousSubmissionId: DataTypes.INTEGER,
             extId: DataTypes.INTEGER,
