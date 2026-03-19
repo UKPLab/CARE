@@ -8,7 +8,7 @@
         <span>{{(new Date(timeString)).toLocaleTimeString()}}</span>
       </div>
       <div class="col-3">
-        <div class="badge bg-secondary" v-if="type">
+        <div v-if="type" class="badge bg-secondary">
           {{type}}
         </div>
       </div>
@@ -21,7 +21,7 @@
         </button>
       </div>
     </div>
-    <div class="row" v-if="showPayload">
+    <div v-if="showPayload" class="row">
       <JsonEditor :content="data.data" readOnly/>
     </div>
   </div>

@@ -48,3 +48,16 @@ exports.inject = async function inject(data, func, targetName, key = null) {
       })
     );
 }
+
+/**
+ * Create an Error object with a machine-readable code.
+ *
+ * @param {string} code Error code for frontend handling
+ * @param {string} message Human-readable error message
+ * @returns {Error}
+ */
+exports.generateError = function generateError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}

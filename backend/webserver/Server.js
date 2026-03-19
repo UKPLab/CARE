@@ -81,8 +81,15 @@ module.exports = class Server {
         require("./routes/config")(this);
         require('./routes/auth')(this);
 
-        // all further urls reference to frontend
-        this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
+        this.app.use((req, res, next) => {
+            if (req.method !== "GET") {
+                return next();
+            }
+            if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/docs")) {
+                return next();
+            }
+            return res.sendFile(path.resolve(__dirname, "../../dist/index.html"));
+        });
 
         this.httpServer = http.createServer(this.app);
         Promise.resolve(this.#initMailServer()).then(() => {

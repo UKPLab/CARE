@@ -1,6 +1,6 @@
 <template>
   <!-- Edits Section: Only visible when there are edits and no annotations -->
-  <div class="edits-section" v-if="showEdits">
+  <div v-if="showEdits" class="edits-section">
     <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
       <h4 class="group-header">{{ dateCategory }}</h4>
 

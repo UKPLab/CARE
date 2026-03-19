@@ -23,6 +23,7 @@
           :columns="user_table.columns"
           :data="users"
           :options="user_table.options"
+          :max-table-height="'25vh'"
       />
     </template>
   </Card>
@@ -35,6 +36,7 @@
           :columns="stats_table.columns"
           :data="stats"
           :options="stats_table.options"
+          :max-table-height="'25vh'"
       />
     </template>
   </Card>

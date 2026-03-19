@@ -1,6 +1,20 @@
 <template>
+  <!-- Error state when document not found or deleted -->
+  <div v-if="documentError" class="document-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
+    <div class="error-card text-center p-5 bg-white rounded shadow">
+      <i class="bi bi-file-earmark-x text-danger" style="font-size: 5rem;"></i>
+      <h2 class="mt-4 text-danger">{{ documentError.title }}</h2>
+      <p class="text-muted mb-4">{{ documentError.message }}</p>
+      <div class="d-flex gap-3 justify-content-center">
+        <router-link to="/" class="btn btn-primary">
+          <i class="bi bi-house me-2"></i>Go to Dashboard
+        </router-link>
+      </div>
+    </div>
+  </div>
+
   <Loader
-    v-if="documentId === 0"
+    v-else-if="documentId === 0"
     :loading="true"
     class="pageLoader"
   />
@@ -36,7 +50,8 @@ export default {
   },
   data() {
     return {
-      documentId: 0
+      documentId: 0,
+      documentError: null,
     }
   },
   computed: {
@@ -57,27 +72,34 @@ export default {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash}, (res) => {
       if (!res.success) {
         this.documentId = res.documentId;
-        this.eventBus.emit("toast", {
-              title: "Document not found",
-              message: res.message,
-              variant: "danger",
-        });
+        this.setDocumentError(res.message, res.code);
       }
     });
   },
-  sockets: {
-    documentError: function (data) {
-      if (data.documentHash === this.documentHash) {
-        this.eventBus.emit('toast', {
-          title: "Document Error",
-          message: data.message,
-          variant: "danger"
-        });
-        this.$router.push("/");
-      }
-    }
-  },
   methods: {
+    /**
+     * Set document error state with user-friendly title and message
+     */
+    setDocumentError(message, errorCode) {
+      const titleMap = {
+        'DOCUMENT_NOT_FOUND': 'Document Not Found',
+        'ACCESS_DENIED': 'Access Denied',
+        'FILE_MISSING': 'File Not Available',
+      };
+
+      // Use predefined message if error code exists
+      this.documentError = {
+        title: titleMap[errorCode] || 'Document Error',
+        message: message || 'An unexpected error occurred.'
+      };
+
+      // Also emit toast for immediate feedback
+      this.eventBus.emit('toast', {
+        title: this.documentError.title,
+        message: this.documentError.message,
+        variant: "danger"
+      });
+    },
   }
 }
 </script>
@@ -88,5 +110,15 @@ export default {
   top: 25%;
   left: 50%;
   transform: translate(-50%, -50%)
+}
+
+.document-error-page {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.error-card {
+  max-width: 500px;
+  border: 1px solid #e0e0e0;
 }
 </style>

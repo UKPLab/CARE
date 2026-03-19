@@ -96,7 +96,7 @@ class StudySocket extends Socket {
 
             try {
 
-                await this.models['study'].updateById(study.id, {closed: true}, {transaction: transaction});
+                await this.models['study'].updateById(study.id, {closed: true, userIdClosed: this.userId}, {transaction: transaction});
                 transaction.afterCommit(() => {
                     this.broadcastTransactionChanges(transaction);
                 });

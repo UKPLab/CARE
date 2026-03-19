@@ -99,7 +99,11 @@ module.exports = class Socket {
                 this.logger.error(err.message);
 
                 if (callback) {
-                    callback({success: false, message: err.message});
+                    const response = {success: false, message: err.message};
+                    if (err.code) {
+                        response.code = err.code;
+                    }
+                    callback(response);
                 }
             }
             finally {

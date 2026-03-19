@@ -53,6 +53,7 @@
           :columns="userColumns"
           :data="users"
           :options="tableOptions"
+          :max-table-height="'60vh'"
         />
         <small class="text-muted">
           {{ userSelection.length }} user(s) selected
