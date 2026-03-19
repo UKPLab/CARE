@@ -9,7 +9,7 @@
       />
       <BasicButton
         class="btn btn-secondary btn-sm ms-2"
-        title="export Workflows"
+        title="Export Workflows"
         text="Export All"
         icon="download"
         @click="exportWorkflows"
@@ -188,7 +188,7 @@ export default {
           },
         },
         {
-          title: "export Workflow",
+          title: "Export Workflow",
           action: "exportWorkflow",
           stats: { workflowId: "id" },
           icon: "download",
