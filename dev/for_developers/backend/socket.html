@@ -2228,6 +2228,28 @@ has consented to statistics collection (<cite>acceptStats</cite> is true).</p>
 <dd><p>Handle all study sessions through websocket</p>
 <p>Loading the study sessions through websocket</p>
 <dl class="js function">
+<dt class="sig sig-object js" id="StudySessionSocket.copyStudySession">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">copyStudySession</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.copyStudySession" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>studySessionCopy</cite></p>
+<p>Duplicates a study session and assigns to user.
+This is used to copy a study session for a user when they want to start a new session with the same data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>) – The data object containing the study session information and target user IDs.</p></li>
+<li><p><strong>data.studySession</strong> (<strong>object</strong>) – The study session object to be duplicated.</p></li>
+<li><p><strong>data.userIds</strong> (<strong>Array.&lt;number&gt;</strong>) – An array of user IDs to assign the duplicated session to.</p></li>
+<li><p><strong>options</strong> (<strong>object</strong>) – Configuration for the database operation.</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – A Sequelize DB transaction object to ensure atomicity.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Array.&lt;StudySessions&gt;&gt;</strong> – A promise that resolves with an array of the newly created study session objects for each target user.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="StudySessionSocket.sendSessionsByStudyId">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendSessionsByStudyId</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">studyId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.sendSessionsByStudyId" title="Link to this definition"></a></dt>
 <dd><p>Send all study sessions to the client
