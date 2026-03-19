@@ -13,9 +13,12 @@
 
     <!-- Step 1: File picker -->
     <template #step-1>
-      <div class="form-field">
-        <label class="form-label">Select workflow file (JSON or YAML):</label>
-        <div class="flex-grow-1">
+      <div class="form-field d-flex flex-column">
+        <label class="form-label w-100 text-start mb-2">
+          Select workflow file (JSON or YAML):
+        </label>
+
+        <div class="w-100">
           <input
             ref="fileInput"
             class="form-control"
