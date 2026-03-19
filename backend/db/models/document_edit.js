@@ -66,25 +66,27 @@ module.exports = (sequelize, DataTypes) => {
          *   - If not provided or empty, copies ALL edits (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
-         * @param {Object} transaction - The database transaction
+         * @param {number|null} targetStudySessionId - Optional study session ID to set for the duplicated data (overrides original value)
+         * @param {number|null} targetStudyStepId - Optional study step ID to set for the duplicated data (overrides original value)
+         * @param {Object} options - Database options including transaction
          * @returns {Promise<Array>} Array of duplicated document edits
          *
          * @example
          * // Copy all edits (default)
-         * await duplicateEditsByDocument(1, 2, null, transaction);
+         * await duplicateEditsByDocument(1, 2, null, null, null, options);
          *
          * @example
          * // Copy only null entries
-         * await duplicateEditsByDocument(1, 2, { studySessionId: null, studyStepId: null }, transaction);
+         * await duplicateEditsByDocument(1, 2, { studySessionId: null, studyStepId: null }, null, null, options);
          *
          * @example
          * // Copy multiple conditions
          * await duplicateEditsByDocument(1, 2, [
          *   { studySessionId: null, studyStepId: null },
          *   { studySessionId: 45, studyStepId: 12 }
-         * ], transaction);
+         * ], options);
          */
-        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, filters = null, transaction) {
+        static async duplicateEditsByDocument(originalDocumentId, duplicatedDocumentId, filters = null, targetStudySessionId = null, targetStudyStepId = null, options) {
             // Build where clause: start with documentId and deleted=false
             const whereClause = {
                 documentId: originalDocumentId,
@@ -113,7 +115,7 @@ module.exports = (sequelize, DataTypes) => {
             const originalEdits = await this.findAll({
                 where: whereClause,
                 raw: true,
-                transaction
+                transaction: options.transaction
             });
 
             // Build payloads first
@@ -121,11 +123,11 @@ module.exports = (sequelize, DataTypes) => {
                 ...originalEdit,
                 documentId: duplicatedDocumentId,
                 id: undefined,
-                studySessionId: null,
-                studyStepId: null,
+                studySessionId: targetStudySessionId,
+                studyStepId: targetStudyStepId,
             }));
 
-            return await this.bulkCreate(bulkData, {timestamps: false, transaction});
+            return await this.bulkCreate(bulkData, {timestamps: false, transaction: options.transaction});
 
         }
     }
