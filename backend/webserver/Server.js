@@ -421,30 +421,49 @@ module.exports = class Server {
             cert
         };
 
+        this.logger.info(`[Auth] Initializing SAML strategy with entryPoint=${entryPoint}, issuer=${issuer}, callbackUrl=${callbackUrl}`);
+
         try {
             passport.use('saml-login', new SamlStrategy(config, async (profile, done) => {
                 try {
+                    const profileKeys = Object.keys(profile || {}).sort();
+                    const emailAttr = profile?.email || profile?.mail || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+                    const email = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
                     const nameId = profile?.nameID;
-                    if (!nameId) return done(null, false, { message: "Missing SAML NameID." });
+                    this.logger.info(`[Auth] SAML callback received. nameID=${nameId || "<missing>"}, email=${email || "<missing>"}, profileKeys=${profileKeys.join(",")}`);
+                    this.logger.debug(`[Auth] Full SAML profile: ${JSON.stringify(profile || {})}`);
+
+                    if (!nameId) {
+                        this.logger.warn(`[Auth] SAML authentication failed: missing NameID. profileKeys=${profileKeys.join(",")}`);
+                        return done(null, false, { message: "Missing SAML NameID." });
+                    }
 
                     let user = await this.db.models['user'].findOne({ where: { samlNameId: nameId }, raw: true });
 
                     if (!user) {
-                        const emailAttr = profile.email || profile.mail || profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
-                        const email = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
-
                         if (email) {
                             user = await this.db.models['user'].findOne({ where: { email }, raw: true });
                             if (user) {
                                 await this.db.models['user'].update({ samlNameId: nameId, email }, { where: { id: user.id } });
                                 user.samlNameId = nameId;
+                                this.logger.info(`[Auth] Linked existing user ${user.id} to SAML NameID ${nameId}.`);
                             }
                         }
                     }
 
-                    if (!user) return done(null, false, { message: "SAML account not linked." });
+                    if (!user) {
+                        this.logger.warn(`[Auth] SAML authentication failed: account not linked for NameID=${nameId}, email=${email || "<missing>"}.`);
+                        return done(null, false, { message: "SAML account not linked." });
+                    }
+                    this.logger.info(`[Auth] SAML authentication succeeded for user ${user.id}.`);
                     return done(null, relevantFields(user));
-                } catch (e) { return done(e); }
+                } catch (e) {
+                    this.logger.error(`[Auth] SAML verify callback failed: ${e.message}`);
+                    if (e.stack) {
+                        this.logger.debug(e.stack);
+                    }
+                    return done(e);
+                }
             }));
             this.authProviderStatus.saml = { ready: true, reason: "ready" };
         } catch (e) {
