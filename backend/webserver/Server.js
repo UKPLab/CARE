@@ -436,7 +436,7 @@ module.exports = class Server {
                     const firstName = Array.isArray(firstNameAttr) ? firstNameAttr[0] : firstNameAttr;
                     const lastName = Array.isArray(lastNameAttr) ? lastNameAttr[0] : lastNameAttr;
                     this.logger.info(`[Auth] SAML callback received. nameID=${nameId || "<missing>"}, email=${email || "<missing>"}, profileKeys=${profileKeys.join(",")}`);
-                    this.logger.info(`[Auth] Full SAML profile: ${JSON.stringify(profile || {})}`);
+                    this.logger.info(`[Auth] Full SAML profile: ${JSON.stringify(profileKeys || {})}`);
 
                     if (!nameId) {
                         this.logger.warn(`[Auth] SAML authentication failed: missing NameID. profileKeys=${profileKeys.join(",")}`);
