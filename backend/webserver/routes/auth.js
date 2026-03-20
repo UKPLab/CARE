@@ -510,25 +510,18 @@ The CARE Team`
             return passport.authenticate('saml-login', function (err, user, info) {
                 if (err) {
                     server.logger.error(`[Auth] SAML authentication error: ${err.message}`);
-                    if (err.stack) {
-                        server.logger.debug(err.stack);
-                    }
                     return res.redirect(failureRedirect);
                 }
 
                 if (!user) {
                     const infoMessage = info?.message || "Unknown SAML authentication failure.";
                     server.logger.warn(`[Auth] SAML authentication failed: ${infoMessage}`);
-                    server.logger.debug(`[Auth] SAML failure details: ${JSON.stringify(info || {})}`);
                     return res.redirect(failureRedirect);
                 }
 
                 return req.logIn(user, function (loginErr) {
                     if (loginErr) {
                         server.logger.error(`[Auth] SAML session login error: ${loginErr.message}`);
-                        if (loginErr.stack) {
-                            server.logger.debug(loginErr.stack);
-                        }
                         return res.redirect(failureRedirect);
                     }
                     return next();

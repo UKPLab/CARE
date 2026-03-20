@@ -24,6 +24,56 @@ const RPC = require(path.resolve(__dirname,"./RPC.js"));
 const statsScheduler = require('../db/stats');
 const nodemailer = require('nodemailer');
 
+const SAML_ATTRIBUTE_KEYS = {
+    email: [
+        "email",
+        "mail",
+        "urn:oid:1.2.840.113549.1.9.1",
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+    ],
+    firstName: [
+        "firstName",
+        "givenName",
+        "urn:oid:2.5.4.42",
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
+    ],
+    lastName: [
+        "lastName",
+        "sn",
+        "surname",
+        "familyName",
+        "urn:oid:2.5.4.4",
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
+    ],
+};
+
+function getFirstPresentValue(source, keys = []) {
+    for (const key of keys) {
+        const value = source?.[key];
+        if (Array.isArray(value) && value.length > 0 && value[0]) {
+            return value[0];
+        }
+        if (value) return value;
+    }
+    return null;
+}
+
+function displayNamePart(value, fallback) {
+    if (!value) return fallback;
+    return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getNamePartsFromEmail(email) {
+    const localPart = (email || "").split("@")[0] || "";
+    const [rawFirstName, ...rest] = localPart.split(".").filter(Boolean);
+    const rawLastName = rest.join(".");
+
+    return {
+        firstName: displayNamePart(rawFirstName, "SSO"),
+        lastName: displayNamePart(rawLastName, "User"),
+    };
+}
+
 /**
  * Defines Express Webserver of Content Server
  *
@@ -421,30 +471,20 @@ module.exports = class Server {
             cert
         };
 
-        this.logger.info(`[Auth] Initializing SAML strategy with entryPoint=${entryPoint}, issuer=${issuer}, callbackUrl=${callbackUrl}`);
-
         try {
             passport.use('saml-login', new SamlStrategy(config, async (profile, done) => {
                 try {
-                    const profileKeys = Object.keys(profile || {}).sort();
-                    const emailAttr = profile?.email || profile?.mail || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
-                    const resolvedEmailAttr = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
                     const nameId = profile?.nameID;
-                    const email = resolvedEmailAttr || nameId;
-                    const firstNameAttr = profile?.firstName || profile?.givenName || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'];
-                    const lastNameAttr = profile?.lastName || profile?.sn || profile?.surname || profile?.familyName || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'];
-                    const firstName = Array.isArray(firstNameAttr) ? firstNameAttr[0] : firstNameAttr;
-                    const lastName = Array.isArray(lastNameAttr) ? lastNameAttr[0] : lastNameAttr;
-                    this.logger.info(`[Auth] SAML callback received. nameID=${nameId || "<missing>"}, email=${email || "<missing>"}, profileKeys=${profileKeys.join(",")}`);
-                    this.logger.info(`[Auth] Full SAML profile: ${JSON.stringify(profileKeys || {})}`);
+                    const email = getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.email) || nameId;
+                    const firstName = getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.firstName);
+                    const lastName = getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.lastName);
+                    const fallbackNameParts = getNamePartsFromEmail(email);
 
                     if (!nameId) {
-                        this.logger.warn(`[Auth] SAML authentication failed: missing NameID. profileKeys=${profileKeys.join(",")}`);
                         return done(null, false, { message: "Missing SAML NameID." });
                     }
 
                     if (!email) {
-                        this.logger.warn(`[Auth] SAML authentication failed: missing email and NameID fallback unavailable. profileKeys=${profileKeys.join(",")}`);
                         return done(null, false, { message: "Missing SAML email." });
                     }
 
@@ -455,17 +495,15 @@ module.exports = class Server {
                         if (user) {
                             await this.db.models['user'].update({ samlNameId: nameId, email }, { where: { id: user.id } });
                             user.samlNameId = nameId;
-                            this.logger.info(`[Auth] Linked existing user ${user.id} to SAML NameID ${nameId}.`);
                         }
                     }
 
                     if (!user) {
                         const transaction = await this.db.models['user'].sequelize.transaction();
-                        // TODO: Names to be modified
                         try {
                             const createdUser = await this.db.models['user'].add({
-                                firstName: firstName || 'test',
-                                lastName: lastName || 'test',
+                                firstName: firstName || fallbackNameParts.firstName,
+                                lastName: lastName || fallbackNameParts.lastName,
                                 email,
                                 samlNameId: nameId,
                                 emailVerified: true,
@@ -473,23 +511,13 @@ module.exports = class Server {
                             }, { transaction });
                             await transaction.commit();
                             user = createdUser.get({ plain: true });
-                            this.logger.info(`[Auth] Auto-provisioned SAML user ${user.id} for NameID=${nameId}, email=${email}.`);
                         } catch (provisionErr) {
                             await transaction.rollback();
-                            this.logger.error(`[Auth] Failed to auto-provision SAML user for NameID=${nameId}, email=${email}: ${provisionErr.message}`);
-                            if (provisionErr.stack) {
-                                this.logger.debug(provisionErr.stack);
-                            }
                             return done(provisionErr);
                         }
                     }
-                    this.logger.info(`[Auth] SAML authentication succeeded for user ${user.id}.`);
                     return done(null, relevantFields(user));
                 } catch (e) {
-                    this.logger.error(`[Auth] SAML verify callback failed: ${e.message}`);
-                    if (e.stack) {
-                        this.logger.debug(e.stack);
-                    }
                     return done(e);
                 }
             }));
