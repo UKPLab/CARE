@@ -58,19 +58,32 @@ function getFirstPresentValue(source, keys = []) {
     return null;
 }
 
-function displayNamePart(value, fallback) {
-    if (!value) return fallback;
-    return value.charAt(0).toUpperCase() + value.slice(1);
-}
+function getProvisionedNameParts({ firstName, lastName, email, fullName, fallbackFirstName, fallbackLastName }) {
+    const normalizedFirstName = Array.isArray(firstName) ? firstName[0] : firstName;
+    const normalizedLastName = Array.isArray(lastName) ? lastName[0] : lastName;
+    const toDisplayNamePart = (value, fallback) => {
+        if (!value) return fallback;
+        return value.charAt(0).toUpperCase() + value.slice(1);
+    };
 
-function getNamePartsFromEmail(email) {
-    const localPart = (email || "").split("@")[0] || "";
-    const [rawFirstName, ...rest] = localPart.split(".").filter(Boolean);
-    const rawLastName = rest.join(".");
+    if (normalizedFirstName && normalizedLastName) {
+        return { firstName: normalizedFirstName, lastName: normalizedLastName };
+    }
 
+    if (email) {
+        const localPart = (email || "").split("@")[0] || "";
+        const [rawFirstName, ...rest] = localPart.split(".").filter(Boolean);
+        const rawLastName = rest.join(".");
+        return {
+            firstName: normalizedFirstName || toDisplayNamePart(rawFirstName, fallbackFirstName),
+            lastName: normalizedLastName || toDisplayNamePart(rawLastName, fallbackLastName),
+        };
+    }
+
+    const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
     return {
-        firstName: displayNamePart(rawFirstName, "SSO"),
-        lastName: displayNamePart(rawLastName, "User"),
+        firstName: normalizedFirstName || toDisplayNamePart(parts[0], fallbackFirstName),
+        lastName: normalizedLastName || toDisplayNamePart(parts.slice(1).join(" "), fallbackLastName),
     };
 }
 
@@ -341,17 +354,28 @@ module.exports = class Server {
             passport.use("orcid-login", new OrcidStrategy(config, async (req, accessToken, refreshToken, params, profile, done) => {
                 try {
                     const orcidId = params.orcid;
-                    let user = await this.db.models['user'].findOne({ where: { orcidId }, raw: true });
+                    if (!orcidId) return done(new Error("ORCID response missing ORCID identifier"));
 
-                    if (!user) {
-                        const nameParts = (params.name || "").trim().split(/\s+/);
-                        user = await this.db.models['user'].add({
-                            orcidId,
-                            firstName: nameParts[0] || null,
-                            lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : null,
-                        }, {});
-                        if (user && user.get) user = user.get({ plain: true });
-                    }
+                    const email = getFirstPresentValue(profile, ["email", "mail"]) || params.email || null;
+                    const nameParts = getProvisionedNameParts({
+                        firstName: getFirstPresentValue(profile, ["firstName", "givenName"]),
+                        lastName: getFirstPresentValue(profile, ["lastName", "familyName", "surname"]),
+                        email,
+                        fullName: params.name,
+                        fallbackFirstName: "ORCID",
+                        fallbackLastName: "User",
+                    });
+
+                    const user = await this.#findOrProvisionExternalUser({
+                        externalField: "orcidId",
+                        externalValue: orcidId,
+                        email,
+                        createData: {
+                            firstName: nameParts.firstName,
+                            lastName: nameParts.lastName,
+                            emailVerified: !!email,
+                        },
+                    });
                     return done(null, relevantFields(user));
                 } catch (e) { return done(e); }
             }));
@@ -404,28 +428,28 @@ module.exports = class Server {
                 try {
                     const username = Array.isArray(ldapUser?.uid) ? ldapUser.uid[0] : ldapUser?.uid;
                     const email = [].concat(ldapUser?.mail || ldapUser?.email || [])[0];
+                    const nameParts = getProvisionedNameParts({
+                        firstName: [].concat(ldapUser?.givenName || ldapUser?.cn || [])[0],
+                        lastName: [].concat(ldapUser?.sn || [])[0],
+                        email,
+                        fullName: [].concat(ldapUser?.cn || [])[0],
+                        fallbackFirstName: "LDAP",
+                        fallbackLastName: "User",
+                    });
 
                     if (!username) return done(new Error('LDAP user missing UID'));
 
-                    let user = await this.db.models['user'].findOne({ where: { ldapUsername: username }, raw: true });
-
-                    if (!user && email) {
-                        user = await this.db.models['user'].findOne({ where: { email }, raw: true });
-                        if (user) {
-                            await this.db.models['user'].update({ ldapUsername: username }, { where: { id: user.id } });
-                            user.ldapUsername = username; // Update local reference
-                        }
-                    }
-
-                    if (!user) {
-                        user = await this.db.models['user'].add({
-                            ldapUsername: username,
+                    const user = await this.#findOrProvisionExternalUser({
+                        externalField: "ldapUsername",
+                        externalValue: username,
+                        email,
+                        createData: {
+                            firstName: nameParts.firstName,
+                            lastName: nameParts.lastName,
                             email,
-                            firstName: [].concat(ldapUser?.givenName || ldapUser?.cn || 'New')[0],
-                            lastName: [].concat(ldapUser?.sn || 'User')[0]
-                        });
-                        if (user && user.get) user = user.get({ plain: true });
-                    }
+                            emailVerified: !!email,
+                        },
+                    });
                     return done(null, relevantFields(user));
                 } catch (e) { return done(e); }
             }));
@@ -476,9 +500,14 @@ module.exports = class Server {
                 try {
                     const nameId = profile?.nameID;
                     const email = getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.email) || nameId;
-                    const firstName = getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.firstName);
-                    const lastName = getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.lastName);
-                    const fallbackNameParts = getNamePartsFromEmail(email);
+                    const nameParts = getProvisionedNameParts({
+                        firstName: getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.firstName),
+                        lastName: getFirstPresentValue(profile, SAML_ATTRIBUTE_KEYS.lastName),
+                        email,
+                        fullName: null,
+                        fallbackFirstName: "SSO",
+                        fallbackLastName: "User",
+                    });
 
                     if (!nameId) {
                         return done(null, false, { message: "Missing SAML NameID." });
@@ -488,34 +517,18 @@ module.exports = class Server {
                         return done(null, false, { message: "Missing SAML email." });
                     }
 
-                    let user = await this.db.models['user'].findOne({ where: { samlNameId: nameId }, raw: true });
-
-                    if (!user) {
-                        user = await this.db.models['user'].findOne({ where: { email }, raw: true });
-                        if (user) {
-                            await this.db.models['user'].update({ samlNameId: nameId, email }, { where: { id: user.id } });
-                            user.samlNameId = nameId;
-                        }
-                    }
-
-                    if (!user) {
-                        const transaction = await this.db.models['user'].sequelize.transaction();
-                        try {
-                            const createdUser = await this.db.models['user'].add({
-                                firstName: firstName || fallbackNameParts.firstName,
-                                lastName: lastName || fallbackNameParts.lastName,
-                                email,
-                                samlNameId: nameId,
-                                emailVerified: true,
-                                acceptTerms: false,
-                            }, { transaction });
-                            await transaction.commit();
-                            user = createdUser.get({ plain: true });
-                        } catch (provisionErr) {
-                            await transaction.rollback();
-                            return done(provisionErr);
-                        }
-                    }
+                    const user = await this.#findOrProvisionExternalUser({
+                        externalField: "samlNameId",
+                        externalValue: nameId,
+                        email,
+                        createData: {
+                            firstName: nameParts.firstName,
+                            lastName: nameParts.lastName,
+                            email,
+                            emailVerified: true,
+                            acceptTerms: false,
+                        },
+                    });
                     return done(null, relevantFields(user));
                 } catch (e) {
                     return done(e);
@@ -544,6 +557,38 @@ module.exports = class Server {
      */
     getAuthProviderStatus(provider) {
         return this.authProviderStatus?.[provider] || { ready: false, reason: "unknown-provider" };
+    }
+
+    async #findOrProvisionExternalUser({ externalField, externalValue, email, createData }) {
+        let user = await this.db.models['user'].findOne({ where: { [externalField]: externalValue }, raw: true });
+
+        if (!user && email) {
+            user = await this.db.models['user'].findOne({ where: { email }, raw: true });
+            if (user) {
+                const updateData = { [externalField]: externalValue };
+                if (email) updateData.email = email;
+                await this.db.models['user'].update(updateData, { where: { id: user.id } });
+                user = { ...user, ...updateData };
+            }
+        }
+
+        if (user) {
+            return user;
+        }
+
+        const transaction = await this.db.models['user'].sequelize.transaction();
+        try {
+            const createdUser = await this.db.models['user'].add({
+                ...createData,
+                [externalField]: externalValue,
+                email: email || createData?.email || null,
+            }, { transaction });
+            await transaction.commit();
+            return createdUser?.get ? createdUser.get({ plain: true }) : createdUser;
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     /**
