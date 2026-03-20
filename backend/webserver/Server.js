@@ -428,32 +428,60 @@ module.exports = class Server {
                 try {
                     const profileKeys = Object.keys(profile || {}).sort();
                     const emailAttr = profile?.email || profile?.mail || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
-                    const email = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
+                    const resolvedEmailAttr = Array.isArray(emailAttr) ? emailAttr[0] : emailAttr;
                     const nameId = profile?.nameID;
+                    const email = resolvedEmailAttr || nameId;
+                    const firstNameAttr = profile?.firstName || profile?.givenName || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'];
+                    const lastNameAttr = profile?.lastName || profile?.sn || profile?.surname || profile?.familyName || profile?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'];
+                    const firstName = Array.isArray(firstNameAttr) ? firstNameAttr[0] : firstNameAttr;
+                    const lastName = Array.isArray(lastNameAttr) ? lastNameAttr[0] : lastNameAttr;
                     this.logger.info(`[Auth] SAML callback received. nameID=${nameId || "<missing>"}, email=${email || "<missing>"}, profileKeys=${profileKeys.join(",")}`);
-                    this.logger.debug(`[Auth] Full SAML profile: ${JSON.stringify(profile || {})}`);
+                    this.logger.info(`[Auth] Full SAML profile: ${JSON.stringify(profile || {})}`);
 
                     if (!nameId) {
                         this.logger.warn(`[Auth] SAML authentication failed: missing NameID. profileKeys=${profileKeys.join(",")}`);
                         return done(null, false, { message: "Missing SAML NameID." });
                     }
 
+                    if (!email) {
+                        this.logger.warn(`[Auth] SAML authentication failed: missing email and NameID fallback unavailable. profileKeys=${profileKeys.join(",")}`);
+                        return done(null, false, { message: "Missing SAML email." });
+                    }
+
                     let user = await this.db.models['user'].findOne({ where: { samlNameId: nameId }, raw: true });
 
                     if (!user) {
-                        if (email) {
-                            user = await this.db.models['user'].findOne({ where: { email }, raw: true });
-                            if (user) {
-                                await this.db.models['user'].update({ samlNameId: nameId, email }, { where: { id: user.id } });
-                                user.samlNameId = nameId;
-                                this.logger.info(`[Auth] Linked existing user ${user.id} to SAML NameID ${nameId}.`);
-                            }
+                        user = await this.db.models['user'].findOne({ where: { email }, raw: true });
+                        if (user) {
+                            await this.db.models['user'].update({ samlNameId: nameId, email }, { where: { id: user.id } });
+                            user.samlNameId = nameId;
+                            this.logger.info(`[Auth] Linked existing user ${user.id} to SAML NameID ${nameId}.`);
                         }
                     }
 
                     if (!user) {
-                        this.logger.warn(`[Auth] SAML authentication failed: account not linked for NameID=${nameId}, email=${email || "<missing>"}.`);
-                        return done(null, false, { message: "SAML account not linked." });
+                        const transaction = await this.db.models['user'].sequelize.transaction();
+                        // TODO: Names to be modified
+                        try {
+                            const createdUser = await this.db.models['user'].add({
+                                firstName: firstName || 'test',
+                                lastName: lastName || 'test',
+                                email,
+                                samlNameId: nameId,
+                                emailVerified: true,
+                                acceptTerms: false,
+                            }, { transaction });
+                            await transaction.commit();
+                            user = createdUser.get({ plain: true });
+                            this.logger.info(`[Auth] Auto-provisioned SAML user ${user.id} for NameID=${nameId}, email=${email}.`);
+                        } catch (provisionErr) {
+                            await transaction.rollback();
+                            this.logger.error(`[Auth] Failed to auto-provision SAML user for NameID=${nameId}, email=${email}: ${provisionErr.message}`);
+                            if (provisionErr.stack) {
+                                this.logger.debug(provisionErr.stack);
+                            }
+                            return done(provisionErr);
+                        }
                     }
                     this.logger.info(`[Auth] SAML authentication succeeded for user ${user.id}.`);
                     return done(null, relevantFields(user));
