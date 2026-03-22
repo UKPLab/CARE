@@ -30,8 +30,8 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          @click="close"
           title="Close"
+          @click="close"
         />
         <BasicButton
           class="btn btn-primary"

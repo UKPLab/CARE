@@ -4,6 +4,7 @@ const database = require("../../db");
 const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/data.js");
 const {mergeInjects} = require("../../utils/data");
+const {generateError} = require("../../utils/generic.js");
 
 /**
  * Send data for building the frontend app
@@ -55,7 +56,6 @@ class AppSocket extends Socket {
      * @param {Object} data.data New data to update
      * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @param {Object} options.transaction Sequelize DB transaction options
-     * Sequelize options passed to add/updateById also include callerUserId (socket user) for model hooks.
      * @returns {Promise<void>} A promise that resolves with the ID of the newly created or updated primary record.
      * @throws {Error} Throws an error under several conditions:
      *  If a non-admin user attempts to update a record for another user,
@@ -64,7 +64,6 @@ class AppSocket extends Socket {
      */
     async updateData(data, options = {}) {
         const transaction = options.transaction;
-        const callerUserId = this.userId;
 
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
@@ -72,7 +71,10 @@ class AppSocket extends Socket {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction, callerUserId: callerUserId}
+                {
+                    context: {...data.data, currentUserId: this.userId},
+                    transaction: transaction
+                }
             );
             
             return newEntry.id;
@@ -110,12 +112,18 @@ class AppSocket extends Socket {
             if (!("userId" in data.data)) {
                 data.data.userId = this.userId;
             }
-            newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction, callerUserId: callerUserId});
+            newEntry = await this.models[data.table].add(data.data, {
+                context: {...data.data, currentUserId: this.userId},
+                transaction: transaction
+            });
         } else {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction, callerUserId: callerUserId}
+                {
+                    context: {...data.data, currentUserId: this.userId},
+                    transaction: transaction
+                }
             );
         }
 
@@ -292,12 +300,24 @@ class AppSocket extends Socket {
      * @throws {Error} Throws error if results is empty (no record found or operation fails)
      */
     async sendDataByHash(data, options) {
+        const record = await this.models[data.table].getByHash(data.hash);
+        let errorCode = "UNKNOWN";
+        let errorMessage = "";
+
+        if (!record) {
+            // Record doesn't exist or was deleted
+            throw generateError("NOT_FOUND", "The requested resource does not exist or has been deleted.");
+        }
+
+        // Now check permissions by attempting to send via filtered sendTable
         const result = await this.sendTable(data.table, mergeFilter([[{
             key: "hash",
             value: data.hash
         }]], this.models[data.table].getAttributes()));
+
         if (result.length === 0) {
-            throw new Error("You don't have rights to access this data");
+            // Record exists but user doesn't have permission
+            throw generateError("ACCESS_DENIED", "You do not have rights to access this data.");
         }
     }
 

@@ -1148,4 +1148,29 @@ export default {
   white-space: normal;
   word-break: break-word;
 }
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed,
+.table-wrapper thead th.table-fixed-left,
+.table-wrapper thead th.table-fixed-right {
+  z-index: 6 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed-right {
+  z-index: 7 !important;
+}
+
+.table-wrapper tbody td.table-fixed,
+.table-wrapper tbody td.table-fixed-left,
+.table-wrapper tbody td.table-fixed-right {
+  z-index: 2 !important;
+  background: var(--bs-body-bg, #fff);
+}
 </style>

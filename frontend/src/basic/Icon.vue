@@ -5,6 +5,7 @@
     :color="color"
     :name="iconName"
     :cursor="cursor"
+    :style="rotateStyle"
   />
 </template>
 
@@ -40,11 +41,19 @@ export default {
       type: String,
       default: null,
       required: false
+    },
+    rotate: {
+      type: Number,
+      default: null,
+      required: false
     }
   },
   computed: {
     trueIconName(){
       return this.iconName ? this.iconName : "question-circle";
+    },
+    rotateStyle() {
+      return this.rotate ? { transform: `rotate(${this.rotate}deg)` } : {};
     },
     icon() {
       if (this.trueIconName === "loading") {

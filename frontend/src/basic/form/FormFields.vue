@@ -47,6 +47,12 @@
         v-model="modelValue[field.key]"
         :options="field"
       />
+      <FormJsonTextarea
+        v-else-if="field.type === 'json'"
+        :ref="'ref_' + field.key"
+        v-model="modelValue[field.key]"
+        :options="field"
+      />
       <FormTable
         v-else-if="field.type === 'table'"
         :ref="'ref_' + field.key"
@@ -92,6 +98,7 @@ import FormCheckbox from "@/basic/form/Checkbox.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormPassword from "@/basic/form/Password.vue";
 import FormTextarea from "@/basic/form/Textarea.vue";
+import FormJsonTextarea from "@/basic/form/JsonTextarea.vue";
 import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
 import FormChoice from "@/basic/form/Choice.vue";
@@ -115,6 +122,7 @@ export default {
     FormDefault,
     FormPassword,
     FormTextarea,
+    FormJsonTextarea,
     FormEditor,
     FormTable,
     FormChoice,

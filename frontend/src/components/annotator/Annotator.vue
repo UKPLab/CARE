@@ -22,8 +22,8 @@
 
         </div>
         <BasicSidebar
-            ref="basicSidebar"
             v-if="!sidebarDisabled"
+            ref="basicSidebar"
             :isShown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"

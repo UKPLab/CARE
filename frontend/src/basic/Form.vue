@@ -11,8 +11,14 @@
         @update:config-status="handleConfigStatusChange"
         @file-change="(file) => $emit('file-change', file)"
       />
-      <div v-if="advancedFields.length > 0" class="col-12">
-        <Collapsible title="Advanced Settings" :collapsed="true">
+      <div
+        v-if="advancedFields.length > 0"
+        class="col-12"
+      >
+        <Collapsible
+          title="Advanced Settings"
+          :collapsed="true"
+        >
           <div class="row g-3">
             <FormFields
               ref="advancedGrid"
@@ -56,7 +62,7 @@ export default {
       required: true,
     },
     fields: {
-      type: Object,
+      type: Array,
       required: true,
     },
   },

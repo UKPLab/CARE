@@ -464,12 +464,12 @@ module.exports = (sequelize, DataTypes) => {
                         );
                     }
 
-                    // appDataUpdate / updateData passes callerUserId so hooks can enforce ownership
-                    if (options.callerUserId === undefined) {
+                    // updateData sets context.currentUserId (same pattern as study model)
+                    if (options.context?.currentUserId === undefined) {
                         return;
                     }
 
-                    if (template.userId !== options.callerUserId) {
+                    if (template.userId !== options.context.currentUserId) {
                         throw new Error(
                             "You can only update templates that you own"
                         );

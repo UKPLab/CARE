@@ -1,6 +1,20 @@
 <template>
+    <!-- Error state -->
+  <div v-if="studyError" class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
+    <div class="error-card text-center p-5 bg-white rounded shadow">
+      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+      <h2 class="mt-4 text-danger">{{ studyError.title }}</h2>
+      <p class="text-muted mb-4">{{ studyError.message }}</p>
+      <div class="d-flex gap-3 justify-content-center">
+        <router-link to="/" class="btn btn-primary">
+          <i class="bi bi-house me-2"></i>Go to Dashboard
+        </router-link>
+      </div>
+    </div>
+  </div>
+
   <StudyModal
-      v-if="studySessionId === 0 || (studySession && studySession.start === null)"
+      v-else-if="studySessionId === 0 || (studySession && studySession.start === null)"
       ref="studyModal"
       :study-id="studyId"
       :study-closed="studyClosed"
@@ -9,6 +23,7 @@
       @start="start"
   />
   <FinishModal
+      v-if="!studyError"
       ref="studyFinishModal"
       :study-session-id="studySessionId"
       :show-time-up="timeUp"
@@ -96,7 +111,7 @@
   </Teleport>
 
   <div
-      v-if="studySessionId !== 0"
+      v-if="studySessionId !== 0 && !studyError"
       class="study-container"
   >
     <div v-for="step in orderedStudySteps" :key="'step_' + step.id">
@@ -113,6 +128,7 @@
                 @insert-nlp-response="handleInsertNlpResponse"
                 @update:data="updateStudyData(step.id, 'data', $event)"
                 @update:ready="loadingReady[step.id] = $event"
+                @error="handleLoadingError"
             />
           </div>
           <div v-if="isStepLoaded(step.id)">
@@ -140,8 +156,8 @@
             </Annotator>
 
             <Editor
-                ref="editor"
                 v-if="step.stepType === 2"
+                ref="editor"
                 :document-id="step.documentId"
                 :isShown="currentStudyStepId === step.id"
                 :study-step-id="step.id"
@@ -253,6 +269,7 @@ export default {
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
       pendingNlpInsertion: null,
+      studyError: null,
     };
   },
   computed: {
@@ -385,6 +402,9 @@ export default {
     },
     studyClosed() {
       if (this.study) {
+        if(this.studySession?.parentStudySessionId !== null && this.studySession?.end === null){
+          return false;
+        }
         if (this.study.closed) {
           return true;
         }
@@ -449,6 +469,19 @@ export default {
     }
   },
   methods: {
+    setStudyError(message, errorCode) {
+      const titleMap = {
+        NOT_FOUND: 'Study Not Found',
+        ACCESS_DENIED: 'Access Denied',
+        FILE_MISSING: 'Files Not Available',
+        DOCUMENT_NOT_FOUND: 'Document Not Found',
+      };
+
+      this.studyError = {
+        title: titleMap[errorCode] || 'Access Error!',
+        message: message || 'An unexpected error occurred.'
+      };
+    },
     updateStudyData(stepId, data_type, data) {
       if (!this.studyData[stepId]) {
         this.studyData[stepId] = {};
@@ -463,6 +496,12 @@ export default {
       }
 
       this.pendingNlpInsertion = responseText;
+    },
+    /*
+    Handle errors captured in loading modal
+     */
+    handleLoadingError(errorData) {
+      this.setStudyError(errorData.message, errorData.code);
     },
     next() {
       const nextStep = this.nextStudyStep;
@@ -485,12 +524,7 @@ export default {
             },
             (response) => {
               if (!response.success) {
-                this.eventBus.emit("toast", {
-                  title: "Access Error!",
-                  message: response.message,
-                  variant: "danger",
-                });
-                this.$router.push("/");
+                this.setStudyError(response.message, response.code);
               } else {
                 if (
                     this.studySessionId === 0 ||
@@ -639,4 +673,14 @@ export default {
 .ms-3 {
   margin-left: 1rem;
 }
+
+.study-error-page {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+.error-card {
+  max-width: 500px;
+  border: 1px solid #e0e0e0;
+}
+
 </style>

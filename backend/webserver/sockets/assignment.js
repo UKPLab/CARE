@@ -352,7 +352,11 @@ class AssignmentSocket extends Socket {
                 }
             }
 
-            for (const [assignmentId, reviewerIds] of Object.entries(finalAssignments)) {
+            const assignmentEntries = Object.entries(finalAssignments);
+            const totalAssignments = assignmentEntries.length;
+            let currentAssignment = 0;
+
+            for (const [assignmentId, reviewerIds] of assignmentEntries) {
                 const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
                 const assignmentData = {
@@ -366,6 +370,16 @@ class AssignmentSocket extends Socket {
                     enableEmailNotification: data.enableEmailNotification,
                 };
                 await this.createAssignment(assignmentData, options);
+
+                // Emit progress update
+                currentAssignment++;
+                if (data.progressId) {
+                    this.socket.emit("progressUpdate", {
+                        id: data.progressId,
+                        current: currentAssignment,
+                        total: totalAssignments
+                    });
+                }
             }
 
             return finalAssignments;
@@ -440,6 +454,10 @@ class AssignmentSocket extends Socket {
             }
 
             // create the final assignments
+            // Count total assignments for progress tracking
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
+
             for (const [reviewerId, assignments] of Object.entries(finalAssignments)) {
                 for (const assignment of assignments) {
                     const assignmentData = {
@@ -453,6 +471,16 @@ class AssignmentSocket extends Socket {
                         enableEmailNotification: data.enableEmailNotification,
                     };
                     await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
                 }
             }
 
@@ -481,6 +509,8 @@ class AssignmentSocket extends Socket {
             }
 
             // Create the final assignments
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
             for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
                 for (const assignmentId of assignmentIds) {
                     const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
@@ -495,6 +525,16 @@ class AssignmentSocket extends Socket {
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
                     };
                     await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
                 }
             }
 

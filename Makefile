@@ -100,7 +100,7 @@ dev-build-frontend: frontend/node_modules/.uptodate
 build:
 	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
-.PHONE: build-frontend
+.PHONY: build-frontend
 build-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-build
 

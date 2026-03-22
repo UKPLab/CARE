@@ -101,30 +101,38 @@ export default {
       if (Array.isArray(this.options.options)) {
         baseOptions = this.options.options;
       } else if (this.options.options.filter) {
+        // Group filters by key: within each key group use OR, across groups use AND
+        const filterGroups = this.options.options.filter.reduce((groups, f) => {
+          const groupKey = f.key;
+          if (!groups[groupKey]) groups[groupKey] = [];
+          groups[groupKey].push(f);
+          return groups;
+        }, {});
+
         baseOptions = this.$store.getters["table/" + this.options.options.table + "/getFiltered"]((e) =>
-          this.options.options.filter.every((f) => {
-            let sourceValue = e[f.key];
-            if (f.mapping) {
-              // create a mapping function to map the value to the key
-              sourceValue = f.mapping[e[f.key]];
-            }
-            switch (f.type) {
-              case "formData":
-                return sourceValue === this.formData[f.value];
-              case "parentData":
-                return sourceValue === this.parentValue[f.value];
-              case "byUserId":
-                return sourceValue === this.userId;
-              case "byProjectId":
-                return sourceValue === this.selectedProjectId;
-              default:
-                // Handle boolean comparisons more flexibly
-                if (typeof f.value === 'boolean' || typeof sourceValue === 'boolean') {
-                  return Boolean(sourceValue) === Boolean(f.value);
-                }
-                return sourceValue === f.value;
-            }
-          })
+          Object.values(filterGroups).every((group) =>
+            group.some((f) => {
+              let sourceValue = e[f.key];
+              if (f.mapping) {
+                sourceValue = f.mapping[e[f.key]];
+              }
+              switch (f.type) {
+                case "formData":
+                  return sourceValue === this.formData[f.value];
+                case "parentData":
+                  return sourceValue === this.parentValue[f.value];
+                case "byUserId":
+                  return sourceValue === this.userId;
+                case "byProjectId":
+                  return sourceValue === this.selectedProjectId;
+                default:
+                  if (typeof f.value === 'boolean' || typeof sourceValue === 'boolean') {
+                    return Boolean(sourceValue) === Boolean(f.value);
+                  }
+                  return sourceValue === f.value;
+              }
+            })
+          )
         );
       } else {
         baseOptions = this.$store.getters["table/" + this.options.options.table + "/getAll"];
