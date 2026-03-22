@@ -91,9 +91,7 @@
         // For edit: restrict default language to languages that have content
         this.$socket.emit("templateGetLanguages", { templateId: id }, (res) => {
           const data = res.success && res.data ? res.data : {};
-          const languagesArray = Array.isArray(data)
-            ? data
-            : data.languages || [];
+          const languagesArray = Array.isArray(data) ? data : (data.languages || []);
 
           this.languagesWithContent = languagesArray;
 
@@ -131,30 +129,42 @@
           payload.content = { ops: [{ insert: "\n" }] };
         }
   
-        const eventName = isEdit ? "templateUpdate" : "templateAdd";
-        
-        this.$socket.emit(eventName, payload, (result) => {
-          if (result.success) {
-            this.$refs.coordinator.waiting = false;
-            this.eventBus.emit("toast", {
-              title: isEdit ? "Template updated" : "Template created",
-              message: "",
-              variant: "success",
-            });
-            this.$refs.coordinator.close();
-            // Route to editor after creation
-            if (!isEdit && result.data && result.data.id) {
-              this.$router.push(`/template/${result.data.id}`);
+        if (isEdit) {
+          this.$socket.emit(
+            "appDataUpdate",
+            { table: "template", data: payload },
+            (result) => {
+              this.handleSaveResult(result, isEdit);
             }
-          } else {
-            this.$refs.coordinator.waiting = false;
-            this.eventBus.emit("toast", {
-              title: "Template operation failed",
-              message: result.message,
-              variant: "danger",
-            });
-          }
+          );
+          return;
+        }
+
+        this.$socket.emit("templateAdd", payload, (result) => {
+          this.handleSaveResult(result, isEdit);
         });
+      },
+      handleSaveResult(result, isEdit) {
+        if (result.success) {
+          this.$refs.coordinator.waiting = false;
+          this.eventBus.emit("toast", {
+            title: isEdit ? "Template updated" : "Template created",
+            message: "",
+            variant: "success",
+          });
+          this.$refs.coordinator.close();
+          // Route to editor after creation (templateAdd returns row; appDataUpdate returns numeric id on edit only)
+          if (!isEdit && result.data && result.data.id) {
+            this.$router.push(`/template/${result.data.id}`);
+          }
+        } else {
+          this.$refs.coordinator.waiting = false;
+          this.eventBus.emit("toast", {
+            title: "Template operation failed",
+            message: result.message,
+            variant: "danger",
+          });
+        }
       },
     },
   };

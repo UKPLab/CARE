@@ -463,6 +463,27 @@ module.exports = (sequelize, DataTypes) => {
                             "Cannot make a template non-public once it has been made public"
                         );
                     }
+
+                    // appDataUpdate / updateData passes callerUserId so hooks can enforce ownership
+                    if (options.callerUserId === undefined) {
+                        return;
+                    }
+
+                    if (template.userId !== options.callerUserId) {
+                        throw new Error(
+                            "You can only update templates that you own"
+                        );
+                    }
+
+                    const prevSourceId = template._previousDataValues?.sourceId;
+                    const nextSourceId = template.sourceId;
+                    // Allow clearing sourceId (detach); block other edits while still a copy
+                    if (
+                        prevSourceId != null &&
+                        nextSourceId != null
+                    ) {
+                        throw new Error("Copied templates cannot be edited");
+                    }
                 }
             }
         }

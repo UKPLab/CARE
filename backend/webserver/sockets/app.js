@@ -55,6 +55,7 @@ class AppSocket extends Socket {
      * @param {Object} data.data New data to update
      * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @param {Object} options.transaction Sequelize DB transaction options
+     * Sequelize options passed to add/updateById also include callerUserId (socket user) for model hooks.
      * @returns {Promise<void>} A promise that resolves with the ID of the newly created or updated primary record.
      * @throws {Error} Throws an error under several conditions:
      *  If a non-admin user attempts to update a record for another user,
@@ -63,6 +64,7 @@ class AppSocket extends Socket {
      */
     async updateData(data, options = {}) {
         const transaction = options.transaction;
+        const callerUserId = this.userId;
 
         let newEntry = null;
         if (("id" in data.data && data.data.id !== 0) &&
@@ -70,7 +72,7 @@ class AppSocket extends Socket {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction}
+                {context: data.data, transaction: transaction, callerUserId: callerUserId}
             );
             
             return newEntry.id;
@@ -108,12 +110,12 @@ class AppSocket extends Socket {
             if (!("userId" in data.data)) {
                 data.data.userId = this.userId;
             }
-            newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
+            newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction, callerUserId: callerUserId});
         } else {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {context: data.data, transaction: transaction}
+                {context: data.data, transaction: transaction, callerUserId: callerUserId}
             );
         }
 

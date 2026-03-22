@@ -106,9 +106,12 @@ export default {
       }
     },
     publish() {
-      this.$socket.emit("templateUpdate", {
-        id: this.id,
-        public: true,
+      this.$socket.emit("appDataUpdate", {
+        table: "template",
+        data: {
+          id: this.id,
+          public: true,
+        },
       }, (res) => {
           if (!res.success) {
             this.$refs.publishModal.close();

@@ -180,64 +180,6 @@ class TemplateSocket extends Socket {
 
 
   /**
-   * Update a template
-   *
-   * @socketEvent templateUpdate
-   * @param {Object} data                  The data object containing the template update
-   * @param {number} data.id               Template ID to update (required)
-   * @param {string} [data.name]           New name
-   * @param {string} [data.description]    New description
-   * @param {string} [data.defaultLanguage] Default language code
-   * @param {boolean} [data.public]        New public flag (can only be set to true, cannot be unpublished)
-   * @param {Object} options
-   * @param {Object} options.transaction
-   * @returns {Promise<Object>}
-   */
-  async updateTemplate(data, options) {
-    if (!data.id) throw new Error("Template ID is required");
-
-    // Get current template
-    const currentTemplate = await this.models["template"].getById(data.id);
-    if (!currentTemplate) {
-      throw new Error("Template not found");
-    }
-
-    // Check ownership: users (including admins) can only update their own templates
-    if (currentTemplate.userId !== this.userId) {
-      throw new Error("You can only update templates that you own");
-    }
-
-    // Copied templates cannot be edited
-    if (currentTemplate.sourceId) {
-      throw new Error("Copied templates cannot be edited");
-    }
-    
-    // Prevent editing public templates from others (view-only)
-    if (currentTemplate.public === true && currentTemplate.userId !== this.userId) {
-      throw new Error("Public templates from other users are view-only and cannot be edited");
-    }
-
-    // Prevent unpublishing: if template is public, cannot set to false
-    if (currentTemplate.public === true && data.public === false) {
-      throw new Error("Cannot make a template non-public once it has been made public");
-    }
-
-    const updateData = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.type !== undefined) updateData.type = data.type;
-    if (data.defaultLanguage !== undefined) updateData.defaultLanguage = data.defaultLanguage;
-    if (data.public !== undefined) updateData.public = data.public;
-
-    return await this.models["template"].updateById(
-        data.id,
-        updateData,
-        { transaction: options.transaction }
-    );
-  }
-
-
-  /**
    * Add a placeholder to a template type
    *
    * @socketEvent templatePlaceholderAdd
@@ -760,7 +702,6 @@ class TemplateSocket extends Socket {
 
   init() {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
-    this.createSocket("templateUpdate", this.updateTemplate, {}, true);
     this.createSocket("templateGetContent", this.getContent, {}, false);
     this.createSocket("templateGetLanguages", this.getLanguages, {}, false);
     this.createSocket("templateEditContent", this.editContent, {}, true);
