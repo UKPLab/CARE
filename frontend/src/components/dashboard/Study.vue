@@ -379,6 +379,7 @@ export default {
       return cols;
     },
     studiesTable() {
+      const sessionCounts = this.$store.getters["table/study_session/sessionCountByStudyId"];
       return this.studies
           .filter(study => !study.template)
           .filter(study => this.canViewAllStudies ||
@@ -409,7 +410,7 @@ export default {
             }
 
             study.createdAt = new Date(study.createdAt).toLocaleString()
-            study.sessions = this.$store.getters["table/study_session/getFiltered"]((e) => e.studyId === study.id).length;
+            study.sessions = sessionCounts[study.id] ?? 0;
 
             study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
             study.showDeleteButton = this.isAdmin || study.userId === this.userId;

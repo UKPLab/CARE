@@ -24,6 +24,26 @@ export function refreshState(state, data, removeDeleted = true) {
 }
 
 /**
+ * Optional getters merged into specific table modules (keyed by backend table name).
+ * Simple implementation for trial purposes.
+ */
+const TABLE_EXTRA_GETTERS = {
+    study_session: {
+        sessionCountByStudyId: (state) => {
+            const counts = {};
+            for (const row of Object.values(state.data)) {
+                const id = row.studyId;
+                if (id == null) {
+                    continue;
+                }
+                counts[id] = (counts[id] || 0) + 1;
+            }
+            return counts;
+        },
+    },
+};
+
+/**
  * This file creates default data tables in vuex store for the backend database mapping
  *
  */
@@ -192,6 +212,8 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
             return true;
         }
     }
+
+    Object.assign(newModule.getters, TABLE_EXTRA_GETTERS[table.name] || {});
 
     //remove old store if exists
     if (store.hasModule([namespace, table.name])) {
