@@ -38,15 +38,10 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      assignmentGroup: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: null,
-      },
-      groupIdx: {
+      maxRevisions: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
+        defaultValue: 1,
       },
       start: {
         type: Sequelize.DATE,

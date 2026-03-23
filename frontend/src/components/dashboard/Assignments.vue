@@ -63,8 +63,7 @@ export default {
         { name: "Description", key: "description", multiline: true },
         { name: "Study ID", key: "studyId" },
         { name: "Workflow ID", key: "workflowId" },
-        { name: "Group", key: "assignmentGroup" },
-        { name: "Group Idx", key: "groupIdx" },
+        { name: "Max Revisions", key: "maxRevisions" },
         { name: "Start", key: "start" },
         { name: "End", key: "end" },
         {
@@ -154,8 +153,7 @@ export default {
         ...assignment,
         studyId: assignment.studyId ?? "-",
         workflowId: assignment.workflowId ?? "-",
-        assignmentGroup: assignment.assignmentGroup ?? "-",
-        groupIdx: assignment.groupIdx ?? "-",
+        maxRevisions: assignment.maxRevisions ?? 1,
         start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
         end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
         allowReUpload: Boolean(assignment.allowReUpload),
@@ -239,6 +237,27 @@ export default {
         ...copyData
       } = originalAssignment;
 
+      const assignmentById = new Map(this.assignments.map((assignment) => [assignment.id, assignment]));
+      let revisionDepth = 0;
+      let currentAssignment = originalAssignment;
+      const visited = new Set();
+
+      while (currentAssignment?.parentAssignmentId && !visited.has(currentAssignment.id)) {
+        visited.add(currentAssignment.id);
+        revisionDepth++;
+        currentAssignment = assignmentById.get(currentAssignment.parentAssignmentId);
+      }
+
+      const maxRevisions = Number(originalAssignment.maxRevisions ?? 1);
+      if (revisionDepth >= maxRevisions) {
+        this.eventBus.emit("toast", {
+          title: "Revision limit reached",
+          message: `Maximum of ${maxRevisions} revision${maxRevisions === 1 ? "" : "s"} reached for this assignment.`,
+          variant: "warning",
+        });
+        return;
+      }
+
       this.$socket.emit(
         "appDataUpdate",
         {
@@ -265,6 +284,7 @@ export default {
               data: {
                 ...copyData,
                 parentAssignmentId: params.id,
+                maxRevisions,
               },
             },
             (result) => {
