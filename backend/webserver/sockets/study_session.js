@@ -84,10 +84,44 @@ class StudySessionSocket extends Socket {
         await this.sendSessionsByStudyId(data.studyId);
     }
 
+    /**
+     * Duplicates a study session and assigns to user.
+     * This is used to copy a study session for a user when they want to start a new session with the same data.
+     * 
+     * @socketEvent studySessionCopy
+     * @param {object} data The data object containing the study session information and target user IDs.
+     * @param {object} data.studySession The study session object to be duplicated.
+     * @param {number[]} data.userIds An array of user IDs to assign the duplicated session to.
+     * @param {object} options  Configuration for the database operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<StudySessions[]>} A promise that resolves with an array of the newly created study session objects for each target user.
+     */
+    async copyStudySession(data, options) {
+        let studySessions = [];
+        const study = await this.models['study'].getById(data.studySession.studyId);
+        if (study.limitSessionsPerUser !== null) {
+            await this.models["study"].updateById(study.id, {
+                limitSessionsPerUser: study.limitSessionsPerUser + 1 // we only add 1 because there is a list of unique userIds, so the limit of session per user will only ever increase by one.
+            }, {transaction: options.transaction});
+        }   
+         if (study.limitSessions !== null) {
+            await this.models["study"].updateById(study.id, {
+                limitSessions: study.limitSessions + data.userIds.length // we add the length of userIds because we are creating a session for each userId, so the limit of session per user will increase by the number of userIds.
+            }, {transaction: options.transaction});
+        }   
+
+
+        for (const userId of data.userIds){
+            studySessions.push(await this.models["study_session"].duplicateStudySession(data.studySession.id, {userId: userId}, options));
+        }
+        return studySessions;
+    }
+
     async init() {
         this.createSocket("studySessionSubscribe", this.subscribeToStudySession, {}, false)
         this.createSocket("studySessionUnsubscribe", this.unsubscribeFromStudySession, {}, false);
         this.createSocket("studySessionStart", this.startStudySession, {}, true);
+        this.createSocket("studySessionCopy", this.copyStudySession, {}, true);
     }
 }
 

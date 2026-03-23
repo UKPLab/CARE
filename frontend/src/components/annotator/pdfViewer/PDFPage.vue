@@ -13,8 +13,8 @@
     >
       <canvas
         v-show="!isRendered"
-        :style="canvasStyle"
         :id="'placeholder-canvas-' + pageNumber + '-' + documentId"
+        :style="canvasStyle"
       />
       <div
         :id="'canvas-wrapper-' + pageNumber + '-' + documentId"

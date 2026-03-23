@@ -27,6 +27,7 @@
             :options="sessionTableOptions"
             :buttons="buttons"
             @action="sessionAction"
+            :max-table-height="'60vh'"
         />
       </span>
       <span v-else>

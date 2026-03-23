@@ -24,8 +24,8 @@
                 v-if="!removeClose"
                 aria-label="Close"
                 class="btn-close"
-                @click="handleCloseClick"
                 type="button"
+                @click="handleCloseClick"
             />
           </div>
           <div class="modal-body">
@@ -184,8 +184,14 @@ export default {
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
     }
     if (this.modal) {
-      this.modal.hide();
+      try {
+        this.modal.dispose();
+      } catch (e) {
+        // Ignore errors during dispose - the modal may already be in an invalid state
+        console.error('[BasicModal] Error during modal dispose:', e.message);
+      }
     }
+    this.resumeParentModal();
   },
   sockets: {
     progressUpdate: function (data) {
@@ -306,5 +312,17 @@ export default {
 .nested-suspended {
   visibility: hidden;
   pointer-events: none;
+}
+
+.modal-content {
+  max-height: calc(100vh - 3.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 </style>

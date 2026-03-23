@@ -33,6 +33,7 @@
           :columns="table.columns"
           :data="users"
           :options="table.options"
+          :max-table-height="'60vh'"
         />
         <small class="text-muted"
           >{{ Object.keys(userSelection || {}).length }} user(s) selected</small

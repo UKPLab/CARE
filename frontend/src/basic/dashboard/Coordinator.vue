@@ -136,6 +136,11 @@ export default {
       required: false,
       default: false,
     },
+    noSuccessMessage: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["submit", "success"],
   data() {
@@ -168,12 +173,15 @@ export default {
      * @param id
      * @param defaultValues Override default values
      * @param copy If the entry should be copied
+     * @param dataOverrides Additional data to override after fetching
      */
-    open(id = 0, defaultValues = {}, copy = false) {
+    open(id = 0, defaultValues = {}, copy = false, dataOverrides = {}) {
       if (this.fields) {
         this.reset();
         this.overrideDefaultValues = defaultValues;
         this.data = this.getData(id, copy);
+        // Apply data overrides after fetching data
+        this.data = { ...this.data, ...dataOverrides };
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
@@ -224,7 +232,7 @@ export default {
         (result) => {
           if (result.success) {
             this.showSuccess();
-            this.$emit("success", result.data);
+            this.$emit("success", result.data, data.id ? 'update' : 'create');
           } else {
             this.$refs.coordinatorModal.waiting = false;
             this.eventBus.emit("toast", {
@@ -238,8 +246,12 @@ export default {
       this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
-      this.success = true;
       this.$refs.coordinatorModal.waiting = false;
+      if (this.noSuccessMessage) {
+        this.$refs.coordinatorModal.close();
+      } else {
+        this.success = true;
+      }
     },
     reset() {
       this.$refs.coordinatorModal.waiting = false;

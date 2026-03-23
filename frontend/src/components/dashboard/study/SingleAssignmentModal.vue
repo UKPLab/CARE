@@ -3,8 +3,8 @@
       ref="assignmentStepper"
       :steps="steps"
       :validation="stepValid"
-      @submit="createAssignment"
       size="xl"
+      @submit="createAssignment"
     >
     <template #title>
       <h5 class="modal-title">Create Assignment</h5>
