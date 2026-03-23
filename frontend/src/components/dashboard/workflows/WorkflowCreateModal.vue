@@ -42,7 +42,7 @@ export default {
           message: "Workflow link copied to clipboard!",
           variant: "success"
         });
-      } catch ($e) {
+      } catch {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Could not copy workflow link to clipboard!",

@@ -141,7 +141,7 @@ export default {
           message: "Document link copied to clipboard!",
           variant: "success"
         });
-      } catch ($e) {
+      } catch (_$e) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Could not copy document link to clipboard!",

@@ -183,7 +183,7 @@ export default {
       if (!this.settings || this.originalSettingsSnapshot === null) return false;
       try {
         return JSON.stringify(this.settings) !== this.originalSettingsSnapshot;
-      } catch (e) {
+      } catch (_e) {
         return true;
       }
     },

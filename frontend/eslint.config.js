@@ -1,11 +1,11 @@
-const js = require('@eslint/js')
-const { FlatCompat } = require('@eslint/eslintrc')
-const pluginVue = require('eslint-plugin-vue')
-const eslintConfigPrettier = require('eslint-config-prettier')
+import js from '@eslint/js'
+import { FlatCompat } from '@eslint/eslintrc'
+import pluginVue from 'eslint-plugin-vue'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
 const compat = new FlatCompat()
 
-module.exports = [
+export default [
     {
         ignores: ['dist/**', 'node_modules/**', 'build/**'],
     },
@@ -19,6 +19,16 @@ module.exports = [
     eslintConfigPrettier,
     {
         rules: {
+            'no-unused-vars': [
+                'error',
+                {
+                    args: 'after-used',
+                    argsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                    destructuredArrayIgnorePattern: '^_',
+                    ignoreRestSiblings: true,
+                },
+            ],
         },
     },
 ]

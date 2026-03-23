@@ -487,7 +487,15 @@ export default {
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
-        const {deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams} = data.params;
+        const {
+          deletedAt,
+          createdAt,
+          firstName,
+          lastName,
+          updatedAt,
+          manage,
+          ...filteredParams
+        } = data.params;
         this.$refs.informationModal.open(filteredParams);
       }
     },
@@ -510,7 +518,7 @@ export default {
           message: "Study link copied to clipboard!",
           variant: "success"
         });
-      } catch ($e) {
+      } catch (_$e) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Could not copy study link to clipboard!",
