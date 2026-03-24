@@ -2,13 +2,13 @@
 
 const navElements = [
   {
-    name: "Recording",
+    name: "Socket Profiler",
     groupId: "Admin",
     icon: "record-circle",
     order: 16,
     admin: true,
-    path: "recording",
-    component: "Recording",
+    path: "Socket_Profiler",
+    component: "SocketProfiler",
   }
 ];
 

@@ -1,5 +1,5 @@
 <template>
-  <Card title="Recording & Replay">
+  <Card title="Socket Profiler">
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
@@ -31,7 +31,7 @@ import BasicButton from "@/basic/Button.vue";
 
 
 export default {
-  name: "DashboardRecording",
+  
   components: {
     Card,
     BasicTable,
