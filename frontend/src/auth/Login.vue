@@ -10,9 +10,8 @@
             class="text-center"
             style="margin-bottom: 20px"
         >
-          <IconAsset
+          <LogoSvg
               :height="200"
-              name="logo"
           />
         </div>
 
@@ -150,7 +149,7 @@
  *
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
@@ -158,7 +157,7 @@ import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthLogin",
-  components: {IconAsset, ForgotPasswordModal, EmailVerificationModal},
+  components: {LogoSvg, ForgotPasswordModal, EmailVerificationModal},
   data() {
     return {
       showError: false,

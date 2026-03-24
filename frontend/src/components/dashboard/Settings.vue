@@ -65,12 +65,18 @@
         <Loading v-if="settings === null"/>
 
         <div v-else class="mt-3">
-          <SettingItem
-              v-for="(group, key) in groupedSettings"
-              :key="key"
-              :group="group"
-              :title="key"
-          />
+          <template v-for="(group, key) in groupedSettings" :key="key">
+            <LogoSettings
+                v-if="key === 'logo'"
+                :model-value="getSettingValue('logo.reBgColor')"
+                @update:model-value="setSettingValue('logo.reBgColor', $event)"
+            />
+            <SettingItem
+                v-else
+                :group="group"
+                :title="key"
+            />
+          </template>
         </div>
       </template>
     </Card>
@@ -148,6 +154,7 @@ import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import {onBeforeRouteUpdate} from 'vue-router'
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
+import LogoSettings from "@/components/dashboard/settings/LogoSettings.vue";
 
 export default {
   name: "DashboardSettings",
@@ -159,6 +166,7 @@ export default {
     BasicButton,
     Modal,
     ChangeUserSettingsModal,
+    LogoSettings,
   },
   data() {
     return {
@@ -205,6 +213,14 @@ export default {
     });
   },
   methods: {
+    getSettingValue(key) {
+      const match = this.settings && this.settings.find((s) => s.key === key);
+      return match ? match.value : "";
+    },
+    setSettingValue(key, value) {
+      const match = this.settings && this.settings.find((s) => s.key === key);
+      if (match) match.value = value;
+    },
     nestSettings(obj, keys, setting) {
       if (keys.length === 1) {
         if (!obj[keys[0]]) obj[keys[0]] = [];
@@ -224,6 +240,9 @@ export default {
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
         if (res.success) {
+          this.settings.forEach((s) => {
+            this.$store.commit("settings/set", { key: s.key, value: s.value });
+          });
           this.eventBus.emit("toast", {
             title: "Success",
             message: res.data,

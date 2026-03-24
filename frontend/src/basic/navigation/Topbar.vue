@@ -21,10 +21,9 @@
           class="navbar-brand"
           @click="toHome()"
         >
-          <IconAsset
+          <LogoSvg
             :style="{cursor: 'pointer'}"
             :height="30"
-            name="logo"
           />
         </a>
         <div id="topbarCustomPlaceholder"/>   
@@ -134,7 +133,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
@@ -142,7 +141,7 @@ import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
+  components: {LoadIcon, LogoSvg, PasswordModal, ConsentUpdateModal},
   data() {
     return {
       showProjectDropdown: false,
