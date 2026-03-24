@@ -240,11 +240,11 @@ The configuration consists of: ``settings``, ``services``, ``placeholders`` and 
      - ``boolean``
      - Whether all document annotations are shown in the current step.
    * - ``configurationId``
-     - ``string`` (ID reference)
+     - ``string`` 
      - Reference to a configuration document (for example, a rubric) used in this step.
    * - ``modalSize``
-     - ``"md"`` / ``"sm"`` / ``"lg"`` / ``"xl"``
-     - Size of the modal (small, medium, large) when stepType is Modal.
+     - ``string``
+     - Size of the modal (``"sm"``, ``"md"``, ``"lg"``, ``"xl"``) when stepType is Modal.
 
 
 .. list-table:: Services
@@ -264,7 +264,7 @@ The configuration consists of: ``settings``, ``services``, ``placeholders`` and 
       - ``true``
       - If true, the step expects successful service output.
 
-.. list-table:: ``services keys``
+.. list-table:: services keys
    :header-rows: 1
    :widths: 20 40 40
 
@@ -278,7 +278,7 @@ The configuration consists of: ``settings``, ``services``, ``placeholders`` and 
      - dk
      - Example service name for an NLP assessment service.
 
-.. list-table:: ``placeholder``
+.. list-table:: placeholder
     :header-rows: 1
     :widths: 20 40 40
   
@@ -299,7 +299,7 @@ The configuration consists of: ``settings``, ``services``, ``placeholders`` and 
 Other top-level configuration keys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. list-table:: Other top-level keys in ``configuration``
+.. list-table:: Other top-level keys in configuration
    :header-rows: 1
 
     * - Name
@@ -312,7 +312,7 @@ Other top-level configuration keys
       - ``boolean``
       - Whether to show all document annotations in this step (applicable to Modal steps).
       - ``previousAssessmentData``
-      - ``stepId`` (number)
+      - ``step number``
       - For Modal steps, specifies a previous step to pull assessment data from for display in this step.
       
 Detailed examples from predefined workflows
