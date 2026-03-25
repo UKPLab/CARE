@@ -20,6 +20,11 @@ Workflow type and editability
 
 The **Type** column is important for permissions and maintenance:
 
+Visibility rule:
+
+* A **System** workflow is visible to all users.
+* A non-system workflow (Type **User**) is visible only to the user who created it.
+
 * **System**: predefined workflow templates provided by the CARE instance.
 	These are intended as reference baselines and are usually not editable by regular users.
 * **User**: workflows created by users in the dashboard.
@@ -90,8 +95,7 @@ Action guidance:
 Workflow Creation
 -----------------
 
-To create a new workflow:
-
+**To create a new workflow:**
 1. Go to **Dashboard → Workflows**.
 2. Click **Add Workflow**.
 3. Fill in the workflow form:
@@ -106,9 +110,8 @@ Recommended practice:
 
 * Use clear names that encode purpose and version (for example, ``Peer Review v2 - with rubric``).
 * Use the description to record study intent and special behavior (e.g., "includes NLP comparison modal").
-* Keep ``hideInFrontend`` enabled while iterating, and disable it only when ready for participants.
 
-To create from an existing workflow:
+**To create from an existing workflow:**
 
 1. Use **Copy Workflow** in the workflow row.
 2. A new workflow is created with the selected workflow as its parent.
@@ -116,17 +119,21 @@ To create from an existing workflow:
 
 This is the preferred way to create controlled variants for A/B-style study conditions.
 
-To rename a workflow:
+**To rename a workflow:** 
 
 1. Click **Rename Workflow**.
 2. Enter the new name and confirm.
 
 Use rename for semantic cleanup (clearer naming), and copy for behavioral changes.
 
-You can also exchange workflows between instances:
+**To exchange workflows between instances:**
 
 * **Export** supports JSON and YAML.
-* **Import** supports JSON and YAML and lets you select specific workflows before import.
+* **Import** supports JSON and YAML.
+
+.. tip::
+
+  You can select specific workflows during import, which is useful when migrating only part of your workflow set to another instance.
 
 Workflow Steps Management
 -------------------------
@@ -137,7 +144,7 @@ In this editor, each node represents a workflow step. You can:
 
 * Add a step before or after another step that enables you to freely insert your steps in the workflow
 * Edit a step to change its type, configuration, and behavior
-* Copy a step for reuse
+* Copy a step to reuse it in another part of the workflow or in another workflow 
 * Inspect a step 
 * Delete a step
 * Paste a step before or after another step (after copying it)
@@ -176,78 +183,38 @@ The ``configuration`` object is a set of key value pairs that control the behavi
 
 The configuration consists of: ``settings``, ``services``, ``placeholders`` and other keys.
 
-.. list-table:: Settings
-   :header-rows: 1
-   :widths: 20 40 40
+In practice, this configuration layer is mainly used for NLP model integration workflows.
 
-   * - Name
-     - Value examples
-     - Description
-   * - ``fields``
-     - ``[{"key": "configurationId", ...}]``
-     - Array of configurable UI fields shown in a workflow step.
-   * - ``fields[].key``
-     - ``"configurationId"``
-     - Internal identifier for the setting. See :ref:`settings-key-reference`.
-   * - ``fields[].label``
-     - ``"Assessment Configuration File:"``
-     - User-facing label shown in the form.
-   * - ``fields[].type``
-     - ``"select"`` / ``"switch"``
-     - Input type used to render the control.
-   * - ``fields[].required``
-     - ``true``
-     - Whether the value must be provided to proceed.
-   * - ``fields[].default``
-     - ``false``
-     - Default value for optional controls.
-   * - ``fields[].help``
-     - ``"If enabled, reviewers must save a score..."``
-     - Helper text explaining the effect of the field.
-   * - ``fields[].options``
-     - ``{"table": "configuration", ...}`` or ``[{"value": "xl", "name": "Extra Large"}]``
-     - Choice source, either dynamic DB lookup or static options.
-   * - ``fields[].options.table``
-     - ``"configuration"``
-     - Source table for dynamic select options.
-   * - ``fields[].options.name``
-     - ``"name"``
-     - Column used as display text for dynamic options.
-   * - ``fields[].options.value``
-     - ``"id"``
-     - Column/value stored when option is selected.
-   * - ``fields[].options.filter``
-     - ``[{"key": "type", "value": 0}, {"key": "deleted", "value": false}]``
-     - Filters applied to dynamic option loading.
-   * - ``fields[].options[].value``
-     - ``"xl"``
-     - Stored value of a static option entry.
-   * - ``fields[].options[].name``
-     - ``"Extra Large"``
-     - Display label of a static option entry.
+For the ``settings.fields`` structure and supported form field options, see
+:doc:`Basic Form documentation <../for_developers/frontend/basic/form>`.
 
 .. list-table:: Settings keys
    :header-rows: 1
-   :widths: 20 40 40
+   :widths: 20 20 40 20
 
    * - Name
      - Value type
      - Description
+     - StepType applicability
    * - ``forcedAssessment``
      - ``boolean``
      - Whether a user is forced to save all assessment criteria before proceeding.
+     - Annotator, Editor
    * - ``showAllDocumentAnnotations``
      - ``boolean``
      - Whether all document annotations are shown in the current step.
+     - Annotator
    * - ``configurationId``
      - ``string`` 
-     - Reference to a configuration document (for example, a rubric) used in this step.
+     - Reference to a configuration document (for example, a rubric) used in this step; this key activates the assessment sidebar.
+     - Annotator, Editor (with assessment component)
    * - ``modalSize``
      - ``string``
      - Size of the modal (``"sm"``, ``"md"``, ``"lg"``, ``"xl"``) when stepType is Modal.
+     - Modal only
 
 
-.. list-table:: Services
+.. list-table:: Services 
     :header-rows: 1
     :widths: 20 40 40
 
@@ -255,7 +222,7 @@ The configuration consists of: ``settings``, ``services``, ``placeholders`` and 
       - Value examples
       - Description
     * - ``name``
-      - ``"nlpEditComparison"`` / ``"nlpAssessment"``
+      - ``"nlpAssessment"``
       - Service identifier to call in this workflow step.
     * - ``type``
       - ``"nlpRequest"``
@@ -266,17 +233,15 @@ The configuration consists of: ``settings``, ``services``, ``placeholders`` and 
 
 .. list-table:: services keys
    :header-rows: 1
-   :widths: 20 40 40
+   :widths: 20 40 
 
    * - Name
-     - Value type
      - Description
-   * - ``nlpEditComparison``
-     - dk
-     - Example service name for an NLP comparison service.
    * - ``nlpAssessment``
-     - dk
-     - Example service name for an NLP assessment service.
+     - is used for the grading workflows in EiwA, so for requesting a model to assess the submission based on the uploaded submission files.
+   * - ``nlpTextualFeedback``
+     - it is used to generate feedback based on the assessment made and the uploaded submission files.
+
 
 .. list-table:: placeholder
     :header-rows: 1
@@ -302,18 +267,22 @@ Other top-level configuration keys
 .. list-table:: Other top-level keys in configuration
    :header-rows: 1
 
-    * - Name
-      - Value type
-      - Description
-    * - ``readOnlyComponents``
-      - ``array of strings`` Example: ``["annotator", "assessment"]``
-      - For Modal steps, specifies which components (for example, "annotator", "assessment") are read-only in this step.
-    * - ``showAllDocumentAnnotations``
-      - ``boolean``
-      - Whether to show all document annotations in this step (applicable to Modal steps).
-      - ``previousAssessmentData``
-      - ``step number``
-      - For Modal steps, specifies a previous step to pull assessment data from for display in this step.
+   * - Name
+     - Value type
+     - Description
+     - StepType applicability
+   * - ``readOnlyComponents``
+     - ``array``
+     - For Modal steps, specifies which components (for example, "annotator", "assessment") are read-only in this step.
+     - Modal only
+   * - ``showAllDocumentAnnotations``
+     - ``boolean``
+     - Whether to show all document annotations in this step (applicable to Modal steps).
+     - Modal, Annotator
+   * - ``previousAssessmentData``
+     - ``number``
+     - For Modal steps, specifies a previous step to pull assessment data from for display in this step.
+     - Editor, Annotator (with assessment sidebar)
       
 Detailed examples from predefined workflows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -366,6 +335,48 @@ Example B: revision assessment controls
 
 Use case: configure rubric source, enforce mandatory scoring, and control whether annotations are visible.
 
+Example C: assessment workflow configuration with NLP service
+
+.. code-block:: json
+
+   {
+     "settings": {
+       "fields": [
+         {
+           "key": "configurationId",
+           "label": "Configuration File:",
+           "type": "select",
+           "required": true,
+           "options": {
+             "table": "configuration",
+             "name": "name",
+             "value": "id",
+             "filter": [
+               { "key": "type", "value": 0 },
+               { "key": "deleted", "value": false }
+             ]
+           }
+         },
+         {
+           "key": "forcedAssessment",
+           "label": "Forced Assessment",
+           "type": "switch",
+           "default": false
+         }
+       ]
+     },
+     "services": [
+       {
+         "name": "nlpAssessment",
+         "type": "nlpRequest",
+         "required": true
+       }
+     ],
+     "placeholders": false
+   }
+
+Use case: configure an assessment step that requires rubric selection and triggers an NLP assessment request.
+
 Configuration safety checklist
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -373,7 +384,8 @@ Before releasing a workflow to participants:
 
 1. Validate JSON format (no trailing commas, valid quoting).
 2. Confirm referenced entities exist (skills, configuration documents, expected step references).
-3. Test one complete run with a non-admin test account.4. Verify backward navigation and hidden-state behavior are exactly as intended.
+3. Test one complete run with a non-admin test account.
+4. Verify backward navigation and hidden-state behavior are exactly as intended.
 
 .. tip::
 
