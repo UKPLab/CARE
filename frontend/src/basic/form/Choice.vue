@@ -170,7 +170,7 @@ export default {
 
         this.currentData = this.choices.map((choice) => {
           // Find matched newValue entry by workflowStepId
-          const matchedValue = newValue.find((v) => v.workflowStepId === choice.id);
+          const matchedValue = newValue.find((v) => (v.workflowStepId ?? v.id) === choice.id);
 
           return {
             ...this.fields.reduce((acc, field) => {
@@ -188,8 +188,19 @@ export default {
     },
     currentData: {
       handler(newData) {
-        if (JSON.stringify(this.modelValue) !== JSON.stringify(newData)) {
-          this.$emit("update:modelValue", newData);
+        // When documentId is null and step links to another step's document, send the linked step's documentId
+        const payload = newData.map((entry) => {
+          const step = this.workflowSteps.find((s) => s.id === entry.id);
+          const effective =
+            entry.documentId != null
+              ? entry.documentId
+              : step?.workflowStepDocument != null
+                ? this.getEffectiveDocumentId(entry.id)
+                : null;
+          return { ...entry, documentId: effective };
+        });
+        if (JSON.stringify(this.modelValue) !== JSON.stringify(payload)) {
+          this.$emit("update:modelValue", payload);
         }
         this.$emit("update:configStatus", this.getConfigurationStatus());
       },
@@ -208,6 +219,15 @@ export default {
     },
   },
   methods: {
+    getEffectiveDocumentId(workflowStepId) {
+      const step = this.workflowSteps.find((s) => s.id === workflowStepId);
+      if (step && step.workflowStepDocument) {
+        const sourceEntry = this.currentData.find((entry) => entry.id === step.workflowStepDocument);
+        return sourceEntry?.documentId ?? sourceEntry?.parentDocumentId ?? null;
+      }
+      const currentEntry = this.currentData.find((entry) => entry.id === workflowStepId);
+      return currentEntry?.documentId ?? currentEntry?.parentDocumentId ?? null;
+    },
     // Resolve the effective document for a workflow step.
     // Prefers linked document via workflowStepDocument, falls back to step's own document.
     getResolvedDocumentId(workflowStepId) {
@@ -291,10 +311,45 @@ export default {
       if (index >= 0 && index < this.currentData.length) {
         // Create a new array to trigger the watcher
         const updatedCurrentData = [...this.currentData];
-        updatedCurrentData[index] = {
-          ...updatedCurrentData[index],
-          [fieldKey]: value,
-        };
+
+        const currentEntry = updatedCurrentData[index] || {};
+        const currentConfig = currentEntry.configuration || {};
+
+        // Special handling for documentId field: detect document templates and
+        // store the selected template ID in the per-step configuration while
+        // keeping documentId null so the backend creates a new document from a template.
+        if (fieldKey === 'documentId') {
+          let nextDocumentId = value;
+          let nextConfig = { ...currentConfig };
+
+          if (typeof value === 'string' && value.startsWith('template:')) {
+            const templateId = parseInt(value.replace('template:', ''), 10);
+            if (!Number.isNaN(templateId)) {
+              nextConfig = {
+                ...nextConfig,
+                documentTemplateId: templateId,
+              };
+            }
+            nextDocumentId = null;
+          } else {
+            // Non-template selection: clear any previous template reference in configuration.
+            if ('documentTemplateId' in nextConfig) {
+              const { documentTemplateId, ...rest } = nextConfig;
+              nextConfig = rest;
+            }
+          }
+
+          updatedCurrentData[index] = {
+            ...currentEntry,
+            documentId: nextDocumentId,
+            configuration: nextConfig,
+          };
+        } else {
+          updatedCurrentData[index] = {
+            ...currentEntry,
+            [fieldKey]: value,
+          };
+        }
 
         this.currentData = updatedCurrentData;
       }
