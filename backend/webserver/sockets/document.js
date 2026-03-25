@@ -940,7 +940,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, projectId} = data;
+        const {files, userId, group, validationConfigurationId, projectId, assignmentId} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -948,14 +948,52 @@ class DocumentSocket extends Socket {
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
             }
-            const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
+
+            let previousSubmissionId = null;
+
+            if (assignmentId) {
+                const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
+                if (!assignment) {
+                    throw new Error(`Assignment with id ${assignmentId} not found`);
+                }
+
+                const assignmentSubmissions = await this.models["submission"].findAll({
+                    where: {
+                        assignmentId,
+                        userId,
+                        deleted: false,
+                    },
+                    order: [["createdAt", "DESC"]],
+                    raw: true,
+                    transaction,
+                });
+
+                const latestSubmission = assignmentSubmissions[0] || null;
+                const submissionCount = assignmentSubmissions.length;
+
+                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined) {
+                    if (submissionCount > assignment.maxRevisions) {
+                        throw new Error(
+                            `Maximum revisions reached for this assignment (${submissionCount}/${assignment.maxRevisions})`
+                        );
+                    }
+                }
+
+                previousSubmissionId = latestSubmission ? latestSubmission.id : null;
+            } else {
+                const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
+                previousSubmissionId = previousSubmission ? previousSubmission.id : null;
+            }
+
+
 
             const submission = await this.models["submission"].add({
                 userId,
                 group,
                 validationConfigurationId,
                 createdByUserId: this.userId,
-                previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                previousSubmissionId,
+                assignmentId: assignmentId || null,
             }, {transaction});
             for (const file of files) {
                 await this.addDocument(
