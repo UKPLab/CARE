@@ -67,8 +67,7 @@ Use ``v-if`` to defer mounting until the modal is actually needed, and **unload 
 .. note::
 
     When a lazy-loaded modal is closed and unmounted, all internal state (form data, selections,
-    step progress) is destroyed.
-
+    step progress) is destroyed. Most modals already reset on ``open()``, so this is safe.
 -----
 
 `StepperModal`
