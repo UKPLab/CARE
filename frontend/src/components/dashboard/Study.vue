@@ -21,8 +21,8 @@
           <BasicButton
               v-if="canCloseStudies"
               class="btn-secondary btn-sm"
-              title="Close All Studies"
-              text="Close All Studies"
+              title="Bulk close open studies (optional workflow and user filters)"
+              text="Close Studies"
               icon="x-octagon"
               @click="closeStudies"
           />
