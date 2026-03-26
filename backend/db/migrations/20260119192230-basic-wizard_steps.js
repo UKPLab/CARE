@@ -6,10 +6,9 @@ module.exports = {
         const now = new Date();
         await queryInterface.bulkInsert('wizard_step', [
             { key: 'admin', order: 1, title: 'Admin Account', description: 'Create the administrator account', type: 'admin', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
-            { key: 'general', order: 2, title: 'General Settings', description: 'Copyright, consent, guest login, study mode, external links', type: 'general', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
+            { key: 'general', order: 2, title: 'General Settings', description: 'Copyright, consent, guest login, external links', type: 'general', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
             { key: 'mail', order: 3, title: 'Mail Configuration', description: 'Enable email service and configure SMTP/sendmail', type: 'mail', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
             { key: 'registration', order: 4, title: 'User Registration', description: 'What is required at signup', type: 'registration', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
-            { key: 'moodle', order: 5, title: 'Moodle Integration', description: 'Optional: API URL, key, course ID', type: 'moodle', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
             { key: 'summary', order: 6, title: 'Summary', description: 'Review your choices before finishing', type: 'summary', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
         ], {});
     },

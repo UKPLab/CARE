@@ -9,7 +9,6 @@ const WIZARD_SETTINGS = [
     { key: 'app.config.consent.enabled', wizardStep: 'general', wizardOrder: 2, requiredInWizard: false },
     { key: 'app.login.guest', wizardStep: 'general', wizardOrder: 3, requiredInWizard: false },
     { key: 'app.login.forgotPassword', wizardStep: 'general', wizardOrder: 4, requiredInWizard: false },
-    { key: 'app.study.enabled', wizardStep: 'general', wizardOrder: 5, requiredInWizard: false },
     { key: 'app.landing.showDocs', wizardStep: 'general', wizardOrder: 6, requiredInWizard: false },
     { key: 'app.landing.linkDocs', wizardStep: 'general', wizardOrder: 7, requiredInWizard: true },
     { key: 'app.landing.showProject', wizardStep: 'general', wizardOrder: 8, requiredInWizard: false },
@@ -38,11 +37,7 @@ const WIZARD_SETTINGS = [
     { key: 'app.register.requestData', wizardStep: 'registration', wizardOrder: 28, requiredInWizard: false },
     { key: 'app.register.acceptStats.default', wizardStep: 'registration', wizardOrder: 29, requiredInWizard: false },
     { key: 'app.register.acceptDataSharing.default', wizardStep: 'registration', wizardOrder: 30, requiredInWizard: false },
-    { key: 'app.register.terms', wizardStep: 'registration', wizardOrder: 31, requiredInWizard: false },
-    // moodle
-    { key: 'rpc.moodleAPI.apiUrl', wizardStep: 'moodle', wizardOrder: 32, requiredInWizard: false },
-    { key: 'rpc.moodleAPI.apiKey', wizardStep: 'moodle', wizardOrder: 33, requiredInWizard: false },
-    { key: 'rpc.moodleAPI.courseID', wizardStep: 'moodle', wizardOrder: 34, requiredInWizard: false },
+    { key: 'app.register.terms', wizardStep: 'general', wizardOrder: 5, requiredInWizard: false },
 ];
 
 /** @type {import('sequelize-cli').Migration} */
