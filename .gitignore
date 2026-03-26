@@ -1,3 +1,5 @@
+# accidental SQL/export artifact at repo root (long filename)
+/select CHANGELOG.md CONTRIBUTORS.md Dockerfile LICENSE Makefile NOTICE README.md backend docker-compose.yml docker-dev.yml docs files frontend logs msmtprc utils from Sessions
 
 # files dir
 files/*.pdf
@@ -9,7 +11,8 @@ files/*.zip
 # database dumps
 db_dumps/
 
-# backend
+# logs (root + backend)
+logs/
 backend/sessions
 backend/node_modules
 backend/logs
