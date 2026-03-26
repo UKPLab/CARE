@@ -19,22 +19,13 @@
 
       <!-- Step: Admin -->
       <div v-show="displaySteps[currentStep]?.type === 'admin'" class="card">
-        <div class="card-header step-card-header">Setup – Create admin account</div>
+        <div class="card-header step-card-header">Setup – Admin account</div>
         <div class="card-body mx-4 my-4">
-          <template v-if="adminCreatedThisSession">
-            <p class="text-muted mb-3">
-              The administrator account has been created. Continue to configure settings.
-            </p>
-            <button class="btn btn-primary" type="button" @click="currentStep++">
-              Continue
-            </button>
-          </template>
-          <template v-else>
-            <p class="text-muted mb-3">
-              No administrator account exists. Create one to finish setting up CARE.
-            </p>
-            <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
-            <form @submit.prevent="submitAdmin">
+          <p class="text-muted mb-3">
+            No administrator account exists. Enter credentials now; the account is created on Finish.
+          </p>
+          <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
+          <form @submit.prevent="submitAdmin">
             <div class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="setup-username">Username</label>
               <div class="col-md-6">
@@ -87,10 +78,9 @@
               </div>
             </div>
             <div class="col-md-6 offset-md-4 my-4">
-              <button class="btn btn-primary" type="submit">Create admin and continue</button>
+              <button class="btn btn-primary" type="submit">Continue</button>
             </div>
           </form>
-          </template>
         </div>
       </div>
 
@@ -124,16 +114,13 @@
           </template>
           <template v-else>
             <p class="text-muted mb-3">
-              Configure copyright notice, consent requirements, guest access, study mode, and links shown on the landing page.
+              Configure copyright notice, consent requirements, guest access, and links shown on the landing page.
             </p>
 
-            <FormCollapsible
-              v-for="group in generalFieldGroups"
-              :key="group.title"
-              :title="group.title"
-              :collapsed="true"
-              class="mb-3"
-            >
+            <div v-for="group in generalFieldGroups" :key="group.title" class="mb-4">
+              <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
+                {{ group.title }}
+              </h6>
               <div
                 v-for="s in group.settings"
                 :key="s.key"
@@ -146,7 +133,7 @@
                 >
                   {{ settingLabel(s.key) }}
                 </label>
-                <div class="col-md-6 d-flex align-items-start">
+                <div class="col-md-6 d-flex flex-column">
                   <template v-if="s.type === 'boolean' || s.type === 'bool'">
                     <div class="form-check form-switch">
                       <input
@@ -158,12 +145,19 @@
                       />
                     </div>
                   </template>
+                  <template v-else-if="s.key === 'app.register.terms'">
+                    <BasicEditor
+                      :model-value="formSettings[s.key]"
+                      :read-only="false"
+                      @update:model-value="formSettings[s.key] = $event"
+                    />
+                  </template>
                   <template v-else-if="s.type === 'edits'">
                     <textarea
                       :id="'set-' + s.key"
                       v-model="formSettings[s.key]"
                       class="form-control w-100"
-                      rows="2"
+                      rows="5"
                     />
                   </template>
                   <input
@@ -173,7 +167,11 @@
                     class="form-control"
                     type="text"
                   />
-                  <FormHelp v-if="s.description" :help="s.description" class="ms-1" />
+                  <div
+                    v-if="settingDescription(s.key) || s.description"
+                    class="small text-muted mt-1"
+                    v-html="settingDescription(s.key) || s.description"
+                  />
                 </div>
                 <div v-if="s.requiredInWizard" class="col-md-6 offset-md-4">
                   <div class="feedback-invalid" :class="{invalid: settingsTouched && !(formSettings[s.key] != null && String(formSettings[s.key]).trim() !== '')}">
@@ -181,7 +179,7 @@
                   </div>
                 </div>
               </div>
-            </FormCollapsible>
+            </div>
           </template>
 
           <div class="d-flex justify-content-between mt-4">
@@ -218,13 +216,10 @@
           </div>
 
           <template v-if="mailEnabled">
-            <FormCollapsible
-              v-for="group in mailFieldGroups"
-              :key="group.title"
-              :title="group.title"
-              :collapsed="true"
-              class="mb-3"
-            >
+            <div v-for="group in mailFieldGroups" :key="group.title" class="mb-4">
+              <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
+                {{ group.title }}
+              </h6>
               <div
                 v-for="s in group.settings"
                 :key="s.key"
@@ -237,7 +232,7 @@
                 >
                   {{ settingLabel(s.key) }}
                 </label>
-                <div class="col-md-6 d-flex align-items-start">
+                <div class="col-md-6 d-flex flex-column">
                   <template v-if="s.type === 'boolean' || s.type === 'bool'">
                     <div class="form-check form-switch">
                       <input
@@ -254,7 +249,7 @@
                       :id="'set-' + s.key"
                       v-model="formSettings[s.key]"
                       class="form-control w-100"
-                      rows="2"
+                      rows="4"
                     />
                   </template>
                   <input
@@ -264,14 +259,14 @@
                     class="form-control"
                     type="text"
                   />
-                  <FormHelp
+                  <div
                     v-if="settingDescription(s.key) || s.description"
-                    :help="settingDescription(s.key) || s.description"
-                    class="ms-1"
+                    class="small text-muted mt-1"
+                    v-html="settingDescription(s.key) || s.description"
                   />
                 </div>
               </div>
-            </FormCollapsible>
+            </div>
           </template>
 
           <div class="d-flex justify-content-between mt-4">
@@ -292,13 +287,10 @@
             Configure which information and consents are requested from users during registration.
           </p>
 
-          <FormCollapsible
-            v-for="group in registrationFieldGroups"
-            :key="group.title"
-            :title="group.title"
-            :collapsed="true"
-            class="mb-3"
-          >
+          <div v-for="group in registrationFieldGroups" :key="group.title" class="mb-4">
+            <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
+              {{ group.title }}
+            </h6>
             <div
               v-for="s in group.settings"
               :key="s.key"
@@ -311,7 +303,7 @@
               >
                 {{ settingLabel(s.key) }}
               </label>
-              <div class="col-md-6 d-flex align-items-start">
+              <div class="col-md-6 d-flex flex-column">
                 <template v-if="s.type === 'boolean' || s.type === 'bool'">
                   <div class="form-check form-switch">
                     <input
@@ -328,7 +320,7 @@
                     :id="'set-' + s.key"
                     v-model="formSettings[s.key]"
                     class="form-control w-100"
-                    rows="2"
+                    rows="4"
                   />
                 </template>
                 <input
@@ -338,26 +330,22 @@
                   class="form-control"
                   type="text"
                 />
-                <FormHelp
+                <div
                   v-if="settingDescription(s.key) || s.description"
-                  :help="settingDescription(s.key) || s.description"
-                  class="ms-1"
+                  class="small text-muted mt-1"
+                  v-html="settingDescription(s.key) || s.description"
                 />
               </div>
             </div>
-          </FormCollapsible>
-          <FormCollapsible
-            v-if="mailEnabled"
-            title="Email verification"
-            description="Require new users to verify their email before accessing the application"
-            :collapsed="true"
-            class="mb-3"
-          >
+          </div>
+
+          <div v-if="mailEnabled" class="mb-4">
+            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Email verification</h6>
             <div class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="email-verification-reg" @click.prevent>
                 {{ settingLabel("app.register.emailVerification") }}
               </label>
-              <div class="col-md-6 d-flex align-items-start">
+              <div class="col-md-6 d-flex flex-column">
                 <div class="form-check form-switch">
                   <input
                     id="email-verification-reg"
@@ -367,57 +355,9 @@
                     @change="formSettings['app.register.emailVerification'] = $event.target.checked ? 'true' : 'false'"
                   />
                 </div>
-                <FormHelp
-                  :help="'Require new users to verify their email address before accessing the application.'"
-                  class="ms-1"
-                />
-              </div>
-            </div>
-          </FormCollapsible>
-
-          <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-secondary" type="button" @click="onPrevious">Previous</button>
-            <button class="btn btn-primary ms-auto" type="button" @click="onStepNext">
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step: Moodle -->
-      <div v-show="displaySteps[currentStep]?.type === 'moodle'" class="card">
-        <div class="card-header step-card-header d-flex align-items-center">
-          Moodle Integration
-          <span class="badge bg-secondary ms-2">Optional</span>
-        </div>
-        <div class="card-body mx-4 my-4">
-          <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
-          <div class="alert alert-info mb-3 py-2" role="alert">
-            <strong>This step is optional.</strong> Configure it only if you use Moodle. You can skip it now and configure Moodle integration later in Settings.
-          </div>
-
-          <div v-for="group in moodleFieldGroups" :key="group.title" class="mb-4">
-            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">{{ group.title }}</h6>
-            <div
-              v-for="s in group.settings"
-              :key="s.key"
-              class="form-group row my-2"
-            >
-              <label
-                class="col-md-4 col-form-label text-md-right"
-                :for="'set-' + s.key"
-                @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-              >
-                {{ settingLabel(s.key) }}
-              </label>
-              <div class="col-md-6 d-flex align-items-start">
-                <input
-                  :id="'set-' + s.key"
-                  v-model="formSettings[s.key]"
-                  class="form-control"
-                  type="text"
-                />
-                <FormHelp v-if="s.description" :help="s.description" class="ms-1" />
+                <div class="small text-muted mt-1">
+                  Require new users to verify their email address before accessing the application.
+                </div>
               </div>
             </div>
           </div>
@@ -437,32 +377,29 @@
         <div class="card-body mx-4 my-4">
           <p class="text-muted mb-3">Review your choices before finishing.</p>
 
-          <FormCollapsible
-            v-if="!hasAdmin"
-            title="Admin"
-            :collapsed="false"
-            class="mb-3"
-          >
+          <div v-if="!hasAdmin" class="mb-4">
+            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Admin</h6>
             <ul class="list-unstyled mb-0">
               <li><strong>Username:</strong> {{ formData.userName || "—" }}</li>
               <li><strong>Email:</strong> {{ formData.email || "—" }}</li>
               <li><strong>Password:</strong> Password set</li>
             </ul>
-          </FormCollapsible>
+          </div>
 
-          <FormCollapsible
-            v-for="group in summaryFieldGroups"
-            :key="group.title"
-            :title="group.title"
-            :collapsed="false"
-            class="mb-3"
-          >
+          <div v-for="group in summaryFieldGroups" :key="group.title" class="mb-4">
+            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">{{ group.title }}</h6>
             <ul class="list-unstyled ms-2 mb-0">
-              <li v-for="s in group.settings" :key="s.key">
-                <strong>{{ settingLabel(s.key) }}:</strong> {{ summarySettingValue(s.key) }}
+              <li v-for="s in group.settings" :key="s.key" class="mb-2">
+                <template v-if="s.key === 'app.register.terms'">
+                  <div class="fw-semibold mb-1">{{ settingLabel(s.key) }}</div>
+                  <BasicEditor :model-value="summarySettingValue(s.key)" :read-only="true" />
+                </template>
+                <template v-else>
+                  <strong>{{ settingLabel(s.key) }}:</strong> {{ summarySettingValue(s.key) }}
+                </template>
               </li>
             </ul>
-          </FormCollapsible>
+          </div>
 
           <div v-if="settingsFromFile && Object.keys(settingsFromFile).length" class="mt-4">
             <button
@@ -497,7 +434,7 @@
         <template #title>Import Settings</template>
         <template #body>
           <p class="mb-2">
-            Select a JSON file with settings. Loaded values will override the form and skip the following steps: Mail, Registration, and Moodle.
+            Select a JSON file with settings. Loaded values will override the form and skip the following steps: Mail and Registration.
           </p>
           <input
             ref="jsonFileInput"
@@ -545,23 +482,22 @@
  * @author CARE
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
-import FormHelp from "@/basic/form/Help.vue";
-import FormCollapsible from "@/basic/form/Collapsible.vue";
+import BasicEditor from "@/basic/editor/Editor.vue";
 import Modal from "@/basic/Modal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 /** Order of subsections within each wizard step (from displaySubsection in DB). */
 const SUBSECTION_ORDER = {
-  general: ["Copyright and consent", "Login options", "Study mode", "Landing page links"],
+  general: ["Copyright and consent", "Terms and conditions", "Login options", "Landing page links"],
   mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
-  registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
+  registration: ["Enable registration", "Information requested at registration", "Consent options", "Email verification rate limit"],
   moodle: ["Connection", "Course", "Show inputs"],
 };
 
 export default {
   name: "SetupWizard",
-  components: { IconAsset, FormHelp, FormCollapsible, Modal },
+  components: { IconAsset, BasicEditor, Modal },
   data() {
     return {
       currentStep: 0,
@@ -580,7 +516,6 @@ export default {
       showError: false,
       errorMessage: "",
       finishing: false,
-      adminCreatedThisSession: false,
     };
   },
   computed: {
@@ -588,13 +523,13 @@ export default {
       return this.$route.query.reRun === "true";
     },
     displaySteps() {
-      const stepTypes = ["admin", "general", "mail", "registration", "moodle", "summary"];
+      const stepTypes = ["admin", "general", "mail", "registration", "summary"];
       let filtered = this.steps.filter((s) => stepTypes.includes(s.type));
       if (this.hasAdmin) {
         filtered = filtered.filter((s) => s.type !== "admin");
       }
       if (this.settingsFromFile && Object.keys(this.settingsFromFile).length > 0) {
-        filtered = filtered.filter((s) => !["mail", "registration", "moodle"].includes(s.type));
+        filtered = filtered.filter((s) => !["mail", "registration"].includes(s.type));
       }
       return filtered;
     },
@@ -605,25 +540,53 @@ export default {
       return this.formSettings["system.mailService.enabled"] === "true";
     },
     mailFieldGroups() {
-      const groups = this.fieldGroupsForStep("mail");
+      const sendmailEnabled = this.formSettings["system.mailService.sendMail.enabled"] === "true";
+      const smtpEnabled = this.formSettings["system.mailService.smtp.enabled"] === "true";
+      const sendmailKey = "system.mailService.sendMail.enabled";
+      const smtpKey = "system.mailService.smtp.enabled";
+
+      const groups = this.fieldGroupsForStep("mail")
+        .map((g) => ({
+          ...g,
+          settings: (g.settings || []).filter((s) => s.key !== "system.mailService.enabled"),
+        }))
+        .filter((g) => g.settings.length > 0);
+
+      const filteredGroups = groups.filter((g) => {
+        if (sendmailEnabled && g.title === "SMTP") return false;
+        if (smtpEnabled && g.title === "Sendmail") return false;
+        return true;
+      });
+
+      const normalizedGroups = filteredGroups
+        .map((g) => {
+          if (g.title === "Sendmail" && !sendmailEnabled) {
+            return { ...g, settings: g.settings.filter((s) => s.key === sendmailKey) };
+          }
+          if (g.title === "SMTP" && !smtpEnabled) {
+            return { ...g, settings: g.settings.filter((s) => s.key === smtpKey) };
+          }
+          return g;
+        })
+        .filter((g) => g.settings.length > 0);
+
       const forgotPassword = (this.wizardSettings || []).find((s) => s.key === "app.login.forgotPassword");
       if (forgotPassword && this.mailEnabled) {
-        groups.push({ title: "Features that use email", settings: [forgotPassword] });
+        normalizedGroups.push({ title: "Features that use email", settings: [forgotPassword] });
       }
-      return groups;
+      return normalizedGroups;
     },
     registrationFieldGroups() {
-      return this.fieldGroupsForStep("registration");
-    },
-    moodleFieldGroups() {
-      return this.fieldGroupsForStep("moodle");
+      return this.fieldGroupsForStep("registration").map((g) => ({
+        ...g,
+        settings: (g.settings || []).filter((s) => s.key !== "app.register.terms"),
+      })).filter((g) => g.settings.length > 0);
     },
     summaryFieldGroups() {
       const stepTitles = {
         general: "General",
         mail: "Mail",
         registration: "Registration",
-        moodle: "Moodle",
       };
       const byStep = {};
       for (const s of this.wizardSettings || []) {
@@ -631,7 +594,7 @@ export default {
         if (!byStep[step]) byStep[step] = [];
         byStep[step].push(s);
       }
-      const order = ["general", "mail", "registration", "moodle"];
+      const order = ["general", "mail", "registration"];
       return order.filter((step) => byStep[step]?.length).map((step) => ({
         title: stepTitles[step],
         settings: byStep[step],
@@ -701,12 +664,47 @@ export default {
         acc[s.key] = s.value != null && s.value !== undefined ? String(s.value) : "";
         return acc;
       }, {});
+
+      // Keep sendmail and smtp mutually exclusive; sendmail takes precedence.
+      if (this.formSettings["system.mailService.sendMail.enabled"] === "true") {
+        this.formSettings["system.mailService.smtp.enabled"] = "false";
+      }
     }
     if (this.hasAdmin && this.$socket && !this.$socket.connected) {
       this.$socket.connect();
     }
   },
   methods: {
+    waitForSocketConnect() {
+      return new Promise((resolve, reject) => {
+        if (!this.$socket) {
+          reject(new Error("Socket not available"));
+          return;
+        }
+        if (this.$socket.connected) {
+          resolve(true);
+          return;
+        }
+
+        const onConnect = () => {
+          cleanup();
+          resolve(true);
+        };
+        const onError = (err) => {
+          cleanup();
+          reject(err || new Error("Socket connect error"));
+        };
+        const cleanup = () => {
+          try { this.$socket.off("connect", onConnect); } catch (e) {}
+          try { this.$socket.off("connect_error", onError); } catch (e) {}
+          try { this.$socket.off("error", onError); } catch (e) {}
+        };
+
+        try { this.$socket.on("connect", onConnect); } catch (e) {}
+        try { this.$socket.on("connect_error", onError); } catch (e) {}
+        try { this.$socket.on("error", onError); } catch (e) {}
+      });
+    },
     /**
      * Handle mail step setting changes.
      * @param {string} key - Setting key
@@ -714,6 +712,15 @@ export default {
      */
     onMailSettingChange(key, value) {
       this.formSettings[key] = value;
+
+      const sendmailKey = "system.mailService.sendMail.enabled";
+      const smtpKey = "system.mailService.smtp.enabled";
+      if (key === sendmailKey && value === "true") {
+        this.formSettings[smtpKey] = "false";
+      }
+      if (key === smtpKey && value === "true") {
+        this.formSettings[sendmailKey] = "false";
+      }
     },
     /**
      * Group wizard settings by displaySubsection for a given step.
@@ -762,7 +769,9 @@ export default {
     submitAdmin() {
       Object.keys(this.validity).forEach(k => { this.validity[k] = true; });
       if (!this.adminFormValid) return;
-      this.doSubmitAdmin();
+      this.showError = false;
+      this.errorMessage = "";
+      this.currentStep++;
     },
     async doSubmitAdmin() {
       this.showError = false;
@@ -782,18 +791,20 @@ export default {
           }
         );
         if (res.status === 200) {
-          this.adminCreatedThisSession = true;
+          this.hasAdmin = true;
           if (this.$socket && !this.$socket.connected) {
             this.$socket.connect();
           }
-          this.currentStep = 1;
+          return true;
         } else {
           this.showError = true;
           this.errorMessage = (res.data && res.data.message) || "Setup failed. Please try again.";
+          return false;
         }
       } catch (err) {
         this.showError = true;
         this.errorMessage = err.message || "Setup failed. Please try again.";
+        return false;
       }
     },
     onPrevious() {
@@ -886,11 +897,31 @@ export default {
     },
     async finish() {
       this.settingsTouched = true;
-      if (!this.$socket || !this.$socket.connected) {
+      this.showError = false;
+      this.errorMessage = "";
+
+      if (!this.hasAdmin) {
+        const created = await this.doSubmitAdmin();
+        if (!created) return;
+      }
+
+      if (!this.$socket) {
         this.showError = true;
-        this.errorMessage = "Connection not ready. Please wait and try again.";
+        this.errorMessage = "Connection not available. Please reload and try again.";
         return;
       }
+
+      if (!this.$socket.connected) {
+        try {
+          this.$socket.connect();
+          await this.waitForSocketConnect();
+        } catch (err) {
+          this.showError = true;
+          this.errorMessage = "Connection not ready. Please try again.";
+          return;
+        }
+      }
+
       const merged = { ...this.formSettings, ...(this.settingsFromFile || {}) };
       if (merged["system.mailService.enabled"] !== "true") {
         merged["app.register.emailVerification"] = "false";
