@@ -204,6 +204,12 @@ export default {
         if (otherInStep.length) {
           keys = [...keys, ...otherInStep.map((s) => s.key)];
         }
+
+        // Terms of Service should be visible in both "General" and "Registration".
+        if (step === "registration" && this.displaySettings.some((s) => s.key === "app.register.terms")) {
+          if (!keys.includes("app.register.terms")) keys.push("app.register.terms");
+        }
+
         if (keys.length) {
           const settingsInSection = keys.map((k) => this.displaySettings.find((s) => s.key === k)).filter(Boolean);
           sections.push({
