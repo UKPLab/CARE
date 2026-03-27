@@ -84,6 +84,7 @@ class AssignmentSocket extends Socket {
             hash: undefined,
             closed: undefined,
             userIdClosed: undefined,
+            parentStudyId: data.assignmentType === 'study_session' ? data['assignment'].studyId : null,
             limitSessions: data["reviewer"].length,
             limitSessionsPerUser: 1,
             resumable: true,
@@ -315,7 +316,11 @@ class AssignmentSocket extends Socket {
                 }
             }
 
-            for (const [assignmentId, reviewerIds] of Object.entries(finalAssignments)) {
+            const assignmentEntries = Object.entries(finalAssignments);
+            const totalAssignments = assignmentEntries.length;
+            let currentAssignment = 0;
+
+            for (const [assignmentId, reviewerIds] of assignmentEntries) {
                 const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
                 const assignmentData = {
@@ -327,6 +332,16 @@ class AssignmentSocket extends Socket {
                     ...(data.assignmentType && { assignmentType: data.assignmentType }),
                 };
                 await this.createAssignment(assignmentData, options);
+
+                // Emit progress update
+                currentAssignment++;
+                if (data.progressId) {
+                    this.socket.emit("progressUpdate", {
+                        id: data.progressId,
+                        current: currentAssignment,
+                        total: totalAssignments
+                    });
+                }
             }
 
             return finalAssignments;
@@ -401,6 +416,10 @@ class AssignmentSocket extends Socket {
             }
 
             // create the final assignments
+            // Count total assignments for progress tracking
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
+
             for (const [reviewerId, assignments] of Object.entries(finalAssignments)) {
                 for (const assignment of assignments) {
                     const assignmentData = {
@@ -412,6 +431,70 @@ class AssignmentSocket extends Socket {
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
                     };
                     await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
+                }
+            }
+
+            return finalAssignments;
+
+            } else if (data.mode === "session_user") {
+            // Session user-based assignment: assign each study session to its original user
+            const finalAssignments = {};
+
+            for (const assignment of shuffledAssignments) {
+                const studySession = await this.models['study_session'].getById(assignment.id, {transaction: options.transaction});
+                const reviewerId = studySession.userId;
+                
+                // Check if the reviewer exists in selectedReviewer
+                const reviewer = data.selectedReviewer.find((r) => r.id === reviewerId);
+                if (!reviewer) {
+                    throw new Error(`Study session owner (User ID: ${reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.`);
+                }
+
+                // Initialize array for this reviewer if not exists
+                if (!finalAssignments[reviewerId]) {
+                    finalAssignments[reviewerId] = [];
+                }
+
+                finalAssignments[reviewerId].push(assignment.id);
+            }
+
+            // Create the final assignments
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
+            for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
+                for (const assignmentId of assignmentIds) {
+                    const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
+                    const reviewer = data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId));
+                    
+                    const assignmentData = {
+                        assignment: assignment,
+                        reviewer: [reviewer],
+                        template: data.template,
+                        documents: assignment["document"],
+                        // Pass through optional properties if they exist
+                        ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                    };
+                    await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
                 }
             }
 
@@ -545,8 +628,42 @@ class AssignmentSocket extends Socket {
         const duplicatedDocuments = [];
         for (const studySession of data.selectedAssignments) {
             const currentDocuments = [];
+            let previousSubmissionId = null;
             for (const [sourceWorkflowStepId, targetWorkflowStepId] of Object.entries(data.workflowMapping)) {
-                
+                if( targetWorkflowStepId === 'previousSubmission'){
+                    // Get the original submission first
+                    if(previousSubmissionId === null){
+                        throw new Error("First step selected does not map to a submission.");
+                    }    
+                    let originalSubmission = await this.models['submission'].findOne(
+                        { where: { id: previousSubmissionId } }, 
+                        { transaction: options.transaction }
+                    );
+                    
+                    // Follow the parent chain to find the root submission
+                    originalSubmission = await this.models['submission'].getRootSubmission(originalSubmission);
+                    
+                    // Now find the submission that has previousSubmissionId pointing to this root
+                    const latestSubmission = await this.models['submission'].findOne(
+                        { where: { previousSubmissionId: originalSubmission?.id } }, 
+                        { transaction: options.transaction }
+                    );
+                    //get document based on validation file for now getting pdf
+                    if(!latestSubmission){
+                        throw new Error("The latest version of the chosen submission could not be found.");
+                    }
+                    const document = await this.models['document'].findOne(
+                        { where: { submissionId: latestSubmission.id, type: 0} },
+                        { transaction: options.transaction }
+                    );
+                    
+                    currentDocuments.push({
+                        documentId: document.id,
+                        workflowStepId: Number(sourceWorkflowStepId),
+                        submissionId: document?.submissionId || null, 
+                    });
+                }
+                else {                
                 const sourceStudyStep = await this.models['study_step'].findOne(
                     { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
                     { transaction: options.transaction }
@@ -558,6 +675,7 @@ class AssignmentSocket extends Socket {
                 );
                 
                 let duplicatedDocument;
+                previousSubmissionId = originalDocument.submissionId;
                 
                 // Check if document has a submissionId
                 if (originalDocument.submissionId) {
@@ -565,7 +683,7 @@ class AssignmentSocket extends Socket {
                     const copyResult = await this.models['submission'].copySubmission(
                         originalDocument.submissionId,
                         this.userId,
-                        {}, // Submission overrides
+                        { hideInFrontend: true }, // Submission overrides
                         {}, // Document overrides
                         [
                             {
@@ -601,13 +719,14 @@ class AssignmentSocket extends Socket {
                         ],
                         { transaction: options.transaction }
                     );
-                }  
+                }
 
-                currentDocuments.push({
-                    documentId: duplicatedDocument.id,
-                    workflowStepId: Number(sourceWorkflowStepId),
-                    submissionId: duplicatedDocument?.submissionId || null, 
-                });
+                    currentDocuments.push({
+                        documentId: duplicatedDocument.id,
+                        workflowStepId: Number(sourceWorkflowStepId),
+                        submissionId: duplicatedDocument?.submissionId || null, 
+                    });
+                }
             }
             duplicatedDocuments.push(currentDocuments);
         }

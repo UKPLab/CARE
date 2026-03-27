@@ -1,5 +1,6 @@
 import { FileSaver } from "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
+import yaml from "js-yaml";
 
 
 /**
@@ -60,6 +61,21 @@ export function objectsToJSON(objs) {
 }
 
 /**
+ * Returns a YAML string of the provided objects.
+ *
+ * @param objs
+ * @returns {string}
+ */
+export function objectsToYAML(objs) {
+    return yaml.dump(objs, {
+        indent: 2,
+        lineWidth: -1,
+        noRefs: true,
+        sortKeys: true
+    });
+}
+
+/**
  * Exports a list of objects into a single string, where nested objects are visualized by indentation.
  *
  * @param objs
@@ -96,8 +112,12 @@ export function downloadObjectsAs(objs, name, file_type) {
         httpType = "application/json";
     } else if (file_type === "txt") {
         data = objectsToTXT(objs);
-        httpType = "text/plain";
-    } else {
+        httpType = "text/plain";  
+    } else if (file_type === "yaml") {
+        data = objectsToYAML(objs);
+        httpType = "application/x-yaml";
+    }
+    else {
         throw `Invalid argument '${file_type}' passed to downloadObjectsAs`;
     }
 

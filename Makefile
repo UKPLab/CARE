@@ -100,7 +100,7 @@ dev-build-frontend: frontend/node_modules/.uptodate
 build:
 	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
-.PHONE: build-frontend
+.PHONY: build-frontend
 build-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-build
 
@@ -127,6 +127,10 @@ recover_db:
 	@echo "Recovering from $${DUMP}"
 	@echo "Recovering int container $${CONTAINER}"
 	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+
+.PHONY: admin-password
+admin-password: backend/node_modules/.uptodate
+	cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" npm run set-admin-password
 
 .PHONY: check_clean clean
 

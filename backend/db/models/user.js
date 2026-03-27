@@ -42,6 +42,8 @@ module.exports = (sequelize, DataTypes) => {
             if (!data.password) {
                 data.password = genPwd(10, true);
                 data.initialPassword = data.password;
+            } else {
+                User.validatePasswordContent(data.password);
             }
             data.passwordHash = await genPwdHash(data.password, data.salt);
             if (!data.userName) {
@@ -441,6 +443,26 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Validates that a password is acceptable (printable, no emojis, not whitespace-only).
+         * @param {string} pwd - The password to validate
+         * @throws {Error} If the password is invalid
+         */
+        static validatePasswordContent(pwd) {
+            if (typeof pwd !== "string" || pwd.length < 8) {
+                throw new Error("Password must be at least 8 characters.");
+            }
+            if (/^\s*$/.test(pwd)) {
+                throw new Error("Password cannot be only spaces or whitespace.");
+            }
+            if (/[\x00-\x1F\x7F]/.test(pwd)) {
+                throw new Error("Password cannot contain control or non-printable characters.");
+            }
+            if ([...pwd].some((c) => (c.codePointAt(0) || 0) > 0xFFFF)) {
+                throw new Error("Password cannot contain emojis or special symbols. Use letters, numbers, and standard punctuation.");
+            }
+        }
+
+        /**
          * Resets user's password
          * @param {number} userId - The ID of the user
          * @param {string} pwd - The new password
@@ -448,6 +470,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async resetUserPwd(userId, pwd) {
             try {
+                User.validatePasswordContent(pwd);
                 const salt = genSalt();
                 const passwordHash = await genPwdHash(pwd, salt);
                 const [updatedRowsCount] = await User.update(

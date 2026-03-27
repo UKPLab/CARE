@@ -266,6 +266,7 @@ module.exports = (sequelize, DataTypes) => {
 
     StudyStep.init({
             studyId: DataTypes.INTEGER,
+            stepNumber: DataTypes.INTEGER,
             workflowStepId: DataTypes.INTEGER,
             stepType: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,

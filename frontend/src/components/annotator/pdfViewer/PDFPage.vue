@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      :id="'page-container-' + pageNumber"
+      :id="'page-container-' + pageNumber + '-' + documentId"
       v-observe-visibility="{
         callback: visibilityChanged,
         throttle: 300,
@@ -13,11 +13,11 @@
     >
       <canvas
         v-show="!isRendered"
+        :id="'placeholder-canvas-' + pageNumber + '-' + documentId"
         :style="canvasStyle"
-        :id="'placeholder-canvas-' + pageNumber"
       />
       <div
-        :id="'canvas-wrapper-' + pageNumber"
+        :id="'canvas-wrapper-' + pageNumber + '-' + documentId"
         class="canvasWrapper"
       >
         <Loader
@@ -27,13 +27,13 @@
         />
 
         <canvas
-          :id="'pdf-canvas-' + pageNumber"
+          :id="'pdf-canvas-'+ pageNumber + '-' + documentId"
           :style="{'visibility':(isRendered)?'visible':'hidden'}"
           class="pdf-page"
         />
       </div>
       <div
-        :id="'text-layer-' + pageNumber"
+        :id="'text-layer-' + pageNumber + '-' + documentId"
         class="textLayer"
       />
     </div>
@@ -162,7 +162,7 @@ export default {
       handler(newValue, oldValue) {
         if (this.isRendered) {
           this.isZooming = true;
-          const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+          const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
           
           // Calculate new width based on current width and zoom change
           const currentWidth = wrapper.getBoundingClientRect().width;
@@ -192,9 +192,9 @@ export default {
   mounted() {
     this.$nextTick(() => {
       this.setA4();
-      this.anchor = new Anchoring(this.pdf, this.pageNumber);
+      this.anchor = new Anchoring(this.pdf, this.pageNumber, this.documentId);
       this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
-      this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
+      this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId));
       this.init();
     });
   },
@@ -212,12 +212,12 @@ export default {
       this.$emit('updateVisibility', {
         pageNumber: this.pageNumber,
         isVisible: isVisible,
-        offset: document.getElementById('page-container-' + this.pageNumber).offsetTop - 52.5
+        offset: document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId).offsetTop - 52.5
       });
     },
     setA4() {
-      const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber);
-      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+      const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber + '-' + this.documentId);
+      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
       const width = wrapper.getBoundingClientRect().width;
       this.originalWidth = width; 
       const height = width * 1.4142;
@@ -227,7 +227,7 @@ export default {
     },
     applyZoomToWrapper() {
       if (this.originalWidth > 0) {
-        const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+        const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
         const width = this.originalWidth * this.zoomValue;
         wrapper.style.width = width + 'px';
         wrapper.style.height = (width * 1.4142) + 'px';
@@ -238,8 +238,8 @@ export default {
       if (this.render && !this.isRendered) {
         this.applyZoomToWrapper();
         this.pdf.getPage(this.pageNumber).then((page) => {
-          const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
-          const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
+          const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber + '-' + this.documentId);
+          const canvas = document.getElementById('pdf-canvas-' + page.pageNumber + '-' + this.documentId);
 
           // Calculate scale based on wrapper width
           this.scale = wrapper.getBoundingClientRect().width / page.getViewport({scale: 1.0}).width;
@@ -258,7 +258,7 @@ export default {
     resizeHandler(event) {
       if (this.isZooming) return;
       
-      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
       const width = wrapper.getBoundingClientRect().width;
       
       if (width !== this.currentWidth) {
@@ -276,7 +276,7 @@ export default {
     renderPage(page) {
       if (this.renderTask) return;
 
-      const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
+      const canvas = document.getElementById('pdf-canvas-' + page.pageNumber + '-' + this.documentId);
       const context = canvas.getContext('2d');
       const viewport = page.getViewport({scale: this.scale * this.devicePixelRatio});
 
@@ -293,9 +293,9 @@ export default {
       toRaw(this.renderTask).promise.then(() => {
         return page.getTextContent();
       }).then((textContent) => {
-        const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
+        const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber + '-' + this.documentId).getBoundingClientRect();
 
-        const textLayerDiv = document.getElementById('text-layer-' + page.pageNumber);
+        const textLayerDiv = document.getElementById('text-layer-' + page.pageNumber + '-' + this.documentId);
  
         // Use display scale for text layer positioning
         const displayViewport = page.getViewport({scale: this.scale});
@@ -356,10 +356,10 @@ export default {
       this.$emit('destroyPage', {pageNumber: this.pageNumber});
       
       if (this.$refs.highlights) {
-        this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + this.pageNumber));
+        this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + this.pageNumber + '-' + this.documentId));
       }
       
-      const textLayer = document.getElementById('text-layer-' + this.pageNumber);
+      const textLayer = document.getElementById('text-layer-' + this.pageNumber + '-' + this.documentId);
       if (textLayer) {
         while (textLayer.firstChild) {
           textLayer.removeChild(textLayer.firstChild);

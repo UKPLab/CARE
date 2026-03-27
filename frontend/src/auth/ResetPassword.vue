@@ -38,9 +38,9 @@
             <!-- Form - only show when token is validated and not successful yet -->
             <div v-if="!isSuccess && tokenValidated && !validatingToken">
               <BasicForm
+                ref="resetForm"
                 v-model="formData"
                 :fields="fields"
-                ref="resetForm"
               />
             </div>
 
@@ -54,8 +54,8 @@
               <BasicButton
                   v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
                   :class="isSuccess ? 'btn btn-success w-full max-w-xs' : 'btn btn-secondary w-full max-w-xs'"
-                  @click="toLogin"
                   :text="isSuccess ? 'Return to Login' : 'Back to Login'"
+                  @click="toLogin"
               />
           </div>
         </div>
@@ -97,8 +97,8 @@ export default {
           key: "newPassword",
           type: "password",
           required: true,
-          placeholder: "Enter new password (minimum 8 characters)",
-          invalidText: "Password must be at least 8 characters long.",
+          placeholder: "Enter new password (minimum 8 characters, no emojis or spaces-only)",
+          invalidText: "Password must be at least 8 characters. Use letters, numbers, and standard punctuation.",
           pattern: ".{8,}",
           default: "",
           size: 12,
@@ -121,7 +121,11 @@ export default {
       return this.$route.query.token;
     },
     validPassword() {
-      return this.formData.newPassword && this.formData.newPassword.length >= 8;
+      const p = this.formData.newPassword || "";
+      return p.length >= 8
+        && !/^\s*$/.test(p)
+        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     validConfirmPassword() {
       return this.formData.newPassword === this.formData.confirmPassword;

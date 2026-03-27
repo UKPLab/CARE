@@ -45,9 +45,9 @@
               "
             >
               <div
-                @click.stop="toggleProjectDropdown"
                 class="project-box"
                 :title="`Project: ${currentProjectName}`"
+                @click.stop="toggleProjectDropdown"
               >
                 <span class="project-text">Project: {{ currentProjectName }}</span>
               </div>

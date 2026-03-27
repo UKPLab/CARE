@@ -68,6 +68,50 @@ module.exports = (sequelize, DataTypes) => {
 
             return affectedCount;
         }
+        /**
+         * Get the most recent submission for a user and project, traversing back through parent submissions
+         * 
+         * @param {number} userId Id of the user
+         * @param {number} projectId Id of the project
+         * @param {boolean} root Whether to return the root submission
+         * @param {Object} transaction Database transaction object
+         * @returns {Object|null} The most recent submission or null if none found
+         */
+        static async getParentSubmission(userId, projectId, returnRoot, transaction = {}) {
+            let submission = await Submission.findOne({
+                where: {
+                    userId,
+                    projectId,
+                    deleted: false,
+                },
+                order: [['createdAt', 'DESC']],
+                raw: true
+            });
+            if(returnRoot && submission && submission.parentSubmissionId) {
+                 submission = await this.getRootSubmission(submission);
+            }
+            return submission ? submission : null;
+        }
+
+        /** 
+         * Get the root submission from a given submission by traversing back through parent submissions 
+         * 
+         * @param {Object} submission The starting submission object
+         * @returns {Object} The root submission object
+         */
+        static async getRootSubmission(submission) {
+            let currentSubmission = submission;
+            while (currentSubmission.parentSubmissionId) {
+                currentSubmission = await Submission.findOne({
+                    where: {
+                        id: currentSubmission.parentSubmissionId,
+                        deleted: false,
+                    },
+                    raw: true,
+                });
+            }
+            return currentSubmission ? currentSubmission : null;
+        }
 
         /**
          * Copy a submission and all its associated documents
@@ -76,16 +120,15 @@ module.exports = (sequelize, DataTypes) => {
          * @param {number} createdByUserId - The ID of the user creating the copy
          * @param {Object} submissionOverrides - Overrides for the submission (e.g., hideInFrontend)
          * @param {Object} documentOverrides - Overrides for documents (e.g., studySessionId, studyStepId)
-         * @param {Object} includes - Additional includes for document duplication (eg: {studySessionId: 1}) in case we require cenrtain extra files
+         * @param {Object} filters - Additional filters for document duplication (eg: {studySessionId: 1}) in case we require certain extra files
          * @param {Object} options - Database options including transaction
          * @returns {Promise<Object>} Object containing copied submission and documents
          */
-        static async copySubmission(originalSubmissionId, createdByUserId, submissionOverrides = {}, documentOverrides = {}, includes= {}, options = {}) {
-            const transaction = options.transaction;
+        static async copySubmission(originalSubmissionId, createdByUserId, submissionOverrides = {}, documentOverrides = {}, filters= {}, options = {}) {
 
             // Get the original submission
             const originalSubmission = await Submission.findByPk(originalSubmissionId, {
-                transaction
+                transaction: options.transaction
             });
 
             if (!originalSubmission) {
@@ -106,13 +149,13 @@ module.exports = (sequelize, DataTypes) => {
                     deleted: false,
                     ...submissionOverrides, // Apply submission-specific overrides (e.g., hideInFrontend)
                 },
-                {transaction}
+                {transaction: options.transaction}
             );
 
             // Get all documents associated with the original submission
             const originalDocuments = await sequelize.models.document.findAll({
                 where: {submissionId: originalSubmissionId},
-                transaction
+                transaction: options.transaction
             });
 
             // Copy every associated document and track mapping
@@ -129,8 +172,8 @@ module.exports = (sequelize, DataTypes) => {
                     const copiedDoc = await sequelize.models.document.duplicateDocument(
                         originalDoc.id,
                         mergedDocumentOverrides,
-                        includes,
-                        {transaction}
+                        filters,
+                        options
                     );
                     copiedDocuments.push(copiedDoc);
                 } catch (error) {
@@ -192,6 +235,7 @@ module.exports = (sequelize, DataTypes) => {
             createdByUserId: DataTypes.INTEGER,
             projectId: DataTypes.INTEGER,
             parentSubmissionId: DataTypes.INTEGER,
+            previousSubmissionId: DataTypes.INTEGER,
             extId: DataTypes.INTEGER,
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,

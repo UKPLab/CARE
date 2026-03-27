@@ -4,13 +4,13 @@
   </div>
   <div
     v-if="pdf"
-    id="pdfContainer"
+    :id="'pdfContainer-' + documentId"
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
     <!-- Toolbar -->
     <PDFToolbar
-      id="pdfToolbar"
+      :id="'pdfToolbar-' + documentId"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
       :is-zooming="isZooming"
@@ -25,12 +25,12 @@
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
-      class="scrolling-page"
+      :class="'scrolling-page'"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
     <Adder v-if="!readOnly && !componentReadOnly"/>
-  </div>
+         </div>
 </template>
 
 <script>
@@ -221,16 +221,19 @@ export default {
       }, 1000);
     },
     updateVisibility(page) {
+      let stateChanged = false;
       if (page.isVisible) {
         if (!this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.push(page.pageNumber);
+          stateChanged = true;
         }
       } else {
         if (this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
+          stateChanged = true;
         }
       }
-      if (this.acceptStats) {
+      if (stateChanged && this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfPageVisibilityChange",
           data: {

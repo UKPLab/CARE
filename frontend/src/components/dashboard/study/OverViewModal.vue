@@ -47,6 +47,7 @@
         :data="filteredStudySessions"
         :options="tableOptions"
         @action="handleAction"
+        :max-table-height="'60vh'"
       />
     </template>
     <template #footer>
@@ -97,6 +98,8 @@ export default {
         { name: "Last Name", key: "lastName", sortable: true },
         { name: "Max Step", key: "currentStep", sortable: true },
         { name: "Created At", key: "createdAt", sortable: true },
+        { name: "Last updated", key: "updatedAt", sortable: true },
+        { name: "Number of Steps", key: "numSteps", sortable: true },
         {
           name: "Status",
           key: "status",
@@ -128,7 +131,10 @@ export default {
       
       return sessions.map((session) => {
         const study = studies.find(s => s.id === session.studyId);
-        const currentStepIndex = this.getStudyStepIndex(session.studyId, session.studyStepIdMax);
+        const currentStepIndex = this.$store.getters["table/study_step/get"](session.studyStepIdMax)?.stepNumber ?? null;
+        const studySteps = this.$store.getters["table/study_step/getFiltered"](
+          (step) => step.studyId === session.studyId
+        );
         
         return {
           id: session.id,
@@ -136,9 +142,10 @@ export default {
           studyName: study.name,
           firstName: this.getUserName(session.userId).firstName,
           lastName: this.getUserName(session.userId).lastName,
-          currentStep: currentStepIndex !== null ? `Step ${currentStepIndex + 1}` : 'N/A',
+          currentStep: currentStepIndex !== null ? `Step ${currentStepIndex}` : 'N/A',
           createdAt: new Date(session.createdAt).toLocaleString(),
           updatedAt: new Date(session.updatedAt).toLocaleString(),
+          numSteps: studySteps.length,  
           status: session.end === null ? "Running" : "Finished",
           hash: session.hash,
         };
@@ -169,30 +176,6 @@ export default {
     },
   },
   methods: {
-    getStudyStepIndex(studyId, studyStepIdMax) {
-      if (!studyStepIdMax) return null;
-      
-      const steps = this.$store.getters["table/study_step/getFiltered"](
-        (s) => s.studyId === studyId
-      );
-      
-      if (!steps || !steps.length) return null;
-
-      const nextMap = new Map(steps.map(s => [s.studyStepPrevious, s]));
-
-      let current = steps.find(s => s.studyStepPrevious == null);
-      
-      let index = 0;
-      while (current) {
-        if (current.id === studyStepIdMax) {
-          return index;
-        }
-        current = nextMap.get(current.id);
-        index++;
-      }
-      
-      return null;
-    },
     getWorkflowType(workflowId) {
         const workflow = this.$store.getters["table/workflow/get"](workflowId);
         return workflow ? workflow.name : "Unknown";
