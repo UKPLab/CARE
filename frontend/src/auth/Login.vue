@@ -324,8 +324,12 @@ export default {
     },
     async login_user() {
       try {
-        await this.login({username: this.formData.username, password: this.formData.password})
-        {
+        const loginResult = await this.login({
+          username: this.formData.username,
+          password: this.formData.password,
+        });
+
+        if (loginResult?.completedLogin) {
           // TODO: May need to figure out another way to fix old user data persisting issue.
           await this.$router.go(0);
           this.showError = false;
@@ -340,8 +344,12 @@ export default {
     },
     async login_guest() {
       try {
-        await this.login({username: "guest", password: "guestguest"});
-        {
+        const loginResult = await this.login({
+          username: "guest",
+          password: "guestguest",
+        });
+
+        if (loginResult?.completedLogin) {
           await this.$router.go(0);
           this.showError = false;
         }
@@ -380,7 +388,7 @@ export default {
                 redirectedFrom: this.$route.query.redirectedFrom
               }
             });
-            return;
+            return { completedLogin: false };
           }
 
           // Single method, go directly to corresponding verification
@@ -391,7 +399,7 @@ export default {
                 redirectedFrom: this.$route.query.redirectedFrom
               }
             });
-            return;
+            return { completedLogin: false };
           }
 
           if (method === "totp") {
@@ -401,15 +409,16 @@ export default {
                 redirectedFrom: this.$route.query.redirectedFrom
               }
             });
-            return;
+            return { completedLogin: false };
           }
           // Unknown method: surface a clear error
           this.showError = true;
           this.errorMessage = "Unsupported 2FA method returned from server.";
-          return;
+          return { completedLogin: false };
         }
         // Normal login flow (no 2FA)
         await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
+        return { completedLogin: true };
       }
     },
     loginWithOrcid() {
