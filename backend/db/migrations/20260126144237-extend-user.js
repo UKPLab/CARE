@@ -72,6 +72,12 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
+    await queryInterface.changeColumn("user", "email", {
+      type: Sequelize.STRING,
+      allowNull: false,
+      unique: true
+    });
+
     for (const column of columns) {
       await queryInterface.removeColumn("user", column.name);
     }
