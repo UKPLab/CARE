@@ -28,7 +28,7 @@
         <!-- Status Summary -->
         <div v-if="enabledMethods.length === 0" class="alert alert-info">
           <i class="bi bi-info-circle"></i>
-          <strong>Status:</strong> No 2FA methods enabled
+          Status: No 2FA methods enabled
         </div>
         <div v-else class="alert alert-success">
           <i class="bi bi-shield-check"></i>
@@ -242,8 +242,18 @@ export default {
     canVerifyTotpSetup() {
       return /^[0-9]{6}$/.test(this.totpVerificationCode);
     },
+    loginMethod() {
+      const user = this.$store.getters["auth/getUser"];
+      if (!user) return null;
+      if (user.loginMethod) return user.loginMethod;
+      if (user.orcidId) return "orcid";
+      if (user.ldapUsername) return "ldap";
+      if (user.samlNameId) return "saml";
+      return "local";
+    },
     isTwoFactorRequired() {
-      return this.$store.getters["settings/getValue"]("system.auth.2fa.required") === "true";
+      if (!this.loginMethod) return false;
+      return this.$store.getters["settings/getValue"](`system.auth.${this.loginMethod}.2fa.required`) === "true";
     },
   },
   methods: {

@@ -145,7 +145,7 @@ export default {
     );
   },
   mounted() {
-    if (window.config["system.auth.loginMethods.ldap.enabled"] !== "true") {
+    if (window.config["system.auth.ldap.enabled"] !== "true") {
       this.$router.replace({
         name: "login",
         query: { redirectedFrom: this.$route.query.redirectedFrom },

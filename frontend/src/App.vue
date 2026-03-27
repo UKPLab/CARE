@@ -154,8 +154,19 @@ export default {
       const methods = Array.isArray(user?.twoFactorMethods) ? user.twoFactorMethods : [];
       return methods.length > 0;
     },
+    loginMethod() {
+      const user = this.$store.getters["auth/getUser"];
+      console.log({user});
+      if (!user) return null;
+      if (user.loginMethod) return user.loginMethod;
+      if (user.orcidId) return "orcid";
+      if (user.ldapUsername) return "ldap";
+      if (user.samlNameId) return "saml";
+      return "local";
+    },
     isTwoFactorRequired() {
-      return this.$store.getters["settings/getValue"]("system.auth.2fa.required") === "true";
+      if (!this.loginMethod) return false;
+      return this.$store.getters["settings/getValue"](`system.auth.${this.loginMethod}.2fa.required`) === "true";
     },
     isTermsConsented() {
       return !!this.$store.getters["auth/getUser"]?.acceptTerms;

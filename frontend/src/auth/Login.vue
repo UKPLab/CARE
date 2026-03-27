@@ -240,13 +240,13 @@ export default {
       return window.config['app.register.enabled'] === 'true';
     },
     showOrcidLogin() {
-      return window.config['system.auth.loginMethods.orcid.enabled'] === 'true';
+      return window.config['system.auth.orcid.enabled'] === 'true';
     },
     showLdapLogin() {
-      return window.config['system.auth.loginMethods.ldap.enabled'] === 'true';
+      return window.config['system.auth.ldap.enabled'] === 'true';
     },
     showSamlLogin() {
-      return window.config['system.auth.loginMethods.saml.enabled'] === 'true';
+      return window.config['system.auth.saml.enabled'] === 'true';
     },
     showExternalLoginOptions() {
       return this.showOrcidLogin || this.showLdapLogin || this.showSamlLogin;

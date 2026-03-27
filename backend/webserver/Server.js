@@ -320,7 +320,7 @@ module.exports = class Server {
      * ORCID Strategy Logic
      */
     async #setupOrcidStrategy() {
-        const enabled = (await this.db.models['setting'].get("system.auth.loginMethods.orcid.enabled")) === "true";
+        const enabled = (await this.db.models['setting'].get("system.auth.orcid.enabled")) === "true";
         if (!enabled) {
             this.authProviderStatus.orcid = { ready: false, reason: "disabled" };
             return;
@@ -390,7 +390,7 @@ module.exports = class Server {
      * LDAP Strategy Logic
      */
     async #setupLdapStrategy() {
-        const enabled = (await this.db.models['setting'].get("system.auth.loginMethods.ldap.enabled")) === "true";
+        const enabled = (await this.db.models['setting'].get("system.auth.ldap.enabled")) === "true";
         if (!enabled) {
             this.authProviderStatus.ldap = { ready: false, reason: "disabled" };
             return;
@@ -464,7 +464,7 @@ module.exports = class Server {
      * SAML Strategy Logic
      */
     async #setupSamlStrategy() {
-        const enabled = (await this.db.models['setting'].get("system.auth.loginMethods.saml.enabled")) === "true";
+        const enabled = (await this.db.models['setting'].get("system.auth.saml.enabled")) === "true";
         if (!enabled) {
             this.authProviderStatus.saml = { ready: false, reason: "disabled" };
             return;

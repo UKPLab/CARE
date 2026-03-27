@@ -135,7 +135,7 @@ module.exports = function (server) {
     }
 
     async function isLoginMethodEnabled(method) {
-        return (await server.db.models['setting'].get(`system.auth.loginMethods.${method}.enabled`)) === "true";
+        return (await server.db.models['setting'].get(`system.auth.${method}.enabled`)) === "true";
     }
 
     async function sendEmailOtp(userRecord) {
@@ -223,8 +223,9 @@ The CARE Team`
      *
      * Returns true if a response has been sent (2FA flow started / selection required).
      */
-    async function startTwoFactorLogin(req, res, userId, options = { mode: 'json' }) {
+    async function startTwoFactorLogin(req, res, userId, options = { mode: 'json', loginMethod: null }) {
         const mode = options.mode || 'json';
+        const loginMethod = options.loginMethod || null;
     
         // 1.Get user record and 2fa methods
         const dbUser = await server.db.models['user'].findByPk(userId, { raw: true });
@@ -237,7 +238,8 @@ The CARE Team`
         req.session.twoFactorPending = {
             userId: dbUser.id,
             methods: methods,
-            method: null
+            method: null,
+            loginMethod,
         };
     
         let responseData = { requiresTwoFactor: true, methods };
@@ -310,6 +312,11 @@ The CARE Team`
         return paths[method] || "/login?error=unsupported-method";
     }
 
+    function addLoginMethod(user, loginMethod) {
+        if (!user || !loginMethod) return;
+        user.loginMethod = loginMethod;
+    }
+
     /**
      * Finalizes the authentication process by establishing a passport session, 
      * updating login records, and handling the HTTP response.
@@ -377,7 +384,7 @@ The CARE Team`
     /**
      * Login Procedure
      */
-    server.app.post('/auth/login', function (req, res, next) {
+    server.app.post('/auth/login', async function (req, res, next) {
         passport.authenticate('local-login', async function (err, user, info) {
             if (err) {
                 server.logger.error("Login failed: " + err);
@@ -388,7 +395,7 @@ The CARE Team`
                     JSON.stringify(info));
                 return res.status(401).send(info);
             }
-            
+
             // Check if email verification is required and if user has verified their email
             const emailVerificationEnabled = await server.db.models['setting'].get("app.register.emailVerification") === "true";
             if (emailVerificationEnabled && !user.emailVerified) {
@@ -401,11 +408,12 @@ The CARE Team`
             
             
             // Start 2FA if configured for this user
-            const twoFactorHandled = await startTwoFactorLogin(req, res, user.id, { mode: 'json' });
+            const twoFactorHandled = await startTwoFactorLogin(req, res, user.id, { mode: 'json', loginMethod: 'local' });
             // 2FA response has been sent; stop normal login flow
             if (twoFactorHandled) return;
             
             // No 2FA required, proceed with normal login
+            addLoginMethod(user, 'local');
             return finalizeLogin(req, res, user, { mode: 'json' });
         })(req, res, next);
     });
@@ -433,9 +441,10 @@ The CARE Team`
                 return res.status(401).send(info || { message: "LDAP login failed." });
             }
 
-            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'json' });
+            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'json', loginMethod: 'ldap' });
             if (handled) return;
 
+            addLoginMethod(user, 'ldap');
             return finalizeLogin(req, res, user, { mode:'json'});
         })(req, res, next);
     });
@@ -472,9 +481,10 @@ The CARE Team`
         },
         async function (req, res, next) {
             const user = req.user;
-            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect'});
+            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect', loginMethod: 'orcid' });
             if (handled) return;
 
+            addLoginMethod(user, 'orcid');
             return finalizeLogin(req, res, user, { mode:'redirect'});
         }
     );
@@ -530,9 +540,10 @@ The CARE Team`
         },
         async function (req, res, next) {
             const user = req.user;
-            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect'});
+            const handled = await startTwoFactorLogin(req, res, user.id, { mode: 'redirect', loginMethod: 'saml' });
             if (handled) return;
 
+            addLoginMethod(user, 'saml');
             return finalizeLogin(req, res, user, { mode: 'redirect'});
         }
     );
@@ -1029,6 +1040,7 @@ The CARE Team`
         
         try {
             const { userId } = req.session.twoFactorPending;
+            const loginMethod = req.session.twoFactorPending?.loginMethod;
 
             // Get user details
             const user = await server.db.models['user'].findOne({
@@ -1064,6 +1076,7 @@ The CARE Team`
             );
             
             // Complete login
+            addLoginMethod(user, loginMethod);
             return finalizeLogin(req, res, user, { mode: 'json' });
         } catch (error) {
             server.logger.error("Failed to verify OTP: " + error);
@@ -1103,6 +1116,7 @@ The CARE Team`
                 }
 
                 // Complete login
+                addLoginMethod(user, pending?.loginMethod);
                 return finalizeLogin(req, res, user, { mode: 'json' });
             } catch (err) {
                 return next(err);
