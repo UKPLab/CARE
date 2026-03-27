@@ -140,6 +140,7 @@ module.exports = function (server) {
     }
 
     const EMAIL_2FA_RESEND_COOLDOWN_MS = 60 * 1000;
+    const MAX_2FA_VERIFY_ATTEMPTS = 5;
 
     function getEmailOtpCooldownInfo(pending) {
         const cooldownUntil = Number(pending?.resendCooldownUntil || 0);
@@ -156,6 +157,72 @@ module.exports = function (server) {
         pending.resendCooldownUntil = Date.now() + durationMs;
         return getEmailOtpCooldownInfo(pending);
     }
+
+    function getTwoFactorAttemptsRemaining(pending) {
+        const failedAttempts = Number(pending?.failedAttempts || 0);
+        return Math.max(0, MAX_2FA_VERIFY_ATTEMPTS - failedAttempts);
+    }
+
+    function resetTwoFactorFailedAttempts(pending) {
+        pending.failedAttempts = 0;
+        return pending;
+    }
+
+    async function handleFailedTwoFactorAttempt(req, res, options = {}) {
+        const {
+            userId = null,
+            clearEmailOtp = false,
+            errorMessage = "Invalid verification code.",
+            tooManyAttemptsErrorMessage = "Too many invalid verification attempts. Please login again.",
+        } = options;
+
+        const pending = req.session?.twoFactorPending;
+        if (!pending) {
+            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
+        }
+
+        pending.failedAttempts = Number(pending.failedAttempts || 0) + 1;
+        const attemptsRemaining = getTwoFactorAttemptsRemaining(pending);
+
+        if (attemptsRemaining === 0) {
+            if (clearEmailOtp && userId) {
+                await server.db.models['user'].update(
+                    { twoFactorOtp: null, twoFactorOtpExpiresAt: null },
+                    { where: { id: userId } }
+                );
+            }
+
+            delete req.session.twoFactorPending;
+
+            return req.session.save((err) => {
+                if (err) {
+                    server.logger.error("Failed to save session: " + err);
+                    return res.status(500).json({ message: "Session error during 2FA." });
+                }
+
+                return res.status(429).json({
+                    message: tooManyAttemptsErrorMessage,
+                    attemptsRemaining: 0,
+                    maxAttempts: MAX_2FA_VERIFY_ATTEMPTS,
+                });
+            });
+        }
+
+        req.session.twoFactorPending = pending;
+
+            return req.session.save((err) => {
+                if (err) {
+                    server.logger.error("Failed to save session: " + err);
+                    return res.status(500).json({ message: "Session error during 2FA." });
+                }
+
+                return res.status(401).json({
+                    message: `${errorMessage} ${attemptsRemaining} attempt(s) remaining.`,
+                    attemptsRemaining,
+                    maxAttempts: MAX_2FA_VERIFY_ATTEMPTS,
+                });
+            });
+        }
 
     async function sendEmailOtp(userRecord) {
         if (!userRecord || !userRecord.email) {
@@ -235,6 +302,7 @@ The CARE Team`
             }
             
             await sendEmailOtp(user);
+            resetTwoFactorFailedAttempts(pending);
             const nextCooldownInfo = setEmailOtpCooldown(pending);
 
             return req.session.save((err) => {
@@ -280,6 +348,7 @@ The CARE Team`
             methods: methods,
             method: null,
             loginMethod,
+            failedAttempts: 0,
         };
     
         let responseData = { requiresTwoFactor: true, methods };
@@ -296,6 +365,7 @@ The CARE Team`
 
                 if (method === 'email') {
                     const cooldownInfo = setEmailOtpCooldown(req.session.twoFactorPending);
+                    resetTwoFactorFailedAttempts(req.session.twoFactorPending);
                     Object.assign(responseData, cooldownInfo);
                 }
                 
@@ -1032,6 +1102,7 @@ The CARE Team`
         }
 
         pending.method = method;
+        pending.failedAttempts = 0;
         req.session.twoFactorPending = pending;
 
         try {
@@ -1040,6 +1111,7 @@ The CARE Team`
                     return res.status(400).json({ message: "Email address not found. Cannot use email 2FA." });
                 }
                 await sendEmailOtp(userRecord);
+                resetTwoFactorFailedAttempts(pending);
                 const cooldownInfo = setEmailOtpCooldown(pending);
                 req.session.save(() => {
                     return res.status(200).json({ requiresTwoFactor: true, method: 'email', ...cooldownInfo });
@@ -1085,8 +1157,9 @@ The CARE Team`
         }
         
         try {
-            const { userId } = req.session.twoFactorPending;
-            const loginMethod = req.session.twoFactorPending?.loginMethod;
+            const pending = req.session.twoFactorPending;
+            const { userId } = pending;
+            const loginMethod = pending?.loginMethod;
 
             // Get user details
             const user = await server.db.models['user'].findOne({
@@ -1101,7 +1174,12 @@ The CARE Team`
             
             // Verify OTP
             if (!user.twoFactorOtp || user.twoFactorOtp !== otp) {
-                return res.status(401).json({ message: "Invalid OTP code." });
+                return await handleFailedTwoFactorAttempt(req, res, {
+                    userId: user.id,
+                    clearEmailOtp: true,
+                    errorMessage: "Invalid OTP code.",
+                    tooManyAttemptsErrorMessage: "Too many invalid OTP attempts. Please login again.",
+                });
             }
             
             // Check if OTP has expired
@@ -1170,12 +1248,23 @@ The CARE Team`
                     raw: true,
                 });
                 if (!user || !user.totpSecret) {
-                    return res.status(401).json({ message: 'Invalid TOTP code' });
+                    delete req.session.twoFactorPending;
+                    return req.session.save((saveErr) => {
+                        if (saveErr) {
+                            server.logger.error("Failed to save session: " + saveErr);
+                            return res.status(500).json({ message: "Session error during 2FA." });
+                        }
+
+                        return res.status(401).json({ message: 'Invalid TOTP code' });
+                    });
                 }
 
                 const totp = new TOTP({ secret: user.totpSecret, digits: 6, period: 30 });
                 if (totp.validate({ token, window: 1 }) === null) {
-                    return res.status(401).json({ message: 'Invalid TOTP code' });
+                    return await handleFailedTwoFactorAttempt(req, res, {
+                        errorMessage: "Invalid TOTP code.",
+                        tooManyAttemptsErrorMessage: "Too many invalid TOTP attempts. Please login again.",
+                    });
                 }
 
                 // Complete login

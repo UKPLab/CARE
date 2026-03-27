@@ -156,7 +156,7 @@ export default {
           { token: this.formData.token },
           {
             validateStatus(status) {
-              return status === 200 || status === 400 || status === 401;
+              return status === 200 || status === 400 || status === 401 || status === 429;
             },
             withCredentials: true,
           },
@@ -221,4 +221,3 @@ input:focus.custom-invalid {
   border-radius: 0.25rem;
 }
 </style>
-

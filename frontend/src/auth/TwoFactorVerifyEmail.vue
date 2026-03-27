@@ -228,7 +228,7 @@ export default {
           { otp: this.formData.otp },
           {
             validateStatus: function (status) {
-              return status === 200 || status === 400 || status === 401;
+              return status === 200 || status === 400 || status === 401 || status === 429;
             },
             withCredentials: true,
           },

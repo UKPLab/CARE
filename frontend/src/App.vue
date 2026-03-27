@@ -156,7 +156,6 @@ export default {
     },
     loginMethod() {
       const user = this.$store.getters["auth/getUser"];
-      console.log({user});
       if (!user) return null;
       if (user.loginMethod) return user.loginMethod;
       if (user.orcidId) return "orcid";
