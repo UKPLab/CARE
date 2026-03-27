@@ -7,8 +7,9 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
+const crypto = require('crypto');
 const { TOTP, Secret } = require('otpauth');
-const { generateToken, decodeToken, generateOTP } = require('../../utils/auth');
+const { generateToken, decodeToken } = require('../../utils/auth');
 
 /**
  * Route for user management
@@ -143,7 +144,9 @@ module.exports = function (server) {
             throw new Error("Email address missing for email 2FA.");
         }
 
-        const otp = generateOTP();
+        const randomInt = crypto.randomInt(0, 1000000);
+        // Add '0' as padding from the start until otp is 6-digit.
+        const otp = randomInt.toString().padStart(6, '0');
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
         await server.db.models['user'].update(

@@ -127,13 +127,3 @@ exports.decodeToken = function decodeToken(token) {
         return { isValid: false, expired: false, expiryTime: null };
     }
 }
-
-/**
- * Generate a 6-digit OTP (One-Time Password)
- * @returns {string} 6-digit OTP
- */
-exports.generateOTP = function generateOTP() {
-    // Generate a random 6-digit number (000000 to 999999)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    return otp;
-}
