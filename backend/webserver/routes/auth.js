@@ -139,6 +139,24 @@ module.exports = function (server) {
         return (await server.db.models['setting'].get(`system.auth.${method}.enabled`)) === "true";
     }
 
+    const EMAIL_2FA_RESEND_COOLDOWN_MS = 60 * 1000;
+
+    function getEmailOtpCooldownInfo(pending) {
+        const cooldownUntil = Number(pending?.resendCooldownUntil || 0);
+        const retryAfterSeconds = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+
+        return {
+            cooldownUntil,
+            retryAfterSeconds,
+            canResend: retryAfterSeconds === 0,
+        };
+    }
+
+    function setEmailOtpCooldown(pending, durationMs = EMAIL_2FA_RESEND_COOLDOWN_MS) {
+        pending.resendCooldownUntil = Date.now() + durationMs;
+        return getEmailOtpCooldownInfo(pending);
+    }
+
     async function sendEmailOtp(userRecord) {
         if (!userRecord || !userRecord.email) {
             throw new Error("Email address missing for email 2FA.");
@@ -187,7 +205,17 @@ The CARE Team`
         }
         
         try {
-            const { userId } = req.session.twoFactorPending;
+            const pending = req.session.twoFactorPending;
+            const cooldownInfo = getEmailOtpCooldownInfo(pending);
+
+            if (!cooldownInfo.canResend) {
+                return res.status(429).json({
+                    message: "Please wait before requesting another code.",
+                    ...cooldownInfo,
+                });
+            }
+
+            const { userId } = pending;
 
             // Get user details
             const user = await server.db.models['user'].findOne({
@@ -207,10 +235,19 @@ The CARE Team`
             }
             
             await sendEmailOtp(user);
-            
-            return res.status(200).json({ 
-                message: "OTP has been sent to your email address.",
-                expiresIn: 10 // minutes
+            const nextCooldownInfo = setEmailOtpCooldown(pending);
+
+            return req.session.save((err) => {
+                if (err) {
+                    server.logger.error("Failed to save session: " + err);
+                    return res.status(500).json({ message: "Session error during 2FA." });
+                }
+
+                return res.status(200).json({
+                    message: "OTP has been sent to your email address.",
+                    expiresIn: 10, // minutes
+                    ...nextCooldownInfo,
+                });
             });
             
         } catch (error) {
@@ -256,6 +293,11 @@ The CARE Team`
             try {
                 // Execute 2fa relevant operation
                 await performTwoFactorAction(dbUser, method);
+
+                if (method === 'email') {
+                    const cooldownInfo = setEmailOtpCooldown(req.session.twoFactorPending);
+                    Object.assign(responseData, cooldownInfo);
+                }
                 
                 // Set results for a single 2FA method
                 responseData.selectionRequired = false;
@@ -998,8 +1040,9 @@ The CARE Team`
                     return res.status(400).json({ message: "Email address not found. Cannot use email 2FA." });
                 }
                 await sendEmailOtp(userRecord);
+                const cooldownInfo = setEmailOtpCooldown(pending);
                 req.session.save(() => {
-                    return res.status(200).json({ requiresTwoFactor: true, method: 'email' });
+                    return res.status(200).json({ requiresTwoFactor: true, method: 'email', ...cooldownInfo });
                 });
                 return;
             }
@@ -1085,6 +1128,23 @@ The CARE Team`
             server.logger.error("Failed to verify OTP: " + error);
             return res.status(500).json({ message: "Internal server error" });
         }
+    });
+
+    /**
+     * Check email resend status
+     */
+    server.app.get('/auth/2fa/email/status', async function (req, res) {
+        const pending = req.session?.twoFactorPending;
+
+        if (!pending) {
+            return res.status(400).json({ message: "No pending 2FA verification found. Please login again." });
+        }
+
+        if (pending.method !== 'email') {
+            return res.status(400).json({ message: "Email 2FA is not the selected method." });
+        }
+
+        return res.status(200).json(getEmailOtpCooldownInfo(pending));
     });
 
     server.app.post('/auth/2fa/otp/resend', resendEmailOtp);

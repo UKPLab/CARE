@@ -149,11 +149,11 @@ export default {
       Object.keys(this.formData).map((key) => [key, false]),
     );
   },
+  mounted() {
+    this.fetchResendStatus();
+  },
   beforeUnmount() {
-    // Clean up interval
-    if (this.resendInterval) {
-      clearInterval(this.resendInterval);
-    }
+    this.clearResendInterval();
   },
   methods: {
     checkVal(key) {
@@ -162,6 +162,52 @@ export default {
     formatOTP() {
       // Only allow numbers
       this.formData.otp = this.formData.otp.replace(/[^0-9]/g, "");
+    },
+    clearResendInterval() {
+      if (this.resendInterval) {
+        clearInterval(this.resendInterval);
+        this.resendInterval = null;
+      }
+    },
+    updateResendCooldown(cooldownUntil) {
+      const remainingSeconds = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+
+      this.resendCooldown = remainingSeconds;
+
+      if (remainingSeconds === 0) {
+        this.clearResendInterval();
+      }
+    },
+    startResendCooldown(cooldownUntil) {
+      this.updateResendCooldown(cooldownUntil);
+      this.clearResendInterval();
+
+      this.resendInterval = setInterval(() => {
+        this.updateResendCooldown(cooldownUntil);
+      }, 1000);
+    },
+    applyCooldownFromResponse(payload) {
+      if (!payload?.cooldownUntil) {
+        this.resendCooldown = 0;
+        this.clearResendInterval();
+        return;
+      }
+
+      this.startResendCooldown(payload.cooldownUntil);
+    },
+    async fetchResendStatus() {
+      try {
+        const response = await axios.get(getServerURL() + "/auth/2fa/email/status", {
+          withCredentials: true,
+        });
+
+        this.applyCooldownFromResponse(response.data);
+      } catch (error) {
+        this.showError = true;
+        this.errorMessage =
+          error.response?.data?.message ||
+          "Failed to load verification status. Please login again.";
+      }
     },
     async checkForm() {
       Object.keys(this.validity).map((key) => {
@@ -226,7 +272,7 @@ export default {
           {},
           {
             validateStatus: function (status) {
-              return status === 200 || status === 400;
+              return status === 200 || status === 400 || status === 429;
             },
             withCredentials: true,
           },
@@ -237,15 +283,12 @@ export default {
           this.successMessage =
             "A new verification code has been sent to your Email";
 
-          // Start cooldown timer (60 seconds)
-          this.resendCooldown = 60;
-          this.resendInterval = setInterval(() => {
-            this.resendCooldown--;
-            if (this.resendCooldown <= 0) {
-              clearInterval(this.resendInterval);
-              this.resendInterval = null;
-            }
-          }, 1000);
+          this.applyCooldownFromResponse(response.data);
+        } else if (response.status === 429) {
+          this.showError = true;
+          this.errorMessage =
+            response.data.message || "Please wait before requesting another code.";
+          this.applyCooldownFromResponse(response.data);
         } else {
           this.showError = true;
           this.errorMessage =
