@@ -476,7 +476,8 @@ export default {
         scrollY: true,
         scrollX: true,
         onlyOneRowSelectable: false,
-        search: true
+        search: true,
+        pagination: 10,
       },
       reviewerTableOptions: {
         striped: true,
@@ -488,7 +489,8 @@ export default {
         scrollY: true,
         scrollX: true,
         onlyOneRowSelectable: false,
-        search: true
+        search: true,
+        pagination: 10,
       },
     };
   },
