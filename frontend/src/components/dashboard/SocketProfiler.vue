@@ -29,9 +29,13 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 
-
 export default {
-  
+  name: "DashboardSocketProfiler",
+  subscribeTable: [
+    {
+      table: "recording",
+    },
+  ],
   components: {
     Card,
     BasicTable,
@@ -51,9 +55,10 @@ export default {
       tableColumns: [
         {name: "ID", key: "id"},
         {name: "Name", key: "name"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Duration", key: "duration"},
         {name: "Status", key: "status"},
+        {name: "Start Time", key: "startTime"},
+        {name: "End Time", key: "endTime"},
+        {name: "Created At", key: "createdAt"},
       ],
       tableButtons: [
         {
@@ -83,8 +88,7 @@ export default {
   },
   computed: {
     recordings() {
-      // Placeholder — will be replaced once DB table exists
-      return [];
+      return this.$store.getters["table/recording/getAll"];
     },
   },
   methods: {
