@@ -38,6 +38,13 @@ const WIZARD_SETTINGS = [
     { key: 'app.register.acceptStats.default', wizardStep: 'registration', wizardOrder: 29, requiredInWizard: false },
     { key: 'app.register.acceptDataSharing.default', wizardStep: 'registration', wizardOrder: 30, requiredInWizard: false },
     { key: 'app.register.terms', wizardStep: 'general', wizardOrder: 5, requiredInWizard: false },
+    // Optional Moodle (wizardStep moodle keeps Settings > Moodle grouping; shown on General screen in SetupWizard)
+    { key: 'rpc.moodleAPI.apiUrl', wizardStep: 'moodle', wizardOrder: 31, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.apiKey', wizardStep: 'moodle', wizardOrder: 32, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.courseID', wizardStep: 'moodle', wizardOrder: 33, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.showInput.apiUrl', wizardStep: 'moodle', wizardOrder: 34, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.showInput.apiKey', wizardStep: 'moodle', wizardOrder: 35, requiredInWizard: false },
+    { key: 'rpc.moodleAPI.showInput.courseID', wizardStep: 'moodle', wizardOrder: 36, requiredInWizard: false },
 ];
 
 /** @type {import('sequelize-cli').Migration} */
