@@ -86,16 +86,27 @@
 
       <!-- Step: General -->
       <div v-show="displaySteps[currentStep]?.type === 'general'" class="card">
-        <div class="card-header step-card-header d-flex justify-content-between align-items-center">
-          General Settings
-          <button
-            class="btn btn-outline-secondary btn-sm"
-            type="button"
-            title="Import settings from a JSON file (overrides form values)"
-            @click="openImportModal"
-          >
-            Import JSON
-          </button>
+        <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span>General Settings</span>
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              type="button"
+              :disabled="!wizardSettingsLoaded"
+              :title="wizardSettingsLoaded ? 'Download JSON with current wizard setting values' : 'Available after settings load'"
+              @click="downloadImportTemplate"
+            >
+              Download template
+            </button>
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              type="button"
+              title="Load settings from a JSON file exported from another CARE instance"
+              @click="openImportModal"
+            >
+              Import from previous instance
+            </button>
+          </div>
         </div>
         <div class="card-body mx-4 my-4">
           <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
@@ -146,11 +157,14 @@
                     </div>
                   </template>
                   <template v-else-if="s.key === 'app.register.terms'">
-                    <BasicEditor
-                      :model-value="formSettings[s.key]"
-                      :read-only="false"
-                      @update:model-value="formSettings[s.key] = $event"
-                    />
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                      <EditorModal
+                        :model-value="formSettings[s.key]"
+                        :title="'Edit ' + settingLabel(s.key)"
+                        @update:model-value="formSettings[s.key] = $event"
+                      />
+                      <span class="small text-muted">Open the editor to change terms and conditions.</span>
+                    </div>
                   </template>
                   <template v-else-if="s.type === 'edits'">
                     <textarea
@@ -160,6 +174,13 @@
                       rows="5"
                     />
                   </template>
+                  <input
+                    v-else-if="s.type === 'integer'"
+                    :id="'set-' + s.key"
+                    v-model.number="formSettings[s.key]"
+                    class="form-control"
+                    type="number"
+                  />
                   <input
                     v-else
                     :id="'set-' + s.key"
@@ -177,6 +198,60 @@
                   <div class="feedback-invalid" :class="{invalid: settingsTouched && !(formSettings[s.key] != null && String(formSettings[s.key]).trim() !== '')}">
                     This field is required.
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="moodleSettingsFlat.length" class="mb-4 mt-4">
+              <h6 class="step-group-heading text-muted border-bottom pb-1 mb-2">
+                Moodle <span class="fw-normal small">(optional)</span>
+              </h6>
+              <p class="small text-muted mb-3">
+                Configure Moodle if you use it for enrollments or submissions. You can change these later under Settings → Moodle.
+              </p>
+              <div
+                v-for="s in moodleSettingsFlat"
+                :key="s.key"
+                class="form-group row my-2"
+              >
+                <label
+                  class="col-md-4 col-form-label text-md-right"
+                  :for="'set-' + s.key"
+                  @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
+                >
+                  {{ settingLabel(s.key) }}
+                </label>
+                <div class="col-md-6 d-flex flex-column">
+                  <template v-if="s.type === 'boolean' || s.type === 'bool'">
+                    <div class="form-check form-switch">
+                      <input
+                        :id="'set-' + s.key"
+                        :checked="formSettings[s.key] === 'true'"
+                        class="form-check-input"
+                        type="checkbox"
+                        @change="formSettings[s.key] = $event.target.checked ? 'true' : 'false'"
+                      />
+                    </div>
+                  </template>
+                  <input
+                    v-else-if="s.type === 'integer'"
+                    :id="'set-' + s.key"
+                    v-model.number="formSettings[s.key]"
+                    class="form-control"
+                    type="number"
+                  />
+                  <input
+                    v-else
+                    :id="'set-' + s.key"
+                    v-model="formSettings[s.key]"
+                    class="form-control"
+                    type="text"
+                  />
+                  <div
+                    v-if="settingDescription(s.key) || s.description"
+                    class="small text-muted mt-1"
+                    v-html="settingDescription(s.key) || s.description"
+                  />
                 </div>
               </div>
             </div>
@@ -431,10 +506,15 @@
 
       <!-- Import JSON Modal -->
       <Modal ref="importModal" name="wizardImportSettings">
-        <template #title>Import Settings</template>
+        <template #title>Import JSON from previous instance</template>
         <template #body>
           <p class="mb-2">
-            Select a JSON file with settings. Loaded values will override the form and skip the following steps: Mail and Registration.
+            This is an alternative to filling the wizard by hand. Upload a JSON file you exported from another CARE server
+            (<strong>Dashboard → Settings → Export JSON</strong>). Loaded keys replace values in this setup form and
+            <strong>skip the Mail and Registration steps</strong> (you can still review everything on the Summary).
+          </p>
+          <p class="small text-muted mb-3">
+            For a minimal example, use <strong>Download template</strong> on the General step, or export from Settings on an existing instance.
           </p>
           <input
             ref="jsonFileInput"
@@ -476,28 +556,37 @@
 
 <script>
 /**
- * First-time setup wizard: Admin, General (with optional JSON import), Mail, Registration, Moodle, Summary.
+ * First-time setup wizard: Admin, General (optional Moodle + JSON import), Mail, Registration, Summary.
  * Fetches /setup/config for steps and wizardSettings. On Finish, calls settingSave and redirects.
  *
  * @author CARE
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicEditor from "@/basic/editor/Editor.vue";
+import EditorModal from "@/basic/editor/Modal.vue";
 import Modal from "@/basic/Modal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /** Order of subsections within each wizard step (from displaySubsection in DB). */
 const SUBSECTION_ORDER = {
-  general: ["Copyright and consent", "Terms and conditions", "Login options", "Landing page links"],
+  general: [
+    "Copyright and consent",
+    "Terms and conditions",
+    "Login options",
+    "Landing page links",
+    "Connection",
+    "Course",
+    "Show inputs",
+  ],
   mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
   registration: ["Enable registration", "Information requested at registration", "Consent options", "Email verification rate limit"],
-  moodle: ["Connection", "Course", "Show inputs"],
 };
 
 export default {
   name: "SetupWizard",
-  components: { IconAsset, BasicEditor, Modal },
+  components: { IconAsset, BasicEditor, EditorModal, Modal },
   data() {
     return {
       currentStep: 0,
@@ -522,6 +611,10 @@ export default {
     isReRun() {
       return this.$route.query.reRun === "true";
     },
+    /** True once GET /setup/config has returned at least one wizard setting (enables template download). */
+    wizardSettingsLoaded() {
+      return Array.isArray(this.wizardSettings) && this.wizardSettings.length > 0;
+    },
     displaySteps() {
       const stepTypes = ["admin", "general", "mail", "registration", "summary"];
       let filtered = this.steps.filter((s) => stepTypes.includes(s.type));
@@ -535,6 +628,10 @@ export default {
     },
     generalFieldGroups() {
       return this.fieldGroupsForStep("general");
+    },
+    moodleSettingsFlat() {
+      const list = (this.wizardSettings || []).filter((s) => s.wizardStep === "moodle");
+      return [...list].sort((a, b) => (a.wizardOrder || 0) - (b.wizardOrder || 0));
     },
     mailEnabled() {
       return this.formSettings["system.mailService.enabled"] === "true";
@@ -587,6 +684,7 @@ export default {
         general: "General",
         mail: "Mail",
         registration: "Registration",
+        moodle: "Moodle",
       };
       const byStep = {};
       for (const s of this.wizardSettings || []) {
@@ -594,7 +692,7 @@ export default {
         if (!byStep[step]) byStep[step] = [];
         byStep[step].push(s);
       }
-      const order = ["general", "mail", "registration"];
+      const order = ["general", "mail", "registration", "moodle"];
       return order.filter((step) => byStep[step]?.length).map((step) => ({
         title: stepTitles[step],
         settings: byStep[step],
@@ -724,7 +822,7 @@ export default {
     },
     /**
      * Group wizard settings by displaySubsection for a given step.
-     * @param {string} stepType - general, registration, or moodle
+     * @param {string} stepType - general, mail, registration, moodle
      * @returns {Array<{title: string, settings: object[]}>}
      */
     fieldGroupsForStep(stepType) {
@@ -840,6 +938,17 @@ export default {
       this.importError = null;
       if (this.$refs.jsonFileInput) this.$refs.jsonFileInput.value = "";
       this.$refs.importModal.open();
+    },
+    /**
+     * JSON template from current wizard settings (DB values for showInWizard keys), same shape as import.
+     */
+    downloadImportTemplate() {
+      const flat = (this.wizardSettings || []).reduce((acc, s) => {
+        const v = s.value;
+        acc[s.key] = v === null || v === undefined ? "" : v;
+        return acc;
+      }, {});
+      downloadObjectsAs(flat, "care-settings-template", "json");
     },
     onJsonFileChange(ev) {
       this.importFile = ev.target.files && ev.target.files[0] || null;
