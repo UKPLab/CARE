@@ -383,6 +383,14 @@ body.sb-sidenav-toggled .arrow-toggle {
 }
 
 .default-subitem {
-  padding-left: 2.5rem !important;
+  padding-left: 2.0rem !important;
 }
+
+.default-subitem.router-link-active,
+.default-subitem.router-link-exact-active {
+  background-color: #e0e0e0 !important;
+  box-shadow: inset 2px 0 0 #222;
+}
+
+
 </style>
