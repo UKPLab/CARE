@@ -15,7 +15,7 @@ module.exports = function (server) {
      * GET /setup/config
      * Returns wizard config for first-time setup or re-run. needsSetup is true when no admin exists.
      * When setup is needed (or reRun=true with an admin): steps, wizardSettings,
-     * and wizardSettingsByStep (grouped by general, mail, registration, moodle).
+     * and wizardSettingsByStep (grouped by general, mail, registration). Moodle fields appear in the General wizard step in the UI.
      * When setup is not needed: empty steps and wizardSettings.
      */
     server.app.get("/setup/config", async function (req, res) {
