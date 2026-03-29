@@ -6,29 +6,76 @@
   >
     <div id="sidebar-wrapper">
       <div class="list-group-test">
-        <span v-for="group in sidebarGroups">
-          <div
-            v-if="group.name !== 'Default'"
-            class="sidebar-heading"
-          >
-            <h5 class="mb-1">{{ group.name }}</h5>
-          </div>
-          <router-link
-            v-for="element in sidebarElements[group.id]"
-            :to="'/dashboard/' + element.path"
-            class="list-group-item list-group-item-action list-group-item-custom p-3"
-          >
-            <span
-              class="sidebar-icon"
-              :title="element.name"
+        <span
+          v-for="group in sidebarGroups"
+          :key="group.id"
+        >
+          <template v-if="group.name === 'Default'">
+            <div
+              v-for="subgroup in defaultGroupedElements"
+              :key="subgroup.name"
+              class="default-subgroup"
             >
-              <LoadIcon
-                :icon-name="element.icon"
-                :size="24"
-              />
-            </span>
-            <div class="list-group-item-text">{{ element.name }}</div>
-          </router-link>
+              <div
+                class="sidebar-subgroup-heading list-group-item-custom p-3"
+                @click="toggleDefaultGroup(subgroup.name)"
+              >
+                <div class="list-group-item-text subgroup-title">
+                  {{ subgroup.name }}
+                </div>
+                <span
+                  class="subgroup-arrow"
+                  :class="arrowAnimationClass[subgroup.name]"
+                >
+                  <LoadIcon icon-name="chevron-down" />
+                </span>
+              </div>
+
+              <div v-if="expandedDefaultGroups[subgroup.name]">
+                <router-link
+                  v-for="element in subgroup.elements"
+                  :key="element.id"
+                  :to="'/dashboard/' + element.path"
+                  class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
+                >
+                  <span
+                    class="sidebar-icon"
+                    :title="element.name"
+                  >
+                    <LoadIcon
+                      :icon-name="element.icon"
+                      :size="24"
+                    />
+                  </span>
+                  <div class="list-group-item-text">{{ element.name }}</div>
+                </router-link>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="sidebar-heading">
+              <h5 class="mb-1">{{ group.name }}</h5>
+            </div>
+
+            <router-link
+              v-for="element in sidebarElements[group.id]"
+              :key="element.id"
+              :to="'/dashboard/' + element.path"
+              class="list-group-item list-group-item-action list-group-item-custom p-3"
+            >
+              <span
+                class="sidebar-icon"
+                :title="element.name"
+              >
+                <LoadIcon
+                  :icon-name="element.icon"
+                  :size="24"
+                />
+              </span>
+              <div class="list-group-item-text">{{ element.name }}</div>
+            </router-link>
+          </template>
         </span>
       </div>
       <div v-if="isAdmin" class="text-center text-secondary">
@@ -70,6 +117,16 @@ export default {
   data() {
     return {
       version: APP_VERSION,
+      arrowAnimationClass: {
+        Home: '',
+        Study: '',
+        Manage: '',
+      },
+      expandedDefaultGroups: {
+        Home: false,
+        Study: false,
+        Manage: false,
+      },
     }
   },
   computed: {
@@ -101,12 +158,62 @@ export default {
         return a["order"] - b["order"];
       });
     },
+    defaultGroupedElements() {
+      const defaultGroup = this.sidebarGroups.find(group => group.name === "Default");
+
+      if (!defaultGroup || !this.sidebarElements[defaultGroup.id]) {
+        return [];
+      }
+
+      const defaultElements = this.sidebarElements[defaultGroup.id];
+
+      const groupingMap = {
+        Home: ["Home", "Documents"],
+        Study: ["Studies", "Study Sessions", "Tags"],
+        Manage: ["Projects"],
+      };
+
+      return Object.entries(groupingMap)
+        .map(([groupName, elementNames]) => ({
+          name: groupName,
+          elements: elementNames
+            .map(elementName =>
+              defaultElements.find(element => element.name === elementName)
+            )
+            .filter(Boolean),
+        }))
+        .filter(group => group.elements.length > 0);
+    },
+    activeDefaultGroup() {
+      const currentPath = this.$route.path.toLowerCase();
+
+      const groupingMap = {
+        Home: ["home", "documents"],
+        Study: ["studies", "study_sessions", "tags"],
+        Manage: ["projects"],
+      };
+
+      const currentElement = this.$store.getters['table/nav_element/getAll']
+        .find(element => currentPath === `/dashboard/${element.path}`.toLowerCase());
+
+      if (!currentElement) {
+        return null;
+      }
+
+      return Object.entries(groupingMap).find(([, elementPaths]) =>
+        elementPaths.includes(currentElement.path.toLowerCase())
+      )?.[0] || null;
+    },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     }
   },
   mounted() {
     document.body.classList.add('sidebar-exists');
+
+    if (this.activeDefaultGroup) {
+      this.setExpandedDefaultGroup(this.activeDefaultGroup);
+    }
   },
   beforeUnmount() {
     document.body.classList.remove('sidebar-exists');
@@ -115,7 +222,28 @@ export default {
     toggleSidebar() {
       document.body.classList.toggle('sb-sidenav-toggled');
     },
-  }
+    setExpandedDefaultGroup(groupName) {
+      if (groupName) {
+        this.expandedDefaultGroups[groupName] = true;
+      }
+    },
+    toggleDefaultGroup(groupName) {
+      const isOpening = !this.expandedDefaultGroups[groupName];
+
+      this.expandedDefaultGroups[groupName] = isOpening;
+
+      this.arrowAnimationClass[groupName] = isOpening
+        ? 'arrow-open'
+        : 'arrow-close';
+    },
+  },
+  watch: {
+  $route() {
+    if (this.activeDefaultGroup) {
+      this.setExpandedDefaultGroup(this.activeDefaultGroup);
+    }
+  },
+},
 }
 
 </script>
@@ -204,5 +332,57 @@ body.sb-sidenav-toggled .arrow-toggle {
   transform: rotate(0deg);
 }
 
+.sidebar-subgroup-heading {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  border: none;
+  background-color: #f2f2f2;
+}
 
+.sidebar-subgroup-heading:hover {
+  background-color: white !important;
+}
+
+.subgroup-title {
+  font-weight: 600;
+}
+
+.subgroup-arrow {
+  display: flex;
+  align-items: center;
+  transform-origin: center;
+}
+
+.arrow-open {
+  animation: flip-horizontal-bottom 0.25s ease both;
+}
+
+.arrow-close {
+  animation: flip-horizontal-top 0.25s ease both;
+}
+
+@keyframes flip-horizontal-bottom {
+  0% {
+    transform: rotateX(0);
+  }
+  100% {
+    transform: rotateX(180deg);
+  }
+}
+
+@keyframes flip-horizontal-top {
+  0% {
+    transform: rotateX(180deg);
+  }
+  100% {
+    transform: rotateX(0);
+  }
+}
+
+.default-subitem {
+  padding-left: 2.5rem !important;
+}
 </style>
