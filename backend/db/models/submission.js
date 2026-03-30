@@ -250,6 +250,8 @@ module.exports = (sequelize, DataTypes) => {
             parentSubmissionId: DataTypes.INTEGER,
             previousSubmissionId: DataTypes.INTEGER,
             extId: DataTypes.INTEGER,
+            name: DataTypes.STRING,
+            description: DataTypes.TEXT,
             additionalSettings: DataTypes.JSONB,
             validationConfigurationId: DataTypes.INTEGER,
             deleted: DataTypes.BOOLEAN,
