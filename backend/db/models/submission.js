@@ -9,6 +9,12 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
 module.exports = (sequelize, DataTypes) => {
     class Submission extends MetaModel {
         static autoTable = true;
+        static accessMap = [
+			{
+				right: "frontend.dashboard.assignments.admin.view",
+				columns: this.getAttributes(),
+			},
+		];
 
         static fields = [];
 
