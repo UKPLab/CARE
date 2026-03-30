@@ -452,7 +452,7 @@ module.exports = class Socket {
         if ((isAdmin || model.publicTable) && !hasModelUserFilter) { // is allowed to see everything
             // no adaption of the filter or attributes needed
         } else if (hasModelUserFilter) {
-            const userFilter = model.getUserFilter(userId, isAdmin);
+            const userFilter = await model.getUserFilter(userId, isAdmin);
             allFilter = {[Op.and]: [allFilter, userFilter]};
         } else if (model.autoTable && 'userId' in model.getAttributes() && accessRights.length === 0) {
             // is allowed to see only his data and possible if there is a public attribute
