@@ -7,7 +7,16 @@
             text="Start Recording"
             title="Start Recording"
             icon="record-circle"
+            :disabled="isRecording"
             @click="startRecording"
+        />
+        <BasicButton
+            class="btn-danger btn-sm"
+            text="Stop Recording"
+            title="Stop Recording"
+            icon="stop-circle"
+            :disabled="!isRecording"
+            @click="stopActiveRecording"
         />
       </div>
     </template>
@@ -62,6 +71,17 @@ export default {
       ],
       tableButtons: [
         {
+          icon: "stop-circle",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-danger": true,
+            },
+          },
+          title: "Stop recording",
+          action: "stopRecording",
+        },
+        {
           icon: "play-circle",
           options: {
             iconOnly: true,
@@ -90,10 +110,20 @@ export default {
     recordings() {
       return this.$store.getters["table/recording/getAll"];
     },
+    isRecording() {
+      return this.recordings.some(r => r.status === "recording");
+    },
+    activeRecordingId() {
+      const active = this.recordings.find(r => r.status === "recording");
+      return active ? active.id : null;
+    },
   },
   methods: {
     action(data) {
       switch (data.action) {
+        case "stopRecording":
+          this.stopRecording(data.params);
+          break;
         case "replayRecording":
           this.replayRecording(data.params);
           break;
@@ -103,11 +133,41 @@ export default {
       }
     },
     startRecording() {
-      // TODO: implement recording logic
-      this.eventBus.emit("toast", {
-        title: "Recording",
-        message: "Recording started",
-        variant: "success",
+      this.$socket.emit("recorderStart", {name: "New Recording"}, (res) => {
+        if (res.success) {
+          this.isRecording = true;
+          this.activeRecordingId = res.data;
+          this.eventBus.emit("toast", {
+            title: "Recording started",
+            message: "Recording is now active",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to start recording",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
+    },
+    stopRecording(row) {
+      this.$socket.emit("recorderStop", {id: row.id}, (res) => {
+        if (res.success) {
+          this.isRecording = false;
+          this.activeRecordingId = null;
+          this.eventBus.emit("toast", {
+            title: "Recording stopped",
+            message: "Recording has been saved",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to stop recording",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     replayRecording(row) {
@@ -118,12 +178,27 @@ export default {
         variant: "success",
       });
     },
+    stopActiveRecording() {
+      this.stopRecording({ id: this.activeRecordingId });
+    },
     deleteRecording(row) {
-      // TODO: implement delete logic
-      this.eventBus.emit("toast", {
-        title: "Delete",
-        message: "Recording deleted",
-        variant: "success",
+      this.$socket.emit("appDataUpdate", {
+        table: "recording",
+        data: { id: row.id, deleted: true }
+      }, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "Recording deleted",
+            message: "Recording has been deleted",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to delete recording",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
   },
