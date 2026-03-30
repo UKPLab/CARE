@@ -22,6 +22,8 @@ module.exports = (sequelize, DataTypes) => {
             direction: DataTypes.BOOLEAN,
             startTime: DataTypes.DATE,
             endTime: DataTypes.DATE,
+            deleted: DataTypes.BOOLEAN,
+            deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
         },
