@@ -48,6 +48,7 @@ export default {
       },
       columns: [
         { name: "ID", key: "id" },
+        { name: "Submission Name", key: "submissionName" },
         { name: "Username", key: "userName" },
         { name: "Studies Using", key: "studyUsageCount" },
         { name: "Created At", key: "createdAt" },
@@ -99,6 +100,7 @@ export default {
             allowReUpload: (Boolean(this.assignment?.allowReUpload) || this.hasAdminRights) && !isStudyLocked,
             isStudyLocked,
             studyUsageCount,
+            submissionName: submission.name || "-",
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
             createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
