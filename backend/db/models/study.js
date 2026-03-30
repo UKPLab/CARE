@@ -222,10 +222,49 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async deleteStudySteps(study, options) {
             const studySteps = await sequelize.models.study_step.getAllByKey("studyId", study.id);
+            const documentIds = [...new Set(studySteps.map((step) => step.documentId).filter(Boolean))];
 
             for (const studyStep of studySteps) {
                 await sequelize.models.study_step.deleteById(studyStep.id, {transaction: options.transaction});
             }
+
+            for (const documentId of documentIds) {
+                await Study.updateDocumentStudyUsageCount(documentId, options);
+            }
+        }
+
+        /**
+         * Recalculate and persist how many studies use a given document.
+         *
+         * @param {number} documentId - The document ID to recalculate usage for.
+         * @param {object} options - Optional sequelize options with transaction.
+         * @returns {Promise<number>} The recalculated study usage count.
+         */
+        static async updateDocumentStudyUsageCount(documentId, options = {}) {
+            if (!documentId) {
+                return 0;
+            }
+
+            const transaction = options.transaction;
+            const count = await sequelize.models.study_step.count({
+                distinct: true,
+                col: "studyId",
+                where: {
+                    documentId,
+                    deleted: false,
+                },
+                include: [{
+                    model: sequelize.models.study,
+                    as: "study",
+                    attributes: [],
+                    where: { deleted: false },
+                    required: true,
+                }],
+                transaction,
+            });
+
+            await sequelize.models.document.updateById(documentId, { studyUsageCount: count }, { transaction });
+            return count;
         }
 
         /**
@@ -295,6 +334,16 @@ module.exports = (sequelize, DataTypes) => {
                         );
                     }
                 }
+            }
+
+            const usedDocumentIds = [...new Set(
+                Object.values(studyStepsMap)
+                    .map((step) => step.documentId)
+                    .filter(Boolean)
+            )];
+
+            for (const documentId of usedDocumentIds) {
+                await Study.updateDocumentStudyUsageCount(documentId, options);
             }
 
         }
