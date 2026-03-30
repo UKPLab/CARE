@@ -4,7 +4,7 @@ const settings = [
   {
     key: "logo.reBgColor",
     value: "#ffe599",
-    type: "string",
+    type: "color",
     description: "Background colour for the RE section of the logo",
   },
 ];
