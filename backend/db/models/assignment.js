@@ -175,7 +175,6 @@ module.exports = (sequelize, DataTypes) => {
 				defaultValue: [],
 			},
 			parentAssignmentId: DataTypes.INTEGER,
-			previousSubmissionAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
 			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,

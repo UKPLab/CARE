@@ -90,17 +90,6 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
       },
-      previousSubmissionAssignmentId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
-        references: {
-          model: 'assignment',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
-      },
       allowReUpload: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
