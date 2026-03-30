@@ -440,42 +440,7 @@ export default {
         return;
       }
 
-      const {
-        id,
-        createdAt,
-        updatedAt,
-        deleted,
-        deletedAt,
-        userId,
-        ...copyData
-      } = originalAssignment;
-
-      this.$socket.emit(
-        "appDataUpdate",
-        {
-          table: "assignment",
-          data: {
-            ...copyData,
-            userId: this.userId,
-            parentAssignmentId: params.id,
-          },
-        },
-        (result) => {
-          if (result.success) {
-            this.eventBus.emit("toast", {
-              title: "Assignment copied",
-              message: "The assignment has been copied",
-              variant: "success",
-            });
-          } else {
-            this.eventBus.emit("toast", {
-              title: "Assignment copy failed",
-              message: result.message,
-              variant: "danger",
-            });
-          }
-        }
-      );
+      this.$refs.assignmentModal.open(params.id, true);
     },
   },
 };
