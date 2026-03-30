@@ -1,5 +1,5 @@
 <template>
-  <AdminAssignmentsView v-if="isAdmin" />
+  <AdminAssignmentsView v-if="isAdmin || hasAdminViewRight" />
   <UserAssignmentsView v-else />
 </template>
 
@@ -17,6 +17,9 @@ export default {
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];
     },
+    hasAdminViewRight(){
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.view")
+    }
   },
 };
 </script>

@@ -192,8 +192,7 @@ export default {
         {
           icon: "x-circle",
           filter: [
-            { key: "isOwner", value: true },
-            { key: "isClosed", value: false },
+            { key: "canCloseAssignment", value: true },
           ],
           options: {
             iconOnly: true,
@@ -231,7 +230,7 @@ export default {
       return this.assignments.map((assignment) => ({
         ...assignment,
         isOwner: this.isAssignmentOwner(assignment),
-        isClosed: Boolean(assignment.closed),
+        canCloseAssignment: this.isAssignmentOwner(assignment) && !assignment.closed,
         submissionStatus: this.getSubmissionStatus(assignment),
         studyId: assignment.studyId ?? "-",
         workflowId: assignment.workflowId ?? "-",
