@@ -952,13 +952,27 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, projectId, assignmentId} = data;
+        const {files, userId, group, validationConfigurationId, projectId, assignmentId, submissionId} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
 
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
+            }
+
+            if (assignmentId && submissionId) {
+                return await this.replaceAssignmentSubmission(
+                    {
+                        files,
+                        userId,
+                        group,
+                        validationConfigurationId,
+                        assignmentId,
+                        submissionId,
+                    },
+                    {transaction}
+                );
             }
 
             let previousSubmissionId = null;
@@ -975,23 +989,62 @@ class DocumentSocket extends Socket {
                         userId,
                         deleted: false,
                     },
-                    order: [["createdAt", "DESC"]],
                     raw: true,
                     transaction,
                 });
 
-                const latestSubmission = assignmentSubmissions[0] || null;
-                const submissionCount = assignmentSubmissions.length;
-
-                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined) {
-                    if (submissionCount > assignment.maxRevisions) {
-                        throw new Error(
-                            `Maximum revisions reached for this assignment (${submissionCount}/${assignment.maxRevisions})`
-                        );
+                const submissionById = new Map(assignmentSubmissions.map((submission) => [submission.id, submission]));
+                const childByParentId = new Map();
+                for (const submission of assignmentSubmissions) {
+                    if (submission.previousSubmissionId) {
+                        childByParentId.set(submission.previousSubmissionId, submission.id);
                     }
                 }
 
-                previousSubmissionId = latestSubmission ? latestSubmission.id : null;
+                const resolveChainTailId = (startId) => {
+                    let currentId = startId;
+                    const visited = new Set();
+
+                    while (childByParentId.has(currentId) && !visited.has(currentId)) {
+                        visited.add(currentId);
+                        currentId = childByParentId.get(currentId);
+                    }
+
+                    return currentId;
+                };
+
+                const parentIds = new Set();
+                for (const submission of assignmentSubmissions) {
+                    if (submission.previousSubmissionId) {
+                        parentIds.add(submission.previousSubmissionId);
+                    }
+                }
+
+                const chainTails = assignmentSubmissions
+                    .filter((submission) => !parentIds.has(submission.id))
+                    .map((submission) => submission.id);
+
+                if (chainTails.length > 0) {
+                    previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
+                }
+
+                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && previousSubmissionId) {
+                    let chainDepth = 0;
+                    let currentId = previousSubmissionId;
+                    const visited = new Set();
+
+                    while (currentId && submissionById.has(currentId) && !visited.has(currentId)) {
+                        visited.add(currentId);
+                        chainDepth += 1;
+                        currentId = submissionById.get(currentId).previousSubmissionId;
+                    }
+
+                    if (chainDepth >= assignment.maxRevisions) {
+                        throw new Error(
+                            `Maximum revisions reached for this assignment (${chainDepth}/${assignment.maxRevisions})`
+                        );
+                    }
+                }
             } else {
                 const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
                 previousSubmissionId = previousSubmission ? previousSubmission.id : null;
@@ -1023,6 +1076,110 @@ class DocumentSocket extends Socket {
             this.logger.error(error);
             throw new Error(error);
         }
+    }
+
+    /**
+     * Replace an existing assignment submission by creating a new one,
+     * deleting the old one, and reconnecting submission chain pointers.
+     *
+     * @param {Object} data
+     * @param {Array<Object>} data.files
+     * @param {number} data.userId
+     * @param {number} data.group
+     * @param {number} data.validationConfigurationId
+     * @param {number} data.assignmentId
+     * @param {number} data.submissionId
+     * @param {Object} options
+     * @param {Object} options.transaction
+     * @returns {Promise<Object>} replacement information
+     */
+    async replaceAssignmentSubmission(data, options) {
+        const {files, userId, group, validationConfigurationId, assignmentId, submissionId} = data;
+        const transaction = options.transaction;
+
+        const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
+        if (!assignment) {
+            throw new Error(`Assignment with id ${assignmentId} not found`);
+        }
+
+        const oldSubmission = await this.models["submission"].findOne({
+            where: {
+                id: submissionId,
+                assignmentId,
+                userId,
+                deleted: false,
+            },
+            raw: true,
+            transaction,
+        });
+
+        if (!oldSubmission) {
+            throw new Error(`Submission with id ${submissionId} not found for this assignment`);
+        }
+
+        const oldSubmissionDocuments = await this.models["document"].findAll({
+            where: {
+                submissionId: oldSubmission.id,
+                deleted: false,
+            },
+            raw: true,
+            transaction,
+        });
+        const hasStudyLinkedDocument = oldSubmissionDocuments.some(
+            (document) => Number(document.studyUsageCount || 0) > 0
+        );
+        if (hasStudyLinkedDocument) {
+            throw new Error("Cannot replace submission because one or more linked documents are used in studies.");
+        }
+
+        const newSubmission = await this.models["submission"].add({
+            userId,
+            group: group ?? oldSubmission.group,
+            validationConfigurationId,
+            createdByUserId: this.userId,
+            previousSubmissionId: oldSubmission.previousSubmissionId || null,
+            assignmentId,
+        }, {transaction});
+
+        // Reconnect revisions that pointed to the replaced submission.
+        const childRevision = await this.models["submission"].findOne({
+            where: {
+                previousSubmissionId: oldSubmission.id,
+                assignmentId,
+                userId,
+                deleted: false,
+            },
+            raw: true,
+            transaction,
+        });
+
+        if (childRevision) {
+            await this.models["submission"].updateById(
+                childRevision.id,
+                { previousSubmissionId: newSubmission.id },
+                { transaction }
+            );
+        }
+
+        await this.models["submission"].updateById(oldSubmission.id, {deleted: true}, {transaction});
+
+        for (const file of files) {
+            await this.addDocument(
+                {
+                    file: file.content,
+                    name: file.fileName,
+                    userId,
+                    isUploaded: true,
+                    submissionId: newSubmission.id,
+                },
+                {transaction}
+            );
+        }
+
+        return {
+            replacedSubmissionId: oldSubmission.id,
+            newSubmissionId: newSubmission.id,
+        };
     }
 
     /**
