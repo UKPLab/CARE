@@ -1,9 +1,34 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const { Op } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
 	class Assignment extends MetaModel {
 		static autoTable = true;
+
+		/**
+		 * Apply visibility filter for assignments based on assigned roles.
+		 * Non-admin users can always see their own assignments and assignments
+		 * that are assigned to at least one of their roles.
+		 */
+		static async getUserFilter(userId) {
+			const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
+			const isAdmin = await sequelize.models.user_role_matching.isAdminInUserRoles(roleIds);
+			if (isAdmin) {
+				return {};
+			}
+
+			if (!Array.isArray(roleIds) || roleIds.length === 0) {
+				return { userId };
+			}
+
+			return {
+				[Op.or]: [
+					{ userId },
+					{ assignedRoleIds: { [Op.overlap]: roleIds } },
+				],
+			};
+		}
 		static fields = [
 			{
 				key: "title",
@@ -47,12 +72,18 @@ module.exports = (sequelize, DataTypes) => {
 			{
 				key: "maxRevisions",
 				label: "Maximum Revisions:",
-				placeholder: "1",
-				type: "number",
+				type: "slider",
+				class: "custom-slider-class",
 				min: 1,
+				max: 20,
+				step: 1,
+				unit: "revision(s)",
+				unlimitedAtMax: true,
+				unlimitedLabel: "unlimited",
+				unlimitedStoredValue: 0,
 				required: true,
 				default: 1,
-				help: "Maximum number of allowed revision copies for this assignment.",
+				help: "Maximum number of allowed revision copies for this assignment. Move to the end for unlimited.",
 			},
 			{
 				key: "start",
@@ -128,6 +159,8 @@ module.exports = (sequelize, DataTypes) => {
 			description: DataTypes.TEXT,
 			studyId: DataTypes.INTEGER,
 			workflowId: DataTypes.INTEGER,
+			userId: DataTypes.INTEGER,
+			public: DataTypes.BOOLEAN,
 			maxRevisions: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
@@ -136,9 +169,15 @@ module.exports = (sequelize, DataTypes) => {
 			start: DataTypes.DATE,
 			end: DataTypes.DATE,
 			validationConfigurationId: DataTypes.INTEGER,
+			assignedRoleIds: {
+				type: DataTypes.ARRAY(DataTypes.INTEGER),
+				allowNull: true,
+				defaultValue: [],
+			},
 			parentAssignmentId: DataTypes.INTEGER,
 			previousSubmissionAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
+			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,
 			deletedAt: DataTypes.DATE,
 			createdAt: DataTypes.DATE,
