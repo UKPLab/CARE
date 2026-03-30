@@ -133,6 +133,7 @@ export default {
 			if (copy) {
 				delete this.formData.id;
 				this.formData.userId = this.currentUserId;
+				this.formData.closed = null;
 			}
 
 			this.$refs.stepperModal.open();
