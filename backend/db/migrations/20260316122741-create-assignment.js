@@ -18,6 +18,11 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      public: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       studyId: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -38,6 +43,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'user',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+       },
       maxRevisions: {
         type: Sequelize.INTEGER,
         allowNull: false,
