@@ -19,6 +19,10 @@
           {{ assignmentDescription }}
         </p>
       </div>
+      <BasicForm
+        v-model="submissionMeta"
+        :fields="metadataFields"
+      />
       <BasicTable
         v-model="selectedUser"
         :columns="selectionTable"
@@ -50,10 +54,11 @@
             {{ assignmentDescription }}
           </p>
         </div>
-        <div class="alert alert-info mb-3">
-          Validation schema is preselected from this assignment.
-        </div>
       </div>
+      <BasicForm
+        v-model="submissionMeta"
+        :fields="metadataFields"
+      />
     </template>
 
     <template
@@ -89,6 +94,10 @@ export default {
       selectedUser: [],
       selectedValidatorId: 0,
       selectedValidatorData: null,
+      submissionMeta: {
+        name: "",
+        description: "",
+      },
       files: null,
       assignmentId: null,
       replacementSubmissionId: null,
@@ -181,12 +190,36 @@ export default {
         };
       });
     },
+    metadataFields() {
+      return [
+        {
+          key: "name",
+          label: "Submission Name",
+          type: "text",
+          placeholder: "Enter a submission name",
+          class: "form-control",
+          default: "",
+        },
+        {
+          key: "description",
+          label: "Submission Description",
+          type: "textarea",
+          placeholder: "Add a short description",
+          class: "form-control",
+          default: "",
+        },
+      ];
+    },
   },
   methods: {
     open(assignmentId = null, replacement = null) {
       this.files = null;
       this.selectedUser = [];
       this.selectedValidatorData = null;
+      this.submissionMeta = {
+        name: replacement?.name || "",
+        description: replacement?.description || "",
+      };
       this.assignmentId = assignmentId;
       this.replacementSubmissionId = replacement?.submissionId ?? null;
 
@@ -265,6 +298,8 @@ export default {
         projectId: this.projectId,
         assignmentId: this.assignmentId,
         submissionId: this.replacementSubmissionId,
+        name: (this.submissionMeta.name || "").trim() || null,
+        description: (this.submissionMeta.description || "").trim() || null,
         files: Object.keys(this.files).map((k) => ({
           content: this.files[k],
           fileName: this.files[k].name,
