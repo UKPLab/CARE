@@ -518,7 +518,7 @@ export default {
           message: "Study link copied to clipboard!",
           variant: "success"
         });
-      } catch (_$e) {
+      } catch (_error) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Could not copy study link to clipboard!",

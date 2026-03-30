@@ -60,7 +60,7 @@ export class Anchoring {
 
                 const range = await this.anchorByPosition(index, start, end);
                 return range;
-            } catch {
+            } catch (_error) {
                 // Fall back to quote selector
             }
 

@@ -164,7 +164,7 @@ function evaluateSimpleXPath(xpath, root) {
 export function nodeFromXPath(xpath, root = document.body) {
   try {
     return evaluateSimpleXPath(xpath, root);
-  } catch (_err) {
+  } catch (_error) {
     return document.evaluate(
       '.' + xpath,
       root,

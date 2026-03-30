@@ -137,7 +137,7 @@ export default {
 
     try {
       window.removeEventListener("click", this.leaveEditModeListener);
-    } catch (_e) {
+    } catch (_error) {
       // do nothing
     }
   },
@@ -152,7 +152,7 @@ export default {
       try {
         JSON.parse(this.contentText);
         return true;
-      } catch (_e) {
+      } catch (_error) {
         return false;
       }
     },
@@ -197,7 +197,7 @@ export default {
             message: "Json copied to clipboard!",
             variant: "success"
           });
-        } catch (_$e) {
+        } catch (_error) {
           this.eventBus.emit('toast', {
             title: "Json not copied",
             message: "Could not copy json to clipboard!",

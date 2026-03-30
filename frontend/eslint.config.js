@@ -24,9 +24,17 @@ export default [
                 {
                     args: 'after-used',
                     argsIgnorePattern: '^_',
-                    caughtErrorsIgnorePattern: '^_',
+                    caughtErrors: 'all',
+                    caughtErrorsIgnorePattern: '^_error$',
                     destructuredArrayIgnorePattern: '^_',
                     ignoreRestSiblings: true,
+                },
+            ],
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector: 'CatchClause[param=null]',
+                    message: 'Always name caught errors `_error`.',
                 },
             ],
         },

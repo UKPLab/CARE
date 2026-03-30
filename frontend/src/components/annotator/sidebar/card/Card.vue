@@ -108,7 +108,7 @@ export default {
     // just to make sure: cancel possible event listeners, if still attached
     try {
       window.removeEventListener("click", this.focusListener);
-    } catch (_e) {
+    } catch (_error) {
       // do nothing
     }
   },
@@ -129,7 +129,7 @@ export default {
       if (Object.keys(this.actions).length === 0) {
         try {
           window.removeEventListener("click", this.focusListener);
-        } catch (_e) {
+        } catch (_error) {
           // do nothing
         }
         this.focusListener = null;
