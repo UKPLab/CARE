@@ -37,12 +37,8 @@
             />
           </template>
           <template #body>
-            <BasicTable
-              :columns="submissionColumns"
-              :data="submissionRowsByAssignment(assignment.id)"
-              :options="submissionTableOptions"
-              :buttons="tableButtons"
-              @action="action"
+            <AssignmentSubmissionsTable
+              :assignment-id="assignment.id"
             />
           </template>
           <template #footer>
@@ -83,12 +79,8 @@
             />
           </template>
           <template #body>
-            <BasicTable
-              :columns="submissionColumns"
-              :data="submissionRowsByAssignment(assignment.id)"
-              :options="submissionTableOptions"
-              :buttons="tableButtons"
-              @action="action"
+            <AssignmentSubmissionsTable
+              :assignment-id="assignment.id"
             />
           </template>
         </Card>
@@ -104,86 +96,20 @@
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
+import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { getTimeDiffString } from "@/assets/utils";
 
 export default {
   name: "UserAssignmentsView",
   subscribeTable: ["assignment", "submission", "user", "document"],
-  components: { Card, BasicTable, BasicButton, AssignmentModal, AssignmentUploadModal, ConfirmModal },
-  data() {
-    return {
-      submissionTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
-      submissionColumns: [
-        { name: "ID", key: "id" },
-        { name: "Username", key: "userName" },
-        { name: "Studies Using", key: "studyUsageCount" },
-        { name: "Created At", key: "createdAt" },
-      ],
-      tableButtons: [
-        {
-          icon: "arrow-repeat",
-          filter: [
-            {
-              key: "allowReUpload",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
-          title: "Replace submission",
-          action: "replaceSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-        {
-          icon: "trash",
-          filter: [
-            {
-              key: "isStudyLocked",
-              value: false,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-danger": true,
-              "btn-sm": true,
-            },
-          },
-          title: "Delete submission",
-          action: "deleteSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-      ],
-    };
-  },
+  components: { Card, BasicButton, AssignmentModal, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
   computed: {
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];
-    },
-    user() {
-      return this.$store.getters["auth/getUser"];
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -211,16 +137,6 @@ export default {
   methods: {
     addAssignment() {
       this.$refs.assignmentModal.open();
-    },
-    action(data) {
-      switch (data.action) {
-        case "replaceSubmission":
-          this.replaceSubmission(data.params);
-          break;
-        case "deleteSubmission":
-          this.deleteSubmission(data.params);
-          break;
-      }
     },
     getAssignmentStatus(assignment) {
       if (assignment.closed) {
@@ -314,96 +230,6 @@ export default {
       }
 
       this.$refs.uploadModal.open(assignment.id);
-    },
-    submissionRowsByAssignment(assignmentId) {
-      const submissions = this.$store.getters["table/submission/getFiltered"](
-        (submission) => submission.assignmentId === assignmentId && !submission.deleted
-      ) || [];
-
-      const assignment = this.$store.getters["table/assignment/get"](assignmentId);
-
-      return submissions
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .map((submission) => {
-          const user = this.$store.getters["table/user/get"](submission.userId);
-          const submissionDocuments = this.$store.getters["table/document/getFiltered"](
-            (document) => document.submissionId === submission.id && !document.deleted
-          ) || [];
-
-          const studyUsageCount = submissionDocuments
-            .reduce((total, document) => total + Number(document.studyUsageCount || 0), 0);
-          const isStudyLocked = studyUsageCount > 0;
-
-          return {
-            id: submission.id,
-            userId: submission.userId,
-            assignmentId,
-            allowReUpload: (Boolean(assignment?.allowReUpload) || this.isAdmin) && !isStudyLocked,
-            isStudyLocked,
-            studyUsageCount,
-            userName: user?.userName || this.user?.userName || "unknown",
-            group: submission.group ?? "-",
-            createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
-          };
-        });
-    },
-    replaceSubmission(row) {
-      if (row.isStudyLocked) {
-        this.eventBus.emit("toast", {
-          title: "Replace not allowed",
-          message: "This submission cannot be replaced because one or more documents are used in studies.",
-          variant: "warning",
-        });
-        return;
-      }
-
-      this.$refs.uploadModal.open(row.assignmentId, {
-        submissionId: row.id,
-        userId: row.userId,
-        group: row.group === "-" ? null : row.group,
-      });
-    },
-    deleteSubmission(row) {
-      if (row.isStudyLocked) {
-        this.eventBus.emit("toast", {
-          title: "Delete not allowed",
-          message: "This submission cannot be deleted because one or more documents are used in studies.",
-          variant: "warning",
-        });
-        return;
-      }
-
-      this.$refs.deleteConf.open(
-        "Delete Submission",
-        "Are you sure you want to delete this submission?",
-        "",
-        (confirmed) => {
-          if (!confirmed) return;
-
-          this.$socket.emit(
-            "submissionUpdate",
-            {
-              id: row.id,
-              deleted: true,
-            },
-            (res) => {
-              if (res.success) {
-                this.eventBus.emit("toast", {
-                  title: "Submission deleted",
-                  message: "The submission has been deleted",
-                  variant: "success",
-                });
-              } else {
-                this.eventBus.emit("toast", {
-                  title: "Failed to delete submission",
-                  message: res.message,
-                  variant: "danger",
-                });
-              }
-            }
-          );
-        }
-      );
     },
   },
 };
