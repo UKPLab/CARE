@@ -1,0 +1,4 @@
+python-socketio>=5.13.0
+python-socketio[asyncio]>=5.13.0
+gunicorn>=20.1.0
+litellm

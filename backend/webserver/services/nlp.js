@@ -18,12 +18,15 @@ module.exports = class NLPService extends Service {
         super(server, {
             cmdTypes: [
                 "skillGetAll",
-                "skillGetConfig"
+                "skillGetConfig",
+                "llmGetStatus"
             ],
             resTypes: [
                 "skillUpdate",
                 "skillConfig",
-                "skillResults"
+                "skillResults",
+                "llmResponse",
+                "llmStatus"
             ]
         });
 
@@ -33,6 +36,7 @@ module.exports = class NLPService extends Service {
         this.timer = null;
 
         this.nlpSocket = null;
+        this.litellmEnabled = false;
     }
 
     /**
@@ -259,6 +263,8 @@ module.exports = class NLPService extends Service {
             // check for skill with config to send
             const skill = this.skills.find(n => this.#hasConfig(n) && n.name === data.name);
             await this.send(client, "skillConfig", skill ? skill.config : null);
+        } else if (command === "llmGetStatus") {
+            await this.#handleLLMGetStatus(client);
         } else {
             await super.command(client, command, data);
         }
@@ -338,13 +344,18 @@ module.exports = class NLPService extends Service {
     }
 
     /**
-     * Overwrite method to handle incoming requests
+     * Overwrite method to handle incoming requests.
+     * Routes to LiteLLM for LLM requests (data.type === "llm") or to BrokerIO for skill requests.
      * @param client
      * @param data
      * @return {Promise<void>}
      */
     async request(client, data) {
-        await this._handleSkillRequest(client, data, false);
+        if (data.type === "llm") {
+            await this.#handleLLMRequest(client, data);
+        } else {
+            await this._handleSkillRequest(client, data, false);
+        }
     }
 
 
@@ -356,6 +367,80 @@ module.exports = class NLPService extends Service {
      */
     async backgroundRequest(client, data) {
         await this._handleSkillRequest(client, data, true);
+    }
+
+    /**
+     * Returns the LiteLLMRPC instance if available and connected, or null.
+     * @returns {Object|null}
+     */
+    #getLiteLLMRPC() {
+        const rpc = this.server.rpcs['LiteLLMRPC'];
+        return rpc || null;
+    }
+
+    /**
+     * Handle an LLM chat completion request by routing it through LiteLLMRPC.
+     * Forwards the entire payload as-is — the caller controls model, api_key,
+     * and all provider-specific parameters.
+     * @param client
+     * @param data - must include model and messages at minimum
+     */
+    async #handleLLMRequest(client, data) {
+        const rpc = this.#getLiteLLMRPC();
+        if (!rpc) {
+            this.logger.error("LiteLLM RPC is not registered");
+            await this.send(client, "llmResponse", {
+                id: data.id,
+                error: "LiteLLM service is not available"
+            });
+            return;
+        }
+
+        const online = await rpc.isOnline();
+        if (!online) {
+            this.logger.error("LiteLLM RPC is not connected");
+            await this.send(client, "llmResponse", {
+                id: data.id,
+                error: "LiteLLM service is not connected"
+            });
+            return;
+        }
+
+        try {
+            const {id, type, ...llmParams} = data;
+            const response = await rpc.chatCompletion(llmParams);
+
+            await this.send(client, "llmResponse", {
+                id: data.id,
+                ...response.data
+            });
+        } catch (err) {
+            this.logger.error("LLM request failed: " + err.message);
+            await this.send(client, "llmResponse", {
+                id: data.id,
+                error: err.message
+            });
+        }
+    }
+
+    /**
+     * Return LiteLLM RPC status to the client.
+     * @param client
+     */
+    async #handleLLMGetStatus(client) {
+        const rpc = this.#getLiteLLMRPC();
+        if (!rpc) {
+            await this.send(client, "llmStatus", {online: false, error: "LiteLLM RPC not registered"});
+            return;
+        }
+
+        try {
+            const status = await rpc.getStatus();
+            await this.send(client, "llmStatus", status);
+        } catch (err) {
+            this.logger.error("Failed to get LLM status: " + err.message);
+            await this.send(client, "llmStatus", {online: false, error: err.message});
+        }
     }
 
     /**
