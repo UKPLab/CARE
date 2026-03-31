@@ -445,17 +445,24 @@ module.exports = class Socket {
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
-        if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) { // is allowed to see everything
+        const model = this.models[tableName];
+        const hasModelUserFilter = typeof model.getUserFilter === "function";
+        const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+
+        if ((isAdmin || model.publicTable) && !hasModelUserFilter) { // is allowed to see everything
             // no adaption of the filter or attributes needed
-        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
+        } else if (hasModelUserFilter) {
+            const userFilter = model.getUserFilter(userId, isAdmin);
+            allFilter = {[Op.and]: [allFilter, userFilter]};
+        } else if (model.autoTable && 'userId' in model.getAttributes() && accessRights.length === 0) {
             // is allowed to see only his data and possible if there is a public attribute
             const userFilter = {};
-            if ("public" in this.models[tableName].getAttributes()) {
+            if ("public" in model.getAttributes()) {
                 userFilter[Op.or] = [{userId: userId}, {public: true}];
             } else {
                 userFilter['userId'] = userId;
             }
-            allFilter = {[Op.and]: [allFilter, userFilter]}
+            allFilter = {[Op.and]: [allFilter, userFilter]};
         } else {
 
             if (accessRights.length > 0) {
@@ -833,9 +840,15 @@ module.exports = class Socket {
         if (filter[Op.or]) {
             return filter[Op.or].some(subfilter => this.matchesFilter(entry, subfilter));
         }
-        return Object.entries(filter).every(([key, val]) =>
-            entry[key] === val
-        );
+        return Object.entries(filter).every(([key, val]) => {
+            if (val && typeof val === "object" && Op.in in val) {
+                return Array.isArray(val[Op.in]) && val[Op.in].includes(entry[key]);
+            }
+            if (val && typeof val === "object" && Op.ne in val) {
+                return entry[key] !== val[Op.ne];
+            }
+            return entry[key] === val;
+        });
     }
 
     /**
@@ -858,8 +871,14 @@ module.exports = class Socket {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
-            // if socket is admin or table is public, also just send
-            if (await this.isAdmin(userId, rolesUpdatedAt) || this.models[tableName].publicTable) {
+            const model = this.models[tableName];
+            const hasModelUserFilter = typeof model.getUserFilter === "function";
+            const hasBroadcastExpander = typeof model.expandBroadcastFilter === "function";
+            const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+            const isPublicTable = model.publicTable;
+            
+            // if socket is admin or table is public, also just send (unless model requires per-user filtering/expansion)
+            if (!hasModelUserFilter && !hasBroadcastExpander && (isAdmin || isPublicTable)) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
@@ -870,6 +889,10 @@ module.exports = class Socket {
                 continue;
             }
             allFilter = filtersAndAttributes.filter;
+            // Allow models to expand the broadcast filter (e.g. templates: source templates of user's copies)
+            if (hasBroadcastExpander) {
+                allFilter = await model.expandBroadcastFilter(allFilter, userId, isAdmin);
+            }
             const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
             this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
         }

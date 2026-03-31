@@ -201,7 +201,11 @@ export default {
       await this.$router.push("/login");
     },
     async toHome() {
-      await this.$router.push('/dashboard');
+      if (this.$route.path.startsWith('/template/')) {
+        await this.$router.push('/dashboard/templates');
+      } else {
+        await this.$router.push('/dashboard');
+      }
     },
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');

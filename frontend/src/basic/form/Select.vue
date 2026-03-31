@@ -138,6 +138,12 @@ export default {
         baseOptions = this.$store.getters["table/" + this.options.options.table + "/getAll"];
       }
 
+      if ((this.options.options?.prependNone || this.options.prependNone) && this.options.options?.table) {
+        const valueKey = this.options.options.value || 'id';
+        const nameKey = this.options.options.name || 'name';
+        baseOptions = [{ [valueKey]: null, [nameKey]: 'None' }, ...baseOptions];
+      }
+
       // Filter according to additional Options and add to baseOptions
       if (this.options.options.additionalOptions) {
         const mappingFilter = this.options.options.filter.find((filter) => filter.type === "parentData");
@@ -166,6 +172,32 @@ export default {
 
       if (this.formData?.isTemplateMode && this.options.options.table === 'document' && this.parentValue?.stepType === 1) {
         baseOptions = [{ id: null, name: '<Document>' }, ...baseOptions];
+      }
+
+      // Add document templates (Type 5) to document dropdown for Editor steps in study creation
+      if (
+        this.options.options.table === 'document' &&
+        this.parentValue?.stepType === 2 && 
+        this.formData?.workflowId 
+      ) {
+        const currentUserId = this.$store.getters["auth/getUserId"];
+        const documentTemplates = this.$store.getters["table/template/getAll"]
+          .filter(t => t.type === 5 && !t.deleted && t.userId === currentUserId) // Type 5 = Document Template, own only
+          .map(t => {
+            const valueKey = this.options.options.value || 'id';
+            const nameKey = this.options.options.name || 'name';
+            return {
+              [valueKey]: `template:${t.id}`,
+              [nameKey]: `${t.name} (document template)`,
+              id: `template:${t.id}`,
+              name: `${t.name} (document template)`,
+              value: `template:${t.id}`,
+              isTemplateOption: true,
+              templateId: t.id,
+            };
+          });
+        
+        baseOptions = [...baseOptions, ...documentTemplates];
       }
 
       return baseOptions;
