@@ -31,25 +31,35 @@
                 </span>
               </div>
 
-              <div v-if="expandedDefaultGroups[subgroup.name]">
-                <router-link
-                  v-for="element in subgroup.elements"
-                  :key="element.id"
-                  :to="'/dashboard/' + element.path"
-                  class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
+              <transition 
+                name="submenu"
+                @enter="enterSubmenu"
+                @leave="leaveSubmenu"
+              >
+                <div 
+                  v-if="expandedDefaultGroups[subgroup.name]" 
+                  class="submenu-content"
                 >
-                  <span
-                    class="sidebar-icon"
-                    :title="element.name"
+                  <router-link
+                    v-for="element in subgroup.elements"
+                    :key="element.id"
+                    :to="'/dashboard/' + element.path"
+                    class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
                   >
-                    <LoadIcon
-                      :icon-name="element.icon"
-                      :size="24"
-                    />
-                  </span>
-                  <div class="list-group-item-text">{{ element.name }}</div>
-                </router-link>
-              </div>
+                    <span
+                      class="sidebar-icon"
+                      :title="element.name"
+                    >
+                      <LoadIcon
+                        :icon-name="element.icon"
+                        :size="24"
+                      />
+                    </span>
+                    <div class="list-group-item-text">{{ element.name }}</div>
+                  </router-link>
+                </div>
+              </transition>
+             
             </div>
           </template>
 
@@ -236,14 +246,40 @@ export default {
         ? 'arrow-open'
         : 'arrow-close';
     },
+    enterSubmenu(el) {
+      el.style.height = '0';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-4px)';
+
+      requestAnimationFrame(() => {
+        el.style.height = `${el.scrollHeight}px`;
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+    },
+
+    leaveSubmenu(el) {
+      el.style.height = `${el.scrollHeight}px`;
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+
+      requestAnimationFrame(() => {
+        el.style.height = '0';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-4px)';
+      });
+    },
   },
   watch: {
-  $route() {
-    if (this.activeDefaultGroup) {
-      this.setExpandedDefaultGroup(this.activeDefaultGroup);
-    }
+    activeDefaultGroup: {
+      immediate: true,
+      handler(newGroup) {
+        if (newGroup) {
+          this.setExpandedDefaultGroup(newGroup);
+        }
+      },
+    },
   },
-},
 }
 
 </script>
@@ -392,5 +428,16 @@ body.sb-sidenav-toggled .arrow-toggle {
   box-shadow: inset 2px 0 0 #222;
 }
 
+.submenu-content {
+  overflow: hidden;
+}
+
+.submenu-enter-active,
+.submenu-leave-active {
+  transition:
+    height 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 </style>
