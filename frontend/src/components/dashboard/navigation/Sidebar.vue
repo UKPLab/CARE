@@ -247,7 +247,6 @@ export default {
       const currentPath = this.$route.path.toLowerCase().replace(/\/$/, '');
 
       if (currentPath === '/dashboard') {
-        this.closeAllDefaultGroups();
         return;
       }
 
@@ -291,7 +290,18 @@ export default {
     },
   },
   watch: {
-    $route() {
+    $route(to) {
+      const toPath = to.path.toLowerCase().replace(/\/$/, '');
+
+      if (toPath === '/dashboard') {
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            this.closeAllDefaultGroups();
+          });
+        });
+        return;
+      }
+
       this.syncSidebarWithRoute();
     },
 
@@ -301,7 +311,6 @@ export default {
         const currentPath = this.$route.path.toLowerCase().replace(/\/$/, '');
 
         if (currentPath === '/dashboard') {
-          this.closeAllDefaultGroups();
           return;
         }
 
