@@ -82,10 +82,6 @@ class ServiceSocket extends Socket {
             await this.server.services['NLPService'].connectClient(this);
         }
 
-        if (await this.models['setting'].get("service.llm.enabled") === "true") {
-            await this.server.services['LLMService'].connectClient(this);
-        }
-
         this.createSocket("serviceConnect", this.connectService, {}, false);
         this.createSocket("serviceDisconnect", this.disconnectService, {}, false);
         this.createSocket("serviceRequest", this.requestService, {}, false);
