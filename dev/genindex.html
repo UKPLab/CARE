@@ -62,6 +62,7 @@
 <li class="toctree-l1"><a class="reference internal" href="for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="for_researchers/templates.html">Email and Document Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -134,10 +135,10 @@
 </li>
       <li><a href="for_developers/backend/socket.html#AppSocket.sendSystemRoles">AppSocket.sendSystemRoles() (AppSocket method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="for_developers/backend/socket.html#AppSocket.sendTables">AppSocket.sendTables() (AppSocket method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="for_developers/backend/socket.html#AppSocket.sendUser">AppSocket.sendUser() (AppSocket method)</a>
 </li>
       <li><a href="for_developers/backend/socket.html#AppSocket.subscribeAppData">AppSocket.subscribeAppData() (AppSocket method)</a>
@@ -163,6 +164,8 @@
       <li><a href="for_developers/backend/socket.html#AssignmentSocket.getAssignmentInfoFromCourse">AssignmentSocket.getAssignmentInfoFromCourse() (AssignmentSocket method)</a>
 </li>
       <li><a href="for_developers/backend/socket.html#AssignmentSocket.replaceTemplateValues">AssignmentSocket.replaceTemplateValues() (AssignmentSocket method)</a>
+</li>
+      <li><a href="for_developers/backend/socket.html#AssignmentSocket.sendAssignmentEmail">AssignmentSocket.sendAssignmentEmail() (AssignmentSocket method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -290,17 +293,23 @@
 </li>
       <li><a href="for_developers/backend/socket.html#StatisticSocket.addStats">StatisticSocket.addStats() (StatisticSocket method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="for_developers/backend/socket.html#StatisticSocket.getStats">StatisticSocket.getStats() (StatisticSocket method)</a>
 </li>
       <li><a href="for_developers/backend/socket.html#StatisticSocket.sendStatsByUser">StatisticSocket.sendStatsByUser() (StatisticSocket method)</a>
 </li>
       <li><a href="for_developers/backend/socket.html#StudySessionSocket">StudySessionSocket() (class)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="for_developers/backend/socket.html#StudySessionSocket.copyStudySession">StudySessionSocket.copyStudySession() (StudySessionSocket method)</a>
 </li>
+      <li><a href="for_developers/backend/socket.html#StudySessionSocket.finishStudySession">StudySessionSocket.finishStudySession() (StudySessionSocket method)</a>
+</li>
+      <li><a href="for_developers/backend/socket.html#StudySessionSocket.sendSessionFinishEmail">StudySessionSocket.sendSessionFinishEmail() (StudySessionSocket method)</a>
+</li>
       <li><a href="for_developers/backend/socket.html#StudySessionSocket.sendSessionsByStudyId">StudySessionSocket.sendSessionsByStudyId() (StudySessionSocket method)</a>
+</li>
+      <li><a href="for_developers/backend/socket.html#StudySessionSocket.sendSessionStartEmail">StudySessionSocket.sendSessionStartEmail() (StudySessionSocket method)</a>
 </li>
       <li><a href="for_developers/backend/socket.html#StudySessionSocket.startStudySession">StudySessionSocket.startStudySession() (StudySessionSocket method)</a>
 </li>
@@ -312,7 +321,11 @@
 </li>
       <li><a href="for_developers/backend/socket.html#StudySocket.closeBulk">StudySocket.closeBulk() (StudySocket method)</a>
 </li>
+      <li><a href="for_developers/backend/socket.html#StudySocket.closeStudy">StudySocket.closeStudy() (StudySocket method)</a>
+</li>
       <li><a href="for_developers/backend/socket.html#StudySocket.saveStudyAsTemplate">StudySocket.saveStudyAsTemplate() (StudySocket method)</a>
+</li>
+      <li><a href="for_developers/backend/socket.html#StudySocket.sendStudyClosedEmails">StudySocket.sendStudyClosedEmails() (StudySocket method)</a>
 </li>
   </ul></td>
 </tr></table>

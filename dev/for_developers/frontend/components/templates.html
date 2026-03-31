@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Templates &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_js.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Step Modal" href="stepmodal.html" />
+    <link rel="prev" title="Quill Editor" href="editor.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../basic/basic.html">Basic</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="components.html">Components</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="components.html#code-structure-overview">Code Structure Overview</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="annotator.html">Annotator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Templates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stepmodal.html">Step Modal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="study.html">Study</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#dashboard">Dashboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#document">Document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study">Study</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#templates">Templates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="components.html#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../frontend.html">Frontend Development</a></li>
+          <li class="breadcrumb-item"><a href="components.html">Components</a></li>
+      <li class="breadcrumb-item active">Templates</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/for_developers/frontend/components/templates.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="templates">
+<h1>Templates<a class="headerlink" href="#templates" title="Link to this heading"></a></h1>
+<p>The <strong>Templates</strong> system provides email and document content templates that can be used for system emails, session and assignment notifications, study-closed emails, and pre-filled document content.
+Templates are edited in the same Quill-based Editor as documents; placeholder resolution is done by the backend when the template is used.</p>
+<p>Key features include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Template types</strong> with fixed placeholder sets and usage locations (see table below).</p></li>
+<li><p><strong>Multi-language content</strong> stored in <code class="docutils literal notranslate"><span class="pre">template_content</span></code>; default language on the <code class="docutils literal notranslate"><span class="pre">template</span></code> row.</p></li>
+<li><p><strong>TemplateEditor</strong> and <strong>TemplateConfigurator</strong> (Placeholders sidebar) shown when the Editor is opened with a template (<code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided).</p></li>
+<li><p><strong>Toolbar and editor behavior</strong> controlled by the same settings as the document editor (see <a class="reference internal" href="../../../for_researchers/editor_usage.html#editor-settings-ref"><span class="std std-ref">Editor Settings</span></a>).</p></li>
+</ul>
+</div></blockquote>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Templates are listed and created from <strong>Dashboard → Templates</strong>. See the <a class="reference internal" href="dashboard.html"><span class="doc">dashboard</span></a> documentation for navigation details.</p>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/dashboard/Templates.vue</span></code></p>
+<p>When you open a template for editing, the Editor loads with <code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided; it renders the <a class="reference internal" href="editor.html"><span class="doc">Quill Editor</span></a> (TemplateEditor) for the main content and, for email types (1, 2, 3, 6), a <strong>Placeholders</strong> sidebar so you can insert allowed placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) into the text.</p>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/sidebar/TemplateConfigurator.vue</span></code></p>
+<p>Backend storage:</p>
+<ul class="simple">
+<li><p><strong>template</strong> — name, type, public, defaultLanguage, userId.</p></li>
+<li><p><strong>template_content</strong> — content (Quill Delta) per template and language.</p></li>
+<li><p><strong>template_edit</strong> — draft edits per template and language.</p></li>
+<li><p><strong>placeholder</strong> — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).</p></li>
+</ul>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code></p>
+<p>Placeholder resolution is implemented there: <code class="docutils literal notranslate"><span class="pre">resolveTemplate</span></code> (returns HTML for emails) and <code class="docutils literal notranslate"><span class="pre">resolveTemplateToDelta</span></code> (returns Delta for document creation).
+Only placeholders listed in <code class="docutils literal notranslate"><span class="pre">PLACEHOLDERS_BY_TYPE</span></code> for the template’s type are substituted at runtime.</p>
+</section>
+<section id="implementing-the-template-editor">
+<h2>Implementing the Template Editor<a class="headerlink" href="#implementing-the-template-editor" title="Link to this heading"></a></h2>
+<p>The main Editor provides <code class="docutils literal notranslate"><span class="pre">templateId</span></code> via <code class="docutils literal notranslate"><span class="pre">provide</span></code> and conditionally shows the Placeholders sidebar when the document is a template with placeholders.
+TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template. When the user saves and closes the editor, draft edits are merged from
+<code class="docutils literal notranslate"><span class="pre">template_edit</span></code> into <code class="docutils literal notranslate"><span class="pre">template_content</span></code> so that the next resolution uses the latest saved content.</p>
+<p>Location:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/Editor.vue</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/template/TemplateEditor.vue</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/sidebar/TemplateConfigurator.vue</span></code></p></li>
+</ul>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TemplateEditor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;templateId&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">template</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;templateId &amp;&amp; template &amp;&amp; !readOnlyOverwrite &amp;&amp; hasPlaceholders&quot;</span> <span class="err">#</span><span class="na">templateConfigurator</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">TemplateConfigurator</span> <span class="p">/&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<section id="template-types-placeholders-and-usage">
+<h3>Template Types, Placeholders, and Usage<a class="headerlink" href="#template-types-placeholders-and-usage" title="Link to this heading"></a></h3>
+<p>At resolution time, only the placeholder keys listed in the following table are substituted.</p>
+</section>
+</section>
+<section id="adding-a-new-template-type-or-placeholder">
+<h2>Adding a New Template Type or Placeholder<a class="headerlink" href="#adding-a-new-template-type-or-placeholder" title="Link to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Placeholders marked with <code class="docutils literal notranslate"><span class="pre">*</span></code> in the table above are <strong>required</strong> for that type.
+If a required placeholder is missing from the template text, validation will fail
+(e.g. publishing or using the template) until it is added. The set of required
+placeholders is defined in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table (<code class="docutils literal notranslate"><span class="pre">required:</span> <span class="pre">true</span></code>) and
+enforced via <code class="docutils literal notranslate"><span class="pre">getMissingRequiredPlaceholders</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>.</p>
+</div>
+<p>Here is a concrete example for adding a new placeholder (e.g. <code class="docutils literal notranslate"><span class="pre">studyEndDate</span></code> for type 6):</p>
+<ol class="arabic simple">
+<li><p><strong>Backend (DB + resolver):</strong></p>
+<ul class="simple">
+<li><p>Add a row to the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table via a migration:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code>: <code class="docutils literal notranslate"><span class="pre">6</span></code> (Email - Study Close)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">placeholderKey</span></code>: <code class="docutils literal notranslate"><span class="pre">studyEndDate</span></code></p></li>
+<li><p>other metadata as needed (label, required, etc.)</p></li>
+</ul>
+</li>
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">PLACEHOLDERS_BY_TYPE</span></code> / <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> in
+<code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code> to fill <code class="docutils literal notranslate"><span class="pre">studyEndDate</span></code> from context, for example:</p>
+<ul>
+<li><p>In the resolver, when <code class="docutils literal notranslate"><span class="pre">context.templateType</span> <span class="pre">===</span> <span class="pre">6</span></code>, set
+<code class="docutils literal notranslate"><span class="pre">replacements[&quot;~studyEndDate~&quot;]</span> <span class="pre">=</span> <span class="pre">&lt;value</span> <span class="pre">from</span> <span class="pre">study</span> <span class="pre">or</span> <span class="pre">session&gt;</span></code>.</p></li>
+</ul>
+</li>
+<li><p>If the new placeholder is driven by a specific feature (e.g. study close emails),
+ensure the call site (e.g. <code class="docutils literal notranslate"><span class="pre">sendStudyClosedEmails</span></code> in <code class="docutils literal notranslate"><span class="pre">study.js</span></code>) passes
+whatever additional data is needed into the resolver context.</p></li>
+</ul>
+</li>
+<li><p><strong>Frontend (editor + sidebar):</strong></p>
+<ul class="simple">
+<li><p>Add the placeholder to the template configurator configuration so it appears in the
+Placeholders sidebar with a name/description (e.g. update
+<code class="docutils literal notranslate"><span class="pre">placeholderConfigs</span></code> / <code class="docutils literal notranslate"><span class="pre">longDescriptions</span></code> in
+<code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/sidebar/TemplateConfigurator.vue</span></code>).</p></li>
+</ul>
+</li>
+<li><p><strong>Access / type visibility:</strong></p>
+<ul class="simple">
+<li><p>If the new placeholder is tied to a new template type, also update:</p>
+<ul>
+<li><p>The template type dropdown in <code class="docutils literal notranslate"><span class="pre">frontend/src/components/dashboard/templates/TemplateModal.vue</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getUserFilter</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/db/models/template.js</span></code> so that only the correct
+users (e.g. admins) see or can use that type.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="settings">
+<h2>Settings<a class="headerlink" href="#settings" title="Link to this heading"></a></h2>
+<p>The template editor uses the same toolbar and edit settings as the document editor.
+See <a class="reference internal" href="../../../for_researchers/editor_usage.html#editor-settings-ref"><span class="std std-ref">Editor Settings</span></a> in the <a class="reference internal" href="editor.html"><span class="doc">Quill Editor</span></a> documentation and <a class="reference internal" href="../../examples/settings.html#add-setting-example-ref"><span class="std std-ref">Adding a New Setting</span></a> in <a class="reference internal" href="../../examples/settings.html"><span class="doc">Settings</span></a> if you need to add or change a setting key.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="editor.html" class="btn btn-neutral float-left" title="Quill Editor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="stepmodal.html" class="btn btn-neutral float-right" title="Step Modal" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

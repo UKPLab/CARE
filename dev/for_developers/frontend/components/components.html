@@ -59,6 +59,7 @@
 <li class="toctree-l4"><a class="reference internal" href="annotator.html">Annotator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="dashboard.html">Dashboard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="editor.html">Quill Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="templates.html">Templates</a></li>
 <li class="toctree-l4"><a class="reference internal" href="stepmodal.html">Step Modal</a></li>
 <li class="toctree-l4"><a class="reference internal" href="study.html">Study</a></li>
 <li class="toctree-l4"><a class="reference internal" href="apply_skill_preprocessing.html">Apply Skill Modal : Preprocessing</a></li>
@@ -68,6 +69,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#document">Document</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#study">Study</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#study-session">Study Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#templates">Templates</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nlp-skill-preprocessing">NLP Skill Preprocessing</a></li>
 </ul>
 </li>
@@ -88,6 +90,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/templates.html">Email and Document Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -171,6 +174,13 @@ Each entry links to its dedicated documentation page:</p>
 <li class="toctree-l2"><a class="reference internal" href="editor.html#implementing-the-editor">Implementing the Editor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="editor.html#editor-deltas-and-code-integration">Editor-Deltas and Code Integration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="editor.html#testing-the-editor">Testing the Editor</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templates</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="templates.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="templates.html#implementing-the-template-editor">Implementing the Template Editor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="templates.html#adding-a-new-template-type-or-placeholder">Adding a New Template Type or Placeholder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="templates.html#settings">Settings</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="stepmodal.html">Step Modal</a><ul>
@@ -281,6 +291,48 @@ Its purpose is to <strong>resume existing sessions</strong> (via <code class="do
 <li><p><strong>Starting or creating a new study session</strong> → handled in <a class="reference internal" href="study.html"><span class="doc">Study</span></a>.</p></li>
 <li><p><strong>Resuming an existing session</strong> → handled in <strong>StudySession</strong>.</p></li>
 </ul>
+</section>
+<hr class="docutils" />
+<section id="templates">
+<h2>Templates<a class="headerlink" href="#templates" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="templates.html"><span class="doc">Templates</span></a> component provides <strong>email and document content templates</strong> available from the Dashboard.
+Templates are used for system emails (e.g. password reset, verification, registration), session start/finish and assignment emails, study-closed notifications, and pre-filled document content.</p>
+<p>Template types (see <a class="reference internal" href="templates.html"><span class="doc">Templates</span></a> for details):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Template type</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Email - General</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>Email - Study Session</p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-even"><td><p>Email - Assignment</p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-odd"><td><p>Document - General</p></td>
+<td><p>4</p></td>
+</tr>
+<tr class="row-even"><td><p>Document - Study</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p>Email - Study Close</p></td>
+<td><p>6</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) are resolved per type by the backend (<code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>).</p></li>
+<li><p>Content is stored per language in <code class="docutils literal notranslate"><span class="pre">template_language_content</span></code>; the Editor shows TemplateEditor and, for email types, a <strong>Placeholders</strong> sidebar (TemplateConfigurator) when editing a template (<code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided).</p></li>
+</ul>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;editor&quot;</span> <span class="na">:template-id</span><span class="o">=</span><span class="s">&quot;templateId&quot;</span> <span class="p">/&gt;</span>
+</pre></div>
+</div>
+<p>For full details on template types, placeholders, and where each type is used, see <a class="reference internal" href="templates.html"><span class="doc">Templates</span></a>.</p>
 </section>
 <hr class="docutils" />
 <section id="nlp-skill-preprocessing">

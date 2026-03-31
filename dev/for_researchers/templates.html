@@ -1,0 +1,226 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email and Document Templates &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Validation Schemas" href="validation_schemas.html" />
+    <link rel="prev" title="Quill Editor" href="editor_usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Email and Document Templates</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#when-to-use-which-template-type">When to Use Which Template Type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flow-to-create-and-use-a-template">Flow to Create and Use a Template</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkboxes-so-emails-actually-get-sent">Checkboxes So Emails Actually Get Sent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#where-templates-are-used">Where Templates Are Used</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#publishing-and-deletion">Publishing and Deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#update-from-source-for-copies">Update-from-Source for Copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#errors-and-placeholders-not-replaced">Errors and Placeholders Not Replaced</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Email and Document Templates</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/templates.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="email-and-document-templates">
+<h1>Email and Document Templates<a class="headerlink" href="#email-and-document-templates" title="Link to this heading"></a></h1>
+<p>This section describes <strong>email and document content templates</strong> in CARE.
+These are different from <strong>study templates</strong> (saved study configurations): content templates define the text of emails (e.g. password reset, session links, study closed) and the initial body of documents created from a template.</p>
+<p>You manage content templates from <strong>Dashboard → Templates</strong>.
+They are used for:</p>
+<ul class="simple">
+<li><p>System emails (password reset, verification, registration)</p></li>
+<li><p>Session start and session finish emails</p></li>
+<li><p>Assignment emails (when a reviewer is assigned to a task)</p></li>
+<li><p>Study-closed emails (when a study is closed and participants with open sessions are notified)</p></li>
+<li><p>Pre-filled document content when creating a new document from a template</p></li>
+</ul>
+<section id="when-to-use-which-template-type">
+<h2>When to Use Which Template Type<a class="headerlink" href="#when-to-use-which-template-type" title="Link to this heading"></a></h2>
+<p>Each template has a <strong>type</strong> that determines where it can be used and which <strong>placeholders</strong> (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) are replaced when the template is sent or applied.
+Only the placeholders listed below for each type are actually replaced; others will appear as literal text or be empty.</p>
+<p><strong>Email - General (type 1)</strong>
+Used for system emails. Assign the template in <strong>Dashboard → Settings</strong> to the keys for password reset, verification, or registration.
+Placeholders that are replaced: <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~firstName~</span></code>, <code class="docutils literal notranslate"><span class="pre">~lastName~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>.</p>
+<p><strong>Email - Study Session (type 2)</strong>
+Used for emails when a session is started or finished. Assign the template in Settings to <strong>Session start</strong> and <strong>Session finish</strong>.
+Placeholders that are replaced: <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>.</p>
+<p><strong>Email - Assignment (type 3)</strong>
+Used when a reviewer is assigned to a document or submission. Assign the template in Settings to <strong>Assignment</strong>.
+Placeholders that are replaced: <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~assignmentType~</span></code>, <code class="docutils literal notranslate"><span class="pre">~assignmentName~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>.</p>
+<p><strong>Email - Study Close (type 6)</strong>
+Used when a study is closed and participants who still had an open session are notified. Assign the template in Settings to <strong>Study closed</strong>; the study must have <strong>Enable Study Close Email Notifications</strong> turned on (see <strong>Checkboxes So Emails Actually Get Sent</strong> below).
+Placeholders that are replaced: <code class="docutils literal notranslate"><span class="pre">~username~</span></code> (the session owner), <code class="docutils literal notranslate"><span class="pre">~studyName~</span></code>.</p>
+<p><strong>Document - General (type 4)</strong> and <strong>Document - Study (type 5)</strong>
+Used when creating a new document and pre-filling its content from a template. No placeholders are replaced; use these for static boilerplate.
+Type 4 is for general documents; type 5 is for documents used in studies.</p>
+</section>
+<section id="flow-to-create-and-use-a-template">
+<h2>Flow to Create and Use a Template<a class="headerlink" href="#flow-to-create-and-use-a-template" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Create:</strong> In the Dashboard, open <strong>Templates</strong> and click <strong>Add</strong>. Choose the <strong>type</strong> and enter a name (and description).</p></li>
+<li><p><strong>Edit:</strong> Open the template. Write the body; for email types, use the <strong>Placeholders</strong> sidebar to insert allowed placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) where they should be replaced.</p></li>
+<li><p><strong>Assign:</strong> In <strong>Dashboard → Settings</strong>, open the section that contains the <strong>email template</strong> settings. You will see one setting per email use (e.g. password reset, session start, session finish, assignment, study closed). Each is a <strong>dropdown</strong>: choose a template from the list, or leave <strong>None (use default email)</strong> to use the built-in text. For <strong>document templates</strong> (types 4 and 5), you do not assign them in Settings; choose a template when <strong>creating a document</strong> (e.g. Dashboard → Documents → Create).</p></li>
+<li><p><strong>Publish (optional):</strong> Publishing makes the template visible to other users. Once published, it cannot be unpublished or deleted (see below).</p></li>
+</ol>
+<p>If you leave a template setting at <strong>None (use default email)</strong> or the system cannot load the template, CARE uses a <strong>default (fallback) email</strong> for that feature, so the action (e.g. sending the email) still completes with built-in text. To use your own text, assign a template and ensure the relevant checkbox below is enabled.</p>
+</section>
+<section id="checkboxes-so-emails-actually-get-sent">
+<h2>Checkboxes So Emails Actually Get Sent<a class="headerlink" href="#checkboxes-so-emails-actually-get-sent" title="Link to this heading"></a></h2>
+<p>For template-based emails to be sent, the relevant option must be enabled:</p>
+<ul class="simple">
+<li><p><strong>Session start and session finish emails</strong> — The <strong>study</strong> must have <strong>Enable Email Notifications</strong> turned on. When creating or editing the study (e.g. in the study coordinator), enable the <strong>Enable Email Notifications</strong> switch; otherwise session start/finish emails are not sent even if you assigned templates in Settings.</p></li>
+<li><p><strong>Study closed emails</strong> — The <strong>study</strong> must have <strong>Enable Study Close Email Notifications</strong> (or “Send study closed emails”) turned on. In the study settings, enable that switch; otherwise study-closed emails are not sent even if you assigned a template in Settings.</p></li>
+<li><p><strong>Assignment emails</strong> — When creating assignments (<strong>Single Assignment</strong> or <strong>Bulk Assignment</strong> from the Studies dashboard), you must <strong>check the option to send email notifications</strong> (e.g. “Send email notification”) in that modal before confirming. If it is unchecked, no assignment emails are sent even if you assigned a template in Settings.</p></li>
+</ul>
+</section>
+<section id="where-templates-are-used">
+<h2>Where Templates Are Used<a class="headerlink" href="#where-templates-are-used" title="Link to this heading"></a></h2>
+</section>
+<section id="publishing-and-deletion">
+<h2>Publishing and Deletion<a class="headerlink" href="#publishing-and-deletion" title="Link to this heading"></a></h2>
+<p><strong>Publishing</strong> (making a template <em>public</em>) makes an email template (types 1, 2, 3, 6) visible to other users.
+<strong>Once a template is public:</strong></p>
+<ul class="simple">
+<li><p>It <strong>cannot be unpublished</strong>.</p></li>
+<li><p>It <strong>cannot be deleted</strong>.</p></li>
+</ul>
+<p>This is enforced so that templates already in use (e.g. referenced in Settings or in studies) are not removed, which would break those features.
+If you need a different version, create a new template or duplicate an existing one, and avoid publishing until the content is final.</p>
+</section>
+<section id="update-from-source-for-copies">
+<h2>Update-from-Source for Copies<a class="headerlink" href="#update-from-source-for-copies" title="Link to this heading"></a></h2>
+<p>If you copy someone else’s public template into your own list, CARE keeps track of the
+relationship between your copy and the original (the “source template”). When the source
+is changed, your copy will show <strong>Update available</strong> in the Templates table. You can then
+open the update modal and choose whether to update your existing copy with the latest
+content from the source, or to create a new copy that contains the updates while keeping
+the old copy unchanged and independent of future source changes.</p>
+</section>
+<section id="errors-and-placeholders-not-replaced">
+<h2>Errors and Placeholders Not Replaced<a class="headerlink" href="#errors-and-placeholders-not-replaced" title="Link to this heading"></a></h2>
+<p><strong>Wrong template type</strong>
+If you change the type of a template after writing content, placeholders that are not allowed for the new type will <strong>not</strong> be replaced when the template is used (they may appear as literal <code class="docutils literal notranslate"><span class="pre">~name~</span></code> or empty).
+Choose the correct type when creating the template.</p>
+<p><strong>Document templates (types 4 and 5)</strong>
+No placeholders are replaced in document templates. Any <code class="docutils literal notranslate"><span class="pre">~...~</span></code> in the text will remain as-is.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="editor_usage.html" class="btn btn-neutral float-left" title="Quill Editor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="validation_schemas.html" class="btn btn-neutral float-right" title="Validation Schemas" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
