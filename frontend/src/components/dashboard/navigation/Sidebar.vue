@@ -220,10 +220,6 @@ export default {
   },
   mounted() {
     document.body.classList.add('sidebar-exists');
-
-    if (this.activeDefaultGroup) {
-      this.setExpandedDefaultGroup(this.activeDefaultGroup);
-    }
   },
   beforeUnmount() {
     document.body.classList.remove('sidebar-exists');
@@ -232,11 +228,34 @@ export default {
     toggleSidebar() {
       document.body.classList.toggle('sb-sidenav-toggled');
     },
+
+    closeAllDefaultGroups() {
+      Object.keys(this.expandedDefaultGroups).forEach(groupName => {
+        this.expandedDefaultGroups[groupName] = false;
+        this.arrowAnimationClass[groupName] = 'arrow-close';
+      });
+    },
+
     setExpandedDefaultGroup(groupName) {
       if (groupName) {
         this.expandedDefaultGroups[groupName] = true;
+        this.arrowAnimationClass[groupName] = 'arrow-open';
       }
     },
+
+    syncSidebarWithRoute() {
+      const currentPath = this.$route.path.toLowerCase().replace(/\/$/, '');
+
+      if (currentPath === '/dashboard') {
+        this.closeAllDefaultGroups();
+        return;
+      }
+
+      if (this.activeDefaultGroup) {
+        this.setExpandedDefaultGroup(this.activeDefaultGroup);
+      }
+    },
+
     toggleDefaultGroup(groupName) {
       const isOpening = !this.expandedDefaultGroups[groupName];
 
@@ -246,6 +265,7 @@ export default {
         ? 'arrow-open'
         : 'arrow-close';
     },
+
     enterSubmenu(el) {
       el.style.height = '0';
       el.style.opacity = '0';
@@ -271,9 +291,20 @@ export default {
     },
   },
   watch: {
+    $route() {
+      this.syncSidebarWithRoute();
+    },
+
     activeDefaultGroup: {
       immediate: true,
       handler(newGroup) {
+        const currentPath = this.$route.path.toLowerCase().replace(/\/$/, '');
+
+        if (currentPath === '/dashboard') {
+          this.closeAllDefaultGroups();
+          return;
+        }
+
         if (newGroup) {
           this.setExpandedDefaultGroup(newGroup);
         }
