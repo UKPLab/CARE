@@ -178,6 +178,29 @@ export default {
                 }
             }
 
+            if (service === "LLMService") {
+                if (serviceType === "providerUpdate") {
+                    state.services[service][serviceType] = Array.isArray(data.data) ? data.data : [];
+                } else if (serviceType === "apiKeyUpdate") {
+                    state.services[service][serviceType] = Array.isArray(data.data) ? data.data : [];
+                } else if (serviceType === "promptTemplateUpdate") {
+                    state.services[service][serviceType] = Array.isArray(data.data) ? data.data : [];
+                } else if (serviceType === "llmResult") {
+                    let cur;
+                    if (!(serviceType in state.services[service])) {
+                        cur = {};
+                    } else {
+                        cur = {...state.services[service][serviceType]};
+                    }
+                    if (!data.data.error) {
+                        cur[data.data.id] = data.data;
+                    }
+                    state.services[service][serviceType] = cur;
+                } else if (serviceType === "usageStats" || serviceType === "usageLogs") {
+                    state.services[service][serviceType] = data.data;
+                }
+            }
+
             if (service === "BackgroundTaskService") {
                 if (!(serviceType in state.services[service])) {
                     state.services[service][serviceType] = {};
@@ -190,7 +213,8 @@ export default {
         },
 
         /**
-         * Removes an NLP result by the given requestID from the store.
+         * Removes a result by the given requestID from the store.
+         * Works for both NLPService (skillResults) and LLMService (llmResult).
          *
          * @param state
          * @param requestId
@@ -198,6 +222,9 @@ export default {
         removeResults: (state, {service, requestId}) => {
             if (service in state.services && 'skillResults' in state.services[service]) {
                 delete state.services[service]['skillResults'][requestId];
+            }
+            if (service in state.services && 'llmResult' in state.services[service]) {
+                delete state.services[service]['llmResult'][requestId];
             }
         },
     },

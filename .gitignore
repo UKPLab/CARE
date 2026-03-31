@@ -14,7 +14,7 @@ backend/sessions
 backend/node_modules
 backend/logs
 backend/coverage
-
+logs/
 # ignore build files
 dist/
 frontend/node_modules

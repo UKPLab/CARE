@@ -3,6 +3,7 @@
  *
  * @author Nils Dycke
  */
+
 module.exports = {
     development: {
         username: 'postgres',
