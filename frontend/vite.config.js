@@ -23,6 +23,7 @@ const getVersion = () => {
     tag_latest = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
     return tag_latest + ": " + ciHash;
   } catch (e) {
+    console.log(e.toString());
     // Fallback if no git is found
     return 'dev-build';
   }
