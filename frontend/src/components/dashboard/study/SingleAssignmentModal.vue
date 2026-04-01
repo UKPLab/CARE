@@ -37,6 +37,19 @@
             :options="assignmentTypeFields"
         />
       </div>
+      <div class="mt-3">
+        <div class="form-check">
+          <input
+            type="checkbox"
+            v-model="enableEmailNotification"
+            class="form-check-input"
+            id="emailNotifyCheck"
+          />
+          <label class="form-check-label" for="emailNotifyCheck">
+            <strong>Send email notification to reviewer</strong>
+          </label>
+        </div>
+      </div>
     </template>
     <template #step-2>
       <div v-if="assignmentType === 'study_session'">
@@ -223,6 +236,9 @@ export default {
     },
     "submission",
     {
+      table: "template",
+    },
+    {
       table: "configuration",
       filter: [{key: "type", value: 1}]
     }],
@@ -233,6 +249,7 @@ export default {
       assignmentTypeSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
+      enableEmailNotification: false,
       studySessionSelections: [[]],
       targetWorkflowId: null,
       workflowMapping: {},
@@ -320,6 +337,22 @@ export default {
           {value: 'document', name: 'Documents'},
           {value: 'submission', name: 'Submissions'},
           {value: "study_session", name: "Study Sessions"}
+        ]
+      };
+    },
+    emailTemplates() {
+      const currentUserId = this.$store.getters["auth/getUserId"];
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => t.type === 3 && !t.deleted && t.userId === currentUserId);
+    },
+    emailTemplateOptions() {
+      return {
+        options: [
+          {value: null, name: 'None (no email will be sent)'},
+          ...this.emailTemplates.map(t => ({
+            value: t.id,
+            name: t.name
+          }))
         ]
       };
     },
@@ -783,6 +816,7 @@ export default {
       this.baseFileSelections = {};
       this.inputGroupValid = false;
       this.validationConfigurationNames = {};
+      this.enableEmailNotification = false;
     },
     createAssignment() {
       this.$refs.assignmentStepper.setWaiting(true);
@@ -791,6 +825,9 @@ export default {
         template: this.template,
         assignmentType: this.assignmentType,
         reviewer: this.selectedReviewer,
+        assignment: this.selectedAssignment[0],
+        documents: this.workflowStepsAssignments,
+        enableEmailNotification: this.enableEmailNotification,
         selectedAssignments: this.selectedAssignment,
       };
       

@@ -76,6 +76,7 @@ class AppSocket extends Socket {
                     transaction: transaction
                 }
             );
+            
             return newEntry.id;
         }
 

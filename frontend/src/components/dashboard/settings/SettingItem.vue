@@ -43,6 +43,18 @@
                             class="w-100 form-control"
                             rows="6"
                         ></textarea>
+                        <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
+                          <select v-model="setting.value" class="form-select">
+                            <option value="">None (use default email)</option>
+                            <option 
+                              v-for="template in getFilteredEmailTemplates(setting)" 
+                              :key="template.id" 
+                              :value="String(template.id)"
+                            >
+                              {{ template.name }} (ID: {{ template.id }})
+                            </option>
+                          </select>
+                        </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
                       </div>
                     </div>
@@ -65,6 +77,7 @@ import EditorModal from "@/basic/editor/Modal.vue";
 export default {
   name: "SettingItem",
   components: { LoadIcon, EditorModal },
+  subscribeTable: ["template"],
   props: {
     group: Object,
     title: String
@@ -74,9 +87,53 @@ export default {
       collapsed: true
     };
   },
+  computed: {
+    user() {
+      return this.$store.getters["auth/getUser"];
+    },
+    emailTemplates() {
+      const allTemplates = this.$store.getters["table/template/getAll"]
+        .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3 || t.type === 6));
+      
+      // Show only the user's own templates (includes copies since copies have userId === currentUser)
+      const visibleTemplates = allTemplates.filter(t => t.userId === this.user?.id);
+      
+      return visibleTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        type: t.type
+      }));
+    }
+  },
   methods: {
     toggleCollapse() {
       this.collapsed = !this.collapsed;
+    },
+    isEmailTemplateSetting(setting) {
+      return setting.key && 
+             setting.key.startsWith("email.template.") && 
+             (setting.type === "number" || setting.type === "integer");
+    },
+    getFilteredEmailTemplates(setting) {
+      // Determine template type based on setting key
+      let requiredType = null;
+      if (setting.key === "email.template.passwordReset" || 
+          setting.key === "email.template.verification" || 
+          setting.key === "email.template.registration") {
+        requiredType = 1; // Email - General
+      } else if (setting.key === "email.template.sessionStart" || 
+                 setting.key === "email.template.sessionFinish") {
+        requiredType = 2; // Email - Study Session
+      } else if (setting.key === "email.template.assignment") {
+        requiredType = 3; // Email - Assignment
+      } else if (setting.key === "email.template.studyClosed") {
+        requiredType = 6; // Email - Study Close
+      }
+      
+      // Filter by type if determined
+      return requiredType !== null 
+        ? this.emailTemplates.filter(t => t.type === requiredType)
+        : this.emailTemplates;
     }
   }
 };

@@ -109,6 +109,12 @@ module.exports = (sequelize, DataTypes) => {
             type: "editor",
             required: true
         }, {
+            key: "enableEmailNotifications",
+            label: "Send email notification on session start/finish",
+            type: "switch",
+            default: false,
+            help: "When enabled, the study owner receives an email each time a participant starts or finishes a session."
+        }, {
             key: "timeLimit",
             type: "slider",
             label: "How much time does a participant have for the study?",
@@ -119,7 +125,8 @@ module.exports = (sequelize, DataTypes) => {
             max: 180,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}]
+            textMapping: [{from: 0, to: "unlimited"}],
+            advanced: true
         }, {
             key: "limitSessions",
             type: "slider",
@@ -131,7 +138,8 @@ module.exports = (sequelize, DataTypes) => {
             max: 200,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}]
+            textMapping: [{from: 0, to: "unlimited"}],
+            advanced: true
         }, {
             key: "limitSessionsPerUser",
             type: "slider",
@@ -143,42 +151,48 @@ module.exports = (sequelize, DataTypes) => {
             max: 200,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}]
+            textMapping: [{from: 0, to: "unlimited"}],
+            advanced: true
+        }, {
+            key: "start",
+            label: "Study sessions can't start before",
+            type: "datetime",
+            size: 6,
+            default: null,
+            advanced: true
+        }, {
+            key: "end",
+            label: "Study sessions can't start after:",
+            type: "datetime",
+            size: 6,
+            default: null,
+            advanced: true
         }, {
             key: "collab",
             label: "Should the study be collaborative?",
             type: "switch",
             default: false,
-        },
-            {
-                key: "anonymize",
-                label: "Should the comments be anonymized?",
-                type: "switch",
-                default: false,
-            }, {
-                key: "resumable",
-                label: "Should the study be resumable?",
-                type: "switch",
-                default: false,
-            }, {
-                key: "multipleSubmit",
-                label: "Allow multiple submissions?",
-                type: "switch",
-                default: false,
-                help: "Specify whether participants can submit their study multiple times."
-            }, {
-                key: "start",
-                label: "Study sessions can't start before",
-                type: "datetime",
-                size: 6,
-                default: null,
-            }, {
-                key: "end",
-                label: "Study sessions can't start after:",
-                type: "datetime",
-                size: 6,
-                default: null,
-            },];
+            advanced: true
+        }, {
+            key: "anonymize",
+            label: "Should the comments be anonymized?",
+            type: "switch",
+            default: false,
+            advanced: true
+        }, {
+            key: "resumable",
+            label: "Should the study be resumable?",
+            type: "switch",
+            default: false,
+            advanced: true
+        }, {
+            key: "multipleSubmit",
+            label: "Allow multiple submissions?",
+            type: "switch",
+            default: false,
+            help: "Specify whether participants can submit their study multiple times.",
+            advanced: true
+        },];
 
         /**
          * Check if a study is still open
@@ -243,6 +257,12 @@ module.exports = (sequelize, DataTypes) => {
                 const workflowStep = workflowSteps[i];
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
                 const customConfig = stepDocument?.configuration || {};
+                
+                // Create context object that includes study data
+                const studyContext = {
+                    ...study.dataValues || study
+                };
+                
                 const plainStudyStep = await sequelize.models.study_step.add({
                     studyId: study.id,
                     stepNumber: i + 1,
@@ -253,7 +273,7 @@ module.exports = (sequelize, DataTypes) => {
                     allowBackward: workflowStep.allowBackward,
                     studyStepDocument: null,
                     configuration: customConfig
-                }, { transaction: options.transaction, context: study, doNotDuplicate: options.doNotDuplicate });
+                }, { transaction: options.transaction, context: studyContext, doNotDuplicate: options.doNotDuplicate});
 
                 const studyStep = await sequelize.models.study_step.findByPk(plainStudyStep.id, {
                     transaction: options.transaction
@@ -386,6 +406,7 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: DataTypes.DATE,
         projectId: DataTypes.INTEGER,
         anonymize: DataTypes.BOOLEAN,
+        enableEmailNotifications: DataTypes.BOOLEAN,
         parentStudyId: {
             type: DataTypes.INTEGER,
             allowNull: true,

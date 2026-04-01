@@ -37,6 +37,19 @@
             :options="assignmentTypeFields"
         />
       </div>
+      <div class="mt-3">
+        <div class="form-check">
+          <input
+            type="checkbox"
+            v-model="enableEmailNotification"
+            class="form-check-input"
+            id="emailNotifyCheck"
+          />
+          <label class="form-check-label" for="emailNotifyCheck">
+            <strong>Send email notification to reviewer</strong>
+          </label>
+        </div>
+      </div>
     </template>
 
     <template #step-2>
@@ -449,7 +462,10 @@ export default {
       value: true
     }]
   },
-    "submission"
+    "submission",
+    {
+      table: "template",
+    }
   ],
   components: {StepperModal, BasicTable, BasicForm, FormSelect},
   data() {
@@ -465,6 +481,7 @@ export default {
       workflowMapping: {},
       filterHasDocuments: false,
       filterSelectedDocuments: false,
+      enableEmailNotification: false,
       newStudyOwner: 'session_owner',
       documentTableOptions: {
         striped: true,
@@ -517,7 +534,7 @@ export default {
     },
     isWorkflowMappingComplete() {
       if (!this.targetWorkflowId) return false;
-      return this.workflowSteps.every((step, index) => {
+      return this.workflowSteps.every((step) => {
         return this.workflowMapping[step.id] !== undefined && this.workflowMapping[step.id] !== null;
       });
     },
@@ -889,6 +906,22 @@ export default {
         ]
       };
     },
+    emailTemplates() {
+      const currentUserId = this.$store.getters["auth/getUserId"];
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => t.type === 3 && !t.deleted && t.userId === currentUserId);
+    },
+    emailTemplateOptions() {
+      return {
+        options: [
+          {value: null, name: 'None (no email will be sent)'},
+          ...this.emailTemplates.map(t => ({
+            value: t.id,
+            name: t.name
+          }))
+        ]
+      };
+    },
     reviewerSelectionModeFields() {
       const baseOptions = [
         {
@@ -1082,6 +1115,7 @@ export default {
       this.selectedReviewer = [];
       this.selectedAssignments = [];
       this.assignmentTypeSelection = {};
+      this.emailTemplateSelection = null;
       this.targetWorkflowId = null;
       this.workflowMapping = {};
     },
@@ -1098,6 +1132,7 @@ export default {
         mode: this.reviewerSelectionMode.mode,
         roles: this.roles,
         assignmentType: this.assignmentType,
+        enableEmailNotification: this.enableEmailNotification,
         progressId: progressId, // Pass progress ID to backend for progress updates
       };
 
