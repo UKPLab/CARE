@@ -534,7 +534,7 @@ export default {
     },
     isWorkflowMappingComplete() {
       if (!this.targetWorkflowId) return false;
-      return this.workflowSteps.every((step, index) => {
+      return this.workflowSteps.every((step) => {
         return this.workflowMapping[step.id] !== undefined && this.workflowMapping[step.id] !== null;
       });
     },
