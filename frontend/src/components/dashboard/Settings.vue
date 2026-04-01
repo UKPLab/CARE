@@ -151,6 +151,7 @@ import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserS
 
 export default {
   name: "DashboardSettings",
+  subscribeTable: ["template"],
   components: {
     Card,
     LoadIcon,

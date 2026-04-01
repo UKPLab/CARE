@@ -55,6 +55,20 @@
         <p class="text-muted small mb-0">
           {{ scopeSummary }}
         </p>
+        <div class="form-check mt-3">
+          <input
+            id="notifySessionsCheckbox"
+            v-model="notifySessions"
+            class="form-check-input"
+            type="checkbox"
+          >
+          <label
+            class="form-check-label"
+            for="notifySessionsCheckbox"
+          >
+            Send email notification to participants with open sessions
+          </label>
+        </div>
       </div>
     </template>
 
@@ -89,11 +103,18 @@ export default {
   },
   data() {
     return {
+<<<<<<< feat-134-close_all_studies_options
       workflowScope: "",
       studyUserScope: "any",
     };
   },
   computed: {
+=======
+      notifySessions: false,
+    };
+  },
+  computed:{
+>>>>>>> dev
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
@@ -164,8 +185,12 @@ export default {
   },
   methods: {
     open() {
+<<<<<<< feat-134-close_all_studies_options
       this.workflowScope = "";
       this.studyUserScope = "any";
+=======
+      this.notifySessions = false;
+>>>>>>> dev
       this.$refs.bulkCloseModal.open();
     },
     matchingOpenStudies() {
@@ -224,6 +249,7 @@ export default {
       const data = {
         projectId: this.projectId,
         ignoreClosedState: false,
+        notifySessions: this.notifySessions,
         progressId: this.$refs.bulkCloseModal.getProgressId(),
         bulkCloseUseIdList: true,
         studyIds: ids,
@@ -258,4 +284,7 @@ export default {
 </script>
 
 <style scoped>
+.form-check-label {
+  cursor: pointer;
+}
 </style>
