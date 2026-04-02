@@ -51,11 +51,7 @@
 
     <template #step-2>
 
-      <div v-if="wait">
-        <BasicLoading/>
-      </div>
-
-      <div v-else-if="dataSelection.exportType === 'reviewerList'">
+      <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>Exporting a list of all study sessions with hash:</p>
 
         <p>
@@ -64,36 +60,12 @@
         </p>
       </div>
       <div v-else-if="dataSelection.exportType === 'submissions'">
-        <h6>Select Submissions to Download:</h6>
-
-        <div v-if="submissionTableData.length > 0" class="mb-3" style="max-width: 300px;">
-          <b-form-select 
-            v-model="sharingFilter" 
-            :options="filterOptions"
-            size="sm"
-          ></b-form-select>
-        </div>
-
-        <BasicTable
-          v-if="filteredSubmissionTableData.length > 0"
+        <StepSelectStudents 
+          v-if="dataSelection.projectId"
+          :project-id="dataSelection.projectId" 
           v-model="submissionSelection" 
-          :columns="submissionTable.columns"
-          :data="filteredSubmissionTableData"
-          :options="submissionTable.options"
         />
-
-        <div v-else class="alert alert-warning">
-          <span v-if="submissionTableData.length === 0">
-            No submissions found for this project.
-          </span>
-          <span v-else>
-            No submissions match your current filter.
-          </span>
-        </div>
-
-        <small class="text-muted">
-          {{ submissionSelection.length }} student(s) selected
-        </small>
+        <!-- We send the project ID and get the selected students back -->
       </div>
       <div v-else>
         <p>Exporting all data</p>
@@ -115,27 +87,22 @@
     </template>
 
     
-    <template #step-3>
-      <div v-if="wait">
-        <BasicLoading/>
-      </div>
-      <div v-if="dataSelection.exportType === 'submissions'" class="mb-3">
-        <h6>Confirm Selection:</h6>
-        <div class="alert alert-info">
-          <strong>Summary:</strong><br />
-          You are about to download submissions for 
-          <strong>{{ submissionSelection.length }}</strong> student(s).
-        </div>
+    <template #step-3 v-if="dataSelection.exportType === 'submissions'">
+      <StepOptions 
+        v-model:anonymizeNames="anonymizeNames"
+        v-model:fakerSeed="fakerSeed"
+      />
+      <!-- We get the info back if user wants to anonymize names and the seed that should be used for this -->
+    </template>
 
-        <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
-          <ul class="mb-0 pl-3">
-            <li v-for="row in submissionSelection" :key="row.userId">
-              {{ row.studentName }} ({{ row.fileCount }} files)
-            </li>
-          </ul>
-        </div>
-
-      </div>
+    <template #step-4 v-if="dataSelection.exportType === 'submissions'">
+      <StepConfirmDownload 
+        v-if="dataSelection.exportType === 'submissions'"
+        :wait="wait"
+        :anonymize-names="anonymizeNames"
+        :submission-selection="submissionSelection"
+      />
+      <!-- We send the info the anonymizeNames because it is needed to show the warning talking about the mapping CSV -->
     </template>
 
   </StepperModal>
@@ -143,7 +110,6 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
-import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import {computed} from "vue";
 import {downloadObjectsAs} from "@/assets/utils";
@@ -152,6 +118,10 @@ import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
 import BasicLoading from "@/basic/Loading.vue";
+import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
+import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
+import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
+import getServerURL from "@/assets/serverUrl.js";
 
 
 /**
@@ -161,7 +131,7 @@ import BasicLoading from "@/basic/Loading.vue";
  */
 export default {
   name: "ExportProjectModal",
-  components: {BasicLoading, StepperModal, BasicForm, BasicTable },
+  components: { BasicLoading, StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -195,55 +165,33 @@ export default {
       },
       filter: [],
       wait: false,
-
-      sharingFilter: 'all',
-      filterOptions: [
-        { value: 'all', text: 'Show All Students' },
-        { value: 'accepted', text: 'Only Accepted Data Sharing' },
-        { value: 'declined', text: 'Only Declined Data Sharing' }
-      ],
-
+      // Data for Export Submissions
       submissionSelection: [],
-
-      submissionTable: {
-        options: {
-          selectableRows: true,
-          selectMode: 'multi',
-          pagination: 10,
-          striped: true,
-          hover: true
-        },
-        columns: [
-          { name: "Student Name", key: "studentName", sortable: true },
-          { name: "Files", key: "fileCount", sortable: true },
-          { name: "Accepted Data Sharing", key: "acceptDataSharing", sortable: true },
-          { name: "Last Submitted", key: "lastSubmissionDate", sortable: true }
-        ]
-      }
+      anonymizeNames:false,
+      fakerSeed: 846569412
     };
   },
   computed: {
     stepValid() {
       if (this.dataSelection.exportType === "submissions") {
         return [
-          !!this.dataSelection.projectId,
-          this.submissionSelection.length > 0,
-          !this.wait
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
+          this.submissionSelection.length > 0, // must select at least one student
+          true,
+          true
         ];
       }
       return [
-        !!this.dataSelection.exportType,
+        !!this.dataSelection.projectId && !!this.dataSelection.exportType,
         true
       ];
-    },
-    users() {
-      return this.$store.getters["table/user/getAll"];
     },
     steps() {
       if (this.dataSelection.exportType === 'submissions') {
         return [
           { title: "Settings" },
           { title: "Select Students" },
+          { title: "Options" },
           { title: "Confirm Download" }
         ];
       }
@@ -328,61 +276,6 @@ export default {
     projects() {
       return this.$store.getters["table/project/getAll"];
     },
-    submissionTableData() {
-      const currentUser = this.$store.getters["auth/getUser"];
-      
-      if (!this.documents || !this.users || !this.dataSelection.projectId) {
-        return [];
-      }
-
-      const projectDocs = this.documents.filter(doc => doc.projectId == this.dataSelection.projectId && doc.submissionId && !doc.parentSubmissionId);
-      const submissionsByUser = {};
-      projectDocs.forEach(doc => {
-        const uid = doc.userId;
-        if (!uid) return;
-
-        let student = this.users.find(u => u.id === uid);
-        if (!student && currentUser && currentUser.id === uid) {
-          student = currentUser;
-        }
-
-        if (student) {
-          const currentDocDate = new Date(doc.createdAt);
-
-          if (!submissionsByUser[uid]) {
-            submissionsByUser[uid] = {
-              userId: uid,
-              studentName: `${student.firstName} ${student.lastName}`,
-              fileCount: 0,
-              acceptDataSharing: student.acceptDataSharing,
-              lastSubmissionDate: currentDocDate
-            };
-          }
-          submissionsByUser[uid].fileCount++;
-
-          if (currentDocDate > submissionsByUser[uid].lastSubmissionDate) {
-            submissionsByUser[uid].lastSubmissionDate = currentDocDate;
-          }
-        }
-      });
-      return Object.values(submissionsByUser).map(submission => ({
-        ...submission,
-        lastSubmissionDate: submission.lastSubmissionDate.toISOString().split('T')[0]
-      }));
-    },
-    filteredSubmissionTableData() {
-      let data = this.submissionTableData;
-
-      if (this.sharingFilter === 'accepted') {
-        return data.filter(row => row.acceptDataSharing === true);
-      } 
-      
-      if (this.sharingFilter === 'declined') {
-        return data.filter(row => row.acceptDataSharing === false);
-      }
-
-      return data;
-    }
   },
   methods: {
     open(projectId) {
@@ -458,23 +351,23 @@ export default {
       return results;
     },
     async downloadSubmissions() {
-      this.wait = true;
-
       try {
+        // get the selected student's user ids
         const selectedUserIds = this.submissionSelection.map(row => row.userId);
 
+        // call helper function to trigger the stream download
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
           exportType: 'submissions',
-          userIds: selectedUserIds
+          userIds: selectedUserIds,
+          anonymizeNames: this.anonymizeNames,
+          fakerSeed: this.anonymizeNames ? this.fakerSeed : null
         });
 
-        this.wait = false;
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);
-        alert("An error occurred starting the stream.");
-        this.wait = false;
+        this.$toast.error("An error occurred starting the stream. Please try again.");
       }
     },
     async downloadAllData() {
@@ -585,7 +478,7 @@ export default {
       this.$refs.exportStepper.close();
     },
     triggerStreamDownload(payload) {
-      const serverUrl = import.meta.env.VITE_APP_SERVER_URL || "";
+      const serverUrl = getServerURL();
     
       const form = document.createElement('form');
       form.method = 'POST';
