@@ -120,6 +120,7 @@ export default {
     commentStates(newVal, oldVal) {
       newVal.filter(s => !oldVal.includes(s)).forEach(state => {
         const annotation = this.getAnnotationByCommentState(state);
+        if (!annotation) {return false};
         const annotationPage = annotation?.selectors?.target?.[0]?.selector?.find(s => s.type === 'PagePositionSelector').number;
         const isCollapsed = this.collapsedAnnotationIds.includes(annotation.id);
         const isPageLoaded = this.isPdfPageLoaded(annotationPage);
@@ -518,9 +519,10 @@ export default {
       return textNodes;
     },
     getAnnotationByCommentState(state) {
-      let comment = this.$store.getters['table/comment/get'](state.commentId);
-      let annotation = this.$store.getters['table/annotation/get'](comment.annotationId);
-      return annotation;
+      const comment = this.$store.getters['table/comment/get'](state.commentId);
+      if (!comment) return null;
+      const annotation = this.$store.getters['table/annotation/get'](comment.annotationId);
+      return annotation || null;
     },
   }
 }

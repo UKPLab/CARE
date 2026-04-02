@@ -38,9 +38,9 @@
             <!-- Form - only show when token is validated and not successful yet -->
             <div v-if="!isSuccess && tokenValidated && !validatingToken">
               <BasicForm
+                ref="resetForm"
                 v-model="formData"
                 :fields="fields"
-                ref="resetForm"
               />
             </div>
 
@@ -54,8 +54,8 @@
               <BasicButton
                   v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
                   :class="isSuccess ? 'btn btn-success w-full max-w-xs' : 'btn btn-secondary w-full max-w-xs'"
-                  @click="toLogin"
                   :text="isSuccess ? 'Return to Login' : 'Back to Login'"
+                  @click="toLogin"
               />
           </div>
         </div>

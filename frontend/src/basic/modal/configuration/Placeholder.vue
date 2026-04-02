@@ -17,21 +17,21 @@
 
         <FormSelect
           v-if="field.name === 'skillName' && nlpSkills.length"
+          :key="'field-' + field.name + '-' + index"
           v-model="formData[field.name]"
           :options="skillMap"
           :required="field.required"
-          :key="'field-' + field.name + '-' + index"
         />
 
         <input
           v-else
+          :id="'field-' + field.name + '-' + index"
+          :key="'field-' + field.name + '--' + index"
+          v-model="formData[field.name]"
           type="text"
           class="form-control"
-          :id="'field-' + field.name + '-' + index"
           :placeholder="field.placeholder"
-          v-model="formData[field.name]"
           :required="field.required"
-          :key="'field-' + field.name + '--' + index"
         />
       </div>
     </div>

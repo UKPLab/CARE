@@ -31,9 +31,6 @@
             </div>
           </div>
         </div>
-        <div v-else-if="error">
-          <p class="text-danger">An error occurred while loading the study step. Please try again later.</p>
-        </div>
         <div v-else class="d-flex align-items-center">
           <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -118,6 +115,7 @@ export default {
   data() {
     return {
       error: false,
+      errorMessage:'',
       rotatingIndex: 0,
       documentData: null,
       nlpRequests: {},
@@ -276,6 +274,19 @@ export default {
               }
             } else {
               this.error = true;
+              this.errorMessage = response.message || 'An error occurred while loading the study step.';
+
+              this.$nextTick(() => {
+                if (this.$refs.modal) {
+                  this.close();
+                }
+              });
+              
+              this.$emit('error', {
+                code: response.code || 'UNKNOWN_ERROR',
+                message: response.message || 'An error occurred while loading the study step.'
+              });
+
             }
           }
       );

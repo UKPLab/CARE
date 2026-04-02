@@ -1,5 +1,5 @@
 import {omitObjectAttributeSubset} from "./utils";
-import {Validator} from "jsonschema";
+
 
 /**
  * Returns an object with nested objects representing the thread of comments drawn from the provided list of

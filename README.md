@@ -1,6 +1,6 @@
-# CARE - Collaborative AI-Assisted Reading Environment
+# CARE - Collaborative AI-Assisted Research Environment
 
-CARE is a collaborative reading environment that allows users to read and annotate documents together.
+CARE is a collaborative research environment that allows users to read and annotate documents together.
 
 A demo of the latest public version is available under https://care.ukp.informatik.tu-darmstadt.de.
 

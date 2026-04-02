@@ -9,10 +9,10 @@
     <template #body>
       <div v-if="!isLoading" class="form-check mt-3">
         <input
-          class="form-check-input"
-          type="checkbox"
           id="downloadWithAnnotations"
           v-model="downloadWithAnnotations"
+          class="form-check-input"
+          type="checkbox"
         />
         <label class="form-check-label" for="downloadWithAnnotations">
           Include annotations in PDF

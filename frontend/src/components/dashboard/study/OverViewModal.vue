@@ -47,6 +47,7 @@
         :data="filteredStudySessions"
         :options="tableOptions"
         @action="handleAction"
+        :max-table-height="'60vh'"
       />
     </template>
     <template #footer>
@@ -97,6 +98,8 @@ export default {
         { name: "Last Name", key: "lastName", sortable: true },
         { name: "Max Step", key: "currentStep", sortable: true },
         { name: "Created At", key: "createdAt", sortable: true },
+        { name: "Last updated", key: "updatedAt", sortable: true },
+        { name: "Number of Steps", key: "numSteps", sortable: true },
         {
           name: "Status",
           key: "status",
@@ -129,6 +132,9 @@ export default {
       return sessions.map((session) => {
         const study = studies.find(s => s.id === session.studyId);
         const currentStepIndex = this.$store.getters["table/study_step/get"](session.studyStepIdMax)?.stepNumber ?? null;
+        const studySteps = this.$store.getters["table/study_step/getFiltered"](
+          (step) => step.studyId === session.studyId
+        );
         
         return {
           id: session.id,
@@ -139,6 +145,7 @@ export default {
           currentStep: currentStepIndex !== null ? `Step ${currentStepIndex}` : 'N/A',
           createdAt: new Date(session.createdAt).toLocaleString(),
           updatedAt: new Date(session.updatedAt).toLocaleString(),
+          numSteps: studySteps.length,  
           status: session.end === null ? "Running" : "Finished",
           hash: session.hash,
         };

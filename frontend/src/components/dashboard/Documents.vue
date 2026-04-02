@@ -26,6 +26,7 @@
           :options="options"
           :buttons="buttons"
           @action="action"
+          :max-table-height="'65vh'"
       />
       <EditorDownload ref="editorDownload"/>
     </template>
@@ -63,7 +64,7 @@ import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
  */
 export default {
   name: "DashboardDocument",
-  subscribeTable: ["document", "study"],
+  subscribeTable: ["document", "study", "template"],
   components: {
     StudyModal,
     UploadModal,

@@ -32,25 +32,27 @@ module.exports = (sequelize, DataTypes) => {
          *   - If not provided or empty, copies ALL annotations (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
-         * @param {Object} transaction - The database transaction
+         * @param {number|null} targetStudySessionId - Optional study session ID to set for the duplicated annotations (overrides original value)
+         * @param {number|null} targetStudyStepId - Optional study step ID to set for the duplicated annotations (overrides original value)
+         * @param {Object} options - Database options including transaction
          * @returns {Promise<Array>} Array of duplicated annotations with their comments
          * 
          * @example
          * // Copy all annotations (default)
-         * await duplicateAnnotations(1, 2, null, transaction);
+         * await duplicateAnnotations(1, 2, null, null, null, options);
          * 
          * @example
          * // Copy only null entries
-         * await duplicateAnnotations(1, 2, { studySessionId: null, studyStepId: null }, transaction);
+         * await duplicateAnnotations(1, 2, { studySessionId: null, studyStepId: null }, null, null, options);
          * 
          * @example
          * // Copy multiple conditions
          * await duplicateAnnotations(1, 2, [
          *   { studySessionId: null, studyStepId: null },
          *   { studySessionId: 45, studyStepId: 12 }
-         * ], transaction);
+         * ], options);
          */
-        static async duplicateAnnotations(originalDocumentId, duplicatedDocumentId, filters = null, transaction) {
+        static async duplicateAnnotations(originalDocumentId, duplicatedDocumentId, filters = null, targetStudySessionId = null, targetStudyStepId = null, options) {
             // Build where clause: start with documentId
             const whereClause = {
                 documentId: originalDocumentId,
@@ -79,7 +81,7 @@ module.exports = (sequelize, DataTypes) => {
             const originalAnnotations = await this.findAll({
                 where: whereClause,
                 raw: true,
-                transaction
+                transaction: options.transaction
             });
             
             const duplicatedAnnotations = [];
@@ -95,17 +97,21 @@ module.exports = (sequelize, DataTypes) => {
                     selectors: originalAnnotation.selectors,
                     draft: originalAnnotation.draft,
                     anonymous: originalAnnotation.anonymous,
-                    deleted: false
+                    deleted: false,
+                    studySessionId: targetStudySessionId,
+                    studyStepId: targetStudyStepId
                 };
                 
-                const duplicatedAnnotation = await this.add(baseData, {transaction});
+                const duplicatedAnnotation = await this.add(baseData, {transaction: options.transaction});
                 
                 // Duplicate all comments for this annotation
                 await sequelize.models.comment.duplicateComments(
                     originalAnnotation.id,
                     duplicatedAnnotation,
                     filters,
-                    transaction
+                    targetStudySessionId,
+                    targetStudyStepId,
+                    options
                 );
                 
                 duplicatedAnnotations.push(duplicatedAnnotation);

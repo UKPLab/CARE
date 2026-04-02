@@ -34,7 +34,7 @@
           <div class="input-group mb-2">
             <label class="form-label">First Data Source:</label>
             <select :value="formData[index]?.dataInput?.[0]?.value || ''"
-              @change="updateComparisonInput(index, 0, $event.target.value)" class="form-control">
+              class="form-control" @change="updateComparisonInput(index, 0, $event.target.value)">
               <option value="">Select first data source...</option>
               <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-0`"
                 :value="source.value" :data-step-id="source.stepId">
@@ -46,7 +46,7 @@
           <div class="input-group mb-2">
             <label class="form-label">Second Data Source:</label>
             <select :value="formData[index]?.dataInput?.[1]?.value || ''"
-              @change="updateComparisonInput(index, 1, $event.target.value)" class="form-control">
+              class="form-control" @change="updateComparisonInput(index, 1, $event.target.value)">
               <option value="">Select second data source...</option>
               <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-1`"
                 :value="source.value" :data-step-id="source.stepId">
@@ -60,7 +60,7 @@
         <div v-else class="single-input">
           <label class="form-label">Data Source:</label>
           <select :value="formData[index]?.dataInput?.value || ''"
-            @change="updateSingleInput(index, $event.target.value)" class="form-control">
+            class="form-control" @change="updateSingleInput(index, $event.target.value)">
             <option value="">Select data source...</option>
             <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}`"
               :value="source.value" :data-step-id="source.stepId">
@@ -165,7 +165,7 @@ export default {
       immediate: true
     },
     formData: {
-      handler(newVal) {
+      handler(_newVal) {
         const updated = {
           text: this.formatPlaceholder(this.placeholderType.text),
           chart: this.formatPlaceholder(this.placeholderType.chart),
