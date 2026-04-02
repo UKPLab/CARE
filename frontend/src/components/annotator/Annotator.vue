@@ -22,8 +22,8 @@
 
         </div>
         <BasicSidebar
-            ref="basicSidebar"
             v-if="!sidebarDisabled"
+            ref="basicSidebar"
             :isShown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
@@ -343,7 +343,7 @@ export default {
   },
   watch: {
     // React to external changes to the saved scroll value (e.g., from store updates)
-    async savedScroll(newVal, oldVal) {
+    async savedScroll(newVal, _oldVal) {
       if (newVal) {
         await this.scrollToSavedValue(newVal.value, 1000);
       }

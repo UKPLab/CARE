@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
+const {getEmailContent} = require("../../utils/emailHelper");
 
 /**
  * Handle user through websocket
@@ -29,12 +30,25 @@ class AssignmentSocket extends Socket {
     async createAssignment(data, options) {
 
         const templateStudySteps = await this.models['study_step'].getAllByKey("studyId", data['template'].id);
+        const workflowSteps = await this.models['workflow_step'].getSortedWorkflowSteps(data['template'].workflowId);
+        const workflowStepById = Object.fromEntries(workflowSteps.map((ws) => [ws.id, ws]));
+
         const stepDocuments = [];
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
                 const stepDocument = data['documents'].find(doc => doc.workflowStepId === step.workflowStepId) || null;
-                const stepDocumentId = stepDocument ? stepDocument.documentId : null;
-                
+                const hasOverride = stepDocument != null && stepDocument.documentId != null;
+                let stepDocumentId = hasOverride ? stepDocument.documentId : step.documentId;
+                if (!hasOverride) {
+                    const workflowStep = workflowStepById[step.workflowStepId];
+                    if (workflowStep && workflowStep.workflowStepDocument != null) {
+                        const refStudyStep = templateStudySteps.find((s) => s.workflowStepId === workflowStep.workflowStepDocument);
+                        if (refStudyStep && refStudyStep.documentId != null) {
+                            stepDocumentId = refStudyStep.documentId;
+                        }
+                    }
+                }
+
                 // Determine assignment type and gather context for template replacement
                 let assignmentType, contextData;
                 
@@ -43,7 +57,7 @@ class AssignmentSocket extends Socket {
                     contextData = {
                         assignmentType: assignmentType,
                         submissionId: stepDocument?.submissionId || null,
-                        documentId: stepDocument?.documentId || null
+                        documentId: stepDocumentId|| null
                     };
                 } else if (data.assignmentType === 'submission') {
                     assignmentType = 'submission';
@@ -90,15 +104,21 @@ class AssignmentSocket extends Socket {
             resumable: true,
             stepDocuments: stepDocuments
         }
+        // Check if email notifications are enabled
+        const enableEmailNotification = data.enableEmailNotification || false;
+
         const study = await this.models["study"].add(new_study, {
             transaction: options.transaction, 
             context: new_study, 
             doNotDuplicate: data.assignmentType === 'study_session'
         });
 
-
         await this.addReviewer({
-            studyId: study.id, reviewer: data["reviewer"]
+            studyId: study.id, 
+            reviewer: data["reviewer"],
+            assignmentType: data.assignmentType || 'document',
+            assignmentName: study.name,
+            enableEmailNotification: enableEmailNotification
         }, options);
 
     }
@@ -132,11 +152,27 @@ class AssignmentSocket extends Socket {
             }
         }
 
-        await Promise.all(data['reviewer'].map(reviewer => {
+        const createdSessions = await Promise.all(data['reviewer'].map(reviewer => {
             return this.models["study_session"].add({
                 studyId: data['studyId'], userId: reviewer['id'],
             }, {transaction: options.transaction});
         }));
+
+        // Send assignment notification emails if enabled
+        if (data.enableEmailNotification && createdSessions.length > 0) {
+            options.transaction.afterCommit(async () => {
+                try {
+                    for (const session of createdSessions) {
+                        await this.sendAssignmentEmail(session, {
+                            assignmentType: data.assignmentType || 'document',
+                            assignmentName: data.assignmentName || currentStudy.name
+                        });
+                    }
+                } catch (error) {
+                    this.server.logger.error(`Failed to send assignment emails:`, error);
+                }
+            });
+        }
 
     }
 
@@ -316,7 +352,11 @@ class AssignmentSocket extends Socket {
                 }
             }
 
-            for (const [assignmentId, reviewerIds] of Object.entries(finalAssignments)) {
+            const assignmentEntries = Object.entries(finalAssignments);
+            const totalAssignments = assignmentEntries.length;
+            let currentAssignment = 0;
+
+            for (const [assignmentId, reviewerIds] of assignmentEntries) {
                 const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
                 const assignmentData = {
@@ -326,8 +366,20 @@ class AssignmentSocket extends Socket {
                     documents: assignment["document"],
                     // Pass through optional properties if they exist
                     ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                    ...(data.emailTemplateId && { emailTemplateId: data.emailTemplateId }),
+                    enableEmailNotification: data.enableEmailNotification,
                 };
                 await this.createAssignment(assignmentData, options);
+
+                // Emit progress update
+                currentAssignment++;
+                if (data.progressId) {
+                    this.socket.emit("progressUpdate", {
+                        id: data.progressId,
+                        current: currentAssignment,
+                        total: totalAssignments
+                    });
+                }
             }
 
             return finalAssignments;
@@ -402,6 +454,10 @@ class AssignmentSocket extends Socket {
             }
 
             // create the final assignments
+            // Count total assignments for progress tracking
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
+
             for (const [reviewerId, assignments] of Object.entries(finalAssignments)) {
                 for (const assignment of assignments) {
                     const assignmentData = {
@@ -411,8 +467,20 @@ class AssignmentSocket extends Socket {
                         documents: assignment["document"],
                         // Pass through optional properties if they exist
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
+                        ...(data.emailTemplateId && { emailTemplateId: data.emailTemplateId }),
+                        enableEmailNotification: data.enableEmailNotification,
                     };
                     await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
                 }
             }
 
@@ -441,6 +509,8 @@ class AssignmentSocket extends Socket {
             }
 
             // Create the final assignments
+            const totalAssignments = Object.values(finalAssignments).reduce((sum, arr) => sum + arr.length, 0);
+            let currentAssignment = 0;
             for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
                 for (const assignmentId of assignmentIds) {
                     const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
@@ -455,6 +525,16 @@ class AssignmentSocket extends Socket {
                         ...(data.assignmentType && { assignmentType: data.assignmentType }),
                     };
                     await this.createAssignment(assignmentData, options);
+
+                    // Emit progress update
+                    currentAssignment++;
+                    if (data.progressId) {
+                        this.socket.emit("progressUpdate", {
+                            id: data.progressId,
+                            current: currentAssignment,
+                            total: totalAssignments
+                        });
+                    }
                 }
             }
 
@@ -545,6 +625,57 @@ class AssignmentSocket extends Socket {
         }
 
         return result;
+    }
+
+    /**
+     * Send assignment notification email using configured template
+     * @param {Object} studySession - Study session object
+     * @param {Object} assignmentContext - Assignment context data
+     * @param {string} assignmentContext.assignmentType - Type of assignment ('document' or 'submission')
+     * @param {string} assignmentContext.assignmentName - Name of the assignment
+     * @returns {Promise<void>}
+     */
+    async sendAssignmentEmail(studySession, assignmentContext = {}) {
+        const study = await this.models['study'].getById(studySession.studyId);
+        if (!study) return;
+
+        // Get reviewer email
+        const user = await this.models['user'].getById(studySession.userId);
+        if (!user || !user.email) {
+            this.server.logger.warn(`Cannot send assignment email: user ${studySession.userId} has no email`);
+            return;
+        }
+
+        // Get baseUrl from settings
+        const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
+        const assignmentLink = `http://${baseUrl}/session/${studySession.hash}`;
+
+        // Get email content from template or fallback. Set context.link so ~link~ resolves to /session/ for the reviewer.
+        const emailContent = await getEmailContent(
+            "email.template.assignment",
+            "assignment",
+            {
+                userId: studySession.userId,
+                creatorId: study.userId,
+                studyId: study.id,
+                studySessionId: studySession.id,
+                studySessionHash: studySession.hash,
+                baseUrl: baseUrl,
+                link: assignmentLink,
+                assignmentType: assignmentContext.assignmentType || 'document',
+                assignmentName: assignmentContext.assignmentName || study.name
+            },
+            this.models,
+            this.logger
+        );
+
+        // Send email
+        await this.server.sendMail(
+            user.email,
+            emailContent.subject,
+            emailContent.body,
+            { isHtml: emailContent.isHtml }
+        );
     }
 
     /**

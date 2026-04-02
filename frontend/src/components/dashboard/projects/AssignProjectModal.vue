@@ -33,6 +33,7 @@
           :columns="table.columns"
           :data="users"
           :options="table.options"
+          :max-table-height="'60vh'"
         />
         <small class="text-muted"
           >{{ Object.keys(userSelection || {}).length }} user(s) selected</small
@@ -112,6 +113,7 @@ export default {
           small: false,
           selectableRows: true,
           pagination: 10,
+          search: true,
         },
         columns: [
           { name: "User Id", key: "id", sortable: true },

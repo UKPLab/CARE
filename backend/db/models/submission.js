@@ -125,11 +125,10 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object>} Object containing copied submission and documents
          */
         static async copySubmission(originalSubmissionId, createdByUserId, submissionOverrides = {}, documentOverrides = {}, filters= {}, options = {}) {
-            const transaction = options.transaction;
 
             // Get the original submission
             const originalSubmission = await Submission.findByPk(originalSubmissionId, {
-                transaction
+                transaction: options.transaction
             });
 
             if (!originalSubmission) {
@@ -150,13 +149,13 @@ module.exports = (sequelize, DataTypes) => {
                     deleted: false,
                     ...submissionOverrides, // Apply submission-specific overrides (e.g., hideInFrontend)
                 },
-                {transaction}
+                {transaction: options.transaction}
             );
 
             // Get all documents associated with the original submission
             const originalDocuments = await sequelize.models.document.findAll({
                 where: {submissionId: originalSubmissionId},
-                transaction
+                transaction: options.transaction
             });
 
             // Copy every associated document and track mapping
@@ -174,7 +173,7 @@ module.exports = (sequelize, DataTypes) => {
                         originalDoc.id,
                         mergedDocumentOverrides,
                         filters,
-                        {transaction}
+                        options
                     );
                     copiedDocuments.push(copiedDoc);
                 } catch (error) {

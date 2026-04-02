@@ -171,7 +171,7 @@ export default {
               this.pdf = new PDF();
               this.pdf.setPDF(pdf);
             })
-            .catch(response => {
+            .catch(_response => {
               this.eventBus.emit('toast', {
                 title: "PDF Loading Error",
                 message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",

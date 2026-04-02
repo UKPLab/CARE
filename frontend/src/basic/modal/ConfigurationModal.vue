@@ -28,8 +28,8 @@
         >
           <template #content>
             <GeneralSettingStep  
-              @validation-change="handleGeneralValidationChange"
               :modelValue="stepConfig"
+              @validation-change="handleGeneralValidationChange"
               @update:form-data="handleGeneralFormDataUpdate"
             />
           </template>

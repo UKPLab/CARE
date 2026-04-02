@@ -1,6 +1,6 @@
 <template>
   <!-- Edits Section: Only visible when there are edits and no annotations -->
-  <div class="edits-section" v-if="showEdits">
+  <div v-if="showEdits" class="edits-section">
     <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
       <h4 class="group-header">{{ dateCategory }}</h4>
 
@@ -91,7 +91,7 @@ import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 
-import {scrollElement} from "@/assets/anchoring/scroll";
+
 
 /** Sidebar component of the Annotator
  *
@@ -349,7 +349,6 @@ export default {
       }
     },
     async sidebarScrollTo(commentId) {
-      const scrollContainer = this.$refs.sidepane;
       this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
       //await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);

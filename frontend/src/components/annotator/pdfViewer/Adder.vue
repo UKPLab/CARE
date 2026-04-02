@@ -1,24 +1,24 @@
 <template>
   <div
-    ref="adder"
     id="adder"
+    ref="adder"
     :style="{visibility: isVisible ? 'visible':'hidden'}"
     :class="{ 'is-extended': isExtended }"
   > 
     <div
-      class="menu-search-bar" 
-      v-if="isExtended">
+      v-if="isExtended" 
+      class="menu-search-bar">
       <input
-        type="text"
         v-model="searchTerm"
+        type="text"
         placeholder="Search tags"
         class="form-control"
         @mouseup.stop
       />
     </div> 
     <div 
-      class="scrollable-menu-wrapper"
       ref="adderWrapper"
+      class="scrollable-menu-wrapper"
       :class="{ 'is-extended': isExtended }"
     >
       <div
@@ -41,9 +41,9 @@
     </div>
     <button
       v-if="shouldShowExtender"
-      @click="isExtended=true"
       class="expand-btn btn "
       title="Expand Adder"
+      @click="isExtended=true"
     >
     <i class="bi bi-three-dots"></i>
     </button>
@@ -372,7 +372,7 @@ export default {
       // check if text exists at all
       try {
         this.getTextLayerForRange(range);
-      } catch {
+      } catch (_error) {
         this._onClearSelection();
         return;
       }
@@ -487,7 +487,7 @@ export default {
       // text nodes rather than any containing nodes.
       try {
         range = TextRange.fromRange(range).toRange();
-      } catch {
+      } catch (_error) {
         throw new Error('Selection does not contain text');
       }
 

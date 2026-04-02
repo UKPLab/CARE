@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:20.18.1-alpine
+FROM node:20.19-alpine
 ARG ENV
 ENV ENV=$ENV
 

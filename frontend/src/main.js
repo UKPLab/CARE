@@ -31,6 +31,11 @@ import {BToastPlugin} from 'bootstrap-vue-3'
 app.use(BootstrapVue3);
 app.use(BToastPlugin);
 
+// VNetworkGraph
+import VNetworkGraph from 'v-network-graph';
+import 'v-network-graph/lib/style.css';
+app.use(VNetworkGraph);
+
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
 // Server URL for hot reload

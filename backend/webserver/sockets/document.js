@@ -9,6 +9,8 @@ const {enqueueDocumentTask} = require("../../utils/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
 const {Op} = require('sequelize');
+const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
+const {generateError} = require("../../utils/generic.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -69,6 +71,49 @@ class DocumentSocket extends Socket {
 
 
         return false;
+    }
+
+    /**
+     * Validate document existence and access
+     * Unified check for: 1) database record exists  2) user has access  3) file exists on disk
+     * 
+     * @param {number|string} identifier - documentId or documentHash
+     * @param {string} identifierType - 'id' or 'hash'
+     * @param {boolean} checkFile - whether to check file existence (default: true)
+     * @returns {Promise<Object>} - validated document object
+     * @throws {Error} - if validation fails, with error.code set to the error code
+     */
+
+    async validateDocument(identifier, identifierType = 'id', checkFile = true) {
+        let document;
+        let errorCode = "UNKNOWN"
+        let errorMessage = ""
+
+        if (identifierType === 'hash') {
+            document = await this.models['document'].getByHash(identifier);
+        } else {
+            document = await this.models['document'].getById(identifier);
+        }
+
+        // Check if document exists in database (deleted or never existed)
+        if (!document || document.deleted) {
+            throw generateError("DOCUMENT_NOT_FOUND", "The document does not exist or has been deleted.");
+        }
+
+        // Check user access permission
+        if (!(await this.checkDocumentAccess(document.id))) {
+            throw generateError("ACCESS_DENIED", "You do not have access to this document.");
+        }
+
+        // Check if file exists on disk (optional, skip for metadata-only operations)
+        if (checkFile && document.type === this.models['document'].docTypes.DOC_TYPE_PDF) {
+            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
+            const filename = filePath.split("/").pop();
+            if (!fs.existsSync(filePath)) {
+                throw generateError("FILE_MISSING", `The document file ${filename} is missing from the server.`)
+            }
+        }
+        return document;
     }
 
     /**
@@ -294,6 +339,7 @@ class DocumentSocket extends Socket {
      * @param {Object} data The data for the new document.
      * @param {string} data.name The name of the new document.
      * @param {number} data.type The type identifier for the document (e.g., HTML, MODAL).
+     * @param {number} [data.templateId] Optional template ID to pre-fill document content (Type 4: Document - General).
      * @param {Object} options The options object containing the transaction.
      * @returns {Promise<Object>} A promise that resolves with the newly created document's database record.
      */
@@ -304,6 +350,16 @@ class DocumentSocket extends Socket {
             userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
+
+        // If templateId provided and document is HTML/MODAL type, resolve template and write content
+        if (data.templateId && (doc.type === docTypes.DOC_TYPE_HTML || doc.type === docTypes.DOC_TYPE_MODAL)) {
+            await applyTemplateToDocument(
+                doc,
+                data.templateId,
+                this.models,
+                {transaction: options.transaction, logger: this.server.logger}
+            );
+        } 
 
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
@@ -351,13 +407,8 @@ class DocumentSocket extends Socket {
      */
     async sendByHash(data, options) {
         const documentHash = data.documentHash;
-        const document = await this.models['document'].getByHash(documentHash);
-        if (await this.checkDocumentAccess(document.id)) {
-            this.emit("documentRefresh", document);
-        } else {
-            this.logger.error("Document access error with documentId: " + document.id);
-            this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
-        }
+        const document = await this.validateDocument(documentHash, 'hash', true)
+        this.emit("documentRefresh", document);
     }
 
     /**
@@ -508,12 +559,12 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once all relevant data has been fetched and emitted to the client.
      */
     async getData(data, options) {
-        if (!data.documentId || !await this.checkDocumentAccess(data.documentId)) {
-            throw new Error("No access to document");
+        if (!data.documentId) {
+            throw new Error("Document ID is required.");
         }
+        
+        const document = await this.validateDocument(data.documentId, 'id', true);
 
-
-        const document = await this.models['document'].getById(data['documentId']);
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
             await this.getDocument({...data, "history": true}, options);
         } else {
@@ -956,18 +1007,12 @@ class DocumentSocket extends Socket {
      *  If the document's PDF file (.pdf) for a PDF document is missing from the filesystem.
      */
     async getDocument(data, options) {
-        const document = await this.models['document'].getById(data['documentId']);
-
-        if (!(await this.checkDocumentAccess(document.id))) {
-            throw new Error("You do not have access to this document");
-        }
+        // Unified validation (checks db record, access, and file existence)
+        const document = await this.validateDocument(data['documentId'], 'id', true);
 
         if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
-
-            if (!fs.existsSync(deltaFilePath)) {
-                throw new Error("Document not found");
-            }
+            
             let delta = await this.loadDocument(deltaFilePath);
 
             if (data.history) {
@@ -997,7 +1042,6 @@ class DocumentSocket extends Socket {
                     delta = delta.compose(dbToDelta(edits));
                     return {document: document, deltas: delta};
                 } else {
-
                     // Get the edits for the base document
                     const edits = await this.models['document_edit'].findAll({
                         where: {
@@ -1097,6 +1141,8 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with the retrieved `document_data` record object from the database.
      */
     async getDocumentData(data, options) {
+        const docuemt = await this.validateDocument(data.documentId, 'id', true);
+
         const whereClause = {
             documentId: data.documentId,
             deleted: false,

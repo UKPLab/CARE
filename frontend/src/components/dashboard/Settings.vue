@@ -151,6 +151,7 @@ import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserS
 
 export default {
   name: "DashboardSettings",
+  subscribeTable: ["template"],
   components: {
     Card,
     LoadIcon,
@@ -183,7 +184,7 @@ export default {
       if (!this.settings || this.originalSettingsSnapshot === null) return false;
       try {
         return JSON.stringify(this.settings) !== this.originalSettingsSnapshot;
-      } catch (e) {
+      } catch (_error) {
         return true;
       }
     },
