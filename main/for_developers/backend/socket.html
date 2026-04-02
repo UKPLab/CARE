@@ -113,6 +113,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -1198,6 +1199,25 @@ it adds <cite>documentId</cite>. The original template object properties are pre
 </dl>
 </dd></dl>
 
+<dl class="js function">
+<dt class="sig sig-object js" id="AssignmentSocket.sendAssignmentEmail">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendAssignmentEmail</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">studySession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assignmentContext</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.sendAssignmentEmail" title="Link to this definition"></a></dt>
+<dd><p>Send assignment notification email using configured template</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>studySession</strong> (<strong>Object</strong>) – Study session object</p></li>
+<li><p><strong>assignmentContext</strong> (<strong>Object</strong>) – Assignment context data</p></li>
+<li><p><strong>assignmentContext.assignmentType</strong> (<strong>string</strong>) – Type of assignment (‘document’ or ‘submission’)</p></li>
+<li><p><strong>assignmentContext.assignmentName</strong> (<strong>string</strong>) – Name of the assignment</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1466,6 +1486,7 @@ If there is non existent on the given entity, it will create one, otherwise it w
 <li><p><strong>data</strong> (<strong>Object</strong>) – The data for the new document.</p></li>
 <li><p><strong>data.name</strong> (<strong>string</strong>) – The name of the new document.</p></li>
 <li><p><strong>data.type</strong> (<strong>number</strong>) – The type identifier for the document (e.g., HTML, MODAL).</p></li>
+<li><p><strong>data.templateId</strong> (<strong>number</strong>) – Optional template ID to pre-fill document content (Type 4: Document - General).</p></li>
 <li><p><strong>options</strong> (<strong>Object</strong>) – The options object containing the transaction.</p></li>
 </ul>
 </dd>
@@ -1922,6 +1943,31 @@ or a “toast” error message to the client.</p>
 </dl>
 </dd></dl>
 
+<dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.validateDocument">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">validateDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifierType=&quot;id&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkFile=true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.validateDocument" title="Link to this definition"></a></dt>
+<dd><p>Validate document existence and access
+Unified check for: 1) database record exists  2) user has access  3) file exists on disk</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>identifier</strong> (<strong>number|string</strong>) – documentId or documentHash</p></li>
+<li><p><strong>identifierType</strong> (<strong>string</strong>) – ‘id’ or ‘hash’</p></li>
+<li><p><strong>checkFile</strong> (<strong>boolean</strong>) – whether to check file existence (default: true)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – <ul class="simple">
+<li><p>if validation fails, with error.code set to the error code</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – - validated document object</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -2203,6 +2249,82 @@ has consented to statistics collection (<cite>acceptStats</cite> is true).</p>
 <dd><p>Handle all study sessions through websocket</p>
 <p>Loading the study sessions through websocket</p>
 <dl class="js function">
+<dt class="sig sig-object js" id="StudySessionSocket.copyStudySession">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">copyStudySession</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.copyStudySession" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>studySessionCopy</cite></p>
+<p>Duplicates a study session and assigns to user.
+This is used to copy a study session for a user when they want to start a new session with the same data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>) – The data object containing the study session information and target user IDs.</p></li>
+<li><p><strong>data.studySession</strong> (<strong>object</strong>) – The study session object to be duplicated.</p></li>
+<li><p><strong>data.userIds</strong> (<strong>Array.&lt;number&gt;</strong>) – An array of user IDs to assign the duplicated session to.</p></li>
+<li><p><strong>options</strong> (<strong>object</strong>) – Configuration for the database operation.</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – A Sequelize DB transaction object to ensure atomicity.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Array.&lt;StudySessions&gt;&gt;</strong> – A promise that resolves with an array of the newly created study session objects for each target user.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySessionSocket.finishStudySession">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">finishStudySession</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.finishStudySession" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>studySessionFinish</cite></p>
+<p>Finish a study session by setting its end date.
+Validates that the session exists, has not already ended, and that the study is not closed.
+Sends a session finish email after the transaction commits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>) – The data required to finish the session.</p></li>
+<li><p><strong>data.studySessionId</strong> (<strong>number</strong>) – The ID of the study session to finish.</p></li>
+<li><p><strong>options</strong> (<strong>object</strong>) – Configuration for the database operation.</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – A Sequelize DB transaction object to ensure atomicity.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong> – The updated study session object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySessionSocket.sendSessionFinishEmail">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendSessionFinishEmail</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">studySession</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.sendSessionFinishEmail" title="Link to this definition"></a></dt>
+<dd><p>Send session finish email using configured template or fallback</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>studySession</strong> (<strong>Object</strong>) – Study session object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySessionSocket.sendSessionStartEmail">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendSessionStartEmail</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">studySession</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.sendSessionStartEmail" title="Link to this definition"></a></dt>
+<dd><p>Send session start email using configured template or fallback</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>studySession</strong> (<strong>Object</strong>) – Study session object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="StudySessionSocket.sendSessionsByStudyId">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">StudySessionSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendSessionsByStudyId</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">studyId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySessionSocket.sendSessionsByStudyId" title="Link to this definition"></a></dt>
 <dd><p>Send all study sessions to the client
@@ -2314,6 +2436,28 @@ Each study is updated in its own database transaction. Progress is reported to t
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="StudySocket.closeStudy">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">closeStudy</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.closeStudy" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>studyClose</cite></p>
+<p>Close a single study by setting its closed flag.
+Validates that the study exists and is not already closed.
+Sends study closed emails after the transaction commits (optional, based on notifySessions flag).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>) – The data required to close the study.</p></li>
+<li><p><strong>data.studyId</strong> (<strong>number</strong>) – The ID of the study to close.</p></li>
+<li><p><strong>options</strong> (<strong>object</strong>) – Configuration for the database operation.</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – A Sequelize DB transaction object to ensure atomicity.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong> – The updated study object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="StudySocket.saveStudyAsTemplate">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">saveStudyAsTemplate</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.saveStudyAsTemplate" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>studySaveAsTemplate</cite></p>
@@ -2335,6 +2479,23 @@ This operation is restricted to the owner of the original study or an administra
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Promise.&lt;*&gt;</strong> – A promise that resolves with the newly created study template object from the database.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySocket.sendStudyClosedEmails">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendStudyClosedEmails</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">study</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.sendStudyClosedEmails" title="Link to this definition"></a></dt>
+<dd><p>Send study closed email to users with open/unfinished sessions.
+Uses Type 6 templates configured in settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>study</strong> (<strong>Object</strong>) – Study object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
