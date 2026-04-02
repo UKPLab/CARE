@@ -18,10 +18,19 @@ module.exports = function (server) {
 
         // check if user has right to see full names
         let hasPrivateInfoRight = false;
-        const userRightsObj = await server.db.models.user.getUserRights(currentUserId);  
-        if (userRightsObj) {
-            const allRights = Object.values(userRightsObj).flat();
-            hasPrivateInfoRight = allRights.includes('frontend.dashboard.studies.view.userPrivateInfo');
+
+        const roleIds = await server.db.models["user_role_matching"].getUserRolesById(currentUserId);
+        const isAdmin = await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
+        if (isAdmin) {
+            // override, admin has all rights
+            hasPrivateInfoRight = true;
+        } else {
+            const userRightsObj = await server.db.models.user.getUserRights(currentUserId);  
+            
+            if (userRightsObj) {
+                const allRights = Object.values(userRightsObj).flat();
+                hasPrivateInfoRight = allRights.includes('frontend.dashboard.studies.view.userPrivateInfo');
+            }
         }
 
         // Input parsing
