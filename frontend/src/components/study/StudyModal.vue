@@ -187,6 +187,7 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true
       },
       sessionTableColumns: [
         {name: "Started", key: "startParsed"},

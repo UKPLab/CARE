@@ -302,6 +302,7 @@ export default {
         scrollX: true,
         singleSelect: true,
         search: true,
+        pagination: 10,
       }
     },
     reviewerTableOptions() {
@@ -315,6 +316,7 @@ export default {
         scrollY: true,
         scrollX: true,
         search: true,
+        pagination: 10,
       }
     },
     templateSelectionFields() {
