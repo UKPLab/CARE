@@ -10,8 +10,7 @@ const passport = require('passport');
 const crypto = require('crypto');
 const { TOTP, Secret } = require('otpauth');
 const { generateToken, decodeToken } = require('../../utils/auth');
-const { resolveTemplate } = require('../../utils/templateResolver');
-const { getEmailFallbackContent } = require('../../utils/emailHelper');
+const { getEmailContent } = require('../../utils/emailHelper');
 
 
 /**
@@ -121,58 +120,6 @@ module.exports = function (server) {
         }
         
         return { allowed: true };
-    }
-
-    /**
-     * Helper function to get email content from template or fallback to hardcoded text
-     * @param {string} settingKey - Setting key for template ID (e.g., "email.template.passwordReset")
-     * @param {string} fallbackSubject - Fallback email subject
-     * @param {string} fallbackBody - Fallback email body (plain text)
-     * @param {Object} context - Context object for template resolution
-     * @param {number} context.userId - User ID for placeholder resolution
-     * @param {string} context.link - Link for placeholder resolution
-     * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML
-     */
-    async function getEmailContent(settingKey, fallbackKey, context) {
-        try {
-            const templateIdStr = await server.db.models['setting'].get(settingKey);
-
-            // If no template configured or empty, use fallback from disk
-            if (!templateIdStr || templateIdStr === "" || templateIdStr === "0") {
-                const fallback = await getEmailFallbackContent(fallbackKey, context);
-                return { subject: fallback.subject, body: fallback.body, isHtml: false };
-            }
-            
-            const templateId = parseInt(templateIdStr);
-            if (isNaN(templateId) || templateId <= 0) {
-                const fallback = await getEmailFallbackContent(fallbackKey, context);
-                return { subject: fallback.subject, body: fallback.body, isHtml: false };
-            }
-            
-            // Resolve template
-            const baseUrl = context.baseUrl || await getBaseUrl();
-            const resolvedHtml = await resolveTemplate(
-                templateId,
-                {
-                    userId: context.userId,
-                    baseUrl: baseUrl,
-                    link: context.link 
-                },
-                server.db.models,
-                context.options || {}
-            );
-            const fallback = await getEmailFallbackContent(fallbackKey, context);
-            return { subject: fallback.subject, body: resolvedHtml, isHtml: true };
-        } catch (error) {
-            server.logger.error(`Failed to resolve template for ${settingKey}:`, error);
-            try {
-                const fallback = await getEmailFallbackContent(fallbackKey, context);
-                return { subject: fallback.subject, body: fallback.body, isHtml: false };
-            } catch (fallbackError) {
-                server.logger.error(`Failed to read email fallback ${fallbackKey}:`, fallbackError);
-                throw error;
-            }
-        }
     }
 
     /**
