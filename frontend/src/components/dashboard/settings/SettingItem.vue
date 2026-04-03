@@ -119,7 +119,9 @@ export default {
       let requiredType = null;
       if (setting.key === "email.template.passwordReset" || 
           setting.key === "email.template.verification" || 
-          setting.key === "email.template.registration") {
+          setting.key === "email.template.registration" ||
+          setting.key === "email.template.twoFactorOtp" ||
+          setting.key === "email.template.passwordResetSuccess") {
         requiredType = 1; // Email - General
       } else if (setting.key === "email.template.sessionStart" || 
                  setting.key === "email.template.sessionFinish") {
