@@ -244,16 +244,24 @@ module.exports = function (server) {
             { where: { id: userRecord.id } }
         );
 
+        const emailContent = await getEmailContent(
+            "email.template.twoFactorOtp",
+            "twoFactorOtp",
+            {
+                userId: userRecord.id,
+                userName: userRecord.userName,
+                otp,
+                tokenExpiry: 10,
+            },
+            server.db.models,
+            server.logger
+        );
+
         await server.sendMail(
             userRecord.email,
-            "CARE - Two-Factor Authentication Code",
-            `Hello ${userRecord.userName},
-Your two-factor authentication code is: ${otp}
-
-This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
-
-Thanks,
-The CARE Team`
+            emailContent.subject,
+            emailContent.body,
+            { isHtml: emailContent.isHtml }
         );
     }
 
@@ -795,7 +803,9 @@ The CARE Team`
                         userName: data.userName,
                         tokenExpiry,
                         options: { transaction: transaction },
-                    }
+                    },
+                    server.db.models,
+                    server.logger
                 );
                 
                 await server.sendMail(
@@ -866,7 +876,9 @@ The CARE Team`
                     link: resetLink,
                     userName: user.userName,
                     tokenExpiry,
-                }
+                },
+                server.db.models,
+                server.logger
             );
             
             await server.sendMail(user.email, emailContent.subject, emailContent.body, { isHtml: emailContent.isHtml });
@@ -911,14 +923,24 @@ The CARE Team`
             // Reset password using the user model method and clear token
             await server.db.models['user'].resetUserPwd(user.id, newPassword);
             await server.db.models['user'].update({resetToken: null}, {where: {id: user.id}});
-            await server.sendMail(user.email, "CARE Password Successfully Reset", `Hello ${user.userName},
 
-Your CARE account password has been successfully reset.
+            const emailContent = await getEmailContent(
+                "email.template.passwordResetSuccess",
+                "passwordResetSuccess",
+                {
+                    userId: user.id,
+                    userName: user.userName,
+                },
+                server.db.models,
+                server.logger
+            );
 
-If you initiated this password change, you can now log in with your new password. If you didn't request this password reset, please contact support immediately as your account may have been compromised.
-
-Thanks,
-The CARE Team`);
+            await server.sendMail(
+                user.email,
+                emailContent.subject,
+                emailContent.body,
+                { isHtml: emailContent.isHtml }
+            );
             return res.status(200).json({message: "Password has been reset successfully."});
         } catch (err) {
             server.logger.error("Failed to reset password:", err);
@@ -1069,7 +1091,9 @@ The CARE Team`);
                     link: verificationLink,
                     userName: user.userName,
                     tokenExpiry,
-                }
+                },
+                server.db.models,
+                server.logger
             );
             
             await server.sendMail(
