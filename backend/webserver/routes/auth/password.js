@@ -30,6 +30,7 @@ function registerPasswordRoutes(server, helpers) {
                 return res.status(401).json({ message: 'User with this email does not exist.' });
             }
 
+            // Rate limiting: check if a password reset email was sent recently
             const rateLimitMinutes = await email.getPasswordResetRateLimit();
             const rateLimitCheck = email.checkEmailRateLimit(user, 'passwordReset', rateLimitMinutes);
             if (!rateLimitCheck.allowed) {
@@ -38,12 +39,16 @@ function registerPasswordRoutes(server, helpers) {
                 });
             }
 
+            // Generate token with encoded expiry from settings
             const tokenExpiry = await email.getPasswordResetTokenExpiry();
             const resetToken = generateToken(tokenExpiry);
+
+            // Store the full token and timestamp in the database
             user.resetToken = resetToken;
             user.lastPasswordResetEmailSent = new Date();
             await user.save();
 
+            // Send email with the full encoded token
             const baseUrl = await email.getBaseUrl();
             const resetLink = `http://${baseUrl}/reset-password?token=${resetToken}`;
             const emailContent = await email.getEmailContent(
@@ -85,6 +90,7 @@ function registerPasswordRoutes(server, helpers) {
         }
 
         try {
+            // Decode the token and check expiry
             const decoded = decodeToken(token);
             if (!decoded.isValid) {
                 return res.status(400).json({ message: 'Invalid token format.' });
@@ -93,11 +99,13 @@ function registerPasswordRoutes(server, helpers) {
                 return res.status(400).json({ message: 'Token has expired.' });
             }
 
+            // Find user by the full token stored in database
             const user = await server.db.models['user'].findOne({ where: { resetToken: token } });
             if (!user) {
                 return res.status(400).json({ message: 'Invalid token.' });
             }
 
+            // Reset password and clear the reset token
             await server.db.models['user'].resetUserPwd(user.id, newPassword);
             await server.db.models['user'].update({ resetToken: null }, { where: { id: user.id } });
 
@@ -133,6 +141,7 @@ function registerPasswordRoutes(server, helpers) {
         }
 
         try {
+            // Decode and validate token format/expiry
             const decoded = decodeToken(token);
             if (!decoded.isValid) {
                 return res.status(400).json({ message: 'Invalid token format.' });
@@ -141,6 +150,7 @@ function registerPasswordRoutes(server, helpers) {
                 return res.status(400).json({ message: 'Token has expired.' });
             }
 
+            // Check if token exists in database
             const user = await server.db.models['user'].findOne({ where: { resetToken: token } });
             if (!user) {
                 return res.status(404).json({ message: 'Token not found.' });

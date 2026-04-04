@@ -17,11 +17,13 @@ function registerRegistrationRoutes(server, helpers) {
     server.app.post('/auth/register', async (req, res) => {
         const data = req.body;
 
+        // Check if self-registration is enabled
         const isSelfRegistrationEnabled = await server.db.models['setting'].get('app.register.enabled');
         if (!isSelfRegistrationEnabled) {
             return res.status(403).json({ message: 'Self-registration is currently disabled. Please contact an administrator to create an account.' });
         }
 
+        // Check if name fields are required by settings
         if ((await server.db.models['setting'].get('app.register.requestName')) === 'true') {
             if (!data.firstName) {
                 return res.status(400).json({ message: 'Please provide a first name.' });
@@ -31,6 +33,7 @@ function registerRegistrationRoutes(server, helpers) {
             }
         }
 
+        // Check if email is present and not already taken
         if (!data.email) {
             return res.status(400).json({ message: 'Please provide a email.' });
         }
@@ -39,6 +42,7 @@ function registerRegistrationRoutes(server, helpers) {
             return res.status(400).json({ message: 'E-Mail already taken.' });
         }
 
+        // Validate password presence and policy
         if (!data.password) {
             return res.status(400).json({ message: 'Please provide a password.' });
         }
@@ -52,6 +56,7 @@ function registerRegistrationRoutes(server, helpers) {
             return res.status(400).json({ message: 'Please agree to the terms of use.' });
         }
 
+        // Check if username is present and not already taken
         if (!data.userName) {
             return res.status(400).json({ message: 'Please provide a user name.' });
         }
@@ -65,6 +70,7 @@ function registerRegistrationRoutes(server, helpers) {
         try {
             transaction = await server.db.models['user'].sequelize.transaction();
 
+            // Check if email verification is enabled
             const emailVerificationEnabled = String(await server.db.models['setting'].get('app.register.emailVerification')) === 'true';
             const userData = {
                 firstName: data.firstName,
@@ -78,9 +84,8 @@ function registerRegistrationRoutes(server, helpers) {
             };
             const newUser = await server.db.models['user'].add(userData, { transaction });
 
+            // Generate email verification token if verification is enabled
             if (emailVerificationEnabled) {
-                // Verification remains part of the registration transaction so the user
-                // is only committed once the token has been persisted successfully.
                 const tokenExpiry = await email.getEmailVerificationTokenExpiry();
                 const verificationToken = generateToken(tokenExpiry);
                 await server.db.models['user'].update(

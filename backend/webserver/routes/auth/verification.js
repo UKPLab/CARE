@@ -25,6 +25,7 @@ function registerVerificationRoutes(server, helpers) {
         }
 
         try {
+            // Decode and validate token
             const decoded = decodeToken(token);
             if (!decoded.isValid) {
                 return res.status(400).send({ message: 'Invalid token format.' });
@@ -33,11 +34,13 @@ function registerVerificationRoutes(server, helpers) {
                 return res.status(400).send({ message: 'Token has expired.' });
             }
 
+            // Find user by verification token
             const user = await server.db.models['user'].findOne({ where: { emailVerificationToken: token } });
             if (!user) {
                 return res.status(400).send({ message: 'Invalid token.' });
             }
 
+            // Mark email as verified and clear token
             await server.db.models['user'].update(
                 { emailVerified: true, emailVerificationToken: null },
                 { where: { id: user.id } }
@@ -59,19 +62,24 @@ function registerVerificationRoutes(server, helpers) {
         }
 
         try {
+            // Check if email verification is enabled
             const emailVerificationEnabled = String(await server.db.models['setting'].get('app.register.emailVerification')) === 'true';
             if (!emailVerificationEnabled) {
                 return res.status(400).json({ message: 'Email verification is disabled.' });
             }
 
+            // Find user by email
             const user = await server.db.models['user'].findOne({ where: { email: userEmail } });
             if (!user) {
                 return res.status(400).json({ message: 'User with this email does not exist.' });
             }
+
+            // Check if already verified
             if (user.emailVerified) {
                 return res.status(400).json({ message: 'Email address is already verified.' });
             }
 
+            // Rate limiting: check if a verification email was sent recently
             const rateLimitMinutes = await email.getEmailVerificationRateLimit();
             const rateLimitCheck = email.checkEmailRateLimit(user, 'verification', rateLimitMinutes);
             if (!rateLimitCheck.allowed) {
@@ -80,13 +88,17 @@ function registerVerificationRoutes(server, helpers) {
                 });
             }
 
+            // Generate new verification token
             const tokenExpiry = await email.getEmailVerificationTokenExpiry();
             const verificationToken = generateToken(tokenExpiry);
+
+            // Update user with new token and timestamp
             await server.db.models['user'].update(
                 { emailVerificationToken: verificationToken, lastVerificationEmailSent: new Date() },
                 { where: { id: user.id } }
             );
 
+            // Send verification email
             const baseUrl = await email.getBaseUrl();
             const verificationLink = `http://${baseUrl}/login?token=${verificationToken}`;
             const emailContent = await email.getEmailContent(
