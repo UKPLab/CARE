@@ -6,7 +6,7 @@ const LocalStrategy = require('passport-local');
 const OrcidStrategy = require('passport-orcid').Strategy;
 const LdapStrategy = require('passport-ldapauth');
 const SamlStrategy = require('passport-saml').Strategy;
-const { relevantFields } = require('../utils/auth');
+const { relevantFields } = require('../../utils/auth');
 const {
     findOrProvisionExternalUser,
     getFirstPresentValue,
