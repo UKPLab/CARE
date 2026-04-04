@@ -92,19 +92,19 @@
                   Signed in as {{ username }}
                 </a>
                 <a 
+                  class="dropdown-item"
+                  href="#"
+                  @click="$refs.twoFactorSettingsModal.open()"
+                >
+                  Configure 2FA
+                </a>
+                <a 
                   v-if="consentEnabled"
                   class="dropdown-item"
                   href="#"
                   @click="$refs.consentModal.open()"
                 >
                   Update consent
-                </a>
-                <a 
-                  class="dropdown-item"
-                  href="#"
-                  @click="$refs.twoFactorSettingsModal.open()"
-                >
-                  Configure Authentication
                 </a>
                 <a 
                   class="dropdown-item"
