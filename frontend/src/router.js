@@ -43,19 +43,19 @@ const routes = [
         path: "/2fa/verify/email",
         name: "2fa-verify-email",
         component: () => import("@/auth/TwoFactorVerifyEmail.vue"),
-        meta: { requiresAuth: false }
+        meta: { requireAuth: false, hideTopbar: true, checkLogin: true }
     },
     {
         path: "/2fa/verify/totp",
         name: "2fa-verify-totp",
         component: () => import("@/auth/TwoFactorVerifyTotp.vue"),
-        meta: { requiresAuth: false }
+        meta: { requireAuth: false, hideTopbar: true, checkLogin: true }
     },
     {
         path: "/2fa/select",
         name: "2fa-select",
         component: () => import("@/auth/TwoFactorSelect.vue"),
-        meta: { requiresAuth: false }
+        meta: { requireAuth: false, hideTopbar: true, checkLogin: true }
     },
     {
         path: "/register",

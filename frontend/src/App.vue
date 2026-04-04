@@ -235,7 +235,7 @@ export default {
         withCredentials: true,
       });
       if (response.data.user) {
-        await this.$router.push("/dashboard");
+        await this.$router.push(this.$route.query.redirectedFrom || "/dashboard");
       }
     }
   },
