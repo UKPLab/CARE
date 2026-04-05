@@ -58,6 +58,17 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
     }
 
     /**
+     * Attach the current retry window to the response as Retry-After metadata.
+     *
+     * @param {Object} res
+     * @param {number} retryAfterSeconds
+     */
+    function setRetryAfterHeader(res, retryAfterSeconds) {
+        if (!Number.isFinite(retryAfterSeconds) || retryAfterSeconds < 0) return;
+        res.set('Retry-After', String(Math.ceil(retryAfterSeconds)));
+    }
+
+    /**
      * Return the number of remaining verification attempts for the active 2FA session.
      *
      * @param {Object} pending
@@ -120,7 +131,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
                     return res.status(500).json({ message: 'Session error during 2FA.' });
                 }
 
-                return res.status(429).json({
+                return res.status(403).json({
                     message: tooManyAttemptsErrorMessage,
                     attemptsRemaining: 0,
                     maxAttempts: MAX_2FA_VERIFY_ATTEMPTS,
@@ -207,6 +218,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
             const cooldownInfo = getEmailOtpCooldownInfo(pending);
 
             if (!cooldownInfo.canResend) {
+                setRetryAfterHeader(res, cooldownInfo.retryAfterSeconds);
                 return res.status(429).json({
                     message: 'Please wait before requesting another code.',
                     ...cooldownInfo,
@@ -377,6 +389,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
         resetTwoFactorFailedAttempts,
         sendEmailOtp,
         setEmailOtpCooldown,
+        setRetryAfterHeader,
         startTwoFactorLogin,
     };
 }
