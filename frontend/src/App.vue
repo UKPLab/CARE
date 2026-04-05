@@ -92,7 +92,7 @@ export default {
       this.$socket.disconnect();
       this.$router.push({
         name: "login",
-        query: {redirectedFrom: this.$route.path},
+        query: {redirectedFrom: this.$route.fullPath},
       });
     },
     appTables: function (data) {

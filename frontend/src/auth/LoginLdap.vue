@@ -181,6 +181,7 @@ export default {
           {
             username: this.formData.username,
             password: this.formData.password,
+            redirectedFrom,
           },
           {
             params: {

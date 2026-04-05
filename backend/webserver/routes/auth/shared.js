@@ -8,6 +8,27 @@
  */
 function createSharedHelpers(server) {
     /**
+     * Normalize a frontend-internal post-login redirect target.
+     *
+     * @param {string} value
+     * @returns {string|null}
+     */
+    function normalizeRedirectPath(value) {
+        if (typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        if (!trimmed || !trimmed.startsWith('/') || trimmed.startsWith('//')) {
+            return null;
+        }
+
+        try {
+            const parsed = new URL(trimmed, 'http://localhost');
+            return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } catch (_error) {
+            return null;
+        }
+    }
+
+    /**
      * Normalize a base URL by ensuring protocol is present and trimming trailing slashes.
      *
      * @param {string} value
@@ -39,6 +60,37 @@ function createSharedHelpers(server) {
             Object.entries(query).filter(([, value]) => value !== undefined && value !== null && value !== '')
         ).toString();
         return queryString ? `${frontendBaseUrl}${safePath}?${queryString}` : `${frontendBaseUrl}${safePath}`;
+    }
+
+    /**
+     * Persist the frontend path to return to after authentication.
+     *
+     * @param {Object} req
+     * @param {string} redirectPath
+     * @returns {string|null}
+     */
+    function setPostLoginRedirectPath(req, redirectPath) {
+        const normalizedPath = normalizeRedirectPath(redirectPath);
+        if (!req?.session) return normalizedPath;
+
+        if (normalizedPath) {
+            req.session.postLoginRedirectPath = normalizedPath;
+        } else {
+            delete req.session.postLoginRedirectPath;
+        }
+
+        return normalizedPath;
+    }
+
+    /**
+     * Read the stored post-login redirect target.
+     *
+     * @param {Object} req
+     * @param {string} fallback
+     * @returns {string}
+     */
+    function getPostLoginRedirectPath(req, fallback = '/dashboard') {
+        return normalizeRedirectPath(req?.session?.postLoginRedirectPath) || fallback;
     }
 
     /**
@@ -92,6 +144,10 @@ function createSharedHelpers(server) {
                 server.logger.error(`[Auth] Failed to record login activity for user ${user.id}: ${dbError}`);
             }
 
+            const finalRedirectPath = normalizeRedirectPath(options.redirectPath) || getPostLoginRedirectPath(req, '/dashboard');
+
+            delete req.session.postLoginRedirectPath;
+
             req.session.save(async (saveErr) => {
                 if (saveErr) {
                     server.logger.error(`[Auth] Session save failed for user ${user.id}: ${saveErr}`);
@@ -99,7 +155,7 @@ function createSharedHelpers(server) {
 
                 if (mode === 'redirect') {
                     const frontendBaseUrl = await getFrontendBaseUrl();
-                    const finalUrl = buildFrontendUrl(frontendBaseUrl, options.redirectPath);
+                    const finalUrl = buildFrontendUrl(frontendBaseUrl, finalRedirectPath);
                     return res.redirect(finalUrl);
                 }
 
@@ -128,8 +184,10 @@ function createSharedHelpers(server) {
         buildFrontendUrl,
         ensureAuthenticated,
         finalizeLogin,
+        getPostLoginRedirectPath,
         getFrontendBaseUrl,
         isLoginMethodEnabled,
+        setPostLoginRedirectPath,
     };
 }
 

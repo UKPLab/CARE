@@ -15,6 +15,8 @@ function registerLoginRoutes(server, helpers) {
      * Local username/password login route.
      */
     server.app.post('/auth/login', async (req, res, next) => {
+        shared.setPostLoginRedirectPath(req, req.body?.redirectedFrom);
+
         passport.authenticate('local-login', async (err, user, info) => {
             if (err) {
                 server.logger.error('Login failed: ' + err);
@@ -46,6 +48,8 @@ function registerLoginRoutes(server, helpers) {
      * LDAP login route.
      */
     server.app.post('/auth/login/ldap', async (req, res, next) => {
+        shared.setPostLoginRedirectPath(req, req.body?.redirectedFrom || req.query?.redirectedFrom);
+
         if (!(await shared.isLoginMethodEnabled('ldap'))) {
             return res.status(403).json({ message: 'LDAP login is disabled by the administrator.' });
         }
@@ -79,13 +83,20 @@ function registerLoginRoutes(server, helpers) {
      */
     server.app.get('/auth/login/orcid', async (req, res, next) => {
         const frontendBaseUrl = await shared.getFrontendBaseUrl();
+        const redirectedFrom = shared.setPostLoginRedirectPath(req, req.query?.redirectedFrom);
         if (!(await shared.isLoginMethodEnabled('orcid'))) {
-            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'orcid-login-disabled' }));
+            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                error: 'orcid-login-disabled',
+                redirectedFrom,
+            }));
         }
         if (!server.isAuthProviderReady('orcid')) {
             const status = server.getAuthProviderStatus('orcid');
             server.logger.warn(`[Auth] ORCID requested but provider is not ready (${status.reason}).`);
-            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'orcid-login-not-ready' }));
+            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                error: 'orcid-login-not-ready',
+                redirectedFrom,
+            }));
         }
         return passport.authenticate('orcid-login')(req, res, next);
     });
@@ -96,15 +107,25 @@ function registerLoginRoutes(server, helpers) {
     server.app.get('/auth/2fa/orcid/callback',
         async (req, res, next) => {
             const frontendBaseUrl = await shared.getFrontendBaseUrl();
+            const redirectedFrom = shared.getPostLoginRedirectPath(req, null);
             if (!(await shared.isLoginMethodEnabled('orcid'))) {
-                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'orcid-login-disabled' }));
+                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                    error: 'orcid-login-disabled',
+                    redirectedFrom,
+                }));
             }
             if (!server.isAuthProviderReady('orcid')) {
                 const status = server.getAuthProviderStatus('orcid');
                 server.logger.warn(`[Auth] ORCID callback hit but provider is not ready (${status.reason}).`);
-                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'orcid-login-not-ready' }));
+                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                    error: 'orcid-login-not-ready',
+                    redirectedFrom,
+                }));
             }
-            const failureRedirect = shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'orcid-login-failed' });
+            const failureRedirect = shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                error: 'orcid-login-failed',
+                redirectedFrom,
+            });
             return passport.authenticate('orcid-login', { failureRedirect })(req, res, next);
         },
         async (req, res) => {
@@ -122,13 +143,20 @@ function registerLoginRoutes(server, helpers) {
      */
     server.app.get('/auth/login/saml', async (req, res, next) => {
         const frontendBaseUrl = await shared.getFrontendBaseUrl();
+        const redirectedFrom = shared.setPostLoginRedirectPath(req, req.query?.redirectedFrom);
         if (!(await shared.isLoginMethodEnabled('saml'))) {
-            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'saml-login-disabled' }));
+            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                error: 'saml-login-disabled',
+                redirectedFrom,
+            }));
         }
         if (!server.isAuthProviderReady('saml')) {
             const status = server.getAuthProviderStatus('saml');
             server.logger.warn(`[Auth] SAML requested but provider is not ready (${status.reason}).`);
-            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'saml-login-not-ready' }));
+            return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                error: 'saml-login-not-ready',
+                redirectedFrom,
+            }));
         }
         return passport.authenticate('saml-login')(req, res, next);
     });
@@ -139,15 +167,25 @@ function registerLoginRoutes(server, helpers) {
     server.app.post('/auth/login/saml/callback',
         async (req, res, next) => {
             const frontendBaseUrl = await shared.getFrontendBaseUrl();
+            const redirectedFrom = shared.getPostLoginRedirectPath(req, null);
             if (!(await shared.isLoginMethodEnabled('saml'))) {
-                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'saml-login-disabled' }));
+                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                    error: 'saml-login-disabled',
+                    redirectedFrom,
+                }));
             }
             if (!server.isAuthProviderReady('saml')) {
                 const status = server.getAuthProviderStatus('saml');
                 server.logger.warn(`[Auth] SAML callback hit but provider is not ready (${status.reason}).`);
-                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'saml-login-not-ready' }));
+                return res.redirect(shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                    error: 'saml-login-not-ready',
+                    redirectedFrom,
+                }));
             }
-            const failureRedirect = shared.buildFrontendUrl(frontendBaseUrl, '/login', { error: 'saml-login-failed' });
+            const failureRedirect = shared.buildFrontendUrl(frontendBaseUrl, '/login', {
+                error: 'saml-login-failed',
+                redirectedFrom,
+            });
             return passport.authenticate('saml-login', (err, user, info) => {
                 if (err) {
                     server.logger.error(`[Auth] SAML authentication error: ${err.message}`);

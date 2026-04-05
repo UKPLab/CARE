@@ -360,7 +360,10 @@ export default {
     },
     async login(credentials) {
       const response = await axios.post(getServerURL() + '/auth/login',
-          credentials,
+          {
+            ...credentials,
+            redirectedFrom: this.$route.query.redirectedFrom,
+          },
           {
             validateStatus: function (status) {
               return status === 200 || status === 400 || status === 401;
@@ -422,10 +425,14 @@ export default {
       }
     },
     loginWithOrcid() {
-      window.location.href = getServerURL() + "/auth/login/orcid";
+      const redirectedFrom = this.$route.query.redirectedFrom;
+      const query = redirectedFrom ? `?redirectedFrom=${encodeURIComponent(redirectedFrom)}`: "";
+      window.location.href = getServerURL() + "/auth/login/orcid" + query;
     },
     loginWithSaml() {
-      window.location.href = getServerURL() + "/auth/login/saml";
+      const redirectedFrom = this.$route.query.redirectedFrom;
+      const query = redirectedFrom ? `?redirectedFrom=${encodeURIComponent(redirectedFrom)}`: "";
+      window.location.href = getServerURL() + "/auth/login/saml" + query;
     },
     toLdapLogin() {
       this.$router.push({

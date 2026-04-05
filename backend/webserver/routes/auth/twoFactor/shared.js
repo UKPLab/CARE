@@ -364,6 +364,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
 
         // 4. Unified handling of session persistence and response
         const frontendBaseUrl = mode === 'redirect' ? await sharedHelpers.getFrontendBaseUrl() : null;
+        const redirectedFrom = mode === 'redirect' ? sharedHelpers.getPostLoginRedirectPath(req, null) : null;
         req.session.save((err) => {
             if (err) {
                 server.logger.error('Failed to save session: ' + err);
@@ -372,7 +373,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
 
             if (mode === 'redirect') {
                 // External provider flows hand control back to the frontend.
-                return res.redirect(sharedHelpers.buildFrontendUrl(frontendBaseUrl, redirectPath));
+                return res.redirect(sharedHelpers.buildFrontendUrl(frontendBaseUrl, redirectPath, { redirectedFrom }));
             }
 
             return res.status(200).json(responseData);
