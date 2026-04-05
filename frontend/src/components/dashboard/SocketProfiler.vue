@@ -70,17 +70,7 @@ export default {
         {name: "Created At", key: "createdAt"},
       ],
       tableButtons: [
-        {
-          icon: "stop-circle",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-danger": true,
-            },
-          },
-          title: "Stop recording",
-          action: "stopRecording",
-        },
+        
         {
           icon: "play-circle",
           options: {
@@ -108,7 +98,12 @@ export default {
   },
   computed: {
     recordings() {
-      return this.$store.getters["table/recording/getAll"];
+      return this.$store.getters["table/recording/getAll"].map(r => ({
+        ...r,
+        startTime: r.startTime ? new Date(r.startTime).toLocaleString() : "-",
+        endTime: r.endTime ? new Date(r.endTime).toLocaleString() : "-",
+        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString() : "-",
+      }));
     },
     isRecording() {
       return this.recordings.some(r => r.status === "recording");
@@ -135,8 +130,7 @@ export default {
     startRecording() {
       this.$socket.emit("recorderStart", {name: "New Recording"}, (res) => {
         if (res.success) {
-          this.isRecording = true;
-          this.activeRecordingId = res.data;
+          
           this.eventBus.emit("toast", {
             title: "Recording started",
             message: "Recording is now active",
@@ -154,8 +148,6 @@ export default {
     stopRecording(row) {
       this.$socket.emit("recorderStop", {id: row.id}, (res) => {
         if (res.success) {
-          this.isRecording = false;
-          this.activeRecordingId = null;
           this.eventBus.emit("toast", {
             title: "Recording stopped",
             message: "Recording has been saved",
