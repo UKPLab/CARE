@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
         static autoTable = true;
         static accessMap = [
 			{
-				right: "frontend.dashboard.assignments.admin.view",
+				right: "frontend.dashboard.assignments.viewAll",
 				columns: this.getAttributes(),
 			},
 		];
@@ -155,6 +155,8 @@ module.exports = (sequelize, DataTypes) => {
                     assignmentId: originalSubmission.assignmentId || null,
                     parentSubmissionId: originalSubmissionId, // Link to parent
                     extId: originalSubmission.extId || null,
+                    name: originalSubmission.name || null,
+                    description: originalSubmission.description || null,
                     group: originalSubmission.group,
                     additionalSettings: originalSubmission.additionalSettings || null,
                     validationConfigurationId: originalSubmission.validationConfigurationId || null,

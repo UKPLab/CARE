@@ -5,7 +5,12 @@ const { Op } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
 	class Assignment extends MetaModel {
 		static autoTable = true;
-
+		static accessMap = [
+			{
+				right: "frontend.dashboard.assignments.viewAll",
+				columns: this.getAttributes(),
+			},
+		];
 		/**
 		 * Apply visibility filter for assignments based on assigned roles.
 		 * Non-admin users can always see their own assignments and assignments
@@ -144,11 +149,6 @@ module.exports = (sequelize, DataTypes) => {
 			Assignment.belongsTo(models["assignment"], {
 				foreignKey: "parentAssignmentId",
 				as: "parentAssignment",
-			});
-
-			Assignment.belongsTo(models["assignment"], {
-				foreignKey: "previousSubmissionAssignmentId",
-				as: "previousSubmissionAssignment",
 			});
 		}
 	}
