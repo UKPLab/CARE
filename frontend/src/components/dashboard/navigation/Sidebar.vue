@@ -6,86 +6,56 @@
   >
     <div id="sidebar-wrapper">
       <div class="list-group-test">
-        <span
-          v-for="group in sidebarGroups"
-          :key="group.id"
-        >
-          <template v-if="group.name === 'Default'">
+        <span>
+          <div
+            v-for="subgroup in defaultGroupedElements"
+            :key="subgroup.key"
+            class="default-subgroup"
+          >
             <div
-              v-for="subgroup in defaultGroupedElements"
-              :key="subgroup.name"
-              class="default-subgroup"
+              class="sidebar-subgroup-heading list-group-item-custom p-3"
+              @click="toggleGroup(subgroup.key)"
+            >
+              <div class="list-group-item-text subgroup-title">
+                {{ subgroup.name }}
+              </div>
+              <span
+                class="subgroup-arrow"
+                :class="arrowAnimationClass[subgroup.key]"
+              >
+                <LoadIcon icon-name="chevron-down" />
+              </span>
+            </div>
+
+            <transition
+              name="submenu"
+              @enter="enterSubmenu"
+              @leave="leaveSubmenu"
             >
               <div
-                class="sidebar-subgroup-heading list-group-item-custom p-3"
-                @click="toggleDefaultGroup(subgroup.name)"
+                v-if="expandedGroups[subgroup.key]"
+                class="submenu-content"
               >
-                <div class="list-group-item-text subgroup-title">
-                  {{ subgroup.name }}
-                </div>
-                <span
-                  class="subgroup-arrow"
-                  :class="arrowAnimationClass[subgroup.name]"
+                <router-link
+                  v-for="element in subgroup.elements"
+                  :key="element.id"
+                  :to="'/dashboard/' + element.path"
+                  class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
                 >
-                  <LoadIcon icon-name="chevron-down" />
-                </span>
-              </div>
-
-              <transition 
-                name="submenu"
-                @enter="enterSubmenu"
-                @leave="leaveSubmenu"
-              >
-                <div 
-                  v-if="expandedDefaultGroups[subgroup.name]" 
-                  class="submenu-content"
-                >
-                  <router-link
-                    v-for="element in subgroup.elements"
-                    :key="element.id"
-                    :to="'/dashboard/' + element.path"
-                    class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
+                  <span
+                    class="sidebar-icon"
+                    :title="element.name"
                   >
-                    <span
-                      class="sidebar-icon"
-                      :title="element.name"
-                    >
-                      <LoadIcon
-                        :icon-name="element.icon"
-                        :size="24"
-                      />
-                    </span>
-                    <div class="list-group-item-text">{{ element.name }}</div>
-                  </router-link>
-                </div>
-              </transition>
-             
-            </div>
-          </template>
-
-          <template v-else>
-            <div class="sidebar-heading">
-              <h5 class="mb-1">{{ group.name }}</h5>
-            </div>
-
-            <router-link
-              v-for="element in sidebarElements[group.id]"
-              :key="element.id"
-              :to="'/dashboard/' + element.path"
-              class="list-group-item list-group-item-action list-group-item-custom p-3"
-            >
-              <span
-                class="sidebar-icon"
-                :title="element.name"
-              >
-                <LoadIcon
-                  :icon-name="element.icon"
-                  :size="24"
-                />
-              </span>
-              <div class="list-group-item-text">{{ element.name }}</div>
-            </router-link>
-          </template>
+                    <LoadIcon
+                      :icon-name="element.icon"
+                      :size="24"
+                    />
+                  </span>
+                  <div class="list-group-item-text">{{ element.name }}</div>
+                </router-link>
+              </div>
+            </transition>
+          </div>
         </span>
       </div>
       <div v-if="isAdmin" class="text-center text-secondary">
@@ -127,16 +97,15 @@ export default {
   data() {
     return {
       version: APP_VERSION,
-      arrowAnimationClass: {
-        Home: '',
-        Study: '',
-        Manage: '',
+      sidebarSubgroupConfig: {
+        Home: ["Home", "Documents"],
+        Study: ["Studies", "Study Sessions", "Tags", "Submissions"],
+        Manage: ["Projects", "Users", "User Statistics"],
+        Settings: ["System Settings", "Logs", "Configurations"],
+        AI: ["NLP Skills"],
       },
-      expandedDefaultGroups: {
-        Home: false,
-        Study: false,
-        Manage: false,
-      },
+      arrowAnimationClass: {},
+      expandedGroups: {},
     }
   },
   computed: {
@@ -162,46 +131,29 @@ export default {
                 return a["order"] - b["order"];
             }))
     },
+    defaultGroupedElements() {
+      return Object.entries(this.sidebarSubgroupConfig)
+        .map(([groupName, elementNames]) => ({
+          key: groupName,
+          name: groupName,
+          elements: elementNames
+            .map(elementName =>
+              this.allSidebarElementsForGrouping.find(
+                element => element.name === elementName
+              )
+            )
+            .filter(Boolean),
+        }))
+        .filter(group => group.elements.length > 0);
+    },
     sidebarGroups() {
       const groups = this.$store.getters['table/nav_group/getAll'].filter(group => !group.admin || this.isAdmin);
       return groups.sort(function (a, b) {
         return a["order"] - b["order"];
       });
     },
-    defaultGroupedElements() {
-      const defaultGroup = this.sidebarGroups.find(group => group.name === "Default");
-
-      if (!defaultGroup || !this.sidebarElements[defaultGroup.id]) {
-        return [];
-      }
-
-      const defaultElements = this.sidebarElements[defaultGroup.id];
-
-      const groupingMap = {
-        Home: ["Home", "Documents"],
-        Study: ["Studies", "Study Sessions", "Tags"],
-        Manage: ["Projects"],
-      };
-
-      return Object.entries(groupingMap)
-        .map(([groupName, elementNames]) => ({
-          name: groupName,
-          elements: elementNames
-            .map(elementName =>
-              defaultElements.find(element => element.name === elementName)
-            )
-            .filter(Boolean),
-        }))
-        .filter(group => group.elements.length > 0);
-    },
-    activeDefaultGroup() {
+    activeSubgroup() {
       const currentPath = this.$route.path.toLowerCase();
-
-      const groupingMap = {
-        Home: ["home", "documents"],
-        Study: ["studies", "study_sessions", "tags"],
-        Manage: ["projects"],
-      };
 
       const currentElement = this.$store.getters['table/nav_element/getAll']
         .find(element => currentPath === `/dashboard/${element.path}`.toLowerCase());
@@ -210,9 +162,24 @@ export default {
         return null;
       }
 
-      return Object.entries(groupingMap).find(([, elementPaths]) =>
-        elementPaths.includes(currentElement.path.toLowerCase())
+      return Object.entries(this.sidebarSubgroupConfig).find(([, elementNames]) =>
+        elementNames.some(
+          elementName => elementName.toLowerCase() === currentElement.name.toLowerCase()
+        )
       )?.[0] || null;
+    },
+    defaultElements() {
+      const defaultGroup = this.sidebarGroups.find(group => group.name === "Default");
+      return defaultGroup ? (this.sidebarElements[defaultGroup.id] || []) : [];
+    },
+
+    adminElements() {
+      const adminGroup = this.sidebarGroups.find(group => group.name === "Admin");
+      return this.isAdmin && adminGroup ? (this.sidebarElements[adminGroup.id] || []) : [];
+    },
+
+    allSidebarElementsForGrouping() {
+      return [...this.defaultElements, ...this.adminElements];
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
@@ -220,6 +187,15 @@ export default {
   },
   mounted() {
     document.body.classList.add('sidebar-exists');
+
+    const subgroupNames = Object.keys(this.sidebarSubgroupConfig);
+
+    subgroupNames.forEach(name => {
+      this.expandedGroups[name] = false;
+      this.arrowAnimationClass[name] = '';
+    });
+
+    this.syncSidebarWithRoute();
   },
   beforeUnmount() {
     document.body.classList.remove('sidebar-exists');
@@ -229,16 +205,16 @@ export default {
       document.body.classList.toggle('sb-sidenav-toggled');
     },
 
-    closeAllDefaultGroups() {
-      Object.keys(this.expandedDefaultGroups).forEach(groupName => {
-        this.expandedDefaultGroups[groupName] = false;
+    closeAllGroups() {
+      Object.keys(this.expandedGroups).forEach(groupName => {
+        this.expandedGroups[groupName] = false;
         this.arrowAnimationClass[groupName] = 'arrow-close';
       });
     },
 
-    setExpandedDefaultGroup(groupName) {
+    setExpandedGroup(groupName) {
       if (groupName) {
-        this.expandedDefaultGroups[groupName] = true;
+        this.expandedGroups[groupName] = true;
         this.arrowAnimationClass[groupName] = 'arrow-open';
       }
     },
@@ -250,16 +226,15 @@ export default {
         return;
       }
 
-      if (this.activeDefaultGroup) {
-        this.setExpandedDefaultGroup(this.activeDefaultGroup);
+      if (this.activeSubgroup) {
+        this.setExpandedGroup(this.activeSubgroup);
       }
     },
 
-    toggleDefaultGroup(groupName) {
-      const isOpening = !this.expandedDefaultGroups[groupName];
+    toggleGroup(groupName) {
+      const isOpening = !this.expandedGroups[groupName];
 
-      this.expandedDefaultGroups[groupName] = isOpening;
-
+      this.expandedGroups[groupName] = isOpening;
       this.arrowAnimationClass[groupName] = isOpening
         ? 'arrow-open'
         : 'arrow-close';
@@ -296,7 +271,7 @@ export default {
       if (toPath === '/dashboard') {
         this.$nextTick(() => {
           requestAnimationFrame(() => {
-            this.closeAllDefaultGroups();
+            this.closeAllGroups();
           });
         });
         return;
@@ -305,7 +280,7 @@ export default {
       this.syncSidebarWithRoute();
     },
 
-    activeDefaultGroup: {
+    activeSubgroup: {
       immediate: true,
       handler(newGroup) {
         const currentPath = this.$route.path.toLowerCase().replace(/\/$/, '');
@@ -315,7 +290,7 @@ export default {
         }
 
         if (newGroup) {
-          this.setExpandedDefaultGroup(newGroup);
+          this.setExpandedGroup(newGroup);
         }
       },
     },
@@ -362,10 +337,6 @@ body.sb-sidenav-toggled .list-group-item-text {
   body.sb-sidenav-toggled #wrapper #sidebar-wrapper {
     width: 50px;
   }
-
-  body.sb-sidenav-toggled .sidebar-heading {
-    display: none;
-  }
 }
 
 .list-group-item-custom {
@@ -391,14 +362,6 @@ body.sb-sidenav-toggled .list-group-item-text {
   margin-right: 12px;
   margin-left: -2px;
 }
-
-.sidebar-heading {
-  padding-left: 12px;
-  margin-top: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1.5px solid rgba(0, 0, 0, 0.125);
-}
-
 
 .arrow-toggle {
   transform: rotate(180deg);
