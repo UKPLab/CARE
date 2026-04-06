@@ -859,6 +859,15 @@ class DocumentSocket extends Socket {
         const downloadedSubmissions = [];
         const downloadedErrors = [];
         const submissions = data.submissions || [];
+        const assignmentId = data.assignmentId || null;
+        // Validate assignment once before the loop (if provided)
+        let assignment = null;
+        if (assignmentId) {
+            assignment = await this.models["assignment"].getById(assignmentId, {});
+            if (!assignment) {
+                throw new Error(`Assignment with id ${assignmentId} not found`);
+            }
+        }
 
         for (const submission of submissions) {
             // Create a new transaction for each submission
@@ -870,23 +879,51 @@ class DocumentSocket extends Socket {
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
-                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId);
+                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId? data.validationConfigurationId : (assignment ? assignment.validationConfigurationId : null));
 
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
-                // 3. Get previous submission for the user and project to link the new submission (if exists)
-                const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+
+                // 3. Determine previousSubmissionId
+                let previousSubmissionId = null;
+                if (assignmentId) {
+                    const assignmentSubmissions = await this.models["submission"].findAll({
+                        where: { assignmentId, userId: submission.userId, deleted: false },
+                        raw: true,
+                        transaction,
+                    });
+
+                    const childByParentId = new Map();
+                    for (const s of assignmentSubmissions) {
+                        if (s.previousSubmissionId) {
+                            childByParentId.set(s.previousSubmissionId, s.id);
+                        }
+                    }
+
+                    const parentIds = new Set(assignmentSubmissions.filter((s) => s.previousSubmissionId).map((s) => s.previousSubmissionId));
+                    const chainTails = assignmentSubmissions.filter((s) => !parentIds.has(s.id)).map((s) => s.id);
+
+                    if (chainTails.length > 0) {
+                        previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
+                    }
+                } else {
+                    const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+                    previousSubmissionId = previousSubmission ? previousSubmission.id : null;
+                }
+
                 // 4. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
-                        previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                        previousSubmissionId,
                         projectId: submission.projectId,
-                        group: data.group,
-                        validationConfigurationId: data.validationConfigurationId,
+                        assignmentId: assignmentId || null,
+                        name: submission.name ?? null,
+                        description: submission.description ?? null,
+                        validationConfigurationId: assignment ? assignment.validationConfigurationId : (data.validationConfigurationId || null),
                     },
                     {transaction}
                 );
@@ -946,13 +983,15 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.files - The submissions files
      * @param {number} data.group - The group number to be assigned to the submissions
      * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
+      * @param {string|null} [data.name] - Optional submission name.
+      * @param {string|null} [data.description] - Optional submission description.
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The result of the processed submission
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, projectId, assignmentId, submissionId} = data;
+        const {files, userId, group, validationConfigurationId, projectId, assignmentId, submissionId, name, description} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -970,6 +1009,8 @@ class DocumentSocket extends Socket {
                         validationConfigurationId,
                         assignmentId,
                         submissionId,
+                        name,
+                        description,
                     },
                     {transaction}
                 );
@@ -1059,6 +1100,8 @@ class DocumentSocket extends Socket {
                 createdByUserId: this.userId,
                 previousSubmissionId,
                 assignmentId: assignmentId || null,
+                name: name ?? null,
+                description: description ?? null,
             }, {transaction});
             for (const file of files) {
                 await this.addDocument(
@@ -1089,12 +1132,14 @@ class DocumentSocket extends Socket {
      * @param {number} data.validationConfigurationId
      * @param {number} data.assignmentId
      * @param {number} data.submissionId
+      * @param {string|null} [data.name]
+      * @param {string|null} [data.description]
      * @param {Object} options
      * @param {Object} options.transaction
      * @returns {Promise<Object>} replacement information
      */
     async replaceAssignmentSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, assignmentId, submissionId} = data;
+        const {files, userId, group, validationConfigurationId, assignmentId, submissionId, name, description} = data;
         const transaction = options.transaction;
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
@@ -1115,6 +1160,12 @@ class DocumentSocket extends Socket {
 
         if (!oldSubmission) {
             throw new Error(`Submission with id ${submissionId} not found for this assignment`);
+        }
+
+        const isOwner = this.userId === oldSubmission.userId;
+        const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
+        if (!isOwner && !hasRight) {
+            throw new Error("You are not allowed to replace this submission.");
         }
 
         const oldSubmissionDocuments = await this.models["document"].findAll({
@@ -1139,6 +1190,8 @@ class DocumentSocket extends Socket {
             createdByUserId: this.userId,
             previousSubmissionId: oldSubmission.previousSubmissionId || null,
             assignmentId,
+            name: name ?? oldSubmission.name ?? null,
+            description: description ?? oldSubmission.description ?? null,
         }, {transaction});
 
         // Reconnect revisions that pointed to the replaced submission.
