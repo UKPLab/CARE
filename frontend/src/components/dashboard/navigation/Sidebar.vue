@@ -312,16 +312,39 @@ export default {
   -o-transition: width .25s ease-out;
   transition: width .25s ease-out;
   transition-delay: 0.1s;
-  overflow-y: scroll;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
   width: 13rem;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
 }
 
+/* Chrome / Edge / Safari */
 #sidebar-wrapper::-webkit-scrollbar {
-  display:none;
+  width: 6px;
+}
+
+#sidebar-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#sidebar-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.35);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+#sidebar-wrapper:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.5);
+}
+
+#sidebar-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.7);
 }
 
 .collapse-sidebar-container {
@@ -442,5 +465,7 @@ body.sb-sidenav-toggled .arrow-toggle {
     opacity 280ms ease,
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+
 
 </style>
