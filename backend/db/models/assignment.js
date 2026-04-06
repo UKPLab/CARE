@@ -159,6 +159,7 @@ module.exports = (sequelize, DataTypes) => {
 			description: DataTypes.TEXT,
 			studyId: DataTypes.INTEGER,
 			workflowId: DataTypes.INTEGER,
+			projectId: DataTypes.INTEGER,
 			userId: DataTypes.INTEGER,
 			public: DataTypes.BOOLEAN,
 			maxRevisions: {

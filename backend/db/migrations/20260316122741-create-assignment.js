@@ -23,6 +23,16 @@ module.exports = {
         allowNull: false,
         defaultValue: false,
       },
+      projectId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'project',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
       studyId: {
         type: Sequelize.INTEGER,
         allowNull: true,
