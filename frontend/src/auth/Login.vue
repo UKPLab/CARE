@@ -328,7 +328,7 @@ export default {
             variant: "danger",
           });
         }
-      } catch (error) {
+      } catch (_error) {
         this.eventBus.emit("toast", {
           title: "Email Verification Error",
           message: "Failed to verify email. Please try again later.",

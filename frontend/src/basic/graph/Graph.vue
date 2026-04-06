@@ -288,7 +288,7 @@ export default {
       // metadata about the node. In this case we're going to add labels to each of
       // our nodes.
       Object.entries(this.currentData['nodes'])
-        .filter(([nodeId, node]) => node && !node.deleted)
+        .filter(([_nodeId, node]) => node && !node.deleted)
         .forEach(([nodeId, node]) => {
           g.setNode(nodeId, { label: node.name, width: nodeSize, height: nodeSize })
         })

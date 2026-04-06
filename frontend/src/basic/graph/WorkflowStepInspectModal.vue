@@ -136,7 +136,7 @@ export default {
         const cfg = this.step?.configuration;
         if (typeof cfg === "string") return JSON.stringify(JSON.parse(cfg), null, 2);
         return JSON.stringify(cfg, null, 2);
-      } catch {
+      } catch (_error) {
         return String(this.step?.configuration);
       }
     },

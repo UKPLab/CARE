@@ -493,7 +493,8 @@ export default {
         scrollY: true,
         scrollX: true,
         onlyOneRowSelectable: false,
-        search: true
+        search: true,
+        pagination: 10,
       },
       reviewerTableOptions: {
         striped: true,
@@ -505,7 +506,8 @@ export default {
         scrollY: true,
         scrollX: true,
         onlyOneRowSelectable: false,
-        search: true
+        search: true,
+        pagination: 10,
       },
     };
   },
@@ -534,7 +536,7 @@ export default {
     },
     isWorkflowMappingComplete() {
       if (!this.targetWorkflowId) return false;
-      return this.workflowSteps.every((step, index) => {
+      return this.workflowSteps.every((step) => {
         return this.workflowMapping[step.id] !== undefined && this.workflowMapping[step.id] !== null;
       });
     },
