@@ -14,10 +14,11 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll"
         >
+          <RecordingBar />
           <component
             :is="currentComponent"
             :key="$route.path"
-          />
+          />  
         </div>
       </div>
     </div>
@@ -37,13 +38,14 @@ import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
+import RecordingBar from "./dashboard/navigation/RecordingBar.vue";
 
 const dashboardModules = import.meta.glob("./dashboard/*.vue");
 
 export default {
   name: "DashboardRoute",
   subscribeTable: ["nav_element"],
-  components: { Loading, Sidebar, NotFoundPage },
+  components: { Loading, Sidebar, NotFoundPage, RecordingBar },
   props: {
     catchAll: {
       type: String,
