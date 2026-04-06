@@ -72,6 +72,9 @@ export default {
 		};
 	},
 	computed: {
+		projectId() {
+		return this.$store.getters["settings/getValueAsInt"]("projects.default");
+		},
 		currentUserId() {
 			return this.$store.getters["auth/getUserId"];
 		},
@@ -152,9 +155,9 @@ export default {
 			const payload = {
 				...this.formData,
 				userId: this.formData.userId || this.currentUserId,
+				projectId: this.projectId,
 				assignedRoleIds: this.selectedRoles.map((role) => Number(role.id)).filter((id) => Number.isInteger(id)),
 			};
-
 			this.$socket.emit(
 				"appDataUpdate",
 				{

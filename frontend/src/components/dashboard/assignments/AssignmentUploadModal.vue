@@ -10,7 +10,7 @@
     </template>
 
     <template
-      v-if="isAdmin"
+      v-if="canUploadForOthers"
       #step-1
     >
       <div class="p-3 pb-0">
@@ -34,7 +34,7 @@
 
 
     <template
-      v-if="isAdmin"
+      v-if="canUploadForOthers"
       #step-2
     >
       <BasicForm
@@ -44,7 +44,7 @@
     </template>
 
     <template
-      v-if="!isAdmin"
+      v-if="!canUploadForOthers"
       #step-1
     >
       <div class="p-3">
@@ -62,7 +62,7 @@
     </template>
 
     <template
-      v-if="!isAdmin"
+      v-if="!canUploadForOthers"
       #step-2
     >
       <BasicForm
@@ -123,8 +123,8 @@ export default {
     };
   },
   computed: {
-    isAdmin() {
-      return this.$store.getters["auth/isAdmin"];
+    canUploadForOthers() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
     },
     users() {
       return this.$store.getters["table/user/getAll"];
@@ -148,7 +148,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
     },
     steps() {
-      if (this.isAdmin) {
+      if (this.canUploadForOthers) {
         return [
           { title: "Select User" },
           { title: "Upload File" },
@@ -161,7 +161,7 @@ export default {
       ];
     },
     stepValid() {
-      if (this.isAdmin) {
+      if (this.canUploadForOthers) {
         return [
           this.selectedUser.length > 0,
           this.checkRequiredFiles(),
@@ -231,10 +231,10 @@ export default {
       const validationId = assignment?.validationConfigurationId || 0;
       this.selectedValidatorId = validationId;
 
-      if (!this.isAdmin && this.currentUserId) {
+      if (!this.canUploadForOthers && this.currentUserId) {
         const currentUser = this.$store.getters["table/user/get"](this.currentUserId);
         this.selectedUser = currentUser ? [currentUser] : [{ id: this.currentUserId }];
-      } else if (this.isAdmin && replacement?.userId) {
+      } else if (this.canUploadForOthers && replacement?.userId) {
         const selectedUser = this.$store.getters["table/user/get"](replacement.userId);
         this.selectedUser = selectedUser ? [selectedUser] : [{ id: replacement.userId }];
       }
@@ -280,7 +280,7 @@ export default {
         return;
       }
 
-      const selectedUserId = this.isAdmin
+      const selectedUserId = this.canUploadForOthers
         ? this.selectedUser?.[0]?.id
         : this.currentUserId;
       if (!selectedUserId) {
