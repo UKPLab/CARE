@@ -75,18 +75,28 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Stop the current recording
+     * Stop the current recording and return its traces
      * @param {Object} data The input data from the frontend
+     * @param {number} data.id Optional recording ID (fallback if in-memory state is lost)
      * @param {Object} options Sequelize transaction options
      */
     async stopRecording(data, options) {
-        if (!this.isRecording) {
+        // Fall back to the ID sent by the frontend if our in-memory state was lost
+        // (e.g., the user refreshed the page mid-recording and got a new socket)
+        const recordingId = this.currentRecordingId || (data && data.id);
+
+        if (!recordingId) {
             throw new Error("No active recording");
         }
 
+        // Remove catch-all listeners FIRST so the recorderStop event
+        // itself doesn't keep spawning new trace writes
+        this.socket.offAny();
+        this.socket.offAnyOutgoing();
+
         // Update recording status and end time
         await this.models["recording"].updateById(
-            this.currentRecordingId,
+            recordingId,
             {
                 status: "finished",
                 endTime: new Date(),
@@ -97,16 +107,31 @@ class RecorderSocket extends Socket {
         this.isRecording = false;
         this.currentRecordingId = null;
 
-        // Remove catch-all listeners
-        this.socket.offAny();
-        this.socket.offAnyOutgoing();
+        // Fetch all traces for this recording so the frontend can show them
+        // in the save modal without having to wait for Vuex to sync
+        const traces = await this.models["trace"].findAll({
+            where: { recordingId },
+            order: [["id", "ASC"]],
+        });
 
         this.sendToast("Recording stopped", "Socket Profiler", "success");
+
+        return {
+            id: recordingId,
+            traces: traces.map(t => ({
+                id: t.id,
+                recordingId: t.recordingId,
+                action: t.action,
+                direction: t.direction,
+                startTime: t.startTime,
+                endTime: t.endTime,
+            })),
+        };
     }
 
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
-        this.createSocket("recorderStop", this.stopRecording, {}, true);
+        this.createSocket("recorderStop", this.stopRecording, {}, false);
     }
 }
 

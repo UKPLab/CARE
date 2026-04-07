@@ -31,12 +31,14 @@
       />
     </template>
   </Card>
+  <RecordingModal ref="recordingModal" />
 </template>
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import RecordingModal from "./socketprofiler/RecordingModal.vue";
 
 export default {
   name: "DashboardSocketProfiler",
@@ -49,6 +51,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
+    RecordingModal,
   },
   data() {
     return {
@@ -70,7 +73,6 @@ export default {
         {name: "Created At", key: "createdAt"},
       ],
       tableButtons: [
-        
         {
           icon: "play-circle",
           options: {
@@ -116,9 +118,6 @@ export default {
   methods: {
     action(data) {
       switch (data.action) {
-        case "stopRecording":
-          this.stopRecording(data.params);
-          break;
         case "replayRecording":
           this.replayRecording(data.params);
           break;
@@ -130,7 +129,6 @@ export default {
     startRecording() {
       this.$socket.emit("recorderStart", {name: "New Recording"}, (res) => {
         if (res.success) {
-          
           this.eventBus.emit("toast", {
             title: "Recording started",
             message: "Recording is now active",
@@ -145,22 +143,8 @@ export default {
         }
       });
     },
-    stopRecording(row) {
-      this.$socket.emit("recorderStop", {id: row.id}, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "Recording stopped",
-            message: "Recording has been saved",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to stop recording",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
+    stopActiveRecording() {
+      this.eventBus.emit("recording:stop");
     },
     replayRecording(row) {
       // TODO: implement replay logic
@@ -169,9 +153,6 @@ export default {
         message: "Replay started",
         variant: "success",
       });
-    },
-    stopActiveRecording() {
-      this.stopRecording({ id: this.activeRecordingId });
     },
     deleteRecording(row) {
       this.$socket.emit("appDataUpdate", {

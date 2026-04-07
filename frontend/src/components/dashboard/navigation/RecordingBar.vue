@@ -13,17 +13,19 @@
       />
     </div>
   </div>
+  <RecordingModal ref="recordingModal" />
 </template>
 
 <script>
 import BasicButton from "@/basic/Button.vue";
+import RecordingModal from "@/components/dashboard/socketprofiler/RecordingModal.vue";
 
 export default {
   name: "RecordingBar",
   subscribeTable: [
     { table: "recording" }
   ],
-  components: { BasicButton },
+  components: { BasicButton, RecordingModal },
   computed: {
     isRecording() {
       return this.$store.getters["table/recording/getAll"].some(r => r.status === "recording");
@@ -33,15 +35,24 @@ export default {
       return active ? active.id : null;
     },
   },
+  mounted() {
+    // Allow other components (e.g. SocketProfiler header button) to trigger the stop flow
+    this.eventBus.on("recording:stop", this.stopRecording);
+  },
+  beforeUnmount() {
+    this.eventBus.off("recording:stop", this.stopRecording);
+  },
   methods: {
     stopRecording() {
-      this.$socket.emit("recorderStop", { id: this.activeRecordingId }, (res) => {
+      const id = this.activeRecordingId;
+      if (!id) return;
+
+      this.$socket.emit("recorderStop", { id }, (res) => {
         if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "Recording stopped",
-            message: "Recording has been saved",
-            variant: "success",
-          });
+          const payload = res.data || res;
+          const recordingId = payload.id ?? id;
+          const traces = payload.traces || [];
+          this.$refs.recordingModal.open(recordingId, traces);
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to stop recording",
