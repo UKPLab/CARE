@@ -5,58 +5,92 @@
     class="nav-container"
   >
     <div id="sidebar-wrapper">
-      <div class="list-group-test">
-        <span>
-          <div
-            v-for="subgroup in defaultGroupedElements"
-            :key="subgroup.key"
-            class="default-subgroup"
-          >
+      <div class="sidebar-scroll-area">
+        <div class="list-group-test">
+          <span>
             <div
-              class="sidebar-subgroup-heading list-group-item-custom p-3"
-              @click="toggleGroup(subgroup.key)"
-            >
-              <div class="list-group-item-text subgroup-title">
-                {{ subgroup.name }}
-              </div>
-              <span
-                class="subgroup-arrow"
-                :class="arrowAnimationClass[subgroup.key]"
-              >
-                <LoadIcon icon-name="chevron-down" />
-              </span>
-            </div>
-
-            <transition
-              name="submenu"
-              @enter="enterSubmenu"
-              @leave="leaveSubmenu"
+              v-for="subgroup in defaultGroupedElements"
+              :key="subgroup.key"
+              class="default-subgroup"
             >
               <div
-                v-if="expandedGroups[subgroup.key]"
-                class="submenu-content"
+                class="sidebar-subgroup-heading list-group-item-custom p-3"
+                :data-group-key="subgroup.key"
+                @click="toggleGroup(subgroup.key)"
+                @mouseenter="handleGroupMouseEnter($event, subgroup.key)"
+                @mouseleave="handleGroupMouseLeave($event, subgroup.key)"
               >
-                <router-link
-                  v-for="element in subgroup.elements"
-                  :key="element.id"
-                  :to="'/dashboard/' + element.path"
-                  class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
+                <div class="list-group-item-text subgroup-title">
+                  {{ subgroup.name }}
+                </div>
+                <span
+                  class="subgroup-arrow"
+                  :class="arrowAnimationClass[subgroup.key]"
                 >
-                  <span
-                    class="sidebar-icon"
-                    :title="element.name"
-                  >
-                    <LoadIcon
-                      :icon-name="element.icon"
-                      :size="24"
-                    />
-                  </span>
-                  <div class="list-group-item-text">{{ element.name }}</div>
-                </router-link>
+                  <LoadIcon icon-name="chevron-down" />
+                </span>
               </div>
-            </transition>
-          </div>
-        </span>
+
+              <transition
+                name="submenu"
+                @enter="enterSubmenu"
+                @leave="leaveSubmenu"
+              >
+                <div
+                  v-if="expandedGroups[subgroup.key]"
+                  class="submenu-content"
+                >
+                  <router-link
+                    v-for="element in subgroup.elements"
+                    :key="element.id"
+                    :to="'/dashboard/' + element.path"
+                    class="list-group-item list-group-item-action list-group-item-custom p-3 default-subitem"
+                  >
+                    <span
+                      class="sidebar-icon"
+                      :title="element.name"
+                    >
+                      <LoadIcon
+                        :icon-name="element.icon"
+                        :size="24"
+                      />
+                    </span>
+                    <div class="list-group-item-text">{{ element.name }}</div>
+                  </router-link>
+                </div>
+              </transition>
+
+              <div
+                v-if="hoveredGroup === subgroup.key && !expandedGroups[subgroup.key]"
+                class="submenu-preview"
+                :data-group-key="subgroup.key"
+                :style="previewStyle"
+                @mouseenter="handlePreviewMouseEnter"
+                @mouseleave="handlePreviewMouseLeave($event, subgroup.key)"
+              >
+                <div class="submenu-preview-inner">
+                  <router-link
+                    v-for="element in subgroup.elements"
+                    :key="`preview-${element.id}`"
+                    :to="'/dashboard/' + element.path"
+                    class="list-group-item list-group-item-action list-group-item-custom p-3 preview-subitem"
+                  >
+                    <span
+                      class="sidebar-icon"
+                      :title="element.name"
+                    >
+                      <LoadIcon
+                        :icon-name="element.icon"
+                        :size="24"
+                      />
+                    </span>
+                    <div class="list-group-item-text">{{ element.name }}</div>
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </span>
+        </div>
       </div>
       <div v-if="isAdmin" class="text-center text-secondary">
           App Version: {{ version }}
@@ -106,6 +140,9 @@ export default {
       },
       arrowAnimationClass: {},
       expandedGroups: {},
+      previewStyle: {},
+      hoveredGroup: null,
+      isHoveringPreview: false,
     }
   },
   computed: {
@@ -206,6 +243,9 @@ export default {
     },
 
     closeAllGroups() {
+      this.hoveredGroup = null;
+      this.previewStyle = {};
+      
       Object.keys(this.expandedGroups).forEach(groupName => {
         this.expandedGroups[groupName] = false;
         this.arrowAnimationClass[groupName] = 'arrow-close';
@@ -231,9 +271,48 @@ export default {
       }
     },
 
+    handleGroupMouseEnter(event, groupName) {
+      if (this.expandedGroups[groupName]) {
+        return;
+      }
+
+      if (this.hoveredGroup === groupName) {
+        return;
+      }
+
+      const rect = event.currentTarget.getBoundingClientRect();
+
+      this.previewStyle = {
+        top: `${rect.top - 8}px`,
+        left: `${rect.right}px`,
+      };
+
+      this.hoveredGroup = groupName;
+    },
+
+    handleGroupMouseLeave(event, groupName) {
+      const nextTarget = event.relatedTarget;
+
+      if (
+        nextTarget &&
+        nextTarget.closest('.submenu-preview') &&
+        nextTarget.closest('.submenu-preview')?.dataset.groupKey === groupName
+      ) {
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        if (this.hoveredGroup === groupName && !this.isHoveringPreview) {
+          this.hoveredGroup = null;
+          this.previewStyle = {};
+        }
+      });
+    },
     toggleGroup(groupName) {
       const isOpening = !this.expandedGroups[groupName];
 
+      this.hoveredGroup = null;
+      this.previewStyle = {};
       this.expandedGroups[groupName] = isOpening;
       this.arrowAnimationClass[groupName] = isOpening
         ? 'arrow-open'
@@ -262,6 +341,26 @@ export default {
         el.style.opacity = '0';
         el.style.transform = 'translateY(-4px)';
       });
+    },
+    handlePreviewMouseEnter() {
+      this.isHoveringPreview = true;
+    },
+
+    handlePreviewMouseLeave(event, groupName) {
+      this.isHoveringPreview = false;
+
+      const nextTarget = event.relatedTarget;
+
+      if (
+        nextTarget &&
+        nextTarget.closest('.sidebar-subgroup-heading') &&
+        nextTarget.closest('.sidebar-subgroup-heading')?.dataset.groupKey === groupName
+      ) {
+        return;
+      }
+
+      this.hoveredGroup = null;
+      this.previewStyle = {};
     },
   },
   watch: {
@@ -307,12 +406,13 @@ export default {
 }
 
 #sidebar-wrapper {
+  position: relative;
   -webkit-transition: width .25s ease-out;
   -moz-transition: width .25s ease-out;
   -o-transition: width .25s ease-out;
   transition: width .25s ease-out;
   transition-delay: 0.1s;
-  overflow-y: auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -344,6 +444,38 @@ export default {
 }
 
 #sidebar-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.7);
+}
+
+.sidebar-scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: visible;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.35);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.sidebar-scroll-area:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.5);
+}
+
+.sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
   background: rgba(120, 120, 120, 0.7);
 }
 
@@ -402,6 +534,7 @@ body.sb-sidenav-toggled .arrow-toggle {
   font-weight: 600;
   border: none;
   background-color: #f2f2f2;
+  border-radius: 8px;
 }
 
 .sidebar-subgroup-heading:hover {
@@ -466,6 +599,74 @@ body.sb-sidenav-toggled .arrow-toggle {
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.default-subgroup {
+  position: relative;
+}
 
+.submenu-preview {
+  position: fixed;
+  z-index: 9999;
+
+  padding-left: 8px; 
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.submenu-preview-inner {
+  min-width: 220px;
+  background: #ebebeb;
+  color: inherit;
+
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.05);
+
+  overflow: hidden;
+  clip-path: inset(0 round 12px);
+}
+
+
+
+.submenu-preview .preview-subitem {
+  border-radius: 0 !important;
+}
+
+.submenu-preview .preview-subitem:first-child,
+.submenu-preview .preview-subitem:last-child {
+  border-radius: 0 !important;
+}
+
+.preview-subitem {
+  padding-left: 1rem !important;
+}
+
+.submenu-preview .list-group-item-custom {
+  background-color: #f2f2f2 !important;
+  color: inherit;
+}
+
+.submenu-preview .list-group-item-custom:hover {
+  background-color: white !important;
+}
+
+.submenu-preview .preview-subitem.router-link-active,
+.submenu-preview .preview-subitem.router-link-exact-active {
+  background-color: #e0e0e0 !important;
+  box-shadow: inset 2px 0 0 #222;
+}
+
+@keyframes preview-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 
 </style>
