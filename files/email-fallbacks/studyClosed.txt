@@ -1,0 +1,8 @@
+CARE - Study Closed
+
+Hello,
+
+The study "{{studyName}}" has been closed.
+
+Best regards,
+The CARE Team

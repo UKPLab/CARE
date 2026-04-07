@@ -1,0 +1,11 @@
+CARE - Please verify your email address
+
+Welcome back to CARE, {{userName}}!
+
+To complete your email verification, please click the link below:
+{{link}}
+
+This link will expire in {{tokenExpiry}} hours. If you didn't request this verification email, you can safely ignore this email.
+
+Thanks,
+The CARE Team
