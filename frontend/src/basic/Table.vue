@@ -532,14 +532,14 @@ export default {
         {},
         ...Object.entries(this.filter).map(([k, v]) => ({
           [k]: Object.entries(v)
-            .filter(([k, v]) => v)
-            .map(([k, v]) => k),
+            .filter(([_k, v]) => v)
+            .map(([k, _v]) => k),
         }))
       );
       return Object.assign(
         {},
         ...Object.entries(sequelizeFilter)
-          .filter(([k, v]) => v.length > 0)
+          .filter(([_k, v]) => v.length > 0)
           .map(([k, v]) => ({ [k]: v }))
       );
     },
@@ -825,7 +825,7 @@ export default {
       // Apply search filter
       if (this.search && this.search !== "") {
         data = data.filter((d) => {
-          for (const [key, value] of Object.entries(d)) {
+          for (const [_key, value] of Object.entries(d)) {
             if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
               return true;
             }
@@ -871,8 +871,8 @@ export default {
             } else {
               // only selected filter
               const filter = Object.entries(filterValue)
-                .filter(([k, v]) => v)
-                .map(([k, v]) => k);
+                .filter(([_k, v]) => v)
+                .map(([k, _v]) => k);
               if (filter.length > 0) {
                 const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
                 const hasMatch = dataValues.some((val) =>

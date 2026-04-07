@@ -372,7 +372,7 @@ export default {
       // check if text exists at all
       try {
         this.getTextLayerForRange(range);
-      } catch {
+      } catch (_error) {
         this._onClearSelection();
         return;
       }
@@ -487,7 +487,7 @@ export default {
       // text nodes rather than any containing nodes.
       try {
         range = TextRange.fromRange(range).toRange();
-      } catch {
+      } catch (_error) {
         throw new Error('Selection does not contain text');
       }
 

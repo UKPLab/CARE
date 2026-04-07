@@ -43,7 +43,7 @@ function textToDelta(text) {
  * Build replacement map from context data. When context.templateType is set,
  * queries the placeholder table to determine which placeholders are allowed for that type.
  *
- * @param {Object} context - Context object (userId, creatorId, studyId, studySessionId, studySessionHash, baseUrl, link, assignmentType, assignmentName, templateType)
+ * @param {Object} context - Context object (userId, creatorId, studyId, studySessionId, studySessionHash, baseUrl, link, assignmentType, assignmentName, studyName, otp, tokenExpiry, templateType)
  * @param {Object} models - Database models
  * @param {Object} options - Options (e.g. transaction)
  * @returns {Promise<Object>} Replacement map with placeholder keys and values
@@ -107,6 +107,14 @@ async function buildReplacementMap(context, models, options = {}) {
     // Study name
     if (allow("studyName") && context.studyName) {
         replacements["~studyName~"] = context.studyName;
+    }
+
+    if (allow("otp") && context.otp) {
+        replacements["~otp~"] = context.otp;
+    }
+
+    if (allow("tokenExpiry") && context.tokenExpiry !== undefined && context.tokenExpiry !== null) {
+        replacements["~tokenExpiry~"] = String(context.tokenExpiry);
     }
 
     return replacements;

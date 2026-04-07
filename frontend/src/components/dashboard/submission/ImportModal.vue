@@ -103,6 +103,8 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
+        pagination: 10,
+        search: true,
         selectableRows: true,
         groupBy: {
           key: "submissionId",

@@ -92,6 +92,13 @@
                   Signed in as {{ username }}
                 </a>
                 <a 
+                  class="dropdown-item"
+                  href="#"
+                  @click="$refs.twoFactorSettingsModal.open()"
+                >
+                  Configure 2FA
+                </a>
+                <a 
                   v-if="consentEnabled"
                   class="dropdown-item"
                   href="#"
@@ -120,6 +127,7 @@
   </div>
   <PasswordModal ref="passwordModal" />
   <ConsentUpdateModal ref="consentModal" />
+  <TwoFactorSettingsModal ref="twoFactorSettingsModal" />
 </template>
 
 <script>
@@ -139,10 +147,11 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
+import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
+  components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal, TwoFactorSettingsModal},
   data() {
     return {
       showProjectDropdown: false,
@@ -179,6 +188,12 @@ export default {
     consentEnabled() {
       return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
+  },
+  mounted() {
+    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
   methods: {
     selectProject(projectId) {
@@ -225,12 +240,6 @@ export default {
         dropdownElement.classList.add("show");
       }
     },
-  },
-  mounted() {
-    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
-  },
-  beforeUnmount() {
-    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
 }
 

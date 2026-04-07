@@ -90,6 +90,7 @@ export default {
         scrollX: true,
         singleSelect: true,
         search: true,
+        pagination: 10,
       },
       formData: {
         group: null
