@@ -42,15 +42,15 @@ export default {
     }
   },
   watch: {
+    modelValue: {
+      immediate: true,
+      handler() {
+        this.currentData = this.modelValue ?? "";
+      },
+    },
     currentData() {
       this.$emit("update:modelValue", this.currentData);
     },
-    modelValue() {
-      this.currentData = this.modelValue;
-    },
-  },
-  mounted() {
-    this.currentData = this.modelValue;
   },
   methods: {
     open() {
