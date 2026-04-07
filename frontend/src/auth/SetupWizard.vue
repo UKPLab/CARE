@@ -92,8 +92,8 @@
             <button
               class="btn btn-outline-secondary btn-sm"
               type="button"
-              :disabled="!wizardSettingsLoaded"
-              :title="wizardSettingsLoaded ? 'Download JSON with current wizard setting values' : 'Available after settings load'"
+              :disabled="!allSettingsLoaded"
+              :title="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
               @click="downloadImportTemplate"
             >
               Download template
@@ -342,6 +342,43 @@
                 </div>
               </div>
             </div>
+
+            <div v-if="mailEnabled" class="border-top pt-3 mt-4">
+              <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Send test email</h6>
+              <p class="small text-muted mb-2">
+                Sends a short fixed message so you can verify delivery before finishing setup.
+              </p>
+              <div class="form-group row my-2">
+                <label class="col-md-4 col-form-label text-md-right" for="setup-test-mail-to">Recipient</label>
+                <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
+                  <input
+                    id="setup-test-mail-to"
+                    v-model="testMailTo"
+                    class="form-control"
+                    type="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                  />
+                  <button
+                    class="btn btn-outline-primary flex-shrink-0"
+                    type="button"
+                    :disabled="testMailSending || !testMailTo.trim()"
+                    @click="sendSetupTestMail"
+                  >
+                    <span
+                      v-if="testMailSending"
+                      class="spinner-border spinner-border-sm me-1"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                    Send test email
+                  </button>
+                </div>
+              </div>
+              <p v-if="testMailMessage" class="small mb-0" :class="testMailError ? 'text-danger' : 'text-success'">
+                {{ testMailMessage }}
+              </p>
+            </div>
           </template>
 
           <div class="d-flex justify-content-between mt-4">
@@ -514,7 +551,7 @@
             <strong>skip the Mail and Registration steps</strong> (you can still review everything on the Summary).
           </p>
           <p class="small text-muted mb-3">
-            For a minimal example, use <strong>Download template</strong> on the General step, or export from Settings on an existing instance.
+            For a minimal example, use <strong>Download template</strong> on the General step (full settings snapshot with current wizard values), or export from Settings of an existing instance.
           </p>
           <input
             ref="jsonFileInput"
@@ -584,6 +621,13 @@ const SUBSECTION_ORDER = {
   registration: ["Enable registration", "Information requested at registration", "Consent options", "Email verification rate limit"],
 };
 
+function wizardValueToFormString(v) {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
 export default {
   name: "SetupWizard",
   components: { IconAsset, BasicEditor, EditorModal, Modal },
@@ -605,15 +649,19 @@ export default {
       showError: false,
       errorMessage: "",
       finishing: false,
+      allSettingsFromDb: null,
+      testMailTo: "",
+      testMailSending: false,
+      testMailMessage: "",
+      testMailError: false,
     };
   },
   computed: {
     isReRun() {
       return this.$route.query.reRun === "true";
     },
-    /** True once GET /setup/config has returned at least one wizard setting (enables template download). */
-    wizardSettingsLoaded() {
-      return Array.isArray(this.wizardSettings) && this.wizardSettings.length > 0;
+    allSettingsLoaded() {
+      return Array.isArray(this.allSettingsFromDb);
     },
     displaySteps() {
       const stepTypes = ["admin", "general", "mail", "registration", "summary"];
@@ -759,7 +807,7 @@ export default {
     if (config.data && config.data.wizardSettings) {
       this.wizardSettings = config.data.wizardSettings;
       this.formSettings = config.data.wizardSettings.reduce((acc, s) => {
-        acc[s.key] = s.value != null && s.value !== undefined ? String(s.value) : "";
+        acc[s.key] = wizardValueToFormString(s.value);
         return acc;
       }, {});
 
@@ -767,6 +815,9 @@ export default {
       if (this.formSettings["system.mailService.sendMail.enabled"] === "true") {
         this.formSettings["system.mailService.smtp.enabled"] = "false";
       }
+    }
+    if (config.data && Array.isArray(config.data.allSettings)) {
+      this.allSettingsFromDb = config.data.allSettings;
     }
     if (this.hasAdmin && this.$socket && !this.$socket.connected) {
       this.$socket.connect();
@@ -939,16 +990,60 @@ export default {
       if (this.$refs.jsonFileInput) this.$refs.jsonFileInput.value = "";
       this.$refs.importModal.open();
     },
-    /**
-     * JSON template from current wizard settings (DB values for showInWizard keys), same shape as import.
-     */
     downloadImportTemplate() {
-      const flat = (this.wizardSettings || []).reduce((acc, s) => {
-        const v = s.value;
-        acc[s.key] = v === null || v === undefined ? "" : v;
-        return acc;
-      }, {});
+      const serialize = (v) => {
+        if (v === null || v === undefined) return "";
+        if (typeof v === "boolean") return v ? "true" : "false";
+        if (typeof v === "object") return JSON.stringify(v);
+        return String(v);
+      };
+      const flat = {};
+      for (const row of this.allSettingsFromDb || []) {
+        if (!row || !row.key) continue;
+        flat[row.key] = serialize(row.value);
+      }
+      for (const [k, v] of Object.entries(this.formSettings || {})) {
+        flat[k] = serialize(v);
+      }
       downloadObjectsAs(flat, "care-settings-template", "json");
+    },
+    mailSettingsPayloadFromForm() {
+      const settings = {};
+      for (const [k, v] of Object.entries(this.formSettings || {})) {
+        if (k.startsWith("system.mailService.")) {
+          settings[k] = v === null || v === undefined ? "" : String(v);
+        }
+      }
+      return settings;
+    },
+    async sendSetupTestMail() {
+      const to = (this.testMailTo || "").trim();
+      if (!to) return;
+      this.testMailSending = true;
+      this.testMailMessage = "";
+      this.testMailError = false;
+      try {
+        const res = await axios.post(
+          getServerURL() + "/setup/test-mail",
+          { to, settings: this.mailSettingsPayloadFromForm() },
+          {
+            withCredentials: true,
+            validateStatus: (status) => status === 200 || (status >= 400 && status < 500),
+          }
+        );
+        if (res.status === 200 && res.data && res.data.success) {
+          this.testMailMessage = res.data.message || "Test email sent.";
+          this.testMailError = false;
+        } else {
+          this.testMailError = true;
+          this.testMailMessage = (res.data && res.data.message) || "Failed to send test email.";
+        }
+      } catch (err) {
+        this.testMailError = true;
+        this.testMailMessage = err?.response?.data?.message || err.message || "Failed to send test email.";
+      } finally {
+        this.testMailSending = false;
+      }
     },
     onJsonFileChange(ev) {
       this.importFile = ev.target.files && ev.target.files[0] || null;
