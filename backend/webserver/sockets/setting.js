@@ -1,4 +1,26 @@
 const Socket = require("../Socket.js");
+const mailTest = require("../utils/mailTest.js");
+
+const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
+
+/**
+ * @param {Array<{ key: string }>|undefined} data Settings payload from settingSave
+ * @returns {boolean} True if any saved key is under system.mailService.*
+ */
+function payloadTouchesMailService(data) {
+    if (!Array.isArray(data)) {
+        return false;
+    }
+    for (const setting of data) {
+        if (!setting || typeof setting.key !== "string") {
+            continue;
+        }
+        if (setting.key.startsWith(MAIL_SERVICE_KEY_PREFIX)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /**
  * Handle settings through websocket
@@ -42,6 +64,8 @@ class SettingSocket extends Socket {
             throw new Error("You do not have permission to save settings.");
         }
 
+        const shouldRefreshMail = payloadTouchesMailService(data);
+
         for (const setting of data) {
             let value = setting.value;
             if (typeof value === "object") {
@@ -54,6 +78,9 @@ class SettingSocket extends Socket {
         }
 
         options.transaction.afterCommit(async () => {
+            if (shouldRefreshMail) {
+                await this.server.refreshMailServer();
+            }
             await this.getSocket("AppSocket").sendSettings(true); // Notify all clients of new settings
             this.emit("settingData", await this.models["setting"].getAll(true)); // Refresh settings on this socket
         });
@@ -61,9 +88,34 @@ class SettingSocket extends Socket {
         return "Settings saved successfully.";
     }
 
+    /**
+     * Sends a fixed test email using current DB mail settings.
+     *
+     * @socketEvent mailSendTest
+     * @param {{ to: string }} data Recipient address.
+     * @returns {Promise<string>} Success message.
+     */
+    async mailSendTest(data) {
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to send test mail.");
+        }
+        const to = data && data.to != null ? String(data.to).trim() : "";
+        if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+            throw new Error("A valid recipient email address is required.");
+        }
+
+        const rows = await this.models["setting"].getAll(false);
+        const map = mailTest.buildMailMapFromSettingsRows(rows);
+        const transport = mailTest.buildTransportFromMailSettings(map);
+        const from = map["system.mailService.senderAddress"] || "";
+        await mailTest.sendFixedTestMail(transport, { from, to });
+        return "Test email sent.";
+    }
+
     init() {
         this.createSocket("settingGetData", this.sendSettings, {}, false);
         this.createSocket("settingSave", this.saveSettings, {}, true);
+        this.createSocket("mailSendTest", this.mailSendTest, {}, false);
     }
 }
 

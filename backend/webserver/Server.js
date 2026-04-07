@@ -86,7 +86,7 @@ module.exports = class Server {
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
         this.httpServer = http.createServer(this.app);
-        Promise.resolve(this.#initMailServer()).then(() => {
+        Promise.resolve(this.refreshMailServer()).then(() => {
             if (this.mailer) {
                 this.logger.info("Mail server initialized");
             } else {
@@ -119,10 +119,25 @@ module.exports = class Server {
     }
 
     /**
-     * Initialize the mail server
+     * Re-read mail settings from the database and rebuild the nodemailer transport.
+     * Used at startup and after admin saves mail-related settings (see SettingSocket).
+     * @returns {Promise<void>}
+     */
+    async refreshMailServer() {
+        try {
+            await this.#initMailServer();
+        } catch (err) {
+            this.logger.error("refreshMailServer failed: " + err);
+        }
+    }
+
+    /**
+     * Initialize the mail server from current DB settings.
+     * Clears any previous transport first so disabled mail or changed mode is reflected.
      * @returns {Promise<void>}
      */
     async #initMailServer() {
+        this.mailer = null;
 
         if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
             if (await this.db.models['setting'].get("system.mailService.sendMail.enabled") === "true") {
