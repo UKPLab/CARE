@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('llm_log', {
+    await queryInterface.createTable('ai_log', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -24,24 +24,21 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
         references: {
-          model: 'api_key',
+          model: 'ai_api_key',
           key: 'id',
         },
         onDelete: 'SET NULL',
         onUpdate: 'CASCADE',
       },
-      provider: {
-        type: Sequelize.STRING,
+      modelId: {
+        type: Sequelize.INTEGER,
         allowNull: false,
-      },
-      model: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      skillName: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: null,
+        references: {
+          model: 'ai_model',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
       },
       documentId: {
         type: Sequelize.INTEGER,
@@ -91,19 +88,30 @@ module.exports = {
         allowNull: false,
         defaultValue: 'success',
       },
+      deleted: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      deletedAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.fn('NOW'),
       },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
-    await queryInterface.addIndex('llm_log', ['userId']);
-    await queryInterface.addIndex('llm_log', ['provider']);
-    await queryInterface.addIndex('llm_log', ['createdAt']);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('llm_log');
+    await queryInterface.dropTable('ai_log');
   },
 };

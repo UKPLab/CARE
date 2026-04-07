@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('llm_provider', {
+    await queryInterface.createTable('ai_model', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -13,10 +13,9 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      slug: {
+      modelPath: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true,
       },
       apiBaseUrl: {
         type: Sequelize.STRING,
@@ -26,11 +25,6 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-      },
-      models: {
-        type: Sequelize.JSONB,
-        allowNull: false,
-        defaultValue: [],
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -56,6 +50,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('llm_provider');
+    await queryInterface.dropTable('ai_model');
   },
 };

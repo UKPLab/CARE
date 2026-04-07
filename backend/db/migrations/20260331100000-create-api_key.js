@@ -2,7 +2,9 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('api_key', {
+    await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
+
+    await queryInterface.createTable('ai_api_key', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -33,28 +35,13 @@ module.exports = {
         defaultValue: null,
       },
       encryptedKey: {
-        type: Sequelize.TEXT,
+        type: Sequelize.BLOB,
         allowNull: false,
       },
       enabled: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-      },
-      shared: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      sharedScope: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 'none',
-      },
-      sharedTargetId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
       },
       usageLimitMonthly: {
         type: Sequelize.INTEGER,
@@ -90,6 +77,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('api_key');
+    await queryInterface.dropTable('ai_api_key');
   },
 };
