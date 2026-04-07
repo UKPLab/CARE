@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Trace extends MetaModel {
         static autoTable = true;
         static fields = [];
+        static publicTable = true;
 
         static associate(models) {
             Trace.belongsTo(models["recording"], {

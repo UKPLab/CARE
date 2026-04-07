@@ -31,6 +31,7 @@ class RecorderSocket extends Socket {
             status: "recording",
             startTime: new Date(),
             userId: this.userId,
+            deleted: false,
         }, options);
 
         this.isRecording = true;
