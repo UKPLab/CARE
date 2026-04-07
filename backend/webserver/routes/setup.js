@@ -11,6 +11,7 @@
  * @param {import("../Server").Server} server
  */
 module.exports = function (server) {
+    const mailTest = require("../utils/mailTest.js");
     /**
      * GET /setup/config
      * Returns wizard config for first-time setup or re-run. needsSetup is true when no admin exists.
@@ -54,11 +55,51 @@ module.exports = function (server) {
 
             const wizardSettings = await server.db.models["setting"].getWizardSettings();
             const wizardSettingsByStep = await server.db.models["setting"].getWizardSettingsByStep();
+            const allSettings = await server.db.models["setting"].getAll(false);
 
-            return res.status(200).json({ needsSetup: true, steps, wizardSettings, wizardSettingsByStep });
+            return res.status(200).json({ needsSetup: true, steps, wizardSettings, wizardSettingsByStep, allSettings });
         } catch (err) {
             server.logger.error("GET /setup/config error: " + err);
             return res.status(500).json({ message: "Internal server error." });
+        }
+    });
+
+    /**
+     * POST /setup/test-mail
+     * Sends a fixed test message using mail settings from DB with optional body.settings overrides.
+     * Only allowed while needsSetup is true (no admin account).
+     */
+    server.app.post("/setup/test-mail", async function (req, res) {
+        try {
+            const admins = await server.db.models["user"].getUsersByRole("admin");
+            if (admins.length > 0) {
+                return res.status(403).json({ success: false, message: "Test mail is only available during initial setup." });
+            }
+
+            const to = req.body && req.body.to != null ? String(req.body.to).trim() : "";
+            if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+                return res.status(400).json({ success: false, message: "A valid recipient email address is required." });
+            }
+
+            const rows = await server.db.models["setting"].getAll(false);
+            const baseMap = mailTest.buildMailMapFromSettingsRows(rows);
+            const overlay = req.body && req.body.settings && typeof req.body.settings === "object" && !Array.isArray(req.body.settings)
+                ? req.body.settings
+                : {};
+            const map = { ...baseMap };
+            for (const [k, v] of Object.entries(overlay)) {
+                if (k && String(k).startsWith("system.mailService.")) {
+                    map[String(k)] = v != null && v !== undefined ? String(v) : "";
+                }
+            }
+
+            const transport = mailTest.buildTransportFromMailSettings(map);
+            const from = map["system.mailService.senderAddress"] || "";
+            await mailTest.sendFixedTestMail(transport, { from, to });
+            return res.status(200).json({ success: true, message: "Test email sent." });
+        } catch (err) {
+            server.logger.error("POST /setup/test-mail error: " + err);
+            return res.status(400).json({ success: false, message: err?.message || "Failed to send test email." });
         }
     });
 
