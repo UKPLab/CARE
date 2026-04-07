@@ -71,7 +71,46 @@
               :title="section.title"
               :subsections="section.subsections"
               :settings="displaySettings"
-          />
+          >
+            <template v-if="section.title === 'Mail'" #footer>
+              <div class="border-top pt-3 mt-2">
+                <h6 class="step-group-heading text-muted border-bottom pb-1 mb-2">Send test email</h6>
+                <p class="small text-muted mb-2">
+                  Sends a short fixed message using the currently saved mail configuration.
+                </p>
+                <div class="form-group row my-2">
+                  <label class="col-md-4 col-form-label text-md-right" for="settings-test-mail-to">Recipient</label>
+                  <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
+                    <input
+                        id="settings-test-mail-to"
+                        v-model="mailTestTo"
+                        class="form-control"
+                        type="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                    />
+                    <button
+                        class="btn btn-outline-primary flex-shrink-0"
+                        type="button"
+                        :disabled="mailTestSending || !mailTestTo.trim()"
+                        @click="sendMailTest"
+                    >
+                      <span
+                          v-if="mailTestSending"
+                          class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"
+                      />
+                      Send test email
+                    </button>
+                  </div>
+                </div>
+                <p v-if="mailTestMessage" class="small mb-0" :class="mailTestError ? 'text-danger' : 'text-success'">
+                  {{ mailTestMessage }}
+                </p>
+              </div>
+            </template>
+          </SettingsSection>
         </div>
       </template>
     </Card>
@@ -182,6 +221,10 @@ export default {
       uploadFile: null,
       uploading: false,
       originalSettingsSnapshot: null,
+      mailTestTo: "",
+      mailTestSending: false,
+      mailTestMessage: "",
+      mailTestError: false,
     };
   },
   computed: {
@@ -297,6 +340,23 @@ export default {
         return;
       }
       this.originalSettingsSnapshot = JSON.stringify(this.settings);
+    },
+    sendMailTest() {
+      const to = (this.mailTestTo || "").trim();
+      if (!to || !this.$socket) return;
+      this.mailTestSending = true;
+      this.mailTestMessage = "";
+      this.mailTestError = false;
+      this.$socket.emit("mailSendTest", { to }, (res) => {
+        this.mailTestSending = false;
+        if (res.success) {
+          this.mailTestError = false;
+          this.mailTestMessage = typeof res.data === "string" ? res.data : "Test email sent.";
+        } else {
+          this.mailTestError = true;
+          this.mailTestMessage = res.message || "Failed to send test email.";
+        }
+      });
     },
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {

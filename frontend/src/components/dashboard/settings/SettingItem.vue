@@ -7,19 +7,13 @@
     >
       <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-md-end">
         <span>{{ setting.displayName || setting.key }}</span>
-        <span
+        <FormHelp
           v-if="setting.description"
-          class="text-muted flex-shrink-0"
-          aria-hidden="true"
-        >
-          <LoadIcon icon-name="info-circle" :size="14" />
-        </span>
+          :help="setting.description"
+          icon-name="info-circle"
+          button-class="text-muted flex-shrink-0"
+        />
       </div>
-      <div
-        v-if="setting.description"
-        class="small text-muted mt-1 fw-normal text-break"
-        v-html="setting.description"
-      />
     </label>
     <div class="col-md-6 d-flex align-items-start">
       <template v-if="setting.type === 'edits'">
@@ -54,7 +48,7 @@
 
 <script>
 import EditorModal from "@/basic/editor/Modal.vue";
-import LoadIcon from "@/basic/Icon.vue";
+import FormHelp from "@/basic/form/Help.vue";
 
 /**
  * SettingItem - Renders a single setting row (label + input).
@@ -62,7 +56,7 @@ import LoadIcon from "@/basic/Icon.vue";
  */
 export default {
   name: "SettingItem",
-  components: { EditorModal, LoadIcon },
+  components: { EditorModal, FormHelp },
   props: {
     setting: {
       type: Object,

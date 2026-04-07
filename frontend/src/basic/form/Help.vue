@@ -1,7 +1,8 @@
 <template>
   <span
     v-if="help"
-    class="btn btn-sm mt-0 pt-0"
+    class="btn btn-sm mt-0 pt-0 border-0"
+    :class="buttonClass"
     :title="help"
     ref="tooltip"
     data-bs-html="true"
@@ -10,15 +11,13 @@
   >
     <LoadIcon
       :size="16"
-      icon-name="question-square-fill"
+      :icon-name="iconName"
     />
   </span>
 </template>
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
-// as directive
-import { VBTooltip } from 'bootstrap-vue-3';
 
 /**
  * Show help icon with tooltip if help is provided.
@@ -32,6 +31,14 @@ export default {
     help: {
       type: String,
       required: false,
+      default: null,
+    },
+    iconName: {
+      type: String,
+      default: "question-square-fill",
+    },
+    buttonClass: {
+      type: [String, Object, Array],
       default: null,
     },
   },
