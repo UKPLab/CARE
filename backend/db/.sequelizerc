@@ -1,20 +1,4 @@
 const path = require('path');
-const fs = require('fs');
-
-// Load repo-root .env so migrations (e.g. basic-users) see ADMIN_PWD / GUEST_PWD even when
-// the shell that runs `npx sequelize-cli` does not export them (common on Windows).
-// __dirname is backend/db — repo root is two levels up (…/backend/db → project root)
-const repoRoot = path.resolve(__dirname, '../..');
-const rootEnv = path.join(repoRoot, '.env');
-// Use override: true so values from .env win over empty/partial Windows user/shell variables
-// (dotenv’s default is to never overwrite existing process.env keys).
-require('dotenv').config({ path: rootEnv, override: true });
-if (process.env.ENV) {
-  const envFile = path.join(repoRoot, `.env.${process.env.ENV}`);
-  if (fs.existsSync(envFile)) {
-    require('dotenv').config({ path: envFile, override: true });
-  }
-}
 
 module.exports = {
   'config': path.resolve('./config', 'config.js'),
