@@ -31,6 +31,7 @@ help:
 	@echo "make lint             				Run linter (only frontend)"
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
+	@echo "make audit            				npm audit for frontend, backend, utils/modules/editor-delta-conversion"
 
 .PHONY: doc
 doc: doc_sphinx
@@ -205,3 +206,16 @@ endif
 
 .PHONY: modules
 modules: install-utils-modules
+
+.PHONY: audit
+# All three audits run even if one fails; exit 1 if any failed (npm.cmd avoids PowerShell execution policy on npm.ps1).
+ifeq ($(OS),Windows_NT)
+audit:
+	@powershell -NoProfile -Command "$$e=0; foreach ($$p in @('frontend','backend','utils/modules/editor-delta-conversion')) { Write-Host ''; Write-Host ('=== npm audit: ' + $$p + ' ==='); npm.cmd audit --prefix (Join-Path '$(CURDIR)' $$p); if ($$LASTEXITCODE -ne 0) { $$e=1 } }; exit $$e"
+else
+audit:
+	@st=0; for d in frontend backend utils/modules/editor-delta-conversion; do \
+		echo ""; echo "=== npm audit: $$d ==="; \
+		npm audit --prefix $$d || st=1; \
+	done; exit $$st
+endif
