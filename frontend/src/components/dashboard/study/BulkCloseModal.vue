@@ -103,9 +103,9 @@ export default {
   },
   data() {
     return {
-      notifySessions: false,
       workflowScope: "",
       studyUserScope: "any",
+      notifySessions: false,
     };
   },
   computed: {
@@ -122,47 +122,31 @@ export default {
       );
     },
     workflowOptions() {
-      const seen = new Set();
-      const opts = [];
-      for (const study of this.openStudiesInProject) {
-        const id = study.workflowId;
-        if (id == null || seen.has(id)) {
-          continue;
-        }
-        seen.add(id);
-        const wf = this.$store.getters["table/workflow/get"](id);
-        const name = wf?.name ? `${wf.name} (id ${id})` : `Workflow ${id}`;
-        opts.push({value: id, name});
-      }
-      return opts.sort((a, b) => a.name.localeCompare(b.name));
+      return [...new Set(this.openStudiesInProject.map(s => s.workflowId))]
+        .filter(id => id != null)
+        .map(id => {
+          const wf = this.$store.getters["table/workflow/get"](id);
+          return {
+            value: id,
+            name: wf?.name ? `${wf.name} (id ${id})` : `Workflow ${id}`,
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
     studyUserOptions() {
-      const seen = new Set();
-      const opts = [];
-      for (const study of this.openStudiesInProject) {
-        const id = study.userId;
-        if (id == null || seen.has(id)) {
-          continue;
-        }
-        seen.add(id);
-        const user = this.$store.getters["table/user/get"](id);
-        let name = `User ${id}`;
-        if (user) {
-          const parts = [user.firstName, user.lastName].filter(Boolean);
-          if (parts.length) {
-            name = parts.join(" ");
-          } else if (user.userName) {
-            name = user.userName;
-          } else if (user.email) {
-            name = user.email;
-          }
-        }
-        opts.push({value: id, name});
-      }
-      return opts.sort((a, b) => a.name.localeCompare(b.name));
+      return [...new Set(this.openStudiesInProject.map(s => s.userId))]
+        .filter(id => id != null)
+        .map(id => {
+          const user = this.$store.getters["table/user/get"](id);
+          const parts = user ? [user.firstName, user.lastName].filter(Boolean) : [];
+          const name = parts.length ? parts.join(" ")
+            : user?.userName || user?.email || `User ${id}`;
+          return { value: id, name };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
     matchingOpenCount() {
-      return this.matchingOpenStudies().length;
+      return this.matchingOpenStudies.length;
     },
     scopeSummary() {
       const n = this.matchingOpenCount;
@@ -170,6 +154,32 @@ export default {
         return "No open studies match the current filters.";
       }
       return `${n} open ${n === 1 ? "study matches" : "studies match"} these filters.`;
+    },
+    guestUserIds() {
+      const roles = this.$store.getters["table/user_role/getAll"] || [];
+      const guestRole = roles.find((r) => r.name === "guest" && !r.deleted);
+      if (!guestRole) return new Set();
+      const matchings = this.$store.getters["table/user_role_matching/getFiltered"](
+        (m) => !m.deleted && m.userRoleId === guestRole.id
+      );
+      return new Set(matchings.map((m) => Number(m.userId)));
+    },
+    matchingOpenStudies() {
+      const wf = Number(this.workflowScope);
+      const filterByWorkflow = Number.isFinite(wf) && wf > 0;
+
+      return this.openStudiesInProject.filter((s) => {
+        if (filterByWorkflow && Number(s.workflowId) !== wf) return false;
+
+        if (this.studyUserScope === "role_guest") {
+          return this.guestUserIds.has(Number(s.userId));
+        }
+        if (typeof this.studyUserScope === "string" && this.studyUserScope.startsWith("user:")) {
+          const id = Number(this.studyUserScope.slice("user:".length));
+          return Number.isFinite(id) && id > 0 && Number(s.userId) === id;
+        }
+        return true;
+      });
     },
     confirmButtonTitle() {
       return this.matchingOpenCount === 0
@@ -179,53 +189,13 @@ export default {
   },
   methods: {
     open() {
-      this.notifySessions = false;
       this.workflowScope = "";
       this.studyUserScope = "any";
+      this.notifySessions = false;
       this.$refs.bulkCloseModal.open();
     },
-    matchingOpenStudies() {
-      return this.openStudiesInProject.filter(
-          (s) => this.studyMatchesWorkflow(s) && this.studyMatchesUserScope(s)
-      );
-    },
-    studyMatchesWorkflow(s) {
-      const wf = Number(this.workflowScope);
-      if (!Number.isFinite(wf) || wf <= 0) {
-        return true;
-      }
-      return Number(s.workflowId) === wf;
-    },
-    studyUserHasRole(userId, roleName) {
-      if (userId == null) {
-        return false;
-      }
-      const uid = Number(userId);
-      const roles = this.$store.getters["table/user_role/getAll"] || [];
-      const role = roles.find((r) => r.name === roleName && !r.deleted);
-      if (!role) {
-        return false;
-      }
-      const matches = this.$store.getters["table/user_role_matching/getFiltered"](
-          (m) => !m.deleted && Number(m.userId) === uid && m.userRoleId === role.id
-      );
-      return matches.length > 0;
-    },
-    studyMatchesUserScope(s) {
-      if (this.studyUserScope === "any") {
-        return true;
-      }
-      if (this.studyUserScope === "role_guest") {
-        return this.studyUserHasRole(s.userId, "guest");
-      }
-      if (typeof this.studyUserScope === "string" && this.studyUserScope.startsWith("user:")) {
-        const id = Number(this.studyUserScope.slice("user:".length));
-        return Number.isFinite(id) && id > 0 && Number(s.userId) === id;
-      }
-      return true;
-    },
     closeMatchingStudies() {
-      const matches = this.matchingOpenStudies();
+      const matches = this.matchingOpenStudies;
       if (matches.length === 0) {
         this.eventBus.emit("toast", {
           title: "Nothing to close",
