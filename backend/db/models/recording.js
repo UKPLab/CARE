@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
             startTime: DataTypes.DATE,
             endTime: DataTypes.DATE,
             userId: DataTypes.INTEGER,
-            deleted: DataTypes.BOOLEAN,
+            deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
