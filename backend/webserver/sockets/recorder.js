@@ -12,6 +12,8 @@ class RecorderSocket extends Socket {
         super(server, io, socket);
         this.isRecording = false;
         this.currentRecordingId = null;
+        this.incomingHandler = null;
+        this.outgoingHandler = null;
     }
 
     /**
@@ -31,14 +33,14 @@ class RecorderSocket extends Socket {
             status: "recording",
             startTime: new Date(),
             userId: this.userId,
-            deleted: false,
         }, options);
 
         this.isRecording = true;
         this.currentRecordingId = recording.id;
 
-        // Catch all incoming events (frontend -> backend)
-        this.socket.onAny(async (eventName, ...args) => {
+        // Store handlers as instance properties so we can detach
+        // exactly these listeners later (instead of nuking all catch-alls)
+        this.incomingHandler = async (eventName, ...args) => {
             if (!this.isRecording) return;
             try {
                 await this.models["trace"].add({
@@ -52,10 +54,9 @@ class RecorderSocket extends Socket {
             } catch (err) {
                 this.logger.error("Failed to save trace: " + err.message);
             }
-        });
+        };
 
-        // Catch all outgoing events (backend -> frontend)
-        this.socket.onAnyOutgoing(async (eventName, ...args) => {
+        this.outgoingHandler = async (eventName, ...args) => {
             if (!this.isRecording) return;
             try {
                 await this.models["trace"].add({
@@ -69,7 +70,10 @@ class RecorderSocket extends Socket {
             } catch (err) {
                 this.logger.error("Failed to save trace: " + err.message);
             }
-        });
+        };
+
+        this.socket.onAny(this.incomingHandler);
+        this.socket.onAnyOutgoing(this.outgoingHandler);
 
         this.sendToast("Recording started", "Socket Profiler", "success");
         return recording.id;
@@ -90,10 +94,16 @@ class RecorderSocket extends Socket {
             throw new Error("No active recording");
         }
 
-        // Remove catch-all listeners FIRST so the recorderStop event
-        // itself doesn't keep spawning new trace writes
-        this.socket.offAny();
-        this.socket.offAnyOutgoing();
+        // Remove only OUR catch-all listeners, by reference,
+        // so we don't stomp on any catch-alls registered elsewhere
+        if (this.incomingHandler) {
+            this.socket.offAny(this.incomingHandler);
+            this.incomingHandler = null;
+        }
+        if (this.outgoingHandler) {
+            this.socket.offAnyOutgoing(this.outgoingHandler);
+            this.outgoingHandler = null;
+        }
 
         // Update recording status and end time
         await this.models["recording"].updateById(
