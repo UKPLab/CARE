@@ -130,9 +130,6 @@ class StudySocket extends Socket {
     }
 
     /**
-<<<<<<< feat-134-close_all_studies_options
-     * Closes studies associated with a given project ID in a loop.
-=======
      * Send study closed email to users with open/unfinished sessions.
      * Uses Type 6 templates configured in settings.
      * @param {Object} study - Study object
@@ -241,7 +238,6 @@ class StudySocket extends Socket {
 
     /**
      * Closes all studies associated with a given project ID in a loop.
->>>>>>> dev
      * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
      *
      * @socketEvent studyCloseBulk
