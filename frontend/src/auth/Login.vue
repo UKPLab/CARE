@@ -97,6 +97,40 @@
                 @click="$refs.forgotPasswordModal.open()"
               >Forgot Password?</a>
             </div>
+
+            <hr v-if="showExternalLoginOptions">
+
+            <div v-if="showExternalLoginOptions" class="col-md-8 offset-md-2 mt-3">
+              <p class="text-center text-muted small mb-2">
+                Or sign in with
+              </p>
+              <div class="d-grid gap-2">
+                <button
+                  v-if="showOrcidLogin"
+                  type="button"
+                  class="btn btn-outline-success btn-block"
+                  @click="loginWithOrcid"
+                >
+                  ORCID
+                </button>
+                <button
+                  v-if="showLdapLogin"
+                  type="button"
+                  class="btn btn-outline-secondary btn-block"
+                  @click="toLdapLogin"
+                >
+                  LDAP
+                </button>
+                <button
+                  v-if="showSamlLogin"
+                  type="button"
+                  class="btn btn-outline-dark btn-block"
+                  @click="loginWithSaml"
+                >
+                  SSO
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div
@@ -204,6 +238,18 @@ export default {
     showRegisterButton() {
       return window.config['app.register.enabled'] === 'true';
     },
+    showOrcidLogin() {
+      return window.config['system.auth.orcid.enabled'] === 'true';
+    },
+    showLdapLogin() {
+      return window.config['system.auth.ldap.enabled'] === 'true';
+    },
+    showSamlLogin() {
+      return window.config['system.auth.saml.enabled'] === 'true';
+    },
+    showExternalLoginOptions() {
+      return this.showOrcidLogin || this.showLdapLogin || this.showSamlLogin;
+    },
     validUsername() {
       return this.formData.username !== "";
     },
@@ -227,10 +273,31 @@ export default {
   },
   methods: {
     handleQueryParams() {
+      if (this.$route.query.error) {
+        this.showError = true;
+        this.errorMessage = this.mapAuthErrorCode(this.$route.query.error);
+      }
       if (this.$route.query.token) {
         this.verifyEmail(this.$route.query.token);
       }
-      this.$router.replace({ name: this.$route.name });
+      const query = {};
+      if (this.$route.query.redirectedFrom) {
+        query.redirectedFrom = this.$route.query.redirectedFrom;
+      }
+      this.$router.replace({ name: this.$route.name, query });
+    },
+    mapAuthErrorCode(errorCode) {
+      const mapping = {
+        "twofactor-session-save-failed": "Could not start 2FA due to a session issue. Please try logging in again.",
+        "unsupported-2fa-method": "This account uses an unsupported 2FA method. Please contact an administrator.",
+        "orcid-login-disabled": "ORCID login is currently disabled.",
+        "orcid-login-not-ready": "ORCID login is enabled but not fully configured.",
+        "orcid-login-failed": "ORCID login failed. Please try again.",
+        "saml-login-disabled": "SAML login is currently disabled.",
+        "saml-login-not-ready": "SAML login is enabled but not fully configured.",
+        "saml-login-failed": "SAML login failed. Please try again.",
+      };
+      return mapping[errorCode] || "Login failed. Please try again.";
     },
     checkSelfRegistration() {
       if (this.$route.query.registrationDisabled === "true") {
@@ -256,12 +323,15 @@ export default {
     },
     async login_user() {
       try {
-        await this.login({username: this.formData.username, password: this.formData.password})
-        {
+        const loginResult = await this.login({
+          username: this.formData.username,
+          password: this.formData.password,
+        });
 
+        if (loginResult?.completedLogin) {
+          // TODO: May need to figure out another way to fix old user data persisting issue.
           await this.$router.go(0);
           this.showError = false;
-
         }
       } catch (error) {
         this.showError = true;
@@ -273,8 +343,12 @@ export default {
     },
     async login_guest() {
       try {
-        await this.login({username: "guest", password: "guestguest"});
-        {
+        const loginResult = await this.login({
+          username: "guest",
+          password: "guestguest",
+        });
+
+        if (loginResult?.completedLogin) {
           await this.$router.go(0);
           this.showError = false;
         }
@@ -285,23 +359,86 @@ export default {
     },
     async login(credentials) {
       const response = await axios.post(getServerURL() + '/auth/login',
-          credentials,
+          {
+            ...credentials,
+            redirectedFrom: this.$route.query.redirectedFrom,
+          },
           {
             validateStatus: function (status) {
-              return status === 200 || status === 401;
+              return status === 200 || status === 400 || status === 401;
             },
             withCredentials: true
           });
-      if (response.status === 401) {
+      if (response.status === 400 || response.status === 401) {
         // Check if the error is due to unverified email
         if (response.data.emailNotVerified) {
           this.showEmailVerificationModal(response.data.email);
         }
         throw response.data.message;
       }
-      await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
-    },
 
+      // Check if 2FA is required
+      if (response.status === 200) {
+        if (response.data.requiresTwoFactor) {
+          const { method, methods, selectionRequired } = response.data;
+          // If multiple methods are enabled, let the user choose
+          if (selectionRequired) {
+            await this.$router.push({
+              name: "2fa-select",
+              query: {
+                methods: Array.isArray(methods) ? methods.join(",") : "",
+                redirectedFrom: this.$route.query.redirectedFrom
+              }
+            });
+            return { completedLogin: false };
+          }
+
+          // Single method, go directly to corresponding verification
+          if (method === "email") {
+            await this.$router.push({
+              name: "2fa-verify-email",
+              query: {
+                redirectedFrom: this.$route.query.redirectedFrom
+              }
+            });
+            return { completedLogin: false };
+          }
+
+          if (method === "totp") {
+            await this.$router.push({
+              name: "2fa-verify-totp",
+              query: {
+                redirectedFrom: this.$route.query.redirectedFrom
+              }
+            });
+            return { completedLogin: false };
+          }
+          // Unknown method: surface a clear error
+          this.showError = true;
+          this.errorMessage = "Unsupported 2FA method returned from server.";
+          return { completedLogin: false };
+        }
+        // Normal login flow (no 2FA)
+        await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
+        return { completedLogin: true };
+      }
+    },
+    loginWithOrcid() {
+      const redirectedFrom = this.$route.query.redirectedFrom;
+      const query = redirectedFrom ? `?redirectedFrom=${encodeURIComponent(redirectedFrom)}`: "";
+      window.location.href = getServerURL() + "/auth/login/orcid" + query;
+    },
+    loginWithSaml() {
+      const redirectedFrom = this.$route.query.redirectedFrom;
+      const query = redirectedFrom ? `?redirectedFrom=${encodeURIComponent(redirectedFrom)}`: "";
+      window.location.href = getServerURL() + "/auth/login/saml" + query;
+    },
+    toLdapLogin() {
+      this.$router.push({
+        name: "login-ldap",
+        query: { redirectedFrom: this.$route.query.redirectedFrom },
+      });
+    },
     showEmailVerificationModal(email) {
       this.$refs.emailVerificationModal.open(email);
     },
@@ -327,7 +464,7 @@ export default {
             variant: "danger",
           });
         }
-      } catch (error) {
+      } catch (_error) {
         this.eventBus.emit("toast", {
           title: "Email Verification Error",
           message: "Failed to verify email. Please try again later.",

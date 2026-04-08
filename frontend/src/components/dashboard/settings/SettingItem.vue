@@ -28,9 +28,32 @@
                           <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
                         </div>
                         <div v-else-if="setting.type === 'boolean' || setting.type === 'bool'" class="form-check form-switch">
-                          <input v-model="setting.value" :checked="setting.value"
-                                 class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
-                                 type="checkbox">
+                          <input 
+                            v-model="setting.value" 
+                            :checked="setting.value"
+                            class="form-check-input" 
+                            role="switch" 
+                            title="Activate/Deactivate NLP support"
+                            type="checkbox"
+                          >
+                        </div>
+                        <textarea
+                            v-else-if="setting.type === 'text'"
+                            v-model="setting.value"
+                            class="w-100 form-control"
+                            rows="6"
+                        ></textarea>
+                        <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
+                          <select v-model="setting.value" class="form-select">
+                            <option value="">None (use default email)</option>
+                            <option 
+                              v-for="template in getFilteredEmailTemplates(setting)" 
+                              :key="template.id" 
+                              :value="String(template.id)"
+                            >
+                              {{ template.name }} (ID: {{ template.id }})
+                            </option>
+                          </select>
                         </div>
                         <div v-else-if="setting.type === 'color'" class="d-flex align-items-center gap-3 mt-2 flex-wrap">
                           <input
@@ -85,6 +108,7 @@ import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 export default {
   name: "SettingItem",
   components: { LoadIcon, EditorModal, LogoSvg },
+  subscribeTable: ["template"],
   props: {
     group: Object,
     title: String
@@ -93,6 +117,24 @@ export default {
     return {
       collapsed: true
     };
+  },
+  computed: {
+    user() {
+      return this.$store.getters["auth/getUser"];
+    },
+    emailTemplates() {
+      const allTemplates = this.$store.getters["table/template/getAll"]
+        .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3 || t.type === 6));
+      
+      // Show only the user's own templates (includes copies since copies have userId === currentUser)
+      const visibleTemplates = allTemplates.filter(t => t.userId === this.user?.id);
+      
+      return visibleTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        type: t.type
+      }));
+    }
   },
   methods: {
     toggleCollapse() {
@@ -120,6 +162,34 @@ export default {
         return DEFAULT_RE_BG;
       }
       return null;
+    },
+    isEmailTemplateSetting(setting) {
+      return setting.key && 
+             setting.key.startsWith("email.template.") && 
+             (setting.type === "number" || setting.type === "integer");
+    },
+    getFilteredEmailTemplates(setting) {
+      // Determine template type based on setting key
+      let requiredType = null;
+      if (setting.key === "email.template.passwordReset" || 
+          setting.key === "email.template.verification" || 
+          setting.key === "email.template.registration" ||
+          setting.key === "email.template.twoFactorOtp" ||
+          setting.key === "email.template.passwordResetSuccess") {
+        requiredType = 1; // Email - General
+      } else if (setting.key === "email.template.sessionStart" || 
+                 setting.key === "email.template.sessionFinish") {
+        requiredType = 2; // Email - Study Session
+      } else if (setting.key === "email.template.assignment") {
+        requiredType = 3; // Email - Assignment
+      } else if (setting.key === "email.template.studyClosed") {
+        requiredType = 6; // Email - Study Close
+      }
+      
+      // Filter by type if determined
+      return requiredType !== null 
+        ? this.emailTemplates.filter(t => t.type === requiredType)
+        : this.emailTemplates;
     }
   }
 };

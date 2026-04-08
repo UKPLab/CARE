@@ -578,6 +578,20 @@ module.exports = (sequelize, DataTypes) => {
             emailVerificationToken: DataTypes.STRING,
             lastPasswordResetEmailSent: DataTypes.DATE,
             lastVerificationEmailSent: DataTypes.DATE,
+            // Email OTP for 2FA
+            twoFactorOtp: DataTypes.STRING,
+            twoFactorOtpExpiresAt: DataTypes.DATE,
+            // Multi-method 2FA configuration
+            twoFactorMethods: {
+                type: DataTypes.JSON,
+                defaultValue: [],
+            },
+            // TOTP for 2FA
+            totpSecret: DataTypes.STRING,
+            // External login method identifiers
+            orcidId: DataTypes.STRING,
+            ldapUsername: DataTypes.STRING,
+            samlNameId: DataTypes.STRING,
         },
         {
             sequelize,

@@ -217,7 +217,7 @@ export default {
             message: "Skill configuration copied to clipboard!",
             variant: "success"
           });
-        } catch ($e) {
+        } catch (_error) {
           this.eventBus.emit('toast', {
             title: "Config not copied",
             message: "Could not copy skill configuration to clipboard!",

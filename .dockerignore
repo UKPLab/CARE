@@ -13,3 +13,6 @@ docs
 # exclude aux files
 .git
 .idea
+
+# exclude database dumps 
+db_dumps 

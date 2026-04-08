@@ -76,6 +76,7 @@ class AppSocket extends Socket {
                     transaction: transaction
                 }
             );
+            
             return newEntry.id;
         }
 
@@ -198,6 +199,7 @@ class AppSocket extends Socket {
      */
     async sendUser() {
         try {
+            const sessionUser = this.socket.request.session?.passport?.user || {};
             const user = relevantFields(
                 await this.models["user"].getById(this.userId)
             );
@@ -215,6 +217,7 @@ class AppSocket extends Socket {
 
             const userWithRoleInfo = {
                 ...user,
+                loginMethod: sessionUser.loginMethod || null,
                 roles: userRoleIds,
                 rights: userRights,
                 isAdmin: await this.isAdmin(),

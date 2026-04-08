@@ -165,7 +165,7 @@ export default {
       immediate: true
     },
     formData: {
-      handler(newVal) {
+      handler(_newVal) {
         const updated = {
           text: this.formatPlaceholder(this.placeholderType.text),
           chart: this.formatPlaceholder(this.placeholderType.chart),
