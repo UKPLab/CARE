@@ -39,8 +39,8 @@ const settings = [
   {
     key: 'service.llm.systemApiKey',
     value: '',
-    type: 'string',
-    description: 'System-level fallback API key (encrypted). Used when users have no personal key.',
+    type: 'encrypted',
+    description: 'System-level fallback API key. Used when users have no personal key.',
     onlyAdmin: true,
   },
 ];
