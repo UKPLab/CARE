@@ -11,7 +11,7 @@
         You have selected one or more students who <strong>didn't accept data sharing</strong>.
       </div>
 
-      <div v-if="anonymizeNames" class="alert alert-danger mt-3">
+      <div v-if="generateAliases" class="alert alert-danger mt-3">
         The downloaded ZIP archive will include a CSV file that maps the generated aliases back to the real student names.
       </div>
 
@@ -39,6 +39,18 @@
 <script>
 import BasicLoading from "@/basic/Loading.vue";
 
+/**
+ * StepConfirmDownload
+ *
+ * The final confirmation step within the ExportModal. 
+ * This component provides a summary of the selected 
+ * submissions intended for download, as well as some
+ * warnings for the user, if they selected generate aliases
+ * or students who didn't accept data sharing.
+ *
+ * @author Mélissa Loew
+ */
+
 export default {
   name: "StepConfirmDownload",
   components: { BasicLoading },
@@ -47,7 +59,7 @@ export default {
       type: Boolean,
       default: false
     },
-    anonymizeNames: {
+    generateAliases: {
       type: Boolean,
       default: false
     },

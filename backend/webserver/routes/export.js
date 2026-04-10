@@ -2,12 +2,13 @@ const archiver = require('archiver');
 const path = require('path');
 const fs = require('fs');
 const { faker } = require('@faker-js/faker');
-const crypto = require('crypto');
 const JSZip = require('jszip');
+const { deriveUserSeed } = require('../auth/utils');
+const Papa = require('papaparse');
 
 module.exports = function (server) {
 
-    server.app.post('/export/project/stream', async function (req, res) {
+    server.app.post('/export/stream', async function (req, res) {
 
         // Auth checking
         const currentUserId = req.user?.id;
@@ -34,9 +35,9 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, anonymizeNames, fakerSeed } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed } = req.body;
         let { userIds = [] } = req.body;
-        const shouldAnonymize = String(anonymizeNames) === 'true';
+        const shouldGenerateAliases = String(generateAliases) === 'true';
 
         try {
             userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
@@ -61,8 +62,8 @@ module.exports = function (server) {
                 return res.status(400).send("No authorized users to export.");
             }
 
-            // build user mapping for anonymization
-            const { userMapping, mappingCsv } = buildUserMapping(users, shouldAnonymize, hasPrivateInfoRight, fakerSeed, currentUser.salt);
+            // build user mapping for aliases
+            const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
 
             // archiver stream setup
             const exportFolderName = `${exportType}_${Date.now()}.zip`;
@@ -75,8 +76,8 @@ module.exports = function (server) {
 
             // start stream & start by piping the mapping if necessary
             archive.pipe(res);
-            if (shouldAnonymize) {
-                archive.append(mappingCsv, { name: 'anonymization_mapping.csv' });
+            if (shouldGenerateAliases) {
+                archive.append(mappingCsv, { name: 'aliases_mapping.csv' });
             }
 
             // process based on type
@@ -87,7 +88,7 @@ module.exports = function (server) {
                         projectId,
                         userIds,
                         users,
-                        shouldAnonymize,
+                        shouldGenerateAliases,
                         hasPrivateInfoRight,
                         userMapping,
                         exportFolderName.split('.')[0],
@@ -109,36 +110,14 @@ module.exports = function (server) {
     // HELPER FUNCTIONS
 
     /**
-     * Generates a deterministic 32-bit unsigned integer seed by hashing a 
-     * provided seed integer with a user-specific salt using SHA-256.
-     * * @param {number} seedInt - The base integer seed (from the form input).
-     * @param {string} saltHex - The hex-encoded salt string from the user's database record.
-     * @returns {number} - A deterministic 32-bit unsigned integer (uint32) to be used as a seed for the Faker API.
-     */
-    function deriveUserSeed(seedInt, saltHex) {
-        const seedBuf = Buffer.alloc(8);
-        seedBuf.writeBigUInt64BE(BigInt(seedInt));
-
-        const saltBuf = Buffer.from(saltHex, "hex");
-
-        const hash = crypto
-            .createHash("sha256")
-            .update(seedBuf)
-            .update(saltBuf)
-            .digest();
-
-        return hash.readUInt32BE(0); // uint32
-    }
-
-    /**
      * Opens a zip file, replaces the student's real name with a fake name in all .tex files,
      * and returns the modified zip as a Buffer.
-     * * @param {string} filePath - Path to the original zip file on disk
+     * @param {string} filePath - Path to the original zip file on disk
      * @param {string} realName - The student's real name to search for
-     * @param {string} fakeName - The anonymized name to insert
+     * @param {string} fakeName - The generated fake name to insert
      * @returns {Promise<Buffer>} - The newly generated zip file buffer
      */
-    async function anonymizeZipFile(filePath, realName, fakeName) {
+    async function replaceAuthorInZip(filePath, realName, fakeName) {
         const fileData = fs.readFileSync(filePath);
         const zip = await JSZip.loadAsync(fileData);
 
@@ -164,20 +143,20 @@ module.exports = function (server) {
     /**
      * Constructs a mapping of user IDs to aliases and generates a 
      * corresponding CSV string.
-     * * @param {Array<Object>} users - Array of user objects from the database.
-     * @param {boolean} shouldAnonymize - Whether the export should use fake names.
+     * @param {Array<Object>} users - Array of user objects from the database.
+     * @param {boolean} shouldGenerateAliases - Whether the export should use fake names.
      * @param {boolean} hasPrivateInfoRight - Whether the current user is allowed to see/export full names.
      * @param {number|string} fakerSeed - The base integer seed (from the form input).
      * @param {string} salt - The hex-encoded salt string from the user's database record.
      * @returns {Object} An object containing:
-     * - userMapping: An object mapping user IDs to their generated anonymized names.
+     * - userMapping: An object mapping user IDs to their generated fake names.
      * - mappingCsv: A CSV-formatted string containing the mapping (conditionally includes real names).
      */
-    function buildUserMapping(users, shouldAnonymize, hasPrivateInfoRight, fakerSeed, salt) {
+    function buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, salt) {
         let userMapping = {};
-        let mappingCsv = hasPrivateInfoRight ? "Username,Real Name,Anonymized Name\n" : "Username,Anonymized Name\n";
+        let csvRows = [];
 
-        if (shouldAnonymize) {
+        if (shouldGenerateAliases) {
             if (fakerSeed && !isNaN(parseInt(fakerSeed, 10))) {
                 const derivedFakerSeed = deriveUserSeed(parseInt(fakerSeed, 10), salt);
                 faker.seed(derivedFakerSeed);
@@ -190,13 +169,19 @@ module.exports = function (server) {
                 
                 userMapping[u.id] = fakeName;
 
+                let rowData = {
+                    "Username": realUsername
+                };
                 if (hasPrivateInfoRight) {
-                    mappingCsv += `"${realUsername}","${realName}","${fakeName}"\n`;
-                } else {
-                    mappingCsv += `"${realUsername}","${fakeName}"\n`;
+                    rowData["Real Name"] = realName;
                 }
+
+                rowData["Generated Alias"] = fakeName;
+
+                csvRows.push(rowData);
             });
         }
+        const mappingCsv = csvRows.length > 0 ? Papa.unparse(csvRows) : "";
         return { userMapping, mappingCsv };
     }
 
@@ -204,25 +189,26 @@ module.exports = function (server) {
      * Does the fetching, filtering, and archiving of student submissions for a specific project.
      * Handles file renaming based on validation rules and manages directory structures
      * (Student Name/Version/File) within the ZIP archive.
-     * * @param {Object} server - The server instance providing database models and Sequelize operators.
+     * @param {Object} server - The server instance providing database models and Sequelize operators.
      * @param {number|string} projectId - The ID of the project to export submissions from.
      * @param {Array<number|string>} userIds - List of user IDs for this export.
      * @param {Array<Object>} users - Full user objects.
-     * @param {boolean} shouldAnonymize - If true, students' real names are replaced with fake names.
+     * @param {boolean} shouldGenerateAliases - If true, students' real names are replaced with fake names.
      * @param {boolean} hasPrivateInfoRight - If true, non-anonymized exports use full name instead of username.
-     * @param {Object} userMapping - A map of user IDs to their generated anonymized names.
+     * @param {Object} userMapping - A map of user IDs to their generated fake names.
      * @param {string} baseFolderName - The root directory name inside the generated ZIP.
      * @param {Object} archive - The archiver instance (stream) where files are appended.
      * @returns {Promise<void>} - Resolves once all submissions have been processed and added to the archive.
      */
-    async function processSubmissionsExport(server, projectId, userIds, users, shouldAnonymize, hasPrivateInfoRight, userMapping, baseFolderName, archive) {
+    async function processSubmissionsExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, baseFolderName, archive) {
         
-        // Fetch all top-level submissions for the selected users
+        // Fetch all submissions for the selected users
         const submissions = await server.db.models.submission.findAll({
             where: {
                 projectId,
                 userId: userIds,
-                parentSubmissionId: null // Using null directly instead of Op.is
+                parentSubmissionId: null,
+                deleted: false
             },
             include: [{
                 model: server.db.models.document,
@@ -230,7 +216,7 @@ module.exports = function (server) {
             }]
         });
 
-        // Fetch configurations for file renaming rules
+        // Fetch validation configurations that was used when document was uploaded to rename file in consistent way
         const configurationIds = [...new Set(submissions.map(s => s.validationConfigurationId).filter(Boolean))];
         const configurations = await server.db.models.configuration.findAll({
             where: { id: configurationIds }
@@ -251,7 +237,7 @@ module.exports = function (server) {
             if (!student) continue;
 
             const validationRules = configMap.get(submission.validationConfigurationId);
-            let folderName = shouldAnonymize ? userMapping[student.id] : (hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : `${student.userName}`);
+            let folderName = shouldGenerateAliases ? userMapping[student.id] : (hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : `${student.userName}`);
 
             for (const doc of submission.documents) {
                 const version = calculateSubmissionVersion(submission, submissionMap);
@@ -273,14 +259,14 @@ module.exports = function (server) {
                 const destPathInArchive = `${baseFolderName}/${folderName}/version_${version}/${fileName}`;
 
                 if (fs.existsSync(filePath)) {
-                    if (shouldAnonymize && doc.type == 4) {
+                    if (shouldGenerateAliases && doc.type == 4) {
                         const realName = `${student.firstName} ${student.lastName}`;
                         const fakeName = userMapping[student.id];
                         try {
-                            const newZipBuffer = await anonymizeZipFile(filePath, realName, fakeName);
+                            const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
                             archive.append(newZipBuffer, { name: destPathInArchive });
                         } catch (err) {
-                            console.error(`Failed to anonymize zip ${doc.hash}:`, err);
+                            console.error(`Failed to change names for zip ${doc.hash}:`, err);
                             archive.file(filePath, { name: destPathInArchive });
                         }
                     } else {
@@ -296,7 +282,7 @@ module.exports = function (server) {
     /**
      * Calculates the version number of a submission by traversing backwards 
      * through the chain of previous submissions.
-     * * @param {Object} submission - The current submission object to start from.
+     * @param {Object} submission - The current submission object to start from.
      * @param {Map<number|string, Object>} submissionMap - A Map containing all related 
      * submissions for quick lookup by ID.
      * @returns {number} - The calculated version number (starting at 1 for the original).

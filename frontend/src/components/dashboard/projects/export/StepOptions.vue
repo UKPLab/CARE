@@ -8,15 +8,15 @@
       <input 
         class="form-check-input" 
         type="checkbox" 
-        id="anonymizeSwitch" 
-        v-model="anonymize"
+        id="aliasSwitch" 
+        v-model="aliases"
       >
-      <label class="form-check-label" for="anonymizeSwitch">
+      <label class="form-check-label" for="aliasSwitch">
         <strong>Generate aliases for student names</strong>
       </label>
     </div>
     
-    <div v-if="anonymize">
+    <div v-if="aliases">
       <label for="fakerSeedInput" class="form-label small mb-1">Custom Seed (Optional):</label>
       <input 
         id="fakerSeedInput"
@@ -28,17 +28,26 @@
         placeholder="e.g. 846569412"
       >
       <small class="text-muted d-block mt-1">
-        Using the same seed generates the same aliases across different exports.
+        Using the same seed ensures consistent aliases for your own exports. <strong>Note:</strong> Aliases are tied to your account and won't match other users' exports.
       </small>
     </div>
   </div>
 </template>
 
 <script>
+/**
+ * StepOptions
+ *
+ * Provides configuration options for the export process. Currently, it allows 
+ * the user to toggle alias generation for student names and set a custom seed for it.
+ *
+ * @author Mélissa Loew
+ */
+
 export default {
   name: "StepOptions",
   props: {
-    anonymizeNames: {
+    generateAliases: {
       type: Boolean,
       default: false
     },
@@ -47,11 +56,11 @@ export default {
       default: 846569412
     }
   },
-  emits: ['update:anonymizeNames', 'update:fakerSeed'],
+  emits: ['update:generateAliases', 'update:fakerSeed'],
   computed: {
-    anonymize: {
-      get() { return this.anonymizeNames; },
-      set(value) { this.$emit('update:anonymizeNames', value); }
+    aliases: {
+      get() { return this.generateAliases; },
+      set(value) { this.$emit('update:generateAliases', value); }
     },
     seed: {
       get() { return this.fakerSeed; },

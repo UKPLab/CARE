@@ -20,6 +20,16 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 
+/**
+ * StepSelectStudents
+ *
+ * This component renders an interactive data table allowing the user to select 
+ * specific student submissions for download. It adjusts data visibility depending
+ * on the user's rights to see the full names or not.
+ *
+ * @author Mélissa Loew
+ */
+
 export default {
   name: "StepSelectStudents",
   components: { BasicTable },
@@ -96,6 +106,7 @@ export default {
       
       return Object.values(submissionsByUser).map(submission => ({
         ...submission,
+        id: submission.userId,
         lastSubmissionDate: submission.lastSubmissionDate.toISOString().split('T')[0]
       }));
     },
@@ -110,7 +121,7 @@ export default {
           filter: [
             { key: "Yes", name: "Yes" },
             { key: "No", name: "No" },
-          ]
+          ],
         },
         { name: "Last Submitted", key: "lastSubmissionDate", sortable: true }
       ];

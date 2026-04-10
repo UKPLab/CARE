@@ -89,20 +89,20 @@
     
     <template #step-3 v-if="dataSelection.exportType === 'submissions'">
       <StepOptions 
-        v-model:anonymizeNames="anonymizeNames"
+        v-model:generateAliases="generateAliases"
         v-model:fakerSeed="fakerSeed"
       />
-      <!-- We get the info back if user wants to anonymize names and the seed that should be used for this -->
+      <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
     </template>
 
     <template #step-4 v-if="dataSelection.exportType === 'submissions'">
       <StepConfirmDownload 
         v-if="dataSelection.exportType === 'submissions'"
         :wait="wait"
-        :anonymize-names="anonymizeNames"
+        :generate-aliases="generateAliases"
         :submission-selection="submissionSelection"
       />
-      <!-- We send the info the anonymizeNames because it is needed to show the warning talking about the mapping CSV -->
+      <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
     </template>
 
   </StepperModal>
@@ -167,7 +167,7 @@ export default {
       wait: false,
       // Data for Export Submissions
       submissionSelection: [],
-      anonymizeNames:false,
+      generateAliases:false,
       fakerSeed: 846569412
     };
   },
@@ -360,8 +360,8 @@ export default {
           projectId: this.dataSelection.projectId,
           exportType: 'submissions',
           userIds: selectedUserIds,
-          anonymizeNames: this.anonymizeNames,
-          fakerSeed: this.anonymizeNames ? this.fakerSeed : null
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
 
         this.$refs.exportStepper.close();
@@ -482,7 +482,7 @@ export default {
     
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = `${serverUrl}/export/project/stream`;
+      form.action = `${serverUrl}/export/stream`;
       form.style.display = 'none';
 
       for (const [key, value] of Object.entries(payload)) {
