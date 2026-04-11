@@ -105,6 +105,11 @@ module.exports = {
         allowNull: false,
         defaultValue: false,
       },
+      notifyOnSubmissionUpload: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
       deleted: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

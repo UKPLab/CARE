@@ -993,17 +993,18 @@ class DocumentSocket extends Socket {
             return;
         }
 
+        if (assignment.notifyOnSubmissionUpload === false) {
+            return;
+        }
+
         const user = await this.models["user"].getById(assignment.userId);
         if (!user || !user.email) {
             this.server.logger.warn(`Cannot send submission upload email: assignment owner ${assignment.userId} has no email`);
             return;
         }
 
-        const baseUrl = await this.models["setting"].get("system.baseUrl") || "localhost:3000";
         const eventLabel = eventType === "reupload" ? "Reuploaded" : "Uploaded";
         const eventLabelLower = eventType === "reupload" ? "reuploaded" : "uploaded";
-        const submissionLink = `http://${baseUrl}/dashboard/submission/${submissionId}`;
-        const eventTypeDisplay = eventType === "reupload" ? "Reupload" : "First upload";
 
         const emailContent = await getEmailContent(
             "email.template.submissionUpload",
@@ -1013,12 +1014,9 @@ class DocumentSocket extends Socket {
                 assignmentName: assignment.title,
                 assignmentId,
                 submissionId,
-                baseUrl,
-                link: submissionLink,
-                eventType: eventTypeDisplay,
+                eventType: eventLabelLower,
                 eventLabel,
                 eventLabelLower,
-                submissionLink,
             },
             this.models,
             this.logger

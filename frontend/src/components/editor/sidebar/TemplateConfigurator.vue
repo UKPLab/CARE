@@ -193,8 +193,7 @@
           7: { // Email - Submission upload
             username: "The assignment owner receiving this email (not the user who uploaded).",
             assignmentName: "The title of the assignment.",
-            link: "Link to the submission in the dashboard.",
-            eventType: "Whether this was a first upload or a reupload.",
+            eventType: "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
             assignmentId: "Internal assignment ID.",
             submissionId: "Internal submission ID.",
           },
