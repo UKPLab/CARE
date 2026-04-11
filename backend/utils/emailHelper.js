@@ -52,6 +52,12 @@ async function getEmailFallbackContent(key, variables = {}) {
  * @param {string} [context.studyName] - Study name (studyClosed)
  * @param {string} [context.userName] - User name (registration, passwordReset, verification)
  * @param {number} [context.tokenExpiry] - Token expiry hours
+ * @param {string} [context.eventType] - Human-readable upload event (submission upload HTML template)
+ * @param {string} [context.eventLabel] - Title-style label for submission upload fallback
+ * @param {string} [context.eventLabelLower] - Lowercase label for submission upload fallback
+ * @param {string} [context.submissionLink] - Submission dashboard URL for submission upload fallback
+ * @param {number} [context.assignmentId] - Assignment ID (submission upload)
+ * @param {number} [context.submissionId] - Submission ID (submission upload)
  * @param {Object} models - Database models
  * @param {Object} logger - Logger instance
  * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML

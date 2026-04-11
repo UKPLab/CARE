@@ -1,0 +1,12 @@
+CARE - Submission {{eventLabel}}
+
+Hello,
+
+An assignment submission has been {{eventLabelLower}}.
+
+Assignment ID: {{assignmentId}}
+Submission ID: {{submissionId}}
+View submission: {{submissionLink}}
+
+Best regards,
+The CARE Team
