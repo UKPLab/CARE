@@ -131,11 +131,11 @@ module.exports = (sequelize, DataTypes) => {
 			},
 			{
 				key: "notifyOnSubmissionUpload",
-				label: "Email owner on submission upload:",
+				label: "Notify on Submission Upload:",
 				type: "switch",
 				default: false,
 				required: false,
-				help: "If enabled, the assignment owner receives an email when a student uploads or re-uploads a submission.",
+				help: "If enabled, sends an email when a student uploads or re-uploads a submission.",
 			},
 		];
 		static associate(models) {
