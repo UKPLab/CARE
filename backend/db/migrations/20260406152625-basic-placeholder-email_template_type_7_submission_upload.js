@@ -16,13 +16,6 @@ const placeholders = [
     placeholderLabel: 'Assignment name',
     placeholderType: 'text',
     placeholderDescription: 'Name of the assignment.',
-  },
-  {
-    type: 7,
-    placeholderKey: 'link',
-    placeholderLabel: 'Submission link',
-    placeholderType: 'link',
-    placeholderDescription: 'Link to open the submission in the dashboard.',
     required: true,
   },
   {
@@ -30,7 +23,7 @@ const placeholders = [
     placeholderKey: 'eventType',
     placeholderLabel: 'Upload event',
     placeholderType: 'text',
-    placeholderDescription: 'Whether the submission was first uploaded or reuploaded.',
+    placeholderDescription: 'Lowercase: "uploaded" or "reuploaded".',
   },
   {
     type: 7,
