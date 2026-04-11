@@ -26,6 +26,13 @@
               icon="x-octagon"
               @click="closeStudies"
           />
+           <BasicButton
+            class="btn-secondary btn-sm"
+            text="Publish Assessment"
+            title="Publish Assessment"
+            icon="clipboard-data"
+            @click="$refs.publishAssessmentModal.open()"
+          />
           <BasicButton
               v-if="canAddBulkAssignments"
               class="btn-secondary btn-sm"
@@ -70,6 +77,7 @@
     <StudyCloseModal ref="studyCloseModal" />
     <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
     <SingleAssignmentModal ref="singleAssignmentModal"/>
+    <PublishAssessmentModal ref="publishAssessmentModal"/>
     <InformationModal ref="informationModal"/>
     <OverViewModal ref="overviewModal"/>
     <SavedTemplatesModal ref="savedTemplatesModal"/>
@@ -90,6 +98,7 @@ import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import OverViewModal from "./study/OverViewModal.vue";
+import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 
 /**
  * Dashboard component for handling studies

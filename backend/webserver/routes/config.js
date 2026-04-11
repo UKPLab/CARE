@@ -28,6 +28,9 @@ module.exports = function (server) {
             "app.login.guest": await server.db.models['setting'].get("app.login.guest"),
             "app.login.forgotPassword": await server.db.models['setting'].get("app.login.forgotPassword"),
             "app.register.emailVerification": await server.db.models['setting'].get("app.register.emailVerification"),
+            "system.auth.orcid.enabled": await server.db.models['setting'].get("system.auth.orcid.enabled"),
+            "system.auth.ldap.enabled": await server.db.models['setting'].get("system.auth.ldap.enabled"),
+            "system.auth.saml.enabled": await server.db.models['setting'].get("system.auth.saml.enabled"),
             "app.landing.showDocs": await server.db.models['setting'].get("app.landing.showDocs"),
             "app.landing.linkDocs": await server.db.models['setting'].get("app.landing.linkDocs"),
             "app.landing.showProject": await server.db.models['setting'].get("app.landing.showProject"),
@@ -38,4 +41,4 @@ module.exports = function (server) {
         res.set('Content-Type', 'application/javascript');
         res.send(`window.config = JSON.parse(${JSON.stringify(JSON.stringify(config))})`);
     });
-}
+};

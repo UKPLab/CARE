@@ -1,14 +1,34 @@
 'use strict';
 
-const assignmentAdminViewRights = [
+const assignmentAdminRights = [
   {
-    name: "frontend.dashboard.assignments.admin.view",
-    description: "access to view assignments in the admin dashboard view",
+    name: "frontend.dashboard.assignments.viewAll",
+    description: "access to view all assignments and submissions in the Assignments dashboard view",
+  },
+  {
+    name: "frontend.dashboard.assignments.uploadForOthers",
+    description: "access to upload submissions for other users",
+  },
+  {
+    name: "frontend.dashboard.assignments.edit",
+    description: "access to edit assignments",
+  },
+  {
+    name: "frontend.dashboard.assignments.replaceDeleteSubmissions",
+    description: "access to replace or delete submissions",
+  },
+  {
+    name: "frontend.dashboard.submissions.view",
+    description: "access to view submissions dashboard",
   },
 ];
 
 const roleRights = [
-  { role: "teacher", userRightName: "frontend.dashboard.assignments.admin.view" },
+  { role: "admin", userRightName: "frontend.dashboard.assignments.viewAll" },
+  { role: "admin", userRightName: "frontend.dashboard.assignments.uploadForOthers" },
+  { role: "admin", userRightName: "frontend.dashboard.assignments.edit" },
+  { role: "admin", userRightName: "frontend.dashboard.assignments.replaceDeleteSubmissions" },
+  { role: "user", userRightName: "frontend.dashboard.submissions.view" },
 ];
 
 /** @type {import('sequelize-cli').Migration} */
@@ -16,7 +36,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert(
       "user_right",
-      assignmentAdminViewRights.map((right) => ({
+      assignmentAdminRights.map((right) => ({
         ...right,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -59,7 +79,7 @@ module.exports = {
     await queryInterface.bulkDelete(
       "user_right",
       {
-        name: assignmentAdminViewRights.map((r) => r.name),
+        name: assignmentAdminRights.map((r) => r.name),
       },
       {}
     );

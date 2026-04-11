@@ -31,8 +31,7 @@ async function getEmailFallbackContent(key, variables = {}) {
 }
 
 /**
- * Get email content from template or fallback from disk file
- * (Same pattern as auth.js getEmailContent)
+ * Get email content from template or fallback from disk file.
  *
  * @author Mohammad Elwan
  *
@@ -51,7 +50,9 @@ async function getEmailFallbackContent(key, variables = {}) {
  * @param {string} [context.reviewLink] - Review link (sessionFinish)
  * @param {string} [context.studyName] - Study name (studyClosed)
  * @param {string} [context.userName] - User name (registration, passwordReset, verification)
+ * @param {string} [context.otp] - One-time password code (2FA email)
  * @param {number} [context.tokenExpiry] - Token expiry hours
+ * @param {Object} [context.options] - Extra resolver options (e.g. transaction)
  * @param {string} [context.eventType] - Human-readable upload event (submission upload HTML template)
  * @param {string} [context.eventLabel] - Title-style label for submission upload fallback
  * @param {string} [context.eventLabelLower] - Lowercase label for submission upload fallback
@@ -79,7 +80,7 @@ async function getEmailContent(settingKey, fallbackKey, context, models, logger)
     }
 
     // Resolve template
-    const resolvedHtml = await resolveTemplate(templateId, context, models);
+    const resolvedHtml = await resolveTemplate(templateId, context, models, context.options || {});
     const fallback = await getEmailFallbackContent(fallbackKey, context);
     return { subject: fallback.subject, body: resolvedHtml, isHtml: true };
   } catch (error) {

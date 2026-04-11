@@ -23,15 +23,26 @@
                     <div class="card-body">
                       <h5 class="card-title">{{ setting.key }}</h5>
                       <h6 class="card-subtitle mb-2 text-muted">{{ setting.description }}</h6>
-                      <p class="card-text">
+                      <div class="card-text">
                         <div v-if="setting.type === 'edits'">
                           <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
                         </div>
                         <div v-else-if="setting.type === 'boolean' || setting.type === 'bool'" class="form-check form-switch">
-                          <input v-model="setting.value" :checked="setting.value"
-                                 class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
-                                 type="checkbox">
+                          <input 
+                            v-model="setting.value" 
+                            :checked="setting.value"
+                            class="form-check-input" 
+                            role="switch" 
+                            title="Activate/Deactivate NLP support"
+                            type="checkbox"
+                          >
                         </div>
+                        <textarea
+                            v-else-if="setting.type === 'text'"
+                            v-model="setting.value"
+                            class="w-100 form-control"
+                            rows="6"
+                        ></textarea>
                         <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
                           <select v-model="setting.value" class="form-select">
                             <option value="">None (use default email)</option>
@@ -45,7 +56,7 @@
                           </select>
                         </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -108,7 +119,9 @@ export default {
       let requiredType = null;
       if (setting.key === "email.template.passwordReset" || 
           setting.key === "email.template.verification" || 
-          setting.key === "email.template.registration") {
+          setting.key === "email.template.registration" ||
+          setting.key === "email.template.twoFactorOtp" ||
+          setting.key === "email.template.passwordResetSuccess") {
         requiredType = 1; // Email - General
       } else if (setting.key === "email.template.sessionStart" || 
                  setting.key === "email.template.sessionFinish") {

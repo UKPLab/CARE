@@ -21,12 +21,20 @@
         Maximum number of revisions ({{ maxRevisions }}) reached.
       </span>
       <span class="btn-group">
+        
         <BasicButton
           class="btn btn-secondary"
           title="Close"
           @click="close"
         />
-         <BasicButton
+        <BasicButton
+          class="btn btn-primary"
+          title="Import via Moodle"
+          text="Import via Moodle"
+          icon="box-arrow-in-down"
+          @click="openImportModal()"
+        /> 
+        <BasicButton
           class="btn btn-primary"
           title="Upload Submission"
           text="Upload Submission"
@@ -34,9 +42,11 @@
           :disabled="!canUploadSubmission"
           @click="openUploadModal"
         />
+        
       </span>
     </template>
   </BasicModal>
+  <ImportModal ref="importModal" />
   <AssignmentUploadModal ref="uploadModal" />
   <ConfirmModal ref="deleteConf" />
 </template>
@@ -47,11 +57,12 @@ import BasicButton from "@/basic/Button.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 
 export default {
   name: "AssignmentSubmissionsModal",
   subscribeTable: ["submission", "user", "assignment", "document"],
-  components: { BasicModal, BasicButton, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  components: { BasicModal, BasicButton, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal, ImportModal },
   data() {
     return {
       assignmentId: 0,
@@ -174,6 +185,9 @@ export default {
         return;
       }
       this.$refs.uploadModal.open(this.assignmentId);
+    },
+    openImportModal() {
+      this.$refs.importModal.open(this.assignmentId);
     },
     close() {
       this.$refs.assignmentSubmissionsModal.close();
