@@ -153,9 +153,9 @@ export default {
       version: APP_VERSION,
       isCollapsed: false,
       sidebarSubgroupConfig: {
-        Home: ["Home", "Documents"],
+        Home: ['Home', 'Documents', 'Templates'],
         Study: ["Studies", "Study Sessions", "Tags", "Submissions"],
-        Manage: ["Projects", "Users", "User Statistics"],
+        Manage: ['Projects', 'Users', 'User Statistics', 'Workflows'],
         Settings: ["System Settings", "Logs", "Configurations"],
         AI: ["NLP Skills"],
       },
