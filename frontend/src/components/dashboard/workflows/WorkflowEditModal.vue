@@ -331,7 +331,7 @@ export default {
           ...data
         }, selectedNode.data);
     },
-    success(id){
+    success(_id){
       this.loadWorkflow();
     },
     updateWorkflowStep(id) {

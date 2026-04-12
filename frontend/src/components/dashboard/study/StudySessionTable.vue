@@ -383,7 +383,7 @@ export default {
       try {
         await navigator.clipboard.writeText(link);
         this.showSuccessToast("Link copied", "Study session link copied to clipboard!");
-      } catch (error) {
+      } catch (_error) {
         this.showErrorToast("Link not copied", "Could not copy study session link to clipboard!");
       }
     },

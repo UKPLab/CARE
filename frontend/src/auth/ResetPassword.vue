@@ -6,9 +6,8 @@
             class="text-center"
             style="margin-bottom: 20px"
         >
-          <IconAsset
+          <LogoSvg
               :height="200"
-              name="logo"
           />
         </div>
 
@@ -72,7 +71,7 @@
  *
  * @author: Karim Ouf
  */
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
@@ -80,7 +79,7 @@ import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthResetPassword",
-  components: {IconAsset, BasicForm, BasicButton},
+  components: {LogoSvg, BasicForm, BasicButton},
   data() {
     return {
       showError: false,

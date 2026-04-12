@@ -5,7 +5,7 @@
  * @author Dennis Zyska
  */
 export default {
-    install: (app, options = {namespace: "table"}) => {
+    install: (app, _options = {namespace: "table"}) => {
         app.mixin({
             data() {
                 return {

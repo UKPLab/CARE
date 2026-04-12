@@ -114,7 +114,28 @@ function deltaToDb(ops) {
     }, []);
 }
 
+/**
+ * Extract plain text from a Quill Delta or ops array.
+ *
+ * It concatenates all string `insert` values from the operations in order.
+ *
+ * @param {object|array} deltaOrOps - Quill Delta ({ ops: [...] }) or ops array
+ * @returns {string} Concatenated string inserts
+ */
+function deltaToPlainText(deltaOrOps) {
+    if (!deltaOrOps) return "";
+    const ops = Array.isArray(deltaOrOps)
+        ? deltaOrOps
+        : (deltaOrOps.ops || []);
+
+    return ops
+        .filter(op => op.insert && typeof op.insert === "string")
+        .map(op => op.insert)
+        .join("");
+}
+
 module.exports = {
     deltaToDb: deltaToDb,
     dbToDelta: dbToDelta,
+    deltaToPlainText: deltaToPlainText,
 }
