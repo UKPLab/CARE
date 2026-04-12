@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Recording extends MetaModel {
         static autoTable = true;
         static fields = [];
-        static publicTable = true;
+        static publicTable = false;
 
         static associate(models) {
             Recording.belongsTo(models["user"], {
@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
             startTime: DataTypes.DATE,
             endTime: DataTypes.DATE,
             userId: DataTypes.INTEGER,
-            deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+            deleted: DataTypes.BOOLEAN,            
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,

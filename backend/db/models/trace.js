@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Trace extends MetaModel {
         static autoTable = true;
         static fields = [];
-        static publicTable = true;
+        static publicTable = false;
 
         static associate(models) {
             Trace.belongsTo(models["recording"], {
@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
             direction: DataTypes.BOOLEAN,
             startTime: DataTypes.DATE,
             endTime: DataTypes.DATE,
-            deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+            deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
