@@ -252,9 +252,16 @@ export default {
     document.body.classList.remove('sidebar-exists');
   },
   methods: {
+    resetPreview() {
+      this.hoveredGroup = null;
+      this.previewStyle = {};
+      this.isHoveringPreview = false;
+    },
     toggleSidebar() {
-      this.isCollapsed = !this.isCollapsed;
+       this.isCollapsed = !this.isCollapsed;
       document.body.classList.toggle('sb-sidenav-toggled', this.isCollapsed);
+
+      this.resetPreview();
 
       if (this.isCollapsed) {
         this.closeAllGroups();
@@ -264,8 +271,7 @@ export default {
     },
 
     closeAllGroups() {
-      this.hoveredGroup = null;
-      this.previewStyle = {};
+      this.resetPreview();
       
       Object.keys(this.expandedGroups).forEach(groupName => {
         this.expandedGroups[groupName] = false;
@@ -274,7 +280,13 @@ export default {
     },
 
     setExpandedGroup(groupName) {
-      if (groupName) {
+      if (!groupName) {
+        return;
+      }
+
+      this.resetPreview();
+
+      if (!this.isCollapsed) {
         this.expandedGroups[groupName] = true;
         this.arrowAnimationClass[groupName] = 'arrow-open';
       }
@@ -287,6 +299,8 @@ export default {
         return;
       }
 
+      this.resetPreview();
+
       if (this.activeSubgroup) {
         this.setExpandedGroup(this.activeSubgroup);
       }
@@ -294,21 +308,22 @@ export default {
 
     handleGroupMouseEnter(event, groupName) {
       if (this.expandedGroups[groupName]) {
-        return;
-      }
-
-      if (this.hoveredGroup === groupName) {
+        this.resetPreview();
         return;
       }
 
       const rect = event.currentTarget.getBoundingClientRect();
 
-      this.previewStyle = {
-        top: `${rect.top - 8}px`,
-        left: `${rect.right}px`,
-      };
+      this.resetPreview();
 
-      this.hoveredGroup = groupName;
+      requestAnimationFrame(() => {
+        this.previewStyle = {
+          top: `${rect.top - 8}px`,
+          left: `${rect.right}px`,
+        };
+
+        this.hoveredGroup = groupName;
+      });
     },
 
     handleGroupMouseLeave(event, groupName) {
@@ -324,8 +339,7 @@ export default {
 
       requestAnimationFrame(() => {
         if (this.hoveredGroup === groupName && !this.isHoveringPreview) {
-          this.hoveredGroup = null;
-          this.previewStyle = {};
+          this.resetPreview();
         }
       });
     },
@@ -336,8 +350,8 @@ export default {
 
       const isOpening = !this.expandedGroups[groupName];
 
-      this.hoveredGroup = null;
-      this.previewStyle = {};
+      this.resetPreview();
+
       this.expandedGroups[groupName] = isOpening;
       this.arrowAnimationClass[groupName] = isOpening
         ? 'arrow-open'
@@ -386,13 +400,14 @@ export default {
         return;
       }
 
-      this.hoveredGroup = null;
-      this.previewStyle = {};
+      this.resetPreview();
     },
   },
   watch: {
     $route(to) {
       const toPath = to.path.toLowerCase().replace(/\/$/, '');
+
+      this.resetPreview();
 
       if (toPath === '/dashboard') {
         this.$nextTick(() => {
