@@ -4,7 +4,10 @@
     id="wrapper"
     class="nav-container"
   >
-    <div id="sidebar-wrapper">
+    <div 
+      id="sidebar-wrapper"
+      :class="{ collapsed: isCollapsed }"
+    >
       <div class="sidebar-scroll-area">
         <div class="list-group-test">
           <span>
@@ -20,14 +23,24 @@
                 @mouseenter="handleGroupMouseEnter($event, subgroup.key)"
                 @mouseleave="handleGroupMouseLeave($event, subgroup.key)"
               >
-                <div class="list-group-item-text subgroup-title">
+                <div v-if="!isCollapsed" class="list-group-item-text subgroup-title">
                   {{ subgroup.name }}
                 </div>
+
                 <span
+                  v-if="!isCollapsed"
                   class="subgroup-arrow"
                   :class="arrowAnimationClass[subgroup.key]"
                 >
                   <LoadIcon icon-name="chevron-down" />
+                </span>
+
+                <span
+                  v-else
+                  class="sidebar-icon collapsed-group-icon"
+                  :title="subgroup.name"
+                >
+                  <LoadIcon :icon-name="getGroupIcon(subgroup.key)" :size="24" />
                 </span>
               </div>
 
@@ -37,7 +50,7 @@
                 @leave="leaveSubmenu"
               >
                 <div
-                  v-if="expandedGroups[subgroup.key]"
+                  v-if="expandedGroups[subgroup.key] && !isCollapsed"
                   class="submenu-content"
                 >
                   <router-link
@@ -92,7 +105,7 @@
           </span>
         </div>
       </div>
-      <div v-if="isAdmin" class="text-center text-secondary">
+      <div v-if="isAdmin && !isCollapsed" class="text-center text-secondary">
           App Version: {{ version }}
         </div>
       <div
@@ -103,7 +116,7 @@
         <span class="arrow-toggle sidebar-icon">
           <LoadIcon name="chevron-double-right" />
         </span>
-        <div class="list-group-item-text" style="cursor:pointer">
+        <div v-if="!isCollapsed" class="list-group-item-text" style="cursor:pointer">
           Collapse sidebar
         </div>
       </div>
@@ -131,6 +144,7 @@ export default {
   data() {
     return {
       version: APP_VERSION,
+      isCollapsed: false,
       sidebarSubgroupConfig: {
         Home: ["Home", "Documents"],
         Study: ["Studies", "Study Sessions", "Tags", "Submissions"],
@@ -239,7 +253,14 @@ export default {
   },
   methods: {
     toggleSidebar() {
-      document.body.classList.toggle('sb-sidenav-toggled');
+      this.isCollapsed = !this.isCollapsed;
+      document.body.classList.toggle('sb-sidenav-toggled', this.isCollapsed);
+
+      if (this.isCollapsed) {
+        this.closeAllGroups();
+      } else {
+        this.syncSidebarWithRoute();
+      }
     },
 
     closeAllGroups() {
@@ -309,6 +330,10 @@ export default {
       });
     },
     toggleGroup(groupName) {
+      if (this.isCollapsed) {
+        return;
+      }
+
       const isOpening = !this.expandedGroups[groupName];
 
       this.hoveredGroup = null;
@@ -330,7 +355,9 @@ export default {
         el.style.transform = 'translateY(0)';
       });
     },
-
+    getGroupIcon(subgroup) {
+      return subgroup.elements?.[0]?.icon || 'circle';
+    },
     leaveSubmenu(el) {
       el.style.height = `${el.scrollHeight}px`;
       el.style.opacity = '1';
@@ -483,15 +510,54 @@ export default {
   border-top: 1px solid rgba(0, 0, 0, 0.125);
 }
 
-body.sb-sidenav-toggled .list-group-item-text {
-  display: none;
+@media (min-width: 768px) {
+  #wrapper #sidebar-wrapper.collapsed {
+    width: 64px;
+  }
 }
 
-@media (min-width: 768px) {
+#sidebar-wrapper.collapsed > .sidebar-scroll-area .sidebar-subgroup-heading .list-group-item-text,
+#sidebar-wrapper.collapsed > .collapse-sidebar-container .list-group-item-text,
+#sidebar-wrapper.collapsed .subgroup-arrow,
+#sidebar-wrapper.collapsed > .text-secondary {
+  display: none !important;
+}
 
-  body.sb-sidenav-toggled #wrapper #sidebar-wrapper {
-    width: 50px;
-  }
+#sidebar-wrapper.collapsed .submenu-preview .list-group-item-text {
+  display: block !important;
+}
+
+#sidebar-wrapper.collapsed .submenu-preview .sidebar-icon {
+  margin-right: 12px;
+  margin-left: -2px;
+}
+
+#sidebar-wrapper.collapsed .sidebar-subgroup-heading,
+#sidebar-wrapper.collapsed .collapse-sidebar-container {
+  justify-content: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.collapsed-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+}
+
+
+
+#sidebar-wrapper.collapsed .sidebar-icon {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+#sidebar-wrapper.collapsed .sidebar-subgroup-heading {
+  justify-content: center !important;
+  min-height: 52px;
+  border-radius: 10px;
 }
 
 .list-group-item-custom {
