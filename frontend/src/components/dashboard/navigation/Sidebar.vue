@@ -89,6 +89,12 @@
                 @mouseleave="handlePreviewMouseLeave($event, subgroup.key)"
               >
                 <div class="submenu-preview-inner">
+                  <div v-if="isCollapsed" class="submenu-preview-header">
+                    {{ subgroup.name }}
+                  </div>
+
+                  <div v-if="isCollapsed" class="submenu-preview-divider" />
+
                   <router-link
                     v-for="element in subgroup.elements"
                     :key="`preview-${element.id}`"
@@ -803,6 +809,19 @@ body.sb-sidenav-toggled .arrow-toggle {
   width: 3px;
   height: 30px;
   background: rgba(20, 20, 20, 0.85);
+}
+
+.submenu-preview-header {
+  padding: 0.95rem 1rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #f2f2f2;
+  color: inherit;
+}
+
+.submenu-preview-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
 }
 
 </style>
