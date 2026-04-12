@@ -74,9 +74,6 @@ class RecorderSocket extends Socket {
 
         this.socket.onAny(this.incomingHandler);
         this.socket.onAnyOutgoing(this.outgoingHandler);
-
-        this.sendToast("Recording started", "Socket Profiler", "success");
-        return recording.id;
     }
 
     /**
@@ -124,8 +121,6 @@ class RecorderSocket extends Socket {
             where: { recordingId },
             order: [["id", "ASC"]],
         });
-
-        this.sendToast("Recording stopped", "Socket Profiler", "success");
 
         return {
             id: recordingId,
