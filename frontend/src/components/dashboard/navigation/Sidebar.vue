@@ -24,6 +24,9 @@
                 @mouseleave="handleGroupMouseLeave($event, subgroup.key)"
               >
                 <div v-if="!isCollapsed" class="list-group-item-text subgroup-title">
+                  <span class="sidebar-icon subgroup-heading-icon" :title="subgroup.name">
+                    <LoadIcon :icon-name="getGroupIcon(subgroup.key)" :size="22" />
+                  </span>
                   {{ subgroup.name }}
                 </div>
 
@@ -369,8 +372,16 @@ export default {
         el.style.transform = 'translateY(0)';
       });
     },
-    getGroupIcon(subgroup) {
-      return subgroup.elements?.[0]?.icon || 'circle';
+    getGroupIcon(groupKey) {
+      const icons = {
+        Home: 'house',
+        Manage: 'table',
+        Study: 'book',
+        AI: 'code-slash',
+        Settings: 'sliders2',
+      };
+
+      return icons[groupKey] || 'circle';
     },
     leaveSubmenu(el) {
       el.style.height = `${el.scrollHeight}px`;
@@ -612,7 +623,7 @@ body.sb-sidenav-toggled .arrow-toggle {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 400;
   border: none;
   background-color: #f2f2f2;
   border-radius: 8px;
@@ -623,7 +634,7 @@ body.sb-sidenav-toggled .arrow-toggle {
 }
 
 .subgroup-title {
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .subgroup-arrow {
@@ -748,6 +759,14 @@ body.sb-sidenav-toggled .arrow-toggle {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+.subgroup-heading-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  vertical-align: middle;
 }
 
 </style>
