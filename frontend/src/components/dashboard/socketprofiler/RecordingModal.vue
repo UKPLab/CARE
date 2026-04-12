@@ -44,22 +44,27 @@
       </div>
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="abort">
-        Cancel
-      </button>
-      <button class="btn btn-primary" type="button" @click="confirm">
-        Save Recording
-      </button>
+      <BasicButton
+        class="btn-secondary"
+        text="Cancel"
+        @click="abort"
+      />
+      <BasicButton
+        class="btn-primary"
+        text="Save Recording"
+        @click="confirm"
+      />
     </template>
   </BasicModal>
 </template>
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "RecordingModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {
       recordingId: null,
@@ -75,7 +80,6 @@ export default {
         ...t,
         selected: t.action !== "recorderStart" && t.action !== "recorderStop",
       }));
-      console.log("Calling this.$refs.modal.open()");
       this.$refs.modal.open();
     },
     abort() {
