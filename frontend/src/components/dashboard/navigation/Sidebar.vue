@@ -18,6 +18,10 @@
             >
               <div
                 class="sidebar-subgroup-heading list-group-item-custom p-3"
+                :class="{
+                  'collapsed-group-icon-active': isCollapsed && activeSubgroup === subgroup.key,
+                  'expanded-group-active': !isCollapsed && activeSubgroup === subgroup.key && !expandedGroups[subgroup.key]
+                }"
                 :data-group-key="subgroup.key"
                 @click="toggleGroup(subgroup.key)"
                 @mouseenter="handleGroupMouseEnter($event, subgroup.key)"
@@ -375,7 +379,7 @@ export default {
     getGroupIcon(groupKey) {
       const icons = {
         Home: 'house',
-        Manage: 'table',
+        Manage: 'briefcase',
         Study: 'book',
         AI: 'code-slash',
         Settings: 'sliders2',
@@ -583,7 +587,7 @@ export default {
 #sidebar-wrapper.collapsed .sidebar-subgroup-heading {
   justify-content: center !important;
   min-height: 52px;
-  border-radius: 10px;
+  border-radius: 0;
 }
 
 .list-group-item-custom {
@@ -626,7 +630,7 @@ body.sb-sidenav-toggled .arrow-toggle {
   font-weight: 400;
   border: none;
   background-color: #f2f2f2;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .sidebar-subgroup-heading:hover {
@@ -767,6 +771,38 @@ body.sb-sidenav-toggled .arrow-toggle {
   justify-content: center;
   margin-right: 12px;
   vertical-align: middle;
+}
+
+#sidebar-wrapper.collapsed .collapsed-group-icon-active {
+  position: relative;
+  background-color: #e0e0e0 !important;
+}
+
+#sidebar-wrapper.collapsed .collapsed-group-icon-active::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 30px;
+  background: rgba(20, 20, 20, 0.85);
+}
+
+#sidebar-wrapper:not(.collapsed) .expanded-group-active {
+  position: relative;
+  background-color: #e0e0e0 !important;
+}
+
+#sidebar-wrapper:not(.collapsed) .expanded-group-active::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 30px;
+  background: rgba(20, 20, 20, 0.85);
 }
 
 </style>
