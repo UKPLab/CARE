@@ -38,7 +38,7 @@
     "pdfjs-dist": "^5.5.207",
     "pg": "^8.19.0",
     "pg-hstore": "^2.3.4",
-    "quill": "^2.0.3",
+    "quill": "2.0.2",
     "qrcode": "^1.5.4",
     "scroll-into-view": "^1.16.2",
     "socket.io-client": "^4.8.3",
@@ -79,9 +79,7 @@
     "lodash": "^4.18.1",
     "lodash-es": "^4.18.1",
     "tar": "^7.5.13",
-    "quill": {
-      "lodash-es": "^4.18.1"
-    },
+    "quill": "2.0.2",
     "socket.io-client": "^4.8.3",
     "socket.io-parser": "^4.2.6",
     "brace-expansion": "^2.0.3",
