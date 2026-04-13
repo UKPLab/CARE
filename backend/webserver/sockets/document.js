@@ -11,6 +11,7 @@ const Validator = require("../../utils/validator.js");
 const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const {generateError} = require("../../utils/generic.js");
+const {getEmailContent} = require("../../utils/emailHelper.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -975,6 +976,56 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Send submission upload/reupload notification email to assignment owner.
+     *
+     * @author Mohammad Elwan
+     * @param {Object} data - The input data for sending the notification
+     * @param {number} data.assignmentId - Assignment ID linked to the submission
+     * @param {number} data.submissionId - Submission ID that was created/replaced
+     * @param {string} data.eventType - Upload event type ('first_upload' or 'reupload')
+     * @returns {Promise<void>}
+     */
+    async sendSubmissionUploadEmail(data) {
+        const {assignmentId, submissionId, eventType} = data;
+        const assignment = await this.models["assignment"].getById(assignmentId);
+        if (!assignment) {
+            this.server.logger.warn(`Cannot send submission upload email: assignment ${assignmentId} not found`);
+            return;
+        }
+
+        if (assignment.notifyOnSubmissionUpload === false) {
+            return;
+        }
+
+        const user = await this.models["user"].getById(assignment.userId);
+        if (!user || !user.email) {
+            this.server.logger.warn(`Cannot send submission upload email: assignment owner ${assignment.userId} has no email`);
+            return;
+        }
+
+        const eventLabel = eventType === "reupload" ? "Reuploaded" : "Uploaded";
+        const eventLabelLower = eventType === "reupload" ? "reuploaded" : "uploaded";
+
+        const emailContent = await getEmailContent(
+            "email.template.submissionUpload",
+            "submissionUpload",
+            {
+                userId: assignment.userId,
+                assignmentName: assignment.title,
+                assignmentId,
+                submissionId,
+                eventType: eventLabelLower,
+                eventLabel,
+                eventLabelLower,
+            },
+            this.models,
+            this.logger
+        );
+
+        await this.server.sendMail(user.email, emailContent.subject, emailContent.body, {isHtml: emailContent.isHtml});
+    }
+
+    /**
      * Upload a single submission to the DB.
      *
      * @author Linyin Huang
@@ -1115,6 +1166,20 @@ class DocumentSocket extends Socket {
                     {transaction}
                 );
             }
+
+            if (assignmentId) {
+                transaction.afterCommit(async () => {
+                    try {
+                        await this.sendSubmissionUploadEmail({
+                            assignmentId,
+                            submissionId: submission.id,
+                            eventType: "first_upload",
+                        });
+                    } catch (emailError) {
+                        this.server.logger.error("Failed to send submission upload email:", emailError);
+                    }
+                });
+            }
         } catch (error) {
             this.logger.error(error);
             throw new Error(error);
@@ -1228,6 +1293,18 @@ class DocumentSocket extends Socket {
                 {transaction}
             );
         }
+
+        transaction.afterCommit(async () => {
+            try {
+                await this.sendSubmissionUploadEmail({
+                    assignmentId: assignment.id,
+                    submissionId: newSubmission.id,
+                    eventType: "reupload",
+                });
+            } catch (emailError) {
+                this.server.logger.error("Failed to send submission reupload email:", emailError);
+            }
+        });
 
         return {
             replacedSubmissionId: oldSubmission.id,

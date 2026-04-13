@@ -117,6 +117,17 @@ async function buildReplacementMap(context, models, options = {}) {
         replacements["~tokenExpiry~"] = String(context.tokenExpiry);
     }
 
+    // Submission upload notification (template type 7)
+    if (allow("eventType") && context.eventType) {
+        replacements["~eventType~"] = context.eventType;
+    }
+    if (allow("assignmentId") && context.assignmentId != null) {
+        replacements["~assignmentId~"] = String(context.assignmentId);
+    }
+    if (allow("submissionId") && context.submissionId != null) {
+        replacements["~submissionId~"] = String(context.submissionId);
+    }
+
     return replacements;
 }
 
@@ -323,7 +334,7 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
  * Return placeholder keys that are required for the given template type but missing in content.
  *
  * @param {Object} content - Quill Delta object with ops array
- * @param {number} templateType - Template type (e.g. 1, 2, 3, 6)
+ * @param {number} templateType - Template type (e.g. 1, 2, 3, 6, 7)
  * @param {Object} models - Database models
  * @param {Object} [options]
  * @returns {Promise<string[]>} Array of missing required placeholder keys (e.g. ['link'])

@@ -129,6 +129,14 @@ module.exports = (sequelize, DataTypes) => {
 				required: false,
 				help: "If enabled, users can replace or delete uploaded submissions.",
 			},
+			{
+				key: "notifyOnSubmissionUpload",
+				label: "Notify on Submission Upload:",
+				type: "switch",
+				default: false,
+				required: false,
+				help: "If enabled, sends an email when a student uploads or re-uploads a submission.",
+			},
 		];
 		static associate(models) {
 			Assignment.belongsTo(models["study"], {
@@ -177,6 +185,11 @@ module.exports = (sequelize, DataTypes) => {
 			},
 			parentAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
+			notifyOnSubmissionUpload: {
+				type: DataTypes.BOOLEAN,
+				allowNull: false,
+				defaultValue: true,
+			},
 			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,
 			deletedAt: DataTypes.DATE,
