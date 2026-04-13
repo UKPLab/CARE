@@ -169,7 +169,7 @@ kill: check_kill
 	killall node
 
 frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.json
-	cd frontend && npm install --no-audit
+	cd frontend && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	type NUL > $@
 else
@@ -177,7 +177,7 @@ else
 endif
 
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
-	cd backend && npm install --no-audit
+	cd backend && npm install --no-audit --no-fund
 ifeq ($(OS),Windows_NT)
 	type NUL > $@
 else
@@ -186,7 +186,7 @@ endif
 
 utils/modules/%/node_modules/.uptodate: utils/modules/%/package.json
 	@echo "Running npm install in $(@D)"
-	@cd $(@D) && npm install --no-audit
+	@cd $(@D) && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	@echo. > $@
 else
@@ -196,11 +196,11 @@ endif
 install-utils-modules:
 ifeq ($(OS),Windows_NT)
 	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
-	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install --no-audit && @echo. > node_modules\.uptodate)
+	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install --no-audit --no-fund --loglevel=error && @echo. > node_modules\.uptodate)
 else
 	rm -rf frontend/node_modules
 	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
-		(cd $$d && npm install --no-audit && touch node_modules/.uptodate); \
+		(cd $$d && npm install --no-audit --no-fund --loglevel=error && touch node_modules/.uptodate); \
 	done
 endif
 
