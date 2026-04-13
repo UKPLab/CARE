@@ -177,7 +177,7 @@ else
 endif
 
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
-	cd backend && npm install --no-audit --no-fund
+	cd backend && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	type NUL > $@
 else
