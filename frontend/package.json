@@ -17,7 +17,7 @@
     "@popperjs/core": "^2.11.8",
     "@vitejs/plugin-vue": "^6.0.4",
     "approx-string-match": "^2.0.0",
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "bootstrap-vue-3": "^0.5.1",
@@ -43,7 +43,7 @@
     "scroll-into-view": "^1.16.2",
     "socket.io-client": "^4.8.3",
     "uuid": "^13.0.0",
-    "vite": "^7.3.1",
+    "vite": "^7.3.2",
     "vite-plugin-html": "^3.2.2",
     "vue": "^3.5.29",
     "v-network-graph": "^0.9.7",
@@ -63,7 +63,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.8.0",
     "vue-eslint-parser": "^10.4.0",
-    "happy-dom": "^20.7.0",
+    "happy-dom": "^20.8.9",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-dropcursor": "1.8.2",
     "prosemirror-gapcursor": "^1.4.0",
@@ -82,6 +82,12 @@
     "quill": {
       "lodash-es": "^4.18.1"
     },
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "socket.io-parser": "^4.2.6",
+    "brace-expansion": "^2.0.3",
+    "defu": "^6.1.5",
+    "flatted": "^3.4.2",
+    "picomatch": "^4.0.4",
+    "yaml": "^2.8.3"
   }
 }
