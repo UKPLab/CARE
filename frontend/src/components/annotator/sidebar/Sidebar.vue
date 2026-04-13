@@ -88,7 +88,6 @@
 <script>
 import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 
 
@@ -102,7 +101,7 @@ import LoadIcon from "@/basic/Icon.vue";
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {SideCard, AnnoCard, ConfirmModal, LoadIcon},
+  components: {SideCard, AnnoCard, LoadIcon},
   inject: {
     documentId: {
       type: Number,

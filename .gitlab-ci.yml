@@ -4,6 +4,7 @@ stages:          # List of stages for jobs, and their order of execution
   - build
   - deploy
   - lint
+  - audit
 
 variables:
   DOCKER_HOST: tcp://docker:2375
@@ -94,3 +95,17 @@ lint:
     - echo "$TOKEN" | docker login -u $DOCKER_USER --password-stdin
   script:
     - make lint
+
+audit:
+  image:
+    name: node:20-alpine
+  stage: audit
+  needs: []
+  allow_failure: true
+  before_script:
+    - apk add --no-cache make
+    - npm ci --prefix frontend --ignore-scripts
+    - npm ci --prefix backend --ignore-scripts
+    - npm ci --prefix utils/modules/editor-delta-conversion --ignore-scripts
+  script:
+    - make audit
