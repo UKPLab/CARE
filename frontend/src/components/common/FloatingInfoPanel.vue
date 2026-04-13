@@ -42,8 +42,6 @@
 </template>
 
 <script>
-import LoadIcon from "@/basic/Icon.vue";
-
 /**
  * FloatingInfoPanel Component
  * 
@@ -54,7 +52,6 @@ import LoadIcon from "@/basic/Icon.vue";
  */
 export default {
   name: "FloatingInfoPanel",
-  components: { LoadIcon },
   
   props: {
     show: {
@@ -106,7 +103,7 @@ export default {
   
   data() {
     return {
-      isPinned: false,
+      localIsPinned: this.isPinned,
       isHovering: false,
       closeTimer: null,
       panelStyle: {}
@@ -114,12 +111,15 @@ export default {
   },
   
   watch: {
+    isPinned(newVal) {
+      this.localIsPinned = newVal;
+    },
     show(newVal) {
       if (newVal) {
         this.calculatePosition();
         this.clearCloseTimer();
       } else {
-        this.isPinned = false;
+        this.localIsPinned = false;
         this.isHovering = false;
         this.clearCloseTimer();
       }
@@ -239,10 +239,10 @@ export default {
     },
     
     togglePin() {
-      this.isPinned = !this.isPinned;
-      this.$emit('pin-changed', this.isPinned);
+      this.localIsPinned = !this.localIsPinned;
+      this.$emit('pin-changed', this.localIsPinned);
       
-      if (!this.isPinned) {
+      if (!this.localIsPinned) {
         this.requestClose();
       }
     },
@@ -260,10 +260,10 @@ export default {
     },
     
     requestClose() {
-      if (this.isPinned) return;
+      if (this.localIsPinned) return;
       this.clearCloseTimer();
       this.closeTimer = setTimeout(() => {
-        if (!this.isPinned && !this.isHovering) {
+        if (!this.localIsPinned && !this.isHovering) {
           this.$emit('close-requested');
         }
       }, this.closeDelay);
@@ -296,19 +296,19 @@ export default {
     },
     
     close() {
-      this.isPinned = false;
+      this.localIsPinned = false;
       this.isHovering = false;
       this.clearCloseTimer();
       this.$emit('update:show', false);
     },
     
     pin() {
-      this.isPinned = true;
+      this.localIsPinned = true;
       this.$emit('pin-changed', true);
     },
     
     unpin() {
-      this.isPinned = false;
+      this.localIsPinned = false;
       this.$emit('pin-changed', false);
       this.requestClose();
     }

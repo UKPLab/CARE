@@ -77,7 +77,7 @@
           <a
             class="dropdown-item"
             :title="s"
-            @click="service = s"
+            @click="$emit('update:service', s)"
           > {{ s }} </a>
         </li>
       </ul>
@@ -168,6 +168,7 @@ export default {
       default: null
     }
   },
+  emits: ['update:service'],
   data() {
     return {
       payload: {},
