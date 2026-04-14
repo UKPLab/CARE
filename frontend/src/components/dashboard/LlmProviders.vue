@@ -1,27 +1,20 @@
 <template>
   <div>
-    <Card title="LLM Providers">
+    <Card title="LLM Model Catalog">
       <template #headerElements>
         <div class="btn-group gap-2 ms-3">
           <BasicButton
             class="btn-primary btn-sm"
-            title="Add Provider"
-            text="Add Provider"
+            title="Add Model"
+            text="Add Model"
             icon="plus-circle"
             @click="openAddModal"
-          />
-          <BasicButton
-            class="btn-outline-secondary btn-sm"
-            title="Refresh"
-            text="Refresh"
-            icon="arrow-clockwise"
-            @click="load"
           />
         </div>
       </template>
       <template #body>
-        <div v-if="!providers || providers.length === 0" class="text-center text-muted py-4">
-          No LLM providers configured.
+        <div v-if="!models || models.length === 0" class="text-center text-muted py-4">
+          No LLM models configured.
         </div>
         <BasicTable
           v-else
@@ -34,25 +27,37 @@
       </template>
     </Card>
 
-    <!-- Provider Modal -->
-    <Modal ref="providerModal" name="llmProviderModal" size="lg">
+    <Modal ref="providerModal" name="llmModelModal" size="lg">
       <template #title>
-        {{ editingProvider ? 'Edit Provider' : 'Add Provider' }}
+        {{ editingModel ? 'Edit Model' : 'Add Model' }}
       </template>
       <template #body>
         <div class="mb-3">
           <label class="form-label fw-bold">Name</label>
-          <input v-model="form.name" type="text" class="form-control" placeholder="e.g. OpenAI" />
+          <input v-model="form.name" type="text" class="form-control" placeholder="e.g. GPT-4o (Default)" />
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-bold">Slug (unique identifier)</label>
-          <input v-model="form.slug" type="text" class="form-control" placeholder="e.g. openai" :disabled="!!editingProvider" />
+          <label class="form-label fw-bold">LiteLLM Model ID</label>
+          <input v-model="form.model" type="text" class="form-control" placeholder="e.g. gpt-4o, azure/my-deploy, openrouter/google/gemini-pro" />
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-bold">API Base URL</label>
-          <input v-model="form.apiBaseUrl" type="text" class="form-control" placeholder="https://api.openai.com/v1" />
+          <label class="form-label fw-bold">Provider</label>
+          <input v-model="form.provider" type="text" class="form-control" placeholder="e.g. openai, azure, anthropic, ollama" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Description</label>
+          <textarea v-model="form.description" class="form-control" rows="2" placeholder="Optional model description"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Credential (optional)</label>
+          <select v-model="form.llmCredentialId" class="form-select">
+            <option :value="null">None</option>
+            <option v-for="c in credentialOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
         </div>
 
         <div class="form-check mb-3">
@@ -60,25 +65,20 @@
           <label class="form-check-label" for="providerEnabled">Enabled</label>
         </div>
 
-        <hr />
-        <h6 class="text-secondary">Models</h6>
-        <div class="mb-2" v-for="(model, idx) in form.models" :key="idx">
-          <div class="input-group input-group-sm">
-            <input v-model="model.id" type="text" class="form-control" placeholder="Model ID (e.g. gpt-4o)" />
-            <input v-model="model.name" type="text" class="form-control" placeholder="Display Name" />
-            <button class="btn btn-outline-danger" type="button" @click="form.models.splice(idx, 1)">
-              &times;
-            </button>
-          </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Additional Parameters (JSON)</label>
+          <textarea
+            v-model="form.additionalParametersText"
+            class="form-control font-monospace"
+            rows="5"
+            placeholder='{"temperature":0.2,"max_tokens":4096,"top_p":1}'
+          ></textarea>
         </div>
-        <button class="btn btn-sm btn-outline-secondary mt-1" @click="form.models.push({id: '', name: '', capabilities: ['text-generation']})">
-          + Add Model
-        </button>
       </template>
       <template #footer>
         <button class="btn btn-secondary" type="button" @click="$refs.providerModal.close()">Cancel</button>
         <button class="btn btn-primary" type="button" :disabled="!isFormValid" @click="saveProvider">
-          {{ editingProvider ? 'Update' : 'Add Provider' }}
+          {{ editingModel ? 'Update' : 'Add Model' }}
         </button>
       </template>
     </Modal>
@@ -102,10 +102,10 @@ import Modal from "@/basic/Modal.vue";
 export default {
   name: "LlmProviders",
   components: {Card, BasicTable, BasicButton, Modal},
-  subscribeTable: ['llm_provider'],
+  subscribeTable: ['llm_model', 'llm_credential'],
   data() {
     return {
-      editingProvider: null,
+      editingModel: null,
       form: this.getEmptyForm(),
       tableOptions: {
         striped: true,
@@ -117,9 +117,10 @@ export default {
       },
       columns: [
         {name: "Name", key: "name"},
-        {name: "Slug", key: "slug"},
-        {name: "API Base URL", key: "apiBaseUrl"},
-        {name: "Models", key: "modelCount"},
+        {name: "LiteLLM Model", key: "model"},
+        {name: "Provider", key: "provider"},
+        {name: "Credential", key: "credentialName"},
+        {name: "Defaults", key: "defaultsSummary"},
         {
           name: "Enabled",
           key: "enabledToggle",
@@ -130,20 +131,26 @@ export default {
     };
   },
   computed: {
-    providers() {
-      return this.$store.getters["table/llm_provider/getAll"] || [];
+    models() {
+      return this.$store.getters["table/llm_model/getAll"] || [];
+    },
+    credentials() {
+      return this.$store.getters["table/llm_credential/getAll"] || [];
+    },
+    credentialOptions() {
+      return this.credentials.map((c) => ({id: c.id, name: c.name || `Credential ${c.id}`}));
     },
     tableData() {
-      return this.providers.map(p => {
-        const models = Array.isArray(p.models)
-          ? p.models
-          : (typeof p.models === 'string' ? JSON.parse(p.models) : []);
+      return this.models.map((m) => {
+        const defaults = this.stringifyParameters(m.additionalParameters);
+        const credential = this.credentials.find((c) => c.id === m.llmCredentialId);
         return {
-          ...p,
-          modelCount: models.length + ' model(s)',
+          ...m,
+          credentialName: credential ? credential.name : "-",
+          defaultsSummary: defaults.length > 60 ? `${defaults.slice(0, 60)}...` : defaults,
           enabledToggle: {
             title: "Toggle enabled",
-            value: p.enabled,
+            value: m.enabled,
             action: "toggleEnabled",
           },
         };
@@ -166,82 +173,97 @@ export default {
       ];
     },
     isFormValid() {
-      return this.form.name && this.form.slug && this.form.apiBaseUrl;
+      return this.form.name && this.form.model && this.form.provider;
     },
-  },
-  mounted() {
-    this.load();
   },
   methods: {
     getEmptyForm() {
       return {
         name: '',
-        slug: '',
-        apiBaseUrl: '',
+        model: '',
+        provider: '',
+        description: '',
+        llmCredentialId: null,
         enabled: true,
-        models: [{id: '', name: '', capabilities: ['text-generation']}],
+        additionalParametersText: '{}',
       };
     },
-    load() {
-      this.$socket.emit("serviceCommand", {service: "LLMService", command: "getProviders", data: {}});
+    stringifyParameters(value) {
+      if (!value) return "{}";
+      if (typeof value === "string") return value;
+      try {
+        return JSON.stringify(value);
+      } catch (_error) {
+        return "{}";
+      }
+    },
+    parseParameters(text) {
+      if (!text || !text.trim()) return {};
+      return JSON.parse(text);
     },
     openAddModal() {
-      this.editingProvider = null;
+      this.editingModel = null;
       this.form = this.getEmptyForm();
       this.$refs.providerModal.open();
     },
     handleAction(data) {
       switch (data.action) {
         case "edit": {
-          this.editingProvider = data.params;
-          const models = Array.isArray(data.params.models)
-            ? data.params.models
-            : (typeof data.params.models === 'string' ? JSON.parse(data.params.models) : []);
+          this.editingModel = data.params;
           this.form = {
             name: data.params.name,
-            slug: data.params.slug,
-            apiBaseUrl: data.params.apiBaseUrl,
+            model: data.params.model,
+            provider: data.params.provider,
+            description: data.params.description || '',
+            llmCredentialId: data.params.llmCredentialId || null,
             enabled: data.params.enabled,
-            models: models.map(m => ({...m})),
+            additionalParametersText: this.stringifyParameters(data.params.additionalParameters),
           };
           this.$refs.providerModal.open();
           break;
         }
         case "delete":
-          if (confirm(`Delete provider "${data.params.name}"?`)) {
+          if (confirm(`Delete model "${data.params.name}"?`)) {
             this.$socket.emit("appDataUpdate", {
-              table: "llm_provider",
-              action: "delete",
-              data: {id: data.params.id},
+              table: "llm_model",
+              data: {id: data.params.id, deleted: true},
             });
           }
           break;
         case "toggleEnabled":
           this.$socket.emit("appDataUpdate", {
-            table: "llm_provider",
-            action: "update",
+            table: "llm_model",
             data: {id: data.params.id, enabled: data.value},
           });
           break;
       }
     },
     saveProvider() {
+      let additionalParameters = {};
+      try {
+        additionalParameters = this.parseParameters(this.form.additionalParametersText);
+      } catch (_error) {
+        this.eventBus.emit("toast", {title: "Invalid JSON", message: "Please provide valid JSON in additional parameters.", variant: "danger"});
+        return;
+      }
+
       const payload = {
-        name: this.form.name,
-        slug: this.form.slug,
-        apiBaseUrl: this.form.apiBaseUrl,
+        name: this.form.name.trim(),
+        model: this.form.model.trim(),
+        provider: this.form.provider.trim(),
+        description: this.form.description,
+        llmCredentialId: this.form.llmCredentialId,
         enabled: this.form.enabled,
-        models: JSON.stringify(this.form.models.filter(m => m.id && m.name)),
+        additionalParameters,
       };
 
-      if (this.editingProvider) {
+      if (this.editingModel) {
         this.$socket.emit("appDataUpdate", {
-          table: "llm_provider",
-          action: "update",
-          data: {id: this.editingProvider.id, ...payload},
+          table: "llm_model",
+          data: {id: this.editingModel.id, ...payload},
         }, (res) => {
           if (res && res.success !== false) {
-            this.eventBus.emit("toast", {title: "Provider", message: "Provider updated.", variant: "success"});
+            this.eventBus.emit("toast", {title: "Model", message: "Model updated.", variant: "success"});
             this.$refs.providerModal.close();
           } else {
             this.eventBus.emit("toast", {title: "Error", message: res?.message || "Failed.", variant: "danger"});
@@ -249,12 +271,11 @@ export default {
         });
       } else {
         this.$socket.emit("appDataUpdate", {
-          table: "llm_provider",
-          action: "add",
+          table: "llm_model",
           data: payload,
         }, (res) => {
           if (res && res.success !== false) {
-            this.eventBus.emit("toast", {title: "Provider", message: "Provider added.", variant: "success"});
+            this.eventBus.emit("toast", {title: "Model", message: "Model added.", variant: "success"});
             this.$refs.providerModal.close();
           } else {
             this.eventBus.emit("toast", {title: "Error", message: res?.message || "Failed.", variant: "danger"});
@@ -267,4 +288,7 @@ export default {
 </script>
 
 <style scoped>
+.font-monospace {
+  font-family: 'Courier New', Courier, monospace;
+}
 </style>
