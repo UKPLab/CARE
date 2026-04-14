@@ -5,11 +5,11 @@
  * @author Dennis Zyska
  */
 export default {
-    install: (app, options = {namespace: "table"}) => {
+    install: (app, _options = {namespace: "table"}) => {
         app.mixin({
             data() {
                 return {
-                    subscriptionId: null
+                    subscriptionIds: []
                 }
             },
             mounted() {
@@ -21,7 +21,7 @@ export default {
                             }
                             this.$socket.emit("subscribeAppData", table, (result) => {
                                 if (result.success) {
-                                    this.$data.subscriptionId = result.data;
+                                    this.$data.subscriptionIds.push(result.data);
                                 }
                             });
                         });
@@ -29,12 +29,15 @@ export default {
                 }
             },
             unmounted() {
-                if (this.$data.subscriptionId) {
-                    this.$socket.emit("unsubscribeAppData", this.$data.subscriptionId, (result) => {
-                        if (result.success) {
-                            this.$data.subscriptionId = null;
-                        }
+                if (this.$data.subscriptionIds && this.$data.subscriptionIds.length > 0) {
+                    this.$data.subscriptionIds.forEach((id) => {
+                        this.$socket.emit("unsubscribeAppData", id, (result) => {
+                            if (!result?.success) {
+                                console.warn("unsubscribeAppData failed", { id, result });
+                            }
+                        });
                     });
+                    this.$data.subscriptionIds = [];
                 }
             }
         })

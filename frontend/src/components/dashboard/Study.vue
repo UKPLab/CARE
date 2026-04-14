@@ -58,14 +58,16 @@
             :options="options"
             :buttons="buttons"
             @action="action"
+            :max-table-height="'65vh'"
         />
       </template>
     </Card>
-        <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator" @hide="modals.studyCoordinator = false"/>
+    <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator" @hide="modals.studyCoordinator = false"/>
     <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
     <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
     <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
+    <StudyCloseModal ref="studyCloseModal" />
     <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
     <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
@@ -85,6 +87,7 @@ import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
+import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import OverViewModal from "./study/OverViewModal.vue";
 
@@ -97,6 +100,7 @@ export default {
   name: "DashboardStudy",
   components: {
     BulkCloseModal,
+    StudyCloseModal,
     Card,
     BasicTable,
     StudyModal,
@@ -124,7 +128,7 @@ export default {
     },
     "user",
     'document',
-    'study_session', 'workflow', 'workflow_step', 'study_step'],
+    'study_session', 'workflow', 'workflow_step', 'study_step', 'template'],
   data() {
     return {
       modals: {
@@ -345,6 +349,15 @@ export default {
         {name: "Session Limit", key: "limitSessions", sortable: true},
         {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
         {
+          name: "Session Start/Finish Emails",
+          key: "enableEmailNotifications",
+          type: "badge",
+          typeOptions: {
+            keyMapping: { true: "Yes", false: "No" },
+            classMapping: { true: "bg-success", false: "bg-danger" }
+          }
+        },
+        {
           name: "Resumable",
           key: "resumable",
           type: "badge",
@@ -514,28 +527,7 @@ export default {
       } else if (data.action === "inspectStudySessions") {
         this.openStudySessionModal(data.params.id);
       } else if (data.action === "closeStudy") {
-
-        this.$socket.emit("appDataUpdate", {
-          table: "study",
-          data: {
-            id: data.params.id,
-            closed: true
-          }
-        }, (result) => {
-          if (result.success) {
-            this.eventBus.emit('toast', {
-              title: "Study closed",
-              message: "The study has been closed",
-              variant: "success"
-            });
-          } else {
-            this.eventBus.emit('toast', {
-              title: "Study closing failed",
-              message: result.message,
-              variant: "danger"
-            });
-          }
-        });
+        this.$refs.studyCloseModal.open(data.params);
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
@@ -562,7 +554,7 @@ export default {
           message: "Study link copied to clipboard!",
           variant: "success"
         });
-      } catch ($e) {
+      } catch (_error) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Could not copy study link to clipboard!",

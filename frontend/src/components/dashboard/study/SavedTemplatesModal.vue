@@ -16,6 +16,7 @@
         :options="tableOptions"
         :buttons="tableButtons"
         @action="handleAction"
+        :max-table-height="'60vh'"
       />
     </template>
     <template #footer>
@@ -158,11 +159,12 @@ export default {
       }
     },
     deleteTemplate(template) {
+      this.close();
       this.$refs.deleteConf.open(
         "Delete Template",
         "Are you sure you want to delete this template?",
         "",
-        function (val) {
+        (val) => {
           if (val) {
             this.$socket.emit("appDataUpdate", {
               table: "study",
@@ -186,6 +188,7 @@ export default {
               }
             });
           }
+          this.$nextTick(() => this.open());
         }
       );
     },

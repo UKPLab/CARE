@@ -82,9 +82,8 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object>} The duplicated document
          */
         static async duplicateDocument(documentId, overrides = {}, filters = {}, options = {}) {
-            const transaction = options.transaction;
-            
-            const originalDoc = await Document.findByPk(documentId, {transaction});
+
+            const originalDoc = await Document.findByPk(documentId, {transaction: options.transaction});
             if (!originalDoc) {
                 throw new Error(`Document with id ${documentId} not found`);
             }
@@ -106,22 +105,67 @@ module.exports = (sequelize, DataTypes) => {
             // Apply overrides using Object.assign
             const duplicateData = Object.assign(baseData, overrides);
 
-            const duplicatedDoc = await this.add(duplicateData, options);
-
-           
+            const duplicatedDoc = await this.add(duplicateData, {transaction: options.transaction});
 
             // Copy document files based on type
-            await this.duplicateDocumentFiles(originalDoc, duplicatedDoc, transaction);
+            await this.duplicateDocumentFiles(originalDoc, duplicatedDoc, options);
 
-            await sequelize.models.document_data.duplicateDocumentData(originalDoc.id, duplicatedDoc.id, filters, transaction);
+            await this.duplicateDocumentData(
+                originalDoc,
+                duplicatedDoc,
+                filters,
+                null,
+                null,
+                options
+            );
 
-            if (originalDoc.type === Document.docTypes.DOC_TYPE_PDF) {
-                await sequelize.models.annotation.duplicateAnnotations(originalDoc.id, duplicatedDoc.id, filters, transaction);
-            }
-            else if(originalDoc.type === Document.docTypes.DOC_TYPE_HTML || originalDoc.type === Document.docTypes.DOC_TYPE_MODAL){
-                await sequelize.models.document_edit.duplicateEditsByDocument(originalDoc.id, duplicatedDoc.id, filters, transaction);
-            }
             return duplicatedDoc;
+        }
+
+        /**
+         * Duplicate all data related to a document (document_data, annotations, document_edit, comments, comment votes)
+         *
+         * @param {Object} originalDocument - The original document object
+         * @param {Object} targetDocument - The target document to copy data to
+         * @param {Object} filters - Optional filters for extra associations (e.g., { studySessionId: 45 })
+         * @param {number|null} targetStudySessionId - Optional study session ID to add the document related data to
+         * @param {number|null} targetStudyStepId - Optional study step ID to add the document related data to
+         * @param {Object} options - Database options including transaction
+         * @returns {Promise<void>}
+         */
+        static async duplicateDocumentData(originalDocument, targetDocument, filters = {}, targetStudySessionId = null, targetStudyStepId = null, options) {
+            // Copy document_data
+            await sequelize.models.document_data.duplicateDocumentData(
+                originalDocument.id, 
+                targetDocument.id, 
+                filters, 
+                targetStudySessionId, 
+                targetStudyStepId, 
+                options
+            );
+
+            // Copy annotations for PDF documents
+            if (originalDocument.type === Document.docTypes.DOC_TYPE_PDF) {
+                await sequelize.models.annotation.duplicateAnnotations(
+                    originalDocument.id, 
+                    targetDocument.id, 
+                    filters, 
+                    targetStudySessionId, 
+                    targetStudyStepId, 
+                    options
+                );
+            }
+            // Copy document edits for HTML/MODAL documents
+            else if (originalDocument.type === Document.docTypes.DOC_TYPE_HTML || originalDocument.type === Document.docTypes.DOC_TYPE_MODAL) {
+                await sequelize.models.document_edit.duplicateEditsByDocument(
+                    originalDocument.id, 
+                    targetDocument.id, 
+                    filters, 
+                    targetStudySessionId, 
+                    targetStudyStepId, 
+                    options
+                );
+            }
         }
 
         /**
@@ -129,9 +173,9 @@ module.exports = (sequelize, DataTypes) => {
          *
          * @param {Object} originalDoc - The original document
          * @param {Object} duplicatedDoc - The duplicated document
-         * @param {Object} transaction - The database transaction
+         * @param {Object} options - Database options including transaction
          */
-        static async duplicateDocumentFiles(originalDoc, duplicatedDoc, transaction) {
+        static async duplicateDocumentFiles(originalDoc, duplicatedDoc, options) {
             if ([Document.docTypes.DOC_TYPE_PDF, Document.docTypes.DOC_TYPE_ZIP].includes(originalDoc.type)) {
                 const docType = originalDoc.type;
                 const docTypeKey = Object.keys(Document.docTypes)

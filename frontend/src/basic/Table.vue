@@ -532,14 +532,14 @@ export default {
         {},
         ...Object.entries(this.filter).map(([k, v]) => ({
           [k]: Object.entries(v)
-            .filter(([k, v]) => v)
-            .map(([k, v]) => k),
+            .filter(([_k, v]) => v)
+            .map(([k, _v]) => k),
         }))
       );
       return Object.assign(
         {},
         ...Object.entries(sequelizeFilter)
-          .filter(([k, v]) => v.length > 0)
+          .filter(([_k, v]) => v.length > 0)
           .map(([k, v]) => ({ [k]: v }))
       );
     },
@@ -825,7 +825,7 @@ export default {
       // Apply search filter
       if (this.search && this.search !== "") {
         data = data.filter((d) => {
-          for (const [key, value] of Object.entries(d)) {
+          for (const [_key, value] of Object.entries(d)) {
             if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
               return true;
             }
@@ -871,8 +871,8 @@ export default {
             } else {
               // only selected filter
               const filter = Object.entries(filterValue)
-                .filter(([k, v]) => v)
-                .map(([k, v]) => k);
+                .filter(([_k, v]) => v)
+                .map(([k, _v]) => k);
               if (filter.length > 0) {
                 const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
                 const hasMatch = dataValues.some((val) =>
@@ -1010,12 +1010,27 @@ export default {
     getFilteredButtons(row) {
       const filteredButtons = this.buttons.filter((b) => {
         if (!b.filter || !b.filter.length) return true;
-        return b.filter.some((f) => {
-          if (f.type === "not") {
-            return row[f.key] !== f.value;
-          }
-          return row[f.key] === f.value;
-        });
+        
+        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
+        const filterMode = b.filterMode || "or";
+        
+        if (filterMode === "and") {
+          // AND logic: all filters must match
+          return b.filter.every((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        } else {
+          // OR logic (default): at least one filter must match
+          return b.filter.some((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        }
       });
 
       // Update this flag if there are any buttons
@@ -1132,5 +1147,30 @@ export default {
   text-overflow: ellipsis;
   white-space: normal;
   word-break: break-word;
+}
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed,
+.table-wrapper thead th.table-fixed-left,
+.table-wrapper thead th.table-fixed-right {
+  z-index: 6 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed-right {
+  z-index: 7 !important;
+}
+
+.table-wrapper tbody td.table-fixed,
+.table-wrapper tbody td.table-fixed-left,
+.table-wrapper tbody td.table-fixed-right {
+  z-index: 2 !important;
+  background: var(--bs-body-bg, #fff);
 }
 </style>

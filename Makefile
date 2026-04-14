@@ -31,6 +31,7 @@ help:
 	@echo "make lint             				Run linter (only frontend)"
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
+	@echo "make audit            				npm audit for frontend, backend, utils/modules/editor-delta-conversion"
 
 .PHONY: doc
 doc: doc_sphinx
@@ -100,7 +101,7 @@ dev-build-frontend: frontend/node_modules/.uptodate
 build:
 	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
-.PHONE: build-frontend
+.PHONY: build-frontend
 build-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-build
 
@@ -127,6 +128,10 @@ recover_db:
 	@echo "Recovering from $${DUMP}"
 	@echo "Recovering int container $${CONTAINER}"
 	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+
+.PHONY: admin-password
+admin-password: backend/node_modules/.uptodate
+	cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" npm run set-admin-password
 
 .PHONY: check_clean clean
 
@@ -164,7 +169,7 @@ kill: check_kill
 	killall node
 
 frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.json
-	cd frontend && npm install
+	cd frontend && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	type NUL > $@
 else
@@ -172,7 +177,7 @@ else
 endif
 
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
-	cd backend && npm install
+	cd backend && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	type NUL > $@
 else
@@ -181,7 +186,7 @@ endif
 
 utils/modules/%/node_modules/.uptodate: utils/modules/%/package.json
 	@echo "Running npm install in $(@D)"
-	@cd $(@D) && npm install
+	@cd $(@D) && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	@echo. > $@
 else
@@ -191,13 +196,26 @@ endif
 install-utils-modules:
 ifeq ($(OS),Windows_NT)
 	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
-	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install && @echo. > node_modules\.uptodate)
+	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install --no-audit --no-fund --loglevel=error && @echo. > node_modules\.uptodate)
 else
 	rm -rf frontend/node_modules
 	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
-		(cd $$d && npm install && touch node_modules/.uptodate); \
+		(cd $$d && npm install --no-audit --no-fund --loglevel=error && touch node_modules/.uptodate); \
 	done
 endif
 
 .PHONY: modules
 modules: install-utils-modules
+
+.PHONY: audit
+# All three audits run even if one fails; exit 1 if any failed (npm.cmd avoids PowerShell execution policy on npm.ps1).
+ifeq ($(OS),Windows_NT)
+audit:
+	@powershell -NoProfile -Command "$$e=0; foreach ($$p in @('frontend','backend','utils/modules/editor-delta-conversion')) { Write-Host ''; Write-Host ('=== npm audit: ' + $$p + ' ==='); npm.cmd audit --prefix (Join-Path '$(CURDIR)' $$p); if ($$LASTEXITCODE -ne 0) { $$e=1 } }; exit $$e"
+else
+audit:
+	@st=0; for d in frontend backend utils/modules/editor-delta-conversion; do \
+		echo ""; echo "=== npm audit: $$d ==="; \
+		npm audit --prefix $$d || st=1; \
+	done; exit $$st
+endif

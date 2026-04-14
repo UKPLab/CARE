@@ -11,15 +11,13 @@ const passport = require("passport");
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const Sequelize = require('sequelize');
-const LocalStrategy = require("passport-local");
-const {relevantFields} = require("../utils/auth");
-const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Socket = require(path.resolve(__dirname, "./Socket.js"));
 const Service = require(path.resolve(__dirname, "./Service.js"));
 const RPC = require(path.resolve(__dirname,"./RPC.js"));
 const statsScheduler = require('../db/stats');
 const nodemailer = require('nodemailer');
+const { initializeAuth } = require("./auth");
 
 /**
  * Defines Express Webserver of Content Server
@@ -48,6 +46,12 @@ module.exports = class Server {
         this.availSockets = {};
         this.services = {};
         this.documentQueues = new Map();
+        this.authProviderStatus = {
+            local: { ready: false, reason: "not-initialized" },
+            orcid: { ready: false, reason: "not-initialized" },
+            ldap: { ready: false, reason: "not-initialized" },
+            saml: { ready: false, reason: "not-initialized" },
+        };
 
         // No Caching
         this.app.disable('etag');
@@ -72,7 +76,9 @@ module.exports = class Server {
         this.logger.debug("Initializing Passport...");
         this.app.use(bodyParser.urlencoded({extended: false}));
         this.app.use(bodyParser.json());
-        this.#loginManagement();
+        initializeAuth(this).catch((error) => {
+            this.logger.error("Failed to initialize login management: " + error);
+        });
         this.app.use(passport.initialize());
         this.app.use(passport.session());
 
@@ -81,8 +87,15 @@ module.exports = class Server {
         require("./routes/config")(this);
         require('./routes/auth')(this);
 
-        // all further urls reference to frontend
-        this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
+        this.app.use((req, res, next) => {
+            if (req.method !== "GET") {
+                return next();
+            }
+            if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/docs")) {
+                return next();
+            }
+            return res.sendFile(path.resolve(__dirname, "../../dist/index.html"));
+        });
 
         this.httpServer = http.createServer(this.app);
         Promise.resolve(this.#initMailServer()).then(() => {
@@ -171,21 +184,29 @@ module.exports = class Server {
      * Send a mail
      * @param to email address
      * @param subject of the mail
-     * @param text of the mail
+     * @param body body of the mail (plain text or HTML depending on options.isHtml)
+     * @param {Object} [options] options
+     * @param {boolean} [options.isHtml] if true, body is sent as HTML (Content-Type text/html); otherwise as plain text
      * @returns {Promise<void>}
      */
-    async sendMail(to, subject, text) {
+    async sendMail(to, subject, body, options = {}) {
         if (!this.mailer) {
             this.logger.warn(`Email service not configured. Would send email to ${to} with subject: ${subject}`);
             return;
         }
-        
-        this.mailer.sendMail({
+
+        const mailOptions = {
             from: await this.db.models['setting'].get("system.mailService.senderAddress"),
             to: to,
-            subject: subject,
-            text: text
-        }, (err, info) => {
+            subject: subject
+        };
+        if (options.isHtml === true) {
+            mailOptions.html = body;
+        } else {
+            mailOptions.text = body;
+        }
+
+        this.mailer.sendMail(mailOptions, (err, info) => {
             if (err) {
                 this.logger.error(err);
             } else {
@@ -196,44 +217,21 @@ module.exports = class Server {
     }
 
     /**
-     * Set the login management (routes and passport)
+     * Returns true if provider strategy is initialized and ready.
+     * @param {string} provider - local|orcid|ldap|saml
+     * @returns {boolean}
      */
-    #loginManagement() {
-        this.logger.debug("Initialize Routes for auth...");
+    isAuthProviderReady(provider) {
+        return !!this.authProviderStatus?.[provider]?.ready;
+    }
 
-        passport.use(new LocalStrategy(async (username, password, cb) => {
-
-            const user = await this.db.models['user'].find(username);
-            if (!user) {
-                return cb(null, false, {message: 'Incorrect username or password.'});
-            }
-
-            crypto.pbkdf2(password, user.salt, 310000, 32, 'sha256', (err, hashedPassword) => {
-                if (err) {
-                    return cb(err);
-                }
-
-                if (!crypto.timingSafeEqual(Buffer.from(user.passwordHash, 'hex'), hashedPassword)) {
-                    return cb(null, false, {message: 'Incorrect username or password.'});
-                }
-
-                // filter row object, because not everything is the right information for website
-                return cb(null, relevantFields(user));
-            });
-        }));
-
-
-        // required to work -- defines strategy for storing user information
-        passport.serializeUser(function (user, done) {
-            done(null, user);
-        });
-
-        // required to work -- defines strategy for loading user information
-        passport.deserializeUser(function (user, done) {
-            done(null, user);
-        });
-
-
+    /**
+     * Get detailed provider status.
+     * @param {string} provider
+     * @returns {{ready:boolean,reason:string}|{ready:false,reason:string}}
+     */
+    getAuthProviderStatus(provider) {
+        return this.authProviderStatus?.[provider] || { ready: false, reason: "unknown-provider" };
     }
 
     /**
@@ -331,12 +329,18 @@ module.exports = class Server {
         this.io.use(wrap(passport.session()));
         this.io.use((socket, next) => {
             const session = socket.request.session;
-            if (session && "passport" in session) {
+            if (session && "passport" in session && !session.twoFactorPending) {
                 socket.request.session.touch();
                 socket.request.session.save();
                 next();
+            } else if (session && session.twoFactorPending) {
+                socket.emit("logout"); // force client back to auth flow
+                this.logger.warn("Websocket blocked: 2FA verification pending.");
+                socket.disconnect();
             } else {
-                socket.request.session.destroy();
+                if (socket.request.session) {
+                    socket.request.session.destroy();
+                }
                 socket.emit("logout"); //force logout on client side
                 this.logger.warn("Session in websocket not available! Send logout...");
                 socket.disconnect();

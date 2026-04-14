@@ -30,8 +30,6 @@ export class Anchoring {
     }
 
     async PDFanchor(selectors) {
-        const root = document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId);
-
         const quote = /** @type {TextQuoteSelector|undefined} */ (
             selectors.find(s => s.type === 'TextQuoteSelector')
         );
@@ -62,7 +60,7 @@ export class Anchoring {
 
                 const range = await this.anchorByPosition(index, start, end);
                 return range;
-            } catch {
+            } catch (_error) {
                 // Fall back to quote selector
             }
 

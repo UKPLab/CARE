@@ -33,7 +33,7 @@
     </template>
     <template #footer>
       <div class="d-flex justify-content-end">
-        <BasicButton class="btn btn-outline-secondary" @click="close" title="Close" />
+        <BasicButton class="btn btn-outline-secondary" title="Close" @click="close" />
       </div>
     </template>
   </BasicModal>

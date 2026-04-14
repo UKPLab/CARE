@@ -44,25 +44,27 @@ module.exports = (sequelize, DataTypes) => {
          *   - If not provided or empty, copies ALL comments (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
-         * @param {Object} transaction - The database transaction
+         * @param {number|null} targetStudySessionId - Optional study session ID to set for the duplicated comments (overrides original value)
+         * @param {number|null} targetStudyStepId - Optional study step ID to set for the duplicated comments (overrides original value)
+         * @param {Object} options - Database options including transaction
          * @returns {Promise<Array>} Array of duplicated comments
          * 
          * @example
          * // Copy all comments (default)
-         * await duplicateComments(1, dupAnnotation, null, transaction);
+         * await duplicateComments(1, dupAnnotation, null, null, null, options);
          * 
          * @example
          * // Copy only null entries
-         * await duplicateComments(1, dupAnnotation, { studySessionId: null, studyStepId: null }, transaction);
+         * await duplicateComments(1, dupAnnotation, { studySessionId: null, studyStepId: null }, null, null, options);
          * 
          * @example
          * // Copy multiple conditions
          * await duplicateComments(1, dupAnnotation, [
          *   { studySessionId: null, studyStepId: null },
          *   { studySessionId: 45, studyStepId: 12 }
-         * ], transaction);
+         * ], options);
          */
-        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, filters = null, transaction) {
+        static async duplicateComments(originalAnnotationId, duplicatedAnnotation, filters = null, targetStudySessionId = null, targetStudyStepId = null, options) {
             
             // Build where clause for root comments (no parent)
             const whereClause = {
@@ -93,7 +95,7 @@ module.exports = (sequelize, DataTypes) => {
             const originalComments = await this.findAll({
                 where: whereClause,
                 raw: true,
-                transaction
+                transaction: options.transaction
             });
             
             const duplicatedComments = [];
@@ -106,8 +108,10 @@ module.exports = (sequelize, DataTypes) => {
                     duplicatedAnnotation,
                     null,
                     filters,
-                    transaction,
-                    commentIdMap
+                    targetStudySessionId,
+                    targetStudyStepId,
+                    commentIdMap,
+                    options
                 );
                 duplicatedComments.push(...duplicated);
             }
@@ -122,11 +126,13 @@ module.exports = (sequelize, DataTypes) => {
          * @param {Object} duplicatedAnnotation - The duplicated annotation object
          * @param {number|null} newParentCommentId - The ID of the parent comment in the duplicated tree
          * @param {Object|Object[]} filters - Optional where clause conditions for filtering
-         * @param {Object} transaction - The database transaction
+         * @param {number|null} targetStudySessionId - Optional study session ID to set for the duplicated comment (overrides original value)
+         * @param {number|null} targetStudyStepId - Optional study step ID to set for the duplicated comment (overrides original value)
          * @param {Map} commentIdMap - Map to track original to duplicated comment IDs
+         * @param {Object} options - Database options including transaction
          * @returns {Promise<Array>} Array of duplicated comments
          */
-        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, filters, transaction, commentIdMap) {
+        static async duplicateCommentWithChildren(originalComment, duplicatedAnnotation, newParentCommentId, filters, targetStudySessionId = null, targetStudyStepId = null , commentIdMap, options) {
             // Create base comment data
             const baseData = {
                 userId: originalComment.userId,
@@ -134,13 +140,15 @@ module.exports = (sequelize, DataTypes) => {
                 draft: originalComment.draft,
                 documentId: duplicatedAnnotation.documentId,
                 annotationId: duplicatedAnnotation.id,
+                studySessionId: targetStudySessionId,
+                studyStepId: targetStudyStepId,
                 parentCommentId: newParentCommentId,
                 tags: originalComment.tags,
                 anonymous: originalComment.anonymous,
                 deleted: false
             };
                       
-            const duplicatedComment = await this.add(baseData, {transaction});
+            const duplicatedComment = await this.add(baseData, {transaction: options.transaction});
             commentIdMap.set(originalComment.id, duplicatedComment.id);
             
             const allDuplicated = [duplicatedComment];
@@ -149,14 +157,14 @@ module.exports = (sequelize, DataTypes) => {
             await sequelize.models.comment_vote.duplicateCommentVotes(
                 originalComment.id,
                 duplicatedComment.id,
-                transaction
+                options
             );
             
             // Find and duplicate child comments
             const childComments = await this.getAllByKey(
                 "parentCommentId",
                 originalComment.id,
-                {transaction},
+                {transaction: options.transaction},
                 true
             );
             
@@ -166,8 +174,10 @@ module.exports = (sequelize, DataTypes) => {
                     duplicatedAnnotation,
                     duplicatedComment.id,
                     filters,
-                    transaction,
-                    commentIdMap
+                    targetStudySessionId,
+                    targetStudyStepId,
+                    commentIdMap,
+                    options
                 );
                 allDuplicated.push(...duplicatedChildren);
             }
