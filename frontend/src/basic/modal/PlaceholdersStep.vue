@@ -81,7 +81,6 @@
 </template>
 
 <script>
-import StepTemplate from "@/basic/modal/StepTemplate.vue";
 import Quill from "quill";
 
 /**
@@ -92,9 +91,6 @@ import Quill from "quill";
  */
 export default {
   name: "PlaceholdersStep",
-  components: {
-    StepTemplate
-  },
   props: {
     modelValue: {
       type: Array,

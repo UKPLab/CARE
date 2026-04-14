@@ -320,6 +320,8 @@ class UserSocket extends Socket {
         this.socket.emit("userByRole", {
             success: true, users,
         });
+        // Keep table/user store in sync so Submissions (and other components using table/user) see the same list
+        await this.emit("userRefresh", users, true);
         return users;
     }
 

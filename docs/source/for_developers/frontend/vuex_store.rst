@@ -79,5 +79,21 @@ The following getters are supported for auto tables:
 - ``getFields``: Returns the fields definition defined in the backend (used for :doc:`basic/form`), if available (check before with hasFields).
 - ``refreshCount``: Returns the count how often the data was refreshed from the backend.
 
+Table-specific getters (extension point)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Auto table modules are built in ``frontend/src/store/utils.js`` by ``createTable``. Besides the
+standard getters above, **optional getters** can be registered for a given backend table name via
+``TABLE_EXTRA_GETTERS``. They are merged into the module in the same way as conditional
+``getFields`` / ``hasFields``. Use this only when repeating ``getFiltered`` in components would be
+too expensive or duplicated; see :doc:`for_developers/frontend/plugins` for how components subscribe to tables.
+
+Current extras:
+
+- ``sessionCountByStudyId`` on ``table/study_session``: returns a plain object mapping each
+  ``studyId`` to the number of session rows currently in the store (one pass over ``state.data``).
+  The Studies dashboard uses it for the **Sessions** column instead of filtering the full session
+  list once per study row.
+  
 For the full backend–frontend pipeline (sockets, broadcasts, refresh logic), see :doc:`Data Transfer <../backend/data_transfer>`.
 

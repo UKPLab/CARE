@@ -8,6 +8,7 @@
         ref="regularGrid"
         :fields="regularFields"
         :model-value="currentData"
+        @update:model-value="currentData = $event"
         @update:config-status="handleConfigStatusChange"
         @file-change="(file) => $emit('file-change', file)"
       />
@@ -24,6 +25,7 @@
               ref="advancedGrid"
               :fields="advancedFields"
               :model-value="currentData"
+              @update:model-value="currentData = $event"
               @update:config-status="handleConfigStatusChange"
               @file-change="(file) => $emit('file-change', file)"
             />
