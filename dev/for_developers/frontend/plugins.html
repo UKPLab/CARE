@@ -123,6 +123,12 @@ more backend <strong>autoTables</strong>; the server then pushes <code class="do
 Vuex merges. On unmount the plugin automatically unsubscribes.</p>
 <p>For the complete end-to-end flow (Sockets ↔ Vuex ↔ Components), see
 <a class="reference internal" href="../backend/data_transfer.html"><span class="doc">Data Transfer</span></a> and <a class="reference internal" href="vuex_store.html"><span class="doc">Vuex Store</span></a>.</p>
+<p><strong>Dashboard pages and lazy-loaded modals</strong></p>
+<p>Top-level dashboard views that use <a class="reference internal" href="basic/modal.html#lazy-loading-modals"><span class="std std-ref">lazy-loading modals</span></a> should still
+include every auto table the <strong>page itself</strong> needs on first render (for example <code class="docutils literal notranslate"><span class="pre">&quot;user&quot;</span></code> when
+the table shows names from <code class="docutils literal notranslate"><span class="pre">table/user</span></code>). Lazy-loaded modals are not mounted until opened, so
+<code class="docutils literal notranslate"><span class="pre">subscribeTable</span></code> on those modals does not run on the initial dashboard load. Relying on modals
+alone would leave the related Vuex stores empty until the user opens a modal.</p>
 <p><strong>Examples</strong></p>
 <p>Minimal subscription (e.g., in <code class="docutils literal notranslate"><span class="pre">Documents.vue</span></code>):</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
