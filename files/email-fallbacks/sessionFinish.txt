@@ -1,0 +1,10 @@
+CARE - Review Session Completed
+
+Hello,
+
+A review session has been completed for your submission.
+
+You can view the review here: {{reviewLink}}
+
+Best regards,
+The CARE Team

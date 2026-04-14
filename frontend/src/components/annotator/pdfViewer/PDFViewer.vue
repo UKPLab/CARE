@@ -44,7 +44,6 @@ import {computed} from "vue";
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
-import ReadOnlyIndicator from "../../common/ReadOnlyIndicator.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -60,7 +59,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "PDFViewer",
-  components: {BasicLoading, PDFPage, Adder, PDFToolbar, ReadOnlyIndicator},
+  components: {BasicLoading, PDFPage, Adder, PDFToolbar},
   inject: {
     documentId: {
       type: Number,
@@ -171,7 +170,7 @@ export default {
               this.pdf = new PDF();
               this.pdf.setPDF(pdf);
             })
-            .catch(response => {
+            .catch(_response => {
               this.eventBus.emit('toast', {
                 title: "PDF Loading Error",
                 message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",

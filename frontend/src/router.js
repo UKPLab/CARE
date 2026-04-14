@@ -34,6 +34,30 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
+        path: "/login/ldap",
+        component: () => import("@/auth/LoginLdap.vue"),
+        name: "login-ldap",
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
+    },
+    {
+        path: "/2fa/verify/email",
+        name: "2fa-verify-email",
+        component: () => import("@/auth/TwoFactorVerifyEmail.vue"),
+        meta: { requireAuth: false, hideTopbar: true, checkLogin: true }
+    },
+    {
+        path: "/2fa/verify/totp",
+        name: "2fa-verify-totp",
+        component: () => import("@/auth/TwoFactorVerifyTotp.vue"),
+        meta: { requireAuth: false, hideTopbar: true, checkLogin: true }
+    },
+    {
+        path: "/2fa/select",
+        name: "2fa-select",
+        component: () => import("@/auth/TwoFactorSelect.vue"),
+        meta: { requireAuth: false, hideTopbar: true, checkLogin: true }
+    },
+    {
         path: "/register",
         name: "register",
         component: () => import("@/auth/Register.vue"),
@@ -48,6 +72,12 @@ const routes = [
     {
         path: "/document/:documentHash",
         component: () => import('@/components/Document.vue'),
+        props: true,
+        meta: {requireAuth: true}
+    },
+    {
+        path: "/template/:templateId",
+        component: () => import('@/components/Template.vue'),
         props: true,
         meta: {requireAuth: true}
     },

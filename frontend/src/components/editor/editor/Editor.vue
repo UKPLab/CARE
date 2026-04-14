@@ -46,7 +46,6 @@ import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
-import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 
 const Delta = Quill.import('delta');
@@ -54,7 +53,6 @@ const Delta = Quill.import('delta');
 export default {
   name: "EditorView",
   components: {
-    ReadOnlyIndicator,
     LoadIcon,
   },
   fetch_data: ["document_edit"],

@@ -278,6 +278,27 @@ export const sorter = function(arrayToSort, sortList) {
 }
 
 /**
+ * Returns "#000000" or "#ffffff" depending on which provides better contrast
+ * against the given hex background colour, using the W3C relative luminance
+ * formula (WCAG 2.x).
+ *
+ * @param {string} hexColor - A 7-char hex colour string (e.g. "#ffe599")
+ * @returns {string} "#000000" or "#ffffff"
+ */
+export function getContrastColor(hexColor) {
+    const hex = (hexColor || "").replace(/^#/, "");
+    if (hex.length !== 6) return "#000000";
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    const toLinear = (c) =>
+        c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    const luminance =
+        0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    return luminance > 0.179 ? "#000000" : "#ffffff";
+}
+
+/**
  * Extracts text content from a PDF document using PDF.js
  * @param {Object} pdfDocument - The PDF.js document object
  * @returns {Promise<string>} A promise that resolves to the extracted text

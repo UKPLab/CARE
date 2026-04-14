@@ -174,7 +174,6 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
                         return d;
                     });
                 }
-                let start = Date.now()
                 // for table tag we wont remove deleted tags - as they are needed for annotations made in documents
                 refreshState(state, data, (table.name !== 'tag'));
                 state.refreshCount++;
