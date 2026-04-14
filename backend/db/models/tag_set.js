@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param options
          * @returns {Promise<void>}
          */
-        static async puslishTags(tagSet, options) {
+        static async publishTags(tagSet, options) {
             const tags = await sequelize.models['tag'].getAllByKey("tagSetId", tagSet.id, {transaction: options.transaction});
 
             for (const tag of tags) {
@@ -103,7 +103,7 @@ module.exports = (sequelize, DataTypes) => {
                     await TagSet.deleteTags(tagSet, options);
                 }
                 if (tagSet.public && !tagSet._previousDataValues.public) {
-                    await TagSet.puslishTags(tagSet, options);
+                    await TagSet.publishTags(tagSet, options);
                 }
             }
         }
