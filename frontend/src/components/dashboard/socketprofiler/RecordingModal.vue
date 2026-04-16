@@ -74,11 +74,22 @@ export default {
   },
   methods: {
     open(recordingId, traces) {
+      // Save flow — called from the stop recording callback
       this.recordingId = recordingId;
       this.recordingName = "Recording " + new Date().toLocaleString();
       this.traces = traces.map(t => ({
         ...t,
         selected: t.action !== "recorderStart" && t.action !== "recorderStop",
+      }));
+      this.$refs.modal.open();
+    },
+    openForEdit(recordingId, currentName, traces) {
+      // Edit flow — called from the Edit button on a row
+      this.recordingId = recordingId;
+      this.recordingName = currentName || "";
+      this.traces = traces.map(t => ({
+        ...t,
+        selected: true, // All visible traces start checked
       }));
       this.$refs.modal.open();
     },

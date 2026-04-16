@@ -85,6 +85,17 @@ export default {
           action: "replayRecording",
         },
         {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-primary": true,
+            },
+          },
+          title: "Edit recording",
+          action: "editRecording",
+        },
+        {
           icon: "trash",
           options: {
             iconOnly: true,
@@ -121,6 +132,9 @@ export default {
         case "replayRecording":
           this.replayRecording(data.params);
           break;
+        case "editRecording":
+          this.editRecording(data.params);
+          break;
         case "deleteRecording":
           this.deleteRecording(data.params);
           break;
@@ -145,6 +159,20 @@ export default {
     },
     stopActiveRecording() {
       this.eventBus.emit("recording:stop");
+    },
+    editRecording(row) {
+      this.$socket.emit("recordingGetTraces", { id: row.id }, (res) => {
+        if (res.success) {
+          const traces = res.data || [];
+          this.$refs.recordingModal.openForEdit(row.id, row.name, traces);
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to load traces",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     replayRecording(row) {
       // TODO: implement replay logic

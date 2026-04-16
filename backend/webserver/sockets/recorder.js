@@ -75,6 +75,31 @@ class RecorderSocket extends Socket {
         this.socket.onAny(this.incomingHandler);
         this.socket.onAnyOutgoing(this.outgoingHandler);
     }
+    /**
+     * Get all non-deleted traces for a recording
+     * @param {Object} data The input data from the frontend
+     * @param {number} data.id The recording ID
+     * @param {Object} options Sequelize transaction options
+     */
+    async getTraces(data, options) {
+        if (!data || !data.id) {
+            throw new Error("Recording ID required");
+        }
+
+        const traces = await this.models["trace"].findAll({
+            where: { recordingId: data.id, deleted: false },
+            order: [["id", "ASC"]],
+        });
+
+        return traces.map(t => ({
+            id: t.id,
+            recordingId: t.recordingId,
+            action: t.action,
+            direction: t.direction,
+            startTime: t.startTime,
+            endTime: t.endTime,
+        }));
+    }
 
     /**
      * Stop the current recording and return its traces
@@ -138,6 +163,7 @@ class RecorderSocket extends Socket {
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
         this.createSocket("recorderStop", this.stopRecording, {}, false);
+        this.createSocket("recordingGetTraces", this.getTraces, {}, false);
     }
 }
 
