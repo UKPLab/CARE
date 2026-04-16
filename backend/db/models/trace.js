@@ -12,12 +12,17 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "recordingId",
                 as: "recording",
             });
+            Trace.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
     }
 
     Trace.init(
         {
             recordingId: DataTypes.INTEGER,
+            userId: DataTypes.INTEGER,
             action: DataTypes.STRING,
             payload: DataTypes.JSONB,
             direction: DataTypes.BOOLEAN,

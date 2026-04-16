@@ -3,48 +3,36 @@ const Socket = require("../Socket.js");
 /**
  * Recorder Socket
  *
- * Handles recording and replaying of WebSocket events
- * for stress testing the CARE platform.
+ * Captures WebSocket events across ALL connected users for stress-test replay.
+ * Recording is a server-wide toggle controlled by an admin — when active,
+ * every connected user's socket has trace listeners attached automatically,
+ * including users who connect mid-recording.
  */
 class RecorderSocket extends Socket {
 
     constructor(server, io, socket) {
         super(server, io, socket);
-        this.isRecording = false;
-        this.currentRecordingId = null;
         this.incomingHandler = null;
         this.outgoingHandler = null;
     }
 
+
     /**
-     * Start recording all socket events
-     * @param {Object} data The input data from the frontend
-     * @param {string} data.name The name of the recording
-     * @param {Object} options Sequelize transaction options
+     * Attach trace-writing listeners to THIS user's socket.
+     * Handlers tag traces with this.userId so we know who emitted each event.
      */
-    async startRecording(data, options) {
-        if (this.isRecording) {
-            throw new Error("Already recording");
+    attachListeners() {
+        if (this.incomingHandler || this.outgoingHandler) {
+            return; // already attached, avoid doubling up
         }
 
-        // Create a new recording entry in the DB
-        const recording = await this.models["recording"].add({
-            name: data.name || "Recording " + new Date().toLocaleString(),
-            status: "recording",
-            startTime: new Date(),
-            userId: this.userId,
-        }, options);
-
-        this.isRecording = true;
-        this.currentRecordingId = recording.id;
-
-        // Store handlers as instance properties so we can detach
-        // exactly these listeners later (instead of nuking all catch-alls)
         this.incomingHandler = async (eventName, ...args) => {
-            if (!this.isRecording) return;
+            const recordingId = this.server.activeRecordingId;
+            if (!recordingId) return;
             try {
                 await this.models["trace"].add({
-                    recordingId: this.currentRecordingId,
+                    recordingId,
+                    userId: this.userId,
                     action: eventName,
                     payload: args[0] || null,
                     direction: true, // frontend -> backend
@@ -57,10 +45,12 @@ class RecorderSocket extends Socket {
         };
 
         this.outgoingHandler = async (eventName, ...args) => {
-            if (!this.isRecording) return;
+            const recordingId = this.server.activeRecordingId;
+            if (!recordingId) return;
             try {
                 await this.models["trace"].add({
-                    recordingId: this.currentRecordingId,
+                    recordingId,
+                    userId: this.userId,
                     action: eventName,
                     payload: args[0] || null,
                     direction: false, // backend -> frontend
@@ -75,11 +65,100 @@ class RecorderSocket extends Socket {
         this.socket.onAny(this.incomingHandler);
         this.socket.onAnyOutgoing(this.outgoingHandler);
     }
+
     /**
-     * Get all non-deleted traces for a recording
-     * @param {Object} data The input data from the frontend
-     * @param {number} data.id The recording ID
-     * @param {Object} options Sequelize transaction options
+     * Detach this user's trace listeners by reference.
+     */
+    detachListeners() {
+        if (this.incomingHandler) {
+            this.socket.offAny(this.incomingHandler);
+            this.incomingHandler = null;
+        }
+        if (this.outgoingHandler) {
+            this.socket.offAnyOutgoing(this.outgoingHandler);
+            this.outgoingHandler = null;
+        }
+    }
+
+    /**
+     * Start a server-wide recording. Admin-only.
+     * Sets the server flag, then attaches listeners on every connected user's socket.
+     */
+    async startRecording(data, options) {
+        if (this.server.activeRecordingId) {
+            throw new Error("A recording is already in progress");
+        }
+
+        const recording = await this.models["recording"].add({
+            name: data.name || "Recording " + new Date().toLocaleString(),
+            status: "recording",
+            startTime: new Date(),
+            userId: this.userId, // admin who started it
+        }, options);
+
+        this.server.activeRecordingId = recording.id;
+
+        // Iterate every connected socket and attach listeners via their RecorderSocket
+        for (const socketId of Object.keys(this.server.availSockets)) {
+            const recorder = this.server.availSockets[socketId]["RecorderSocket"];
+            if (recorder) {
+                recorder.attachListeners();
+            }
+        }
+    }
+
+    /**
+     * Stop the current server-wide recording. Admin-only.
+     * Detaches listeners on every connected socket, finalizes the recording row,
+     * and returns the captured traces for the save modal.
+     */
+    async stopRecording(data, options) {
+        const recordingId = this.server.activeRecordingId || (data && data.id);
+
+        if (!recordingId) {
+            throw new Error("No active recording");
+        }
+
+        // Detach listeners on every connected socket
+        for (const socketId of Object.keys(this.server.availSockets)) {
+            const recorder = this.server.availSockets[socketId]["RecorderSocket"];
+            if (recorder) {
+                recorder.detachListeners();
+            }
+        }
+
+        await this.models["recording"].updateById(
+            recordingId,
+            {
+                status: "finished",
+                endTime: new Date(),
+            },
+            options
+        );
+
+        this.server.activeRecordingId = null;
+
+        const traces = await this.models["trace"].findAll({
+            where: { recordingId },
+            order: [["id", "ASC"]],
+        });
+
+        return {
+            id: recordingId,
+            traces: traces.map(t => ({
+                id: t.id,
+                recordingId: t.recordingId,
+                userId: t.userId,
+                action: t.action,
+                direction: t.direction,
+                startTime: t.startTime,
+                endTime: t.endTime,
+            })),
+        };
+    }
+
+    /**
+     * Get non-deleted traces for a specific recording (used by edit modal).
      */
     async getTraces(data, options) {
         if (!data || !data.id) {
@@ -94,6 +173,7 @@ class RecorderSocket extends Socket {
         return traces.map(t => ({
             id: t.id,
             recordingId: t.recordingId,
+            userId: t.userId,
             action: t.action,
             direction: t.direction,
             startTime: t.startTime,
@@ -102,68 +182,18 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Stop the current recording and return its traces
-     * @param {Object} data The input data from the frontend
-     * @param {number} data.id Optional recording ID (fallback if in-memory state is lost)
-     * @param {Object} options Sequelize transaction options
+     * Called on connection. Registers socket events and,
+     * if a recording is already in progress, attaches listeners immediately
+     * so this user's events get captured too.
      */
-    async stopRecording(data, options) {
-        // Fall back to the ID sent by the frontend if our in-memory state was lost
-        // (e.g., the user refreshed the page mid-recording and got a new socket)
-        const recordingId = this.currentRecordingId || (data && data.id);
-
-        if (!recordingId) {
-            throw new Error("No active recording");
-        }
-
-        // Remove only OUR catch-all listeners, by reference,
-        // so we don't stomp on any catch-alls registered elsewhere
-        if (this.incomingHandler) {
-            this.socket.offAny(this.incomingHandler);
-            this.incomingHandler = null;
-        }
-        if (this.outgoingHandler) {
-            this.socket.offAnyOutgoing(this.outgoingHandler);
-            this.outgoingHandler = null;
-        }
-
-        // Update recording status and end time
-        await this.models["recording"].updateById(
-            recordingId,
-            {
-                status: "finished",
-                endTime: new Date(),
-            },
-            options
-        );
-
-        this.isRecording = false;
-        this.currentRecordingId = null;
-
-        // Fetch all traces for this recording so the frontend can show them
-        // in the save modal without having to wait for Vuex to sync
-        const traces = await this.models["trace"].findAll({
-            where: { recordingId },
-            order: [["id", "ASC"]],
-        });
-
-        return {
-            id: recordingId,
-            traces: traces.map(t => ({
-                id: t.id,
-                recordingId: t.recordingId,
-                action: t.action,
-                direction: t.direction,
-                startTime: t.startTime,
-                endTime: t.endTime,
-            })),
-        };
-    }
-
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
         this.createSocket("recorderStop", this.stopRecording, {}, false);
         this.createSocket("recordingGetTraces", this.getTraces, {}, false);
+
+        if (this.server.activeRecordingId) {
+            this.attachListeners();
+        }
     }
 }
 
