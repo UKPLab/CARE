@@ -45,6 +45,11 @@
     </template>
     <template #footer>
       <BasicButton
+        class="btn-outline-danger me-auto"
+        text="Discard Recording"
+        @click="discard"
+      />
+      <BasicButton
         class="btn-secondary"
         text="Cancel"
         @click="abort"
@@ -73,6 +78,27 @@ export default {
     };
   },
   methods: {
+    discard() {
+      this.$socket.emit("appDataUpdate", {
+        table: "recording",
+        data: { id: this.recordingId, deleted: true }
+      }, (res) => {
+        if (res.success) {
+          this.$refs.modal.close();
+          this.eventBus.emit("toast", {
+            title: "Recording discarded",
+            message: "Recording has been deleted",
+            variant: "warning",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to discard recording",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
+    },
     open(recordingId, traces) {
       // Save flow — called from the stop recording callback
       this.recordingId = recordingId;

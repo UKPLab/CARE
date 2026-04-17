@@ -3,10 +3,9 @@ const Socket = require("../Socket.js");
 /**
  * Recorder Socket
  *
- * Captures WebSocket events across ALL connected users for stress-test replay.
- * Recording is a server-wide toggle controlled by an admin — when active,
- * every connected user's socket has trace listeners attached automatically,
- * including users who connect mid-recording.
+ * Captures WebSocket events across connected users for stress-test replay.
+ * Recording is a server-wide toggle — admin chooses which users to include,
+ * or leaves the list empty to record everyone.
  */
 class RecorderSocket extends Socket {
 
@@ -16,15 +15,19 @@ class RecorderSocket extends Socket {
         this.outgoingHandler = null;
     }
 
-
     /**
-     * Attach trace-writing listeners to THIS user's socket.
-     * Handlers tag traces with this.userId so we know who emitted each event.
+     * Returns true if this user should be recorded under the current configuration.
      */
-    attachListeners() {
-        if (this.incomingHandler || this.outgoingHandler) {
-            return; // already attached, avoid doubling up
+    isUserIncluded(userId) {
+        const participants = this.server.activeParticipantUserIds;
+        if (!participants || participants.length === 0) {
+            return true; // empty / null = record everyone
         }
+        return participants.includes(userId);
+    }
+
+    attachListeners() {
+        if (this.incomingHandler || this.outgoingHandler) return;
 
         this.incomingHandler = async (eventName, ...args) => {
             const recordingId = this.server.activeRecordingId;
@@ -35,7 +38,7 @@ class RecorderSocket extends Socket {
                     userId: this.userId,
                     action: eventName,
                     payload: args[0] || null,
-                    direction: true, // frontend -> backend
+                    direction: true,
                     startTime: new Date(),
                     endTime: new Date(),
                 });
@@ -53,7 +56,7 @@ class RecorderSocket extends Socket {
                     userId: this.userId,
                     action: eventName,
                     payload: args[0] || null,
-                    direction: false, // backend -> frontend
+                    direction: false,
                     startTime: new Date(),
                     endTime: new Date(),
                 });
@@ -66,9 +69,6 @@ class RecorderSocket extends Socket {
         this.socket.onAnyOutgoing(this.outgoingHandler);
     }
 
-    /**
-     * Detach this user's trace listeners by reference.
-     */
     detachListeners() {
         if (this.incomingHandler) {
             this.socket.offAny(this.incomingHandler);
@@ -80,63 +80,54 @@ class RecorderSocket extends Socket {
         }
     }
 
-    /**
-     * Start a server-wide recording. Admin-only.
-     * Sets the server flag, then attaches listeners on every connected user's socket.
-     */
     async startRecording(data, options) {
         if (this.server.activeRecordingId) {
             throw new Error("A recording is already in progress");
         }
 
+        const participantUserIds = Array.isArray(data?.participantUserIds) && data.participantUserIds.length > 0
+            ? data.participantUserIds
+            : null;
+
         const recording = await this.models["recording"].add({
             name: data.name || "Recording " + new Date().toLocaleString(),
             status: "recording",
             startTime: new Date(),
-            userId: this.userId, // admin who started it
+            userId: this.userId,
+            participantUserIds,
         }, options);
 
         this.server.activeRecordingId = recording.id;
+        this.server.activeParticipantUserIds = participantUserIds;
 
-        // Iterate every connected socket and attach listeners via their RecorderSocket
+        // Attach listeners on included users' sockets
         for (const socketId of Object.keys(this.server.availSockets)) {
             const recorder = this.server.availSockets[socketId]["RecorderSocket"];
-            if (recorder) {
+            if (recorder && recorder.isUserIncluded(recorder.userId)) {
                 recorder.attachListeners();
             }
         }
     }
 
-    /**
-     * Stop the current server-wide recording. Admin-only.
-     * Detaches listeners on every connected socket, finalizes the recording row,
-     * and returns the captured traces for the save modal.
-     */
     async stopRecording(data, options) {
         const recordingId = this.server.activeRecordingId || (data && data.id);
-
         if (!recordingId) {
             throw new Error("No active recording");
         }
 
-        // Detach listeners on every connected socket
         for (const socketId of Object.keys(this.server.availSockets)) {
             const recorder = this.server.availSockets[socketId]["RecorderSocket"];
-            if (recorder) {
-                recorder.detachListeners();
-            }
+            if (recorder) recorder.detachListeners();
         }
 
         await this.models["recording"].updateById(
             recordingId,
-            {
-                status: "finished",
-                endTime: new Date(),
-            },
+            { status: "finished", endTime: new Date() },
             options
         );
 
         this.server.activeRecordingId = null;
+        this.server.activeParticipantUserIds = null;
 
         const traces = await this.models["trace"].findAll({
             where: { recordingId },
@@ -157,19 +148,12 @@ class RecorderSocket extends Socket {
         };
     }
 
-    /**
-     * Get non-deleted traces for a specific recording (used by edit modal).
-     */
     async getTraces(data, options) {
-        if (!data || !data.id) {
-            throw new Error("Recording ID required");
-        }
-
+        if (!data || !data.id) throw new Error("Recording ID required");
         const traces = await this.models["trace"].findAll({
             where: { recordingId: data.id, deleted: false },
             order: [["id", "ASC"]],
         });
-
         return traces.map(t => ({
             id: t.id,
             recordingId: t.recordingId,
@@ -182,16 +166,28 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Called on connection. Registers socket events and,
-     * if a recording is already in progress, attaches listeners immediately
-     * so this user's events get captured too.
+     * Returns userIds of all currently connected sockets, deduplicated.
+     * Used by the Start Recording modal to show who's online right now.
      */
+    async getOnlineUsers(data, options) {
+        const userIds = new Set();
+        for (const socketId of Object.keys(this.server.availSockets)) {
+            const bucket = this.server.availSockets[socketId];
+            const anySocket = Object.values(bucket)[0];
+            if (anySocket && anySocket.userId) {
+                userIds.add(anySocket.userId);
+            }
+        }
+        return Array.from(userIds);
+    }
+
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
         this.createSocket("recorderStop", this.stopRecording, {}, false);
         this.createSocket("recordingGetTraces", this.getTraces, {}, false);
+        this.createSocket("recordingGetOnlineUsers", this.getOnlineUsers, {}, false);
 
-        if (this.server.activeRecordingId) {
+        if (this.server.activeRecordingId && this.isUserIncluded(this.userId)) {
             this.attachListeners();
         }
     }

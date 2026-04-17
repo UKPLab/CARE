@@ -8,7 +8,7 @@
             title="Start Recording"
             icon="record-circle"
             :disabled="isRecording"
-            @click="startRecording"
+            @click="openStartModal"
         />
         <BasicButton
             class="btn-danger btn-sm"
@@ -31,6 +31,7 @@
       />
     </template>
   </Card>
+  <StartRecordingModal ref="startRecordingModal" />
   <RecordingModal ref="recordingModal" />
 </template>
 
@@ -39,6 +40,7 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import RecordingModal from "./socketprofiler/RecordingModal.vue";
+import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
 
 export default {
   name: "DashboardSocketProfiler",
@@ -52,6 +54,7 @@ export default {
     BasicTable,
     BasicButton,
     RecordingModal,
+    StartRecordingModal,
   },
   data() {
     return {
@@ -140,22 +143,8 @@ export default {
           break;
       }
     },
-    startRecording() {
-      this.$socket.emit("recorderStart", {name: "New Recording"}, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "Recording started",
-            message: "Recording is now active",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to start recording",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
+    openStartModal() {
+      this.$refs.startRecordingModal.open();
     },
     stopActiveRecording() {
       this.eventBus.emit("recording:stop");
