@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 function getFirstPresentValue(source, keys = []) {
     for (const key of keys) {
         const value = source?.[key];
@@ -70,8 +72,24 @@ async function findOrProvisionExternalUser(server, { externalField, externalValu
     }
 }
 
+function deriveUserSeed(seedInt, saltHex) {
+    const seedBuf = Buffer.alloc(8);
+    seedBuf.writeBigUInt64BE(BigInt(seedInt));
+
+    const saltBuf = Buffer.from(saltHex, "hex");
+
+    const hash = crypto
+        .createHash("sha256")
+        .update(seedBuf)
+        .update(saltBuf)
+        .digest();
+
+    return hash.readUInt32BE(0); // uint32
+}
+
 module.exports = {
     findOrProvisionExternalUser,
     getFirstPresentValue,
     getProvisionedNameParts,
+    deriveUserSeed
 };

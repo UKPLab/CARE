@@ -11,8 +11,7 @@
             class="text-center"
             style="margin-bottom: 20px"
         >
-          <IconAsset
-              name="logo"
+          <LogoSvg
               :height="200"
           />
         </div>
@@ -216,13 +215,13 @@
  *  @Author: Dennis Zyska, Carly Gettinger, Linyin Huang
  */
 import TermsModal from "./TermsModal.vue";
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthRegister",
-  components: {TermsModal, IconAsset},
+  components: {TermsModal, LogoSvg},
   data() {
     return {
       formData: {

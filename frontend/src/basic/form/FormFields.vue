@@ -7,83 +7,96 @@
     <FormSwitch
       v-if="field.type === 'switch'"
       :ref="'ref_' + field.key"
-      v-model="modelValue[field.key]"
+      :model-value="modelValue[field.key]"
       :options="field"
+      @update:model-value="onFieldUpdate(field.key, $event)"
     />
     <span v-else>
       <FormSlider
         v-if="field.type === 'slider'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <DatetimePicker
         v-else-if="field.type === 'datetime'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormSelect
         v-else-if="field.type === 'select'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormCheckbox
         v-else-if="field.type === 'checkbox'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormEditor
         v-else-if="field.type === 'editor' || field.type === 'html'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormTextarea
         v-else-if="field.type === 'textarea'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormJsonTextarea
         v-else-if="field.type === 'json'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormTable
         v-else-if="field.type === 'table'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormChoice
         v-else-if="field.type === 'choice'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
         @update:config-status="$emit('update:configStatus', $event)"
       />
       <FormPassword
         v-else-if="field.type === 'password'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
       <FormFile
         v-else-if="field.type === 'file'"
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
         @file-change="(file) => $emit('file-change', file)"
       />
       <FormDefault
         v-else
         :ref="'ref_' + field.key"
-        v-model="modelValue[field.key]"
+        :model-value="modelValue[field.key]"
         :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
       />
     </span>
   </div>
@@ -137,8 +150,11 @@ export default {
       required: true,
     },
   },
-  emits: ["update:configStatus", "file-change"],
+  emits: ["update:modelValue", "update:configStatus", "file-change"],
   methods: {
+    onFieldUpdate(key, value) {
+      this.$emit('update:modelValue', { ...this.modelValue, [key]: value });
+    },
     validate() {
       return Object.keys(this.$refs)
         .filter((child) => this.$refs[child][0] && typeof this.$refs[child][0].validate === "function")

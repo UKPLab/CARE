@@ -55,6 +55,36 @@
                             </option>
                           </select>
                         </div>
+                        <div v-else-if="setting.type === 'color'" class="d-flex align-items-center gap-3 mt-2 flex-wrap">
+                          <input
+                            :value="setting.value"
+                            type="color"
+                            class="form-control form-control-color"
+                            title="Pick a color"
+                            @input="updateColorValue(setting, $event.target.value)"
+                          >
+                          <input
+                            :value="setting.value"
+                            type="text"
+                            class="form-control"
+                            style="max-width: 110px; font-family: monospace;"
+                            maxlength="7"
+                            @input="updateColorValue(setting, $event.target.value)"
+                          >
+                          <LogoSvg
+                            v-if="showsLogoPreview(setting)"
+                            :height="40"
+                            :re-bg-color="setting.value"
+                          />
+                          <button
+                            v-if="hasResetValue(setting)"
+                            class="btn btn-outline-secondary btn-sm"
+                            :disabled="setting.value.toLowerCase() === getResetValue(setting).toLowerCase()"
+                            @click="setting.value = getResetValue(setting)"
+                          >
+                            Reset
+                          </button>
+                        </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
                       </div>
                     </div>
@@ -73,10 +103,11 @@
 <script>
 import LoadIcon from "@/basic/Icon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
+import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 
 export default {
   name: "SettingItem",
-  components: { LoadIcon, EditorModal },
+  components: { LoadIcon, EditorModal, LogoSvg },
   subscribeTable: ["template"],
   props: {
     group: Object,
@@ -108,6 +139,29 @@ export default {
   methods: {
     toggleCollapse() {
       this.collapsed = !this.collapsed;
+    },
+    normalizeHexColor(value) {
+      if (!value) return null;
+      const normalized = value.startsWith("#") ? value : `#${value}`;
+      return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : null;
+    },
+    updateColorValue(setting, value) {
+      const normalized = this.normalizeHexColor(value);
+      if (normalized) {
+        setting.value = normalized;
+      }
+    },
+    showsLogoPreview(setting) {
+      return setting.key === "logo.reBgColor";
+    },
+    hasResetValue(setting) {
+      return this.getResetValue(setting) !== null;
+    },
+    getResetValue(setting) {
+      if (setting.key === "logo.reBgColor") {
+        return DEFAULT_RE_BG;
+      }
+      return null;
     },
     isEmailTemplateSetting(setting) {
       return setting.key && 

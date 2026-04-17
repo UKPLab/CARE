@@ -80,7 +80,6 @@ import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
-import ReadOnlyIndicator from "@/components/common/ReadOnlyIndicator.vue";
 
 export default {
   name: "EditorView",
@@ -94,7 +93,6 @@ export default {
     Editor,
     TemplateEditor,
     TemplateConfigurator,
-    ReadOnlyIndicator,
   },
   provide() {
     return {
