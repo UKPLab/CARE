@@ -900,6 +900,7 @@ class DocumentSocket extends Socket {
                             userId: submission.userId,
                             isUploaded: true,
                             submissionId: submissionEntry.id,
+                            projectId: submissionEntry.projectId
                         },
                         {transaction}
                     );
