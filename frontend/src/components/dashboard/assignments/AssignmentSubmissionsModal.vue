@@ -59,6 +59,16 @@ import AssignmentSubmissionsTable from "@/components/dashboard/assignments/Assig
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 
+/**
+ * Modal displaying all submissions for a given assignment.
+ *
+ * Opens via open(assignmentId) and shows the AssignmentSubmissionsTable
+ * scoped to that assignment. Provides actions to upload new submissions,
+ * import from external sources, delete submissions, and close the modal.
+ * Displays a warning when the assignment's maximum revision limit is reached.
+ *
+ * @author Karim Ouf
+ */
 export default {
   name: "AssignmentSubmissionsModal",
   subscribeTable: ["submission", "user", "assignment", "document"],

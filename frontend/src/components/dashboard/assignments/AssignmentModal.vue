@@ -41,6 +41,16 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
 
+/**
+ * Multi-step modal for creating and editing assignments.
+ *
+ * Step 1 lets the admin select which user roles are eligible for the assignment.
+ * Step 2 presents the assignment configuration form (title, dates, revision
+ * limit, validation configuration, re-upload policy, etc.).
+ * Opens in create mode via open() or in edit mode via open(assignmentId).
+ *
+ * @author Karim Ouf
+ */
 export default {
 	name: "AssignmentModal",
 	components: { StepperModal, BasicForm, BasicTable },

@@ -19,6 +19,16 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 
+/**
+ * Table displaying submissions for a specific assignment.
+ *
+ * Can be used standalone via the assignmentId prop or with pre-fetched rows.
+ * Shows submission metadata (name, user, creation date, study usage) and
+ * provides actions to download, replace, or delete individual submissions.
+ * Supports bulk download as a ZIP archive.
+ *
+ * @author Karim Ouf
+ */
 export default {
   name: "AssignmentSubmissionsTable",
   components: { BasicTable, AssignmentUploadModal, ConfirmModal },
