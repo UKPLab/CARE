@@ -112,11 +112,7 @@ import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 
 /**
- * SettingItem - Renders a single setting row (label + input).
- * Uses displayName and description from DB; description is shown next to the title via a gray (i) tooltip.
- *
- * Supported setting types: edits, boolean/bool, text (textarea), color (picker + hex + optional reset/preview),
- * email.template.* (select bound to the template table), and a plain text input fallback.
+ * Renders one setting row: label (displayName, optional description tooltip) and input for setting.type.
  */
 export default {
   name: "SettingItem",
