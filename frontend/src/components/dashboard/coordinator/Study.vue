@@ -119,7 +119,7 @@ export default {
     success(id) {
       if (!this.isTemplateMode) {
         const originalStudy = this.$store.getters['table/study/get'](this.studyId);
-        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === originalStudy.id);
+        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === originalStudy?.id);
         const validNewStudy = newStudies.find(s => new Date(s.createdAt) > new Date(originalStudy.createdAt));
         this.studyId = validNewStudy ? validNewStudy.id : id;
         this.isSuccess = true;
@@ -136,7 +136,7 @@ export default {
           message: "Document link copied to clipboard!",
           variant: "success"
         });
-      } catch ($e) {
+      } catch (_error) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Could not copy document link to clipboard!",

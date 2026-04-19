@@ -22,8 +22,8 @@
 
         </div>
         <BasicSidebar
-            ref="basicSidebar"
             v-if="!sidebarDisabled"
+            ref="basicSidebar"
             :isShown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
@@ -105,7 +105,6 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
-import ReadOnlyIndicator from "../common/ReadOnlyIndicator.vue";
 
 export default {
   name: "AnnotatorView",
@@ -117,7 +116,6 @@ export default {
     Loader,
     TopBarButton,
     BasicSidebar,
-    ReadOnlyIndicator
   },
   provide() {
     return {
@@ -343,7 +341,7 @@ export default {
   },
   watch: {
     // React to external changes to the saved scroll value (e.g., from store updates)
-    async savedScroll(newVal, oldVal) {
+    async savedScroll(newVal, _oldVal) {
       if (newVal) {
         await this.scrollToSavedValue(newVal.value, 1000);
       }

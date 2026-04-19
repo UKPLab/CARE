@@ -198,6 +198,7 @@ const SUBSECTION_ORDER = {
 
 export default {
   name: "DashboardSettings",
+  subscribeTable: ["template"],
   components: {
     Card,
     LoadIcon,
@@ -274,7 +275,7 @@ export default {
       if (!this.settings || this.originalSettingsSnapshot === null) return false;
       try {
         return JSON.stringify(this.settings) !== this.originalSettingsSnapshot;
-      } catch (e) {
+      } catch (_error) {
         return true;
       }
     },
@@ -353,6 +354,9 @@ export default {
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
         if (res.success) {
+          this.settings.forEach((s) => {
+            this.$store.commit("settings/set", { key: s.key, value: s.value });
+          });
           this.eventBus.emit("toast", {
             title: "Success",
             message: res.data,

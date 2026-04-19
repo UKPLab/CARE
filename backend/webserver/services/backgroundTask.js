@@ -1,4 +1,5 @@
 const Service = require("../Service.js");
+const Socket = require("../Socket.js");
 const fs = require("fs");
 const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
@@ -17,6 +18,7 @@ module.exports = class BackgroundTaskService extends Service {
                 "getBackgroundTask",
                 "startPreprocessing",
                 "cancelPreprocessing",
+                "confirmCompletion",
                 "setResult",
                 "subscribeBackgroundTaskUpdates",
                 "unsubscribeBackgroundTaskUpdates"
@@ -40,10 +42,14 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async command(client, command, data) {
         switch (command) {
+            case "getBackgroundTask":
+                return await this.getBackgroundTask(client);
             case "startPreprocessing":
                 return await this.startPreprocessing(client, data);
             case "cancelPreprocessing":
                 return await this.cancelPreprocessing(client);
+            case "confirmCompletion":
+                return await this.confirmCompletion(client);
             case "subscribeBackgroundTaskUpdates":
                 this.subscriptionClients.push(client);
                 return;
@@ -61,6 +67,15 @@ module.exports = class BackgroundTaskService extends Service {
      */
     async getBackgroundTask(client) {
         this.send(client, "backgroundTaskUpdate", this.backgroundTask);
+    }
+
+    /**
+     * Clean up subscription when client disconnects
+     * @param {object} client - The client that disconnected
+     */
+    async disconnectClient(client) {
+        this.subscriptionClients = this.subscriptionClients.filter(c => c !== client);
+        await super.disconnectClient(client);
     }
 
     /**
@@ -89,7 +104,7 @@ module.exports = class BackgroundTaskService extends Service {
             throw new Error("You do not have permission to preprocess submissions");
         }
 
-        this.initializePreprocessingState();
+        await this.initializePreprocessingState();
 
         await this.prepareProcessingItems(preprocessingData);
 
@@ -134,7 +149,12 @@ module.exports = class BackgroundTaskService extends Service {
 
         if (!Object.keys(this.backgroundTask.preprocess.requests).length) {
             this.backgroundTask.preprocess.currentRequestId = null;
-            delete this.backgroundTask.preprocess;
+            // Only set completed if not cancelled - cancelled processes should clear state immediately
+            if (!this.backgroundTask.preprocess.cancelled) {
+                this.backgroundTask.preprocess.completed = true;
+            } else {
+                delete this.backgroundTask.preprocess;
+            }
         }
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
 
@@ -144,16 +164,21 @@ module.exports = class BackgroundTaskService extends Service {
     /**
      * Initialize the preprocessing state and notify clients
      */
-    initializePreprocessingState() {
+    async initializePreprocessingState() {
         this.requestIds = [];
         this.preprocessItems = [];
 
+        const nlpTimeout = await this.server.db.models['setting'].get("service.nlp.timeout");
+
         this.backgroundTask.preprocess = {
             cancelled: false,
+            completed: false,
             requests: {},
             currentSubmissionsCount: 0,
             currentRequestId: null,
-            batchStartTime: Date.now()
+            batchStartTime: Date.now(),
+            errors: [],  // Track all errors that occurred
+            nlpTimeout
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
@@ -440,6 +465,29 @@ module.exports = class BackgroundTaskService extends Service {
     }
 
     /**
+     * Confirm completion by clearing the preprocess state after admin reviews results
+     * @param {object} client - The client requesting confirmation
+     * @returns {string} Success message
+     * @throws {Error} When user lacks admin rights or no completed preprocessing
+     */
+    async confirmCompletion(client) {
+        const preprocess = this.backgroundTask.preprocess;
+        if (!preprocess?.completed) {
+            throw new Error("Cannot confirm completion: no completed preprocessing to confirm");
+        }
+
+        const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
+        if (!(documentSocket && await Socket.prototype.isAdmin.call(documentSocket))) {
+            throw new Error("Cannot confirm completion: missing admin rights");
+        }
+
+        delete this.backgroundTask.preprocess;
+        this.sendAll("backgroundTaskUpdate", this.backgroundTask);
+
+        return "Preprocessing completion confirmed.";
+    }
+
+    /**
      * Handles incoming results from the NLP and updates backgroundTask.preprocess
      * @param state
      * @param {object} data - The data forwarded by the NLPService
@@ -461,7 +509,22 @@ module.exports = class BackgroundTaskService extends Service {
     async setError(data) {
         if (this.backgroundTask.preprocess && this.backgroundTask.preprocess.requests && !this.backgroundTask.preprocess.cancelled) {
             if (data) {
+                // Set current error for waitForNlpResult to catch
                 this.backgroundTask.preprocess.nlpError = {...data};
+                
+                // Also add to persistent errors array with context
+                const currentRequestId = this.backgroundTask.preprocess.currentRequestId;
+                const currentRequest = currentRequestId ? this.backgroundTask.preprocess.requests[currentRequestId] : null;
+                
+                this.backgroundTask.preprocess.errors.push({
+                    message: data.error?.message || 'Unknown error',
+                    requestId: currentRequestId,
+                    submissionId: currentRequest?.submissionId,
+                    documentId: currentRequest?.documentId,
+                    timestamp: Date.now()
+                });
+                
+                this.sendAll("backgroundTaskUpdate", this.backgroundTask);
             } else {
                 this.logger.error("setResult command received without result data.");
             }

@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
+const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
@@ -114,6 +115,8 @@ module.exports = (sequelize, DataTypes) => {
                         hideInFrontend: true
                     }, {transaction: options.transaction});
 
+                    let documentCopied = false;
+
                     if (data.workflowStepId) {
                         const workflowStep = await sequelize.models.workflow_step.getById(data.workflowStepId, {transaction: options.transaction});
 
@@ -170,9 +173,23 @@ module.exports = (sequelize, DataTypes) => {
                                     await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
                                 }
 
-
+                                documentCopied = true;
                             }
                         }
+                    }
+
+                    // Resolve Type 5 template at study creation time (per-step template selection)
+                    const configuredTemplateId = data.configuration && data.configuration.documentTemplateId
+                        ? data.configuration.documentTemplateId
+                        : null;
+
+                    if (!documentCopied && configuredTemplateId) {
+                        await applyTemplateToDocument(
+                            newDocument,
+                            configuredTemplateId,
+                            sequelize.models,
+                            {transaction: options.transaction}
+                        );
                     }
 
                     data.documentId = newDocument.id;

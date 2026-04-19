@@ -1,0 +1,11 @@
+Welcome to CARE - Please verify your email address
+
+Welcome to CARE, {{userName}}! You've successfully registered a new account.
+
+To complete your registration, please verify your email address by clicking the link below:
+{{link}}
+
+This link will expire in {{tokenExpiry}} hours. If you didn't create a CARE account, you can safely ignore this email.
+
+Thanks,
+The CARE Team

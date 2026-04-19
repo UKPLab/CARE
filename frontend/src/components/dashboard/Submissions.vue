@@ -7,7 +7,7 @@
             text="Assign Group"
             title="Assign Group"
             icon="folder-check"
-            @click="$refs.assignModal.open()"
+            @click="openAssignModal"
         />
 
         <BasicButton
@@ -15,7 +15,7 @@
             text="Publish Reviews"
             title="Publish Reviews"
             icon="upload"
-            @click="$refs.publishModal.open()"
+            @click="openPublishModal"
         />
 
         <BasicButton
@@ -23,7 +23,7 @@
             text="Publish Assessment"
             title="Publish Assessment"
             icon="clipboard-data"
-            @click="$refs.publishAssessmentModal.open()"
+            @click="openPublishAssessmentModal"
         />
 
         <BasicButton
@@ -31,7 +31,7 @@
             text="Manual Import"
             title="Manual Import"
             icon="file-earmark-arrow-up"
-            @click="$refs.uploadModal.open()"
+            @click="openUploadModal"
         />
 
         <BasicButton
@@ -39,7 +39,7 @@
             text="Import via Moodle"
             title="Import via Moodle"
             icon="box-arrow-in-down"
-            @click="$refs.importModal.open()"
+            @click="openImportModal"
         />
 
         <BasicButton
@@ -66,18 +66,17 @@
           :options="tableOptions"
           :buttons="tableButtons"
           @action="action"
+          :max-table-height="'65vh'"
       />
     </template>
   </Card>
-  <UploadModal ref="uploadModal"/>
-  <ConfirmModal ref="deleteConf"/>
-  <ImportModal ref="importModal"/>
-  <PublishModal ref="publishModal"/>
-  <PublishAssessmentModal ref="publishAssessmentModal"/>
-  <AssignModal ref="assignModal"/>
-  <ApplySkillModal
-      ref="applySkillModal"
-  />
+  <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
+  <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
+  <ImportModal v-if="modals.import" ref="importModal" @hide="modals.import = false"/>
+  <PublishModal v-if="modals.publish" ref="publishModal" @hide="modals.publish = false"/>
+  <PublishAssessmentModal v-if="modals.publishAssessment" ref="publishAssessmentModal" @hide="modals.publishAssessment = false"/>
+  <AssignModal v-if="modals.assign" ref="assignModal" @hide="modals.assign = false"/>
+  <ApplySkillModal v-if="modals.applySkill" ref="applySkillModal" @hide="modals.applySkill = false"/>
 </template>
 
 <script>
@@ -108,6 +107,7 @@ export default {
     {
       table: "submission",
     },
+    "user",
   ],
   components: {
     UploadModal,
@@ -123,6 +123,15 @@ export default {
   },
   data() {
     return {
+      modals: {
+        assign: false,
+        publish: false,
+        publishAssessment: false,
+        import: false,
+        upload: false,
+        applySkill: false,
+        deleteConf: false,
+      },
       tableOptions: {
         striped: true,
         hover: true,
@@ -195,12 +204,14 @@ export default {
     isProcessingActive() {
       const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
       const preprocess = bgTask.preprocess || {};
-      return (
-          preprocess &&
+      // Show "View Processing" both when requests are pending OR when completed but not yet confirmed
+      const hasActiveRequests = (
           preprocess.requests &&
           typeof preprocess.requests === 'object' &&
           Object.keys(preprocess.requests).length > 0
       );
+      const isCompletedAwaitingConfirmation = preprocess.completed === true;
+      return hasActiveRequests || isCompletedAwaitingConfirmation;
     },
     submissionTable() {
       return this.submissions.map((s) => {
@@ -218,13 +229,64 @@ export default {
     },
   },
   mounted() {
+    // Get initial state
     this.$socket.emit("serviceCommand", {
       service: "BackgroundTaskService",
       command: "getBackgroundTask",
       data: {}
     });
+    // Subscribe to real-time updates
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "subscribeBackgroundTaskUpdates",
+      data: {}
+    });
+  },
+  unmounted() {
+    // Unsubscribe from updates
+    this.$socket.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "unsubscribeBackgroundTaskUpdates",
+      data: {}
+    });
+  },
+  watch: {
+    isProcessingActive(val) {
+      if (val) {
+        this.modals.applySkill = true;
+        this.$nextTick(() => this.$refs.applySkillModal?.open());
+      }
+    },
   },
   methods: {
+    openAssignModal() {
+      this.modals.assign = true;
+      this.$nextTick(() => this.$refs.assignModal?.open());
+    },
+    openPublishModal() {
+      this.modals.publish = true;
+      this.$nextTick(() => this.$refs.publishModal?.open());
+    },
+    openPublishAssessmentModal() {
+      this.modals.publishAssessment = true;
+      this.$nextTick(() => this.$refs.publishAssessmentModal?.open());
+    },
+    openImportModal() {
+      this.modals.import = true;
+      this.$nextTick(() => this.$refs.importModal?.open());
+    },
+    openUploadModal() {
+      this.modals.upload = true;
+      this.$nextTick(() => this.$refs.uploadModal?.open());
+    },
+    openApplySkillModal() {
+      this.modals.applySkill = true;
+      this.$nextTick(() => this.$refs.applySkillModal?.open());
+    },
+    openDeleteConfModal(name, message, warning, cb) {
+      this.modals.deleteConf = true;
+      this.$nextTick(() => this.$refs.deleteConf?.open(name, message, warning, cb));
+    },
     action(data) {
       switch (data.action) {
         case "downloadSubmission":
@@ -237,7 +299,7 @@ export default {
     },
     async deleteSubmission(row) {
       let warning = "";
-      this.$refs.deleteConf.open("Delete Submission", "Are you sure you want to delete the submission?", warning, (val) => {
+      this.openDeleteConfModal("Delete Submission", "Are you sure you want to delete the submission?", warning, (val) => {
         if (val) {
           this.$socket.emit("submissionUpdate", {
             id: row.id,
@@ -261,7 +323,7 @@ export default {
       });
     },
     preprocessGrades() {
-      this.$refs.applySkillModal.open();
+      this.openApplySkillModal();
     },
     async downloadSubmission(submissionId) {
       try {

@@ -13,8 +13,8 @@
     >
       <canvas
         v-show="!isRendered"
-        :style="canvasStyle"
         :id="'placeholder-canvas-' + pageNumber + '-' + documentId"
+        :style="canvasStyle"
       />
       <div
         :id="'canvas-wrapper-' + pageNumber + '-' + documentId"
@@ -208,7 +208,7 @@ export default {
     this.remove_anchors();
   },
   methods: {
-    visibilityChanged(isVisible, entry) {
+    visibilityChanged(isVisible, _entry) {
       this.$emit('updateVisibility', {
         pageNumber: this.pageNumber,
         isVisible: isVisible,
@@ -255,7 +255,7 @@ export default {
         });
       }
     },
-    resizeHandler(event) {
+    resizeHandler(_event) {
       if (this.isZooming) return;
       
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
@@ -293,8 +293,6 @@ export default {
       toRaw(this.renderTask).promise.then(() => {
         return page.getTextContent();
       }).then((textContent) => {
-        const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber + '-' + this.documentId).getBoundingClientRect();
-
         const textLayerDiv = document.getElementById('text-layer-' + page.pageNumber + '-' + this.documentId);
  
         // Use display scale for text layer positioning

@@ -302,7 +302,7 @@ export default {
         small: false,
         selectableRows: true,
         singleSelect: true,
-        pagination: false,
+        pagination: 10,
         search: true,
       };
     },
@@ -314,7 +314,7 @@ export default {
         borderless: false,
         small: false,
         selectableRows: true,
-        pagination: false,
+        pagination: 10,
         search: true,
       };
     },

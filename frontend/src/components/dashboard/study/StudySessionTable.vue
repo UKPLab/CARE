@@ -7,11 +7,13 @@
     @action="action"
   />
   <ConfirmModal ref="deleteConf" />
+  <AssignUserModal ref="assignUserModal"/>
 </template>
 
 <script>
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
 
 /**
  * Table of study session with management buttons
@@ -22,7 +24,8 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "StudySessionTable",
-  components: { BasicTable, ConfirmModal },
+  subscribeTable: ["user", "study_session"],
+  components: { BasicTable, ConfirmModal, AssignUserModal },
   props: {
     studyId: {
       type: Number,
@@ -80,8 +83,15 @@ export default {
             keyMapping: { true: "Yes", false: "No" },
             classMapping: { true: "bg-success", false: "bg-danger" },
           },
-        },
+        }
       ];
+
+      if (this.hasCopiedSessions) {
+        columns.push({
+          name: "Parent Session ID",
+          key: "parentStudySessionId",
+        });
+      }
 
       if (this.currentUserOnly) {
         columns.push({
@@ -176,7 +186,23 @@ export default {
           }
         });
       }
-      buttons.push({
+      buttons.push(
+        {
+          icon: "copy",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          title: "Copy session",
+          action: "copySession",
+          stats:{
+            studySessionId: "id",
+          }     
+        },
+        {
         icon: "trash",
         options: {
           iconOnly: true,
@@ -205,6 +231,13 @@ export default {
     },
     study() {
       return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+    },
+    hasCopiedSessions() {
+      if (!this.study) return false;
+
+      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).some(
+        (session) => session.parentStudySessionId !== null
+      );
     },
     studySessions() {
       if (!this.study) return [];
@@ -257,14 +290,17 @@ export default {
 
       processedSession.startParsed = this.formatDate(session.start);
       processedSession.finished = session.end !== null;
-
+      processedSession.parentStudySessionId = session.parentStudySessionId ?? "-";
       if (this.currentUserOnly) {
+
+        // True only when study is closed, session is not finished, and was copied from a parent session
+        const canResumeOrStart = this.studyClosed && session.end === null && session.parentStudySessionId !== null;
         processedSession.resumable = this.studyResumable;
-        processedSession.showResumeButton = this.studyResumable && session.start !== undefined  && session.start !== null && !this.studyClosed;
-        processedSession.showDeleteButton =
-          this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
-        processedSession.showStartButton = !session.start && !this.studyClosed;
-        processedSession.showInspectButton = this.studyClosed && this.showClosed
+
+        processedSession.showResumeButton = (this.studyResumable && session.start !== undefined && session.start !== null && !this.studyClosed) || (this.studyResumable && session.start !== undefined && session.start !== null && canResumeOrStart);
+        processedSession.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
+        processedSession.showStartButton = (!session.start && !this.studyClosed) || (!session.start && canResumeOrStart);
+        processedSession.showInspectButton = this.showClosed && !canResumeOrStart;
       } else {
         processedSession.showDeleteButton =
           this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"];
@@ -305,6 +341,9 @@ export default {
         case "deleteStudySession":
           this.confirmDelete(data.params);
           break;
+        case "copySession":
+          this.copySession(data.params);
+          break;
       }
     },
     confirmDelete(params) {
@@ -344,9 +383,12 @@ export default {
       try {
         await navigator.clipboard.writeText(link);
         this.showSuccessToast("Link copied", "Study session link copied to clipboard!");
-      } catch (error) {
+      } catch (_error) {
         this.showErrorToast("Link not copied", "Could not copy study session link to clipboard!");
       }
+    },
+    async copySession(params) {
+      this.$refs.assignUserModal.open(params);
     },
     showSuccessToast(title, message) {
       this.eventBus.emit("toast", {

@@ -31,8 +31,8 @@
     <!-- Toggle Button (always visible) -->
     <button 
       class="toolbar-toggle-btn" 
-      @click="toggleToolbar" 
-      :title="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
+      :title="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'" 
+      @click="toggleToolbar"
     >
       <LoadIcon :icon-name="toolbarVisible ? 'chevron-right' : 'tools'" :size="20" />
     </button>

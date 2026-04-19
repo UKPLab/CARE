@@ -1,10 +1,10 @@
 <template>
   <span
     v-if="help"
+    ref="tooltip"
     class="btn btn-sm mt-0 pt-0 border-0"
     :class="buttonClass"
     :title="help"
-    ref="tooltip"
     data-bs-html="true"
     data-bs-placement="top"
     data-bs-toggle="tooltip"

@@ -50,8 +50,8 @@
                   :key="button.action"
                   :title="button.title"
                   class="btn btn-sm sidebar-action-button"
-                  @click="handleButtonAction(button.action, button)"
                   :disabled="button.disabled"
+                  @click="handleButtonAction(button.action, button)"
               >
                 <LoadIcon
                     v-if="button.icon"

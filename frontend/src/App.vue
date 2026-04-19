@@ -25,6 +25,10 @@
     </div>
     <div v-else>
       <ConsentModal ref="consentModal"/>
+      <TwoFactorSettingsModal
+          ref="twoFactorSettingsModal"
+          :enforced="true"
+      />
       <router-view class="top-padding"/>
     </div>
   </div>
@@ -42,6 +46,7 @@ import {createTable} from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import ConsentModal from "@/auth/ConsentModal.vue";
+import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
 
@@ -52,7 +57,7 @@ import {computed} from "vue";
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, Loader, ConsentModal},
+  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
@@ -67,8 +72,8 @@ export default {
         systemRoles: false,
       },
       disconnected: false,
-      isTermsConsented: false,
       behaviorLogger: null,
+      postLoginModalFlowToken: 0,
     }
   },
   sockets: {
@@ -83,10 +88,11 @@ export default {
     },
     logout: function () {
       // if not authenticated, backend will always send logout event
+      this.resetAppLoadState();
       this.$socket.disconnect();
       this.$router.push({
         name: "login",
-        query: {redirectedFrom: this.$route.path},
+        query: {redirectedFrom: this.$route.fullPath},
       });
     },
     appTables: function (data) {
@@ -98,7 +104,6 @@ export default {
     appUser: function (data) {
       this.$store.commit("auth/SET_USER", data);
       this.loaded.users = true;
-      this.isTermsConsented = data.acceptTerms;
     },
     appSettings: function (data) {
       this.$store.commit("settings/setSettings", data);
@@ -144,6 +149,37 @@ export default {
         return false;
       }
     },
+    hasTwoFactorConfigured() {
+      const user = this.$store.getters["auth/getUser"];
+      const methods = Array.isArray(user?.twoFactorMethods) ? user.twoFactorMethods : [];
+      return methods.length > 0;
+    },
+    loginMethod() {
+      const user = this.$store.getters["auth/getUser"];
+      if (!user) return null;
+      if (user.loginMethod) return user.loginMethod;
+      if (user.orcidId) return "orcid";
+      if (user.ldapUsername) return "ldap";
+      if (user.samlNameId) return "saml";
+      return "local";
+    },
+    isTwoFactorRequired() {
+      if (!this.loginMethod) return false;
+      return this.$store.getters["settings/getValue"](`system.auth.${this.loginMethod}.2fa.required`) === "true";
+    },
+    isTermsConsented() {
+      return !!this.$store.getters["auth/getUser"]?.acceptTerms;
+    },
+    shouldShowConsentModal() {
+      return this.requireAuth && this.appLoaded && !this.isTermsConsented;
+    },
+    shouldForceTwoFactorSetup() {
+      return this.requireAuth &&
+          this.appLoaded &&
+          this.isTermsConsented &&
+          this.isTwoFactorRequired &&
+          !this.hasTwoFactorConfigured;
+    },
     requireAuth() {
       return (
           this.$route.meta.requireAuth !== undefined &&
@@ -164,21 +200,23 @@ export default {
       }
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
-      if (newValue !== oldValue) {
-        this.connect();
+      if (newValue === oldValue) return;
+      if (newValue) {
+        this.resetAppLoadState(); // Call this method only when transitioning into protected area, false -> true
       }
+      this.connect();
     },
-    '$data': {
-      handler() {
-        if (this.appLoaded && !this.isTermsConsented) {
-          this.$nextTick(() => {
-            if (this.$refs.consentModal) {
-              this.$refs.consentModal.open();
-            }
-          });
-        }
-      },
-      deep: true
+    shouldForceTwoFactorSetup() {
+      this.syncPostLoginModalFlow();
+    },
+    shouldShowConsentModal() {
+      this.syncPostLoginModalFlow();
+    },
+    isTermsConsented() {
+      this.syncPostLoginModalFlow();
+    },
+    appLoaded() {
+      this.syncPostLoginModalFlow();
     },
     // Initialize logger after settings are loaded because we access the settings table
     'loaded.settings': {
@@ -214,9 +252,24 @@ export default {
         await this.$router.push("/wizard");
       }
     },
+    resetAppLoadState() {
+      this.loaded = {
+        users: false,
+        tables: false,
+        settings: false,
+        systemRoles: false,
+      };
+    },
     connect() {
-      if (this.$route.meta.requireAuth && !this.$socket.connected) {
+      if (!this.$route.meta.requireAuth) return;
+
+      if (!this.$socket.connected) {
         this.$socket.connect();
+        return;
+      }
+
+      if (!this.appLoaded) {
+        this.$socket.emit("appInit");
       }
     },
     initializeBehaviorLogger() {
@@ -224,6 +277,40 @@ export default {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
         this.behaviorLogger.init();
       }
+    },
+    syncPostLoginModalFlow() {
+      if (!this.requireAuth || !this.appLoaded) {
+        return;
+      }
+
+      this.$nextTick(() => {
+        if (this.shouldShowConsentModal) {
+          if (this.$refs.twoFactorSettingsModal?.isVisible()) {
+            this.$refs.twoFactorSettingsModal.close();
+          }
+          if (this.$refs.consentModal) {
+            this.$refs.consentModal.open();
+          }
+          return;
+        }
+
+        if (this.shouldForceTwoFactorSetup) {
+          if (this.$refs.consentModal?.isVisible()) {
+            this.$refs.consentModal.close();
+          }
+          if (this.$refs.twoFactorSettingsModal) {
+            this.$refs.twoFactorSettingsModal.open();
+          }
+          return;
+        }
+
+        if (this.$refs.consentModal?.isVisible()) {
+          this.$refs.consentModal.close();
+        }
+        if (this.$refs.twoFactorSettingsModal?.isVisible()) {
+          this.$refs.twoFactorSettingsModal.close();
+        }
+      });
     },
   },
 };

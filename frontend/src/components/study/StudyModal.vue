@@ -27,6 +27,7 @@
             :options="sessionTableOptions"
             :buttons="buttons"
             @action="sessionAction"
+            :max-table-height="'60vh'"
         />
       </span>
       <span v-else>
@@ -186,6 +187,7 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true
       },
       sessionTableColumns: [
         {name: "Started", key: "startParsed"},

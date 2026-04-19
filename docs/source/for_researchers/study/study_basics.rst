@@ -191,6 +191,10 @@ Working with Study Templates
 
 Study templates allow you to reuse study configurations for future studies, saving time and ensuring consistency.
 
+.. note::
+
+   **Study templates** (saved study configurations) are different from **email and document content templates**, which define the text of emails (e.g. password reset, session links) and pre-filled document content. For content templates, see :doc:`Email and Document Templates <../templates>`.
+
 **Creating Templates:**
 
 You can create a template in two ways:

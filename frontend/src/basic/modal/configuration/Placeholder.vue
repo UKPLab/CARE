@@ -17,21 +17,23 @@
 
         <FormSelect
           v-if="field.name === 'skillName' && nlpSkills.length"
-          v-model="formData[field.name]"
+          :key="'field-' + field.name + '-' + index"
+          :model-value="formData[field.name]"
           :options="skillMap"
           :required="field.required"
-          :key="'field-' + field.name + '-' + index"
+          @update:model-value="onFieldUpdate(field.name, $event)"
         />
 
         <input
           v-else
+          :id="'field-' + field.name + '-' + index"
+          :key="'field-' + field.name + '--' + index"
+          :value="formData[field.name]"
           type="text"
           class="form-control"
-          :id="'field-' + field.name + '-' + index"
           :placeholder="field.placeholder"
-          v-model="formData[field.name]"
           :required="field.required"
-          :key="'field-' + field.name + '--' + index"
+          @input="onFieldUpdate(field.name, $event.target.value)"
         />
       </div>
     </div>
@@ -76,6 +78,7 @@ export default {
       default: "#000"
     }
   },
+  emits: ['update:formData'],
   computed: {
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
@@ -89,6 +92,11 @@ export default {
     },
     hasSkillName() {
       return this.fields.some(field => field.name === 'skillName');
+    }
+  },
+  methods: {
+    onFieldUpdate(key, value) {
+      this.$emit('update:formData', { ...this.formData, [key]: value });
     }
   },
 };

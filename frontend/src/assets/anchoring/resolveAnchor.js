@@ -6,7 +6,7 @@ export function resolveAnchor(anchor) {
   }
   try {
     return anchor.range.toRange();
-  } catch {
+  } catch (_error) {
     return null;
   }
 }

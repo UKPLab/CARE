@@ -50,20 +50,22 @@ module.exports = (sequelize, DataTypes) => {
          *   - If not provided or empty, copies ALL document data (default)
          *   - Single object: copies entries matching that condition
          *   - Array of objects: copies entries matching ANY of the conditions (OR logic)
-         * @param {Object} transaction - Sequelize transaction object
+         * @param {number|null} targetStudySessionId - Optional study session ID to set for the duplicated data (overrides original value)
+         * @param {number|null} targetStudyStepId - Optional study step ID to set for the duplicated data (overrides original value)
+         * @param {Object} options - Database options including transaction
          * @returns {Promise<void>}
          * 
          * @example
          * // Copy all data (default)
-         * await duplicateDocumentData(1, 2, null, transaction);
+         * await duplicateDocumentData(1, 2, null, null, null, options);
          * 
          * @example
          * // Copy only entries where both studySessionId and studyStepId are null
-         * await duplicateDocumentData(1, 2, { studySessionId: null, studyStepId: null }, transaction);
+         * await duplicateDocumentData(1, 2, { studySessionId: null, studyStepId: null }, null, null, options);
          * 
          * @example
          * // Copy entries with specific studySessionId (regardless of studyStepId)
-         * await duplicateDocumentData(1, 2, { studySessionId: 45 }, transaction);
+         * await duplicateDocumentData(1, 2, { studySessionId: 45 }, null, null, options);
          * 
          * @example
          * // Copy entries matching multiple conditions (OR logic)
@@ -71,9 +73,12 @@ module.exports = (sequelize, DataTypes) => {
          *   { studySessionId: null, studyStepId: null },
          *   { studySessionId: 45, studyStepId: 12 },
          *   { studySessionId: 46 }
-         * ], transaction);
+         * ],
+         * null,
+         * null,
+         *  options);
          */
-        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, filters = null, transaction) {
+        static async duplicateDocumentData(originalDocumentId, duplicateDocumentId, filters = null, targetStudySessionId = null, targetStudyStepId = null, options) {
 
             // Build where clause: start with documentId
             const whereClause = {
@@ -103,7 +108,7 @@ module.exports = (sequelize, DataTypes) => {
             const originalDataEntries = await this.findAll({
                 where: whereClause,
                 raw: true,
-                transaction
+                transaction: options.transaction
             });       
             // Create new data entries for the duplicated document
             if (originalDataEntries.length > 0) {
@@ -112,12 +117,12 @@ module.exports = (sequelize, DataTypes) => {
                     documentId: duplicateDocumentId, // Set to the new duplicated document ID
                     createdAt: new Date(),
                     updatedAt: new Date(),
-                    studySessionId: null,
-                    studyStepId: null,
+                    studySessionId: targetStudySessionId,
+                    studyStepId: targetStudyStepId,
                     id: undefined,
                     deletedAt: undefined,
                 }));
-                await this.bulkCreate(newDataEntries, {transaction});
+                await this.bulkCreate(newDataEntries, {transaction: options.transaction});
             }
         }
     }

@@ -1,7 +1,7 @@
 <template>
   <blockquote
-      ref="top"
       v-show="content"
+      ref="top"
       class="blockquote fs-6 position-relative"
       @mouseover="showControls=true"
       @mouseleave="showControls=false"
@@ -11,12 +11,12 @@
         class="bg-light border-start"
         @dblclick="toEditMode(true)"
     >
-      <div class="button-group position-absolute top-0 end-0 opacity-50 pe-1" v-show="showControls">
+      <div v-show="showControls" class="button-group position-absolute top-0 end-0 opacity-50 pe-1">
         <button
-            class="btn"
-            @click="(e) => {e.stopPropagation(); copy()}"
-            title="Copy"
             v-show="!editMode"
+            class="btn"
+            title="Copy"
+            @click="(e) => {e.stopPropagation(); copy()}"
         >
           <LoadIcon
               class="me-1"
@@ -25,10 +25,10 @@
           />
         </button>
         <button
-            class="btn"
-            @click="(e) => {e.stopPropagation(); toEditMode(true)}"
-            title="Edit"
             v-show="!editMode && !readOnly"
+            class="btn"
+            title="Edit"
+            @click="(e) => {e.stopPropagation(); toEditMode(true)}"
         >
           <LoadIcon
               class="me-1"
@@ -37,10 +37,10 @@
           />
         </button>
         <button
-            class="btn"
-            @click="(e) => {e.stopPropagation(); toEditMode(false)}"
-            title="Edit"
             v-show="editMode && !readOnly"
+            class="btn"
+            title="Edit"
+            @click="(e) => {e.stopPropagation(); toEditMode(false)}"
         >
           <LoadIcon
               class="me-1"
@@ -50,7 +50,7 @@
         </button>
       </div>
       <form v-if="editMode">
-        <textarea :rows="contentText.split('\n').length" v-model="contentText" class="code form-check-input w-100 h-100"
+        <textarea v-model="contentText" :rows="contentText.split('\n').length" class="code form-check-input w-100 h-100"
                   title="Edit JSON" type="text"> </textarea>
       </form>
     </div>
@@ -137,7 +137,7 @@ export default {
 
     try {
       window.removeEventListener("click", this.leaveEditModeListener);
-    } catch (e) {
+    } catch (_error) {
       // do nothing
     }
   },
@@ -152,7 +152,7 @@ export default {
       try {
         JSON.parse(this.contentText);
         return true;
-      } catch (e) {
+      } catch (_error) {
         return false;
       }
     },
@@ -197,7 +197,7 @@ export default {
             message: "Json copied to clipboard!",
             variant: "success"
           });
-        } catch ($e) {
+        } catch (_error) {
           this.eventBus.emit('toast', {
             title: "Json not copied",
             message: "Could not copy json to clipboard!",
