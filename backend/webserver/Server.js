@@ -20,6 +20,7 @@ const Service = require(path.resolve(__dirname, "./Service.js"));
 const RPC = require(path.resolve(__dirname,"./RPC.js"));
 const statsScheduler = require('../db/stats');
 const nodemailer = require('nodemailer');
+const { setupDevAdmin } = require('./utils/devAdmin');
 
 /**
  * Defines Express Webserver of Content Server
@@ -93,6 +94,7 @@ module.exports = class Server {
                 this.logger.warn("Mail server not available!");
             }
         });
+        Promise.resolve(setupDevAdmin(this));
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
