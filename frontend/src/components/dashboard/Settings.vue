@@ -185,12 +185,22 @@ import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserS
  * Order of subsections within each section (for display).
  */
 const SUBSECTION_ORDER = {
-  general: ["Copyright and consent", "Login options", "Study mode", "Landing page links"],
-  mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
+  general: [
+    "Copyright and consent",
+    "Login options",
+    "Study mode",
+    "Landing page links",
+    "ORCID login",
+    "LDAP login",
+    "SAML login",
+    "Two-factor authentication",
+    "Auth redirects",
+  ],
+  mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification", "Email templates"],
   registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
   moodle: ["Connection", "Course", "Show inputs"],
   annotations: ["Comments", "Download", "NLP in annotations", "Sidebar"],
-  interface: ["Navigation and dashboard", "Projects", "Statistics and tags"],
+  interface: ["Navigation and dashboard", "Branding", "Projects", "Statistics and tags"],
   "text editor": ["Document buttons", "Edit history", "Toolbar"],
   "ai & nlp": ["Modal NLP", "NLP service"],
   system: ["Token expiry"],
