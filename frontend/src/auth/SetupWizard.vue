@@ -563,28 +563,20 @@
           <p v-if="importError" class="text-danger small mt-2 mb-0">{{ importError }}</p>
         </template>
         <template #footer>
-          <button
-            class="btn btn-secondary me-2"
-            type="button"
-            :disabled="importing"
-            @click="$refs.importModal.close()"
-          >
-            Close
-          </button>
-          <button
-            class="btn btn-primary"
-            type="button"
-            :disabled="!importFile || importing"
-            @click="confirmImport"
-          >
-            <span
-              v-if="importing"
-              class="spinner-border spinner-border-sm me-1"
-              role="status"
-              aria-hidden="true"
+          <span class="btn-group">
+            <BasicButton
+              class="btn btn-secondary"
+              title="Close"
+              :disabled="importing"
+              @click="$refs.importModal.close()"
             />
-            Import
-          </button>
+            <BasicButton
+              class="btn btn-primary"
+              :title="importing ? 'Importing…' : 'Import'"
+              :disabled="!importFile || importing"
+              @click="confirmImport"
+            />
+          </span>
         </template>
       </Modal>
     </div>
@@ -599,6 +591,7 @@
  * @author CARE
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
+import BasicButton from "@/basic/Button.vue";
 import BasicEditor from "@/basic/editor/Editor.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import Modal from "@/basic/Modal.vue";
@@ -630,7 +623,7 @@ function wizardValueToFormString(v) {
 
 export default {
   name: "SetupWizard",
-  components: { IconAsset, BasicEditor, EditorModal, Modal },
+  components: { IconAsset, BasicButton, BasicEditor, EditorModal, Modal },
   data() {
     return {
       currentStep: 0,
