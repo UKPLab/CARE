@@ -650,9 +650,6 @@ export default {
     };
   },
   computed: {
-    isReRun() {
-      return this.$route.query.reRun === "true";
-    },
     allSettingsLoaded() {
       return Array.isArray(this.allSettingsFromDb);
     },
@@ -780,7 +777,7 @@ export default {
     const check = await axios.get(getServerURL() + "/auth/check", { withCredentials: true });
     this.hasAdmin = !!(check.data && check.data.user);
 
-    if (check.data.user && !this.isReRun) {
+    if (check.data.user) {
       if (check.data.wizardCompleted) {
         await this.$router.push("/dashboard");
         return;
@@ -792,8 +789,7 @@ export default {
       return;
     }
 
-    const url = (this.hasAdmin || this.isReRun) ? getServerURL() + "/setup/config?reRun=true" : getServerURL() + "/setup/config";
-    const config = await axios.get(url, { withCredentials: true });
+    const config = await axios.get(getServerURL() + "/setup/config", { withCredentials: true });
     if (config.data && config.data.steps) {
       this.steps = config.data.steps;
     }
