@@ -1,6 +1,7 @@
 'use strict';
 
 const passport = require('passport');
+const { relevantFields } = require('../../../utils/auth');
 
 /**
  * Register login/logout/session-check routes, including local and external provider entrypoints.
@@ -231,16 +232,33 @@ function registerLoginRoutes(server, helpers) {
     });
 
     /**
-     * Return the current authenticated user, if any.
+     * Return the current authenticated user (if any), needsSetup and wizardCompleted.
      */
-    server.app.get('/auth/check', (req, res) => {
-        if (req.user) {
-            res.status(200).send({ user: req.user });
-        } else {
-            res.status(401);
+    server.app.get('/auth/check', async (req, res) => {
+        try {
+            const admins = await server.db.models['user'].getUsersByRole('admin');
+            const needsSetup = admins.length === 0;
+            const wizardCompleted = (await server.db.models['app_state'].get('setup.wizardCompleted')) === 'true';
+
+            server.logger.debug(`req.session.passport: ${JSON.stringify(req.session && req.session.passport)}`);
+            server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);
+
+            if (req.user) {
+                return res.status(200).json({
+                    user: relevantFields(req.user),
+                    needsSetup,
+                    wizardCompleted,
+                });
+            }
+            return res.status(200).json({
+                user: null,
+                needsSetup,
+                wizardCompleted,
+            });
+        } catch (err) {
+            server.logger.error('auth/check error: ' + err);
+            return res.status(500).json({ message: 'Internal server error' });
         }
-        server.logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
-        server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);
     });
 }
 
