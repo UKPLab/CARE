@@ -8,6 +8,7 @@
  */
 const passport = require('passport');
 const { generateToken, decodeToken, relevantFields } = require('../../utils/auth');
+const { createInitialAdmin } = require('../utils/setupAdmin');
 
 /**
  * Route for user management
@@ -169,84 +170,24 @@ module.exports = function (server) {
                 return res.status(403).json({ message: 'An admin account already exists.' });
             }
 
-            if (!userName || (typeof userName === 'string' && !userName.trim())) {
-                return res.status(400).json({ message: 'Please provide a user name.' });
-            }
-            const existingByName = await server.db.models['user'].getUserIdByName(userName);
-            if (existingByName !== 0) {
-                return res.status(400).json({ message: 'Username already taken.' });
-            }
-
-            if (!email || (typeof email === 'string' && !email.trim())) {
-                return res.status(400).json({ message: 'Please provide an email.' });
-            }
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                return res.status(400).json({ message: 'Please provide a valid email.' });
-            }
-            const existingByEmail = await server.db.models['user'].getUserIdByEmail(email);
-            if (existingByEmail !== 0) {
-                return res.status(400).json({ message: 'E-Mail already taken.' });
-            }
-
-            if (!password || (typeof password === 'string' && password.length < 8)) {
-                return res.status(400).json({ message: 'Password does not meet requirements (min 8 characters).' });
-            }
-
-            const User = server.db.models['user'];
-            const Configuration = server.db.models['configuration'];
-            const { Op } = server.db.Sequelize;
-
-            const EXPOSE_CONFIG_NAMES = [
-                'Exposé assessment configuration',
-                'Exposé feedback configuration',
-                'UKP Exposé Submission Validator',
-                'Exposé assessment configuration (German)',
-                'Exposé feedback configuration (German)',
-            ];
-            const BOT_USER_ID = 2;
-
-            const transaction = await User.sequelize.transaction();
+            let user;
             try {
-                const user = await User.add(
-                    {
-                        userName: userName.trim(),
-                        email: email.trim(),
-                        password,
-                        firstName: userName.trim(),
-                        lastName: 'User',
-                        acceptTerms: true,
-                        acceptStats: true,
-                        emailVerified: true,
-                    },
-                    { transaction, context: { userRoles: 'admin' } }
-                );
-
-                await Configuration.update(
-                    { userId: user.id },
-                    {
-                        where: {
-                            name: { [Op.in]: EXPOSE_CONFIG_NAMES },
-                            userId: BOT_USER_ID,
-                        },
-                        transaction,
-                    }
-                );
-
-                await transaction.commit();
-
-                req.logIn(user, function (err) {
-                    if (err) {
-                        server.logger.error('setup-admin logIn error: ' + err);
-                        return res.status(500).json({ message: 'Failed to complete setup.' });
-                    }
-                    return res.status(200).json({ user: relevantFields(user) });
-                });
+                user = await createInitialAdmin(server, { userName, email, password });
             } catch (err) {
-                await transaction.rollback();
+                if (err && err.statusCode === 400) {
+                    return res.status(400).json({ message: err.message });
+                }
                 server.logger.error('Cannot create setup admin: ' + err);
                 return res.status(400).json({ message: 'Failed to create admin.', error: err.message });
             }
+
+            req.logIn(user, function (err) {
+                if (err) {
+                    server.logger.error('setup-admin logIn error: ' + err);
+                    return res.status(500).json({ message: 'Failed to complete setup.' });
+                }
+                return res.status(200).json({ user: relevantFields(user) });
+            });
         } catch (err) {
             server.logger.error('setup-admin error: ' + err);
             return res.status(500).json({ message: 'Internal server error.' });
