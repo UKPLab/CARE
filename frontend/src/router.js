@@ -98,7 +98,17 @@ const router = VueRouter.createRouter({
  * so they cannot bypass it by typing /dashboard, /login, etc.
  */
 router.beforeEach(async (to, from, next) => {
-    if (to.path === "/wizard") return next();
+    if (to.path === "/wizard") {
+        try {
+            const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
+            if (!r.ok) return next({ path: "/" });
+            const d = await r.json();
+            if (d.needsSetup === true) return next();
+            if (d.user && d.wizardCompleted === false) return next();
+            return next({ path: "/" });
+        } catch (_) {}
+        return next();
+    }
     if (!to.meta.requireAuth && !to.meta.checkLogin) return next();
     try {
         const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
