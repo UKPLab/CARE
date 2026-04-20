@@ -11,6 +11,20 @@
         <p>
           Are you sure you want to close all open studies?
         </p>
+        <div class="form-check mt-3">
+          <input
+            id="notifySessionsCheckbox"
+            v-model="notifySessions"
+            class="form-check-input"
+            type="checkbox"
+          >
+          <label
+            class="form-check-label"
+            for="notifySessionsCheckbox"
+          >
+            Send email notification to participants with open sessions
+          </label>
+        </div>
       </div>
     </template>
 
@@ -41,6 +55,11 @@ export default {
     BasicModal,
     BasicButton,
   },
+  data() {
+    return {
+      notifySessions: false,
+    };
+  },
   computed:{
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
@@ -48,12 +67,14 @@ export default {
   },
   methods: {
     open() {
+      this.notifySessions = false;
       this.$refs.bulkCloseModal.open();
     },
     closeAllStudies() {
       const data = {
         projectId: this.projectId,
         ignoreClosedState: false,
+        notifySessions: this.notifySessions,
         progressId: this.$refs.bulkCloseModal.getProgressId(),
       };
       this.$refs.bulkCloseModal.startProgress();
@@ -81,4 +102,7 @@ export default {
 </script>
 
 <style scoped>
+.form-check-label {
+  cursor: pointer;
+}
 </style>

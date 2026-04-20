@@ -15,9 +15,14 @@
               <div class="icon-container rounded p-2 text-primary">
                 <i :class="placeholder.icon"></i>
               </div>
-              <div>
-                <h5 class="mb-1">{{ placeholder.label }}</h5>
-                <p class="text-muted small mb-0">{{ placeholder.description }}</p>
+              <div class="d-flex flex-column">
+                <div class="d-flex align-items-center">
+                  <h5 class="mb-0 me-1">{{ placeholder.label }}</h5>
+                  <FormHelp
+                    :help="getPlaceholderHelp(placeholder.id)"
+                  />
+                </div>
+                <p class="text-muted small mb-0 mt-1">{{ placeholder.description }}</p>
               </div>
             </div>
             <div class="d-flex align-items-center">
@@ -37,8 +42,13 @@
 </template>
 
 <script>
+import FormHelp from "@/basic/form/Help.vue";
+
 export default {
   name: "SidebarConfigurator",
+  components: {
+    FormHelp,
+  },
   inject: {
     studySessionId: {
       type: Number,
@@ -78,6 +88,14 @@ export default {
     this.eventBus.off("editorContentUpdated", this.editorContentHandler);
   },
   methods: {
+    getPlaceholderHelp(placeholderId) {
+      const longDescriptions = {
+        text: "Displays a single value from a previous editor step or NLP skill output. Use this when you want to show a specific piece of data (like a text field, number, or label) from an earlier step in your workflow.",
+        chart: "Displays a chart built from labels and values provided by previous steps or NLP skills. The chart will automatically visualize the data structure you've configured, making it easy to present numerical or categorical data visually.",
+        comparison: "Compares two data sources (e.g. two document versions or NLP outputs) and visualizes the result. This is useful for showing differences between versions, comparing outputs from different steps, or highlighting changes over time.",
+      };
+      return longDescriptions[placeholderId] || "";
+    },
     updatePlaceholderCounts(editorContent) {
       // Reset counts
       Object.keys(this.placeholderCounts).forEach((key) => {

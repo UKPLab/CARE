@@ -88,10 +88,9 @@
 <script>
 import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 
-import {scrollElement} from "@/assets/anchoring/scroll";
+
 
 /** Sidebar component of the Annotator
  *
@@ -102,7 +101,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {SideCard, AnnoCard, ConfirmModal, LoadIcon},
+  components: {SideCard, AnnoCard, LoadIcon},
   inject: {
     documentId: {
       type: Number,
@@ -349,7 +348,6 @@ export default {
       }
     },
     async sidebarScrollTo(commentId) {
-      const scrollContainer = this.$refs.sidepane;
       this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
       //await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
