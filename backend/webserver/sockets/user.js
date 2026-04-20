@@ -4,7 +4,7 @@ const {inject} = require("../../utils/generic");
 const _ = require("lodash");
 const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
-const ADMIN_ROOM = "room:admins";
+const MONITOR_USERS_ROOM = "room:monitor:users";
 
 /**
  * Handle user through websocket
@@ -484,7 +484,7 @@ class UserSocket extends Socket {
     async broadcastStats(excludeSocketId = null) {
         try {
             const stats = await this.buildStats(excludeSocketId);
-            this.io.to(ADMIN_ROOM).emit("monitorStatsUpdate", stats);
+            this.io.to(MONITOR_USERS_ROOM).emit("monitorStatsUpdate", stats);
         } catch (error) {
             this.logger.error("Error broadcasting monitor stats: " + error);
         }
@@ -495,9 +495,9 @@ class UserSocket extends Socket {
      *
      * @socketEvent userMonitorSubscribe
      */
-    async subscribe(data, options) {
+    async subscribeToUserMonitor(data, options) {
         if (!(await this.isAdmin())) throw new Error("Admin access required");
-        this.socket.join(ADMIN_ROOM);
+        this.socket.join(MONITOR_USERS_ROOM);
         return await this.buildStats();
     }
 
@@ -506,9 +506,9 @@ class UserSocket extends Socket {
      *
      * @socketEvent userMonitorUnsubscribe
      */
-    async unsubscribe(data, options) {
+    async unsubscribeFromUserMonitor(data, options) {
         if (!(await this.isAdmin())) throw new Error("Admin access required");
-        this.socket.leave(ADMIN_ROOM);
+        this.socket.leave(MONITOR_USERS_ROOM);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -541,8 +541,8 @@ class UserSocket extends Socket {
         this.createSocket("userGetRoleBasedRights", this.getRoleRights, {}, false);
         this.createSocket("userGetAllRights", this.getAllRights, {}, false);
         this.createSocket("userAssignRoleRights", this.assignRoleRights, {}, true);
-        this.createSocket("userMonitorSubscribe", this.subscribe, {}, false);
-        this.createSocket("userMonitorUnsubscribe", this.unsubscribe, {}, false);
+        this.createSocket("userMonitorSubscribe", this.subscribeToUserMonitor, {}, false);
+        this.createSocket("userMonitorUnsubscribe", this.unsubscribeFromUserMonitor, {}, false);
     }
 };
 

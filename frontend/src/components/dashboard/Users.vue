@@ -2,18 +2,13 @@
   <Card title="Users">
     <template #headerElements>
       <div class="d-flex align-items-center flex-wrap gap-2">
-        <button
-            type="button"
-            class="btn btn-secondary btn-sm position-relative"
+        <BasicButton
+            class="btn btn-secondary btn-sm"
+            title="Live Sessions"
+            text="Live Sessions"
+            icon="people-fill"
             @click="openSessionDetailsModal()"
-        >
-          <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary" style="z-index: 2; left: 0.25rem; top: 0.25rem;">
-            {{ activeUserCount }}
-            <span class="visually-hidden">active users</span>
-          </span>
-          <i class="bi bi-people-fill me-1" />
-          Live Sessions
-        </button>
+        />
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Download Users"
@@ -228,9 +223,6 @@ export default {
           "Roles": user.roles.map(role => this.systemRoles.find((r) => r.id === role)?.name).join(", "),
         };
       });
-    },
-    activeUserCount() {
-      return this.$store.getters["monitor/getStats"].activeUsers;
     },
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"];
