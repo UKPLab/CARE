@@ -42,13 +42,14 @@ The code is structured accordingly:
 
 The Frontend
 ------------
-The frontend essentially consists of three major views:
+The frontend essentially consists of the following major views:
 
     1. the landing page (login and register view)
-    2. the dashboard (connecting all other views)
-    3. the annotator (view for annotating documents)
-    4. the editor (view for editing documents)
-    5. the studies including study dashboard and study sessions (view for managing and using user studies)
+    2. the first-time setup wizard (shown when no admin account exists)
+    3. the dashboard (connecting all other views)
+    4. the annotator (view for annotating documents)
+    5. the editor (view for editing documents)
+    6. the studies including study dashboard and study sessions (view for managing and using user studies)
 
 All management functionality is realized within the :doc:`dashboard <../for_developers/frontend/components/dashboard>`.
 If you intend to extend CARE, you usually add new :doc:`components <../for_developers/frontend/components/components>` here.

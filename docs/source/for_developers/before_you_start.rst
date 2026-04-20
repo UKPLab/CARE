@@ -128,10 +128,15 @@ the backend, just run the basic build using the following commands in different 
 
     make docker # starts the docker containers needed for development
     make init   # initializes the database
-    make dev    # starts the development server (backend & frontend) - only linux!
+    make dev    # starts the development server (backend & frontend, wizard skipped) - only Linux!
 
 This will start the development server for the backend as well as the frontend. This also starts up
 a database in a docker container and populates it with the necessary schemas.
+
+.. note::
+
+    ``make dev`` runs with ``DEV_SKIP_WIZARD=true`` for faster iterative development.
+    If you need to test the first-time setup flow, use ``make dev-wizard``.
 
 .. note::
 
@@ -228,7 +233,9 @@ More Commands
     * - ``make doc_clean``
       - Clean the Sphinx documentation.
     * - ``make dev``
-      - Run frontend (dev) and backend (dev) together. (Unix only)
+      - Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix only)
+    * - ``make dev-wizard``
+      - Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)
     * - ``make dev-backend``
       - Run backend in development mode.
     * - ``make dev-frontend``

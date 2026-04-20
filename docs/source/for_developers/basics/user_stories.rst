@@ -8,6 +8,58 @@ Landing and Authentication
 
 -----
 
+First-Time Setup Wizard
+-----------------------
+
+.. container:: user-story
+
+   :Description:
+     I as an administrator, am guided through an initial setup wizard on a fresh CARE instance instead of being dropped into fragmented configuration screens.
+
+   :Acceptance:
+     When no admin account exists, opening CARE leads to a setup wizard with steps for admin account creation, general settings, mail settings, registration settings, and a summary. I can move through the steps, review values on summary, and finish setup. After completion, the instance is marked as configured and normal login/dashboard access is used.
+
+-----
+
+Import Setup Settings from JSON
+-------------------------------
+
+.. container:: user-story
+
+   :Description:
+     I as an administrator, can import setup values from a JSON file exported from another CARE instance to avoid re-entering settings manually.
+
+   :Acceptance:
+     In setup wizard steps after admin creation, I can open the import modal and select a JSON file with setting key/value pairs. Valid keys are loaded into the wizard state and reflected on the summary page. Unknown keys are ignored and this is shown in feedback. If the file is invalid JSON, I receive an error message and no values are imported.
+
+-----
+
+Export Setup Settings to JSON
+-----------------------------
+
+.. container:: user-story
+
+   :Description:
+     I as an administrator, can export the current setup configuration as a JSON snapshot to reuse it in another CARE instance.
+
+   :Acceptance:
+     In setup wizard steps after admin creation, I can use the download action to export a JSON file containing the current setup values. The exported file can be used as input for the setup import flow on another instance.
+
+-----
+
+Test Mail During Setup
+----------------------
+
+.. container:: user-story
+
+   :Description:
+     I as an administrator, can test mail delivery during setup before finishing the wizard.
+
+   :Acceptance:
+     In the mail step, I can enter a recipient address and trigger a test email. I receive clear success or error feedback based on the response of the test mail endpoint and can continue editing mail settings before finishing setup.
+
+-----
+
 Landing Page
 ------------
 
@@ -522,6 +574,19 @@ Admin Settings
      I as an admin user want to access and modify the settings of the system in the frontend.
    :Acceptance:
      As an admin, I can see the Settings componentn in the navigation sidebar. When I access this, I can see the list of settings, reload them from the server backend, make changes and save these on the server. The changes have immediate effect on the behavior of the application.
+
+-----
+
+Wizard-Style Settings Configuration
+-----------------------------------
+
+.. container:: user-story
+
+   :Description:
+     I as an admin can edit system settings in a structured, step-based layout consistent with first-time setup, including mail and registration dependencies.
+
+   :Acceptance:
+     In the Settings area, I see grouped, user-facing labels and subsections aligned with the setup flow. Mail-dependent options are shown consistently with the mail service state. A test mail action is available to validate mail configuration. When I change mail settings and click "Save Settings", the new values are applied immediately without requiring a backend restart.
 
 -----
 
