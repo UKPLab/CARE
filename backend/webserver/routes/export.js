@@ -35,7 +35,7 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat } = req.body;
         let { userIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
 
@@ -94,8 +94,22 @@ module.exports = function (server) {
                         exportFolderName.split('.')[0],
                         archive
                     );
+                    break;
+                case 'grades':
+                    await processGradesExport(
+                        server,
+                        projectId,
+                        userIds,
+                        users,
+                        shouldGenerateAliases,
+                        hasPrivateInfoRight,
+                        userMapping,
+                        normalizedGradeFormat,
+                        archive
+                    );
+                    break;
                 default:
-                    console.warn(`Export type ${exportType} not implemented.`);
+                    return res.status(400).send("Unsupported export type.");
             }
 
             await archive.finalize();
@@ -275,6 +289,209 @@ module.exports = function (server) {
                 } else {
                     console.error(`[NOT FOUND] Looking for document: ${doc.hash} at ${filePath}`);
                 }
+            }
+        }
+    }
+
+    function sanitizePathSegment(value) {
+        return String(value || "unknown")
+            .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function flattenObject(value, prefix = "", out = {}) {
+        if (value === null || value === undefined) return out;
+        if (typeof value !== "object" || Array.isArray(value)) {
+            out[prefix] = value;
+            return out;
+        }
+
+        for (const [key, child] of Object.entries(value)) {
+            const nextPrefix = prefix ? `${prefix}.${key}` : key;
+            flattenObject(child, nextPrefix, out);
+        }
+        return out;
+    }
+
+    function getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
+        if (shouldGenerateAliases) return userMapping[user.id];
+        if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
+        return user.userName;
+    }
+
+    async function processGradesExport(
+        server,
+        projectId,
+        userIds,
+        users,
+        shouldGenerateAliases,
+        hasPrivateInfoRight,
+        userMapping,
+        gradeFormat,
+        archive
+    ) {
+        const { Op } = server.db.Sequelize;
+        const gradeRows = await server.db.models.document_data.findAll({
+            where: {
+                key: "assessment_result",
+                deleted: false,
+                studySessionId: { [Op.ne]: null }
+            },
+            include: [{
+                model: server.db.models.document,
+                as: "document",
+                required: true,
+                where: {
+                    projectId,
+                    userId: { [Op.in]: userIds },
+                    deleted: false
+                },
+                include: [{
+                    model: server.db.models.submission,
+                    as: "submission",
+                    required: false
+                }]
+            }],
+            order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
+        });
+
+        const sessionIds = [...new Set(gradeRows.map((row) => row.studySessionId).filter(Boolean))];
+        const studySessions = sessionIds.length > 0
+            ? await server.db.models.study_session.findAll({
+                where: { id: { [Op.in]: sessionIds }, deleted: false },
+                raw: true
+            })
+            : [];
+        const sessionsById = new Map(studySessions.map((session) => [session.id, session]));
+
+        const studyIds = [...new Set(studySessions.map((session) => session.studyId).filter(Boolean))];
+        const studies = studyIds.length > 0
+            ? await server.db.models.study.findAll({
+                where: { id: { [Op.in]: studyIds }, deleted: false },
+                raw: true
+            })
+            : [];
+        const studiesById = new Map(studies.map((study) => [study.id, study]));
+
+        const relatedUserIds = [...new Set([
+            ...users.map((user) => user.id),
+            ...studySessions.map((session) => session.userId),
+            ...studies.map((study) => study.userId)
+        ].filter(Boolean))];
+        const relatedUsers = relatedUserIds.length > 0
+            ? await server.db.models.user.findAll({ where: { id: { [Op.in]: relatedUserIds } }, raw: true })
+            : [];
+        const usersById = new Map(relatedUsers.map((user) => [user.id, user]));
+
+        const roleMatches = relatedUserIds.length > 0
+            ? await server.db.models.user_role_matching.findAll({
+                where: { userId: { [Op.in]: relatedUserIds } },
+                raw: true
+            })
+            : [];
+        const roleIds = [...new Set(roleMatches.map((match) => match.userRoleId))];
+        const roles = roleIds.length > 0
+            ? await server.db.models.user_role.findAll({
+                where: { id: { [Op.in]: roleIds } },
+                attributes: ["id", "name"],
+                raw: true
+            })
+            : [];
+        const roleNameById = new Map(roles.map((role) => [role.id, role.name]));
+        const rolesByUserId = new Map();
+        for (const match of roleMatches) {
+            const roleName = roleNameById.get(match.userRoleId);
+            if (!roleName) continue;
+            if (!rolesByUserId.has(match.userId)) rolesByUserId.set(match.userId, []);
+            rolesByUserId.get(match.userId).push(roleName);
+        }
+
+        const recordsByUser = new Map();
+        for (const row of gradeRows) {
+            const document = row.document;
+            const ownerUser = usersById.get(document.userId);
+            if (!ownerUser) continue;
+            const session = sessionsById.get(row.studySessionId);
+            const reviewerUser = session ? usersById.get(session.userId) : null;
+            const study = session ? studiesById.get(session.studyId) : null;
+            const graderUser = study ? usersById.get(study.userId) : null;
+            const submission = document.submission;
+
+            const scoreObject = row.value || {};
+            const totalPoints =
+                typeof scoreObject.total === "number"
+                    ? scoreObject.total
+                    : (typeof scoreObject.achieved_points === "number" ? scoreObject.achieved_points : null);
+
+            const record = {
+                projectId,
+                userId: ownerUser.id,
+                userExtId: ownerUser.extId ?? null,
+                userName: ownerUser.userName ?? "",
+                displayName: getDisplayName(ownerUser, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
+                submissionId: submission?.id ?? document.submissionId ?? null,
+                submissionExtId: submission?.extId ?? null,
+                studySessionId: row.studySessionId ?? null,
+                studyStepId: row.studyStepId ?? null,
+                hash: session?.hash ?? null,
+                type: "assessment",
+                roles: rolesByUserId.get(study?.userId) || [],
+                grader: graderUser ? `${graderUser.firstName} ${graderUser.lastName}`.trim() : null,
+                reviewer: reviewerUser ? `${reviewerUser.firstName} ${reviewerUser.lastName}`.trim() : null,
+                author: ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}`.trim() : null,
+                scores: scoreObject,
+                totalPoints,
+                createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+                sourceKey: "assessment_result"
+            };
+
+            if (!recordsByUser.has(ownerUser.id)) recordsByUser.set(ownerUser.id, []);
+            recordsByUser.get(ownerUser.id).push(record);
+        }
+
+        for (const user of users) {
+            const displayName = getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping);
+            const safeFolder = `${sanitizePathSegment(displayName)}_u${user.id}`;
+            const studentFolder = `grades/${safeFolder}`;
+            const records = (recordsByUser.get(user.id) || []).sort((a, b) => {
+                const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return (
+                    (a.studySessionId || 0) - (b.studySessionId || 0) ||
+                    (a.studyStepId || 0) - (b.studyStepId || 0) ||
+                    createdA - createdB
+                );
+            });
+
+            if (gradeFormat === "csv") {
+                const csvRows = records.map((record) => {
+                    const flatScores = flattenObject(record.scores, "scores");
+                    return {
+                        projectId: record.projectId,
+                        userId: record.userId,
+                        userExtId: record.userExtId,
+                        userName: record.userName,
+                        displayName: record.displayName,
+                        submissionId: record.submissionId,
+                        submissionExtId: record.submissionExtId,
+                        studySessionId: record.studySessionId,
+                        studyStepId: record.studyStepId,
+                        hash: record.hash,
+                        type: record.type,
+                        roles: record.roles.join("|"),
+                        grader: record.grader,
+                        reviewer: record.reviewer,
+                        author: record.author,
+                        totalPoints: record.totalPoints,
+                        createdAt: record.createdAt,
+                        sourceKey: record.sourceKey,
+                        ...flatScores
+                    };
+                });
+                archive.append(Papa.unparse(csvRows), { name: `${studentFolder}/scores.csv` });
+            } else {
+                archive.append(JSON.stringify(records, null, 2), { name: `${studentFolder}/scores.json` });
             }
         }
     }
