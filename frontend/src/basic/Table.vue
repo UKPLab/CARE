@@ -1173,4 +1173,21 @@ export default {
   z-index: 2 !important;
   background: var(--bs-body-bg, #fff);
 }
+
+.table-wrapper thead th:has(.dropdown-menu.show) {
+  z-index: 5 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th .dropdown-menu {
+  z-index: 9999 !important;
+}
+
+.input-group.input-group-sm,
+.input-group.input-group-sm .input-group-text,
+.input-group.input-group-sm .form-control {
+  position: relative;
+  z-index: 20;
+}
+
 </style>
