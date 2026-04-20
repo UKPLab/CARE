@@ -86,8 +86,6 @@ jobs:
 
   audit:
     runs-on: ubuntu-latest
-    permissions:
-      checks: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,24 +98,14 @@ jobs:
           npm ci --prefix frontend --ignore-scripts
           npm ci --prefix backend --ignore-scripts
           npm ci --prefix utils/modules/editor-delta-conversion --ignore-scripts
-      - name: Run npm audit
-        id: audit
-        continue-on-error: true
-        run: make audit
-      - name: Mark audit check as neutral when issues are found
-        if: steps.audit.outcome == 'failure'
-        uses: LouisBrunner/checks-action@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: CI Pipeline / audit (warnings)
-          conclusion: neutral
-          output: |
-            {"summary":"npm audit reported issues. This check is informational only and does not block merges. See the audit job log for details."}
+      - name: Run npm audit (warnings only)
+        run: |
+          if ! make audit; then
+            echo "::warning::npm audit reported issues. Review the log above."
+          fi
 
   lint:
     runs-on: ubuntu-latest
-    permissions:
-      checks: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -127,19 +115,11 @@ jobs:
           node-version: 20
       - name: Install frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts
-      - name: Run linter
-        id: lint
-        continue-on-error: true
-        run: make lint
-      - name: Mark lint check as neutral when issues are found
-        if: steps.lint.outcome == 'failure'
-        uses: LouisBrunner/checks-action@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: CI Pipeline / lint (warnings)
-          conclusion: neutral
-          output: |
-            {"summary":"Linter reported issues. This check is informational only and does not block merges. See the lint job log for details."}
+      - name: Run linter (warnings only)
+        run: |
+          if ! make lint; then
+            echo "::warning::Linter reported issues. Review the log above."
+          fi
 
   sync_to_gitlab:
     runs-on: ubuntu-latest
