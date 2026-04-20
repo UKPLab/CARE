@@ -17,12 +17,17 @@ import { execSync } from 'child_process';
 const getVersion = () => {
   let ciHash = process.env.TAG_COMMIT;
   let tag_latest = process.env.TAG_LATEST;
-  if (tag_latest && ciHash) return tag_latest + ": " + ciHash;
+  if (tag_latest && ciHash){
+    console.log("inside getVersion first if ");
+    return tag_latest + ": " + ciHash;
+  }
   try {
     ciHash = execSync('git rev-parse --short HEAD').toString().trim();
     tag_latest = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+    console.log("inside getVersion try");
     return tag_latest + ": " + ciHash;
   } catch (e) {
+    console.log("inside getVersion error");
     console.log(e.toString());
     // Fallback if no git is found
     return 'dev-build';
