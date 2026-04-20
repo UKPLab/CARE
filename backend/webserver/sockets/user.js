@@ -4,6 +4,8 @@ const {inject} = require("../../utils/generic");
 const _ = require("lodash");
 const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
+const ADMIN_ROOM = "room:admins";
+
 /**
  * Handle user through websocket
  *
@@ -398,7 +400,133 @@ class UserSocket extends Socket {
     }
 
 
+    // ─── Active-user monitoring ────────────────────────────────────────────────
+
+    /**
+     * Resolves a display name from cache or DB.
+     * @param {number} userId
+     * @returns {Promise<string>}
+     */
+    async resolveUserName(userId) {
+        if (userId in this.server.cache["userName"]) {
+            return this.server.cache["userName"][userId];
+        }
+        const name = await this.models["user"].getUserName(userId);
+        this.server.cache["userName"][userId] = name;
+        return name;
+    }
+
+    /**
+     * Reduces a full User-Agent string to a readable browser label.
+     * @param {string|undefined} ua
+     * @returns {string}
+     */
+    parseUserAgent(ua) {
+        if (!ua) return "Unknown";
+        if (ua.includes("Edg")) return "Edge";
+        if (ua.includes("Chrome")) return "Chrome";
+        if (ua.includes("Firefox")) return "Firefox";
+        if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+        return ua.substring(0, 60);
+    }
+
+    /**
+     * Builds a snapshot of all active sessions.
+     * @param {string|null} excludeSocketId Exclude this socket (used on disconnect, before Server.js removes it)
+     * @returns {Promise<object>}
+     */
+    async buildStats(excludeSocketId = null) {
+        const activeSockets = Object.entries(this.server.availSockets)
+            .filter(([sid]) => sid !== excludeSocketId);
+
+        const sessionCountByUser = {};
+        for (const [, socketMap] of activeSockets) {
+            const uid = socketMap["UserSocket"]?.userId;
+            if (uid != null) sessionCountByUser[uid] = (sessionCountByUser[uid] || 0) + 1;
+        }
+
+        const sessions = (
+            await Promise.all(
+                activeSockets.map(async ([sid, socketMap]) => {
+                    const inst = socketMap["UserSocket"];
+                    if (!inst?.connectedAt) return null;
+                    return {
+                        socketId: sid,
+                        userId: inst.userId,
+                        userName: await this.resolveUserName(inst.userId),
+                        connectedAt: inst.connectedAt,
+                        browser: inst.browser,
+                    };
+                })
+            )
+        ).filter(Boolean);
+
+        const seen = new Set();
+        const connectedUsers = [];
+        for (const [, socketMap] of activeSockets) {
+            const inst = socketMap["UserSocket"];
+            if (!inst?.connectedAt || seen.has(inst.userId)) continue;
+            seen.add(inst.userId);
+            connectedUsers.push({
+                userId: inst.userId,
+                userName: await this.resolveUserName(inst.userId),
+                sessionCount: sessionCountByUser[inst.userId] || 0,
+            });
+        }
+
+        return { activeSessions: activeSockets.length, activeUsers: seen.size, connectedUsers, sessions };
+    }
+
+    /**
+     * Broadcasts a fresh stats snapshot to all admins currently subscribed to the monitor room.
+     * @param {string|null} excludeSocketId
+     */
+    async broadcastStats(excludeSocketId = null) {
+        try {
+            const stats = await this.buildStats(excludeSocketId);
+            this.io.to(ADMIN_ROOM).emit("monitorStatsUpdate", stats);
+        } catch (error) {
+            this.logger.error("Error broadcasting monitor stats: " + error);
+        }
+    }
+
+    /**
+     * Admin subscribes to the monitor room and receives the current snapshot immediately.
+     *
+     * @socketEvent userMonitorSubscribe
+     */
+    async subscribe(data, options) {
+        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        this.socket.join(ADMIN_ROOM);
+        return await this.buildStats();
+    }
+
+    /**
+     * Admin unsubscribes from the monitor room.
+     *
+     * @socketEvent userMonitorUnsubscribe
+     */
+    async unsubscribe(data, options) {
+        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        this.socket.leave(ADMIN_ROOM);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+
     init() {
+        this.connectedAt = this.socket.handshake.time;
+        this.browser = this.parseUserAgent(this.socket.request.headers["user-agent"]);
+
+        // Broadcast on new connection; fires before Server.js removes the entry on disconnect
+        this.broadcastStats();
+        this.socket.on("disconnect", async () => {
+            try {
+                await this.broadcastStats(this.socket.id);
+            } catch (error) {
+                this.logger.warn("Error broadcasting monitor stats on disconnect: " + error);
+            }
+        });
+
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
         this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
@@ -413,6 +541,8 @@ class UserSocket extends Socket {
         this.createSocket("userGetRoleBasedRights", this.getRoleRights, {}, false);
         this.createSocket("userGetAllRights", this.getAllRights, {}, false);
         this.createSocket("userAssignRoleRights", this.assignRoleRights, {}, true);
+        this.createSocket("userMonitorSubscribe", this.subscribe, {}, false);
+        this.createSocket("userMonitorUnsubscribe", this.unsubscribe, {}, false);
     }
 };
 

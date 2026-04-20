@@ -49,7 +49,8 @@
               'width' in c ? 'col-' + c.width : 'col-auto',
               getFixedColumnClass(c, index),
             ]"
-            :style="getFixedColumnStyle(c)"
+          
+            :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             {{ c.name }}
             <span
@@ -191,7 +192,7 @@
               { pointer: selectableRows && !r.isDisabled },
               getFixedColumnClass(c, index),
             ]"
-            :style="getFixedColumnStyle(c)"
+            :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
               <TIcon
@@ -199,6 +200,7 @@
                 :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
                 :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
                 :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
+                :size="c.typeOptions?.size ?? 16"
               />
               <TBadge
                 v-else-if="c.type === 'badge'"

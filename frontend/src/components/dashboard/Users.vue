@@ -1,7 +1,19 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <div class="btn-group gap-2">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <button
+            type="button"
+            class="btn btn-secondary btn-sm position-relative"
+            @click="openSessionDetailsModal()"
+        >
+          <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary" style="z-index: 2; left: 0.25rem; top: 0.25rem;">
+            {{ activeUserCount }}
+            <span class="visually-hidden">active users</span>
+          </span>
+          <i class="bi bi-people-fill me-1" />
+          Live Sessions
+        </button>
         <BasicButton
             class="btn btn-secondary btn-sm"
             title="Download Users"
@@ -85,6 +97,13 @@
       @hide="modals.userAdd = false"
   />
   <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
+
+  <ActiveSessionsModal
+    v-if="modals.activeSessions"
+    ref="activeSessionsModal"
+    @hide="modals.activeSessions = false"
+/>
+
 </template>
 
 <script>
@@ -100,6 +119,7 @@ import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import {downloadObjectsAs} from "@/assets/utils";
+import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
 
 /**
  * Display user list by users' role
@@ -121,6 +141,7 @@ export default {
     UploadModal,
     UserAddModal,
     ConfirmModal,
+    ActiveSessionsModal,
   },
   props: {
     admin: {
@@ -140,6 +161,7 @@ export default {
         upload: false,
         userAdd: false,
         confirm: false,
+        activeSessions: false,
       },
       options: {
         striped: true,
@@ -155,6 +177,9 @@ export default {
         },
       },
       columns: [
+        { name: '', key: 'activeIndicator', type: 'icon', sortable: true, sortKey: 'isActive', width: 1, fixed: "left",
+          style: { width: '1px', whiteSpace: "nowrap", textAlign: "center" },
+          typeOptions: { size: 6 } },
         {name: "ID", key: "id", sortable: true, fixed: "left"},
         {name: "First Name", key: "firstName", fixed: "left"},
         {name: "Last Name", key: "lastName"},
@@ -172,8 +197,16 @@ export default {
   },
   computed: {
     users() {
+      const activeIds = this.$store.getters["monitor/getActiveUserIds"];
       return this.$store.getters["admin/getUsersByRole"].map((user) => {
-        return this.formatUserData(user);
+        const isActive = activeIds.has(user.id);
+        return {
+          ...this.formatUserData(user),
+          isActive,
+          activeIndicator: isActive
+            ? { icon: 'circle-fill', color: '#198754', title: 'Online' }
+            : { icon: 'circle', color: '#6c757d', title: 'Offline' },
+        };
       });
     },
     usersExport() {
@@ -195,6 +228,9 @@ export default {
           "Roles": user.roles.map(role => this.systemRoles.find((r) => r.id === role)?.name).join(", "),
         };
       });
+    },
+    activeUserCount() {
+      return this.$store.getters["monitor/getStats"].activeUsers;
     },
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"];
@@ -244,6 +280,21 @@ export default {
           },
         },
         {
+          title: "View Sessions",
+          action: "viewSessions",
+          stats: {
+            userId: "id",
+          },
+          icon: "display",
+          filter: [{ key: "isActive", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
           title: "Delete User",
           action: "deleteUser",
           stats: {
@@ -262,6 +313,16 @@ export default {
   },
   mounted() {
     this.fetchUsers();
+    this.$socket.emit("userMonitorSubscribe", {}, (response) => {
+      if (response?.success) {
+        this.$store.commit("monitor/SOCKET_monitorStatsUpdate", response.data);
+      } else {
+        this.$store.commit("monitor/SET_ERROR", response?.message ?? "Monitor unavailable");
+      }
+    });
+  },
+  beforeUnmount() {
+    this.$socket.emit("userMonitorUnsubscribe", {});
   },
   methods: {
     openDetailsModal(userId) {
@@ -329,6 +390,9 @@ export default {
         case "editReviews":
           this.openEditReviewsModal(data.params);
           break;
+        case "viewSessions":
+          this.openSessionDetailsModal(data.params);
+          break;
         case "deleteUser":
           this.deleteUser(data.params);
           break;
@@ -378,6 +442,11 @@ export default {
     downloadUsers() {
       const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_users';
       downloadObjectsAs(this.usersExport, filename, "csv");
+    },
+    openSessionDetailsModal(params = null) {
+      const userId = params ? params.id : null;
+      this.modals.activeSessions = true;
+      this.$nextTick(() => this.$refs.activeSessionsModal?.open(userId));
     },
   },
 };

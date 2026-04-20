@@ -12,6 +12,7 @@ import AuthStore from './modules/auth.js';
 import AdminStore from './modules/admin.js';
 import SettingsStore from "./modules/settings.js";
 import ServiceStore from "./modules/service.js";
+import MonitorStore from "./modules/monitor.js";
 
 export default createStore({
     modules: {
@@ -19,5 +20,6 @@ export default createStore({
         admin: AdminStore,
         settings: SettingsStore,
         service: ServiceStore,
+        monitor: MonitorStore,
     },
 });

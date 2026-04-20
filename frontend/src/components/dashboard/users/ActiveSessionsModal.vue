@@ -1,0 +1,109 @@
+<template>
+  <BasicModal
+      ref="modal"
+      name="ActiveSessionsModal"
+      size="lg"
+  >
+    <template #title>
+      Active Sessions
+      <span v-if="filteredUserName" class="badge bg-info ms-2">{{ filteredUserName }}</span>
+      <span v-else class="badge bg-primary ms-2">{{ liveStats.activeUsers }} user(s)</span>
+      <span class="badge bg-secondary ms-1">{{ formattedSessions.length }} session(s)</span>
+    </template>
+
+    <template #body>
+      <BasicTable
+          :columns="sessionColumns"
+          :data="formattedSessions"
+          :options="tableOptions"
+      />
+    </template>
+
+    <template #footer>
+      <BasicButton
+          class="btn btn-secondary"
+          title="Close"
+          @click="$refs.modal.close()"
+      />
+    </template>
+  </BasicModal>
+</template>
+
+<script>
+import BasicModal from "@/basic/Modal.vue";
+import BasicTable from "@/basic/Table.vue";
+import BasicButton from "@/basic/Button.vue";
+
+/**
+ * Live modal displaying real-time active user sessions for admins.
+ * Opens unfiltered (from the widget badge) or filtered to a single user (from a table row).
+ *
+ * @author Dennis Zyska, Mohammed Rawhani
+ */
+export default {
+  name: "ActiveSessionsModal",
+  components: {BasicModal, BasicTable, BasicButton},
+
+  data() {
+    return {
+      filterUserId: null,
+
+      sessionColumns: [
+        {name: "Socket ID",    key: "socketId"},
+        {name: "User ID",      key: "userId",      sortable: true},
+        {name: "Username",     key: "userName",    sortable: true},
+        {name: "Connected At", key: "connectedAt", sortable: true},
+        {name: "Browser",      key: "browser"},
+      ],
+
+      tableOptions: {
+        striped:    true,
+        hover:      true,
+        small:      true,
+        pagination: 10,
+        search:     true,
+      },
+    };
+  },
+
+  computed: {
+    liveStats() {
+      return this.$store.getters["monitor/getStats"];
+    },
+
+    formattedSessions() {
+      const source = this.filterUserId
+        ? this.liveStats.sessions.filter(s => s.userId === this.filterUserId)
+        : this.liveStats.sessions;
+
+      return source.map(session => ({
+        ...session,
+        userId: String(session.userId),
+        connectedAt: session.connectedAt
+          ? new Date(session.connectedAt).toLocaleString()
+          : "-",
+      }));
+    },
+
+    filteredUserName() {
+      if (!this.filterUserId) return null;
+      const session = this.liveStats.sessions.find(s => s.userId === this.filterUserId);
+      return session?.userName ?? null;
+    },
+  },
+
+  methods: {
+    open(userId = null) {
+      this.filterUserId = userId;
+      this.$refs.modal.open();
+    },
+
+    close() {
+      this.$refs.modal.close();
+    },
+  },
+};
+</script>
+
+<style scoped>
+</style>
