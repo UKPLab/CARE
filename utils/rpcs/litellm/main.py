@@ -14,17 +14,32 @@ def create_app():
     def connect(sid, environ, auth):
         logger.info(f"Connection established with {sid}")
 
-    @sio.on("call")
-    def call(sid, data):
-        logger.info(f"Health check call from {sid}")
-        return {"success": True, "data": "LiteLLM RPC is running"}
+    @sio.on("healthy")
+    def healthy(sid, data):
+        """
+        Liveness probe: process is up and litellm is importable.
+        No model check - credentials arrive per-request, so there's nothing
+        to verify upfront. See litellm /health/liveliness for the same idea.
+        """
+        logger.info(f"Health check from {sid}")
+        try:
+            return {
+                "success": True,
+                "data": {
+                    "status": "ok",
+                    "litellm_version": getattr(litellm, "__version__", "unknown"),
+                },
+            }
+        except Exception as e:
+            logger.error(f"Health check error: {e}")
+            return {"success": False, "message": str(e)}
 
     @sio.on("chatCompletion")
     def chat_completion(sid, data):
         """
-        Pure passthrough to litellm.completion().
-        Caller must provide 'model' and 'messages'. Everything else is forwarded
-        as-is to litellm so the caller controls the provider, key, and parameters.
+        Passthrough to litellm.completion(). Caller supplies `model` and
+        `messages` (required); all other keys are forwarded verbatim, so the
+        caller controls provider, API key, and any extra parameters.
         """
         model = data.get("model")
         messages = data.get("messages")
@@ -43,37 +58,26 @@ def create_app():
             response = litellm.completion(
                 model=model,
                 messages=messages,
-                **params
+                **params,
             )
 
-            result = {
-                "success": True,
-                "data": {
-                    "id": response.id,
-                    "model": response.model,
-                    "choices": [
-                        {
-                            "index": c.index,
-                            "message": {
-                                "role": c.message.role,
-                                "content": c.message.content,
-                            },
-                            "finish_reason": c.finish_reason,
-                        }
-                        for c in response.choices
-                    ],
-                    "usage": {
-                        "prompt_tokens": response.usage.prompt_tokens,
-                        "completion_tokens": response.usage.completion_tokens,
-                        "total_tokens": response.usage.total_tokens,
-                    } if response.usage else None,
-                }
-            }
+            # Return the full response as-is. ModelResponse is a pydantic
+            # model, so model_dump() gives the complete OpenAI-compatible
+            # dict without hand-mapping (which would silently drop any new
+            # fields litellm / the provider adds).
+            if hasattr(response, "model_dump"):
+                response_data = response.model_dump()
+            elif hasattr(response, "dict"):
+                response_data = response.dict()
+            else:
+                response_data = dict(response)
+
+            usage = response_data.get("usage") or {}
             logger.info(
-                f"chatCompletion success: model={response.model}, "
-                f"tokens={response.usage.total_tokens if response.usage else 'N/A'}"
+                f"chatCompletion success: model={response_data.get('model')}, "
+                f"tokens={usage.get('total_tokens', 'N/A')}"
             )
-            return result
+            return {"success": True, "data": response_data}
 
         except Exception as e:
             logger.error(f"chatCompletion error: {e}")

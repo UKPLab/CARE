@@ -54,13 +54,16 @@ module.exports = class AIService extends Service {
     }
 
     /**
-     * Send a chat completion request to LiteLLM.
-     * The payload (model, messages, api_key, ...) is forwarded as-is.
+     * Forward a chat completion request to LiteLLM.
+     * Payload (model, messages, api_key, ...) is passed through untouched.
+     *
+     * The full response is logged server-side; only `choices` is returned
+     * to the frontend. Add more fields here if a client needs them.
      *
      * @param {object} data
      * @param {string} data.model
      * @param {Array<Object>} data.messages
-     * @returns {Promise<object>} LiteLLM response (choices, usage, ...)
+     * @returns {Promise<{choices: Array<Object>}>}
      * @throws {Error} if LiteLLM is unavailable or the call fails
      */
     async chatCompletion(data) {
@@ -75,7 +78,17 @@ module.exports = class AIService extends Service {
         }
 
         const response = await rpc.chatCompletion(data);
-        return response.data !== undefined ? response.data : response;
+        const payload = response.data !== undefined ? response.data : response;
+
+        const {choices = [], usage, model, id} = payload || {};
+        const finishReasons = choices.map(c => c.finish_reason).filter(Boolean);
+        this.logger.info(
+            `chatCompletion: id=${id} model=${model} ` +
+            `tokens=${usage ? usage.total_tokens : "N/A"} ` +
+            `finish=${finishReasons.join(",") || "N/A"}`
+        );
+
+        return {choices};
     }
 
     /**

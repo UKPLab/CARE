@@ -41,12 +41,4 @@ module.exports = class LiteLLMRPC extends RPC {
         }
         return response;
     }
-
-    /**
-     * @returns {Promise<Object>} Status including connectivity info
-     */
-    async getStatus() {
-        const online = await this.isOnline();
-        return {online};
-    }
 }
