@@ -68,6 +68,11 @@ module.exports = class Server {
             this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
         }
 
+        this.app.use(express.json()); 
+        this.app.use(express.urlencoded({ 
+            extended: true, 
+            limit: "10kb" 
+        }));
 
         this.logger.debug("Initializing Session management...");
         this.session = this.#initSessionManagement();
@@ -84,6 +89,7 @@ module.exports = class Server {
 
         // Routes for config
         this.logger.debug("Initializing Routes for config...");
+        require('./routes/export')(this);
         require("./routes/config")(this);
         require('./routes/auth')(this);
 
