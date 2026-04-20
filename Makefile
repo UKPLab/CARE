@@ -11,8 +11,8 @@ default: help
 .PHONY: help
 help:
 	@echo "make help             		 		Show this help message"
-	@echo "make dev             		  		Run in development mode (only unix)"
-	@echo "make dev-no-wizard   		  		Run dev mode and skip the first-time setup wizard"
+	@echo "make dev             		  		Run in development mode, skipping the first-time setup wizard (only unix)"
+	@echo "make dev-wizard         		  		Run dev mode and go through the first-time setup wizard"
 	@echo "make doc 							Build the documentation"
 	@echo "make dev-build       		  		Build the frontend (make dev-build-frontend) and run the backend in development mode"
 	@echo "make dev-backend      		 		Run backend in development mode"
@@ -80,11 +80,11 @@ init: modules db
 
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
-	cd frontend && npm run frontend-dev & cd backend && npm run start
+	cd frontend && npm run frontend-dev & cd backend && DEV_SKIP_WIZARD=true npm run start
 
-.PHONY: dev-no-wizard
-dev-no-wizard:
-	DEV_SKIP_WIZARD=true $(MAKE) dev
+.PHONY: dev-wizard
+dev-wizard: frontend/node_modules/.uptodate backend/node_modules/.uptodate
+	cd frontend && npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-frontend
 dev-frontend: frontend/node_modules/.uptodate
