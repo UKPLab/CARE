@@ -33,6 +33,7 @@
   </Card>
   <StartRecordingModal ref="startRecordingModal" />
   <RecordingModal ref="recordingModal" />
+  <ReplayResultsModal ref="replayResultsModal" />
 </template>
 
 <script>
@@ -41,6 +42,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import RecordingModal from "./socketprofiler/RecordingModal.vue";
 import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
+import ReplayResultsModal from "./socketprofiler/ReplayResultsModal.vue";
 
 export default {
   name: "DashboardSocketProfiler",
@@ -55,6 +57,7 @@ export default {
     BasicButton,
     RecordingModal,
     StartRecordingModal,
+    ReplayResultsModal,
   },
   data() {
     return {
@@ -164,11 +167,21 @@ export default {
       });
     },
     replayRecording(row) {
-      // TODO: implement replay logic
       this.eventBus.emit("toast", {
-        title: "Replay",
-        message: "Replay started",
-        variant: "success",
+        title: "Replay started",
+        message: "Replaying recording: " + row.name,
+        variant: "info",
+      });
+      this.$socket.emit("replayRun", { recordingId: row.id, timingMode: "fast" }, (res) => {
+        if (res.success) {
+          this.$refs.replayResultsModal.open(res.data);
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Replay failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     deleteRecording(row) {
