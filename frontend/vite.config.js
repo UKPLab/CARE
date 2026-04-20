@@ -13,7 +13,7 @@ import {createHtmlPlugin} from 'vite-plugin-html'
 import path from 'path'
 import {fileURLToPath, URL} from "url";
 import { execSync } from 'child_process';
-const fs = require('fs');
+import fs from 'fs'
 
 const getVersion = () => {
     const versionFilePath = path.join(__dirname, 'version.json');
