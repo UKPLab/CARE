@@ -143,6 +143,7 @@ export default {
         scrollX: true,
         singleSelect: false,
         search: true,
+        pagination: 10,
       },
     };
   },

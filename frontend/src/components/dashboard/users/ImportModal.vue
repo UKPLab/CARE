@@ -189,6 +189,8 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
+        search: true,
+        pagination: 10,
         selectableRows: true,
       },
       columns: [

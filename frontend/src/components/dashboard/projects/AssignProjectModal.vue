@@ -113,6 +113,7 @@ export default {
           small: false,
           selectableRows: true,
           pagination: 10,
+          search: true,
         },
         columns: [
           { name: "User Id", key: "id", sortable: true },

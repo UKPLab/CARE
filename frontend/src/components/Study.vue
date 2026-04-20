@@ -569,13 +569,9 @@ export default {
     },
     finalFinish(data) {
       this.$socket.emit(
-          "appDataUpdate",
+          "studySessionFinish",
           {
-            table: "study_session",
-            data: {
-              id: data.studySessionId,
-              end: Date.now(),
-            },
+            studySessionId: data.studySessionId,
           },
           (result) => {
             if (result.success) {
@@ -596,6 +592,15 @@ export default {
       this.$refs.studyFinishModal.close();
     },
     finish() {
+      // Prevent finishing if study is closed
+      if (this.studyClosed) {
+        this.eventBus.emit("toast", {
+          title: "Cannot finish session",
+          message: "The study has been closed. Sessions are automatically terminated when a study is closed.",
+          variant: "warning",
+        });
+        return;
+      }
       this.$refs.studyFinishModal.open();
     },
     handleModalClose(event) {

@@ -115,7 +115,7 @@ export default {
           this.emailVerification.showError = true;
           this.emailVerification.errorMessage = response.data.message || "Failed to send verification email.";
         }
-      } catch (error) {
+      } catch (_error) {
         this.emailVerification.showError = true;
         this.emailVerification.errorMessage = "An unexpected error occurred. Please try again.";
       } finally {
