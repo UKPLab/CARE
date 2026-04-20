@@ -35,6 +35,7 @@ build:
     - TOKEN=$DOCKER_TOKEN
     - echo "$TOKEN" | docker login -u $DOCKER_USER --password-stdin
   script:
+    - echo "{\"version\":\"$CI_COMMIT_SHORT_SHA\", \"branch\":\"$CI_COMMIT_REF_NAME\"}" > version.json
     - make ENV=dev build
     - docker wait care_dev-docs_sphinx-1
     - docker compose -p "care_dev"  rm -f -s -v
