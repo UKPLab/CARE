@@ -7,7 +7,7 @@
     <template #title>
       Active Sessions
       <span v-if="filteredUserName" class="badge bg-info ms-2">{{ filteredUserName }}</span>
-      <span v-else class="badge bg-primary ms-2">{{ liveStats.activeUsers }} user(s)</span>
+      <span v-else class="badge bg-primary ms-2">{{ stats.activeUsers }} user(s)</span>
       <span class="badge bg-secondary ms-1">{{ formattedSessions.length }} session(s)</span>
     </template>
 
@@ -44,6 +44,13 @@ export default {
   name: "ActiveSessionsModal",
   components: {BasicModal, BasicTable, BasicButton},
 
+  props: {
+    stats: {
+      type: Object,
+      required: true,
+    },
+  },
+
   data() {
     return {
       filterUserId: null,
@@ -67,14 +74,10 @@ export default {
   },
 
   computed: {
-    liveStats() {
-      return this.$store.getters["monitor/getStats"];
-    },
-
     formattedSessions() {
       const source = this.filterUserId
-        ? this.liveStats.sessions.filter(s => s.userId === this.filterUserId)
-        : this.liveStats.sessions;
+        ? this.stats.sessions.filter(s => s.userId === this.filterUserId)
+        : this.stats.sessions;
 
       return source.map(session => ({
         ...session,
@@ -87,7 +90,7 @@ export default {
 
     filteredUserName() {
       if (!this.filterUserId) return null;
-      const session = this.liveStats.sessions.find(s => s.userId === this.filterUserId);
+      const session = this.stats.sessions.find(s => s.userId === this.filterUserId);
       return session?.userName ?? null;
     },
   },

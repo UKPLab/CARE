@@ -400,7 +400,7 @@ class UserSocket extends Socket {
     }
 
 
-    // ─── Active-user monitoring ────────────────────────────────────────────────
+    // Active-user monitoring 
 
     /**
      * Resolves a display name from cache or DB.
@@ -511,7 +511,6 @@ class UserSocket extends Socket {
         this.socket.leave(MONITOR_USERS_ROOM);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
 
     init() {
         this.connectedAt = this.socket.handshake.time;
