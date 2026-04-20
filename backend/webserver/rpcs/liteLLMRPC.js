@@ -6,7 +6,8 @@ const RPC = require("../RPC.js");
  * Pure passthrough: the caller supplies the model, messages, API key, and any
  * provider-specific parameters. Nothing is hardcoded here; the bridge forwards
  * everything to LiteLLM as-is.
- *
+ * 
+ * @author Akash Gundapuneni
  * @class
  * @extends RPC
  */
