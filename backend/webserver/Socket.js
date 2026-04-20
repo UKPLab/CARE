@@ -677,7 +677,6 @@ module.exports = class Socket {
 
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
-        console.log("Final filter for " + tableName + ": ", allFilter, allAttributes);
         let data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,

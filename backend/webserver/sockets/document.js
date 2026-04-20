@@ -1093,18 +1093,6 @@ class DocumentSocket extends Socket {
                     }
                 }
 
-                const resolveChainTailId = (startId) => {
-                    let currentId = startId;
-                    const visited = new Set();
-
-                    while (childByParentId.has(currentId) && !visited.has(currentId)) {
-                        visited.add(currentId);
-                        currentId = childByParentId.get(currentId);
-                    }
-
-                    return currentId;
-                };
-
                 const parentIds = new Set();
                 for (const submission of assignmentSubmissions) {
                     if (submission.previousSubmissionId) {
@@ -1190,18 +1178,19 @@ class DocumentSocket extends Socket {
      * Replace an existing assignment submission by creating a new one,
      * deleting the old one, and reconnecting submission chain pointers.
      *
-     * @param {Object} data
-     * @param {Array<Object>} data.files
-     * @param {number} data.userId
-     * @param {number} data.group
-     * @param {number} data.validationConfigurationId
-     * @param {number} data.assignmentId
-     * @param {number} data.submissionId
-      * @param {string|null} [data.name]
-      * @param {string|null} [data.description]
-     * @param {Object} options
-     * @param {Object} options.transaction
-     * @returns {Promise<Object>} replacement information
+     * @param {Object} data - The input data for the replacement
+     * @param {Array<Object>} data.files - The new submission files to upload
+     * @param {number} data.userId - The ID of the user who owns the submission
+     * @param {number} data.group - The group number to be assigned to the submission
+     * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
+     * @param {number} data.assignmentId - The ID of the assignment the submission belongs to
+     * @param {number} data.submissionId - The ID of the existing submission to replace
+     * @param {string|null} [data.name] - Optional submission name; falls back to the old submission's name
+     * @param {string|null} [data.description] - Optional submission description; falls back to the old submission's description
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Object>} An object containing replacedSubmissionId and newSubmissionId
+     * @throws {Error} If the assignment or submission is not found, the user lacks permission, or a linked document is used in a study
      */
     async replaceAssignmentSubmission(data, options) {
         const {files, userId, group, validationConfigurationId, assignmentId, submissionId, name, description} = data;

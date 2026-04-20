@@ -52,13 +52,6 @@ module.exports = (sequelize, DataTypes) => {
                 required: false,
                 default: false
             },
-            {
-                key: "studyUsageCount",
-                label: "Number of studies using this document",
-                type: "text",
-                required: false,
-                default: 0,
-            },
         ]
 
         /**

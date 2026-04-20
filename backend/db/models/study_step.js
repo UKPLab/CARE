@@ -354,8 +354,8 @@ module.exports = (sequelize, DataTypes) => {
                 afterCreate: async (studyStep, options) => {
                     // if a new step is created with a document, we need to update the study usage count for this document
                     await StudyStep.updateDocumentStudyUsageCount(studyStep.documentId, {transaction: options.transaction});
+                }
             }
-
         }
     );
 
