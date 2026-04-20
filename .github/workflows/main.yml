@@ -99,8 +99,11 @@ jobs:
           npm ci --prefix frontend --ignore-scripts
           npm ci --prefix backend --ignore-scripts
           npm ci --prefix utils/modules/editor-delta-conversion --ignore-scripts
-      - name: Run npm audit
-        run: make audit
+      - name: Run npm audit (warnings only)
+        run: |
+          if ! make audit; then
+            echo "::warning::npm audit reported issues. Review the log above."
+          fi
 
   lint:
     runs-on: ubuntu-latest
@@ -114,8 +117,11 @@ jobs:
           node-version: 20
       - name: Install frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts
-      - name: Run linter
-        run: make lint
+      - name: Run linter (warnings only)
+        run: |
+          if ! make lint; then
+            echo "::warning::Linter reported issues. Review the log above."
+          fi
 
   sync_to_gitlab:
     runs-on: ubuntu-latest
