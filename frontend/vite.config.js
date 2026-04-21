@@ -17,6 +17,7 @@ import fs from 'fs'
 
 const getVersion = () => {
     const versionFilePath = path.join(__dirname, 'version.json');
+    console.log(versionFilePath);
     if (fs.existsSync(versionFilePath)) {
         try {
             const { version, branch } = JSON.parse(fs.readFileSync(versionFilePath, 'utf8'));
