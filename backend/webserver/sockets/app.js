@@ -66,6 +66,17 @@ class AppSocket extends Socket {
         const transaction = options.transaction;
 
         let newEntry = null;
+
+        // Hard delete: permanently remove the record from the database
+        if ("id" in data.data && data.data.id !== 0 && data.data.hardDelete === true) {
+            const record = await this.models[data.table].getById(data.data.id);
+            if (!record) {
+                throw new Error("Record not found: " + data.data.id);
+            }
+            await this.models[data.table].destroy({ where: { id: data.data.id }, transaction });
+            return data.data.id;
+        }
+
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
             newEntry = await this.models[data.table].updateById(
