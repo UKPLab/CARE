@@ -25,23 +25,10 @@ module.exports = (sequelize, DataTypes) => {
 
 	AssignmentRole.init(
 		{
-			assignmentId: {
-				type: DataTypes.INTEGER,
-				allowNull: false,
-			},
-			roleId: {
-				type: DataTypes.INTEGER,
-				allowNull: true,
-			},
-			userId: {
-				type: DataTypes.INTEGER,
-				allowNull: true,
-			},
-			deleted: {
-				type: DataTypes.BOOLEAN,
-				allowNull: false,
-				defaultValue: false,
-			},
+			assignmentId: DataTypes.INTEGER,
+			roleId: DataTypes.INTEGER,
+			userId: DataTypes.INTEGER,
+			deleted: DataTypes.BOOLEAN,
 			createdAt: DataTypes.DATE,
 			updatedAt: DataTypes.DATE,
 		},
@@ -49,6 +36,13 @@ module.exports = (sequelize, DataTypes) => {
 			sequelize,
 			modelName: 'assignment_role',
 			tableName: 'assignment_role',
+			hooks: {
+				afterUpdate: async (assignmentRole, options) => {
+					if (assignmentRole.deleted && !assignmentRole._previousDataValues.deleted) {
+						await this.destroy({ where: { id: assignmentRole.id }, transaction: options.transaction });
+					}
+				},
+			},
 		}
 	);
 
