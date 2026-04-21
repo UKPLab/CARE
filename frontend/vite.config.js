@@ -16,7 +16,7 @@ import { execSync } from 'child_process';
 import fs from 'fs'
 
 const getVersion = () => {
-    const versionFilePath = path.join(__dirname, 'version.json');
+    const versionFilePath = path.join(__dirname, '..', 'version.json');
     console.log(versionFilePath);
     if (fs.existsSync(versionFilePath)) {
         try {
