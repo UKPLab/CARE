@@ -472,8 +472,8 @@ module.exports = class Socket {
 
             // --- User-level row filter ---
             if (hasModelUserFilter) {
-                const userFilter = await model.getUserFilter(userId, isAdmin);
-                if (Object.keys(userFilter).length > 0) {
+                const userFilter = await model.getUserFilter(userId);
+                if (Reflect.ownKeys(userFilter).length > 0) {
                     rowVisibilityConditions.push(userFilter);
                 } else {
                     // getUserFilter returns {} → grants full row access (e.g. for admins)
@@ -523,7 +523,6 @@ module.exports = class Socket {
                 ],
             };
         }
-
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
     }
 

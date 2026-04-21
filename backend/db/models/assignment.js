@@ -11,33 +11,10 @@ module.exports = (sequelize, DataTypes) => {
 				columns: this.getAttributes(),
 			},
 		];
-		/**
-		 * Apply visibility filter for assignments based on assigned roles.
-		 * Non-admin users can always see their own assignments and assignments
-		 * that are assigned to at least one of their roles.
-		 */
-		static async getUserFilter(userId) {
-			const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
-			const isAdmin = await sequelize.models.user_role_matching.isAdminInUserRoles(roleIds);
-			if (isAdmin) {
-				return {};
-			}
-
-			if (!Array.isArray(roleIds) || roleIds.length === 0) {
-				return { userId };
-			}
-
-			return {
-				[Op.or]: [
-					{ userId },
-					{ assignedRoleIds: { [Op.overlap]: roleIds } },
-				],
-			};
-		}
 		static fields = [
 			{
-				key: "title",
-				label: "Assignment Title:",
+				key: "name",
+				label: "Assignment Name:",
 				placeholder: "Assignment 1",
 				type: "text",
 				required: true,
@@ -49,30 +26,6 @@ module.exports = (sequelize, DataTypes) => {
 				help: "Optional description shown for this assignment.",
 				type: "textarea",
 				required: false,
-			},
-			{
-				key: "studyId",
-				label: "Study:",
-				type: "select",
-				options: {
-					table: "study",
-					name: "name",
-					value: "id",
-				},
-				required: false,
-				help: "Select a study assignment source.",
-			},
-			{
-				key: "workflowId",
-				label: "Workflow:",
-				type: "select",
-				options: {
-					table: "workflow",
-					name: "name",
-					value: "id",
-				},
-				required: false,
-				help: "Select a workflow assignment source.",
 			},
 			{
 				key: "maxRevisions",
@@ -138,15 +91,45 @@ module.exports = (sequelize, DataTypes) => {
 				help: "If enabled, sends an email when a student uploads or re-uploads a submission.",
 			},
 		];
-		static associate(models) {
-			Assignment.belongsTo(models["study"], {
-				foreignKey: "studyId",
-				as: "study",
-			});
 
-			Assignment.belongsTo(models["workflow"], {
-				foreignKey: "workflowId",
-				as: "workflow",
+		/**
+		 * Apply visibility filter for assignments based on assignment_role.
+		 * A user can see an assignment if they are the owner (userId), or if the
+		 * assignment's assignment_role entry has their userId or one of their roleIds.
+		 *
+		 * @param {number} userId - The ID of the user to build the filter for.
+		 * @returns {object} Sequelize where-clause filter object.
+		 */
+		static async getUserFilter(userId) {
+			const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
+
+			// Step 1: build the assignment_role query — rows belonging to this user directly or via role
+			const roleOrConditions = [{ userId }];
+			if (Array.isArray(roleIds) && roleIds.length > 0) {
+				roleOrConditions.push({ roleId: { [Op.in]: roleIds } });
+			}
+			// Step 2: find all assignmentIds this user is linked to
+			const matchingEntries = await sequelize.models.assignment_role.findAll({
+				attributes: ['assignmentId'],
+				where: {
+					deleted: { [Op.not]: true },
+					[Op.or]: roleOrConditions,
+				},
+				raw: true,
+			});
+			const assignedIds = [...new Set(matchingEntries.map(e => e.assignmentId))];
+
+			// Step 3: filter assignments by ownership or assignment_role membership
+			const filter = { [Op.or]: [{ userId }] };
+			if (assignedIds.length > 0) {
+				filter[Op.or].push({ id: { [Op.in]: assignedIds } });
+			}
+			return filter;
+		}
+		static associate(models) {
+			Assignment.hasMany(models["assignment_role"], {
+				foreignKey: "assignmentId",
+				as: "assignedEntries",
 			});
 
 			Assignment.belongsTo(models["configuration"], {
@@ -163,10 +146,8 @@ module.exports = (sequelize, DataTypes) => {
 
 	Assignment.init(
 		{
-			title: DataTypes.STRING,
+			name: DataTypes.STRING,
 			description: DataTypes.TEXT,
-			studyId: DataTypes.INTEGER,
-			workflowId: DataTypes.INTEGER,
 			projectId: DataTypes.INTEGER,
 			userId: DataTypes.INTEGER,
 			public: DataTypes.BOOLEAN,
@@ -178,18 +159,9 @@ module.exports = (sequelize, DataTypes) => {
 			start: DataTypes.DATE,
 			end: DataTypes.DATE,
 			validationConfigurationId: DataTypes.INTEGER,
-			assignedRoleIds: {
-				type: DataTypes.ARRAY(DataTypes.INTEGER),
-				allowNull: true,
-				defaultValue: [],
-			},
 			parentAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
-			notifyOnSubmissionUpload: {
-				type: DataTypes.BOOLEAN,
-				allowNull: false,
-				defaultValue: true,
-			},
+			notifyOnSubmissionUpload: DataTypes.BOOLEAN,
 			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,
 			deletedAt: DataTypes.DATE,
