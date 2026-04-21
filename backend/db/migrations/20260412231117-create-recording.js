@@ -38,6 +38,16 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+      participantUserIds: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: null,
+      },
+      excludeEvents: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: null,
+      },
       deleted: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

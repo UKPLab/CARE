@@ -32,6 +32,8 @@ class RecorderSocket extends Socket {
         this.incomingHandler = async (eventName, ...args) => {
             const recordingId = this.server.activeRecordingId;
             if (!recordingId) return;
+            const excludes = this.server.activeExcludeEvents;
+            if (excludes && excludes.includes(eventName)) return;
             try {
                 await this.models["trace"].add({
                     recordingId,
@@ -50,6 +52,8 @@ class RecorderSocket extends Socket {
         this.outgoingHandler = async (eventName, ...args) => {
             const recordingId = this.server.activeRecordingId;
             if (!recordingId) return;
+            const excludes = this.server.activeExcludeEvents;
+            if (excludes && excludes.includes(eventName)) return;
             try {
                 await this.models["trace"].add({
                     recordingId,
@@ -88,6 +92,9 @@ class RecorderSocket extends Socket {
         const participantUserIds = Array.isArray(data?.participantUserIds) && data.participantUserIds.length > 0
             ? data.participantUserIds
             : null;
+        const excludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
+            ? data.excludeEvents
+            : null;
 
         const recording = await this.models["recording"].add({
             name: data.name || "Recording " + new Date().toLocaleString(),
@@ -95,10 +102,14 @@ class RecorderSocket extends Socket {
             startTime: new Date(),
             userId: this.userId,
             participantUserIds,
+            excludeEvents,
         }, options);
 
         this.server.activeRecordingId = recording.id;
         this.server.activeParticipantUserIds = participantUserIds;
+        this.server.activeExcludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
+            ? data.excludeEvents
+            : null;
 
         // Attach listeners on included users' sockets
         for (const socketId of Object.keys(this.server.availSockets)) {
@@ -128,6 +139,7 @@ class RecorderSocket extends Socket {
 
         this.server.activeRecordingId = null;
         this.server.activeParticipantUserIds = null;
+        this.server.activeExcludeEvents = null;
 
         const traces = await this.models["trace"].findAll({
             where: { recordingId },

@@ -19,16 +19,61 @@
       </div>
       <div class="mb-3">
         <label class="form-label fw-bold">Select Users to Record</label>
-        <p class="text-muted small">
-          Select specific users to record, or leave empty to record all connected users.
-        </p>
         <BasicTable
           v-model="selectedUsers"
           :columns="userTableColumns"
           :data="userTable"
           :options="userTableOptions"
-          :max-table-height="300"
+          :max-table-height="250"
         />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Exclude Events</label>
+        <p class="text-muted small">
+          Checked events will not be recorded. Uncheck to include them.
+        </p>
+        <div class="exclude-list">
+          <div
+            v-for="event in defaultExcludeEvents"
+            :key="event"
+            class="form-check py-1"
+          >
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :id="'exclude-' + event"
+              :value="event"
+              v-model="excludeEvents"
+            />
+            <label class="form-check-label" :for="'exclude-' + event">
+              <code>{{ event }}</code>
+            </label>
+          </div>
+        </div>
+        <div class="mt-2 d-flex gap-2">
+          <input
+            v-model="customExcludeEvent"
+            type="text"
+            class="form-control form-control-sm"
+            placeholder="Add custom event name to exclude"
+            @keyup.enter="addCustomExclude"
+          />
+          <BasicButton
+            class="btn-outline-secondary btn-sm"
+            text="Add"
+            @click="addCustomExclude"
+          />
+        </div>
+        <div v-if="customExcludes.length > 0" class="mt-2">
+          <span
+            v-for="event in customExcludes"
+            :key="event"
+            class="badge bg-secondary me-1"
+          >
+            {{ event }}
+            <span class="ms-1 cursor-pointer" @click="removeCustomExclude(event)">×</span>
+          </span>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -40,6 +85,7 @@
       <BasicButton
         class="btn-primary"
         :text="startButtonText"
+        :disabled="selectedUsers.length === 0"
         @click="confirm"
       />
     </template>
@@ -60,6 +106,14 @@ export default {
       recordingName: "",
       selectedUsers: [],
       onlineUserIds: [],
+      excludeEvents: ["stats", "subscribeAppData", "unsubscribeAppData"],
+      customExcludeEvent: "",
+      customExcludes: [],
+      defaultExcludeEvents: [
+        "stats",
+        "subscribeAppData",
+        "unsubscribeAppData",
+      ],
       userTableOptions: {
         striped: true,
         hover: true,
@@ -75,6 +129,9 @@ export default {
   computed: {
     users() {
       return this.$store.getters["table/user/getAll"];
+    },
+    currentUserId() {
+      return this.$store.getters["auth/getUserId"];
     },
     userTable() {
       return this.users.map(u => ({
@@ -102,10 +159,10 @@ export default {
       ];
     },
     startButtonText() {
-      if (this.selectedUsers.length === 0) {
-        return "Record All Users";
-      }
       return "Record " + this.selectedUsers.length + " User(s)";
+    },
+    allExcludeEvents() {
+      return [...this.excludeEvents, ...this.customExcludes];
     },
   },
   methods: {
@@ -113,8 +170,10 @@ export default {
       this.recordingName = "Recording " + new Date().toLocaleString();
       this.selectedUsers = [];
       this.onlineUserIds = [];
+      this.excludeEvents = ["stats", "subscribeAppData", "unsubscribeAppData"];
+      this.customExcludeEvent = "";
+      this.customExcludes = [];
 
-      // Fetch currently online users
       this.$socket.emit("recordingGetOnlineUsers", {}, (res) => {
         if (res.success) {
           this.onlineUserIds = res.data || [];
@@ -122,9 +181,27 @@ export default {
       });
 
       this.$refs.modal.open();
+
+      // Pre-select admin after table renders
+      this.$nextTick(() => {
+        const adminUser = this.userTable.find(u => u.id === this.currentUserId);
+        if (adminUser) {
+          this.selectedUsers = [adminUser];
+        }
+      });
     },
     abort() {
       this.$refs.modal.close();
+    },
+    addCustomExclude() {
+      const event = this.customExcludeEvent.trim();
+      if (event && !this.customExcludes.includes(event) && !this.defaultExcludeEvents.includes(event)) {
+        this.customExcludes.push(event);
+      }
+      this.customExcludeEvent = "";
+    },
+    removeCustomExclude(event) {
+      this.customExcludes = this.customExcludes.filter(e => e !== event);
     },
     confirm() {
       const participantUserIds = this.selectedUsers.map(u => u.id);
@@ -132,14 +209,13 @@ export default {
       this.$socket.emit("recorderStart", {
         name: this.recordingName,
         participantUserIds,
+        excludeEvents: this.allExcludeEvents,
       }, (res) => {
         if (res.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
             title: "Recording started",
-            message: this.selectedUsers.length === 0
-              ? "Recording all connected users"
-              : "Recording " + this.selectedUsers.length + " selected user(s)",
+            message: "Recording " + this.selectedUsers.length + " user(s), excluding " + this.allExcludeEvents.length + " event type(s)",
             variant: "success",
           });
         } else {
@@ -154,3 +230,15 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.exclude-list {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>

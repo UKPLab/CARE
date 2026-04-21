@@ -31,7 +31,7 @@ function emitWithTimeout(client, action, payload, timeoutMs) {
  * @param {Array<Object>} traces - Trace rows (direction: true only), sorted by startTime
  * @param {string} serverUrl - Target server URL
  * @param {string} timingMode - "realtime" to preserve original delays, "fast" to skip them
- * @returns {Promise<Object>} Results with pass/fail counts, errors, and latencies
+ * @returns {Promise<Object>} Results with pass/fail counts, errors, latencies, and DB changes
  */
 async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
     const results = {
@@ -54,10 +54,25 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
     }
 
     try {
+        let pendingDbChanges = [];
+
+        client.onAny((eventName, ...args) => {
+            if (eventName.endsWith('Refresh')) {
+                const records = Array.isArray(args[0]) ? args[0] : [args[0]];
+                pendingDbChanges.push({
+                    table: eventName.replace('Refresh', ''),
+                    recordCount: records.length,
+                    records: records.map(r => ({
+                        id: r?.id,
+                        fields: r ? Object.keys(r).filter(k => k !== 'id') : [],
+                    })),
+                });
+            }
+        });
+
         let prevTime = traces.length > 0 ? new Date(traces[0].startTime).getTime() : 0;
 
         for (const trace of traces) {
-            console.log(`[replay] trace ${results.passed + results.failed + 1}/${traces.length}: ${trace.action}`);
             if (timingMode === 'realtime') {
                 const traceTime = new Date(trace.startTime).getTime();
                 const delay = traceTime - prevTime;
@@ -67,12 +82,22 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
                 prevTime = traceTime;
             }
 
+            pendingDbChanges = [];
+
             try {
                 const start = Date.now();
                 const ack = await emitWithTimeout(client, trace.action, trace.payload, 2000);
                 const latency = Date.now() - start;
 
-                results.latencies.push({ traceId: trace.id, action: trace.action, latency });
+                // Small delay to let any remaining Refresh events arrive
+                await new Promise(resolve => setTimeout(resolve, 50));
+                if (pendingDbChanges.length > 0) {
+                    console.log(`[replay] trace ${trace.action} caused ${pendingDbChanges.length} DB changes`);
+                }
+
+                const dbChanges = [...pendingDbChanges];
+
+                
 
                 if (ack && ack.success === false) {
                     results.failed++;
@@ -80,9 +105,16 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
                         traceId: trace.id,
                         action: trace.action,
                         message: ack.message || 'Server returned success: false',
+                        dbChanges,
                     });
                 } else {
                     results.passed++;
+                    results.latencies.push({
+                        traceId: trace.id,
+                        action: trace.action,
+                        latency,
+                        dbChanges,
+                    });
                 }
             } catch (err) {
                 results.failed++;
@@ -90,6 +122,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
                     traceId: trace.id,
                     action: trace.action,
                     message: err.message,
+                    dbChanges: [],
                 });
             }
         }

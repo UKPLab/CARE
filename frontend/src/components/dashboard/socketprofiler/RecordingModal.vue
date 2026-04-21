@@ -19,28 +19,14 @@
       </div>
       <div class="mb-3">
         <label class="form-label fw-bold">Trace Events</label>
-        <p class="text-muted small">Select which events to keep. Unselected events will be deleted.</p>
-        <div class="trace-list">
-          <div
-            v-for="trace in traces"
-            :key="trace.id"
-            class="form-check py-1 border-bottom"
-          >
-            <input
-              class="form-check-input"
-              type="checkbox"
-              :id="'trace-' + trace.id"
-              v-model="trace.selected"
-            />
-            <label
-              class="form-check-label d-flex justify-content-between w-100"
-              :for="'trace-' + trace.id"
-            >
-              <span>{{ trace.action }}</span>
-              <span class="text-muted small">{{ trace.direction ? '→ backend' : '← frontend' }}</span>
-            </label>
-          </div>
-        </div>
+        <p class="text-muted small">Select events you want to remove. Unselected events will be kept.</p>
+        <BasicTable
+          v-model="tracesToDelete"
+          :columns="traceColumns"
+          :data="traceTable"
+          :options="traceTableOptions"
+          :max-table-height="300"
+        />
       </div>
     </template>
     <template #footer>
@@ -66,18 +52,60 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "RecordingModal",
-  components: { BasicModal, BasicButton },
+  components: { BasicModal, BasicButton, BasicTable },
   data() {
     return {
       recordingId: null,
       recordingName: "",
-      traces: [],
+      allTraces: [],
+      tracesToDelete: [],
+      traceTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: true,
+        selectableRows: true,
+        onlyOneRowSelectable: false,
+        search: true,
+        pagination: 20,
+      },
+      traceColumns: [
+        { name: "Action", key: "action", sortable: true },
+        { name: "Direction", key: "directionLabel" },
+      ],
     };
   },
+  computed: {
+    traceTable() {
+      return this.allTraces.map(t => ({
+        ...t,
+        directionLabel: t.direction ? '→ backend' : '← frontend',
+      }));
+    },
+  },
   methods: {
+    open(recordingId, traces) {
+      this.recordingId = recordingId;
+      this.recordingName = "Recording " + new Date().toLocaleString();
+      this.allTraces = traces;
+      this.tracesToDelete = [];
+      this.$refs.modal.open();
+    },
+    openForEdit(recordingId, currentName, traces) {
+      this.recordingId = recordingId;
+      this.recordingName = currentName || "";
+      this.allTraces = traces;
+      this.tracesToDelete = [];
+      this.$refs.modal.open();
+    },
+    abort() {
+      this.$refs.modal.close();
+    },
     discard() {
       this.$socket.emit("appDataUpdate", {
         table: "recording",
@@ -99,37 +127,13 @@ export default {
         }
       });
     },
-    open(recordingId, traces) {
-      // Save flow — called from the stop recording callback
-      this.recordingId = recordingId;
-      this.recordingName = "Recording " + new Date().toLocaleString();
-      this.traces = traces.map(t => ({
-        ...t,
-        selected: t.action !== "recorderStart" && t.action !== "recorderStop",
-      }));
-      this.$refs.modal.open();
-    },
-    openForEdit(recordingId, currentName, traces) {
-      // Edit flow — called from the Edit button on a row
-      this.recordingId = recordingId;
-      this.recordingName = currentName || "";
-      this.traces = traces.map(t => ({
-        ...t,
-        selected: true, // All visible traces start checked
-      }));
-      this.$refs.modal.open();
-    },
-    abort() {
-      this.$refs.modal.close();
-    },
     confirm() {
       this.$socket.emit("appDataUpdate", {
         table: "recording",
         data: { id: this.recordingId, name: this.recordingName }
       });
 
-      const unselected = this.traces.filter(t => !t.selected);
-      unselected.forEach(t => {
+      this.tracesToDelete.forEach(t => {
         this.$socket.emit("appDataUpdate", {
           table: "trace",
           data: { id: t.id, deleted: true }
@@ -147,13 +151,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.trace-list {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 8px;
-}
-</style>

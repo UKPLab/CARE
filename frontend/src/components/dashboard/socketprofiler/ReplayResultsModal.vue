@@ -31,49 +31,41 @@
             {{ userResult.userName }} (ID: {{ userResult.userId }})
             — {{ userResult.passed }}/{{ userResult.total }} passed
           </p>
-          <div class="d-flex gap-2 mb-2">
-            <BasicButton
-              :class="traceFilter === 'all' ? 'btn-primary btn-sm' : 'btn-outline-primary btn-sm'"
-              :text="'All (' + userResult.total + ')'"
-              @click="traceFilter = 'all'"
-            />
-            <BasicButton
-              :class="traceFilter === 'passed' ? 'btn-success btn-sm' : 'btn-outline-success btn-sm'"
-              :text="'Passed (' + userResult.passed + ')'"
-              @click="traceFilter = 'passed'"
-            />
-            <BasicButton
-              :class="traceFilter === 'failed' ? 'btn-danger btn-sm' : 'btn-outline-danger btn-sm'"
-              :text="'Failed (' + userResult.failed + ')'"
-              @click="traceFilter = 'failed'"
-            />
-          </div>
-          <div class="trace-results">
-            <table class="table table-sm table-striped mb-0">
-              <thead>
-                <tr>
-                  <th>Action</th>
-                  <th>Status</th>
-                  <th>Latency</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(trace, i) in filterTraces(userResult)"
-                  :key="i"
-                >
-                  <td><code>{{ trace.action }}</code></td>
-                  <td>
-                    <span :class="trace.status === 'passed' ? 'text-success' : 'text-danger'">
-                      {{ trace.status }}
-                    </span>
-                  </td>
-                  <td>{{ trace.latency ? trace.latency + 'ms' : '-' }}</td>
-                  <td class="text-muted">{{ trace.message || '' }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <BasicTable
+            :columns="traceColumns"
+            :data="mergeTraces(userResult)"
+            :options="traceTableOptions"
+            :buttons="traceButtons"
+            :max-table-height="300"
+            @action="handleTraceAction"
+          />
+          <div v-if="selectedTrace && selectedTraceUser === userResult.userId" class="db-changes-panel mt-2 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold">
+                DB Changes for: <code>{{ selectedTrace.action }}</code>
+              </span>
+              <BasicButton
+                class="btn-outline-secondary btn-sm"
+                text="Close"
+                icon="x"
+                @click="clearSelection"
+              />
+            </div>
+            <div v-if="selectedTrace.dbChanges && selectedTrace.dbChanges.length > 0">
+              <BasicTable
+                :columns="dbChangeColumns"
+                :data="selectedTrace.dbChanges.map((c, i) => ({
+                  id: i,
+                  table: c.table,
+                  recordIds: c.records ? c.records.map(r => r.id).join(', ') : '-',
+                  fields: c.records && c.records[0] ? c.records[0].fields.join(', ') : '-',
+                  recordCount: c.recordCount,
+                }))"
+                :options="dbChangeTableOptions"
+                :max-table-height="150"
+              />
+            </div>
+            <p v-else class="text-muted mb-0">No database changes for this trace.</p>
           </div>
         </div>
       </div>
@@ -91,14 +83,67 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "ReplayResultsModal",
-  components: { BasicModal, BasicButton },
+  components: { BasicModal, BasicButton, BasicTable },
   data() {
     return {
       results: [],
-      traceFilter: 'all',
+      selectedTrace: null,
+      selectedTraceUser: null,
+      traceTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: true,
+        pagination: 20,
+        search: true,
+      },
+      traceColumns: [
+        { name: "#", key: "seq", sortable: true },
+        { name: "Action", key: "action", sortable: true },
+        {
+          name: "Status",
+          key: "status",
+          sortable: true,
+          filter: [
+            { key: "passed", name: "Passed" },
+            { key: "failed", name: "Failed" },
+          ],
+        },
+        { name: "Latency (ms)", key: "latencyDisplay", sortable: true },
+        { name: "Details", key: "message" },
+        { name: "DB", key: "hasDbChanges" },
+      ],
+      traceButtons: [
+        {
+          icon: "database",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-info": true,
+            },
+          },
+          title: "View DB changes",
+          action: "viewDbChanges",
+        },
+      ],
+      dbChangeColumns: [
+        { name: "Table", key: "table", sortable: true },
+        { name: "Record IDs", key: "recordIds" },
+        { name: "Fields Modified", key: "fields" },
+        { name: "Records", key: "recordCount", sortable: true },
+      ],
+      dbChangeTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: true,
+      },
     };
   },
   computed: {
@@ -119,26 +164,51 @@ export default {
   methods: {
     open(results) {
       this.results = results;
-      this.traceFilter = 'all';
+      this.selectedTrace = null;
+      this.selectedTraceUser = null;
       this.$refs.modal.open();
     },
     close() {
       this.$refs.modal.close();
     },
+    clearSelection() {
+      this.selectedTrace = null;
+      this.selectedTraceUser = null;
+    },
+    handleTraceAction(data) {
+      if (data.action === "viewDbChanges") {
+        this.selectedTrace = data.params;
+        this.selectedTraceUser = data.params.userId;
+      }
+    },
     mergeTraces(userResult) {
       const all = [];
       for (const l of userResult.latencies) {
-        all.push({ action: l.action, status: 'passed', latency: l.latency, message: '' });
+        all.push({
+          id: l.traceId,
+          action: l.action,
+          status: "passed",
+          latencyDisplay: l.latency + "ms",
+          message: "",
+          dbChanges: l.dbChanges || [],
+          hasDbChanges: (l.dbChanges && l.dbChanges.length > 0) ? "Yes" : "",
+          userId: userResult.userId,
+        });
       }
       for (const e of userResult.errors) {
-        all.push({ action: e.action, status: 'failed', latency: null, message: e.message });
+        all.push({
+          id: e.traceId || 0,
+          action: e.action,
+          status: "failed",
+          latencyDisplay: "-",
+          message: e.message,
+          dbChanges: e.dbChanges || [],
+          hasDbChanges: (e.dbChanges && e.dbChanges.length > 0) ? "Yes" : "",
+          userId: userResult.userId,
+        });
       }
-      return all;
-    },
-    filterTraces(userResult) {
-      const all = this.mergeTraces(userResult);
-      if (this.traceFilter === 'passed') return all.filter(t => t.status === 'passed');
-      if (this.traceFilter === 'failed') return all.filter(t => t.status === 'failed');
+      all.sort((a, b) => a.id - b.id);
+      all.forEach((t, i) => { t.seq = i + 1; });
       return all;
     },
   },
@@ -146,9 +216,8 @@ export default {
 </script>
 
 <style scoped>
-.trace-results {
-  max-height: 350px;
-  overflow-y: auto;
+.db-changes-panel {
+  background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 4px;
 }
