@@ -10,7 +10,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      title: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -28,26 +28,6 @@ module.exports = {
         allowNull: true,
         references: {
           model: 'project',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-      },
-      studyId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'study',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-      },
-      workflowId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'workflow',
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -99,6 +79,11 @@ module.exports = {
         },
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
+      },
+      closed: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
       },
       allowReUpload: {
         type: Sequelize.BOOLEAN,
