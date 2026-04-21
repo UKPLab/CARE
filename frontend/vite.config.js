@@ -17,10 +17,10 @@ import fs from 'fs'
 
 const getVersion = () => {
     const versionFilePath = path.join(__dirname, '..', 'version.json');
-    console.log(versionFilePath);
     if (fs.existsSync(versionFilePath)) {
         try {
             const { version, branch } = JSON.parse(fs.readFileSync(versionFilePath, 'utf8'));
+            console.log("found version file at path:", versionFilePath);
             return `${branch}: ${version}`;
         } catch (e) {
             console.error("Error parsing version.json", e);
@@ -29,11 +29,9 @@ const getVersion = () => {
     try {
         Hash = execSync('git rev-parse --short HEAD').toString().trim();
         tag_latest = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-        console.log("inside getVersion try");
         return tag_latest + ": " + Hash;
     } catch (e) {
-        console.log("inside getVersion error");
-        console.log(e.toString());
+        console.error("Error retrieving version from git locally",e);
         // Fallback if no git is found
         return 'dev-build';
     } 
