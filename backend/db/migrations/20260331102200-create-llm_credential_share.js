@@ -2,16 +2,27 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('prompt_template', {
+    await queryInterface.createTable('llm_credential_share', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
       },
-      userId: {
+      llmCredentialId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'llm_credential',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
         references: {
           model: 'user',
           key: 'id',
@@ -19,53 +30,20 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      description: {
-        type: Sequelize.TEXT,
-        allowNull: true,
-        defaultValue: null,
-      },
-      provider: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: null,
-      },
-      model: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: null,
-      },
-      promptText: {
-        type: Sequelize.TEXT,
-        allowNull: false,
-      },
-      inputMapping: {
-        type: Sequelize.JSONB,
-        allowNull: true,
-        defaultValue: {},
-      },
-      defaultOutputMapping: {
-        type: Sequelize.JSONB,
-        allowNull: true,
-        defaultValue: {},
-      },
-      shared: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      sharedScope: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 'none',
-      },
-      sharedTargetId: {
+      roleId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
+        references: {
+          model: 'study',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      },
+      expiryDate: {
+        type: Sequelize.DATE,
+        allowNull: false,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -91,6 +69,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('prompt_template');
+    await queryInterface.dropTable('llm_credential_share');
   },
 };

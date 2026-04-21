@@ -2,9 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
-
-    await queryInterface.createTable('ai_api_key', {
+    await queryInterface.createTable('llm_credential', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -21,37 +19,33 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      provider: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
       name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      apiEndpoint: {
+      apiKey: {
+        type: Sequelize.TEXT,
+        allowNull: false,
+      },
+      apiBaseUrl: {
         type: Sequelize.STRING,
         allowNull: true,
         defaultValue: null,
       },
-      encryptedKey: {
-        type: Sequelize.BLOB,
-        allowNull: false,
+      apiVersion: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
+      additionalParameters: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: {},
       },
       enabled: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-      },
-      usageLimitMonthly: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
-      },
-      lastUsedAt: {
-        type: Sequelize.DATE,
-        allowNull: true,
-        defaultValue: null,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -77,6 +71,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('ai_api_key');
+    await queryInterface.dropTable('llm_credential');
   },
 };

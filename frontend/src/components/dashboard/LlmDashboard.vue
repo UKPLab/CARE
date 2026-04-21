@@ -4,6 +4,13 @@
       <template #headerElements>
         <div class="btn-group gap-2 ms-3">
           <BasicButton
+            class="btn-outline-secondary btn-sm"
+            title="Credential shares and catalog models that use those credentials"
+            text="Shared models"
+            icon="share"
+            @click="openSharedModelsModal"
+          />
+          <BasicButton
             class="btn-primary btn-sm"
             title="Add Credential"
             text="Add Credential"
@@ -27,37 +34,34 @@
       </template>
     </Card>
 
-    <Card title="Shared Credentials" class="mb-3">
+    <Card title="LLM Model Catalog" class="mb-3">
+      <template #headerElements>
+        <div class="btn-group gap-2 ms-3">
+          <BasicButton
+            class="btn-primary btn-sm"
+            title="Add Model"
+            text="Add Model"
+            icon="plus-circle"
+            @click="openAddModelModal"
+          />
+        </div>
+      </template>
       <template #body>
-        <div v-if="allShares.length === 0" class="text-center text-muted py-3">
-          No credential shares available.
+        <div v-if="!allModels || allModels.length === 0" class="text-center text-muted py-4">
+          No LLM models configured.
         </div>
         <BasicTable
           v-else
-          :columns="allSharesColumns"
-          :data="allSharesTableData"
-          :options="compactTableOptions"
-          :buttons="allSharesButtons"
-          @action="handleAllSharesAction"
+          :columns="catalogModelColumns"
+          :data="catalogModelTableData"
+          :options="catalogTableOptions"
+          :buttons="catalogModelButtons"
+          @action="handleModelCatalogAction"
         />
       </template>
     </Card>
 
-    <Card title="Enabled Model Catalog" class="mb-3">
-      <template #body>
-        <div v-if="enabledModels.length === 0" class="text-center text-muted py-3">
-          No enabled models available.
-        </div>
-        <BasicTable
-          v-else
-          :columns="modelColumns"
-          :data="modelTableData"
-          :options="compactTableOptions"
-        />
-      </template>
-    </Card>
-
-    <Card title="LLM Usage Log (Optional)">
+    <Card title="Cost History">
       <template #body>
         <div v-if="usageLogs.length === 0" class="text-center text-muted py-4">
           No usage logs found or backend logging is not enabled yet.
@@ -73,20 +77,35 @@
       </template>
     </Card>
 
+    <Modal ref="sharedModelsModal" name="llmSharedModelsModal" size="xl">
+      <template #title>Shared models and credential access</template>
+      <template #body>
+        <p class="text-muted small mb-3">
+          Each row is a credential share. <strong>Catalog models</strong> lists enabled catalog entries that use that credential
+          (via <code>llmCredentialId</code>), so you can see which models are affected when access is shared or revoked.
+        </p>
+        <div v-if="allShares.length === 0" class="text-center text-muted py-4">
+          No credential shares configured.
+        </div>
+        <BasicTable
+          v-else
+          :columns="allSharesColumns"
+          :data="allSharesTableData"
+          :options="catalogTableOptions"
+          :buttons="allSharesButtons"
+          @action="handleAllSharesAction"
+        />
+      </template>
+      <template #footer>
+        <button class="btn btn-secondary" type="button" @click="$refs.sharedModelsModal.close()">Close</button>
+      </template>
+    </Modal>
+
     <Modal ref="credentialModal" name="llmCredentialModal" size="lg">
       <template #title>
         {{ editingCredential ? "Edit Credential" : "Add Credential" }}
       </template>
       <template #body>
-        <div class="mb-3">
-          <label class="form-label fw-bold">Provider</label>
-          <input
-            v-model="credentialForm.provider"
-            type="text"
-            class="form-control"
-            placeholder="openai, azure, anthropic, ollama, openrouter..."
-          />
-        </div>
         <div class="mb-3">
           <label class="form-label fw-bold">Name</label>
           <input v-model="credentialForm.name" type="text" class="form-control" placeholder="e.g. My Azure Key" />
@@ -179,6 +198,61 @@
       </template>
     </Modal>
 
+    <Modal ref="modelCatalogModal" name="llmModelCatalogModal" size="lg">
+      <template #title>
+        {{ editingModel ? "Edit Model" : "Add Model" }}
+      </template>
+      <template #body>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Name</label>
+          <input v-model="modelCatalogForm.name" type="text" class="form-control" placeholder="e.g. GPT-4o (Default)" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">LiteLLM Model ID</label>
+          <input
+            v-model="modelCatalogForm.model"
+            type="text"
+            class="form-control"
+            placeholder="e.g. gpt-4o, azure/my-deploy, openrouter/google/gemini-pro"
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Provider</label>
+          <input v-model="modelCatalogForm.provider" type="text" class="form-control" placeholder="e.g. openai, azure, anthropic, ollama" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Description</label>
+          <textarea v-model="modelCatalogForm.description" class="form-control" rows="2" placeholder="Optional model description"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Credential (optional)</label>
+          <select v-model="modelCatalogForm.llmCredentialId" class="form-select">
+            <option :value="null">None</option>
+            <option v-for="c in credentialOptionsForModels" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+        <div class="form-check mb-3">
+          <input v-model="modelCatalogForm.enabled" class="form-check-input" type="checkbox" id="modelCatalogEnabled" />
+          <label class="form-check-label" for="modelCatalogEnabled">Enabled</label>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Additional Parameters (JSON)</label>
+          <textarea
+            v-model="modelCatalogForm.additionalParametersText"
+            class="form-control font-monospace"
+            rows="5"
+            placeholder='{"temperature":0.2,"max_tokens":4096,"top_p":1}'
+          ></textarea>
+        </div>
+      </template>
+      <template #footer>
+        <button class="btn btn-secondary" type="button" @click="$refs.modelCatalogModal.close()">Cancel</button>
+        <button class="btn btn-primary" type="button" :disabled="!isModelCatalogFormValid" @click="saveModelCatalog">
+          {{ editingModel ? "Update" : "Add Model" }}
+        </button>
+      </template>
+    </Modal>
+
     <Modal ref="detailModal" name="usageDetailModal" size="xl">
       <template #title>LLM Usage Detail</template>
       <template #body>
@@ -225,6 +299,16 @@ export default {
       editingCredential: null,
       selectedCredentialForSharing: null,
       selectedLog: null,
+      editingModel: null,
+      modelCatalogForm: {
+        name: "",
+        model: "",
+        provider: "",
+        description: "",
+        llmCredentialId: null,
+        enabled: true,
+        additionalParametersText: "{}",
+      },
       credentialForm: this.getEmptyCredentialForm(),
       shareForm: this.getEmptyShareForm(),
       compactTableOptions: {
@@ -233,9 +317,16 @@ export default {
         small: true,
         pagination: 10,
       },
+      catalogTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+      },
       credentialColumns: [
         {name: "Name", key: "name"},
-        {name: "Provider", key: "provider"},
         {name: "API Base URL", key: "apiBaseUrlDisplay"},
         {name: "API Version", key: "apiVersionDisplay"},
         {name: "Enabled", key: "enabledBadge", type: "badge", typeOptions: {keyMapping: {true: "Yes", false: "No"}, classMapping: {true: "bg-success", false: "bg-secondary"}}},
@@ -246,11 +337,18 @@ export default {
         {icon: "pencil", options: {iconOnly: true, specifiers: {"btn-outline-secondary": true}}, title: "Edit", action: "editCredential"},
         {icon: "trash", options: {iconOnly: true, specifiers: {"btn-outline-danger": true}}, title: "Delete", action: "deleteCredential"},
       ],
-      modelColumns: [
+      catalogModelColumns: [
         {name: "Name", key: "name"},
         {name: "LiteLLM Model", key: "model"},
         {name: "Provider", key: "provider"},
+        {name: "Credential", key: "credentialName"},
         {name: "Defaults", key: "defaultsSummary"},
+        {name: "Enabled", key: "enabledToggle", type: "toggle"},
+        {name: "Actions", key: "actions", type: "button-group"},
+      ],
+      catalogModelButtons: [
+        {icon: "pencil", options: {iconOnly: true, specifiers: {"btn-outline-secondary": true}}, title: "Edit", action: "editCatalogModel"},
+        {icon: "trash", options: {iconOnly: true, specifiers: {"btn-outline-danger": true}}, title: "Delete", action: "deleteCatalogModel"},
       ],
       shareColumns: [
         {name: "Type", key: "targetType"},
@@ -259,6 +357,7 @@ export default {
       ],
       allSharesColumns: [
         {name: "Credential", key: "credentialName"},
+        {name: "Catalog models", key: "linkedModelsDisplay", multiline: true},
         {name: "Owner", key: "ownerName"},
         {name: "Type", key: "targetType"},
         {name: "Target", key: "targetName"},
@@ -299,8 +398,24 @@ export default {
     allModels() {
       return this.$store.getters["table/llm_model/getAll"] || [];
     },
-    enabledModels() {
-      return this.allModels.filter((m) => m.enabled !== false);
+    credentialOptionsForModels() {
+      return this.allCredentials.map((c) => ({id: c.id, name: c.name || `Credential ${c.id}`}));
+    },
+    catalogModelTableData() {
+      return this.allModels.map((m) => {
+        const defaults = this.stringifyParametersForCatalog(m.additionalParameters);
+        const credential = this.allCredentials.find((c) => c.id === m.llmCredentialId);
+        return {
+          ...m,
+          credentialName: credential ? credential.name : "-",
+          defaultsSummary: defaults.length > 60 ? `${defaults.slice(0, 60)}...` : defaults,
+          enabledToggle: {
+            title: "Toggle enabled",
+            value: m.enabled !== false,
+            action: "toggleCatalogModelEnabled",
+          },
+        };
+      });
     },
     usageLogs() {
       return this.$store.getters["table/llm_log/getAll"] || [];
@@ -311,6 +426,9 @@ export default {
     studies() {
       return this.$store.getters["table/study/getAll"] || [];
     },
+    isModelCatalogFormValid() {
+      return this.modelCatalogForm.name && this.modelCatalogForm.model && this.modelCatalogForm.provider;
+    },
     credentialTableData() {
       return this.myCredentials.map((c) => ({
         ...c,
@@ -318,12 +436,6 @@ export default {
         apiVersionDisplay: c.apiVersion || "-",
         enabledBadge: c.enabled !== false,
         shareCount: this.allShares.filter((s) => s.llmCredentialId === c.id).length,
-      }));
-    },
-    modelTableData() {
-      return this.enabledModels.map((m) => ({
-        ...m,
-        defaultsSummary: this.stringifyJsonShort(m.additionalParameters),
       }));
     },
     usageLogTableData() {
@@ -345,7 +457,7 @@ export default {
     shareTableData() {
       return this.sharesForSelectedCredential.map((share) => {
         const isUserTarget = share.userId != null;
-        const targetId = isUserTarget ? share.userId : share.studyId;
+        const targetId = isUserTarget ? share.userId : share.roleId;
         const targetName = isUserTarget ? this.getUserName(targetId) : this.getStudyName(targetId);
         return {
           ...share,
@@ -359,10 +471,17 @@ export default {
       return this.allShares.map((share) => {
         const credential = this.allCredentials.find((c) => c.id === share.llmCredentialId);
         const isUserTarget = share.userId != null;
-        const targetId = isUserTarget ? share.userId : share.studyId;
+        const targetId = isUserTarget ? share.userId : share.roleId;
+        const linkedModels = this.allModels.filter(
+          (m) => m.llmCredentialId === share.llmCredentialId && m.deleted !== true
+        );
+        const linkedModelsDisplay = linkedModels.length
+          ? linkedModels.map((m) => m.name || m.model).join(", ")
+          : "—";
         return {
           ...share,
           credentialName: credential?.name || `Credential ${share.llmCredentialId}`,
+          linkedModelsDisplay,
           ownerName: credential ? this.getUserName(credential.userId) : "-",
           targetType: isUserTarget ? "User" : "Study",
           targetName: isUserTarget ? this.getUserName(targetId) : this.getStudyName(targetId),
@@ -371,7 +490,7 @@ export default {
       });
     },
     isCredentialFormValid() {
-      return this.credentialForm.name && this.credentialForm.provider && (this.editingCredential || this.credentialForm.apiKey);
+      return this.credentialForm.name && (this.editingCredential || this.credentialForm.apiKey);
     },
     canCreateShare() {
       return this.selectedCredentialForSharing && this.shareForm.targetId && this.shareForm.expiryDate;
@@ -381,7 +500,6 @@ export default {
     getEmptyCredentialForm() {
       return {
         name: "",
-        provider: "",
         apiKey: "",
         apiBaseUrl: "",
         apiVersion: "",
@@ -428,6 +546,115 @@ export default {
         return String(value);
       }
     },
+    openSharedModelsModal() {
+      this.$refs.sharedModelsModal.open();
+    },
+    getEmptyModelCatalogForm() {
+      return {
+        name: "",
+        model: "",
+        provider: "",
+        description: "",
+        llmCredentialId: null,
+        enabled: true,
+        additionalParametersText: "{}",
+      };
+    },
+    stringifyParametersForCatalog(value) {
+      if (!value) return "{}";
+      if (typeof value === "string") return value;
+      try {
+        return JSON.stringify(value);
+      } catch (_error) {
+        return "{}";
+      }
+    },
+    parseParametersForCatalog(text) {
+      if (!text || !text.trim()) return {};
+      return JSON.parse(text);
+    },
+    openAddModelModal() {
+      this.editingModel = null;
+      this.modelCatalogForm = this.getEmptyModelCatalogForm();
+      this.$refs.modelCatalogModal.open();
+    },
+    handleModelCatalogAction(data) {
+      switch (data.action) {
+        case "editCatalogModel": {
+          this.editingModel = data.params;
+          this.modelCatalogForm = {
+            name: data.params.name,
+            model: data.params.model,
+            provider: data.params.provider,
+            description: data.params.description || "",
+            llmCredentialId: data.params.llmCredentialId || null,
+            enabled: data.params.enabled !== false,
+            additionalParametersText: this.stringifyParametersForCatalog(data.params.additionalParameters),
+          };
+          this.$refs.modelCatalogModal.open();
+          break;
+        }
+        case "deleteCatalogModel":
+          if (confirm(`Delete model "${data.params.name}"?`)) {
+            this.$socket.emit("appDataUpdate", {
+              table: "llm_model",
+              data: {id: data.params.id, deleted: true},
+            });
+          }
+          break;
+        case "toggleCatalogModelEnabled":
+          this.$socket.emit("appDataUpdate", {
+            table: "llm_model",
+            data: {id: data.params.id, enabled: data.value},
+          });
+          break;
+      }
+    },
+    saveModelCatalog() {
+      let additionalParameters = {};
+      try {
+        additionalParameters = this.parseParametersForCatalog(this.modelCatalogForm.additionalParametersText);
+      } catch (_error) {
+        this.eventBus.emit("toast", {title: "Invalid JSON", message: "Please provide valid JSON in additional parameters.", variant: "danger"});
+        return;
+      }
+
+      const payload = {
+        name: this.modelCatalogForm.name.trim(),
+        model: this.modelCatalogForm.model.trim(),
+        provider: this.modelCatalogForm.provider.trim(),
+        description: this.modelCatalogForm.description,
+        llmCredentialId: this.modelCatalogForm.llmCredentialId,
+        enabled: this.modelCatalogForm.enabled,
+        additionalParameters,
+      };
+
+      if (this.editingModel) {
+        this.$socket.emit("appDataUpdate", {
+          table: "llm_model",
+          data: {id: this.editingModel.id, ...payload},
+        }, (res) => {
+          if (res && res.success !== false) {
+            this.eventBus.emit("toast", {title: "Model", message: "Model updated.", variant: "success"});
+            this.$refs.modelCatalogModal.close();
+          } else {
+            this.eventBus.emit("toast", {title: "Error", message: res?.message || "Failed.", variant: "danger"});
+          }
+        });
+      } else {
+        this.$socket.emit("appDataUpdate", {
+          table: "llm_model",
+          data: {userId: this.userId, ...payload},
+        }, (res) => {
+          if (res && res.success !== false) {
+            this.eventBus.emit("toast", {title: "Model", message: "Model added.", variant: "success"});
+            this.$refs.modelCatalogModal.close();
+          } else {
+            this.eventBus.emit("toast", {title: "Error", message: res?.message || "Failed.", variant: "danger"});
+          }
+        });
+      }
+    },
     openAddCredentialModal() {
       this.editingCredential = null;
       this.credentialForm = this.getEmptyCredentialForm();
@@ -439,7 +666,6 @@ export default {
           this.editingCredential = data.params;
           this.credentialForm = {
             name: data.params.name || "",
-            provider: data.params.provider || "",
             apiKey: "",
             apiBaseUrl: data.params.apiBaseUrl || "",
             apiVersion: data.params.apiVersion || "",
@@ -474,7 +700,6 @@ export default {
 
       const payload = {
         name: this.credentialForm.name.trim(),
-        provider: this.credentialForm.provider.trim(),
         apiBaseUrl: this.credentialForm.apiBaseUrl || null,
         apiVersion: this.credentialForm.apiVersion || null,
         enabled: this.credentialForm.enabled,
@@ -482,7 +707,7 @@ export default {
       };
 
       if (this.credentialForm.apiKey) {
-        payload.encryptedKey = this.credentialForm.apiKey;
+        payload.apiKey = this.credentialForm.apiKey;
       }
 
       if (this.editingCredential) {
@@ -516,7 +741,7 @@ export default {
       const payload = {
         llmCredentialId: this.selectedCredentialForSharing.id,
         userId: this.shareForm.targetType === "user" ? this.shareForm.targetId : null,
-        studyId: this.shareForm.targetType === "study" ? this.shareForm.targetId : null,
+        roleId: this.shareForm.targetType === "study" ? this.shareForm.targetId : null,
         expiryDate: new Date(this.shareForm.expiryDate).toISOString(),
       };
       this.$socket.emit("appDataUpdate", {table: "llm_credential_share", data: payload}, (res) => {

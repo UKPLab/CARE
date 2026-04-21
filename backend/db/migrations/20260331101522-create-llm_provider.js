@@ -2,24 +2,55 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('ai_model', {
+    await queryInterface.createTable('llm_model', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
       },
+      llmCredentialId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: 'llm_credential',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
+      },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'user',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      },
       name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      modelPath: {
+      model: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      apiBaseUrl: {
+      provider: {
         type: Sequelize.STRING,
         allowNull: false,
+      },
+      description: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+        defaultValue: null,
+      },
+      additionalParameters: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: {},
       },
       enabled: {
         type: Sequelize.BOOLEAN,
@@ -50,6 +81,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('ai_model');
+    await queryInterface.dropTable('llm_model');
   },
 };

@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('ai_log', {
+    await queryInterface.createTable('llm_log', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -19,22 +19,11 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      apiKeyId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
-        references: {
-          model: 'ai_api_key',
-          key: 'id',
-        },
-        onDelete: 'SET NULL',
-        onUpdate: 'CASCADE',
-      },
-      modelId: {
+      llmModelId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'ai_model',
+          model: 'llm_model',
           key: 'id',
         },
         onDelete: 'CASCADE',
@@ -55,12 +44,21 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
       },
+      requestId: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
       input: {
-        type: Sequelize.JSONB,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       output: {
-        type: Sequelize.JSONB,
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      reasoning: {
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       inputTokens: {
@@ -73,13 +71,18 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
       },
-      estimatedCost: {
-        type: Sequelize.FLOAT,
+      reasoningTokens: {
+        type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
       },
-      latencyMs: {
+      total_tokens: {
         type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+      },
+      costs: {
+        type: Sequelize.FLOAT,
         allowNull: true,
         defaultValue: null,
       },
@@ -87,6 +90,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
         defaultValue: 'success',
+      },
+      requestStart: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -112,6 +120,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('ai_log');
+    await queryInterface.dropTable('llm_log');
   },
 };

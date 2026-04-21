@@ -2,36 +2,39 @@
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
-    class AiLog extends MetaModel {
+    class LlmLog extends MetaModel {
         static autoTable = true;
 
         static associate(models) {
         }
     }
 
-    AiLog.init({
+    LlmLog.init({
         userId: DataTypes.INTEGER,
-        apiKeyId: DataTypes.INTEGER,
-        modelId: DataTypes.INTEGER,
+        llmModelId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
         studyStepId: DataTypes.INTEGER,
-        input: DataTypes.JSONB,
-        output: DataTypes.JSONB,
+        requestId: DataTypes.STRING,
+        input: DataTypes.TEXT,
+        output: DataTypes.TEXT,
+        reasoning: DataTypes.TEXT,
         inputTokens: DataTypes.INTEGER,
         outputTokens: DataTypes.INTEGER,
-        estimatedCost: DataTypes.FLOAT,
-        latencyMs: DataTypes.INTEGER,
+        reasoningTokens: DataTypes.INTEGER,
+        total_tokens: DataTypes.INTEGER,
+        costs: DataTypes.FLOAT,
         status: DataTypes.STRING,
+        requestStart: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'ai_log',
-        tableName: 'ai_log',
+        modelName: 'llm_log',
+        tableName: 'llm_log',
     });
 
-    return AiLog;
+    return LlmLog;
 };

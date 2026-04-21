@@ -13,14 +13,6 @@ module.exports = (sequelize, DataTypes) => {
             // define association here
         }
 
-        static get encryptionKey() {
-            const key = process.env.ENCRYPTION_KEY;
-            if (!key) {
-                throw new Error('ENCRYPTION_KEY env var is required for encrypted settings');
-            }
-            return key;
-        }
-
         /**
          * Get all settings and overwrite to be sure no admin settings are returned to user
          * @param {boolean} includeAdmin include admin settings
@@ -48,13 +40,6 @@ module.exports = (sequelize, DataTypes) => {
             try {
                 let setting = await Setting.findOne({where: {key: key}, raw: true});
                 if (setting) {
-                    if (setting.type === 'encrypted' && setting.value) {
-                        const [[result]] = await sequelize.query(
-                            `SELECT pgp_sym_decrypt(decode($1, 'base64'), $2) AS val`,
-                            {bind: [setting.value, Setting.encryptionKey]}
-                        );
-                        return result.val;
-                    }
                     return setting.value;
                 }
                 return null;
@@ -71,21 +56,10 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async set(key, value) {
             try {
-                let finalValue = value;
-                if (value) {
-                    const existing = await Setting.findOne({where: {key: key}, attributes: ['type'], raw: true});
-                    if (existing && existing.type === 'encrypted') {
-                        const [[result]] = await sequelize.query(
-                            `SELECT encode(pgp_sym_encrypt($1, $2), 'base64') AS val`,
-                            {bind: [value, Setting.encryptionKey]}
-                        );
-                        finalValue = result.val;
-                    }
-                }
                 const [instance, created] =
                     await Setting.upsert({
                         key: key,
-                        value: finalValue,
+                        value: value,
                     }, {
                         conflictFields: ['key']
                     });

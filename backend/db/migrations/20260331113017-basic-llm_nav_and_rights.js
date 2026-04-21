@@ -2,33 +2,20 @@
 
 const navElements = [
   {
-    name: 'API Keys',
+    name: 'LLM',
     groupId: 'Default',
     icon: 'key',
     order: 15,
     admin: false,
-    path: 'api_keys',
+    path: 'llm',
     component: 'LlmDashboard',
-  },
-  {
-    name: 'Models',
-    groupId: 'Default',
-    icon: 'robot',
-    order: 16,
-    admin: false,
-    path: 'models',
-    component: 'LlmProviders',
   },
 ];
 
 const userRights = [
   {
-    name: 'frontend.dashboard.api_keys.view',
-    description: 'Access to the API Keys dashboard',
-  },
-  {
-    name: 'frontend.dashboard.models.view',
-    description: 'Access to the Models dashboard',
+    name: 'frontend.dashboard.llm.view',
+    description: 'Access to the unified LLM dashboard',
   },
 ];
 

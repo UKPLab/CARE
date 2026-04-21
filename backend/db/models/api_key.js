@@ -2,31 +2,46 @@
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
-    class ApiKey extends MetaModel {
+    class LlmCredential extends MetaModel {
         static autoTable = true;
 
         static associate(models) {
-            ApiKey.belongsTo(models['user'], {
+            LlmCredential.belongsTo(models['user'], {
                 foreignKey: 'userId',
                 as: 'owner',
+            });
+            LlmCredential.hasMany(models['llm_credential_share'], {
+                foreignKey: 'llmCredentialId',
+                as: 'shares',
             });
         }
 
         /**
-         * Find all API keys accessible to a user (own + shared with their studies/projects)
+         * Find all credentials accessible to a user (owner + direct user share).
          * @param {number} userId
          * @param {Object} options
          * @returns {Promise<Object[]>}
          */
-        static async getAccessibleKeys(userId, options = {}) {
+        static async getAccessibleCredentials(userId, options = {}) {
             const {Op} = require('sequelize');
+            const now = new Date();
             return await this.findAll({
                 where: {
                     deleted: false,
                     enabled: true,
                     [Op.or]: [
                         {userId: userId},
-                        {shared: true, sharedScope: 'system'},
+                        {
+                            id: {
+                                [Op.in]: sequelize.literal(`(
+                                    SELECT "llmCredentialId"
+                                    FROM "llm_credential_share"
+                                    WHERE "deleted" = false
+                                      AND "userId" = ${parseInt(userId, 10)}
+                                      AND "expiryDate" > '${now.toISOString()}'
+                                )`),
+                            },
+                        },
                     ],
                 },
                 raw: true,
@@ -35,22 +50,33 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Resolve the best API key for a given user and provider.
-         * Priority: user's own key > shared study/project key > system fallback
+         * Resolve a specific credential for a requesting user.
+         * Priority: user's own credential > valid user share.
          * @param {number} userId
-         * @param {string} provider
+         * @param {number} llmCredentialId
          * @returns {Promise<Object|null>}
          */
-        static async resolveKey(userId, provider) {
+        static async resolveCredential(userId, llmCredentialId) {
             const {Op} = require('sequelize');
+            const now = new Date();
             const keys = await this.findAll({
                 where: {
                     deleted: false,
                     enabled: true,
-                    provider: provider,
+                    id: llmCredentialId,
                     [Op.or]: [
                         {userId: userId},
-                        {shared: true},
+                        {
+                            id: {
+                                [Op.in]: sequelize.literal(`(
+                                    SELECT "llmCredentialId"
+                                    FROM "llm_credential_share"
+                                    WHERE "deleted" = false
+                                      AND "userId" = ${parseInt(userId, 10)}
+                                      AND "expiryDate" > '${now.toISOString()}'
+                                )`),
+                            },
+                        },
                     ],
                 },
                 order: [
@@ -63,27 +89,23 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
-    ApiKey.init({
+    LlmCredential.init({
         userId: DataTypes.INTEGER,
-        provider: DataTypes.STRING,
         name: DataTypes.STRING,
-        apiEndpoint: DataTypes.STRING,
-        encryptedKey: DataTypes.TEXT,
+        apiKey: DataTypes.TEXT,
+        apiBaseUrl: DataTypes.STRING,
+        apiVersion: DataTypes.STRING,
         enabled: DataTypes.BOOLEAN,
-        shared: DataTypes.BOOLEAN,
-        sharedScope: DataTypes.STRING,
-        sharedTargetId: DataTypes.INTEGER,
-        usageLimitMonthly: DataTypes.INTEGER,
-        lastUsedAt: DataTypes.DATE,
+        additionalParameters: DataTypes.JSONB,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'api_key',
-        tableName: 'api_key',
+        modelName: 'llm_credential',
+        tableName: 'llm_credential',
     });
 
-    return ApiKey;
+    return LlmCredential;
 };
