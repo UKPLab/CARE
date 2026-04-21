@@ -39,7 +39,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
   name: "DashboardAssignments",
-  subscribeTable: ["assignment", "user_role"],
+  subscribeTable: ["assignment", "assignment_role", "user_role", "user"],
   components: {
     Card,
     BasicTable,
@@ -61,7 +61,7 @@ export default {
       },
       tableColumns: [
         { name: "ID", key: "id" },
-        { name: "Title", key: "title" },
+        { name: "Name", key: "name" },
         {
           name: "Submission Status",
           key: "submissionStatus",
@@ -79,9 +79,7 @@ export default {
             },
           },
         },
-        { name: "Study ID", key: "studyId" },
-        { name: "Workflow ID", key: "workflowId" },
-        { name: "Assigned Roles", key: "assignedRoles" },
+        { name: "Assigned To", key: "assignedRoles" },
         { name: "Max Revisions", key: "maxRevisions" },
         {
           name: "public",
@@ -225,13 +223,6 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    rolesById() {
-      const roles = this.$store.getters["table/user_role/getAll"] || [];
-      return roles.reduce((acc, role) => {
-        acc[role.id] = role.name;
-        return acc;
-      }, {});
-    },
     assignments() {
       if (this.canViewAllAssignments) {
         return this.$store.getters["table/assignment/getAll"] || [];
@@ -242,24 +233,34 @@ export default {
       ) || [];
     },
     assignmentTable() {
-      return this.assignments.map((assignment) => ({
-        ...assignment,
-        isOwner: this.isAssignmentOwner(assignment),
-        canEditAssignment: this.isAssignmentOwner(assignment) || this.canEditAssignments,
-        canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
-        submissionStatus: this.getSubmissionStatus(assignment),
-        studyId: assignment.studyId ?? "-",
-        workflowId: assignment.workflowId ?? "-",
-        assignedRoles: (assignment.assignedRoleIds || [])
-          .map((id) => this.rolesById[id])
+      const rolesById = (this.$store.getters["table/user_role/getAll"] || []).reduce((acc, role) => {
+        acc[role.id] = role.name;
+        return acc;
+      }, {});
+      const usersById = (this.$store.getters["table/user/getAll"] || []).reduce((acc, user) => {
+        acc[user.id] = user.userName || `${user.firstName} ${user.lastName}`.trim() || `User ${user.id}`;
+        return acc;
+      }, {});
+      return this.assignments.map((assignment) => {
+        const entries = this.$store.getters["table/assignment_role/getFiltered"]((e) => e.assignmentId === assignment.id) || [];
+        const assignedRoles = entries
+          .map((e) => (e.roleId ? rolesById[e.roleId] : null) || (e.userId ? usersById[e.userId] : null))
           .filter(Boolean)
-          .join(", ") || "-",
-        maxRevisions: assignment.maxRevisions ?? 1,
-        public: Boolean(assignment.public),
-        start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
-        end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
-        allowReUpload: Boolean(assignment.allowReUpload),
-      }));
+          .join(", ") || "-";
+        return {
+          ...assignment,
+          isOwner: this.isAssignmentOwner(assignment),
+          canEditAssignment: this.isAssignmentOwner(assignment) || this.canEditAssignments,
+          canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
+          submissionStatus: this.getSubmissionStatus(assignment),
+          assignedRoles,
+          maxRevisions: assignment.maxRevisions ?? 1,
+          public: Boolean(assignment.public),
+          start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
+          end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
+          allowReUpload: Boolean(assignment.allowReUpload),
+        };
+      });
     },
   },
   methods: {
