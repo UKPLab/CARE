@@ -44,6 +44,7 @@ build:
     name: "documentation"
     paths:
       - "docs.tar.gz"
+      - "version.json"
 
 .setup-deploy-ssh-template: &setup-ssh
   - apk update && apk add openssh-client
