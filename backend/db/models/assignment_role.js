@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
 			hooks: {
 				afterUpdate: async (assignmentRole, options) => {
 					if (assignmentRole.deleted && !assignmentRole._previousDataValues.deleted) {
-						await this.destroy({ where: { id: assignmentRole.id }, transaction: options.transaction });
+						await AssignmentRole.destroy({ where: { id: assignmentRole.id }, transaction: options.transaction });
 					}
 				},
 			},

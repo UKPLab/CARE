@@ -78,8 +78,8 @@ class AppSocket extends Socket {
                     transaction: transaction
                 }
             );
-            
-            return newEntry.id;
+            // if the entry is destroyed then it wont return an id
+            return newEntry?.id;
         }
 
         // check or set user information
