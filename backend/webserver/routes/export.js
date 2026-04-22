@@ -38,6 +38,9 @@ module.exports = function (server) {
         const { projectId, exportType, generateAliases, fakerSeed, gradeFormat } = req.body;
         let { userIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
+        const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
+        const supportedExportTypes = new Set(["submissions", "grades"]);
+        const { Op } = server.db.Sequelize;
 
         try {
             userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
@@ -48,6 +51,18 @@ module.exports = function (server) {
         }
 
         try {
+            if (!projectId) return res.status(400).send("Missing projectId.");
+            if (!supportedExportTypes.has(exportType)) {
+                return res.status(400).send("Unsupported export type.");
+            }
+            if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
+                return res.status(400).send("Unsupported grade format. Use json or csv.");
+            }
+            if (userIds.length === 0) {
+                console.warn("Export aborted: No valid users selected.");
+                return res.status(400).send("No valid users selected.");
+            }
+
             // check if the project is valid
             const projectCheck = await server.db.models.project.findOne({ where: { id: projectId } });
             if (!projectCheck) {
@@ -55,10 +70,9 @@ module.exports = function (server) {
                 return res.status(403).send("The selected project does not exist.");
             }
 
-            const users = await server.db.models.user.findAll({ where: { id: userIds } });
-
-            if (userIds.length === 0) {
-                console.warn(`Export aborted: No authorized users to export.`);
+            const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
+            if (users.length === 0) {
+                console.warn("Export aborted: No existing users to export.");
                 return res.status(400).send("No authorized users to export.");
             }
 
