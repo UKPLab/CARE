@@ -256,6 +256,7 @@ module.exports = function (server) {
 
             const validationRules = configMap.get(submission.validationConfigurationId);
             let folderName = shouldGenerateAliases ? userMapping[student.id] : (hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : `${student.userName}`);
+            folderName = sanitizeFolderName(folderName);
 
             for (const doc of submission.documents) {
                 const version = calculateSubmissionVersion(submission, submissionMap);
@@ -278,7 +279,7 @@ module.exports = function (server) {
 
                 if (fs.existsSync(filePath)) {
                     if (shouldGenerateAliases && doc.type == 4) {
-                        const realName = `${student.firstName} ${student.lastName}`;
+                        const realName = `${student.firstName || ""} ${student.lastName || ""}`.trim();
                         const fakeName = userMapping[student.id];
                         try {
                             const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
@@ -297,7 +298,7 @@ module.exports = function (server) {
         }
     }
 
-    function sanitizePathSegment(value) {
+    function sanitizeFolderName(value) {
         return String(value || "unknown")
             .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
             .replace(/\s+/g, " ")
@@ -456,7 +457,7 @@ module.exports = function (server) {
         const usedFolderNames = new Set();
         const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
             const raw = baseHash || `session_${sessionId || "unknown"}_user_${userId}`;
-            const safeBase = sanitizePathSegment(raw);
+            const safeBase = sanitizeFolderName(raw);
             let candidate = safeBase;
             let suffix = 1;
             while (usedFolderNames.has(candidate)) {
