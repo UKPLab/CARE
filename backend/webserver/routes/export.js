@@ -134,6 +134,9 @@ module.exports = function (server) {
     async function replaceAuthorInZip(filePath, realName, fakeName) {
         const fileData = fs.readFileSync(filePath);
         const zip = await JSZip.loadAsync(fileData);
+        // TODO: What if the realName contains middle name?
+        const [realFirstName = "", realLastName = ""] = String(realName || "").split(/\s+/, 2);
+        const [fakeFirstName = "", fakeLastName = ""] = String(fakeName || "").split(/\s+/, 2);
 
         const authorRegex = /\\author\s*\{[^}]*\}/g;
 
@@ -141,8 +144,8 @@ module.exports = function (server) {
             if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.tex')) {
                 let text = await zipEntry.async("string");
                 text = text.replace(authorRegex, `\\author{${fakeName}}`);
-                text = text.replace(realName.split(" ")[0], fakeName.split(" ")[0]);
-                text = text.replace(realName.split(" ")[1], fakeName.split(" ")[1]);
+                if (realFirstName && fakeFirstName) text = text.replace(realFirstName, fakeFirstName);
+                if (realLastName && fakeLastName) text = text.replace(realLastName, fakeLastName);
                 
                 zip.file(relativePath, text); 
             }
