@@ -72,39 +72,10 @@ export default {
                          * @param {object} params - at minimum `model` and `messages`
                          * @param {object} [opts]
                          * @param {number} [opts.timeout] - override client-side timeout (ms)
-                         * @param {AbortSignal} [opts.signal] - optional request cancellation signal
                          * @returns {Promise<object>}
                          */
                         chatCompletion(params, opts = {}) {
-                            const requestId = params.requestId || (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
-                            const payload = {...params, requestId};
-                            const request = emitAiCommand(socket, "chatCompletion", payload, opts.timeout);
-
-                            // Keep abort handling local to chatCompletion for minimal plugin changes.
-                            if (!opts.signal) return request;
-
-                            const emitAbort = () => {
-                                socket.emit("serviceCommand", {
-                                    service: "AIService",
-                                    command: "abortChatCompletion",
-                                    data: {requestId},
-                                });
-                            };
-
-                            if (opts.signal.aborted) {
-                                emitAbort();
-                                return Promise.reject(new Error("AI request aborted (command: chatCompletion)"));
-                            }
-
-                            return Promise.race([
-                                request,
-                                new Promise((_, reject) => {
-                                    opts.signal.addEventListener("abort", () => {
-                                        emitAbort();
-                                        reject(new Error("AI request aborted (command: chatCompletion)"));
-                                    }, {once: true});
-                                }),
-                            ]);
+                            return emitAiCommand(socket, "chatCompletion", params, opts.timeout);
                         },
 
                         /**
@@ -113,15 +84,6 @@ export default {
                          */
                         getStatus() {
                             return emitAiCommand(socket, "getStatus", {}, 10000);
-                        },
-
-                        /**
-                         * Explicitly abort a pending chat completion by requestId.
-                         * @param {string} requestId
-                         * @returns {Promise<object>}
-                         */
-                        abortChatCompletion(requestId) {
-                            return emitAiCommand(socket, "abortChatCompletion", {requestId}, 10000);
                         },
                     };
                 },

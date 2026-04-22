@@ -8,7 +8,6 @@ const Service = require("../Service.js");
  *
  * Supported commands:
  *   - chatCompletion(data): forward the payload to LiteLLM as-is
- *   - abortChatCompletion({requestId}): cancel a pending request
  *   - getStatus():          report whether LiteLLM is reachable
  *
  * @class
@@ -20,7 +19,6 @@ module.exports = class AIService extends Service {
         super(server, {
             cmdTypes: [
                 "chatCompletion",
-                "abortChatCompletion",
                 "getStatus"
             ],
             resTypes: []
@@ -41,8 +39,6 @@ module.exports = class AIService extends Service {
         switch (command) {
             case "chatCompletion":
                 return await this.chatCompletion(data);
-            case "abortChatCompletion":
-                return await this.abortChatCompletion(data);
             case "getStatus":
                 return await this.getStatus();
             default:
@@ -93,33 +89,6 @@ module.exports = class AIService extends Service {
         );
 
         return {choices};
-    }
-
-    /**
-     * Best-effort cancellation of a pending chat completion.
-     * @param {object} data
-     * @param {string} data.requestId
-     * @returns {Promise<{aborted: boolean, requestId: string}>}
-     */
-    async abortChatCompletion(data = {}) {
-        const {requestId} = data;
-        if (!requestId) {
-            throw new Error("Missing required field: requestId");
-        }
-
-        const rpc = this.#getRPC();
-        if (!rpc) {
-            this.logger.error("LiteLLM RPC is not registered");
-            throw new Error("LiteLLM service is not available");
-        }
-        if (!(await rpc.isOnline())) {
-            this.logger.error("LiteLLM RPC is not connected");
-            throw new Error("LiteLLM service is not connected");
-        }
-
-        await rpc.abortChatCompletion({requestId});
-        this.logger.info(`abortChatCompletion: requestId=${requestId}`);
-        return {aborted: true, requestId};
     }
 
     /**
