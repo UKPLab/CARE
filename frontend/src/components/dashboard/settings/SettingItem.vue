@@ -33,7 +33,7 @@
                             :checked="setting.value"
                             class="form-check-input" 
                             role="switch" 
-                            title="Activate/Deactivate NLP support"
+                            :title="getBooleanToggleTooltip(setting)"
                             type="checkbox"
                           >
                         </div>
@@ -137,6 +137,10 @@ export default {
     }
   },
   methods: {
+    getBooleanToggleTooltip(setting){
+      const label = (setting.description && setting.description.trim()) || setting.key;
+      return `${label}`;
+    },
     toggleCollapse() {
       this.collapsed = !this.collapsed;
     },

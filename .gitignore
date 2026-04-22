@@ -8,8 +8,8 @@ files/*.zip
 
 # database dumps
 db_dumps/
-
-# backend
+logs/
+# backen
 backend/sessions
 backend/node_modules
 backend/logs
