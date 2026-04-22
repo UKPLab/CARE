@@ -9,6 +9,7 @@ def create_app():
     logger.setLevel(logging.INFO)
 
     sio = socketio.Server(async_mode='threading', ping_timeout=120, ping_interval=25)
+    aborted_request_ids = set()
 
     @sio.event
     def connect(sid, environ, auth):
@@ -43,23 +44,33 @@ def create_app():
         """
         model = data.get("model")
         messages = data.get("messages")
+        request_id = data.get("requestId")
 
         if not model:
             return {"success": False, "message": "Missing required field: model"}
         if not messages:
             return {"success": False, "message": "Missing required field: messages"}
+        if request_id and request_id in aborted_request_ids:
+            aborted_request_ids.discard(request_id)
+            logger.info(f"chatCompletion skipped (already aborted): requestId={request_id}")
+            return {"success": False, "message": "Request aborted"}
 
-        logger.info(f"chatCompletion from {sid}: model={model}")
+        logger.info(f"chatCompletion from {sid}: model={model}, requestId={request_id or 'N/A'}")
 
         try:
             params = {k: v for k, v in data.items()
-                      if k not in ("model", "messages") and v is not None}
+                      if k not in ("model", "messages", "requestId") and v is not None}
 
             response = litellm.completion(
                 model=model,
                 messages=messages,
                 **params,
             )
+
+            if request_id and request_id in aborted_request_ids:
+                aborted_request_ids.discard(request_id)
+                logger.info(f"chatCompletion aborted after completion: requestId={request_id}")
+                return {"success": False, "message": "Request aborted"}
 
             # Return the full response as-is. ModelResponse is a pydantic
             # model, so model_dump() gives the complete OpenAI-compatible
@@ -82,6 +93,16 @@ def create_app():
         except Exception as e:
             logger.error(f"chatCompletion error: {e}")
             return {"success": False, "message": str(e)}
+
+    @sio.on("abortChatCompletion")
+    def abort_chat_completion(sid, data):
+        request_id = (data or {}).get("requestId")
+        if not request_id:
+            return {"success": False, "message": "Missing required field: requestId"}
+
+        aborted_request_ids.add(request_id)
+        logger.info(f"abortChatCompletion from {sid}: requestId={request_id}")
+        return {"success": True, "data": {"aborted": True, "requestId": request_id}}
 
     logger.info("Creating LiteLLM RPC App...")
     app = socketio.WSGIApp(sio)

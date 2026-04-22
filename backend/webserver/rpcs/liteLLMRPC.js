@@ -41,4 +41,21 @@ module.exports = class LiteLLMRPC extends RPC {
         }
         return response;
     }
+
+    /**
+     * Best-effort cancellation of an in-flight chat completion.
+     * @param {Object} data
+     * @param {string} data.requestId
+     * @returns {Promise<Object>}
+     */
+    async abortChatCompletion(data) {
+        this.logger.info("Sending abortChatCompletion request: requestId=" + data.requestId);
+
+        const response = await this.emit("abortChatCompletion", data);
+        if (!response['success']) {
+            this.logger.error("abortChatCompletion error: " + response['message']);
+            throw new Error(response['message']);
+        }
+        return response;
+    }
 }
