@@ -176,7 +176,8 @@ module.exports = function (server) {
                 faker.seed(derivedFakerSeed);
             }
 
-            users.forEach(u => {
+            const sortedUsers = [...users].sort((a, b) => Number(a.id) - Number(b.id));
+            sortedUsers.forEach(u => {
                 const realUsername = u.userName;
                 const realName = `${u.firstName} ${u.lastName}`;
                 const fakeName = `${faker.person.firstName()} ${faker.person.lastName()}`;
