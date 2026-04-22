@@ -438,8 +438,7 @@ module.exports = function (server) {
                 submissionExtId: submission?.extId ?? null,
                 studySessionId: row.studySessionId ?? null,
                 studyStepId: row.studyStepId ?? null,
-                hash: session?.hash ?? null,
-                type: "assessment",
+                sessionHash: session?.hash ?? null,
                 roles: rolesByUserId.get(study?.userId) || [],
                 grader: graderUser ? `${graderUser.firstName} ${graderUser.lastName}`.trim() : null,
                 reviewer: reviewerUser ? `${reviewerUser.firstName} ${reviewerUser.lastName}`.trim() : null,
@@ -454,10 +453,21 @@ module.exports = function (server) {
             recordsByUser.get(ownerUser.id).push(record);
         }
 
+        const usedFolderNames = new Set();
+        const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
+            const raw = baseHash || `session_${sessionId || "unknown"}_user_${userId}`;
+            const safeBase = sanitizePathSegment(raw);
+            let candidate = safeBase;
+            let suffix = 1;
+            while (usedFolderNames.has(candidate)) {
+                candidate = `${safeBase}_${suffix}`;
+                suffix += 1;
+            }
+            usedFolderNames.add(candidate);
+            return candidate;
+        };
+
         for (const user of users) {
-            const displayName = getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping);
-            const safeFolder = `${sanitizePathSegment(displayName)}_u${user.id}`;
-            const studentFolder = `grades/${safeFolder}`;
             const records = (recordsByUser.get(user.id) || []).sort((a, b) => {
                 const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                 const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -468,34 +478,45 @@ module.exports = function (server) {
                 );
             });
 
-            if (gradeFormat === "csv") {
-                const csvRows = records.map((record) => {
-                    const flatScores = flattenObject(record.scores, "scores");
-                    return {
-                        projectId: record.projectId,
-                        userId: record.userId,
-                        userExtId: record.userExtId,
-                        userName: record.userName,
-                        displayName: record.displayName,
-                        submissionId: record.submissionId,
-                        submissionExtId: record.submissionExtId,
-                        studySessionId: record.studySessionId,
-                        studyStepId: record.studyStepId,
-                        hash: record.hash,
-                        type: record.type,
-                        roles: record.roles.join("|"),
-                        grader: record.grader,
-                        reviewer: record.reviewer,
-                        author: record.author,
-                        totalPoints: record.totalPoints,
-                        createdAt: record.createdAt,
-                        sourceKey: record.sourceKey,
-                        ...flatScores
-                    };
-                });
-                archive.append(Papa.unparse(csvRows), { name: `${studentFolder}/scores.csv` });
-            } else {
-                archive.append(JSON.stringify(records, null, 2), { name: `${studentFolder}/scores.json` });
+            const recordsByHash = new Map();
+            for (const record of records) {
+                const hashKey = record.sessionHash || null;
+                if (!recordsByHash.has(hashKey)) recordsByHash.set(hashKey, []);
+                recordsByHash.get(hashKey).push(record);
+            }
+
+            for (const [hashKey, hashRecords] of recordsByHash.entries()) {
+                const folderName = getUniqueHashFolderName(hashKey, user.id, hashRecords[0]?.studySessionId);
+                const hashFolder = `grades/${folderName}`;
+                const exportedRecords = hashRecords.map(({ sessionHash, ...rest }) => rest);
+
+                if (gradeFormat === "csv") {
+                    const csvRows = exportedRecords.map((record) => {
+                        const flatScores = flattenObject(record.scores, "scores");
+                        return {
+                            projectId: record.projectId,
+                            userId: record.userId,
+                            userExtId: record.userExtId,
+                            userName: record.userName,
+                            displayName: record.displayName,
+                            submissionId: record.submissionId,
+                            submissionExtId: record.submissionExtId,
+                            studySessionId: record.studySessionId,
+                            studyStepId: record.studyStepId,
+                            roles: record.roles.join("|"),
+                            grader: record.grader,
+                            reviewer: record.reviewer,
+                            author: record.author,
+                            totalPoints: record.totalPoints,
+                            createdAt: record.createdAt,
+                            sourceKey: record.sourceKey,
+                            ...flatScores
+                        };
+                    });
+                    archive.append(Papa.unparse(csvRows), { name: `${hashFolder}/scores.csv` });
+                } else {
+                    archive.append(JSON.stringify(exportedRecords, null, 2), { name: `${hashFolder}/scores.json` });
+                }
             }
         }
     }
