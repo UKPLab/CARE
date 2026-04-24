@@ -70,7 +70,7 @@
                 @click="sort('sortKey' in c ? c.sortKey : c.key)"
               />
             </span>
-            <span v-if="filter && c.filter">
+            <span v-if="filter && c.filter && hasFilterableData">
               <span
                 aria-expanded="true"
                 aria-haspopup="true"
@@ -429,6 +429,9 @@ export default {
     };
   },
   computed: {
+    hasFilterableData() {
+      return this.data && this.data.length > 0;
+    },
     isAllRowsSelected() {
       // Use the existing method to get filtered data across all pages
       const allFilteredData = this.getFilteredAndSortedData();
