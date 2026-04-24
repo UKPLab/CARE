@@ -353,26 +353,16 @@ export default {
 
       const rect = event.currentTarget.getBoundingClientRect();
 
-      this.resetPreview();
-
-      requestAnimationFrame(() => {
-        this.previewStyle = {
-          top: `${rect.top - 8}px`,
-          left: `${rect.right}px`,
-        };
-
-        this.hoveredGroup = groupName;
-      });
+      this.previewStyle = {
+        top: `${rect.top - 8}px`,
+        left: `${rect.right}px`,
+      };
+      this.hoveredGroup = groupName;
     },
 
     handleGroupMouseLeave(event, groupName) {
       if (this._isRelatedTargetInGroup(event, groupName, '.submenu-preview')) return;
-
-      requestAnimationFrame(() => {
-        if (this.hoveredGroup === groupName && !this.isHoveringPreview) {
-          this.resetPreview();
-        }
-      });
+      this.resetPreview();
     },
 
     handlePreviewMouseEnter() {
