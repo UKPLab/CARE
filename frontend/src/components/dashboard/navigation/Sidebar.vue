@@ -25,7 +25,8 @@
                 class="sidebar-subgroup-heading list-group-item-custom p-3"
                 :class="{
                   'collapsed-group-icon-active': isCollapsed && activeSubgroup === subgroup.key,
-                  'expanded-group-active': !isCollapsed && activeSubgroup === subgroup.key && !groupStates[subgroup.key]
+                  'expanded-group-active': !isCollapsed && activeSubgroup === subgroup.key && !groupStates[subgroup.key],
+                  'preview-group-active': hoveredGroup === subgroup.key && !groupStates[subgroup.key]
                 }"
                 :data-group-key="subgroup.key"
                 @click="toggleGroup(subgroup.key)"
@@ -872,6 +873,15 @@ export default {
   width: 3px;
   height: 30px;
   background: rgba(20, 20, 20, 0.85);
+}
+
+.sidebar-subgroup-heading.preview-group-active {
+  background-color: white !important;
+}
+
+#sidebar-wrapper:not(.collapsed) .expanded-group-active.preview-group-active,
+#sidebar-wrapper.collapsed .collapsed-group-icon-active.preview-group-active {
+  background-color: white !important;
 }
 
 .arrow-toggle {
