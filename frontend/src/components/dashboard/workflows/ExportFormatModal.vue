@@ -44,7 +44,6 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import LoadIcon from "@/basic/Icon.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -56,7 +55,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "ExportFormatModal",
-  components: { BasicModal, BasicButton, LoadIcon },
+  components: { BasicModal, BasicButton },
   emits: ['formatSelected'],
   data() {
     return {

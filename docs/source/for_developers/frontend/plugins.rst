@@ -16,6 +16,14 @@ Vuex merges. On unmount the plugin automatically unsubscribes.
 For the complete end-to-end flow (Sockets ↔ Vuex ↔ Components), see
 :doc:`Data Transfer <../backend/data_transfer>` and :doc:`Vuex Store <../frontend/vuex_store>`.
 
+**Dashboard pages and lazy-loaded modals**
+
+Top-level dashboard views that use :ref:`lazy-loading modals <lazy-loading-modals>` should still
+include every auto table the **page itself** needs on first render (for example ``"user"`` when
+the table shows names from ``table/user``). Lazy-loaded modals are not mounted until opened, so
+``subscribeTable`` on those modals does not run on the initial dashboard load. Relying on modals
+alone would leave the related Vuex stores empty until the user opens a modal.
+
 **Examples**
 
 Minimal subscription (e.g., in ``Documents.vue``):

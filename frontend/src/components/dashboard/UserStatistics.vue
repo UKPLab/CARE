@@ -46,7 +46,6 @@
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
-import ExportSingle from "@/basic/download/ExportSingle.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -63,7 +62,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "UserStatistics",
-  components: {BasicTable, BasicButton, Card, ExportSingle},
+  components: {BasicTable, BasicButton, Card},
   subscribeTable: ["user"],
   props: {
     'admin': {

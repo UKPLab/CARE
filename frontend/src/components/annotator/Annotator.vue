@@ -105,7 +105,6 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
-import ReadOnlyIndicator from "../common/ReadOnlyIndicator.vue";
 
 export default {
   name: "AnnotatorView",
@@ -117,7 +116,6 @@ export default {
     Loader,
     TopBarButton,
     BasicSidebar,
-    ReadOnlyIndicator
   },
   provide() {
     return {

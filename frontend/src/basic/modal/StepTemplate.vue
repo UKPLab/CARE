@@ -13,11 +13,8 @@
  * A simple wrapper component that provides a slot for content.
  * Can be used in other components like GeneralStep to wrap content.
  */
-import BasicForm from "@/basic/Form.vue";
-
 export default {
   name: "StepTemplate",
-  components: { BasicForm },
   props: {
     title: {
       type: String,
