@@ -36,7 +36,7 @@
                 <!-- Expanded mode -->
                 <div v-if="!isCollapsed" class="list-group-item-text subgroup-title">
                   <span class="sidebar-icon subgroup-heading-icon" :title="subgroup.name">
-                    <LoadIcon :icon-name="getGroupIcon(subgroup.key)" :size="22" />
+                    <LoadIcon :icon-name="subgroup.icon" :size="22" />
                   </span>
                   {{ subgroup.name }}
                 </div>
@@ -56,7 +56,7 @@
                   class="sidebar-icon collapsed-group-icon"
                   :title="subgroup.name"
                 >
-                  <LoadIcon :icon-name="getGroupIcon(subgroup.key)" :size="24" />
+                  <LoadIcon :icon-name="subgroup.icon" :size="24" />
                 </span>
               </div>
 
@@ -177,16 +177,6 @@ export default {
       version: APP_VERSION,
       isCollapsed: false,
 
-      // Maps dashboards to visual sidebar subgroups
-      // Only elements listed here will be rendered inside the grouped sidebar
-      sidebarSubgroupConfig: {
-        Home: ['Home', 'Documents', 'Templates'],
-        Study: ["Studies", "Study Sessions", "Tags", "Submissions"],
-        Manage: ['Projects', 'Users', 'User Statistics', 'Workflows'],
-        Settings: ["System Settings", "Logs", "Configurations"],
-        AI: ["NLP Skills"],
-      },
-
       // Stores open/closed state per subgroup, e.g.:
       // { Home: true, Study: false, ... }
       groupStates: {},
@@ -215,19 +205,14 @@ export default {
 
     activeSubgroup() {
       const currentPath = this.$route.path.toLowerCase();
-
       const currentElement = this.$store.getters['table/nav_element/getAll']
-        .find(element => currentPath === `/dashboard/${element.path}`.toLowerCase());
+        .find(el => currentPath === `/dashboard/${el.path}`.toLowerCase());
 
-      if (!currentElement) {
-        return null;
-      }
+      if (!currentElement) return null;
 
-      return Object.entries(this.sidebarSubgroupConfig).find(([, elementNames]) =>
-        elementNames.some(
-          elementName => elementName.toLowerCase() === currentElement.name.toLowerCase()
-        )
-      )?.[0] || null;
+      const group = this.sidebarGroups.find(g => g.id === currentElement.groupId);
+
+      return group?.name || null;
     },
 
     /* ========================================
@@ -272,16 +257,6 @@ export default {
       });
     },
 
-    defaultElements() {
-      const defaultGroup = this.sidebarGroups.find(group => group.name === "Default");
-      return defaultGroup ? (this.sidebarElements[defaultGroup.id] || []) : [];
-    },
-
-    adminElements() {
-      const adminGroup = this.sidebarGroups.find(group => group.name === "Admin");
-      return this.isAdmin && adminGroup ? (this.sidebarElements[adminGroup.id] || []) : [];
-    },
-
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
@@ -290,25 +265,15 @@ export default {
        Sidebar grouping
     ======================================== */
 
-    // Merges admin elements into the same grouped sidebar structure.
-    allSidebarElementsForGrouping() {
-      return [...this.defaultElements, ...this.adminElements];
-    },
-
-    // Builds visual subgroup objects in the exact order defined in sidebarSubgroupConfig.
-    // Missing elements are filtered out automatically
+    // builds sidebar groups from nav_group and filters out empty groups
     defaultGroupedElements() {
-      return Object.entries(this.sidebarSubgroupConfig)
-        .map(([groupName, elementNames]) => ({
-          key: groupName,
-          name: groupName,
-          elements: elementNames
-            .map(elementName =>
-              this.allSidebarElementsForGrouping.find(
-                element => element.name === elementName
-              )
-            )
-            .filter(Boolean),
+      return this.sidebarGroups
+        .filter(group => group.name !== 'Default' && group.name !== 'Admin')
+        .map(group => ({
+          key: group.name,
+          name: group.name,
+          icon: group.icon,
+          elements: (this.sidebarElements[group.id] || []),
         }))
         .filter(group => group.elements.length > 0);
     },
@@ -317,10 +282,7 @@ export default {
   mounted() {
     document.body.classList.add('sidebar-exists');
 
-    this.groupStates = Object.fromEntries(
-      Object.keys(this.sidebarSubgroupConfig).map(name => [name, false])
-    );
-
+    this.initGroupStates();
     this.syncSidebarWithRoute();
   },
 
@@ -494,23 +456,27 @@ export default {
     },
 
     /* ========================================
-       UI helpers
+       Helpers
     ======================================== */
 
-    getGroupIcon(groupKey) {
-      const icons = {
-        Home: 'house',
-        Manage: 'briefcase',
-        Study: 'book',
-        AI: 'code-slash',
-        Settings: 'sliders2',
-      };
-
-      return icons[groupKey] ?? 'circle';
+    //initializes groupStates from store groups
+    initGroupStates() {
+      this.defaultGroupedElements.forEach(group => {
+        if (!(group.key in this.groupStates)) {
+          this.groupStates[group.key] = false;
+        }
+      });
     },
   },
 
   watch: {
+    defaultGroupedElements(newGroups) {
+      newGroups.forEach(group => {
+        if (!(group.key in this.groupStates)) {
+          this.groupStates[group.key] = false;
+        }
+      });
+    },
     $route(to) {
       const toPath = to.path.toLowerCase().replace(/\/$/, '');
 
