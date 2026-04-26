@@ -405,7 +405,7 @@ export default {
     },
     exportSettings() {
       downloadObjectsAs(
-          this.settings.reduce(
+          this.displaySettings.reduce(
               (acc, {key, value}) => ({...acc, [key]: value}),
               {}
           ),
@@ -472,10 +472,11 @@ export default {
 
         let updatedCount = 0;
         const flat = json;
+        const visibleKeys = new Set(this.displaySettings.map((setting) => setting.key));
 
         // Overwrite only existing keys
         this.settings = this.settings.map((setting) => {
-          if (Object.prototype.hasOwnProperty.call(flat, setting.key)) {
+          if (visibleKeys.has(setting.key) && Object.prototype.hasOwnProperty.call(flat, setting.key)) {
             setting.value = flat[setting.key];
             updatedCount++;
           }
