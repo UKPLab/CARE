@@ -10,7 +10,10 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            // define association here
+            Setting.belongsTo(models["wizard_step"], {
+                foreignKey: "wizardStepId",
+                as: "wizardStep",
+            });
         }
 
         /**
@@ -57,7 +60,22 @@ module.exports = (sequelize, DataTypes) => {
                 return await Setting.findAll({
                     where: { showInWizard: true, deleted: false },
                     order: [['wizardOrder', 'ASC']],
-                    attributes: ['key', 'value', 'type', 'description', 'displayName', 'displaySubsection', 'requiredInWizard', 'wizardStep'],
+                    attributes: [
+                        'key',
+                        'value',
+                        'type',
+                        'description',
+                        'displayName',
+                        'displaySubsection',
+                        'requiredInWizard',
+                        [sequelize.col('wizardStep.key'), 'wizardStep'],
+                    ],
+                    include: [{
+                        model: sequelize.models["wizard_step"],
+                        as: "wizardStep",
+                        attributes: [],
+                        required: false,
+                    }],
                     raw: true,
                 });
             } catch (e) {
@@ -124,7 +142,7 @@ module.exports = (sequelize, DataTypes) => {
         showInWizard: DataTypes.BOOLEAN,
         wizardOrder: DataTypes.INTEGER,
         requiredInWizard: DataTypes.BOOLEAN,
-        wizardStep: DataTypes.STRING,
+        wizardStepId: DataTypes.INTEGER,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE
 

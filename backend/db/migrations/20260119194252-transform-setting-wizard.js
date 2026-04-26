@@ -52,7 +52,13 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         for (const { key, wizardStep, wizardOrder, requiredInWizard } of WIZARD_SETTINGS) {
             await queryInterface.sequelize.query(
-                `UPDATE setting SET "showInWizard" = true, "wizardStep" = :wizardStep, "wizardOrder" = :wizardOrder, "requiredInWizard" = :requiredInWizard, "updatedAt" = :now WHERE key = :key`,
+                `UPDATE setting
+                 SET "showInWizard" = true,
+                     "wizardStepId" = (SELECT id FROM wizard_step WHERE key = :wizardStep),
+                     "wizardOrder" = :wizardOrder,
+                     "requiredInWizard" = :requiredInWizard,
+                     "updatedAt" = :now
+                 WHERE key = :key`,
                 {
                     replacements: { key, wizardStep, wizardOrder, requiredInWizard, now: new Date() },
                     type: Sequelize.QueryTypes.UPDATE,
@@ -64,7 +70,7 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         for (const { key } of WIZARD_SETTINGS) {
             await queryInterface.sequelize.query(
-                `UPDATE setting SET "showInWizard" = false, "wizardStep" = NULL, "wizardOrder" = NULL, "requiredInWizard" = false, "updatedAt" = :now WHERE key = :key`,
+                `UPDATE setting SET "showInWizard" = false, "wizardStepId" = NULL, "wizardOrder" = NULL, "requiredInWizard" = false, "updatedAt" = :now WHERE key = :key`,
                 {
                     replacements: { key, now: new Date() },
                     type: Sequelize.QueryTypes.UPDATE,

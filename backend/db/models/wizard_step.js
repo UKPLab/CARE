@@ -7,7 +7,10 @@ module.exports = (sequelize, DataTypes) => {
         static autoTable = false;
 
         static associate(models) {
-            // no associations
+            WizardStep.hasMany(models["setting"], {
+                foreignKey: "wizardStepId",
+                as: "settings",
+            });
         }
     }
 
