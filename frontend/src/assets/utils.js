@@ -95,33 +95,50 @@ export function objectsToTXT(objs) {
 }
 
 /**
+ * Maps each supported export format to its serializer and MIME type.
+ * This is the single source of truth for downloadObjectsAs and getSupportedExportFormats.
+ */
+const EXPORT_FORMATS = {
+    csv:  { serialize: objectsToCSV,  mimeType: "text/csv",            label: "CSV Format",  icon: "filetype-csv",  description: "Comma-separated values, compatible with spreadsheets", extensions: [".csv"] },
+    json: { serialize: objectsToJSON, mimeType: "application/json",    label: "JSON Format", icon: "filetype-json", description: "Standard JSON format with proper formatting",          extensions: [".json"],         parse: (content) => JSON.parse(content) },
+    txt:  { serialize: objectsToTXT,  mimeType: "text/plain",          label: "TXT Format",  icon: "filetype-txt",  description: "Plain text with indented nested objects",             extensions: [".txt"] },
+    yaml: { serialize: objectsToYAML, mimeType: "application/x-yaml", label: "YAML Format", icon: "filetype-yml",  description: "Human-readable YAML format",                          extensions: [".yaml", ".yml"], parse: (content) => yaml.load(content) },
+};
+
+/**
+ * Returns all supported export formats for downloadObjectsAs.
+ *
+ * @returns {string[]}
+ */
+export function getSupportedExportFormats() {
+    return Object.entries(EXPORT_FORMATS).map(([key, { label, icon, description }]) => ({ key, label, icon, description }));
+}
+
+/**
+ * Returns all formats that can be parsed back for import (i.e. those with a parse function).
+ *
+ * @returns {{ key: string, label: string, icon: string, description: string, extensions: string[], parse: function }[]}
+ */
+export function getSupportedImportFormats() {
+    return Object.entries(EXPORT_FORMATS)
+        .filter(([, fmt]) => typeof fmt.parse === "function")
+        .map(([key, { label, icon, description, extensions, parse }]) => ({ key, label, icon, description, extensions, parse }));
+}
+
+/**
  * Downloads the provided objects by the given file type under the given file name.
  *
  * @param objs objects to be downloaded in the browser
  * @param name name of the resulting file
- * @param file_type the type of the file, either {"csv" | "json" | "txt"}
+ * @param file_type the type of the file, either {"csv" | "json" | "txt" | "yaml"}
  */
 export function downloadObjectsAs(objs, name, file_type) {
-    let data;
-    let httpType;
-    if (file_type === "csv") {
-        data = objectsToCSV(objs);
-        httpType = "text/csv";
-    } else if (file_type === "json") {
-        data = objectsToJSON(objs);
-        httpType = "application/json";
-    } else if (file_type === "txt") {
-        data = objectsToTXT(objs);
-        httpType = "text/plain";  
-    } else if (file_type === "yaml") {
-        data = objectsToYAML(objs);
-        httpType = "application/x-yaml";
-    }
-    else {
+    const format = EXPORT_FORMATS[file_type];
+    if (!format) {
         throw `Invalid argument '${file_type}' passed to downloadObjectsAs`;
     }
-
-    window.saveAs(new Blob([data], {type: `${httpType};charset=utf-8`}), `${name}.${file_type}`)
+    const data = format.serialize(objs);
+    window.saveAs(new Blob([data], {type: `${format.mimeType};charset=utf-8`}), `${name}.${file_type}`);
 }
 
 /**
