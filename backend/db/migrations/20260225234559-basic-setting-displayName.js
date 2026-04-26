@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Add displayName, displayGroup, and displaySubsection columns.
+ * Populate displayName, displayGroup, and displaySubsection columns.
  * displayName: user-facing label from CSV Suggested Name
  * displayGroup: section grouping for non-wizard settings from CSV Suggested group naming
  * displaySubsection: subsection within a section for Settings page and SetupWizard
@@ -301,19 +301,6 @@ const DISPLAY_NAMES = {
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.addColumn('setting', 'displayName', {
-            type: Sequelize.STRING(256),
-            allowNull: true,
-        });
-        await queryInterface.addColumn('setting', 'displayGroup', {
-            type: Sequelize.STRING(128),
-            allowNull: true,
-        });
-        await queryInterface.addColumn('setting', 'displaySubsection', {
-            type: Sequelize.STRING(128),
-            allowNull: true,
-        });
-
         const [results] = await queryInterface.sequelize.query(
             "SELECT key FROM setting WHERE deleted = false"
         );
@@ -345,8 +332,18 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.removeColumn('setting', 'displayName');
-        await queryInterface.removeColumn('setting', 'displayGroup');
-        await queryInterface.removeColumn('setting', 'displaySubsection');
+        const [results] = await queryInterface.sequelize.query(
+            "SELECT key FROM setting WHERE deleted = false"
+        );
+
+        for (const row of results) {
+            const key = row.key;
+            if (DISPLAY_NAMES[key] || KEY_TO_DISPLAY_GROUP[key] || KEY_TO_DISPLAY_SUBSECTION[key]) {
+                await queryInterface.sequelize.query(
+                    'UPDATE setting SET "displayName" = NULL, "displayGroup" = NULL, "displaySubsection" = NULL WHERE key = :key',
+                    { replacements: { key } }
+                );
+            }
+        }
     },
 };
