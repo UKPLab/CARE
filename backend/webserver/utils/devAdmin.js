@@ -33,7 +33,7 @@ async function setupDevAdmin(server) {
         }
 
         await createInitialAdmin(server, { userName: "admin", email, password });
-        await server.db.models["app_state"].set("setup.wizardCompleted", "true");
+        await server.db.models["setting"].set("app.setup.wizardCompleted", "true");
 
         server.logger.info(`DEV_SKIP_WIZARD: created admin <${email}> and marked wizard complete.`);
     } catch (err) {

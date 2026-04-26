@@ -238,7 +238,7 @@ function registerLoginRoutes(server, helpers) {
         try {
             const admins = await server.db.models['user'].getUsersByRole('admin');
             const needsSetup = admins.length === 0;
-            const wizardCompleted = (await server.db.models['app_state'].get('setup.wizardCompleted')) === 'true';
+            const wizardCompleted = (await server.db.models['setting'].get('app.setup.wizardCompleted')) === 'true';
 
             server.logger.debug(`req.session.passport: ${JSON.stringify(req.session && req.session.passport)}`);
             server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);

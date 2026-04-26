@@ -16,7 +16,7 @@ module.exports = function (server) {
      * GET /setup/config
      * Returns wizard config while initial setup is in progress: needsSetup is true when no
      * admin exists; steps, wizardSettings, and wizardSettingsByStep (grouped by general,
-     * mail, registration) are returned until app_state.setup.wizardCompleted is true.
+     * mail, registration) are returned until app.setup.wizardCompleted is true.
      * Moodle fields appear in the General wizard step in the UI. When setup is fully
      * complete, returns empty steps and wizardSettings.
      */
@@ -24,7 +24,7 @@ module.exports = function (server) {
         try {
             const admins = await server.db.models["user"].getUsersByRole("admin");
             const needsSetup = admins.length === 0;
-            const wizardCompleted = (await server.db.models["app_state"].get("setup.wizardCompleted")) === "true";
+            const wizardCompleted = (await server.db.models["setting"].get("app.setup.wizardCompleted")) === "true";
 
             if (!needsSetup && wizardCompleted) {
                 return res.status(200).json({ needsSetup: false, steps: [], wizardSettings: [] });
@@ -90,7 +90,7 @@ module.exports = function (server) {
 
     /**
      * PATCH /setup/state
-     * Updates wizard state in app_state.
+     * Updates wizard state in settings.
      * Body: { wizardCompleted?: string, wizardCurrentStep?: string }
      */
     server.app.patch("/setup/state", async function (req, res) {
@@ -105,13 +105,13 @@ module.exports = function (server) {
             }
 
             const { wizardCompleted, wizardCurrentStep } = req.body || {};
-            const AppState = server.db.models["app_state"];
+            const Setting = server.db.models["setting"];
 
             if (wizardCompleted !== undefined) {
-                await AppState.set("setup.wizardCompleted", String(wizardCompleted));
+                await Setting.set("app.setup.wizardCompleted", String(wizardCompleted));
             }
             if (wizardCurrentStep !== undefined) {
-                await AppState.set("setup.wizardCurrentStep", String(wizardCurrentStep));
+                await Setting.set("app.setup.wizardCurrentStep", String(wizardCurrentStep));
             }
 
             return res.status(200).json({ success: true });
