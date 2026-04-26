@@ -5,29 +5,21 @@
     name="ExportFormatModal"
   >
     <template #title>
-      Export Workflows
+      {{ title }}
     </template>
     <template #body>
       <div class="d-grid gap-2">
         <BasicButton
+          v-for="format in supportedFormats"
+          :key="format.key"
           class="btn btn-outline-primary"
-          title="JSON Format"
-          text="JSON Format"
-          icon="filetype-json"
-          @click="selectFormat('json')"
+          :title="format.label"
+          :text="format.label"
+          :icon="format.icon"
+          @click="selectFormat(format.key)"
         >
-          JSON Format
-          <small class="d-block text-muted">Standard JSON format with proper formatting</small>
-        </BasicButton>
-        <BasicButton
-          class="btn btn-outline-primary"
-          title="YAML Format"
-          text="YAML Format"
-          icon="filetype-yml"
-          @click="selectFormat('yaml')"
-        >
-          YAML Format  
-          <small class="d-block text-muted">Human-readable YAML format</small>
+          {{ format.label }}
+          <small class="d-block text-muted">{{ format.description }}</small>
         </BasicButton>
       </div>
     </template>
@@ -44,7 +36,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, getSupportedExportFormats} from "@/assets/utils";
 
 /**
  * Export Format Modal Component
@@ -57,14 +49,29 @@ export default {
   name: "ExportFormatModal",
   components: { BasicModal, BasicButton },
   emits: ['formatSelected'],
+  props: {
+    title: {
+      type: String,
+      default: "Export",
+    },
+  },
+  computed: {
+    supportedFormats() {
+      return getSupportedExportFormats();
+    },
+  },
   data() {
     return {
-      workflowId: null,
+      filterId: null,
+      table: null,
+      childTable: null,
     };
   },
   methods: {
-    open(id = null) {
-      this.workflowId = id;
+    open(id = null, table = null, childTable = null) {
+      this.filterId = id;
+      this.table = table;
+      this.childTable = childTable;
       this.$refs.modal.open();
     },
     close() {
@@ -72,9 +79,12 @@ export default {
     },
     selectFormat(format) {
       this.close();
-      this.downloadWorkflowsWithFormat(format);
+      this.$emit('formatSelected', format);
+      if (this.table) {
+        this.downloadDataWithFormat(format);
+      }
     },
-    downloadWorkflowsWithFormat(format) {
+    downloadDataWithFormat(format) {
       const attributesToDelete = [
         "draft",
         "anonymous",
@@ -84,34 +94,32 @@ export default {
         "deletedAt",
         "userId"
       ];
-      
-      const workflows = this.$store.getters["table/workflow/getFiltered"](
-        (w) => !w.deleted && (this.workflowId === null || w.id === this.workflowId)
-      ).map(w => {
-            return Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key)));
-      });
 
-      // Get workflow steps for each workflow
-      const workflowsWithSteps = workflows.map(workflow => {
-        const workflowSteps = this.$store.getters["table/workflow_step/getFiltered"](
-          (step) => step.workflowId === workflow.id && !step.deleted
-        ).map(step => {
-          return Object.fromEntries(Object.entries(step).filter(([key]) => !attributesToDelete.includes(key)));
+      const tableName = this.table;
+      const childTableName = this.childTable;
+      const items = this.$store.getters[`table/${tableName}/getFiltered`](
+        (w) => (this.filterId === null || w.id === this.filterId)
+      ).map(w => Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key))));
+
+      let result = items;
+
+      if (childTableName) {
+        const fkField = tableName.replace(/_([a-z])/g, (_, c) => c.toUpperCase()) + 'Id';
+        result = items.map(item => {
+          const children = this.$store.getters[`table/${childTableName}/getFiltered`](
+            (child) => child[fkField] === item.id && !child.deleted
+          ).map(child => Object.fromEntries(Object.entries(child).filter(([key]) => !attributesToDelete.includes(key))));
+          return { ...item, [childTableName]: children };
         });
-        
-        return {
-          ...workflow,
-          steps: workflowSteps
-        };
-      });
+      }
 
-      const filename = this.workflowId
-        ? `workflow_${this.workflowId}_${Date.now()}`
-        : `workflows_${Date.now()}`;
-      downloadObjectsAs(workflowsWithSteps, filename, format);
+      const filename = this.filterId
+        ? `${tableName}_${this.filterId}_${Date.now()}`
+        : `${tableName}s_${Date.now()}`;
+      downloadObjectsAs(result, filename, format);
       this.eventBus.emit("toast", {
         title: "Export Successful",
-        message: `Workflow${this.workflowId ? '' : 's'} exported successfully in ${format.toUpperCase()} format`,
+        message: `${tableName}${this.filterId ? '' : 's'} exported successfully in ${format.toUpperCase()} format`,
         variant: "success",
       });
     },
