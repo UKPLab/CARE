@@ -5,7 +5,7 @@ const NEW_GROUPS = [
   { name: 'Study', icon: 'book', order: 2 },
   { name: 'Manage', icon: 'briefcase', order: 3 },
   { name: 'Settings', icon: 'sliders2', order: 4 },
-  { name: 'AI', icon: 'code-slash', order: 5 },
+  { name: 'AI', icon: 'robot', order: 5 },
 ];
 
 const ELEMENT_TO_GROUP = {
