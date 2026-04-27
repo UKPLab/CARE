@@ -23,15 +23,26 @@
                     <div class="card-body">
                       <h5 class="card-title">{{ setting.key }}</h5>
                       <h6 class="card-subtitle mb-2 text-muted">{{ setting.description }}</h6>
-                      <p class="card-text">
+                      <div class="card-text">
                         <div v-if="setting.type === 'edits'">
                           <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
                         </div>
                         <div v-else-if="setting.type === 'boolean' || setting.type === 'bool'" class="form-check form-switch">
-                          <input v-model="setting.value" :checked="setting.value"
-                                 class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
-                                 type="checkbox">
+                          <input 
+                            v-model="setting.value" 
+                            :checked="setting.value"
+                            class="form-check-input" 
+                            role="switch" 
+                            title="Activate/Deactivate NLP support"
+                            type="checkbox"
+                          >
                         </div>
+                        <textarea
+                            v-else-if="setting.type === 'text'"
+                            v-model="setting.value"
+                            class="w-100 form-control"
+                            rows="6"
+                        ></textarea>
                         <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
                           <select v-model="setting.value" class="form-select">
                             <option value="">None (use default email)</option>
@@ -44,8 +55,38 @@
                             </option>
                           </select>
                         </div>
+                        <div v-else-if="setting.type === 'color'" class="d-flex align-items-center gap-3 mt-2 flex-wrap">
+                          <input
+                            :value="setting.value"
+                            type="color"
+                            class="form-control form-control-color"
+                            title="Pick a color"
+                            @input="updateColorValue(setting, $event.target.value)"
+                          >
+                          <input
+                            :value="setting.value"
+                            type="text"
+                            class="form-control"
+                            style="max-width: 110px; font-family: monospace;"
+                            maxlength="7"
+                            @input="updateColorValue(setting, $event.target.value)"
+                          >
+                          <LogoSvg
+                            v-if="showsLogoPreview(setting)"
+                            :height="40"
+                            :re-bg-color="setting.value"
+                          />
+                          <button
+                            v-if="hasResetValue(setting)"
+                            class="btn btn-outline-secondary btn-sm"
+                            :disabled="setting.value.toLowerCase() === getResetValue(setting).toLowerCase()"
+                            @click="setting.value = getResetValue(setting)"
+                          >
+                            Reset
+                          </button>
+                        </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -62,10 +103,11 @@
 <script>
 import LoadIcon from "@/basic/Icon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
+import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 
 export default {
   name: "SettingItem",
-  components: { LoadIcon, EditorModal },
+  components: { LoadIcon, EditorModal, LogoSvg },
   subscribeTable: ["template"],
   props: {
     group: Object,
@@ -98,6 +140,29 @@ export default {
     toggleCollapse() {
       this.collapsed = !this.collapsed;
     },
+    normalizeHexColor(value) {
+      if (!value) return null;
+      const normalized = value.startsWith("#") ? value : `#${value}`;
+      return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : null;
+    },
+    updateColorValue(setting, value) {
+      const normalized = this.normalizeHexColor(value);
+      if (normalized) {
+        setting.value = normalized;
+      }
+    },
+    showsLogoPreview(setting) {
+      return setting.key === "logo.reBgColor";
+    },
+    hasResetValue(setting) {
+      return this.getResetValue(setting) !== null;
+    },
+    getResetValue(setting) {
+      if (setting.key === "logo.reBgColor") {
+        return DEFAULT_RE_BG;
+      }
+      return null;
+    },
     isEmailTemplateSetting(setting) {
       return setting.key && 
              setting.key.startsWith("email.template.") && 
@@ -108,7 +173,9 @@ export default {
       let requiredType = null;
       if (setting.key === "email.template.passwordReset" || 
           setting.key === "email.template.verification" || 
-          setting.key === "email.template.registration") {
+          setting.key === "email.template.registration" ||
+          setting.key === "email.template.twoFactorOtp" ||
+          setting.key === "email.template.passwordResetSuccess") {
         requiredType = 1; // Email - General
       } else if (setting.key === "email.template.sessionStart" || 
                  setting.key === "email.template.sessionFinish") {

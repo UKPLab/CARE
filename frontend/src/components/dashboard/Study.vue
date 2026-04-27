@@ -9,7 +9,7 @@
               title="Overview"
               text="Overview"
               icon="clipboard"
-              @click="this.$refs.overviewModal.open()"
+              @click="openOverviewModal"
           />
           <BasicButton
               class="btn-secondary btn-sm"
@@ -62,17 +62,17 @@
         />
       </template>
     </Card>
-        <StudyModal ref="studyCoordinator"/>
-    <StudySessionModal ref="studySessionModal"/>
-    <ConfirmModal ref="deleteConf"/>
-    <ConfirmModal ref="confirmModal"/>
-    <BulkCloseModal ref="bulkConfirmModal"/>
+    <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator" @hide="modals.studyCoordinator = false"/>
+    <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
+    <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
+    <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
+    <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
-    <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
-    <SingleAssignmentModal ref="singleAssignmentModal"/>
-    <InformationModal ref="informationModal"/>
-    <OverViewModal ref="overviewModal"/>
-    <SavedTemplatesModal ref="savedTemplatesModal"/>
+    <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
+    <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
+    <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
+    <OverViewModal v-if="modals.overview" ref="overviewModal" @hide="modals.overview = false"/>
+    <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>
 </template>
 
@@ -126,10 +126,23 @@ export default {
         {table: "user", by: "userId"}
       ]
     },
+    "user",
     'document',
     'study_session', 'workflow', 'workflow_step', 'study_step', 'template'],
   data() {
     return {
+      modals: {
+        studyCoordinator: false,
+        studySession: false,
+        deleteConf: false,
+        confirm: false,
+        bulkConfirm: false,
+        bulkAssignments: false,
+        singleAssignment: false,
+        information: false,
+        overview: false,
+        savedTemplates: false,
+      },
       options: {
         striped: true,
         hover: true,
@@ -379,6 +392,7 @@ export default {
       return cols;
     },
     studiesTable() {
+      const sessionCounts = this.$store.getters["table/study_session/sessionCountByStudyId"];
       return this.studies
           .filter(study => !study.template)
           .filter(study => this.canViewAllStudies ||
@@ -409,7 +423,7 @@ export default {
             }
 
             study.createdAt = new Date(study.createdAt).toLocaleString()
-            study.sessions = this.$store.getters["table/study_session/getFiltered"]((e) => e.studyId === study.id).length;
+            study.sessions = sessionCounts[study.id] ?? 0;
 
             study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
             study.showDeleteButton = this.isAdmin || study.userId === this.userId;
@@ -439,6 +453,46 @@ export default {
     },
   },
   methods: {
+    openStudyCoordinator(id = 0, linkOnly = false) {
+      this.modals.studyCoordinator = true;
+      this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly));
+    },
+    openStudySessionModal(studyId) {
+      this.modals.studySession = true;
+      this.$nextTick(() => this.$refs.studySessionModal?.open(studyId));
+    },
+    openDeleteConfModal(name, message, warning, cb) {
+      this.modals.deleteConf = true;
+      this.$nextTick(() => this.$refs.deleteConf?.open(name, message, warning, cb));
+    },
+    openConfirmModal(name, message, warning, cb) {
+      this.modals.confirm = true;
+      this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
+    },
+    openBulkConfirmModal() {
+      this.modals.bulkConfirm = true;
+      this.$nextTick(() => this.$refs.bulkConfirmModal?.open());
+    },
+    openBulkAssignmentsModal() {
+      this.modals.bulkAssignments = true;
+      this.$nextTick(() => this.$refs.bulkAssignmentsModal?.open());
+    },
+    openSingleAssignmentModal() {
+      this.modals.singleAssignment = true;
+      this.$nextTick(() => this.$refs.singleAssignmentModal?.open());
+    },
+    openInformationModal(params) {
+      this.modals.information = true;
+      this.$nextTick(() => this.$refs.informationModal?.open(params));
+    },
+    openOverviewModal() {
+      this.modals.overview = true;
+      this.$nextTick(() => this.$refs.overviewModal?.open());
+    },
+    openSavedTemplatesModal() {
+      this.modals.savedTemplates = true;
+      this.$nextTick(() => this.$refs.savedTemplatesModal?.open());
+    },
     action(data) {
       if (data.action === "editStudy") {
         this.studyCoordinator(data.params);
@@ -471,23 +525,14 @@ export default {
           }
         });
       } else if (data.action === "inspectStudySessions") {
-
-        this.$refs.studySessionModal.open(data.params.id);
+        this.openStudySessionModal(data.params.id);
       } else if (data.action === "closeStudy") {
         this.$refs.studyCloseModal.open(data.params);
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
-        const {
-          deletedAt,
-          createdAt,
-          firstName,
-          lastName,
-          updatedAt,
-          manage,
-          ...filteredParams
-        } = data.params;
-        this.$refs.informationModal.open(filteredParams);
+        const {deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams} = data.params;
+        this.openInformationModal(filteredParams);
       }
     },
     async copyLink(studyId) {
@@ -518,25 +563,25 @@ export default {
       }
     },
     openSavedTemplates() {
-      this.$refs.savedTemplatesModal.open();
+      this.openSavedTemplatesModal();
     },
     add() {
-      this.$refs.studyCoordinator.open(0);
+      this.openStudyCoordinator(0);
     },
     addBulkAssignment() {
-      this.$refs.bulkAssignmentsModal.open();
+      this.openBulkAssignmentsModal();
     },
     addSingleAssignment() {
-      this.$refs.singleAssignmentModal.open();
+      this.openSingleAssignmentModal();
     },
     studyCoordinator(row, linkOnly = false) {
-      this.$refs.studyCoordinator.open(row.id, null, linkOnly);
+      this.openStudyCoordinator(row.id, linkOnly);
     },
     closeStudies() {
-      this.$refs.bulkConfirmModal.open();
+      this.openBulkConfirmModal();
     },
     saveAsTemplate(study) {
-      this.$refs.confirmModal.open(
+      this.openConfirmModal(
           "Save Study as Template",
           "Are you sure you want to save this study as a template?",
           "",
@@ -577,7 +622,7 @@ export default {
         warning = "";
       }
 
-      this.$refs.deleteConf.open(
+      this.openDeleteConfModal(
           "Delete Study",
           "Are you sure you want to delete the study?",
           warning,

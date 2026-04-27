@@ -65,12 +65,12 @@
         <Loading v-if="settings === null"/>
 
         <div v-else class="mt-3">
-          <SettingItem
-              v-for="(group, key) in groupedSettings"
-              :key="key"
-              :group="group"
-              :title="key"
-          />
+          <template v-for="(group, key) in groupedSettings" :key="key">
+            <SettingItem
+                :group="group"
+                :title="key"
+            />
+          </template>
         </div>
       </template>
     </Card>
@@ -225,6 +225,9 @@ export default {
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
         if (res.success) {
+          this.settings.forEach((s) => {
+            this.$store.commit("settings/set", { key: s.key, value: s.value });
+          });
           this.eventBus.emit("toast", {
             title: "Success",
             message: res.data,
