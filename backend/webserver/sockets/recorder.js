@@ -38,6 +38,7 @@ class RecorderSocket extends Socket {
                 await this.models["trace"].add({
                     recordingId,
                     userId: this.userId,
+                    socketId: this.socket.id,
                     action: eventName,
                     payload: args[0] || null,
                     direction: true,
@@ -58,6 +59,7 @@ class RecorderSocket extends Socket {
                 await this.models["trace"].add({
                     recordingId,
                     userId: this.userId,
+                    socketId: this.socket.id,
                     action: eventName,
                     payload: args[0] || null,
                     direction: false,

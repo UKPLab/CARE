@@ -23,6 +23,7 @@ module.exports = (sequelize, DataTypes) => {
         {
             recordingId: DataTypes.INTEGER,
             userId: DataTypes.INTEGER,
+            socketId: DataTypes.STRING,
             action: DataTypes.STRING,
             payload: DataTypes.JSONB,
             direction: DataTypes.BOOLEAN,

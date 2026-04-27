@@ -19,6 +19,20 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'user',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
+      },
+      socketId: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       action: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -59,6 +73,10 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.fn('NOW'),
       },
+    });
+
+    await queryInterface.addIndex('trace', ['socketId'], {
+      name: 'trace_socketId_idx',
     });
   },
 
