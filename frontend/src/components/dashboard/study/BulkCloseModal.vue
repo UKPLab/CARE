@@ -2,6 +2,7 @@
   <BasicModal
     ref="bulkCloseModal"
     name="bulk-close-modal"
+    size="xl"
   >
     <template #title>
       <span>Bulk Close Studies</span>
@@ -9,49 +10,15 @@
     <template #body>
       <div>
         <p class="mb-3">
-          Choose which open studies to close. Only studies in the current project are affected.
+          Filter and select open studies to close. Only studies in the current project are affected.
         </p>
-        <div class="mb-3">
-          <label class="form-label" for="bulk-close-workflow">Workflow</label>
-          <select
-            id="bulk-close-workflow"
-            v-model="workflowScope"
-            class="form-select"
-          >
-            <option value="">
-              All workflows
-            </option>
-            <option
-              v-for="opt in workflowOptions"
-              :key="opt.value"
-              :value="String(opt.value)"
-            >
-              {{ opt.name }}
-            </option>
-          </select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label" for="bulk-close-user">Study user (owner)</label>
-          <select
-            id="bulk-close-user"
-            v-model="studyUserScope"
-            class="form-select"
-          >
-            <option value="any">
-              Any user
-            </option>
-            <option value="role_guest">
-              All users with role: Guest
-            </option>
-            <option
-              v-for="opt in studyUserOptions"
-              :key="opt.value"
-              :value="'user:' + opt.value"
-            >
-              {{ opt.name }}
-            </option>
-          </select>
-        </div>
+        <BasicTable
+          v-model="selectedStudies"
+          :columns="columns"
+          :data="tableRows"
+          :options="tableOptions"
+          :max-table-height="'50vh'"
+        />
         <p class="text-muted small mb-0">
           {{ scopeSummary }}
         </p>
@@ -76,7 +43,7 @@
       <div>
         <BasicButton
           :title="confirmButtonTitle"
-          :disabled="matchingOpenCount === 0"
+          :disabled="selectedStudies.length === 0"
           class="btn btn-primary"
           @click="closeMatchingStudies"
         />
@@ -89,6 +56,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicTable from "@/basic/Table.vue";
 
 /**
  * Modal for bulk closing studies (optional filters: workflow, study user / guest role)
@@ -96,16 +64,26 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "BulkCloseModal",
-  subscribeTable: ["user_role", "user_role_matching"],
+  subscribeTable: ["user_role", "user_role_matching", "user", "workflow"],
   components: {
     BasicModal,
     BasicButton,
+    BasicTable,
   },
   data() {
     return {
-      workflowScope: "",
-      studyUserScope: "any",
+      selectedStudies: [],
       notifySessions: false,
+      tableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+        search: true,
+        selectableRows: true,
+      }
     };
   },
   computed: {
@@ -145,15 +123,76 @@ export default {
         })
         .sort((a, b) => a.name.localeCompare(b.name));
     },
-    matchingOpenCount() {
-      return this.matchingOpenStudies.length;
+    groupOptions() {
+      return [
+        { key: "Guest", name: "Guest" },
+        { key: "Other", name: "Other" },
+      ];
+    },
+    columns() {
+      return [
+        { name: "ID", key: "id", sortable: true, width: 1 },
+        { name: "Study", key: "name", sortable: true, multiline: true, width: 3 },
+        {
+          name: "Workflow",
+          key: "workflowName",
+          sortable: true,
+          multiline: true,
+          width: 3,
+          filter: this.workflowOptions.map((opt) => ({ key: opt.name, name: opt.name })),
+        },
+        {
+          name: "User",
+          key: "ownerName",
+          sortable: true,
+          width: 2,
+          filter: this.studyUserOptions.map((opt) => ({ key: opt.name, name: opt.name })),
+        },
+        {
+          name: "Group",
+          key: "ownerGroup",
+          sortable: true,
+          width: 1,
+          filter: this.groupOptions,
+        },
+        {
+          name: "Created",
+          key: "createdAt",
+          sortable: true,
+          width: 2,
+        },
+      ];
+    },
+    tableRows() {
+      return this.openStudiesInProject
+        .map((study) => {
+          const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
+          const user = this.$store.getters["table/user/get"](study.userId);
+          const ownerParts = user ? [user.firstName, user.lastName].filter(Boolean) : [];
+          const ownerName = ownerParts.length
+            ? ownerParts.join(" ")
+            : user?.userName || user?.email || `User ${study.userId}`;
+
+          return {
+            id: study.id,
+            name: study.name || `Study ${study.id}`,
+            workflowName: workflow?.name || `Workflow ${study.workflowId ?? "-"}`,
+            ownerName,
+            ownerGroup: this.guestUserIds.has(Number(study.userId)) ? "Guest" : "Other",
+            createdAt: new Date(study.createdAt).toLocaleString(),
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    selectedCount() {
+      return this.selectedStudies.length;
     },
     scopeSummary() {
-      const n = this.matchingOpenCount;
+      const n = this.selectedCount;
       if (n === 0) {
-        return "No open studies match the current filters.";
+        return `No studies selected. Showing ${this.tableRows.length} open studies.`;
       }
-      return `${n} open ${n === 1 ? "study matches" : "studies match"} these filters.`;
+      return `${n} ${n === 1 ? "study selected" : "studies selected"} for closing.`;
     },
     guestUserIds() {
       const roles = this.$store.getters["table/user_role/getAll"] || [];
@@ -164,42 +203,24 @@ export default {
       );
       return new Set(matchings.map((m) => Number(m.userId)));
     },
-    matchingOpenStudies() {
-      const wf = Number(this.workflowScope);
-      const filterByWorkflow = Number.isFinite(wf) && wf > 0;
-
-      return this.openStudiesInProject.filter((s) => {
-        if (filterByWorkflow && Number(s.workflowId) !== wf) return false;
-
-        if (this.studyUserScope === "role_guest") {
-          return this.guestUserIds.has(Number(s.userId));
-        }
-        if (typeof this.studyUserScope === "string" && this.studyUserScope.startsWith("user:")) {
-          const id = Number(this.studyUserScope.slice("user:".length));
-          return Number.isFinite(id) && id > 0 && Number(s.userId) === id;
-        }
-        return true;
-      });
-    },
     confirmButtonTitle() {
-      return this.matchingOpenCount === 0
+      return this.selectedCount === 0
         ? "No studies to close"
-        : `Close ${this.matchingOpenCount} ${this.matchingOpenCount === 1 ? "study" : "studies"}`;
+        : `Close ${this.selectedCount} ${this.selectedCount === 1 ? "study" : "studies"}`;
     },
   },
   methods: {
     open() {
-      this.workflowScope = "";
-      this.studyUserScope = "any";
+      this.selectedStudies = [];
       this.notifySessions = false;
       this.$refs.bulkCloseModal.open();
     },
     closeMatchingStudies() {
-      const matches = this.matchingOpenStudies;
+      const matches = this.selectedStudies;
       if (matches.length === 0) {
         this.eventBus.emit("toast", {
           title: "Nothing to close",
-          message: "No open studies match the selected workflow and user filters.",
+          message: "Select at least one open study from the table.",
           variant: "warning",
         });
         return;
