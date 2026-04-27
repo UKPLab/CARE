@@ -82,7 +82,7 @@
       <template #body>
         <p class="text-muted small mb-3">
           Each row is a credential share. <strong>Catalog models</strong> lists enabled catalog entries that use that credential
-          (via <code>llmCredentialId</code>), so you can see which models are affected when access is shared or revoked.
+          (via <code>aiCredentialId</code>), so you can see which models are affected when access is shared or revoked.
         </p>
         <div v-if="allShares.length === 0" class="text-center text-muted py-4">
           No credential shares configured.
@@ -226,7 +226,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label fw-bold">Credential (optional)</label>
-          <select v-model="modelCatalogForm.llmCredentialId" class="form-select">
+          <select v-model="modelCatalogForm.aiCredentialId" class="form-select">
             <option :value="null">None</option>
             <option v-for="c in credentialOptionsForModels" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
@@ -291,9 +291,9 @@ import BasicButton from "@/basic/Button.vue";
 import Modal from "@/basic/Modal.vue";
 
 export default {
-  name: "LlmDashboard",
+  name: "AiDashboard",
   components: {Card, BasicTable, BasicButton, Modal},
-  subscribeTable: ["llm_credential", "llm_credential_share", "llm_model", "llm_log", "user", "study"],
+  subscribeTable: ["ai_credential", "ai_model_share", "ai_model", "ai_log", "user", "study"],
   data() {
     return {
       editingCredential: null,
@@ -305,7 +305,7 @@ export default {
         model: "",
         provider: "",
         description: "",
-        llmCredentialId: null,
+        aiCredentialId: null,
         enabled: true,
         additionalParametersText: "{}",
       },
@@ -387,16 +387,16 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     allCredentials() {
-      return this.$store.getters["table/llm_credential/getAll"] || [];
+      return this.$store.getters["table/ai_credential/getAll"] || [];
     },
     myCredentials() {
       return this.allCredentials.filter((c) => c.userId === this.userId);
     },
     allShares() {
-      return this.$store.getters["table/llm_credential_share/getAll"] || [];
+      return this.$store.getters["table/ai_model_share/getAll"] || [];
     },
     allModels() {
-      return this.$store.getters["table/llm_model/getAll"] || [];
+      return this.$store.getters["table/ai_model/getAll"] || [];
     },
     credentialOptionsForModels() {
       return this.allCredentials.map((c) => ({id: c.id, name: c.name || `Credential ${c.id}`}));
@@ -404,7 +404,7 @@ export default {
     catalogModelTableData() {
       return this.allModels.map((m) => {
         const defaults = this.stringifyParametersForCatalog(m.additionalParameters);
-        const credential = this.allCredentials.find((c) => c.id === m.llmCredentialId);
+        const credential = this.allCredentials.find((c) => c.id === m.aiCredentialId);
         return {
           ...m,
           credentialName: credential ? credential.name : "-",
@@ -418,7 +418,7 @@ export default {
       });
     },
     usageLogs() {
-      return this.$store.getters["table/llm_log/getAll"] || [];
+      return this.$store.getters["table/ai_log/getAll"] || [];
     },
     users() {
       return this.$store.getters["table/user/getAll"] || [];
@@ -435,7 +435,7 @@ export default {
         apiBaseUrlDisplay: c.apiBaseUrl || "-",
         apiVersionDisplay: c.apiVersion || "-",
         enabledBadge: c.enabled !== false,
-        shareCount: this.allShares.filter((s) => s.llmCredentialId === c.id).length,
+        shareCount: this.allShares.filter((s) => s.aiModelId != null && this.allModels.find((m) => m.id === s.aiModelId && m.aiCredentialId === c.id)).length,
       }));
     },
     usageLogTableData() {
@@ -446,7 +446,10 @@ export default {
     },
     sharesForSelectedCredential() {
       if (!this.selectedCredentialForSharing) return [];
-      return this.allShares.filter((s) => s.llmCredentialId === this.selectedCredentialForSharing.id);
+      return this.allShares.filter((s) => {
+        const model = this.allModels.find((m) => m.id === s.aiModelId);
+        return model && model.aiCredentialId === this.selectedCredentialForSharing.id;
+      });
     },
     shareTargetOptions() {
       if (this.shareForm.targetType === "user") {
@@ -469,18 +472,17 @@ export default {
     },
     allSharesTableData() {
       return this.allShares.map((share) => {
-        const credential = this.allCredentials.find((c) => c.id === share.llmCredentialId);
+        const sharedModel = this.allModels.find((m) => m.id === share.aiModelId);
+        const credential = this.allCredentials.find((c) => c.id === sharedModel?.aiCredentialId);
         const isUserTarget = share.userId != null;
         const targetId = isUserTarget ? share.userId : share.roleId;
-        const linkedModels = this.allModels.filter(
-          (m) => m.llmCredentialId === share.llmCredentialId && m.deleted !== true
-        );
+        const linkedModels = sharedModel && sharedModel.deleted !== true ? [sharedModel] : [];
         const linkedModelsDisplay = linkedModels.length
           ? linkedModels.map((m) => m.name || m.model).join(", ")
           : "—";
         return {
           ...share,
-          credentialName: credential?.name || `Credential ${share.llmCredentialId}`,
+          credentialName: credential?.name || `Credential ${sharedModel?.aiCredentialId ?? "-"}`,
           linkedModelsDisplay,
           ownerName: credential ? this.getUserName(credential.userId) : "-",
           targetType: isUserTarget ? "User" : "Study",
@@ -555,7 +557,7 @@ export default {
         model: "",
         provider: "",
         description: "",
-        llmCredentialId: null,
+        aiCredentialId: null,
         enabled: true,
         additionalParametersText: "{}",
       };
@@ -587,7 +589,7 @@ export default {
             model: data.params.model,
             provider: data.params.provider,
             description: data.params.description || "",
-            llmCredentialId: data.params.llmCredentialId || null,
+            aiCredentialId: data.params.aiCredentialId || null,
             enabled: data.params.enabled !== false,
             additionalParametersText: this.stringifyParametersForCatalog(data.params.additionalParameters),
           };
@@ -597,14 +599,14 @@ export default {
         case "deleteCatalogModel":
           if (confirm(`Delete model "${data.params.name}"?`)) {
             this.$socket.emit("appDataUpdate", {
-              table: "llm_model",
+              table: "ai_model",
               data: {id: data.params.id, deleted: true},
             });
           }
           break;
         case "toggleCatalogModelEnabled":
           this.$socket.emit("appDataUpdate", {
-            table: "llm_model",
+            table: "ai_model",
             data: {id: data.params.id, enabled: data.value},
           });
           break;
@@ -624,14 +626,14 @@ export default {
         model: this.modelCatalogForm.model.trim(),
         provider: this.modelCatalogForm.provider.trim(),
         description: this.modelCatalogForm.description,
-        llmCredentialId: this.modelCatalogForm.llmCredentialId,
+        aiCredentialId: this.modelCatalogForm.aiCredentialId,
         enabled: this.modelCatalogForm.enabled,
         additionalParameters,
       };
 
       if (this.editingModel) {
         this.$socket.emit("appDataUpdate", {
-          table: "llm_model",
+          table: "ai_model",
           data: {id: this.editingModel.id, ...payload},
         }, (res) => {
           if (res && res.success !== false) {
@@ -643,7 +645,7 @@ export default {
         });
       } else {
         this.$socket.emit("appDataUpdate", {
-          table: "llm_model",
+          table: "ai_model",
           data: {userId: this.userId, ...payload},
         }, (res) => {
           if (res && res.success !== false) {
@@ -677,7 +679,7 @@ export default {
         case "deleteCredential":
           if (confirm(`Delete credential "${data.params.name}"?`)) {
             this.$socket.emit("appDataUpdate", {
-              table: "llm_credential",
+              table: "ai_credential",
               data: {id: data.params.id, deleted: true},
             });
           }
@@ -712,7 +714,7 @@ export default {
 
       if (this.editingCredential) {
         this.$socket.emit("appDataUpdate", {
-          table: "llm_credential",
+          table: "ai_credential",
           data: {id: this.editingCredential.id, ...payload},
         }, (res) => {
           if (res && res.success === false) {
@@ -724,7 +726,7 @@ export default {
         });
       } else {
         this.$socket.emit("appDataUpdate", {
-          table: "llm_credential",
+          table: "ai_credential",
           data: payload,
         }, (res) => {
           if (res && res.success === false) {
@@ -739,12 +741,12 @@ export default {
     addShare() {
       if (!this.canCreateShare) return;
       const payload = {
-        llmCredentialId: this.selectedCredentialForSharing.id,
+        aiModelId: this.selectedCredentialForSharing.id,
         userId: this.shareForm.targetType === "user" ? this.shareForm.targetId : null,
         roleId: this.shareForm.targetType === "study" ? this.shareForm.targetId : null,
         expiryDate: new Date(this.shareForm.expiryDate).toISOString(),
       };
-      this.$socket.emit("appDataUpdate", {table: "llm_credential_share", data: payload}, (res) => {
+      this.$socket.emit("appDataUpdate", {table: "ai_model_share", data: payload}, (res) => {
         if (res && res.success === false) {
           this.eventBus.emit("toast", {title: "Error", message: res.message || "Failed to create share.", variant: "danger"});
           return;
@@ -757,7 +759,7 @@ export default {
       if (data.action !== "revokeShare") return;
       if (!confirm("Revoke this share?")) return;
       this.$socket.emit("appDataUpdate", {
-        table: "llm_credential_share",
+        table: "ai_model_share",
         data: {id: data.params.id, deleted: true},
       }, (res) => {
         if (res && res.success === false) {
@@ -771,7 +773,7 @@ export default {
       if (data.action !== "revokeShareGlobal") return;
       if (!confirm("Revoke this share?")) return;
       this.$socket.emit("appDataUpdate", {
-        table: "llm_credential_share",
+        table: "ai_model_share",
         data: {id: data.params.id, deleted: true},
       }, (res) => {
         if (res && res.success === false) {

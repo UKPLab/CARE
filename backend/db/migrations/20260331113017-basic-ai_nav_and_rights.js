@@ -2,20 +2,20 @@
 
 const navElements = [
   {
-    name: 'LLM',
+    name: 'AI',
     groupId: 'Default',
     icon: 'key',
     order: 15,
     admin: false,
-    path: 'llm',
-    component: 'LlmDashboard',
+    path: 'ai',
+    component: 'AiDashboard',
   },
 ];
 
 const userRights = [
   {
-    name: 'frontend.dashboard.llm.view',
-    description: 'Access to the unified LLM dashboard',
+    name: 'frontend.dashboard.ai.view',
+    description: 'Access to the unified AI dashboard',
   },
 ];
 
