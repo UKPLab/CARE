@@ -3,9 +3,9 @@ const Server = require("../../webserver/Server.js");
 describe('Test RPC call', () => {
 
     /**
-     * Test the RPC call
+     * Test the RPC healthy probe
      */
-    test('Test call', async () => {
+    test('Test healthy', async () => {
         let server = new Server();
 
         // wait until RPCtest service is connected
@@ -14,9 +14,9 @@ describe('Test RPC call', () => {
         // check status
         expect(await server.rpcs["RPCtest"].isOnline()).toEqual(true);
 
-        // call rpc and check response
-        const response = await server.rpcs["RPCtest"].call("Hello")
-        expect(response).toEqual("World!")
+        // run healthy probe and check response
+        const response = await server.rpcs["RPCtest"].healthy();
+        expect(response).toEqual("World!");
 
         server.stop();
 

@@ -338,7 +338,8 @@ module.exports = class NLPService extends Service {
     }
 
     /**
-     * Overwrite method to handle incoming requests
+     * Overwrite method to handle incoming requests.
+     * Forwards skill requests to the NLP broker.
      * @param client
      * @param data
      * @return {Promise<void>}
