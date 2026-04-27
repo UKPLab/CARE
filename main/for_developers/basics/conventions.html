@@ -59,8 +59,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#communication-paradigms">Communication Paradigms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#code-review-guidelines">Code Review Guidelines</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#general">General</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#backend">Backend</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#frontend">Frontend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend-sockets">Backend — Sockets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend-models">Backend — Models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#frontend-vue-style">Frontend — Vue Style</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#frontend-data-and-state">Frontend — Data and State</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#frontend-structure-and-imports">Frontend — Structure and Imports</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#id1">Documentation</a></li>
 </ul>
 </li>
@@ -94,6 +97,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
@@ -182,67 +186,96 @@ an additional method should be created and documented.</p>
 <section id="code-review-guidelines">
 <h2>Code Review Guidelines<a class="headerlink" href="#code-review-guidelines" title="Link to this heading"></a></h2>
 <p>The following checklist ensures consistency, quality, and maintainability across the codebase.
-Reviewers should verify each item before approving changes.</p>
+Use this as a self-review before opening any PR. Reviewers use the same checklist.</p>
 <section id="general">
 <h3>General<a class="headerlink" href="#general" title="Link to this heading"></a></h3>
-<ul>
-<li><p>All open <code class="docutils literal notranslate"><span class="pre">TODOs</span></code> in the code handled</p></li>
-<li><p>All <a class="reference internal" href="#naming-conventions"><span class="std std-ref">naming conventions</span></a> are fulfilled</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
+<li><p>All open <code class="docutils literal notranslate"><span class="pre">TODOs</span></code> in the code are resolved or explicitly documented in an issue</p></li>
+<li><dl class="simple">
+<dt>All <a class="reference internal" href="#naming-conventions"><span class="std std-ref">naming conventions</span></a> are fulfilled</dt><dd><ul>
 <li><p>No redundant or unused variables</p></li>
 <li><p>Variable names are self-explanatory</p></li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </li>
 <li><p>Lint: Code is adequately indented and readable</p></li>
-<li><p>All comments properly (e.g., without spelling errors, consistent with the code)</p></li>
-<li><p>All functions are documented properly (e.g., parameters correctly defined, description understandable)</p></li>
-<li><p>Code structure adequate (e.g., no blocks of repeated code, no one-liners in functions)</p></li>
-<li><p>No <code class="docutils literal notranslate"><span class="pre">console.log</span></code> printouts (i.e., always use integrated logger for handling messages) – check console in backend and browser!</p></li>
+<li><p>All comments are correct, consistent, and free of spelling errors</p></li>
+<li><p>All functions are documented with JSDoc (parameters, descriptions, return types)</p></li>
+<li><p>No blocks of repeated code; extract shared logic into named functions</p></li>
+<li><p>No <code class="docutils literal notranslate"><span class="pre">console.log</span></code> calls left in — always use the integrated logger (check both backend terminal and browser console)</p></li>
 </ul>
 </section>
-<section id="backend">
-<h3>Backend<a class="headerlink" href="#backend" title="Link to this heading"></a></h3>
-<ul class="simple">
-<li><p>All file handles in socket connection are async</p></li>
-<li><p>All functions documented</p></li>
-<li><p>All sockets are defined using <a class="reference internal" href="../backend/socket.html#createsocket"><span class="std std-ref">createSocket: How it works</span></a></p></li>
-<li><p>All socket events that perform database changes set <code class="docutils literal notranslate"><span class="pre">db_transaction:</span> <span class="pre">true</span></code> (see <a class="reference internal" href="../backend/socket.html#socket-db-transaction"><span class="std std-ref">Transaction Usage</span></a>)</p></li>
-<li><p>Socket classes do not call the DB directly (always use predefined functions in DB Models or <code class="docutils literal notranslate"><span class="pre">MetaModel</span></code> class – see <code class="docutils literal notranslate"><span class="pre">./backend/db/models</span></code> and <code class="docutils literal notranslate"><span class="pre">./backend/db/MetaModel.js</span></code>)</p></li>
-<li><p>DB transactions are used if multiple DB calls are depending on each other</p></li>
-<li><p>MetaModel.js used for all possible functions</p></li>
-<li><p>Security: No <code class="docutils literal notranslate"><span class="pre">userId</span></code> is set from the frontend, backend <code class="docutils literal notranslate"><span class="pre">this.userId</span></code> is always used</p></li>
-</ul>
-</section>
-<section id="frontend">
-<h3>Frontend<a class="headerlink" href="#frontend" title="Link to this heading"></a></h3>
+<section id="backend-sockets">
+<h3>Backend — Sockets<a class="headerlink" href="#backend-sockets" title="Link to this heading"></a></h3>
 <ul>
-<li><p>Complied with <a class="reference external" href="https://vuejs.org/style-guide/">Vue Styling Guidelines</a></p>
+<li><p>All socket handler methods are <code class="docutils literal notranslate"><span class="pre">async</span></code></p></li>
+<li><p>All socket handlers are registered using <code class="docutils literal notranslate"><span class="pre">createSocket(eventName,</span> <span class="pre">handler,</span> <span class="pre">additionalOptions,</span> <span class="pre">useTransaction)</span></code></p></li>
+<li><p>Socket classes never call Sequelize directly — always use <code class="docutils literal notranslate"><span class="pre">MetaModel</span></code> static methods or the model’s own methods (<code class="docutils literal notranslate"><span class="pre">getById</span></code>, <code class="docutils literal notranslate"><span class="pre">updateById</span></code>, <code class="docutils literal notranslate"><span class="pre">add</span></code>, <code class="docutils literal notranslate"><span class="pre">deleteById</span></code>, etc.)</p></li>
+<li><p>DB transactions are used whenever multiple dependent DB writes exist; pass <code class="docutils literal notranslate"><span class="pre">options.transaction</span></code> through all calls</p></li>
+<li><p>Side effects that must run after a commit (sending emails, triggering broadcasts) use <code class="docutils literal notranslate"><span class="pre">options.transaction.afterCommit(()</span> <span class="pre">=&gt;</span> <span class="pre">...)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">userId</span></code> is always taken from <code class="docutils literal notranslate"><span class="pre">this.userId</span></code> (server session) — never from <code class="docutils literal notranslate"><span class="pre">data.userId</span></code> or any other frontend-supplied value</p></li>
+<li><p>Permission checks are present and correctly scoped:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Vue component names without “.vue” and multi-word</p></li>
-<li><p>Use detailed prop definitions (e.g., type and required defined!)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">v-for</span></code> loops use <code class="docutils literal notranslate"><span class="pre">:key=&quot;&lt;&gt;.id&quot;</span></code> attribute</p></li>
-<li><p>No usage of <code class="docutils literal notranslate"><span class="pre">v-if</span></code> on the same element as <code class="docutils literal notranslate"><span class="pre">v-for</span></code></p></li>
-<li><p><a class="reference external" href="https://vuejs.org/style-guide/rules-essential.html#use-component-scoped-styling">Component-scoped styling</a> used</p></li>
-<li><p><a class="reference external" href="https://vuejs.org/style-guide/rules-strongly-recommended.html#simple-computed-properties">Simple computed properties</a> (i.e., no complex code in computes)</p></li>
-<li><p><a class="reference external" href="https://vuejs.org/style-guide/rules-recommended.html#component-instance-options-order">Component/instance options order</a> and <a class="reference external" href="https://vuejs.org/style-guide/rules-recommended.html#element-attribute-order">Element attribute order</a></p></li>
+<li><p>Admin-only operations call <code class="docutils literal notranslate"><span class="pre">await</span> <span class="pre">this.isAdmin()</span></code></p></li>
+<li><p>User-owned resource operations call <code class="docutils literal notranslate"><span class="pre">this.checkUserAccess(resource.userId)</span></code></p></li>
+<li><p>Right-based access calls <code class="docutils literal notranslate"><span class="pre">await</span> <span class="pre">this.hasAccess('right.key')</span></code></p></li>
 </ul>
 </div></blockquote>
 </li>
-<li><p>Check for stale variables and methods (e.g., remove unused functions and options)</p></li>
-<li><p>Imports use “&#64;” in path (except for same or one-level sub-directory imports)</p></li>
-<li><p>Basic components are used (e.g., Icons, Buttons, Tables, etc.)</p></li>
-<li><p>Safeguards for loaded variables from backend are available (i.e., what happens if receiving a variable from backend fails or needs time – user needs to be informed!)</p></li>
-<li><p>Every component loads data it needs by itself (using the <span class="xref std std-ref">DB subscription method</span>) // TODO: Link to DB subscription method when ready</p></li>
+<li><p>Cross-socket calls use <code class="docutils literal notranslate"><span class="pre">this.getSocket('SocketClassName')</span></code> — no direct imports of other socket classes</p></li>
+<li><p>Cross-service calls use <code class="docutils literal notranslate"><span class="pre">this.server.services['ServiceName']</span></code> — no direct imports of service files</p></li>
+<li><p>Cross-RPC calls use <code class="docutils literal notranslate"><span class="pre">this.server.rpcs['RPCName']</span></code> — no direct imports of RPC files</p></li>
+</ul>
+</section>
+<section id="backend-models">
+<h3>Backend — Models<a class="headerlink" href="#backend-models" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>New models extend <code class="docutils literal notranslate"><span class="pre">MetaModel</span></code> and do not reimplement <code class="docutils literal notranslate"><span class="pre">getById</span></code>, <code class="docutils literal notranslate"><span class="pre">updateById</span></code>, <code class="docutils literal notranslate"><span class="pre">add</span></code>, <code class="docutils literal notranslate"><span class="pre">deleteById</span></code>, or <code class="docutils literal notranslate"><span class="pre">getAutoTable</span></code> unless there is a specific override reason</p></li>
+<li><p>Soft delete is always done via <code class="docutils literal notranslate"><span class="pre">MetaModel.deleteById()</span></code> — never a hard <code class="docutils literal notranslate"><span class="pre">destroy()</span></code> unless explicitly justified</p></li>
+<li><p>Models that should be visible to the frontend declare <code class="docutils literal notranslate"><span class="pre">autoTable:</span> <span class="pre">true</span></code> and define <code class="docutils literal notranslate"><span class="pre">fields</span></code> (the allowed update columns) and <code class="docutils literal notranslate"><span class="pre">accessMap</span></code> where applicable</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">publicTable:</span> <span class="pre">true</span></code> is only set on models that genuinely need to be readable without authentication</p></li>
+<li><p>All multi-step write flows (create + update, create + send email, copy chains) are wrapped in a single Sequelize transaction</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">options.transaction</span></code> is passed to every <code class="docutils literal notranslate"><span class="pre">MetaModel</span></code> call inside a transaction</p></li>
+<li><p>Sensitive fields (<code class="docutils literal notranslate"><span class="pre">passwordHash</span></code>, <code class="docutils literal notranslate"><span class="pre">salt</span></code>, <code class="docutils literal notranslate"><span class="pre">initialPassword</span></code>) are never returned to the frontend — use <code class="docutils literal notranslate"><span class="pre">relevantFields(user)</span></code> from <code class="docutils literal notranslate"><span class="pre">utils/auth.js</span></code> or verify the model’s <code class="docutils literal notranslate"><span class="pre">fields</span></code> array excludes them</p></li>
+</ul>
+</section>
+<section id="frontend-vue-style">
+<h3>Frontend — Vue Style<a class="headerlink" href="#frontend-vue-style" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Component names are multi-word without the <code class="docutils literal notranslate"><span class="pre">.vue</span></code> suffix (<code class="docutils literal notranslate"><span class="pre">AnnotationCard</span></code>, not <code class="docutils literal notranslate"><span class="pre">Card</span></code>)</p></li>
+<li><p>All props have <code class="docutils literal notranslate"><span class="pre">type</span></code> and <code class="docutils literal notranslate"><span class="pre">required</span></code> defined</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">v-for</span></code> loops use <code class="docutils literal notranslate"><span class="pre">:key=&quot;item.id&quot;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">v-if</span></code> and <code class="docutils literal notranslate"><span class="pre">v-for</span></code> are never on the same element; use a wrapping <code class="docutils literal notranslate"><span class="pre">&lt;template&gt;</span></code> instead</p></li>
+<li><p>Component-scoped styling is used (<code class="docutils literal notranslate"><span class="pre">&lt;style</span> <span class="pre">scoped&gt;</span></code>)</p></li>
+<li><p>Computed properties are simple; complex derivations are split into multiple named computeds</p></li>
+<li><p>Component and element attribute order follows the <a class="reference external" href="https://vuejs.org/style-guide/rules-recommended.html">Vue style guide</a></p></li>
+</ul>
+</section>
+<section id="frontend-data-and-state">
+<h3>Frontend — Data and State<a class="headerlink" href="#frontend-data-and-state" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Components load their own data via the <code class="docutils literal notranslate"><span class="pre">subscribeTable</span></code> plugin</p></li>
+<li><p>Feature flags are read from the Vuex settings module: <code class="docutils literal notranslate"><span class="pre">this.$store.getters['settings/getValue']('setting.key')</span></code></p></li>
+<li><p>Permission checks use <code class="docutils literal notranslate"><span class="pre">this.$store.getters['auth/checkRight']('right.key')</span></code> — not direct <code class="docutils literal notranslate"><span class="pre">isAdmin</span></code> comparisons in templates</p></li>
+<li><p>Unused Vuex state, getters, and mutations are removed</p></li>
+<li><p>Loading states and error handling exist for all data fetched from the backend; users are informed when data is unavailable or still loading</p></li>
+</ul>
+</section>
+<section id="frontend-structure-and-imports">
+<h3>Frontend — Structure and Imports<a class="headerlink" href="#frontend-structure-and-imports" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Imports use the <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> path alias for anything outside the current or immediate sub-directory</p></li>
+<li><p>Base/shared components are reused for icons, buttons, tables, and modals — no custom reimplementations of existing base components</p></li>
 </ul>
 </section>
 <section id="id1">
 <h3>Documentation<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <ul class="simple">
-<li><p>Documentation compiles without errors and is readable (i.e., <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">doc</span></code>)</p></li>
-<li><p>Documentation is clearly written and helps a <a class="reference external" href="https://de.wikipedia.org/wiki/D%C3%BCmmster_anzunehmender_User">DAU</a> to implement a feature</p></li>
+<li><p>Documentation compiles without errors: <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">doc</span></code></p></li>
+<li><p>New socket events, settings keys, and feature flags are documented</p></li>
+<li><p>Any new feature is described clearly enough for a developer unfamiliar with the area to implement a follow-up task</p></li>
 </ul>
 </section>
 </section>

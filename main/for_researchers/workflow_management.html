@@ -1,0 +1,602 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workflow Management &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Email and Document Templates" href="templates.html" />
+    <link rel="prev" title="Quill Editor" href="editor_usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Workflow Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#workflow-dashboard">Workflow Dashboard</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#workflow-type-and-editability">Workflow type and editability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hidden-flag-and-where-it-applies">Hidden flag and where it applies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#top-right-actions-what-they-change">Top-right actions: what they change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#row-actions-when-to-use-which">Row actions: when to use which</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#workflow-creation">Workflow Creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workflow-steps-management">Workflow Steps Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-ordering-and-navigation">Step ordering and navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#understanding-steptype">Understanding <code class="docutils literal notranslate"><span class="pre">stepType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-reference-what-users-will-encounter">Configuration reference (what users will encounter)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#other-top-level-configuration-keys">Other top-level configuration keys</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#detailed-examples-from-predefined-workflows">Detailed examples from predefined workflows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-safety-checklist">Configuration safety checklist</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Workflow Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/workflow_management.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="workflow-management">
+<h1>Workflow Management<a class="headerlink" href="#workflow-management" title="Link to this heading"></a></h1>
+<p>This chapter explains how to manage workflows in CARE from the dashboard, how to create new workflows, and how to maintain workflow steps.</p>
+<section id="workflow-dashboard">
+<h2>Workflow Dashboard<a class="headerlink" href="#workflow-dashboard" title="Link to this heading"></a></h2>
+<p>Open the <strong>Workflows</strong> card in the dashboard to see all workflows available to you.</p>
+<p>The table includes:</p>
+<ul class="simple">
+<li><p><strong>ID</strong> and <strong>Name</strong></p></li>
+<li><p><strong>Type</strong> (System or User)</p></li>
+<li><p><strong>Hidden</strong> (whether the workflow is hidden in the frontend)</p></li>
+<li><p><strong>Created</strong> and <strong>Last Update</strong> timestamps</p></li>
+</ul>
+<section id="workflow-type-and-editability">
+<h3>Workflow type and editability<a class="headerlink" href="#workflow-type-and-editability" title="Link to this heading"></a></h3>
+<p>The <strong>Type</strong> column is important for permissions and maintenance:</p>
+<p>Visibility rule:</p>
+<ul class="simple">
+<li><p>A <strong>System</strong> workflow is visible to all users.</p></li>
+<li><p>A non-system workflow (Type <strong>User</strong>) is visible only to the user who created it.</p></li>
+<li><dl class="simple">
+<dt><strong>System</strong>: predefined workflow templates provided by the CARE instance.</dt><dd><p>These are intended as reference baselines and are usually not editable by regular users.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>User</strong>: workflows created by users in the dashboard.</dt><dd><p>These are the workflows you adapt for your own study setup.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>In practice, if you want to customize a system workflow, the safe path is:</p>
+<ol class="arabic simple">
+<li><p><strong>Copy Workflow</strong> on the system workflow.</p></li>
+<li><p>Edit the copied user workflow.</p></li>
+<li><p>Use the copied one in your study.</p></li>
+</ol>
+</section>
+<section id="hidden-flag-and-where-it-applies">
+<h3>Hidden flag and where it applies<a class="headerlink" href="#hidden-flag-and-where-it-applies" title="Link to this heading"></a></h3>
+<p>The <strong>Hidden</strong> column corresponds to <code class="docutils literal notranslate"><span class="pre">hideInFrontend</span></code>.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>If hidden is <strong>Yes</strong>, the workflow is not shown in workflow selection lists in the frontend</dt><dd><p>(for example, when selecting a workflow during study creation or study template creation).</p>
+</dd>
+</dl>
+</li>
+<li><p>If hidden is <strong>No</strong>, the workflow appears normally in workflow selection views.</p></li>
+</ul>
+<p>Use this when you want to phase out an older workflow without deleting it.
+This lets you keep historical workflows for reproducibility and documentation,
+while guiding users to the new workflow version.</p>
+</section>
+<section id="top-right-actions-what-they-change">
+<h3>Top-right actions: what they change<a class="headerlink" href="#top-right-actions-what-they-change" title="Link to this heading"></a></h3>
+<p>At the top-right of the card, you can:</p>
+<ul class="simple">
+<li><p><strong>Add Workflow</strong></p></li>
+<li><p><strong>Export All</strong> workflows</p></li>
+<li><p><strong>Import</strong> workflows from file</p></li>
+</ul>
+<p>Consequences of these actions:</p>
+<ul class="simple">
+<li><p><strong>Add Workflow</strong> creates a new workflow record; initially it has no steps until you add them in the editor.</p></li>
+<li><dl class="simple">
+<dt><strong>Export All</strong> creates a portable snapshot (JSON/YAML) of workflow definitions and their steps.</dt><dd><p>This is useful for backup, transfer across instances, and versioned study preparation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Import</strong> creates new workflows from JSON/YAML.</dt><dd><p>Imported workflows are independent copies; changing an imported workflow does not change the source instance.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="row-actions-when-to-use-which">
+<h3>Row actions: when to use which<a class="headerlink" href="#row-actions-when-to-use-which" title="Link to this heading"></a></h3>
+<p>For each workflow row, available actions include:</p>
+<ul class="simple">
+<li><p><strong>Copy Workflow</strong></p></li>
+<li><p><strong>Edit Workflow</strong></p></li>
+<li><p><strong>Rename Workflow</strong></p></li>
+<li><p><strong>Export Workflow</strong></p></li>
+<li><p><strong>Toggle Hidden</strong> (show/hide in frontend)</p></li>
+<li><p><strong>Delete Workflow</strong></p></li>
+</ul>
+<p>Action guidance:</p>
+<ul class="simple">
+<li><p><strong>Copy Workflow</strong>: best for creating a variant while preserving the original as baseline.</p></li>
+<li><p><strong>Edit Workflow</strong>: opens the graph-based step editor for structural and configuration changes.</p></li>
+<li><p><strong>Rename Workflow</strong>: creates a renamed successor and deprecates the previous one in the workflow lifecycle.</p></li>
+<li><p><strong>Export Workflow</strong>: exports one workflow only (good for sharing a single template).</p></li>
+<li><p><strong>Toggle Hidden</strong>: soft lifecycle control (active vs. archived visibility) without hard delete.</p></li>
+<li><p><strong>Delete Workflow</strong>: removes it from active use and cascades step deletion; use only if you no longer need it.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Editing actions are restricted to administrators or the workflow owner.</p>
+</div>
+</section>
+</section>
+<section id="workflow-creation">
+<h2>Workflow Creation<a class="headerlink" href="#workflow-creation" title="Link to this heading"></a></h2>
+<p><strong>To create a new workflow:</strong>
+1. Go to <strong>Dashboard → Workflows</strong>.
+2. Click <strong>Add Workflow</strong>.
+3. Fill in the workflow form:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hideInFrontend</span></code> (optional switch)</p></li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p>Save the workflow.</p></li>
+</ol>
+<p>Recommended practice:</p>
+<ul class="simple">
+<li><p>Use clear names that encode purpose and version (for example, <code class="docutils literal notranslate"><span class="pre">Peer</span> <span class="pre">Review</span> <span class="pre">v2</span> <span class="pre">-</span> <span class="pre">with</span> <span class="pre">rubric</span></code>).</p></li>
+<li><p>Use the description to record study intent and special behavior (e.g., “includes NLP comparison modal”).</p></li>
+</ul>
+<p><strong>To create from an existing workflow:</strong></p>
+<ol class="arabic simple">
+<li><p>Use <strong>Copy Workflow</strong> in the workflow row.</p></li>
+<li><p>A new workflow is created with the selected workflow as its parent.</p></li>
+<li><p>Existing steps are copied in order, including internal step links.</p></li>
+</ol>
+<p>This is the preferred way to create controlled variants for A/B-style study conditions.</p>
+<p><strong>To rename a workflow:</strong></p>
+<ol class="arabic simple">
+<li><p>Click <strong>Rename Workflow</strong>.</p></li>
+<li><p>Enter the new name and confirm.</p></li>
+</ol>
+<p>Use rename for semantic cleanup (clearer naming), and copy for behavioral changes.</p>
+<p><strong>To exchange workflows between instances:</strong></p>
+<ul class="simple">
+<li><p><strong>Export</strong> supports JSON and YAML.</p></li>
+<li><p><strong>Import</strong> supports JSON and YAML.</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can select specific workflows during import, which is useful when migrating only part of your workflow set to another instance.</p>
+</div>
+</section>
+<section id="workflow-steps-management">
+<h2>Workflow Steps Management<a class="headerlink" href="#workflow-steps-management" title="Link to this heading"></a></h2>
+<p>Click <strong>Edit Workflow</strong> to open the workflow graph editor.</p>
+<p>In this editor, each node represents a workflow step. You can:</p>
+<ul class="simple">
+<li><p>Add a step before or after another step that enables you to freely insert your steps in the workflow</p></li>
+<li><p>Edit a step to change its type, configuration, and behavior</p></li>
+<li><p>Copy a step to reuse it in another part of the workflow or in another workflow</p></li>
+<li><p>Inspect a step</p></li>
+<li><p>Delete a step</p></li>
+<li><p>Paste a step before or after another step (after copying it)</p></li>
+</ul>
+<section id="step-ordering-and-navigation">
+<h3>Step ordering and navigation<a class="headerlink" href="#step-ordering-and-navigation" title="Link to this heading"></a></h3>
+<p>CARE stores steps as a linked sequence.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">workflowStepPrevious</span></code> defines the predecessor step.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allowBackward</span></code> controls whether users can navigate back from the current step.</p></li>
+</ul>
+<p>When you insert/delete/move steps in the graph editor, these links are updated to preserve a valid trajectory.</p>
+<p>When creating or editing a step, configure:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stepType</span></code> (Annotator, Editor, or Modal)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allowBackward</span></code> (allow backward navigation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">configuration</span></code> (optional JSON object with step behavior)</p></li>
+</ul>
+</section>
+<section id="understanding-steptype">
+<h3>Understanding <code class="docutils literal notranslate"><span class="pre">stepType</span></code><a class="headerlink" href="#understanding-steptype" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>Annotator</strong>: annotation-focused interaction with document and comments.</dt><dd><p>See <a class="reference internal" href="../for_developers/frontend/components/annotator.html"><span class="doc">Annotator component details</span></a>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Editor</strong>: editing-focused interaction for revising text.</dt><dd><p>See <a class="reference internal" href="../for_developers/frontend/components/editor.html"><span class="doc">Editor component details</span></a>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Modal</strong>: structured modal step, often used for feedback views, comparisons, or service-based outputs.</dt><dd><p>See <a class="reference internal" href="../for_developers/frontend/components/stepmodal.html"><span class="doc">StepModal component details</span></a>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="configuration-reference-what-users-will-encounter">
+<h3>Configuration reference (what users will encounter)<a class="headerlink" href="#configuration-reference-what-users-will-encounter" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">configuration</span></code> object is a set of key value pairs that control the behavior of a study step.</p>
+<p>The configuration consists of: <code class="docutils literal notranslate"><span class="pre">settings</span></code>, <code class="docutils literal notranslate"><span class="pre">services</span></code>, <code class="docutils literal notranslate"><span class="pre">placeholders</span></code> and other keys.</p>
+<p>In practice, this configuration layer is mainly used for NLP model integration workflows.</p>
+<p>For the <code class="docutils literal notranslate"><span class="pre">settings.fields</span></code> structure and supported form field options, see
+<a class="reference internal" href="../for_developers/frontend/basic/form.html"><span class="doc">Basic Form documentation</span></a>.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Settings keys</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Value type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>StepType applicability</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">forcedAssessment</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">boolean</span></code></p></td>
+<td><p>Whether a user is forced to save all assessment criteria before proceeding.</p></td>
+<td><p>Annotator, Editor</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">showAllDocumentAnnotations</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">boolean</span></code></p></td>
+<td><p>Whether all document annotations are shown in the current step.</p></td>
+<td><p>Annotator</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">configurationId</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">string</span></code></p></td>
+<td><p>Reference to a configuration document (for example, a rubric) used in this step; this key activates the assessment sidebar.</p></td>
+<td><p>Annotator, Editor (with assessment component)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">modalSize</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">string</span></code></p></td>
+<td><p>Size of the modal (<code class="docutils literal notranslate"><span class="pre">&quot;sm&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;md&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;lg&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;xl&quot;</span></code>) when stepType is Modal.</p></td>
+<td><p>Modal only</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Services</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Value examples</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;nlpAssessment&quot;</span></code></p></td>
+<td><p>Service identifier to call in this workflow step.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;nlpRequest&quot;</span></code></p></td>
+<td><p>Service invocation type.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">required</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p>If true, the step expects successful service output.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">services keys</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nlpAssessment</span></code></p></td>
+<td><p>is used for the grading workflows in EiwA, so for requesting a model to assess the submission based on the uploaded submission files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nlpTextualFeedback</span></code></p></td>
+<td><p>it is used to generate feedback based on the assessment made and the uploaded submission files.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">placeholder</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Value examples</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">text</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[{&quot;input&quot;:</span> <span class="pre">{&quot;stepId&quot;:</span> <span class="pre">2,</span> <span class="pre">&quot;dataSource&quot;:</span> <span class="pre">&quot;summary_text&quot;}}]</span></code></p></td>
+<td><p>Text placeholders that pull data from previous steps.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">chart</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[{&quot;input&quot;:</span> <span class="pre">{&quot;stepId&quot;:</span> <span class="pre">4,</span> <span class="pre">&quot;dataSource&quot;:</span> <span class="pre">&quot;frequency_chart&quot;},</span> <span class="pre">&quot;title&quot;:</span> <span class="pre">&quot;Edits</span> <span class="pre">by</span> <span class="pre">Type&quot;}]</span></code></p></td>
+<td><p>Chart placeholders that render visualizations from previous step outputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">comparison</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[{&quot;input&quot;:</span> <span class="pre">[{&quot;stepId&quot;:</span> <span class="pre">5,</span> <span class="pre">&quot;dataSource&quot;:</span> <span class="pre">&quot;revisionA&quot;},</span> <span class="pre">{&quot;stepId&quot;:</span> <span class="pre">6,</span> <span class="pre">&quot;dataSource&quot;:</span> <span class="pre">&quot;revisionB&quot;}],</span> <span class="pre">&quot;labels&quot;:</span> <span class="pre">[&quot;R1&quot;,</span> <span class="pre">&quot;R2&quot;],</span> <span class="pre">&quot;title&quot;:</span> <span class="pre">&quot;Revisions</span> <span class="pre">Compared&quot;}]</span></code></p></td>
+<td><p>Comparison placeholders that juxtapose multiple inputs with labels and an optional title.</p></td>
+</tr>
+</tbody>
+</table>
+<section id="other-top-level-configuration-keys">
+<h4>Other top-level configuration keys<a class="headerlink" href="#other-top-level-configuration-keys" title="Link to this heading"></a></h4>
+<table class="docutils align-default" id="id5">
+<caption><span class="caption-text">Other top-level keys in configuration</span><a class="headerlink" href="#id5" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Value type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>StepType applicability</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">readOnlyComponents</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">array</span></code></p></td>
+<td><p>For Modal steps, specifies which components (for example, “annotator”, “assessment”) are read-only in this step.</p></td>
+<td><p>Modal only</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">showAllDocumentAnnotations</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">boolean</span></code></p></td>
+<td><p>Whether to show all document annotations in this step (applicable to Modal steps).</p></td>
+<td><p>Modal, Annotator</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">previousAssessmentData</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">number</span></code></p></td>
+<td><p>For Modal steps, specifies a previous step to pull assessment data from for display in this step.</p></td>
+<td><p>Editor, Annotator (with assessment sidebar)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="detailed-examples-from-predefined-workflows">
+<h3>Detailed examples from predefined workflows<a class="headerlink" href="#detailed-examples-from-predefined-workflows" title="Link to this heading"></a></h3>
+<p>Example A: required NLP comparison service in a modal step</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;services&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span>
+<span class="w">                        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nlpEditComparison&quot;</span><span class="p">,</span>
+<span class="w">                        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nlpRequest&quot;</span><span class="p">,</span>
+<span class="w">                        </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Use case: ensure comparison output is generated before users proceed.
+If the service is unavailable, the step may block or degrade depending on UI/service handling.</p>
+<p>Example B: revision assessment controls</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                        </span><span class="p">{</span>
+<span class="w">                                </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;configurationId&quot;</span><span class="p">,</span>
+<span class="w">                                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;select&quot;</span><span class="p">,</span>
+<span class="w">                                </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">                        </span><span class="p">},</span>
+<span class="w">                        </span><span class="p">{</span>
+<span class="w">                                </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;forcedAssessment&quot;</span><span class="p">,</span>
+<span class="w">                                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;switch&quot;</span><span class="p">,</span>
+<span class="w">                                </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">                        </span><span class="p">},</span>
+<span class="w">                        </span><span class="p">{</span>
+<span class="w">                                </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;showAllDocumentAnnotations&quot;</span><span class="p">,</span>
+<span class="w">                                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;switch&quot;</span><span class="p">,</span>
+<span class="w">                                </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">                        </span><span class="p">}</span>
+<span class="w">                </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;previousAssessmentData&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;readOnlyComponents&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;annotator&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;assessment&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;placeholders&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Use case: configure rubric source, enforce mandatory scoring, and control whether annotations are visible.</p>
+<p>Example C: assessment workflow configuration with NLP service</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;configurationId&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration File:&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;select&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;configuration&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;filter&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deleted&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">}</span>
+<span class="w">          </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;forcedAssessment&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Forced Assessment&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;switch&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;services&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nlpAssessment&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nlpRequest&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;placeholders&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Use case: configure an assessment step that requires rubric selection and triggers an NLP assessment request.</p>
+</section>
+<section id="configuration-safety-checklist">
+<h3>Configuration safety checklist<a class="headerlink" href="#configuration-safety-checklist" title="Link to this heading"></a></h3>
+<p>Before releasing a workflow to participants:</p>
+<ol class="arabic simple">
+<li><p>Validate JSON format (no trailing commas, valid quoting).</p></li>
+<li><p>Confirm referenced entities exist (skills, configuration documents, expected step references).</p></li>
+<li><p>Test one complete run with a non-admin test account.</p></li>
+<li><p>Verify backward navigation and hidden-state behavior are exactly as intended.</p></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Keep one stable, hidden “template” workflow and create visible study-specific copies from it.
+This makes later comparisons and debugging much easier.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="editor_usage.html" class="btn btn-neutral float-left" title="Quill Editor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="templates.html" class="btn btn-neutral float-right" title="Email and Document Templates" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

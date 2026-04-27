@@ -61,58 +61,82 @@ Code Review Guidelines
 ----------------------
 
 The following checklist ensures consistency, quality, and maintainability across the codebase.
-Reviewers should verify each item before approving changes.
+Use this as a self-review before opening any PR. Reviewers use the same checklist.
 
 General
 ~~~~~~~
 
-- All open ``TODOs`` in the code handled
+- All open ``TODOs`` in the code are resolved or explicitly documented in an issue
 - All :ref:`naming conventions <naming-conventions>` are fulfilled
-
     - No redundant or unused variables
     - Variable names are self-explanatory
 - Lint: Code is adequately indented and readable
-- All comments properly (e.g., without spelling errors, consistent with the code)
-- All functions are documented properly (e.g., parameters correctly defined, description understandable)
-- Code structure adequate (e.g., no blocks of repeated code, no one-liners in functions)
-- No ``console.log`` printouts (i.e., always use integrated logger for handling messages) – check console in backend and browser!
+- All comments are correct, consistent, and free of spelling errors
+- All functions are documented with JSDoc (parameters, descriptions, return types)
+- No blocks of repeated code; extract shared logic into named functions
+- No ``console.log`` calls left in — always use the integrated logger (check both backend terminal and browser console)
 
-Backend
-~~~~~~~
+Backend — Sockets
+~~~~~~~~~~~~~~~~~
 
-- All file handles in socket connection are async
-- All functions documented
-- All sockets are defined using :ref:`createSocket`
-- All socket events that perform database changes set ``db_transaction: true`` (see :ref:`socket-db-transaction`)
-- Socket classes do not call the DB directly (always use predefined functions in DB Models or ``MetaModel`` class – see ``./backend/db/models`` and ``./backend/db/MetaModel.js``)
-- DB transactions are used if multiple DB calls are depending on each other
-- MetaModel.js used for all possible functions
-- Security: No ``userId`` is set from the frontend, backend ``this.userId`` is always used
+- All socket handler methods are ``async``
+- All socket handlers are registered using ``createSocket(eventName, handler, additionalOptions, useTransaction)``
+- Socket classes never call Sequelize directly — always use ``MetaModel`` static methods or the model's own methods (``getById``, ``updateById``, ``add``, ``deleteById``, etc.)
+- DB transactions are used whenever multiple dependent DB writes exist; pass ``options.transaction`` through all calls
+- Side effects that must run after a commit (sending emails, triggering broadcasts) use ``options.transaction.afterCommit(() => ...)``
+- ``userId`` is always taken from ``this.userId`` (server session) — never from ``data.userId`` or any other frontend-supplied value
+- Permission checks are present and correctly scoped:
 
-Frontend
-~~~~~~~~
+    - Admin-only operations call ``await this.isAdmin()``
+    - User-owned resource operations call ``this.checkUserAccess(resource.userId)``
+    - Right-based access calls ``await this.hasAccess('right.key')``
+- Cross-socket calls use ``this.getSocket('SocketClassName')`` — no direct imports of other socket classes
+- Cross-service calls use ``this.server.services['ServiceName']`` — no direct imports of service files
+- Cross-RPC calls use ``this.server.rpcs['RPCName']`` — no direct imports of RPC files
 
-- Complied with `Vue Styling Guidelines <https://vuejs.org/style-guide/>`_
+Backend — Models
+~~~~~~~~~~~~~~~~
 
-        - Vue component names without ".vue" and multi-word
-        - Use detailed prop definitions (e.g., type and required defined!)
-        - ``v-for`` loops use ``:key="<>.id"`` attribute
-        - No usage of ``v-if`` on the same element as ``v-for``
-        - `Component-scoped styling <https://vuejs.org/style-guide/rules-essential.html#use-component-scoped-styling>`_ used
-        - `Simple computed properties <https://vuejs.org/style-guide/rules-strongly-recommended.html#simple-computed-properties>`_ (i.e., no complex code in computes)
-        - `Component/instance options order <https://vuejs.org/style-guide/rules-recommended.html#component-instance-options-order>`_ and `Element attribute order <https://vuejs.org/style-guide/rules-recommended.html#element-attribute-order>`_
-        
-- Check for stale variables and methods (e.g., remove unused functions and options)
-- Imports use "@" in path (except for same or one-level sub-directory imports)
-- Basic components are used (e.g., Icons, Buttons, Tables, etc.)
-- Safeguards for loaded variables from backend are available (i.e., what happens if receiving a variable from backend fails or needs time – user needs to be informed!)
-- Every component loads data it needs by itself (using the :ref:`DB subscription method <db-subscription-method>`) // TODO: Link to DB subscription method when ready
+- New models extend ``MetaModel`` and do not reimplement ``getById``, ``updateById``, ``add``, ``deleteById``, or ``getAutoTable`` unless there is a specific override reason
+- Soft delete is always done via ``MetaModel.deleteById()`` — never a hard ``destroy()`` unless explicitly justified
+- Models that should be visible to the frontend declare ``autoTable: true`` and define ``fields`` (the allowed update columns) and ``accessMap`` where applicable
+- ``publicTable: true`` is only set on models that genuinely need to be readable without authentication
+- All multi-step write flows (create + update, create + send email, copy chains) are wrapped in a single Sequelize transaction
+- ``options.transaction`` is passed to every ``MetaModel`` call inside a transaction
+- Sensitive fields (``passwordHash``, ``salt``, ``initialPassword``) are never returned to the frontend — use ``relevantFields(user)`` from ``utils/auth.js`` or verify the model's ``fields`` array excludes them
+
+Frontend — Vue Style
+~~~~~~~~~~~~~~~~~~~~
+
+- Component names are multi-word without the ``.vue`` suffix (``AnnotationCard``, not ``Card``)
+- All props have ``type`` and ``required`` defined
+- ``v-for`` loops use ``:key="item.id"``
+- ``v-if`` and ``v-for`` are never on the same element; use a wrapping ``<template>`` instead
+- Component-scoped styling is used (``<style scoped>``)
+- Computed properties are simple; complex derivations are split into multiple named computeds
+- Component and element attribute order follows the `Vue style guide <https://vuejs.org/style-guide/rules-recommended.html>`_
+
+Frontend — Data and State
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Components load their own data via the ``subscribeTable`` plugin
+- Feature flags are read from the Vuex settings module: ``this.$store.getters['settings/getValue']('setting.key')``
+- Permission checks use ``this.$store.getters['auth/checkRight']('right.key')`` — not direct ``isAdmin`` comparisons in templates
+- Unused Vuex state, getters, and mutations are removed
+- Loading states and error handling exist for all data fetched from the backend; users are informed when data is unavailable or still loading
+
+Frontend — Structure and Imports
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Imports use the ``@`` path alias for anything outside the current or immediate sub-directory
+- Base/shared components are reused for icons, buttons, tables, and modals — no custom reimplementations of existing base components
 
 Documentation
 ~~~~~~~~~~~~~
 
-- Documentation compiles without errors and is readable (i.e., ``make doc``)
-- Documentation is clearly written and helps a `DAU <https://de.wikipedia.org/wiki/D%C3%BCmmster_anzunehmender_User>`_ to implement a feature
+- Documentation compiles without errors: ``make doc``
+- New socket events, settings keys, and feature flags are documented
+- Any new feature is described clearly enough for a developer unfamiliar with the area to implement a follow-up task
 
 Repository Workflows
 --------------------

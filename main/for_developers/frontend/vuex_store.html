@@ -62,6 +62,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#auto-tables">Auto tables</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#live-updates-via-subscriptions">Live Updates via Subscriptions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#supported-getters">Supported Getters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#table-specific-getters-extension-point">Table-specific getters (extension point)</a></li>
 </ul>
 </li>
 </ul>
@@ -81,6 +82,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
@@ -188,6 +190,21 @@ then broadcasts <code class="docutils literal notranslate"><span class="pre">&lt
 <li><p><code class="docutils literal notranslate"><span class="pre">hasFields</span></code>: Returns true if the table has a fields definition defined in the backend (used for <a class="reference internal" href="basic/form.html"><span class="doc">Form</span></a>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">getFields</span></code>: Returns the fields definition defined in the backend (used for <a class="reference internal" href="basic/form.html"><span class="doc">Form</span></a>), if available (check before with hasFields).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">refreshCount</span></code>: Returns the count how often the data was refreshed from the backend.</p></li>
+</ul>
+</section>
+<section id="table-specific-getters-extension-point">
+<h3>Table-specific getters (extension point)<a class="headerlink" href="#table-specific-getters-extension-point" title="Link to this heading"></a></h3>
+<p>Auto table modules are built in <code class="docutils literal notranslate"><span class="pre">frontend/src/store/utils.js</span></code> by <code class="docutils literal notranslate"><span class="pre">createTable</span></code>. Besides the
+standard getters above, <strong>optional getters</strong> can be registered for a given backend table name via
+<code class="docutils literal notranslate"><span class="pre">TABLE_EXTRA_GETTERS</span></code>. They are merged into the module in the same way as conditional
+<code class="docutils literal notranslate"><span class="pre">getFields</span></code> / <code class="docutils literal notranslate"><span class="pre">hasFields</span></code>. Use this only when repeating <code class="docutils literal notranslate"><span class="pre">getFiltered</span></code> in components would be
+too expensive or duplicated; see <span class="xref std std-doc">for_developers/frontend/plugins</span> for how components subscribe to tables.</p>
+<p>Current extras:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sessionCountByStudyId</span></code> on <code class="docutils literal notranslate"><span class="pre">table/study_session</span></code>: returns a plain object mapping each
+<code class="docutils literal notranslate"><span class="pre">studyId</span></code> to the number of session rows currently in the store (one pass over <code class="docutils literal notranslate"><span class="pre">state.data</span></code>).
+The Studies dashboard uses it for the <strong>Sessions</strong> column instead of filtering the full session
+list once per study row.</p></li>
 </ul>
 <p>For the full backend–frontend pipeline (sockets, broadcasts, refresh logic), see <a class="reference internal" href="../backend/data_transfer.html"><span class="doc">Data Transfer</span></a>.</p>
 </section>
