@@ -2,27 +2,27 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('llm_model', {
+    await queryInterface.createTable('ai_model_share', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
       },
-      llmCredentialId: {
+      aiModelId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
         references: {
-          model: 'llm_credential',
+          model: 'ai_model',
           key: 'id',
         },
-        onDelete: 'SET NULL',
+        onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
       userId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
+        defaultValue: null,
         references: {
           model: 'user',
           key: 'id',
@@ -30,32 +30,20 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      model: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      provider: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      description: {
-        type: Sequelize.TEXT,
+      roleId: {
+        type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
+        references: {
+          model: 'study',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
       },
-      additionalParameters: {
-        type: Sequelize.JSONB,
-        allowNull: true,
-        defaultValue: {},
-      },
-      enabled: {
-        type: Sequelize.BOOLEAN,
+      expiryDate: {
+        type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: true,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -81,6 +69,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('llm_model');
+    await queryInterface.dropTable('ai_model_share');
   },
 };

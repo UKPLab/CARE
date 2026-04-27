@@ -2,23 +2,23 @@
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
-    class LlmModel extends MetaModel {
+    class AiModel extends MetaModel {
         static autoTable = true;
 
         static associate(models) {
-            LlmModel.belongsTo(models['user'], {
+            AiModel.belongsTo(models['user'], {
                 foreignKey: 'userId',
                 as: 'creator',
             });
-            LlmModel.belongsTo(models['llm_credential'], {
-                foreignKey: 'llmCredentialId',
+            AiModel.belongsTo(models['ai_credential'], {
+                foreignKey: 'aiCredentialId',
                 as: 'credential',
             });
         }
     }
 
-    LlmModel.init({
-        llmCredentialId: DataTypes.INTEGER,
+    AiModel.init({
+        aiCredentialId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
         name: DataTypes.STRING,
         model: DataTypes.STRING,
@@ -32,9 +32,9 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'llm_model',
-        tableName: 'llm_model',
+        modelName: 'ai_model',
+        tableName: 'ai_model',
     });
 
-    return LlmModel;
+    return AiModel;
 };

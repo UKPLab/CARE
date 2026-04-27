@@ -2,19 +2,19 @@
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
-    class LlmCredentialShare extends MetaModel {
+    class AiModelShare extends MetaModel {
         static autoTable = true;
 
         static associate(models) {
-            LlmCredentialShare.belongsTo(models['llm_credential'], {
-                foreignKey: 'llmCredentialId',
-                as: 'credential',
+            AiModelShare.belongsTo(models['ai_model'], {
+                foreignKey: 'aiModelId',
+                as: 'model',
             });
         }
     }
 
-    LlmCredentialShare.init({
-        llmCredentialId: DataTypes.INTEGER,
+    AiModelShare.init({
+        aiModelId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
         expiryDate: DataTypes.DATE,
@@ -24,9 +24,9 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'llm_credential_share',
-        tableName: 'llm_credential_share',
+        modelName: 'ai_model_share',
+        tableName: 'ai_model_share',
     });
 
-    return LlmCredentialShare;
+    return AiModelShare;
 };

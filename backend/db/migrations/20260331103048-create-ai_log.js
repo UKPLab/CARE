@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('llm_log', {
+    await queryInterface.createTable('ai_log', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -19,11 +19,11 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      llmModelId: {
+      aiModelId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'llm_model',
+          model: 'ai_model',
           key: 'id',
         },
         onDelete: 'CASCADE',
@@ -120,6 +120,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('llm_log');
+    await queryInterface.dropTable('ai_log');
   },
 };

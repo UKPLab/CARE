@@ -2,12 +2,23 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('llm_credential', {
+    await queryInterface.createTable('ai_model', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
+      },
+      aiCredentialId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: 'ai_credential',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -23,17 +34,16 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      apiKey: {
-        type: Sequelize.TEXT,
+      model: {
+        type: Sequelize.STRING,
         allowNull: false,
       },
-      apiBaseUrl: {
+      provider: {
         type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
       },
-      apiVersion: {
-        type: Sequelize.STRING,
+      description: {
+        type: Sequelize.TEXT,
         allowNull: true,
         defaultValue: null,
       },
@@ -71,6 +81,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('llm_credential');
+    await queryInterface.dropTable('ai_model');
   },
 };

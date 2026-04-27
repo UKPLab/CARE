@@ -2,16 +2,16 @@
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
-    class LlmLog extends MetaModel {
+    class AiLog extends MetaModel {
         static autoTable = true;
 
         static associate(models) {
         }
     }
 
-    LlmLog.init({
+    AiLog.init({
         userId: DataTypes.INTEGER,
-        llmModelId: DataTypes.INTEGER,
+        aiModelId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
         studyStepId: DataTypes.INTEGER,
@@ -32,9 +32,9 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'llm_log',
-        tableName: 'llm_log',
+        modelName: 'ai_log',
+        tableName: 'ai_log',
     });
 
-    return LlmLog;
+    return AiLog;
 };

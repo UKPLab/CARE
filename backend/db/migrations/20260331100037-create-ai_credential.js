@@ -2,27 +2,16 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('llm_credential_share', {
+    await queryInterface.createTable('ai_credential', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
       },
-      llmCredentialId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'llm_credential',
-          key: 'id',
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-      },
       userId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
         references: {
           model: 'user',
           key: 'id',
@@ -30,20 +19,33 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      roleId: {
-        type: Sequelize.INTEGER,
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      apiKey: {
+        type: Sequelize.TEXT,
+        allowNull: false,
+      },
+      apiBaseUrl: {
+        type: Sequelize.STRING,
         allowNull: true,
         defaultValue: null,
-        references: {
-          model: 'study',
-          key: 'id',
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
       },
-      expiryDate: {
-        type: Sequelize.DATE,
+      apiVersion: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
+      additionalParameters: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: {},
+      },
+      enabled: {
+        type: Sequelize.BOOLEAN,
         allowNull: false,
+        defaultValue: true,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -69,6 +71,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('llm_credential_share');
+    await queryInterface.dropTable('ai_credential');
   },
 };

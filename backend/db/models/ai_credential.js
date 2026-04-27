@@ -2,17 +2,17 @@
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
-    class LlmCredential extends MetaModel {
+    class AiCredential extends MetaModel {
         static autoTable = true;
 
         static associate(models) {
-            LlmCredential.belongsTo(models['user'], {
+            AiCredential.belongsTo(models['user'], {
                 foreignKey: 'userId',
                 as: 'owner',
             });
-            LlmCredential.hasMany(models['llm_credential_share'], {
-                foreignKey: 'llmCredentialId',
-                as: 'shares',
+            AiCredential.hasMany(models['ai_model'], {
+                foreignKey: 'aiCredentialId',
+                as: 'models',
             });
         }
 
@@ -34,11 +34,16 @@ module.exports = (sequelize, DataTypes) => {
                         {
                             id: {
                                 [Op.in]: sequelize.literal(`(
-                                    SELECT "llmCredentialId"
-                                    FROM "llm_credential_share"
+                                    SELECT "aiCredentialId"
+                                    FROM "ai_model"
                                     WHERE "deleted" = false
-                                      AND "userId" = ${parseInt(userId, 10)}
-                                      AND "expiryDate" > '${now.toISOString()}'
+                                      AND "id" IN (
+                                        SELECT "aiModelId"
+                                        FROM "ai_model_share"
+                                        WHERE "deleted" = false
+                                          AND "userId" = ${parseInt(userId, 10)}
+                                          AND "expiryDate" > '${now.toISOString()}'
+                                      )
                                 )`),
                             },
                         },
@@ -53,27 +58,32 @@ module.exports = (sequelize, DataTypes) => {
          * Resolve a specific credential for a requesting user.
          * Priority: user's own credential > valid user share.
          * @param {number} userId
-         * @param {number} llmCredentialId
+         * @param {number} aiCredentialId
          * @returns {Promise<Object|null>}
          */
-        static async resolveCredential(userId, llmCredentialId) {
+        static async resolveCredential(userId, aiCredentialId) {
             const {Op} = require('sequelize');
             const now = new Date();
             const keys = await this.findAll({
                 where: {
                     deleted: false,
                     enabled: true,
-                    id: llmCredentialId,
+                    id: aiCredentialId,
                     [Op.or]: [
                         {userId: userId},
                         {
                             id: {
                                 [Op.in]: sequelize.literal(`(
-                                    SELECT "llmCredentialId"
-                                    FROM "llm_credential_share"
+                                    SELECT "aiCredentialId"
+                                    FROM "ai_model"
                                     WHERE "deleted" = false
-                                      AND "userId" = ${parseInt(userId, 10)}
-                                      AND "expiryDate" > '${now.toISOString()}'
+                                      AND "id" IN (
+                                        SELECT "aiModelId"
+                                        FROM "ai_model_share"
+                                        WHERE "deleted" = false
+                                          AND "userId" = ${parseInt(userId, 10)}
+                                          AND "expiryDate" > '${now.toISOString()}'
+                                      )
                                 )`),
                             },
                         },
@@ -89,7 +99,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
-    LlmCredential.init({
+    AiCredential.init({
         userId: DataTypes.INTEGER,
         name: DataTypes.STRING,
         apiKey: DataTypes.TEXT,
@@ -103,9 +113,9 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'llm_credential',
-        tableName: 'llm_credential',
+        modelName: 'ai_credential',
+        tableName: 'ai_credential',
     });
 
-    return LlmCredential;
+    return AiCredential;
 };
