@@ -184,15 +184,18 @@ class RecorderSocket extends Socket {
      * Used by the Start Recording modal to show who's online right now.
      */
     async getOnlineUsers(data, options) {
-        const userIds = new Set();
+        const sessionCountByUser = {};
         for (const socketId of Object.keys(this.server.availSockets)) {
             const bucket = this.server.availSockets[socketId];
             const anySocket = Object.values(bucket)[0];
             if (anySocket && anySocket.userId) {
-                userIds.add(anySocket.userId);
+                sessionCountByUser[anySocket.userId] = (sessionCountByUser[anySocket.userId] || 0) + 1;
             }
         }
-        return Array.from(userIds);
+        return Object.entries(sessionCountByUser).map(([userId, sessionCount]) => ({
+            userId: parseInt(userId, 10),
+            sessionCount,
+        }));
     }
 
     init() {

@@ -105,7 +105,7 @@ export default {
     return {
       recordingName: "",
       selectedUsers: [],
-      onlineUserIds: [],
+      onlineSessions: {},
       excludeEvents: ["stats", "subscribeAppData", "unsubscribeAppData"],
       customExcludeEvent: "",
       customExcludes: [],
@@ -139,7 +139,8 @@ export default {
         userName: u.userName || "N/A",
         firstName: u.firstName || "Unknown",
         lastName: u.lastName || "Unknown",
-        online: this.onlineUserIds.includes(u.id) ? "Yes" : "",
+        online: this.onlineSessions[u.id] ? "Yes" : "",
+        sessions: this.onlineSessions[u.id] || 0,
       }));
     },
     userTableColumns() {
@@ -156,6 +157,7 @@ export default {
             { key: "", name: "Offline" },
           ],
         },
+        { name: "Sessions", key: "sessions", sortable: true },
       ];
     },
     startButtonText() {
@@ -169,26 +171,28 @@ export default {
     open() {
       this.recordingName = "Recording " + new Date().toLocaleString();
       this.selectedUsers = [];
-      this.onlineUserIds = [];
+      this.onlineSessions = {};
       this.excludeEvents = ["stats", "subscribeAppData", "unsubscribeAppData"];
       this.customExcludeEvent = "";
       this.customExcludes = [];
 
       this.$socket.emit("recordingGetOnlineUsers", {}, (res) => {
         if (res.success) {
-          this.onlineUserIds = res.data || [];
+          const map = {};
+          (res.data || []).forEach(entry => {
+            map[entry.userId] = entry.sessionCount;
+          });
+          this.onlineSessions = map;
         }
-      });
-
-      this.$refs.modal.open();
-
-      // Pre-select admin after table renders
-      this.$nextTick(() => {
+        // Pre-select admin AFTER onlineSessions is set, so userTable is stable
+        // and the object reference in selectedUsers matches what the table renders
         const adminUser = this.userTable.find(u => u.id === this.currentUserId);
         if (adminUser) {
           this.selectedUsers = [adminUser];
         }
       });
+
+      this.$refs.modal.open();
     },
     abort() {
       this.$refs.modal.close();
