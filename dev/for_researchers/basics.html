@@ -67,6 +67,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#care-for-structured-annotation-studies">CARE for Structured Annotation Studies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#care-for-nlp-model-integration">CARE for NLP Model Integration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#user-consent">User Consent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#common-support-issues">Common Support Issues</a></li>
 </ul>
 </li>
 </ul>
@@ -245,6 +246,30 @@ Users can update or withdraw their consent at any time in the profile menu under
 The backend enforces this, and admins can configure the default settings in <a class="reference internal" href="../for_developers/examples/settings.html"><span class="doc">Settings</span></a>.</p>
 </div>
 </section>
+<section id="common-support-issues">
+<h3>Common Support Issues<a class="headerlink" href="#common-support-issues" title="Link to this heading"></a></h3>
+<p><strong>Participants cannot find their work after logging in</strong></p>
+<p>A common support request occurs when participants report that their documents or study
+sessions have “disappeared”. In most cases the participant has accidentally switched to a
+different project using the project dropdown in the topbar, and their work is still present
+but scoped to the original project.</p>
+<p>To prevent this, you can hide the project switcher for specific users so they cannot change
+their active project:</p>
+<ol class="arabic simple">
+<li><p>Log in with an admin account and go to the <strong>Settings</strong> section in the dashboard.</p></li>
+<li><p>Open the <strong>Change User Settings</strong> dialog (available in the admin user management area).</p></li>
+<li><p>Select the setting <code class="docutils literal notranslate"><span class="pre">topBar.projects.hideProjectButton</span></code> and set it to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></li>
+<li><p>Select the affected users and confirm.</p></li>
+</ol>
+<p>After this change, those users will no longer see the project dropdown in the topbar and
+their active project will remain fixed to the one you have assigned to them.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This setting takes effect immediately and does not require the user to log out and back
+in. To assign a specific project to a user, set the <code class="docutils literal notranslate"><span class="pre">projects.default</span></code> user setting to
+the desired project ID in the same dialog.</p>
+</div>
+</section>
 </section>
 </section>
 <section id="nlp-model-debugging">
@@ -281,7 +306,7 @@ for integrating new UI elements for an NLP model as easy as writing a simply con
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022-2025 Team CARE (Technical University Darmstadt).</p>
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

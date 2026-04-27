@@ -45,6 +45,8 @@ Going Public
 
 In 2025, the team decided to release CARE publicly to encourage adoption and collaboration in both academic and open-source communities. This includes making the platform more modular, improving documentation, and publishing tutorials and example use cases.
 
+In early 2026, CARE was published on `GitHub <https://github.com/UKPLab/care>`_, opening development to external contributors and collaborators.
+
 Want to Contribute?
 ~~~~~~~~~~~~~~~~~~~
 
