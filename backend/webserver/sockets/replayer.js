@@ -95,7 +95,7 @@ class ReplayerSocket extends Socket {
             const activeUserIds = userIds.slice(0, level);
 
             this.sendToast(
-                `Level ${level}/${userIds.length}: replaying ${activeUserIds.length} user(s)`,
+                `Iteration ${level}/${userIds.length}: replaying ${activeUserIds.length} user(s)`,
                 'Replay',
                 'info'
             );
@@ -117,7 +117,7 @@ class ReplayerSocket extends Socket {
             });
 
             if (levelFailed) {
-                this.sendToast(`Replay failed at level ${level}`, 'Replay', 'danger');
+                this.sendToast(`Replay failed at iteration ${level}`, 'Replay', 'danger');
                 break;
             }
         }

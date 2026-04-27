@@ -19,12 +19,12 @@
           <span class="fw-bold text-danger">Failed:</span> {{ summary.failed }}
         </div>
         <div>
-          <span class="fw-bold">Levels:</span> {{ summary.levels }}
+          <span class="fw-bold">Iterations:</span> {{ summary.levels }}
         </div>
       </div>
       <div v-for="level in results" :key="level.level" class="mb-4">
         <h6 :class="level.passed ? 'text-success' : 'text-danger'">
-          Level {{ level.level }} — {{ level.users }} user(s) — {{ level.passed ? 'PASSED' : 'FAILED' }}
+          Iteration {{ level.level }} — {{ level.users }} user(s) — {{ level.passed ? 'PASSED' : 'FAILED' }}
         </h6>
         <div v-for="userResult in level.results" :key="userResult.userId" class="mb-3">
           <p class="mb-1 fw-bold">
