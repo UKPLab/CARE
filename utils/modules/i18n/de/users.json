@@ -1,0 +1,82 @@
+{
+    "title": "Benutzer",
+    "downloadUsers": "Benutzer herunterladen",
+    "assignRoles": "Rollen zuweisen",
+    "uploadPassword": "Passwort hochladen",
+    "importCsv": "CSV importieren",
+    "importViaMoodle": "Import über Moodle",
+    "addUser": "Benutzer hinzufügen",
+    "editUser": "Benutzer bearbeiten",
+    "viewRights": "Rechte anzeigen",
+    "resetPassword": "Passwort zurücksetzen",
+    "deleteUser": "Benutzer löschen",
+    "columns": {
+        "firstName": "Vorname",
+        "lastName": "Nachname",
+        "userName": "Benutzer",
+        "email": "E-Mail",
+        "acceptTerms": "Bedingungen akzeptiert",
+        "acceptStats": "Statistiken akzeptiert",
+        "acceptDataSharing": "Datenaustausch akzeptiert",
+        "verified": "Verifiziert",
+        "lastLogin": "Letzte Anmeldung"
+    },
+    "messages": {
+        "deleteConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",
+        "deleteTitle": "Benutzer löschen",
+        "userDeleted": "Benutzer gelöscht",
+        "userDeletedMessage": "Der Benutzer wurde gelöscht"
+    },
+    "stats": {
+        "exportCsv": "Als CSV exportieren",
+        "exportJson": "Als JSON exportieren",
+        "userStatsTitle": "Statistiken für {count} Benutzer | Statistiken für {count} Benutzer",
+        "columns": {
+            "user": "Benutzer",
+            "id": "ID",
+            "lastLogin": "Letzte Anmeldung",
+            "time": "Zeit",
+            "action": "Aktion",
+            "data": "Daten"
+        },
+        "toasts": {
+            "exportFailedTitle": "Export fehlgeschlagen",
+            "exportFailedMessage": "Export fehlgeschlagen."
+        }
+    },
+    "roles": {
+        "teacher": "Lehrer",
+        "mentor": "Tutor",
+        "student": "Student",
+        "guest": "Gast",
+        "user": "Benutzer",
+        "admin": "Administrator"
+  },
+    "rightDescriptions": {
+        "backend_socket_user_getUsers_student": "Zugriff auf alle Studierenden",
+        "backend_socket_user_getUsers_mentor": "Zugriff auf alle Mentor:innen",
+        "frontend_dashboard_users_view": "Zugriff auf die Benutzeransicht im Dashboard",
+        "backend_socket_user_getUsers_all": "Zugriff auf alle Benutzer",
+        "frontend_dashboard_studies_addBulkAssignments": "Zugriff auf das Massenhinzufugen von Zuweisungen im Dashboard",
+        "frontend_dashboard_studies_addSingleAssignments": "Zugriff auf das Hinzufugen von Zuweisungen im Dashboard",
+        "frontend_dashboard_studies_fullAccess": "Zugriff auf offene Studien und Sitzungen",
+        "frontend_dashboard_studies_view_readOnly": "Zugriff auf Sitzungen im Nur-Lesen-Modus",
+        "frontend_dashboard_studies_view_userPrivateInfo": "Zugriff auf private Benutzerinformationen wie Vor- und Nachname",
+        "frontend_dashboard_home_view": "Zugriff auf die Startseite im Dashboard",
+        "frontend_dashboard_documents_view": "Zugriff auf Dokumente im Dashboard",
+        "frontend_dashboard_tags_view": "Zugriff auf Tag-Sets im Dashboard",
+        "frontend_dashboard_projects_view": "Zugriff auf Projekte im Dashboard",
+        "frontend_dashboard_studies_view": "Zugriff auf Studien im Dashboard",
+        "frontend_dashboard_study_sessions_view": "Zugriff auf Studiensitzungen im Dashboard",
+        "study_template_delete": "Zugriff auf das Loschen von Vorlagen"
+  },
+    "roleDescriptions": {
+        "admin": "Vollzugriff",
+        "user": "Keine Systemrechte",
+        "teacher": "Verantwortlich fur Koordination",
+        "mentor": "Hat das Recht zu benoten",
+        "student": "Verfasst Inline-Kommentare",
+        "guest": "Hat eingeschrankte Rechte bei der Nutzung der Plattform",
+        "system": "Systembenutzer"
+  }
+}

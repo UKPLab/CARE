@@ -1,0 +1,20 @@
+{
+    "documentNote": "Dokumentnotiz",
+    "createdByUser": "Erstellt von Benutzer {userId}",
+    "messages": {
+        "unsavedAnnotations": "Nicht gespeicherte Anmerkungen",
+        "unsavedAnnotationsWarning": "Sind Sie sicher, dass Sie den Annotator verlassen möchten? Ungespeicherte Änderungen gehen verloren."
+    },
+    "annotations": "Anmerkungen",
+    "submitReview": "Überprüfung einreichen",
+    "report": "Bericht",
+    "accept": "Akzeptieren",
+    "reject": "Ablehnen",
+    "hideStudyComments": "Studienkommentare ausblenden",
+    "showStudyComments": "Studienkommentare anzeigen",
+    "deactivateNlpSupport": "NLP-Unterstützung deaktivieren",
+    "activateNlpSupport": "NLP-Unterstützung aktivieren",
+    "downloadAnnotations": "Anmerkungen herunterladen",
+    "documentSubscribeError": "Dokumentabonnement-Fehler",
+    "replies": "Antworten"
+}

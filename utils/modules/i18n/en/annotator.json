@@ -1,0 +1,20 @@
+{
+    "documentNote": "Document Note",
+    "createdByUser": "Created by User {userId}",
+    "messages": {
+        "unsavedAnnotations": "Unsaved Annotations",
+        "unsavedAnnotationsWarning": "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost."
+    },
+    "annotations": "Annotations",
+    "submitReview": "Submit Review",
+    "report": "Report",
+    "accept": "Accept",
+    "reject": "Reject",
+    "hideStudyComments": "Hide study comments",
+    "showStudyComments": "Show study comments",
+    "deactivateNlpSupport": "Deactivate NLP support",
+    "activateNlpSupport": "Activate NLP support",
+    "downloadAnnotations": "Download Annotations",
+    "documentSubscribeError": "Document subscribe error",
+    "replies": "Replies"
+}

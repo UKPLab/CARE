@@ -1,0 +1,126 @@
+{
+    "service": "NLP Service",
+    "serviceRequest": "NLP Service Request",
+    "notAvailable": "{name} not available",
+    "skillDetails": "Skill Details",
+    "copyConfig": "Copy config",
+    "downloadConfig": "Download config",
+    "sendCommand": "Send command",
+    "configCopied": "Config copied",
+    "skillConfigCopied": "Skill configuration copied to clipboard!",
+    "downloadSuccess": "Download success",
+    "downloadedConfigMessage": "Downloaded {name} configuration",
+    "services": {
+        "availableServices": "Available Services",
+        "noServices": "No services configuration available for this step."
+    },
+    "inputConfirm": {
+        "confirmSelections": "Confirm Your Selections",
+        "selectedSkill": "Selected Skill:",
+        "inputMappings": "Input Mappings:",
+        "selectedFiles": "Selected Files:",
+        "baseFileSelections": "Base File Selections:",
+        "defaultConfiguration": "Configuration",
+        "unknownSelection": "Unknown"
+    },
+    "inputFiles": {
+        "filesSelectedFor": "Files selected for {param}: {count} file(s)",
+        "selectFilesFor": "Please select files for parameter: {param}",
+        "documents": "Documents",
+        "submissions": "Submissions",
+        "noGroupId": "No GroupID"
+    },
+    "inputGroup": {
+        "validationConfiguration": "Validation Configuration {id}"
+    },
+    "skillSelector": {
+        "selectNlpSkill": "Select NLP Skill:"
+    },
+    "inputMap": {
+        "inputMapping": "Input Mapping",
+        "outputMapping": "Output Mapping",
+        "saveInDocumentData": "Save in Document Data",
+        "insertIntoEditor": "Insert into Editor"
+    },
+    "request": {
+        "title": "NLP Service Request",
+        "timeout": "Timeout in request for skill: {skill}"
+    },
+    "preprocessing": {
+        "title": "Preprocess Grading",
+        "cancelButton": "Cancel Preprocess",
+        "submissionName": "Submission {id}",
+        "cancelApplySkills": "Cancel Apply Skills",
+        "cancelSuccess": "Preprocessing cancelled successfully.",
+        "toasts": {
+            "inProgressTitle": "Preprocessing In Progress",
+            "inProgressMsg": "Preprocessing is currently running. Showing progress...",
+            "cancelledTitle": "Preprocessing Cancelled",
+            "cancelledMsg": "Preprocessing has been cancelled.",
+            "cancellationFailedTitle": "Preprocessing Cancellation Failed",
+            "startedTitle": "Preprocessing Started",
+            "startedMsg": "Preprocessing has been initiated.",
+            "nowRunningMsg": "Preprocessing is now running. Progress shown in the modal."
+        },
+        "setupStepper": {
+            "title": "Apply Skills",
+            "submitButton": "Apply Skills",
+            "steps": {
+                "selectSkill": "Select Skill",
+                "selectFiles": "Select Files",
+                "selectBaseFiles": "Select Base Files",
+                "confirmation": "Confirmation"
+            },
+            "closeModalTitle": "Close Modal",
+            "closeModalMessage": "Current selections will be lost if you close this modal. Are you sure you want to continue?"
+        },
+        "processStepper": {
+            "steps": {
+                "progress": "Processing Progress",
+                "confirmCancel": "Confirm Cancellation"
+            },
+            "stats": {
+                "processed": "Processed:",
+                "currentRuntime": "Current request running time:",
+                "estimatedPerRequest": "Estimated time per request:",
+                "estimatedRemaining": "Estimated time remaining:",
+                "calculating": "Calculating...",
+                "almostDone": "Almost done..."
+            },
+            "queue": {
+                "title": "Submissions in Queue",
+                "empty": "No submissions in queue. Processing the last request...",
+                "columns": {
+                "id": "ID",
+                "submissionName": "Submission Name",
+                "user": "User"
+                }
+            },
+            "cancel": {
+                "title": "Cancel Processing",
+                "message": "Are you sure you want to cancel the remaining requests?",
+                "confirmButton": "Confirm",
+                "nextButton": "Next"
+            }
+        }
+    },
+    "skills": {
+        "title": "Skills",
+        "status": {
+            "online": "ONLINE",
+            "offline": "OFFLINE",
+            "activating": "Activating"
+        },
+        "columns": {
+            "nodes": "# Nodes",
+            "activated": "Activated",
+            "fallback": "Fallback"
+        },
+        "toasts": {
+            "settingUpdatedTitle": "Setting Updated",
+            "settingUpdatedMessage": "Skill \"{name}\" activation updated.",
+            "updateFailedTitle": "Failed to Update Setting"
+        }
+  }
+
+}

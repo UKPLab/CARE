@@ -1,0 +1,68 @@
+{
+    "form": {
+       "placeholders": {
+            "documentBracket": "<Dokument>"
+      }
+    },
+    "configuration": {
+      "title": "Konfiguration",
+      "filesTitle": "Konfigurationsdateien",
+      "uploadButton": "Konfiguration hochladen",
+      "uploadTooltip": "Neue Konfigurationsdatei hochladen",
+      "types": {
+        "assessment": "Bewertung",
+        "validation": "Validierung"
+      },
+      "viewer": {
+        "title": "Konfiguration: {name}"
+      },
+      "editor": {
+        "title": "Konfiguration bearbeiten: {name}",
+        "placeholder": "JSON-Inhalt hier bearbeiten..."
+      },
+      "delete": {
+        "title": "Konfiguration löschen",
+        "message": "Möchten Sie \"{name}\" wirklich löschen?"
+      },
+      "tooltips": {
+        "view": "Konfiguration anzeigen",
+        "edit": "Konfiguration bearbeiten",
+        "delete": "Konfiguration löschen"
+      },
+      "steps": {
+        "general": "Allgemeine Einstellungen",
+        "services": "Dienste",
+        "placeholders": "Platzhalter"
+      },
+      "editButton": "Konfiguration bearbeiten",
+      "saveButton": "Konfiguration speichern",
+      "toasts": {
+        "updatedTitle": "Konfiguration aktualisiert",
+        "updatedMessage": "Die Konfigurationsdaten wurden erfolgreich aktualisiert.",
+        "loadErrorTitle": "Konfigurationsfehler",
+        "loadErrorMessage": "Fehler beim Laden des Konfigurationsinhalts: {error}",
+        "editorNotInit": "Editor nicht initialisiert",
+        "noContent": "Kein Konfigurationsinhalt zum Speichern",
+        "invalidJsonTitle": "Ungültiges JSON",
+        "invalidJsonMessage": "Bitte überprüfen Sie Ihre JSON-Syntax: {error}",
+        "updateErrorTitle": "Fehler beim Aktualisieren der Konfiguration",
+        "updateErrorMessage": "Aktualisierung der Konfiguration fehlgeschlagen",
+        "deleteFailedTitle": "Löschen der Konfiguration fehlgeschlagen"
+      },
+      "stepTitles": {
+        "general": "Allgemeine Konfiguration",
+        "services": "Dienste-Konfiguration",
+        "placeholders": "Platzhalter-Konfiguration"
+      }
+    },
+    "consent": {
+      "successTitle": "Zustimmung erfolgreich aktualisiert",
+      "successMessage": "Die Zustimmungseinstellungen wurden erfolgreich aktualisiert.",
+      "errorTitle": "Fehler beim Aktualisieren der Zustimmung"
+
+    },
+    "export": {
+      "successTitle": "Export erfolgreich",
+      "successMessage": "{id} erfolgreich exportiert"
+    }
+}

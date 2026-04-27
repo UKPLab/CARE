@@ -1,0 +1,240 @@
+{
+  "title": "Studien",
+  "study": "Studie",
+  "template": "Vorlage",
+  "sessions": "Sitzungen",
+  "savedTemplates": "Gespeicherte Vorlagen",
+  "closeAllStudies": "Alle Studien schließen",
+  "addBulkAssignments": "Sammelzuweisung hinzufügen", 
+  "addSingleAssignment": "Zuweisung hinzufügen",
+  "editStudy": "Studie bearbeiten",
+  "deleteStudy": "Studie löschen",
+  "openStudy": "Studie öffnen",
+  "restartStudy": "Studie neustarten",
+  "closeStudy": "Studie schließen",
+  "copyLink": "Studien-Link kopieren",
+  "inspectSessions": "Sitzung prüfen",
+  "saveAsTemplate": "Als Vorlage speichern",
+  "showInformation": "Informationen anzeigen",
+  "finishStudy": "Studie beenden",
+  "finishStudyAgain": "Studie erneut beenden",
+  "returnToDashboard": "Zum Dashboard zurückkehren",
+  "backToDashboard": "Zurück zum Dashboard",
+  "openSessions": "Offene Sitzungen",
+  "openSessionsForStudy": "Sitzungen für {name} öffnen",
+  "resumeSession": "Sitzung fortsetzen",
+  "startSession": "Sitzung starten",
+  "joinStudy": "Studie beitreten",
+  "startStudy": "Studie starten",
+  "finishSession": "Sitzung beenden",
+  "sessionNotStarted": "Sitzung hat noch nicht begonnen",
+  "timeLeft": "Verbleibende Zeit",
+  "notStartedYet": "Die Studie ist noch nicht gestartet!",
+  "noMoreSessions": "Keine weiteren Sitzungen für diese Studie verfügbar.",
+  "clickToStart": "Klicken Sie auf \"Benutzerstudie starten\", um zu beginnen.",
+  "collaborativeNote": "Dies ist eine kollaborative Studie. Alle Teilnehmer können gleichzeitig beitreten und arbeiten!",
+  "thankYouParticipation": "Vielen Dank für Ihre Teilnahme :-)",
+  "canCloseBrowser": "Sie können den Browser jetzt schließen!",
+  "thankYouJoining": "Vielen Dank für Ihre Teilnahme!",
+  "clickFinishToSubmit": "Mit einem Klick auf \"Beenden\" reichen Sie Ihre Ergebnisse ein.",
+  "timeExpired": "Die Zeit ist abgelaufen, es sind keine Änderungen mehr möglich.",
+  "nameOfStudy": "Name der Studie:",
+  "columns": {
+    "status": "Status",
+    "created": "Erstellt am",
+    "sessions": "Sitzungen",
+    "started": "Gestartet",
+    "finished": "Beendet",
+    "sessionLimit": "Sitzungslimit",
+    "sessionLimitPerUser": "Limit pro Nutzer",
+    "resumable": "Fortsetzbar",
+    "collaborative": "Kollaborativ",
+    "multipleSubmissions": "Mehrfacheinreichungen",
+    "timeLimit": "Zeitlimit"
+  },
+  "status": {
+    "notStarted": "Nicht gestartet",
+    "running": "Läuft",
+    "closed": "Geschlossen",
+    "ended": "Beendet"
+  },
+  "messages": {
+    "studyStarted": "Studie gestartet",
+    "enjoy": "Viel Erfolg!",
+    "studyPublishedSuccess": "Studie erfolgreich veröffentlicht!",
+    "participantsCanJoin": "Teilnehmer können über folgenden Link beitreten:",
+    "studyClosed": "Studie geschlossen",
+    "studyClosedMessage": "Die Studie wurde geschlossen",
+    "studyDeleted": "Studie gelöscht",
+    "studyDeletedMessage": "Die Studie wurde gelöscht",
+    "studyRestarted": "Studie neustarten",
+    "studyRestartedMessage": "Die Studie wurde neu gestartet",
+    "linkCopied": "Link kopiert",
+    "linkCopiedMessage": "Studien-Link in die Zwischenablage kopiert!",
+    "templateCreatedSuccess": "Vorlage erfolgreich erstellt!",
+    "templateCreated": "Vorlage erstellt",
+    "templateCreatedMessage": "Die Vorlage wurde erstellt.",
+    "templateSaved": "Vorlage gespeichert",
+    "templateSavedMessage": "Diese Studie wurde als Vorlage gespeichert.",
+    "deleteConfirm": "Sind Sie sicher, dass Sie die Studie löschen möchten?",
+    "deleteTitle": "Studie löschen",
+    "saveAsTemplateConfirm": "Sind Sie sicher, dass Sie diese Studie als Vorlage speichern möchten?",
+    "saveAsTemplateTitle": "Studie als Vorlage speichern",
+    "studyFinished": "Diese Studie wurde am {date} beendet",
+    "studyStartDate": "Start: {date}",
+    "timeLimitNote": "Bitte beachten Sie das Zeitlimit von {minutes} Min. für diese Studie!",
+    "sessionsLeft": "Sie haben noch {count} Sitzungen für diese Studie übrig.",
+    "sessionWarning": "Es existieren derzeit {count} Sitzungen für diese Studie. Das Löschen der Studie entfernt auch diese Sitzungen!",
+    "sessionFinished": "Sitzung beendet",
+    "sessionFinishedMessage": "Ihre Sitzung wurde erfolgreich eingereicht.",
+    "studySessionErrorTitle": "Fehler in der Studiensitzung"
+  },
+  "loading": {
+    "title": "Lade Studienschritt",
+    "nlpError": "Fehler bei der Verarbeitung der NLP-Ergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die NLP-Unterstützung.",
+    "generalError": "Beim Laden des Studienschritts ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+    "buttons": {
+      "tryAgain": "Erneut versuchen",
+      "skip": "NLP-Unterstützung überspringen"
+    },
+    "messages": [
+      "Denke über Ihre Anfrage nach...",
+      "Fast fertig, verfeinere die Details...",
+      "Suche die bestmögliche Antwort...",
+      "Nur noch einen Moment, Präzision braucht Zeit...",
+      "Arbeite an einer schlauen Lösung...",
+      "Einen Augenblick... ich denke schneller, als es aussieht...",
+      "Ordne kurz die Neuronen neu...",
+      "Zünde ein wenig Sprachmagie...",
+      "Ihre Anfrage reist durch eine Milliarde Neuronen...",
+      "Suche in allen Ecken nach Ausnahmefällen...",
+      "Mache einen schnellen Plausibilitätscheck...",
+      "Konsultiere die Weisheit der Menge...",
+      "Fast geschafft..."
+    ]
+  },
+  "dashboard": {
+    "activeSessions": {
+      "title": "Aktive Studiensitzungen",
+      "noSessions": "Sie haben keine aktiven Studiensitzungen. Rufen Sie eine Studie über den Link auf oder erstellen Sie eine eigene Studie."
+    },
+    "closedSessions": {
+      "title": "Geschlossene Studiensitzungen",
+      "noSessions": "Sie haben keine geschlossenen Studiensitzungen."
+    },
+    "studyTitle": "Studie: {name}",
+    "studyTitleWithAuthor": "Studie: {name} (von {author})",
+    "noName": "<kein Name>",
+    "noDueDate": "keine Frist"
+  },
+  "modalTitle": {
+    "createTemplate": "Vorlage erstellen",
+    "editTemplate": "Vorlage bearbeiten",
+    "newTemplate": "Neue Vorlage",
+    "createStudy": "Studie erstellen",
+    "editStudy": "Studie bearbeiten",
+    "newStudy": "Neue Studie"
+  },
+  "unit": {
+    "sessions": "Sitzung(en)"
+  },
+  "form": {
+    "name": {
+      "label": "Name der Studie",
+      "placeholder": "Meine Nutzerstudie"
+    },
+    "workflow": {
+      "label": "Workflow für die Studie auswählen",
+      "help": "Wählen Sie eine Workflow-Vorlage für die einzelnen Studienschritte aus."
+    },
+    "tagSet": {
+      "label": "Tag-Set für die Studie",
+      "help": "Wählen Sie ein Tag-Set aus, das in dieser Studie verwendet werden soll."
+    },
+    "stepDocuments": {
+      "label": "Dokumente den Workflow-Schritten zuordnen"
+    },
+    "description": {
+      "label": "Beschreibung der Studie",
+      "help": "Dieser Text wird den Teilnehmenden zu Beginn der Studie angezeigt."
+    },
+    "timeLimit": {
+      "label": "Wie viel Zeit steht den Teilnehmenden für die Studie zur Verfügung?",
+      "help": "Legen Sie die maximale Bearbeitungszeit fest. Verwenden Sie 0, um das Zeitlimit zu deaktivieren."
+    },
+    "limitSessions": {
+      "label": "Anzahl der Sitzungen für die Studie begrenzen",
+      "help": "Legen Sie fest, wie oft Teilnehmende die Studie starten oder fortsetzen dürfen. Verwenden Sie 0 für eine unbegrenzte Anzahl an Sitzungen."
+    },
+    "limitSessionsPerUser": {
+      "label": "Anzahl der Sitzungen pro Person begrenzen",
+      "help": "Legen Sie fest, wie oft jede teilnehmende Person die Studie starten oder fortsetzen darf. Verwenden Sie 0 für unbegrenzte Sitzungen."
+    },
+    "collab": {
+      "label": "Soll die Studie kollaborativ sein?"
+    },
+    "anonymize": {
+      "label": "Sollen Kommentare anonymisiert werden?"
+    },
+    "resumable": {
+      "label": "Soll die Studie fortsetzbar sein?"
+    },
+    "multipleSubmit": {
+      "label": "Mehrfache Abgaben erlauben?",
+      "help": "Legen Sie fest, ob Teilnehmende die Studie mehr als einmal abschicken dürfen."
+    },
+    "start": {
+      "label": "Studien-Sitzungen dürfen nicht starten vor"
+    },
+    "end": {
+      "label": "Studien-Sitzungen dürfen nicht starten nach"
+    }
+  },
+  "workflowConfig": {
+    "addLinkEod": {
+      "reviewLink": {
+        "help": "Der Link wird am Ende des Dokuments angehängt. `~SESSION_HASH~` wird durch den aktuellen Sitzungs-Hash ersetzt."
+      },
+      "reviewText": {
+        "help": "Finden Sie das Feedback hilfreich?"
+      }
+    },
+    "assessment": {
+      "configurationId": {
+        "label": "Bewertungs-Konfigurationsdatei:",
+        "help": "Wählen Sie die Konfigurationsdatei für diesen Workflow-Schritt zur Bewertung aus."
+      },
+      "forcedAssessment": {
+        "label": "Erzwungene Bewertung",
+        "help": "Wenn aktiviert, müssen Reviewer für jedes Kriterium eine Punktzahl und Begründung speichern, bevor sie fortfahren können."
+      }
+    },
+    "assessmentWithAi": {
+      "configurationId": {
+        "label": "Konfigurationsdatei:",
+        "help": "Wählen Sie die Konfigurationsdatei für diesen Workflow-Schritt aus."
+      },
+      "forcedAssessment": {
+        "label": "Erzwungene Bewertung",
+        "help": "Wenn aktiviert, müssen Reviewer für jedes Kriterium eine Punktzahl und Begründung speichern, bevor sie fortfahren können."
+      }
+    },
+    "modalSize": {
+      "label": "Modalgröße",
+      "options": {
+        "small": "Klein",
+        "medium": "Mittel",
+        "large": "Groß",
+        "extraLarge": "Sehr groß"
+      }
+    }
+  },
+  "workflow": {
+    "peer_review_workflow": "Peer-Review-Workflow",
+    "peer_review_workflow_(assessment)": "Peer-Review-Workflow (Bewertung)",
+    "peer_review_workflow_(assessment_with_ai)": "Peer-Review-Workflow (Bewertung mit KI)",
+    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Projekt",
+    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Projekt (Kontrolle)",
+    "annotation_workflow": "Anmerkungs-Workflow"
+  }
+}

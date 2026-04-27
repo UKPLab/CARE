@@ -1,0 +1,41 @@
+{
+    "placeholders": "Placeholders",
+    "textPlaceholder": "Text placeholder",
+    "textPlaceholderDescription": "Add text content blocks",
+    "singleChart": "Single chart",
+    "singleChartDescription": "Visualize data with a chart",
+    "comparisonChart": "Comparison Chart",
+    "comparisonChartDescription": "Compare multiple data sets",
+    "currentVersion": "Current Version",
+    "versionHistory": "Version History",
+    "anonymousUser": "Anonymous User",
+    "periode": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "This week",
+        "lastWeek": "Last week",
+        "thisMonth": "This month",
+        "lastMonth": "Last month",
+        "older": "Older"
+    },
+    "nav": {
+        "home": "Home",
+        "documents": "Documents",
+        "tags": "Tags",
+        "settings": "Settings",
+        "logs": "Logs",
+        "studies": "Studies",
+        "study_sessions": "Study Sessions",
+        "users": "Users",
+        "nlp_skills": "NLP Skills",
+        "user_stats": "User Statistics",
+        "projects": "Projects",
+        "submissions": "Submissions",
+        "review_documents": "Review Documents",
+        "configurations": "Configurations",
+        "groups": {
+            "default": "Default",
+            "admin": "Admin"
+        }
+    }
+}

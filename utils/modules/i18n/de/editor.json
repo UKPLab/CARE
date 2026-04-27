@@ -1,0 +1,27 @@
+{
+    "reqTitle": "Anfrage senden",
+    "cmdTitle": "Befehl senden",
+    "cmdToSend": "der zu sendende Befehl",
+    "serviceToContact": "der zu kontaktierende Dienst",
+    "waitingForResponse": "Antwort wird erwartet",
+    "payload": "Dateninhalt",
+    "emptyMsgHistory": "Keine Nachrichten gesendet/empfangen.",
+    "messages": {
+        "msgNotReceived": "Innerhalb von 5 Sekunden keine Nachricht vom Server empfangen."
+    },
+    "seePayload": "Dateninhalt ansehen",
+    "request": "Anfrage",
+    "copyJsonSuccess": {
+        "title": "JSON kopiert",
+        "message": "JSON in die Zwischenablage kopiert!"
+    },
+    "editJson": "JSON bearbeiten",
+    "unsavedWarning": {
+        "unsavedChanges": "Ungespeicherte Änderungen",
+        "unsavedChangesMessage": "Möchten Sie die Seite wirklich verlassen? Es gibt ungespeicherte Änderungen, die verloren gehen."
+    },
+    "history": "Verlauf",
+    "configurator": "Konfigurator",
+    "readOnly": "Schreibgeschützt",
+    "downloadDocument": "Dokument herunterladen"
+}

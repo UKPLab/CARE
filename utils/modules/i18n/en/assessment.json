@@ -1,0 +1,21 @@
+{
+    "title": "Assessment",
+    "noConfiguration": "No Assessment Configuration available.",
+    "totalPoints": "{points} P",
+    "criteria": {
+        "unnamedCriterion": "Unnamed criterion",
+        "justification": "Justification:",
+        "noJustification": "No justification provided",
+        "editPlaceholder": "Edit the justification...",
+        "edit": "Edit",
+        "changeScore": "Change score",
+        "saved": "Assessment saved",
+        "save": "Save assessment",
+        "saveEdit": "Save",
+        "cancel": "Cancel"
+    },
+    "rubric": {
+        "unnamedRubric": "Unnamed rubric",
+        "noCriteria": "No criteria defined for this rubric."
+    }
+}

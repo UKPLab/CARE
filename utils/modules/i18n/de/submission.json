@@ -1,0 +1,56 @@
+{
+    "dashboard": {
+        "title": "Einreichungen",
+        "buttons": {
+            "assignGroup": "Gruppe zuweisen",
+            "publishReviews": "Bewertungen veröffentlichen",
+            "publishSubmissions": "Einreichungen veröffentlichen",
+            "manualImport": "Manueller Import",
+            "importMoodle": "Import über Moodle",
+            "viewProcessing": "Verarbeitung anzeigen",
+            "applySkills": "Fähigkeiten anwenden"
+        },
+        "tooltips": {
+            "assignGroup": "Gruppe zuweisen",
+            "publishReviews": "Bewertungen veröffentlichen",
+            "publishSubmissions": "Einreichungen veröffentlichen",
+            "manualImport": "Manueller Import",
+            "importMoodle": "Import über Moodle",
+            "viewProcessing": "Verarbeitungsfortschritt anzeigen",
+            "applySkills": "Fähigkeiten anwenden",
+            "processingActive": "Verarbeitung aktiv"
+        },
+        "columns": {
+            "id": "ID",
+            "firstName": "Vorname",
+            "lastName": "Nachname",
+            "submissionId": "Einreichungs-ID",
+            "group": "Gruppe",
+            "validationId": "Validierungs-ID",
+            "createdAt": "Erstellt am"
+        },
+        "actions": {
+            "download": "Einreichungsdateien herunterladen",
+            "delete": "Dokument löschen..."
+        },
+        "delete": {
+            "title": "Dokument löschen",
+            "message": "Möchten Sie das Dokument wirklich löschen?",
+            "warning": "Auf diesem Dokument läuft derzeit {count} Studie. Das Löschen wird die Studie löschen! | Auf diesem Dokument laufen derzeit {count} Studien. Das Löschen wird die Studien löschen!"
+        },
+        "toasts": {
+            "deleteSuccessTitle": "Dokument gelöscht",
+            "deleteSuccessMessage": "Das Dokument wurde gelöscht",
+            "deleteFailedTitle": "Löschen fehlgeschlagen",
+            "noDocumentsTitle": "Keine Dokumente gefunden",
+            "noDocumentsMessage": "Diese Einreichung hat keine zugeordneten Dokumente zum Herunterladen",
+            "downloadIssueTitle": "Dokumentdownload-Problem",
+            "downloadIssueMessage": "Konnte {name} nicht herunterladen",
+            "downloadErrorTitle": "Download-Fehler",
+            "downloadErrorMessage": "Fehler beim Herunterladen von {name}: {error}",
+            "downloadCompleteTitle": "Download abgeschlossen",
+            "downloadCompleteMessage": "Einreichung {id} mit {count} Dokumenten heruntergeladen",
+            "downloadFailedTitle": "Download fehlgeschlagen"
+        }
+    }
+}

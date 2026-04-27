@@ -1,0 +1,32 @@
+{
+    "logs":{
+        "title": "Logs",
+    "columns": {
+        "level": "Level",
+        "time": "Time",
+        "service": "Service",
+        "message": "Message"
+    },
+    "levels": {
+        "error": "Error",
+        "warn": "Warning",
+        "info": "Info",
+        "debug": "Debug"
+    }
+    },
+    "comment":{
+        "enterText": "Enter text...",
+        "noComment": "No comment",
+        "sentimentAnalysis": "Sentiment Analysis",
+        "saveCommand": "Save (Ctrl+Enter)"
+    },
+    "voteButtons":{
+        "helpful": "Helpful",
+        "notHelpful": "Not helpful"
+    },
+    "pdftoolbar":{
+        "minToolbar": "Minimize Toolbar",
+        "showToolbar": "Show Toolbar"
+    }
+
+}

@@ -1,0 +1,10 @@
+{
+    "entryUpdated": "The entry has been updated successfully!",
+    "entryAdded": "The entry has been added successfully!",
+    "errors": {
+      "noFieldsDefined": "The table {table} has no defined fields!",
+      "saveFailed": "Could not save",
+      "incompleteConfig": "Incomplete Configuration",
+      "incompleteConfigDetail": "You have incomplete configuration at {steps}"
+    }
+}

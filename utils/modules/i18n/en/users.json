@@ -1,0 +1,83 @@
+{
+  "title": "Users",
+  "downloadUsers": "Download Users",
+  "assignRoles": "Assign Roles",
+  "uploadPassword": "Upload Password",
+  "importCsv": "Import CSV",
+  "importViaMoodle": "Import via Moodle",
+  "addUser": "Add User",
+  "editUser": "Edit User",
+  "viewRights": "View Rights",
+  "resetPassword": "Reset Password",
+  "deleteUser": "Delete User",
+  "columns": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "userName": "User",
+    "email": "Email",
+    "acceptTerms": "Accept Terms",
+    "acceptStats": "Accept Stats",
+    "acceptDataSharing": "Accept Data Sharing",
+    "verified": "Verified",
+    "lastLogin": "Last Login"
+  },
+  "messages": {
+    "deleteConfirm": "Are you sure you want to delete this user?",
+    "deleteTitle": "Delete User",
+    "userDeleted": "User deleted",
+    "userDeletedMessage": "User has been deleted"
+  },
+  "stats": {
+    "exportCsv": "Export as CSV",
+    "exportJson": "Export as JSON",
+    "userStatsTitle": "Stats for {count} User | Stats for {count} Users",
+    "columns": {
+      "user": "User",
+      "id": "ID",
+      "lastLogin": "Last Login",
+      "time": "Time",
+      "action": "Action",
+      "data": "Data"
+    },
+    "toasts": {
+      "exportFailedTitle": "Export Failed",
+      "exportFailedMessage": "Export failed."
+    }
+  },
+  "roles": {
+    "teacher": "teacher",
+    "mentor": "mentor",
+    "student": "student",
+    "guest": "guest",
+    "user": "user",
+    "admin": "admin"
+  },
+  "rightDescriptions": {
+    "backend_socket_user_getUsers_student": "Access to get all students",
+    "backend_socket_user_getUsers_mentor": "Access to get all mentors",
+    "frontend_dashboard_users_view": "Access to view users in the dashboard",
+    "backend_socket_user_getUsers_all": "Access to get all users",
+    "frontend_dashboard_studies_addBulkAssignments": "Access to bulk add assignments in the dashboard",
+    "frontend_dashboard_studies_addSingleAssignments": "Access to add assignments in the dashboard",
+    "frontend_dashboard_studies_fullAccess": "Access to view open studies and sessions",
+    "frontend_dashboard_studies_view_readOnly": "Access to open sessions in read-only mode",
+    "frontend_dashboard_studies_view_userPrivateInfo": "Access to view private user information such as first and last name",
+    "frontend_dashboard_home_view": "Access to view home in the dashboard",
+    "frontend_dashboard_documents_view": "Access to view documents in the dashboard",
+    "frontend_dashboard_tags_view": "Access to view tag sets in the dashboard",
+    "frontend_dashboard_projects_view": "Access to view projects in the dashboard",
+    "frontend_dashboard_studies_view": "Access to view studies in the dashboard",
+    "frontend_dashboard_study_sessions_view": "Access to view study sessions in the dashboard",
+    "study_template_delete": "Access to delete templates"
+  },
+  "roleDescriptions": {
+    "admin": "Full control",
+    "user": "No system rights",
+    "teacher": "Responsible for coordination",
+    "mentor": "Has the right to grade",
+    "student": "Leaves inline commentary",
+    "guest": "Has limited rights when using the platform",
+    "system": "System user"
+  }
+}
+

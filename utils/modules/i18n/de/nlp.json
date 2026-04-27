@@ -1,0 +1,125 @@
+{
+  "service": "NLP-Dienst",
+  "serviceRequest": "NLP-Dienstanfrage",
+  "notAvailable": "{name} nicht verfügbar",
+  "skillDetails": "Skill-Details",
+  "copyConfig": "Konfiguration kopieren",
+  "downloadConfig": "Konfiguration herunterladen",
+  "sendCommand": "Befehl senden",
+  "configCopied": "Konfiguration kopiert",
+  "skillConfigCopied": "Skill-Konfiguration in die Zwischenablage kopiert!",
+  "downloadSuccess": "Download erfolgreich",
+  "downloadedConfigMessage": "Konfiguration {name} heruntergeladen",
+  "services": {
+    "availableServices": "Verfügbare Dienste",
+    "noServices": "Für diesen Schritt ist keine Dienstkonfiguration verfügbar."
+  },
+  "inputConfirm": {
+    "confirmSelections": "Bestätigen Sie Ihre Auswahl",
+    "selectedSkill": "Ausgewählter Skill:",
+    "inputMappings": "Input-Zuordnungen:",
+    "selectedFiles": "Ausgewählte Dateien:",
+    "baseFileSelections": "Auswahl der Basisdateien:",
+    "defaultConfiguration": "Konfiguration",
+    "unknownSelection": "Unbekannt"
+  },
+  "inputFiles": {
+    "filesSelectedFor": "Für {param} ausgewählte Dateien: {count} Datei(en)",
+    "selectFilesFor": "Bitte wählen Sie Dateien für den Parameter aus: {param}",
+    "documents": "Dokumente",
+    "submissions": "Einreichungen",
+    "noGroupId": "Keine GroupID"
+  },
+  "inputGroup": {
+    "validationConfiguration": "Validierungskonfiguration {id}"
+  },
+  "skillSelector": {
+    "selectNlpSkill": "Bitte wählen Sie einen NLP-Skill aus:"
+  },
+  "inputMap": {
+    "inputMapping": "Input-Zuordnung",
+    "outputMapping": "Output-Zuordnung",
+    "saveInDocumentData": "In Dokumentdaten speichern",
+    "insertIntoEditor": "In den Editor einfügen"
+  },
+  "request": {
+    "title": "NLP-Dienstanfrage",
+    "timeout": "Zeitüberschreitung bei der Anfrage für Skill: {skill}"
+  },
+  "preprocessing": {
+    "title": "Vorverarbeitung der Bewertung",
+    "cancelButton": "Vorverarbeitung abbrechen",
+    "submissionName": "Einreichung {id}",
+    "cancelApplySkills": "Skill-Anwendung abbrechen",
+    "cancelSuccess": "Vorverarbeitung erfolgreich abgebrochen.",
+    "toasts": {
+      "inProgressTitle": "Vorverarbeitung läuft",
+      "inProgressMsg": "Die Vorverarbeitung läuft derzeit. Fortschritt wird angezeigt...",
+      "cancelledTitle": "Vorverarbeitung abgebrochen",
+      "cancelledMsg": "Die Vorverarbeitung wurde abgebrochen.",
+      "cancellationFailedTitle": "Abbruch der Vorverarbeitung fehlgeschlagen",
+      "startedTitle": "Vorverarbeitung gestartet",
+      "startedMsg": "Die Vorverarbeitung wurde initiiert.",
+      "nowRunningMsg": "Die Vorverarbeitung läuft jetzt. Der Fortschritt wird im Modal angezeigt."
+    },
+    "setupStepper": {
+      "title": "Skills anwenden",
+      "submitButton": "Skills anwenden",
+      "steps": {
+        "selectSkill": "Skill auswählen",
+        "selectFiles": "Dateien auswählen",
+        "selectBaseFiles": "Basisdateien auswählen",
+        "confirmation": "Bestätigung"
+      },
+      "closeModalTitle": "Modal schließen",
+      "closeModalMessage": "Wenn Sie dieses Modal schließen, gehen Ihre aktuellen Auswahlen verloren. Möchten Sie wirklich fortfahren?"
+    },
+    "processStepper": {
+      "steps": {
+        "progress": "Verarbeitungsfortschritt",
+        "confirmCancel": "Abbruch bestätigen"
+      },
+      "stats": {
+        "processed": "Verarbeitet:",
+        "currentRuntime": "Aktuelle Laufzeit der Anfrage:",
+        "estimatedPerRequest": "Geschätzte Zeit pro Anfrage:",
+        "estimatedRemaining": "Geschätzte verbleibende Zeit:",
+        "calculating": "Wird berechnet...",
+        "almostDone": "Fast fertig..."
+      },
+      "queue": {
+        "title": "Einreichungen in der Warteschlange",
+        "empty": "Keine Einreichungen in der Warteschlange. Die letzte Anfrage wird verarbeitet...",
+        "columns": {
+          "id": "ID",
+          "submissionName": "Name der Einreichung",
+          "user": "Benutzer"
+        }
+      },
+      "cancel": {
+        "title": "Verarbeitung abbrechen",
+        "message": "Möchten Sie die verbleibenden Anfragen wirklich abbrechen?",
+        "confirmButton": "Bestätigen",
+        "nextButton": "Weiter"
+      }
+    }
+  },
+  "skills": {
+    "title": "Skills",
+    "status": {
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "activating": "Aktivierung"
+    },
+    "columns": {
+      "nodes": "# Knoten",
+      "activated": "Aktiviert",
+      "fallback": "Fallback"
+    },
+    "toasts": {
+      "settingUpdatedTitle": "Einstellung aktualisiert",
+      "settingUpdatedMessage": "Aktivierung des Skills \"{name}\" aktualisiert.",
+      "updateFailedTitle": "Aktualisierung der Einstellung fehlgeschlagen"
+    }
+  }
+}

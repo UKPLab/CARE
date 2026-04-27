@@ -1,0 +1,10 @@
+{
+  "entryUpdated": "Der Eintrag wurde erfolgreich aktualisiert!",
+  "entryAdded": "Der Eintrag wurde erfolgreich hinzugefügt!",
+  "errors": {
+    "noFieldsDefined": "Die Tabelle {table} hat keine definierten Felder!",
+    "saveFailed": "Konnte nicht gespeichert werden",
+    "incompleteConfig": "Unvollständige Konfiguration",
+    "incompleteConfigDetail": "Sie haben eine unvollständige Konfiguration bei {steps}"
+  }
+}

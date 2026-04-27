@@ -1,0 +1,56 @@
+{
+    "dashboard": {
+      "title": "Submissions",
+      "buttons": {
+        "assignGroup": "Assign Group",
+        "publishReviews": "Publish Reviews",
+        "publishSubmissions": "Publish Submissions",
+        "manualImport": "Manual Import",
+        "importMoodle": "Import via Moodle",
+        "viewProcessing": "View Processing",
+        "applySkills": "Apply Skills"
+      },
+      "tooltips": {
+        "assignGroup": "Assign Group",
+        "publishReviews": "Publish Reviews",
+        "publishSubmissions": "Publish Submissions",
+        "manualImport": "Manual Import",
+        "importMoodle": "Import via Moodle",
+        "viewProcessing": "View Processing Progress",
+        "applySkills": "Apply Skills",
+        "processingActive": "Processing active"
+      },
+      "columns": {
+        "id": "ID",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "submissionId": "Submission ID",
+        "group": "Group",
+        "validationId": "Validation ID",
+        "createdAt": "Created At"
+      },
+      "actions": {
+        "download": "Download submission files",
+        "delete": "Delete document..."
+      },
+      "delete": {
+        "title": "Delete Document",
+        "message": "Are you sure you want to delete the document?",
+        "warning": "There is currently {count} study running on this document. Deleting it will delete the study! | There are currently {count} studies running on this document. Deleting it will delete the studies!"
+      },
+      "toasts": {
+        "deleteSuccessTitle": "Document deleted",
+        "deleteSuccessMessage": "The document has been deleted",
+        "deleteFailedTitle": "Failed to delete document",
+        "noDocumentsTitle": "No documents found",
+        "noDocumentsMessage": "This submission has no associated documents to download",
+        "downloadIssueTitle": "Document download issue",
+        "downloadIssueMessage": "Could not download {name}",
+        "downloadErrorTitle": "Download error",
+        "downloadErrorMessage": "Failed to download {name}: {error}",
+        "downloadCompleteTitle": "Download complete",
+        "downloadCompleteMessage": "Downloaded submission {id} with {count} documents",
+        "downloadFailedTitle": "Download failed"
+      }
+    }
+  }

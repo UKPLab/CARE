@@ -1,0 +1,241 @@
+{
+  "title": "Studies",
+  "study": "Study",
+  "template": "Template",
+  "sessions": "Sessions",
+  "savedTemplates": "Saved Templates",
+  "closeAllStudies": "Close All Studies",
+  "addBulkAssignments": "Add Bulk Assignments",
+  "addSingleAssignment": "Add Single Assignment",
+  "editStudy": "Edit study",
+  "deleteStudy": "Delete study",
+  "openStudy": "Open study",
+  "restartStudy": "Restart study",
+  "closeStudy": "Close study",
+  "copyLink": "Copy link to study",
+  "inspectSessions": "Inspect sessions",
+  "saveAsTemplate": "Save as Template",
+  "showInformation": "Show information",
+  "finishStudy": "Finish Study",
+  "finishStudyAgain": "Finish Study Again",
+  "returnToDashboard": "Return to dashboard",
+  "backToDashboard": "Back to Dashboard",
+  "openSessions": "Open Sessions",
+  "openSessionsForStudy": "Open sessions for {name}",
+  "resumeSession": "Resume session",
+  "startSession": "Start session",
+  "joinStudy": "Join study",
+  "startStudy": "Start study",
+  "finishSession": "Finish session",
+  "sessionNotStarted": "Session has not started yet",
+  "timeLeft": "Time Left",
+  "notStartedYet": "The study has not started yet!",
+  "noMoreSessions": "No more sessions available for this study.",
+  "clickToStart": "Click \"Start User Study\" to start the user study.",
+  "collaborativeNote": "This is a collaborative user study, so everyone can join and proceed with this study simultaneously!",
+  "thankYouParticipation": "Thank you for your participation :-)",
+  "canCloseBrowser": "You can close the browser now!",
+  "thankYouJoining": "Thank you for joining!",
+  "clickFinishToSubmit": "With a click on the finish button, you can submit your results.",
+  "timeExpired": "The time has expired, no more changes are possible.",
+  "nameOfStudy": "Name of the study:",
+  "columns": {
+    "status": "Status",
+    "created": "Created",
+    "sessions": "Sessions",
+    "started": "Started",
+    "finished": "Finished",
+    "sessionLimit": "Session Limit",
+    "sessionLimitPerUser": "Session Limit per User",
+    "resumable": "Resumable",
+    "collaborative": "Collaborative",
+    "multipleSubmissions": "Multiple Submissions",
+    "timeLimit": "Time Limit"
+  },
+  "status": {
+    "notStarted": "Not started",
+    "running": "Running",
+    "closed": "Closed",
+    "ended": "Ended"
+  },
+  "messages": {
+    "studyStarted": "Study started",
+    "enjoy": "Enjoy!",
+    "studyPublishedSuccess": "Study published successfully!",
+    "participantsCanJoin": "Participants can join using the following link:",
+    "studyClosed": "Study closed",
+    "studyClosedMessage": "The study has been closed",
+    "studyDeleted": "Study deleted",
+    "studyDeletedMessage": "The study has been deleted",
+    "studyRestarted": "Study restarted",
+    "studyRestartedMessage": "The study has been restarted",
+    "linkCopied": "Link copied",
+    "linkCopiedMessage": "Study link copied to clipboard!",
+    "templateCreatedSuccess": "Template created successfully!",
+    "templateCreated": "Template Created",
+    "templateCreatedMessage": "The template has been created.",
+    "templateSaved": "Template Saved",
+    "templateSavedMessage": "This study has been saved as a template.",
+    "deleteConfirm": "Are you sure you want to delete the study?",
+    "deleteTitle": "Delete Study",
+    "saveAsTemplateConfirm": "Are you sure you want to save this study as a template?",
+    "saveAsTemplateTitle": "Save Study as Template",
+    "studyFinished": "This study has finished on {date}",
+    "studyStartDate": "Start: {date}",
+    "timeLimitNote": "Please note that there is a time limitation of {minutes} min for this study!",
+    "sessionsLeft": "You have {count} sessions left for this study.",
+    "sessionWarning": "There are currently {count} study sessions existing for this study. Deleting it will delete the study sessions!",
+    "sessionFinished": "Session Finished",
+    "sessionFinishedMessage": "Your session has been submitted successfully.",
+    "studySessionErrorTitle": "Study Session Error"
+  },
+  "loading": {
+    "title": "Loading Study Step",
+    "nlpError": "An error occurred while processing NLP results. Please try again or skip NLP support.",
+    "generalError": "An error occurred while loading the study step. Please try again later.",
+    "buttons": {
+      "tryAgain": "Try Again",
+      "skip": "Skip NLP Support"
+    },
+    "messages": [
+      "Thinking through your request...",
+      "Almost there, just refining the details...",
+      "Gathering the best possible answer...",
+      "Just a few more moments, precision takes time...",
+      "Working on something smart for you...",
+      "One moment... I'm thinking faster than it looks...",
+      "Just aligning a few neurons...",
+      "Spinning up some linguistic magic...",
+      "Your request is traveling through a billion neurons...",
+      "Looking around corners for edge cases...",
+      "Running a quick plausibility pass...",
+      "Consulting the wisdom of the crowd...",
+      "Almost ready..."
+    ]
+  },
+  "dashboard": {
+      "activeSessions": {
+        "title": "Active Study Sessions",
+        "noSessions": "You have no active study sessions. Enter a study by clicking on the study link or create your own study."
+      },
+      "closedSessions": {
+        "title": "Closed Study Sessions",
+        "noSessions": "You have no closed study sessions."
+      },
+      "studyTitle": "Study: {name}",
+      "studyTitleWithAuthor": "Study: {name} (from {author})",
+      "noName": "<no name>",
+      "noDueDate": "no due date"
+  },
+  "modalTitle": {
+    "createTemplate": "Create Template",
+    "editTemplate": "Edit Template",
+    "newTemplate": "New Template",
+    "createStudy": "Create Study",
+    "editStudy": "Edit Study",
+    "newStudy": "New Study"
+  },
+  "unit": {
+    "sessions": "Session(s)"
+  },
+  "form": {
+    "name": {
+      "label": "Name of the study",
+      "placeholder": "My user study"
+    },
+    "workflow": {
+      "label": "Select workflow for study",
+      "help": "Choose a workflow template for the study steps."
+    },
+    
+    "tagSet": {
+      "label": "Tag set for the study",
+      "help": "Select a tag set to use in the study."
+    },
+    "stepDocuments": {
+      "label": "Assign documents to workflow steps"
+    },
+    "description": {
+      "label": "Description of the study",
+      "help": "This text will be displayed at the beginning of the user study."
+    },
+    "timeLimit": {
+      "label": "How much time does a participant have for the study?",
+      "help": "Set the maximum time allowed. Use 0 to disable the time limit."
+    },
+    "limitSessions": {
+      "label": "Limit the number of sessions for the study",
+      "help": "Set how many times participants can start or resume the study. Use 0 for unlimited sessions."
+    },
+    "limitSessionsPerUser": {
+      "label": "Limit the number of sessions per user",
+      "help": "Set how many times each participant can start or resume the study. Use 0 for unlimited sessions."
+    },
+    "collab": {
+      "label": "Should the study be collaborative?"
+    },
+    "anonymize": {
+      "label": "Should the comments be anonymized?"
+    },
+    "resumable": {
+      "label": "Should the study be resumable?"
+    },
+    "multipleSubmit": {
+      "label": "Allow multiple submissions?",
+      "help": "Specify whether participants can submit the study more than once."
+    },
+    "start": {
+      "label": "Study sessions cannot start before"
+    },
+    "end": {
+      "label": "Study sessions cannot start after"
+    }
+  },
+  "workflowConfig": {
+    "addLinkEod": {
+      "reviewLink": {
+        "help": "The link is appended to the end of the document. `~SESSION_HASH~` is replaced with the current session hash."
+      },
+      "reviewText": {
+        "help": "Do you find the feedback helpful?"
+      }
+    },
+    "assessment": {
+      "configurationId": {
+        "label": "Assessment Configuration File:",
+        "help": "Select the configuration file for this workflow step assessment."
+      },
+      "forcedAssessment": {
+        "label": "Forced Assessment",
+        "help": "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
+      }
+    },
+    "assessmentWithAi": {
+      "configurationId": {
+        "label": "Configuration File:",
+        "help": "Select the configuration file for this workflow step."
+      },
+      "forcedAssessment": {
+        "label": "Forced Assessment",
+        "help": "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
+      }
+    },
+    "modalSize": {
+      "label": "Modal Size",
+      "options": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "extraLarge": "Extra Large"
+      }
+    }
+  },
+  "workflow": {
+    "peer_review_workflow": "Peer Review Workflow",
+    "peer_review_workflow_(assessment)": "Peer Review Workflow (Assessment)",
+    "peer_review_workflow_(assessment_with_ai)": "Peer Review Workflow (Assessment with AI)",
+    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Project",
+    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Project (Control)",
+    "annotation_workflow": "Annotation Workflow"
+  }
+}

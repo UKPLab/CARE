@@ -1,0 +1,27 @@
+{
+    "reqTitle": "Send a request",
+    "cmdTitle": "Send a command",
+    "cmdToSend": "the command to send",
+    "serviceToContact": "the service to contact",
+    "waitingForResponse": "Waiting for response",
+    "payload": "Payload",
+    "emptyMsgHistory": "No messages sent/received.",
+    "messages": {
+        "msgNotReceived": "Received no message from server within 5s."
+    },
+    "seePayload": "See Payload",
+    "request": "Request",
+    "copyJsonSuccess": {
+        "title": "JSON copied",
+        "message": "JSON copied to clipboard!"
+    },
+    "editJson": "Edit JSON",
+    "unsavedWarning": {
+        "unsavedChanges": "Unsaved Changes",
+        "unsavedChangesMessage": "Are you sure you want to leave? There are unsaved changes, which will be lost."
+    },
+    "history": "History",
+    "configurator": "Configurator",
+    "readOnly": "Read-only",
+    "downloadDocument": "Download document"
+}

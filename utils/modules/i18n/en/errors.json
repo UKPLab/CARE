@@ -1,0 +1,279 @@
+{
+    "auth": {
+        "invalidResetLink": "Invalid reset link. Please request a new password reset.",
+        "invalidResetToken": "Invalid reset token. Please request a new password reset.",
+        "invalidOrExpiredToken": "Invalid or expired reset token.",
+        "tokenRequired": "Token is required.",
+        "tokenAndPasswordRequired": "Token and new password are required.",
+        "failedToValidateToken": "Failed to validate reset token. Please try again.",
+        "failedToResetPassword": "Failed to reset password. Please try again later.",
+        "passwordResetFailed": "Password Reset Failed",
+        "passwordResetDisabled": "Password reset is disabled.",
+        "passwordResetRateLimited": "Please wait {minutes} minute(s) before requesting another password reset email.",
+        "emailVerificationError": "Email Verification Error",
+        "emailVerificationDisabled": "Email verification is disabled.",
+        "emailAlreadyVerified": "Email address is already verified.",
+        "verificationRateLimited": "Please wait {minutes} minute(s) before requesting another verification email.",
+        "failedToVerifyEmail": "Failed to verify email. Please try again later.",
+        "failedToSendResetEmail": "Failed to send password reset email.",
+        "failedToSendVerificationEmail": "Failed to send verification email. Please try again later.",
+        "failedToLogin": "Login failed.",
+        "failedToCreateUser": "Failed to create user.",
+        "emailAlreadyTaken": "Email is already in use.",
+        "usernameTaken": "Username already taken.",
+        "userNotFoundByEmail": "User with this email does not exist.",
+        "invalidCredentials": "Invalid User Credentials",
+        "termsUpdateError": "Consent Update Error",
+        "consentUpdateError": "Error in updating consent"
+    },
+    "permission": {
+        "accessError": "Access Error",
+        "accessDenied": "Access denied.",
+        "noPermission": "You do not have permission to perform this action.",
+        "noUploadAccess": "You do not have permission to upload documents.",
+        "noUserAccess": "You do not have permission to access this user's data.",
+        "noRoleAccess": "You do not have the required role to perform this action.",
+        "noAnnotationChangePermission": "You have no permission to change this annotation",
+        "cannotUpdateOtherUserTable": "You are not allowed to update the table {dataTable} for another user!",
+        "noDataAccess": "You don't have rights to access this data",
+        "noPermissionToAccesData": "You don't have permission to access this data",
+        "noCommentEditPermission": "You are not allowed to edit this comment.",
+        "noCommentPermission": "You are not allowed to add a comment.",
+        "noCommentAccess": "You don't have access to this comment",
+        "noPreprocessSubmissionPermission": "You do not have permission to preprocess submissions"
+    },
+    "configuration": {
+        "idRequired": "Configuration ID is required.",
+        "contentRequired": "Configuration content is required.",
+        "notFound": "Configuration not found."
+    },
+    "validation": {
+        "fillAllFields": "Please fill in all fields correctly.",
+        "ensurePasswordRequirements": "Please ensure passwords meet the requirements.",
+        "validationError": "Validation Error",
+        "validationFailed": "Validation failed: {message}",
+        "required": "This field is required",
+        "requiredFieldMissing": "Required field missing: {fieldKey}",
+        "fileDownloadFailed": "Failed to download file {fileName}: {message}",
+        "schemaNotFound": "Validation schema not found: {configurationId}",
+        "additionalFilesNotAllowed": "Additional files are not allowed. Found: {files}",
+        "requiredFileMissing": "Required file missing: {file}",
+        "cannotOpenZip": "Cannot open ZIP file {fileName}: {message}",
+        "requiredFileMissingInZip": "Required file missing in ZIP {zipFileName}: {file}",
+        "tooManyMatchesInZip": "Too many matches for {file} in ZIP {zipFileName}: found {found}, max {max}",
+        "zipReadError": "Error reading ZIP file {fileName}: {message}",
+        "auth": {
+            "provideUsername": "Please provide a valid username.",
+            "providePassword": "Please provide a valid password of at least 8 characters.",
+            "provideEmail": "Please provide a valid email address.",
+            "provideFirstName": "Please provide your first name.",
+            "provideLastName": "Please provide your last name.",
+            "usernameNoSpecialChars": "Please provide a valid username - no special characters.",
+            "passwordMinLength": "Password must be at least 8 characters long.",
+            "acceptTermsRequired": "Please accept the terms.",
+            "passwordsDoNotMatch": "Passwords do not match."
+        },
+        "documents": {
+            "selectValidType": "Please select a valid document type.",
+            "noName": "No name provided",
+            "enterName": "Please enter a name for the document."
+        }
+    },
+    "file": {
+        "noFileUploaded": "No file uploaded",
+        "invalidFileType": "Invalid file type",
+        "onlyJsonAllowed": "Only JSON files are allowed.",
+        "onlyPdfDeltaAllowed": "Only PDF and delta files are allowed.",
+        "invalidJson": "Invalid JSON format",
+        "jsonMustBeObject": "The JSON must be an object of key/value pairs.",
+        "noFileSelected": "No file selected",
+        "selectJsonFile": "Please select a JSON file to import.",
+        "noTableAvailable": "No {tableType} available for selection.",
+        "noParameters": "No file selection parameters found. All parameters are using configuration-based inputs.",
+        "pdfNotFound": "PDF file not found",
+        "tableNameRequired": "Table name is required",
+        "copyJsonError": {
+            "title": "Json not copied",
+            "notCopiedMsg": "Could not copy json to clipboard!",
+            "notLoadedMsg": "Json not loaded or empty, cannot copy."
+        },
+        "pdfLoadingError": {
+            "title": "PDF Loading Error",
+            "message": "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format."
+        }
+    },
+    "clipboard": {
+        "linkNotCopied": "Link not copied",
+        "copyFailed": "Could not copy link to clipboard!",
+        "retrieveFailed": "Failed to retrieve URL. Try again later.",
+        "configNotCopied": "Config not copied",
+        "skillConfigCopyFailed": "Could not copy skill configuration to clipboard!",
+        "couldNotCopyStudySession": "Could not copy study session link to clipboard!"
+    },
+    "documents": {
+        "deleteFailed": "Document delete failed",
+        "documentNotPublished": "Document not published",
+        "documentEditFailed": "Document edit failed",
+        "failedToUploadConfiguration": "Failed to upload configuration",
+        "failedToUpload": "Failed to upload",
+        "failedToProcessPdf": "Failed to process PDF",
+        "errorProcessingPdf": "Error processing PDF",
+        "failedToLoadDocContent": "Failed to load the document content.",
+        "documentOpenError": "Document Open Error",
+        "documentCloseError": "Document Close Error",
+        "documentError": "Document Error",
+        "uploadingFailed": "Uploading failed",
+        "noDocumentSelected": "You need to select a document.",
+        "notFound": "Document not found.",
+        "unsupportedDocumentTypeOperation": "This operation is only supported for HTML/MODAL documents.",
+        "processingError": "Error processing document {documentId}: {message}",
+        "fileNotFound": "File not found for document {documentId}: {filePath}",
+        "readError": "Error reading document file {documentId}: {message}",
+        "notEnoughDocumentsForRole": "Not enough documents to review for role {roleName}. Please add more documents.",
+        "notEnoughDocumentsForReviewer": "Not enough documents to review for {reviewerName}. Please add more documents."
+    },
+    "editor": {
+        "cursorPositionError": {
+            "title": "No Cursor Position",
+            "message": "Please click in the editor to set the cursor position before inserting a placeholder."
+        },
+        "previousEditFailed": "Previous edit failed; try again",
+        "editHistoryRetrievalFailed": "Failed retrieving edit history"
+    },
+    "studies": {
+        "studyCannotStart": "Study cannot be started!",
+        "studyClosingFailed": "Study closing failed",
+        "studyDeleteFailed": "Study delete failed",
+        "studyRestartFailed": "Study restart failed",
+        "templateSaveFailed": "Template Save Failed",
+        "templateCreationFailed": "Template Creation Failed",
+        "sessionNotFinished": "Session Not Finished",
+        "stepUpdateFailed": "Step Update Failed",
+        "studyClosed": "This study is closed",
+        "studyEnded": "This study has ended",
+        "studyNotFound": "Study not found",
+        "studyNotStarted": "This study has not started yet",
+        "sessionLimitExceeded": "Cannot create more than {limit} sessions for this study.",
+        "sessionLimitPerUserExceeded": "Cannot create more than {limit} sessions for this user.",
+        "missingContextOrStepDocuments": "Missing context or step documents in options. Cancelling transaction.",
+        "studyStep": {
+            "notFound": "No first step found for this study",
+            "referencedStepNotFound": "Referenced study step not found for workflow step {originalEntryId}",
+            "referencedDocumentNotFound": "Referenced document not found for study step {referencedStudyStepId}",
+            "documentNotFound": "Document not found: document ID {dataDocumentId} is missing for step {dataWorkflowStepId}",
+            "documentTypeMismatch": "Document type mismatch: step {dataWorkflowStepId} expects an Editor document (type 1), but found type {documentType}."
+        }
+    },
+    "settings": {
+        "errorLoading": "Error Loading Settings",
+        "errorSaving": "Error Saving Settings",
+        "failedToImport": "Failed to import settings",
+        "noAccessPermission": "You do not have permission to access settings.",
+        "noSavePermission": "You do not have permission to save settings."
+    },
+    "users": {
+        "errorFetchingUsers": "Error fetching users",
+        "userNotDeleted": "User not deleted",
+        "updateFailed": "Failed to update",
+        "failedToGetUsersFromMoodle": "Failed to get users from Moodle",
+        "failedToBulkCreateUsers": "Failed to bulk create users",
+        "failedToCheckDuplicateUsers": "Failed to check duplicate users",
+        "failedToCheckDuplicateUsersMessage": "Please contact CARE staff to resolve the issue",
+        "errorFetchingUserRights": "Error fetching user rights",
+        "userCreationFailed": "User Creation Failed",
+        "userNotFound": "User not found",
+        "failedToUpdateUser": "Failed to update user: User not found",
+        "noUserFoundForRole": "No users found for role {roleName}. Please add users to the role."
+    },
+    "submission": {
+        "notFound": "Submission with id {submissionId} not found",
+        "documentCopyFailed": "Failed to copy document with id {documentId}: {message}",
+        "noValidFiles": "No valid files found for submission {submissionId}",
+        "missingAdminRights": "Cannot cancel preprocessing: missing admin rights",
+        "noActivePreprocessing": "Cannot cancel preprocessing: no active preprocessing",
+        "invalidPreprocessRequest": "Invalid preprocessing request payload.",
+        "noSkillParameterMappings": "No skill parameter mappings provided.",
+        "copyFailed": "Failed to copy submission {submissionId}. Error: {originalMessage}"
+    },
+    "tags": {
+        "tagSetDeleteFailed": "TagSet delete failed",
+        "tagSetPublishFailed": "TagSet publishing failed",
+        "tagSetEmpty": "Tag set is empty",
+        "tagSetEmptyMessage": "You can not select an empty tag set as default.",
+        "tagUpdateFailed": "Tag Update Failed",
+        "emptyTagset": {
+            "title": "Empty Tagset",
+            "message": "No tagset or an empty tagset have been selected. Cannot make annotations."
+        }
+
+    },
+    "annotator": {
+        "commentNotUpdated": "Comment not updated",
+        "annotationUpdateFailed": "Annotation Update Failed",
+        "annotationNotRetrieved": "Annotation not retrieved",
+        "commentsNotRetrieved": "Comments not retrieved"
+    },
+    "nlp": {
+        "timeout": "Timeout in request for skill {skill} - Request failed!",
+        "invalidService": "The provided service is invalid. Please consult with the service provider.",
+        "configCopyFailed": "Configuration not loaded or empty, cannot copy.",
+        "downloadFailed": "Download failed",
+        "configDownloadFailed": "Failed to download skill config, as it is not loaded",
+        "msgNotReceived": "Received no message from server within 5s."
+    },
+    "server": {
+        "unexpectedError": "An unexpected error occurred. Please try again.",
+        "unknownError": "Unknown error"
+    },
+    "page": {
+        "notFoundTitle": "404 not found",
+        "notFoundMessage": "The page you are looking for does not exist."
+    },
+    "download": {
+        "abortedTitle": "Download aborted",
+        "serverTimeout": "The server did not respond. Please try again later.",
+        "inProgress": "Another download is in progress. Please wait.",
+        "exportAbortedTitle": "Export aborted",
+        "exportFailedTitle": "Export Failed",
+        "exportFailedMessage": "Export failed for {id}."
+    },
+    "element": {
+        "invalidInput": "The input is invalid.",
+        "fieldRequired": "This field is required."
+    },
+    "collaboration": {
+        "collabUpdateFailed": "Collaboration Update Failed",
+        "collabCreationFailed": "Could not start collaboration"
+    },
+    "connectionError": "Connection error! Reconnecting...",
+    "roles": {
+        "loadAvailableRightsFailed": "Failed to load available rights",
+        "loadRoleRightsFailed": "Failed to load role rights",
+        "assignRoleRightsFailed": "Failed to assign role rights"
+    },
+    "csv": {
+        "missingRequiredHeaders": "CSV does not contain all required headers",
+        "emptyValue": "Empty value found for {key} at index {index}",
+        "duplicateId": "Duplicate id found: {extId} at index {index}",
+        "duplicateEmail": "Duplicate email found: {email} at index {index}",
+        "rolesNotCommaSeparated": "Roles not comma-separated for id {id} at index {index}",
+        "invalidEmailFormat": "Invalid email format for id {id} at index {index}: {email}",
+        "parseError": "Error parsing file: {message}"
+    },
+    "rpc": {
+        "serviceNotConnected": "RPC service not connected",
+        "requestFailed": "RPC request {eventName} failed: {message}",
+        "downloadFailed": "Failed to download submissions: {message}",
+        "annotationExtractionFailed": "Failed to extract annotations: {message}",
+        "annotationEmbeddingFailed": "Failed to embed annotations: {message}",
+        "annotationDeletionFailed": "Failed to delete annotations: {message}"
+    },
+    "database": {
+        "failedToUpdateData": "Failed to update data"
+    },
+    "assignment": {
+        "unableToAssignEnoughDocuments": "Unable to assign enough documents for {reviewerName} in role {roleName}",
+        "couldNotAssignReviewers": "Could not assign all reviewers. Please try again.",
+        "invalidMode": "Invalid mode provided for assignment creation."
+    }
+}

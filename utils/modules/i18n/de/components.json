@@ -1,0 +1,32 @@
+{
+    "logs":{
+        "title": "Protokolle",
+    "columns": {
+        "level": "Stufe",
+        "time": "Zeit",
+        "service": "Dienst",
+        "message": "Nachricht"
+    },
+    "levels": {
+        "error": "Fehler",
+        "warn": "Warnung",
+        "info": "Info",
+        "debug": "Debug"
+    }
+    },
+    "comment":{
+        "enterText": "Text eingeben...",
+        "noComment": "Kein Kommentar",
+        "sentimentAnalysis": "Sentiment-Analyse",
+        "saveCommand": "Speichern (Strg + Enter)"
+    },
+    "voteButtons":{
+        "helpful": "Hilfreich",
+        "notHelpful": "Nicht hilfreich"
+    },
+    "pdftoolbar":{
+        "minToolbar": "Symbolleiste minimieren",
+        "showToolbar": "Symbolleiste anzeigen"
+    }
+
+}

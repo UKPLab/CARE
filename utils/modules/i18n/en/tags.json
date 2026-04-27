@@ -1,0 +1,74 @@
+{
+  "title": "Tag Sets",
+  "tagSet": "Tag Set",
+  "addNewTagSet": "Add new tag set",
+  "copyTagSet": "Copy tag set",
+  "editTagSet": "Edit tag set",
+  "deleteTagSet": "Delete tag set",
+  "shareTagSet": "Share tag set",
+  "selectAsDefault": "Select tag set as default",
+  "modalTitle": {
+    "newTagSet": "New Tag Set",
+    "editTagSet": "Edit Tag Set"
+  },
+  "columns": {
+    "tags": "Tags",
+    "lastChange": "Last Change",
+    "user": "User"
+  },
+  "messages": {
+    "deleteTitle": "Delete Tagset",
+    "deleteConfirm": "Do you really want to delete the Tagset?",
+    "tagSetDeleted": "TagSet deleted",
+    "tagSetDeletedMessage": "The TagSet was successfully deleted",
+    "publishTitle": "Publish Tagset",
+    "publishConfirm": "Do you really want to publish the tagset? Note: Once you published it, you can't unpublish the tagset!",
+    "tagSetPublished": "TagSet published",
+    "tagSetPublishedMessage": "The TagSet was successfully published"
+  },
+  "form": {
+    "name": {
+      "label": "Name of the Tag set:",
+      "placeholder": "My tag set"
+    },
+    "description": {
+      "label": "Description of the Tag set:",
+      "placeholder": "Tag set description"
+    },
+    "tags": {
+      "label": "Tags:"
+    }
+  },
+  "editMainTag": "Edit main tag",
+  "basicTags": {
+    "highlight": "Highlight",
+    "strength": "Strength",
+    "weakness": "Weakness",
+    "other": "Other"
+  },
+  "basicTagGroups": {
+    "peerReview": "Peer Review",
+    "standardSet": "A standard tagset for peer review process"
+  },
+  "tag":{
+    "form": {
+      "name":{
+        "label": "Name",
+        "placeholder": "Name of the Tag"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder":"Tag description"
+      },
+      "colorCode": {
+        "label": "Color",
+        "options": {
+          "info": "Info",
+          "warning": "Warning",
+          "success": "Success",
+          "danger": "Danger"
+        }
+      }
+    }
+  }
+}
