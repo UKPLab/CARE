@@ -45,13 +45,14 @@ class ReplayerSocket extends Socket {
             throw new Error('No traces found for this recording');
         }
 
-        const userTraceMap = this.groupTracesByUser(traces);
-        const userIds = Array.from(userTraceMap.keys());
+        const sessionMap = this.groupTracesBySocket(traces);
+        const sessionKeys = Array.from(sessionMap.keys());
 
-        if (userIds.length === 0) {
+        if (sessionKeys.length === 0) {
             throw new Error('No user-tagged traces found');
         }
 
+        const userIds = [...new Set([...sessionMap.values()].map(s => s.userId))];
         const users = await this.models['user'].findAll({
             where: { id: userIds },
         });
@@ -59,59 +60,64 @@ class ReplayerSocket extends Socket {
 
         const serverUrl = `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
 
-        return await this.runScalingTest(userIds, userMap, userTraceMap, serverUrl, timingMode);
+        return await this.runScalingTest(sessionKeys, sessionMap, userMap, serverUrl, timingMode);
     }
 
     /**
-     * Group trace rows by userId.
+     * Group trace rows by socketId, falling back to "user-{userId}" when
+     * socketId is null (older recordings captured before per-session
+     * tracking was added).
      * @param {Array<Object>} traces - Trace rows sorted by startTime
-     * @returns {Map<number, Array<Object>>} Map of userId to their traces
+     * @returns {Map<string, {userId: number, traces: Array<Object>}>} Map of session key to its traces and owning user
      */
-    groupTracesByUser(traces) {
+    groupTracesBySocket(traces) {
         const map = new Map();
         for (const t of traces) {
             if (!t.userId) continue;
-            if (!map.has(t.userId)) {
-                map.set(t.userId, []);
+            // Use socketId as the session key; fall back to a synthetic key
+            // for legacy recordings so they still replay (collapsed by user).
+            const key = t.socketId || `user-${t.userId}`;
+            if (!map.has(key)) {
+                map.set(key, { userId: t.userId, traces: [] });
             }
-            map.get(t.userId).push(t);
+            map.get(key).traces.push(t);
         }
         return map;
     }
 
     /**
-     * Execute the scaling-correctness loop, adding one user per level.
-     * @param {Array<number>} userIds - Ordered list of user IDs to scale through
+     * Execute the scaling-correctness loop, adding one session per iteration.
+     * @param {Array<string>} sessionKeys - Ordered list of session keys (socketIds or fallback) to scale through
+     * @param {Map<string, {userId: number, traces: Array<Object>}>} sessionMap - Map of session key to its user and traces
      * @param {Map<number, Object>} userMap - Map of userId to user row
-     * @param {Map<number, Array<Object>>} userTraceMap - Map of userId to traces
      * @param {string} serverUrl - Target server URL
      * @param {string} timingMode - "realtime" or "fast"
-     * @returns {Promise<Array<Object>>} Results per level
+     * @returns {Promise<Array<Object>>} Results per iteration
      */
-    async runScalingTest(userIds, userMap, userTraceMap, serverUrl, timingMode) {
+    async runScalingTest(sessionKeys, sessionMap, userMap, serverUrl, timingMode) {
         const allResults = [];
 
-        for (let level = 1; level <= userIds.length; level++) {
-            const activeUserIds = userIds.slice(0, level);
+        for (let level = 1; level <= sessionKeys.length; level++) {
+            const activeKeys = sessionKeys.slice(0, level);
 
             this.sendToast(
-                `Iteration ${level}/${userIds.length}: replaying ${activeUserIds.length} user(s)`,
+                `Iteration ${level}/${sessionKeys.length}: replaying ${activeKeys.length} session(s)`,
                 'Replay',
                 'info'
             );
 
             const levelResults = await Promise.all(
-                activeUserIds.map(uid => {
-                    const user = userMap.get(uid);
-                    const userTraces = userTraceMap.get(uid);
-                    return replayUserTraces(this.server, user, userTraces, serverUrl, timingMode);
+                activeKeys.map(key => {
+                    const session = sessionMap.get(key);
+                    const user = userMap.get(session.userId);
+                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode);
                 })
             );
 
             const levelFailed = levelResults.some(r => r.failed > 0);
             allResults.push({
                 level,
-                users: activeUserIds.length,
+                users: activeKeys.length,
                 results: levelResults,
                 passed: !levelFailed,
             });
