@@ -128,26 +128,42 @@ export default {
       });
     },
     confirm() {
-      this.$socket.emit("appDataUpdate", {
+    const tracesToDeleteCount = this.tracesToDelete.length;
+    let pendingOps = 1 + tracesToDeleteCount; // 1 for the rename, plus N trace deletions
+    let failed = false;
+
+    const onOpComplete = (res, opName) => {
+        pendingOps--;
+        if (!res.success && !failed) {
+            failed = true;
+            this.eventBus.emit("toast", {
+                title: "Failed to save recording",
+                message: `${opName}: ${res.message}`,
+                variant: "danger",
+            });
+        }
+        if (pendingOps === 0 && !failed) {
+            this.$refs.modal.close();
+            this.eventBus.emit("toast", {
+                title: "Recording saved",
+                message: "Recording has been saved successfully",
+                variant: "success",
+            });
+        }
+    };
+
+    this.$socket.emit("appDataUpdate", {
         table: "recording",
         data: { id: this.recordingId, name: this.recordingName }
-      });
+    }, (res) => onOpComplete(res, "rename"));
 
-      this.tracesToDelete.forEach(t => {
+    this.tracesToDelete.forEach(t => {
         this.$socket.emit("appDataUpdate", {
-          table: "trace",
-          data: { id: t.id, deleted: true }
-        });
-      });
-
-      this.$refs.modal.close();
-
-      this.eventBus.emit("toast", {
-        title: "Recording saved",
-        message: "Recording has been saved successfully",
-        variant: "success",
-      });
-    },
+            table: "trace",
+            data: { id: t.id, deleted: true }
+        }, (res) => onOpComplete(res, `delete trace ${t.id}`));
+    });
+},
   },
 };
 </script>

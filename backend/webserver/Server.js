@@ -461,10 +461,10 @@ module.exports = class Server {
      * @param port
      */
     start(port) {
-        this.logger.debug("Start Webserver...");
-        this.http = this.httpServer.listen(port, () => {
-            this.logger.info("Server started on port " + port);
-        });
+            this.logger.debug("Start Webserver...");
+            this.http = this.httpServer.listen(port, () => {
+                this.logger.info("Server started on port " + port);
+            });
         // Start DB stats scheduler
         try {
             statsScheduler.start(this.db.sequelize, this.logger);
@@ -472,6 +472,10 @@ module.exports = class Server {
         } catch (e) {
             this.logger.warn('Failed to start DB stats scheduler: ' + e.message);
         }
+        // Recover any recordings interrupted by the previous server shutdown
+        this.recoverInterruptedRecordings().catch((e) => {
+            this.logger.warn("recoverInterruptedRecordings failed: " + e);
+        });
         return this.http;
     }
 
@@ -511,5 +515,32 @@ module.exports = class Server {
             this.logger.error("flushAllStats encountered an error: " + e);
         }
     }
+/**
+ * Mark any recordings still in "recording" status as "interrupted".
+ * These are recordings whose server died mid-capture the in-memory
+ * activeRecordingId is gone but the DB row was never closed out.
+ */
+    async recoverInterruptedRecordings() {
+        try {
+            const stale = await this.db.models["recording"].findAll({
+                where: { status: "recording", deleted: false },
+            });
+            for (const rec of stale) {
+                await this.db.models["recording"].updateById(rec.id, {
+                    status: "interrupted",
+                    endTime: rec.endTime || new Date(),
+                });
+                this.logger.warn(
+                    `Marked recording ${rec.id} as interrupted (server was not running cleanly when stopped)`
+                );
+            }
+            if (stale.length > 0) {
+                this.logger.info(`Recovered ${stale.length} interrupted recording(s) on startup`);
+            }
+        } catch (e) {
+            this.logger.error("Failed to recover interrupted recordings: " + e);
+        }
+    }
+        
 
 }
