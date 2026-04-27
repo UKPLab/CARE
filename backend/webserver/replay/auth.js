@@ -63,7 +63,11 @@ async function createAuthenticatedClient(server, user, serverUrl) {
             type: server.db.sequelize.QueryTypes.INSERT,
         }
     );
-
+    // NOTE: This must match the express-session secret in Server.js (#initSessionManagement).
+    // Replay clients mint their own session cookies using this HMAC secret so that the
+    // session middleware accepts them as valid logged-in sessions. When the session secret
+    // is moved to an env var (see GitHub issue on hardcoded session secret), this literal
+    // must be updated to read from the same env var — otherwise replay auth will break.
     const secret = 'secretString';
     const signedSid = signSessionId(sid, secret);
     const cookie = `connect.sid=${encodeURIComponent(signedSid)}`;
