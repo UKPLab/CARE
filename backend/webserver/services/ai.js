@@ -8,6 +8,7 @@ const Service = require("../Service.js");
  *
  * Supported commands:
  *   - chatCompletion(data): forward the payload to LiteLLM as-is
+ *   - abortChatCompletion(data): abort an in-flight LiteLLM request by id
  *   - getStatus():          report whether LiteLLM is reachable
  *
  * @class
@@ -19,6 +20,7 @@ module.exports = class AIService extends Service {
         super(server, {
             cmdTypes: [
                 "chatCompletion",
+                "abortChatCompletion",
                 "getStatus"
             ],
             resTypes: []
@@ -39,6 +41,8 @@ module.exports = class AIService extends Service {
         switch (command) {
             case "chatCompletion":
                 return await this.chatCompletion(data);
+            case "abortChatCompletion":
+                return await this.abortChatCompletion(data);
             case "getStatus":
                 return await this.getStatus();
             default:
@@ -89,6 +93,23 @@ module.exports = class AIService extends Service {
         );
 
         return {choices};
+    }
+
+    /**
+     * Abort an in-flight chat completion request.
+     *
+     * @param {object} data
+     * @param {string} data.requestId frontend-generated request id
+     * @param {string} [data.reason] diagnostic reason for logs
+     * @returns {Promise<object>}
+     */
+    async abortChatCompletion(data) {
+        const rpc = this.#getRPC();
+        if (!rpc || !(await rpc.isOnline())) {
+            return {aborted: false, message: "LiteLLM service is not connected"};
+        }
+
+        return await rpc.abortChatCompletion(data && data.requestId, data && data.reason);
     }
 
     /**

@@ -1,4 +1,7 @@
 const RPC = require("../RPC.js");
+const {randomUUID} = require("crypto");
+
+const ACK_TIMEOUT_BUFFER_MS = 5000;
 
 /**
  * LiteLLMRPC - Routes LLM requests through LiteLLM for external and local model access
@@ -32,13 +35,59 @@ module.exports = class LiteLLMRPC extends RPC {
      * @throws {Error} If the RPC service call fails
      */
     async chatCompletion(data) {
-        this.logger.info("Sending chatCompletion request: model=" + data.model);
+        const {
+            __requestId: requestId = randomUUID(),
+            __timeoutMs: requestedTimeoutMs,
+            ...params
+        } = data || {};
+        const timeoutOverride = Number(requestedTimeoutMs);
+        const timeoutMs = Number.isFinite(timeoutOverride) && timeoutOverride > 0
+            ? Math.min(timeoutOverride, this.timeout)
+            : this.timeout;
+        const ackTimeoutMs = timeoutMs + ACK_TIMEOUT_BUFFER_MS;
 
-        const response = await this.emit("chatCompletion", data);
+        this.logger.info("Sending chatCompletion request: model=" + params.model + " requestId=" + requestId);
+
+        let response;
+        try {
+            response = await this.emit("chatCompletion", {
+                requestId,
+                timeoutMs,
+                params,
+            }, ackTimeoutMs);
+        } catch (err) {
+            await this.abortChatCompletion(requestId, "RPC acknowledgement timed out");
+            throw err;
+        }
         if (!response['success']) {
             this.logger.error("chatCompletion error: " + response['message']);
             throw new Error(response['message']);
         }
         return response;
+    }
+
+    /**
+     * Ask the Python bridge to abort an in-flight chat completion.
+     *
+     * @param {string} requestId
+     * @param {string} [reason]
+     * @returns {Promise<Object>}
+     */
+    async abortChatCompletion(requestId, reason = "request aborted") {
+        if (!requestId) {
+            return {aborted: false, message: "Missing requestId"};
+        }
+
+        try {
+            const response = await this.emit("abortChatCompletion", {requestId, reason}, 5000);
+            if (!response['success']) {
+                this.logger.error("abortChatCompletion error: " + response['message']);
+                return {aborted: false, message: response['message']};
+            }
+            return response.data || {aborted: true};
+        } catch (err) {
+            this.logger.error("abortChatCompletion failed: " + err.message);
+            return {aborted: false, message: err.message};
+        }
     }
 }
