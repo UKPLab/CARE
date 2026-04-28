@@ -355,6 +355,7 @@ module.exports = class Server {
 
         this.io.on("connection", (socket) => {
             this.availSockets[socket.id] = {};
+            socket.connectedAt = socket.handshake?.time;
             socket.openComponents = {
                 editor: []  // Array to track open documents
             };
@@ -390,7 +391,14 @@ module.exports = class Server {
                         this.logger.warn("Failed to flush stats on disconnect: " + e);
                     }
 
-                    
+                    // Broadcast user monitor stats before cleanup, UserSocket is not available after the socket is disconnected
+                    try {
+                        const userSock = this.availSockets[socket.id]['UserSocket'];
+                        if (userSock) await userSock.broadcastStats(socket.id);
+                    } catch (e) {
+                        this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
+                    }
+
                     delete this.availSockets[socket.id];
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);

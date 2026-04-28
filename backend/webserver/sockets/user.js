@@ -1,6 +1,6 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
-const {inject} = require("../../utils/generic");
+const {inject, parseUserAgent} = require("../../utils/generic");
 const _ = require("lodash");
 const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
@@ -14,6 +14,21 @@ const MONITOR_USERS_ROOM = "room:monitor:users";
  * @class UserSocket
  */
 class UserSocket extends Socket {
+
+    /**
+     * Resolves a display name from cache or DB.
+     * @param {number} userId
+     * @returns {Promise<string>}
+     */
+    async resolveUserName(userId) {
+        if (userId in this.server.cache["userName"]) {
+            return this.server.cache["userName"][userId];
+        }
+        const userName = await this.models["user"].getUserName(userId);
+        this.server.cache["userName"][userId] = userName;
+        return userName;
+    }
+
     /**
      * Adds the username as creator_name of a database entry with column creator
      *
@@ -27,13 +42,7 @@ class UserSocket extends Socket {
      */
     async updateCreatorName(data, key = "userId", targetName = "creator_name") {
         return await inject(data, async (userId) => {
-            if (userId in this.server.cache["userName"]) {
-                return this.server.cache["userName"][userId];
-            } else {
-                const userName = await this.models["user"].getUserName(userId);
-                this.server.cache["userName"][userId] = userName;
-                return userName;
-            }
+            return await this.resolveUserName(userId);
         }, targetName, key);
     }
 
@@ -402,84 +411,11 @@ class UserSocket extends Socket {
 
     // Active-user monitoring 
 
-    /**
-     * Resolves a display name from cache or DB.
-     * @param {number} userId
-     * @returns {Promise<string>}
-     */
-    async resolveUserName(userId) {
-        if (userId in this.server.cache["userName"]) {
-            return this.server.cache["userName"][userId];
-        }
-        const name = await this.models["user"].getUserName(userId);
-        this.server.cache["userName"][userId] = name;
-        return name;
-    }
-
-    /**
-     * Reduces a full User-Agent string to a readable browser label.
-     * @param {string|undefined} ua
-     * @returns {string}
-     */
-    parseUserAgent(ua) {
-        if (!ua) return "Unknown";
-        if (ua.includes("Edg")) return "Edge";
-        if (ua.includes("Chrome")) return "Chrome";
-        if (ua.includes("Firefox")) return "Firefox";
-        if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
-        return ua.substring(0, 60);
-    }
-
-    /**
-     * Builds a snapshot of all active sessions.
-     * @param {string|null} excludeSocketId Exclude this socket (used on disconnect, before Server.js removes it)
-     * @returns {Promise<object>}
-     */
-    async buildStats(excludeSocketId = null) {
-        const activeSockets = Object.entries(this.server.availSockets)
-            .filter(([sid]) => sid !== excludeSocketId);
-
-        const sessionCountByUser = {};
-        for (const [, socketMap] of activeSockets) {
-            const uid = socketMap["UserSocket"]?.userId;
-            if (uid != null) sessionCountByUser[uid] = (sessionCountByUser[uid] || 0) + 1;
-        }
-
-        const sessions = (
-            await Promise.all(
-                activeSockets.map(async ([sid, socketMap]) => {
-                    const inst = socketMap["UserSocket"];
-                    if (!inst?.connectedAt) return null;
-                    return {
-                        socketId: sid,
-                        userId: inst.userId,
-                        userName: await this.resolveUserName(inst.userId),
-                        connectedAt: inst.connectedAt,
-                        browser: inst.browser,
-                    };
-                })
-            )
-        ).filter(Boolean);
-
-        const seen = new Set();
-        const connectedUsers = [];
-        for (const [, socketMap] of activeSockets) {
-            const inst = socketMap["UserSocket"];
-            if (!inst?.connectedAt || seen.has(inst.userId)) continue;
-            seen.add(inst.userId);
-            connectedUsers.push({
-                userId: inst.userId,
-                userName: await this.resolveUserName(inst.userId),
-                sessionCount: sessionCountByUser[inst.userId] || 0,
-            });
-        }
-
-        return { activeSessions: activeSockets.length, activeUsers: seen.size, connectedUsers, sessions };
-    }
+    
 
     /**
      * Broadcasts a fresh stats snapshot to all admins currently subscribed to the monitor room.
-     * @param {string|null} excludeSocketId
+     * @param {string|null} excludeSocketId exclude this socket from the stats, because it reaches this function before the socket is removed
      */
     async broadcastStats(excludeSocketId = null) {
         try {
@@ -492,8 +428,9 @@ class UserSocket extends Socket {
 
     /**
      * Admin subscribes to the monitor room and receives the current snapshot immediately.
-     *
      * @socketEvent userMonitorSubscribe
+     * @param {Object} data The data object containing the user identifier.
+     * @param {Object} options Additional configuration parameters.
      */
     async subscribeToUserMonitor(data, options) {
         if (!(await this.isAdmin())) throw new Error("Admin access required");
@@ -503,7 +440,8 @@ class UserSocket extends Socket {
 
     /**
      * Admin unsubscribes from the monitor room.
-     *
+     * @param {Object} data The data object containing the user identifier.
+     * @param {Object} options Additional configuration parameters.
      * @socketEvent userMonitorUnsubscribe
      */
     async unsubscribeFromUserMonitor(data, options) {
@@ -513,18 +451,10 @@ class UserSocket extends Socket {
 
 
     init() {
-        this.connectedAt = this.socket.handshake.time;
-        this.browser = this.parseUserAgent(this.socket.request.headers["user-agent"]);
+        this.browser = parseUserAgent(this.socket.request.headers["user-agent"]);
 
         // Broadcast on new connection; fires before Server.js removes the entry on disconnect
         this.broadcastStats();
-        this.socket.on("disconnect", async () => {
-            try {
-                await this.broadcastStats(this.socket.id);
-            } catch (error) {
-                this.logger.warn("Error broadcasting monitor stats on disconnect: " + error);
-            }
-        });
 
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
