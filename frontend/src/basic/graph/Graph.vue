@@ -85,9 +85,14 @@
         </div>
         <div class="card-body">
           <v-network-graph
-ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
-            :nodes="currentData['nodes']" :edges="currentData['edges']" :configs="configs"
-            :layouts="currentData['layouts']" />
+            ref="graph"
+            v-model:selected-nodes="selectedNodes"
+            class="graph"
+            :nodes="currentData['nodes']"
+            :edges="currentData['edges']"
+            :configs="configs"
+            :layouts="currentData['layouts']"
+          />
         </div>
       </div>
     </template>

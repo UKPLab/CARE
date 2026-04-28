@@ -36,9 +36,9 @@
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar
-ref="sidebar"
-                                   @new-anno-card="changeSideBarView"
-                                   @scroll-to-comment="scrollToComment"
+                  ref="sidebar"
+                  @new-anno-card="changeSideBarView"
+                  @scroll-to-comment="scrollToComment"
                 />
               </template>
             </SidebarTemplate>

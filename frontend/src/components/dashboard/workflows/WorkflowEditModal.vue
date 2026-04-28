@@ -12,8 +12,12 @@
         </div>
 
         <Graph
-v-if="workflowGraphData" ref="workflowGraph" :model-value="workflowGraphData" table="workflow_step"
-          :options="graphOptions" :data-table="false"
+          v-if="workflowGraphData"
+          ref="workflowGraph"
+          :model-value="workflowGraphData"
+          table="workflow_step"
+          :options="graphOptions"
+          :data-table="false"
           :editable="isEditable"
           :copied-node-data="copiedWorkflowStepData"
           @update:node="updateWorkflowStep" 
