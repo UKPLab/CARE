@@ -40,10 +40,10 @@
       <div class="mt-3">
         <div class="form-check">
           <input
-            type="checkbox"
-            v-model="enableEmailNotification"
-            class="form-check-input"
             id="emailNotifyCheck"
+            v-model="enableEmailNotification"
+            type="checkbox"
+            class="form-check-input"
           />
           <label class="form-check-label" for="emailNotifyCheck">
             <strong>Send email notification to reviewer</strong>

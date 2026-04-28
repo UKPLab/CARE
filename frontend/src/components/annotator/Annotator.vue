@@ -24,7 +24,7 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
-            :isShown="isShown"  
+            :is-shown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -35,7 +35,8 @@
           <template #annotations>
             <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
               <template #content>
-                <AnnotationSidebar ref="sidebar"
+                <AnnotationSidebar
+ref="sidebar"
                                    @new-anno-card="changeSideBarView"
                                    @scroll-to-comment="scrollToComment"
                 />

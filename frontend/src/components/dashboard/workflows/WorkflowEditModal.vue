@@ -11,10 +11,11 @@
           <strong>Copied Step:</strong> {{ copiedWorkflowStepData ? `${copiedWorkflowStepData.name || 'Unnamed step'} (${getStepTypeString(copiedWorkflowStepData.stepType)})` : 'None' }}
         </div>
 
-        <Graph v-if="workflowGraphData" ref="workflowGraph" :model-value="workflowGraphData" table="workflow_step"
+        <Graph
+v-if="workflowGraphData" ref="workflowGraph" :model-value="workflowGraphData" table="workflow_step"
           :options="graphOptions" :data-table="false"
           :editable="isEditable"
-          :copiedNodeData="copiedWorkflowStepData"
+          :copied-node-data="copiedWorkflowStepData"
           @update:node="updateWorkflowStep" 
           @delete:node="deleteWorkflowStep"
           @add:nodeAfter="addWorkflowStepAfter"
@@ -76,8 +77,6 @@ function getColorForStepType(stepType) {
  */
 export default {
   name: "WorkflowEditModal",
-  emits: ["copied:node"],
-  subscribeTable: ["workflow", "workflow_step"],
   components: {
     BasicModal,
     BasicButton,
@@ -85,6 +84,14 @@ export default {
     WorkflowStepEditor,
     WorkflowStepInspectModal,
   },
+  props: {
+    copiedWorkflowStepData: {
+      type: Object,
+      default: null
+    }
+  },
+  emits: ["copied:node"],
+  subscribeTable: ["workflow", "workflow_step"],
   data() {
     return {
       isLoading: false,
@@ -110,12 +117,6 @@ export default {
         }
       },
     };
-  },
-  props: {
-    copiedWorkflowStepData: {
-      type: Object,
-      default: null
-    }
   },
   computed: {
     isEditable() {

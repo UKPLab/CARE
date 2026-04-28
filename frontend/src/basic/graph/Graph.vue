@@ -50,7 +50,7 @@
                 :disabled="!activateEditNode"
                 @click="editNode(selectedNodes[0])"
               />
-              <div class="position-relative d-inline-block" v-if="activatePasteNode">
+              <div v-if="activatePasteNode" class="position-relative d-inline-block">
                 <BasicButton
                   class="btn border-0"
                   :disabled="!activatePasteNode"
@@ -84,7 +84,8 @@
           </span>
         </div>
         <div class="card-body">
-          <v-network-graph ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
+          <v-network-graph
+ref="graph" v-model:selected-nodes="selectedNodes" class="graph"
             :nodes="currentData['nodes']" :edges="currentData['edges']" :configs="configs"
             :layouts="currentData['layouts']" />
         </div>
