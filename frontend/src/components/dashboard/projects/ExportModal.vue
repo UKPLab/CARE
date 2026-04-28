@@ -18,42 +18,9 @@
           :fields="dataSelectionFields"
       />
     </template>
-
-    <!--
     <template #step-2>
-      <div class="table-scroll-container">
-        <div class="list-group">
-          <button
-            v-for="(f, i) in filter"
-            :key="f"
-            type="button"
-            class="list-group-item d-flex justify-content-between list-group-item-action"
-            @click="openFilterModal(i)">
-            <div v-if="f.data" class="ms-2 me-auto">
-              <div class="fw-bold">Filter for {{ f.data.options.table }}</div>
-              Include entries from {{ f.data.options.table }}
-            </div>
-            <span v-if="f.data"  class="badge bg-primary rounded-pill">{{ f.data.selected.length }} </span>
-            <FilterModal
-              :ref="'filter_' + i"
-              v-model="f.data"/>
-          </button>
-        </div>
-        <br>
-        <BasicButton
-          class="btn btn-primary"
-          title="Add Filter"
-          @click="filter.push({data: null})"
-        />
-      </div>
-    </template>
-    -->
-
-    <template #step-2>
-
       <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>Exporting a list of all study sessions with hash:</p>
-
         <p>
           Total Studies: {{ studies.length }}<br>
           Total Study Sessions: {{ studySessions.length }}
