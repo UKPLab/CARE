@@ -59,7 +59,7 @@
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="dataSelection.exportType === 'submissions'">
+      <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
         <StepSelectStudents 
           v-if="dataSelection.projectId"
           :project-id="dataSelection.projectId" 
@@ -87,17 +87,19 @@
     </template>
 
     
-    <template #step-3 v-if="dataSelection.exportType === 'submissions'">
+    <template #step-3 v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
       <StepOptions 
         v-model:generateAliases="generateAliases"
         v-model:fakerSeed="fakerSeed"
+        v-model:gradeFormat="gradeFormat"
+        :show-grade-format="dataSelection.exportType === 'grades'"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
     </template>
 
-    <template #step-4 v-if="dataSelection.exportType === 'submissions'">
+    <template #step-4 v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
       <StepConfirmDownload 
-        v-if="dataSelection.exportType === 'submissions'"
+        v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
         :wait="wait"
         :generate-aliases="generateAliases"
         :submission-selection="submissionSelection"
@@ -127,7 +129,7 @@ import getServerURL from "@/assets/serverUrl.js";
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska, Mélissa Loew
+ * @author Dennis Zyska, Mélissa Loew, Linyin Huang
  */
 export default {
   name: "ExportProjectModal",
@@ -168,12 +170,13 @@ export default {
       // Data for Export Submissions
       submissionSelection: [],
       generateAliases:false,
-      fakerSeed: 846569412
+      fakerSeed: 846569412,
+      gradeFormat: "json"
     };
   },
   computed: {
     stepValid() {
-      if (this.dataSelection.exportType === "submissions") {
+      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
           !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
           this.submissionSelection.length > 0, // must select at least one student
@@ -187,7 +190,7 @@ export default {
       ];
     },
     steps() {
-      if (this.dataSelection.exportType === 'submissions') {
+      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
           { title: "Settings" },
           { title: "Select Students" },
@@ -219,6 +222,7 @@ export default {
           options: [
             {name: "Export a list of all reviewers", value: "reviewerList"},
             {name: "Export submissions", value: "submissions"},
+            {name: "Export grades", value: "grades"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -290,6 +294,8 @@ export default {
         this.downloadReviewerList();
       } else if (this.dataSelection.exportType === "submissions") {
         this.downloadSubmissions();
+      } else if (this.dataSelection.exportType === "grades") {
+        this.downloadGrades();
       } else {
         this.downloadAllData();
       }
@@ -364,6 +370,23 @@ export default {
           fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
 
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadGrades() {
+      try {
+        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'grades',
+          userIds: selectedUserIds,
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null,
+          gradeFormat: this.gradeFormat
+        });
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);
