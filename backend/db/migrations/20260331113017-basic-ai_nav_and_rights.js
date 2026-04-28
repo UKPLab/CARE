@@ -2,20 +2,33 @@
 
 const navElements = [
   {
-    name: 'AI',
+    name: 'AI Models',
     groupId: 'Default',
     icon: 'key',
     order: 15,
     admin: false,
-    path: 'ai',
-    component: 'AiDashboard',
+    path: 'ai-models',
+    component: 'AiModels',
+  },
+  {
+    name: 'AI Log',
+    groupId: 'Default',
+    icon: 'journal-text',
+    order: 16,
+    admin: false,
+    path: 'ai-log',
+    component: 'AiLog',
   },
 ];
 
 const userRights = [
   {
-    name: 'frontend.dashboard.ai.view',
-    description: 'Access to the unified AI dashboard',
+    name: 'frontend.dashboard.ai-models.view',
+    description: 'Access to the AI models dashboard',
+  },
+  {
+    name: 'frontend.dashboard.ai-log.view',
+    description: 'Access to the AI log dashboard',
   },
 ];
 

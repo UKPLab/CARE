@@ -1,19 +1,12 @@
 <template>
   <div>
-    <Card title="LLM Credentials" class="mb-3">
+    <Card title="API Keys" class="mb-3">
       <template #headerElements>
         <div class="btn-group gap-2 ms-3">
           <BasicButton
-            class="btn-outline-secondary btn-sm"
-            title="Credential shares and catalog models that use those credentials"
-            text="Shared models"
-            icon="share"
-            @click="openSharedModelsModal"
-          />
-          <BasicButton
             class="btn-primary btn-sm"
-            title="Add Credential"
-            text="Add Credential"
+            title="Add API Key"
+            text="Add API Key"
             icon="plus-circle"
             @click="openAddCredentialModal"
           />
@@ -21,7 +14,7 @@
       </template>
       <template #body>
         <div v-if="myCredentials.length === 0" class="text-center text-muted py-3">
-          No credentials yet. Add one to connect to your LLM provider.
+          No API keys yet. Add one to connect to your AI provider.
         </div>
         <BasicTable
           v-else
@@ -34,9 +27,16 @@
       </template>
     </Card>
 
-    <Card title="LLM Model Catalog" class="mb-3">
+    <Card title="LLM Models" class="mb-3">
       <template #headerElements>
         <div class="btn-group gap-2 ms-3">
+          <BasicButton
+            class="btn-outline-secondary btn-sm"
+            title="API key shares and catalog models that use those keys"
+            text="Shared models"
+            icon="share"
+            @click="openSharedModelsModal"
+          />
           <BasicButton
             class="btn-primary btn-sm"
             title="Add Model"
@@ -61,31 +61,15 @@
       </template>
     </Card>
 
-    <Card title="Cost History">
-      <template #body>
-        <div v-if="usageLogs.length === 0" class="text-center text-muted py-4">
-          No usage logs found or backend logging is not enabled yet.
-        </div>
-        <BasicTable
-          v-else
-          :columns="logColumns"
-          :data="usageLogTableData"
-          :options="compactTableOptions"
-          :buttons="logButtons"
-          @action="handleLogAction"
-        />
-      </template>
-    </Card>
-
     <Modal ref="sharedModelsModal" name="llmSharedModelsModal" size="xl">
-      <template #title>Shared models and credential access</template>
+      <template #title>Shared models and API key access</template>
       <template #body>
         <p class="text-muted small mb-3">
-          Each row is a credential share. <strong>Catalog models</strong> lists enabled catalog entries that use that credential
+          Each row is an API key share. <strong>Catalog models</strong> lists enabled catalog entries that use that API key
           (via <code>aiCredentialId</code>), so you can see which models are affected when access is shared or revoked.
         </p>
         <div v-if="allShares.length === 0" class="text-center text-muted py-4">
-          No credential shares configured.
+          No API key shares configured.
         </div>
         <BasicTable
           v-else
@@ -103,7 +87,7 @@
 
     <Modal ref="credentialModal" name="llmCredentialModal" size="lg">
       <template #title>
-        {{ editingCredential ? "Edit Credential" : "Add Credential" }}
+        {{ editingCredential ? "Edit API Key" : "Add API Key" }}
       </template>
       <template #body>
         <div class="mb-3">
@@ -151,11 +135,11 @@
 
     <Modal ref="shareModal" name="credentialShareModal" size="lg">
       <template #title>
-        Manage Credential Shares
+        Manage API Key Shares
       </template>
       <template #body>
         <div v-if="selectedCredentialForSharing" class="mb-3">
-          <strong>Credential:</strong> {{ selectedCredentialForSharing.name }}
+          <strong>API Key:</strong> {{ selectedCredentialForSharing.name }}
         </div>
         <div class="row g-2 mb-3">
           <div class="col-md-3">
@@ -225,7 +209,7 @@
           <textarea v-model="modelCatalogForm.description" class="form-control" rows="2" placeholder="Optional model description"></textarea>
         </div>
         <div class="mb-3">
-          <label class="form-label fw-bold">Credential (optional)</label>
+          <label class="form-label fw-bold">API Key (optional)</label>
           <select v-model="modelCatalogForm.aiCredentialId" class="form-select">
             <option :value="null">None</option>
             <option v-for="c in credentialOptionsForModels" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -252,35 +236,6 @@
         </button>
       </template>
     </Modal>
-
-    <Modal ref="detailModal" name="usageDetailModal" size="xl">
-      <template #title>LLM Usage Detail</template>
-      <template #body>
-        <div v-if="selectedLog" class="row">
-          <div class="col-md-6">
-            <h6 class="text-secondary">Metadata</h6>
-            <table class="table table-sm">
-              <tbody>
-                <tr><td class="fw-bold">Status</td><td>{{ selectedLog.status || "-" }}</td></tr>
-                <tr><td class="fw-bold">Input Tokens</td><td>{{ selectedLog.inputTokens || 0 }}</td></tr>
-                <tr><td class="fw-bold">Output Tokens</td><td>{{ selectedLog.outputTokens || 0 }}</td></tr>
-                <tr><td class="fw-bold">Total Tokens</td><td>{{ selectedLog.total_tokens || 0 }}</td></tr>
-                <tr><td class="fw-bold">Costs</td><td>{{ selectedLog.costs || 0 }}</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-6">
-            <h6 class="text-secondary">Input</h6>
-            <pre class="border rounded p-2 bg-light usage-pre">{{ formatJson(selectedLog.input) }}</pre>
-            <h6 class="text-secondary mt-3">Output</h6>
-            <pre class="border rounded p-2 bg-light usage-pre">{{ formatJson(selectedLog.output) }}</pre>
-          </div>
-        </div>
-      </template>
-      <template #footer>
-        <button class="btn btn-secondary" type="button" @click="$refs.detailModal.close()">Close</button>
-      </template>
-    </Modal>
   </div>
 </template>
 
@@ -291,14 +246,13 @@ import BasicButton from "@/basic/Button.vue";
 import Modal from "@/basic/Modal.vue";
 
 export default {
-  name: "AiDashboard",
+  name: "AiModels",
   components: {Card, BasicTable, BasicButton, Modal},
-  subscribeTable: ["ai_credential", "ai_model_share", "ai_model", "ai_log", "user", "study"],
+  subscribeTable: ["ai_credential", "ai_model_share", "ai_model", "user", "study"],
   data() {
     return {
       editingCredential: null,
       selectedCredentialForSharing: null,
-      selectedLog: null,
       editingModel: null,
       modelCatalogForm: {
         name: "",
@@ -369,17 +323,6 @@ export default {
       allSharesButtons: [
         {icon: "trash", options: {iconOnly: true, specifiers: {"btn-outline-danger": true}}, title: "Revoke", action: "revokeShareGlobal"},
       ],
-      logColumns: [
-        {name: "When", key: "createdAtDisplay"},
-        {name: "Status", key: "status"},
-        {name: "Input Tokens", key: "inputTokens"},
-        {name: "Output Tokens", key: "outputTokens"},
-        {name: "Total Tokens", key: "total_tokens"},
-        {name: "Costs", key: "costs"},
-      ],
-      logButtons: [
-        {icon: "eye", options: {iconOnly: true, specifiers: {"btn-outline-primary": true}}, title: "View details", action: "viewLogDetail"},
-      ],
     };
   },
   computed: {
@@ -417,9 +360,6 @@ export default {
         };
       });
     },
-    usageLogs() {
-      return this.$store.getters["table/ai_log/getAll"] || [];
-    },
     users() {
       return this.$store.getters["table/user/getAll"] || [];
     },
@@ -436,12 +376,6 @@ export default {
         apiVersionDisplay: c.apiVersion || "-",
         enabledBadge: c.enabled !== false,
         shareCount: this.allShares.filter((s) => s.aiModelId != null && this.allModels.find((m) => m.id === s.aiModelId && m.aiCredentialId === c.id)).length,
-      }));
-    },
-    usageLogTableData() {
-      return this.usageLogs.map((l) => ({
-        ...l,
-        createdAtDisplay: l.createdAt ? new Date(l.createdAt).toLocaleString() : "-",
       }));
     },
     sharesForSelectedCredential() {
@@ -539,14 +473,6 @@ export default {
     getStudyName(id) {
       const study = this.studies.find((s) => s.id === id);
       return study ? (study.name || `Study ${id}`) : `Study ${id}`;
-    },
-    formatJson(value) {
-      if (!value) return "-";
-      try {
-        return typeof value === "string" ? value : JSON.stringify(value, null, 2);
-      } catch (_error) {
-        return String(value);
-      }
     },
     openSharedModelsModal() {
       this.$refs.sharedModelsModal.open();
@@ -783,11 +709,6 @@ export default {
         this.eventBus.emit("toast", {title: "Share", message: "Share revoked.", variant: "success"});
       });
     },
-    handleLogAction(data) {
-      if (data.action !== "viewLogDetail") return;
-      this.selectedLog = data.params;
-      this.$refs.detailModal.open();
-    },
   },
 };
 </script>
@@ -795,12 +716,5 @@ export default {
 <style scoped>
 .font-monospace {
   font-family: 'Courier New', Courier, monospace;
-}
-
-.usage-pre {
-  max-height: 240px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  font-size: 0.85em;
 }
 </style>
