@@ -1,8 +1,8 @@
 # CARE - Collaborative AI-Assisted Research Environment
 
-CARE is a collaborative research environment that allows users to read and annotate documents together.
+CARE is a Collaborative AI-Assisted Research Environment that integrates reading, annotating, writing, and assessment workflows into a single platform for academic research teams.
 
-A demo of the latest public version is available under https://care.ukp.informatik.tu-darmstadt.de.
+A demo of the latest public version is available under https://demo.care.ukp.informatik.tu-darmstadt.de.
 
 ## Quickstart
 
@@ -27,13 +27,9 @@ The documentation can also be built locally by running `make doc` and is then av
 
 ## Contact 
 
-_Maintainers:_
+Don't hesitate to report an issue on GitHub or reach us directly via [Discord](https://discord.gg/4uX9aCZ6G7) if something is broken or if you have further questions.
 
-* Dennis Zyska (dennis.zyska@tu-darmstadt.de) 
-* Nils Dycke (nils.dycke@tu-darmstadt.de)
-
-Don't hesitate to send us an e-mail or report an issue, if something is broken or if you have further questions.
-
+https://care.ukp.informatik.tu-darmstadt.de \
 https://www.ukp.tu-darmstadt.de \
 https://www.tu-darmstadt.de
 
@@ -63,5 +59,4 @@ If you use this software, please cite the following paper:
 
 ### Disclaimer
 
-This repository contains experimental software and is published for the sole purpose of giving additional background details on the respective publication.\
-The software is only tested on unix systems and is not guaranteed to work on other operating systems.
+This repository contains actively developed software. While it is open for contributions and use, it should be considered experimental and is primarily tested on Unix systems — use in production environments is at your own risk.
