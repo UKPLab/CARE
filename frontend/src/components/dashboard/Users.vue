@@ -181,9 +181,13 @@ export default {
         },
       },
       columns: [
-        { name: '', key: 'activeIndicator', type: 'icon', sortable: true, sortKey: 'isActive', width: 1, fixed: "left",
+        { name: '', key: 'activeIndicator', filterKey: 'isActive', type: 'icon', sortable: true, sortKey: 'isActive', width: 1, fixed: "left",
           style: { width: '1px', whiteSpace: "nowrap", textAlign: "center" },
-          typeOptions: { size: 6 } },
+          typeOptions: { size: 6 }, 
+          filter: [
+                { key:'true',name:'active'},
+                { key:'false',name:'inactive'},
+          ]},
         {name: "ID", key: "id", sortable: true, fixed: "left"},
         {name: "First Name", key: "firstName", fixed: "left"},
         {name: "Last Name", key: "lastName"},

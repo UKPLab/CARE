@@ -6,12 +6,15 @@
   >
     <template #title>
       Active Sessions
-      <span v-if="filteredUserName" class="badge bg-info ms-2">{{ filteredUserName }}</span>
-      <span v-else class="badge bg-primary ms-2">{{ stats.activeUsers }} user(s)</span>
-      <span class="badge bg-secondary ms-1">{{ formattedSessions.length }} session(s)</span>
     </template>
 
     <template #body>
+     <div v-if="filteredUserName" class="mb-2">
+        <small class="text-muted">
+          Filtered user:
+          <span class="fw-semibold text-body">{{ filteredUserName }}</span>
+        </small>
+      </div>
       <BasicTable
           :columns="sessionColumns"
           :data="formattedSessions"
@@ -20,6 +23,9 @@
     </template>
 
     <template #footer>
+     <small v-if="!filteredUserName" class="text-muted me-auto">
+         {{ stats.activeUsers }} active user(s)
+     </small>
       <BasicButton
           class="btn btn-secondary"
           title="Close"

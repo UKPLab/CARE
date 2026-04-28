@@ -639,7 +639,7 @@ export default {
           [c.key]:
             c.filter.type === "numeric"
               ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" } // initialize numeric filter
-              : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
+              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))), // initialize checkbox filter
         }))
     );
 
