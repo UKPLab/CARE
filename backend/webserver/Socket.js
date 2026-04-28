@@ -441,54 +441,87 @@ module.exports = class Socket {
      * @returns {Object} modified filters and attributes + whether access is allowed
      */
     async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
-        const accessMap = this.server.db.models[tableName]['accessMap'];
+        const accessMap = this.server.db.models[tableName]['accessMap'] || [];
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
         const model = this.models[tableName];
         const hasModelUserFilter = typeof model.getUserFilter === "function";
         const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+        const isPublicOrAdmin = isAdmin || model.publicTable;
+        const hasAccessRules = accessMap.length > 0;
+        const hasUserIdAttribute = model.autoTable && 'userId' in model.getAttributes();
 
-        if ((isAdmin || model.publicTable) && !hasModelUserFilter) { // is allowed to see everything
-            // no adaption of the filter or attributes needed
-        } else if (hasModelUserFilter) {
-            const userFilter = model.getUserFilter(userId, isAdmin);
-            allFilter = {[Op.and]: [allFilter, userFilter]};
-        } else if (model.autoTable && 'userId' in model.getAttributes() && accessRights.length === 0) {
-            // is allowed to see only his data and possible if there is a public attribute
-            const userFilter = {};
-            if ("public" in model.getAttributes()) {
-                userFilter[Op.or] = [{userId: userId}, {public: true}];
-            } else {
-                userFilter['userId'] = userId;
+        // Early denial: not public/admin, has access rules, no matching rights, no user-filter, and no ownership fallback
+        if (!isPublicOrAdmin && hasAccessRules && accessRights.length === 0 && !hasModelUserFilter && !hasUserIdAttribute) {
+            this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
+            return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+        }
+
+        // Collect row-visibility conditions from user filter and access-map limitations.
+        // All conditions are combined with OR so the user sees the union of what each grants.
+        // fullRowAccess=true means no row restriction is applied (admin, public table, or unlimited right).
+        const rowVisibilityConditions = [];
+        let fullRowAccess = isPublicOrAdmin;
+
+        if (!fullRowAccess) {
+            // --- Ownership: user always sees their own rows when table has userId ---
+            if (hasUserIdAttribute) {
+                rowVisibilityConditions.push({userId});
             }
-            allFilter = {[Op.and]: [allFilter, userFilter]};
-        } else {
 
-            if (accessRights.length > 0) {
-                if (relevantAccessMap.every(item => item.limitation)) {
-                    const {filter: limitedFilter, columns} = this.handleLimitations(
-                        tableName,
-                        allFilter,
-                        accessRights,
-                        relevantAccessMap,
-                        userId
-                    );
-
-                    allFilter = limitedFilter;
-                    allAttributes['include'] = columns;
-                } else { // do without limitations
-                    allAttributes['include'] = [...new Set(
-                        accessRights
-                            .filter(a => a.columns)
-                            .flatMap(a => a.columns)
-                    )];
+            // --- User-level row filter ---
+            if (hasModelUserFilter) {
+                const userFilter = await model.getUserFilter(userId);
+                if (Reflect.ownKeys(userFilter).length > 0) {
+                    rowVisibilityConditions.push(userFilter);
+                } else {
+                    // getUserFilter returns {} → grants full row access (e.g. for admins)
+                    fullRowAccess = true;
                 }
-
-            } else {
+            } else if (!hasUserIdAttribute && accessRights.length === 0) {
                 this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
                 return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
             }
+
+            // --- Access-map limitations (ORed with user filter conditions) ---
+            if (!fullRowAccess && accessRights.length > 0) {
+                const limitedAccessMap = relevantAccessMap.filter(item => item.limitation);
+                const hasUnlimitedRights = accessRights.length > limitedAccessMap.length;
+
+                if (hasUnlimitedRights) {
+                    // At least one right has no limitation → unlimited row access for that right
+                    fullRowAccess = true;
+                } else if (limitedAccessMap.length > 0) {
+                    // All rights carry limitations → add each as an additional OR condition
+                    limitedAccessMap.forEach(a => {
+                        const idField = a.access.target || 'id';
+                        rowVisibilityConditions.push({[idField]: {[Op.in]: [...new Set(a.limitation)]}});
+                    });
+                }
+            }
+        }
+
+        // --- Column restrictions from access rights (applied regardless of row logic) ---
+        if (accessRights.length > 0) {
+            allAttributes['include'] = [...new Set(
+                accessRights
+                    .filter(a => a.columns)
+                    .flatMap(a => a.columns)
+            )];
+        }
+
+        // Apply row-visibility: baseFilter AND (condition1 OR condition2 OR ...)
+        // Skipped entirely when fullRowAccess is true (no row restriction needed).
+        if (!fullRowAccess && rowVisibilityConditions.length > 0) {
+            allFilter = {
+                [Op.and]: [
+                    allFilter,
+                    rowVisibilityConditions.length === 1
+                        ? rowVisibilityConditions[0]
+                        : {[Op.or]: rowVisibilityConditions},
+                ],
+            };
         }
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
     }
@@ -643,7 +676,6 @@ module.exports = class Socket {
 
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
-
         let data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,

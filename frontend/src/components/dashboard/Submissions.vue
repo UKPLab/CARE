@@ -1,431 +1,224 @@
 <template>
-  <Card title="Submissions">
-    <template #headerElements>
-      <div class="btn-group gap-2">
-        <BasicButton
-            class="btn-secondary btn-sm"
-            text="Assign Group"
-            title="Assign Group"
-            icon="folder-check"
-            @click="openAssignModal"
-        />
-
-        <BasicButton
-            class="btn-secondary btn-sm"
-            text="Publish Reviews"
-            title="Publish Reviews"
-            icon="upload"
-            @click="openPublishModal"
-        />
-
-        <BasicButton
-            class="btn-secondary btn-sm"
-            text="Publish Assessment"
-            title="Publish Assessment"
-            icon="clipboard-data"
-            @click="openPublishAssessmentModal"
-        />
-
-        <BasicButton
-            class="btn-secondary btn-sm"
-            text="Manual Import"
-            title="Manual Import"
-            icon="file-earmark-arrow-up"
-            @click="openUploadModal"
-        />
-
-        <BasicButton
-            class="btn-primary btn-sm"
-            text="Import via Moodle"
-            title="Import via Moodle"
-            icon="box-arrow-in-down"
-            @click="openImportModal"
-        />
-
-        <BasicButton
-            :class="isProcessingActive ? 'btn-warning btn-sm position-relative' : 'btn-success btn-sm'"
-            :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
-            :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
-            :icon="isProcessingActive ? 'hourglass-split' : 'gear-fill'"
-            @click="preprocessGrades"
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="mb-0">Active Assignments</h1>
+    </div>
+    <div v-if="activeAssignments.length === 0">
+      <p class="fs-6">
+        You have no active assignments.
+      </p>
+    </div>
+    <div v-else>
+      <hr>
+      <div
+        v-for="assignment in activeAssignments"
+        :key="`active-${assignment.id}`"
+      >
+        <Card
+          :title="assignment.title"
+          collapsable
+          collapsed
         >
-    <span
-        v-if="isProcessingActive"
-        class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-      <span class="visually-hidden">Processing active</span>
-    </span>
-        </BasicButton>
+          <template #headerElements>
+            <BasicButton
+              class="btn btn-primary btn-sm"
+              title="Upload Submission"
+              text="Upload Submission"
+              icon="file-earmark-arrow-up"
+              :disabled="!canUploadSubmissionForAssignment(assignment)"
+              @click="openUploadModalForAssignment(assignment)"
+            />
+          </template>
+          <template #body>
+            <AssignmentSubmissionsTable
+              :assignment-id="assignment.id"
+            />
+          </template>
+          <template #footer>
+            <span>{{ assignment.end ? assignmentTimes[assignment.id] : "no due date" }}</span>
+          </template>
+        </Card>
+        <hr>
       </div>
+    </div>
+  </div>
 
+  <div class="container">
+    <h1>Closed Assignments</h1>
+    <div v-if="closedAssignments.length === 0">
+      <p class="fs-6">
+        You have no closed assignments.
+      </p>
+    </div>
+    <div v-else>
+      <hr>
+      <div
+        v-for="assignment in closedAssignments"
+        :key="`closed-${assignment.id}`"
+      >
+        <Card
+          :title="assignment.title"
+          collapsable
+          collapsed
+        >
+          <template #headerButtons>
+            <BasicButton
+              class="btn btn-primary btn-sm"
+              title="Upload Submission"
+              text="Upload Submission"
+              icon="file-earmark-arrow-up"
+              :disabled="!canUploadSubmissionForAssignment(assignment)"
+              @click="openUploadModalForAssignment(assignment)"
+            />
+          </template>
+          <template #body>
+            <AssignmentSubmissionsTable
+              :assignment-id="assignment.id"
+            />
+          </template>
+        </Card>
+        <hr>
+      </div>
+    </div>
+  </div>
 
-    </template>
-    <template #body>
-      <BasicTable
-          :columns="tableColumns"
-          :data="submissionTable"
-          :options="tableOptions"
-          :buttons="tableButtons"
-          @action="action"
-          :max-table-height="'65vh'"
-      />
-    </template>
-  </Card>
-  <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
-  <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
-  <ImportModal v-if="modals.import" ref="importModal" @hide="modals.import = false"/>
-  <PublishModal v-if="modals.publish" ref="publishModal" @hide="modals.publish = false"/>
-  <PublishAssessmentModal v-if="modals.publishAssessment" ref="publishAssessmentModal" @hide="modals.publishAssessment = false"/>
-  <AssignModal v-if="modals.assign" ref="assignModal" @hide="modals.assign = false"/>
-  <ApplySkillModal v-if="modals.applySkill" ref="applySkillModal" @hide="modals.applySkill = false"/>
+  <AssignmentUploadModal ref="uploadModal" />
+  <ConfirmModal ref="deleteConf" />
 </template>
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import UploadModal from "./submission/UploadModal.vue";
-import ImportModal from "./submission/ImportModal.vue";
-import PublishModal from "./submission/PublishModal.vue";
-import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
-import AssignModal from "./submission/AssignModal.vue";
+import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
+import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import JSZip from "jszip";
-import FileSaver from "file-saver";
-import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
+import { getTimeDiffString } from "@/assets/utils";
 
-/**
- * Submission list component
- *
- * This component loads the submission documents for review from the server
- * and provide two ways to import submission documents: one is via manually importing;
- * the other is via importing from Moodle API.
- * @author Linyin Huang, Dennis Zyska, Yiwei Wang
- */
 export default {
   name: "DashboardSubmission",
-  subscribeTable: [
-    {
-      table: "submission",
-    },
-    "user",
-  ],
-  components: {
-    UploadModal,
-    ImportModal,
-    ConfirmModal,
-    PublishModal,
-    PublishAssessmentModal,
-    AssignModal,
-    Card,
-    BasicTable,
-    BasicButton,
-    ApplySkillModal,
-  },
-  data() {
-    return {
-      modals: {
-        assign: false,
-        publish: false,
-        publishAssessment: false,
-        import: false,
-        upload: false,
-        applySkill: false,
-        deleteConf: false,
-      },
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
-      tableColumns: [
-        {name: "ID", key: "id"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Submission ID", key: "extId"},
-        {name: "Group", key: "group", sortable: true},
-        {name: "Validation ID", key: "validationConfigurationId", sortable: true},
-        {name: "Created At", key: "createdAt"},
-      ],
-      tableButtons: [
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          title: "Download submission files",
-          action: "downloadSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-        // TODO: validateSubmission is not yet implemented.
-        // {
-        //   icon: "check-square",
-        //   options: {
-        //     iconOnly: true,
-        //     specifiers: {
-        //       "btn-outline-secondary": true,
-        //     },
-        //   },
-        //   title: "Validate Submission",
-        //   action: "validateSubmission",
-        //   stats: {
-        //     documentId: "id",
-        //   },
-        // },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          title: "Delete submission",
-          action: "deleteSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-      ],
-    };
-  },
+  subscribeTable: ["assignment", "submission", "user", "document"],
+  components: { Card, BasicButton, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
   computed: {
-    submissions() {
-      return this.$store.getters["table/submission/getAll"].filter((s) => s.parentSubmissionId === null);
+    isAdmin() {
+      return this.$store.getters["auth/isAdmin"];
     },
-    isProcessingActive() {
-      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
-      const preprocess = bgTask.preprocess || {};
-      // Show "View Processing" both when requests are pending OR when completed but not yet confirmed
-      const hasActiveRequests = (
-          preprocess.requests &&
-          typeof preprocess.requests === 'object' &&
-          Object.keys(preprocess.requests).length > 0
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    assignments() {
+      return this.$store.getters["table/assignment/getFiltered"](
+        (assignment) => assignment.userId === this.userId || Boolean(assignment.public)
+      ) || [];
+    },
+    assignmentTimes() {
+      return Object.fromEntries(
+        this.assignments.map((assignment) => [
+          assignment.id,
+          assignment.end ? getTimeDiffString(Date.now(), new Date(assignment.end)) : null,
+        ])
       );
-      const isCompletedAwaitingConfirmation = preprocess.completed === true;
-      return hasActiveRequests || isCompletedAwaitingConfirmation;
     },
-    submissionTable() {
-      return this.submissions.map((s) => {
-        const user = this.$store.getters["table/user/get"](s.userId);
-        return {
-          id: s.id,
-          extId: s.extId,
-          firstName: user ? user.firstName : "Unknown",
-          lastName: user ? user.lastName : "Unknown",
-          createdAt: new Date(s.createdAt).toLocaleDateString(),
-          validationConfigurationId: s.validationConfigurationId ?? "-",
-          group: s.group ?? "-",
-        };
-      });
+    activeAssignments() {
+      return this.assignments.filter((assignment) => this.getAssignmentStatus(assignment) !== "closed");
     },
-  },
-  mounted() {
-    // Get initial state
-    this.$socket.emit("serviceCommand", {
-      service: "BackgroundTaskService",
-      command: "getBackgroundTask",
-      data: {}
-    });
-    // Subscribe to real-time updates
-    this.$socket.emit("serviceCommand", {
-      service: "BackgroundTaskService",
-      command: "subscribeBackgroundTaskUpdates",
-      data: {}
-    });
-  },
-  unmounted() {
-    // Unsubscribe from updates
-    this.$socket.emit("serviceCommand", {
-      service: "BackgroundTaskService",
-      command: "unsubscribeBackgroundTaskUpdates",
-      data: {}
-    });
-  },
-  watch: {
-    isProcessingActive(val) {
-      if (val) {
-        this.modals.applySkill = true;
-        this.$nextTick(() => this.$refs.applySkillModal?.open());
-      }
+    closedAssignments() {
+      return this.assignments.filter((assignment) => this.getAssignmentStatus(assignment) === "closed");
     },
   },
   methods: {
-    openAssignModal() {
-      this.modals.assign = true;
-      this.$nextTick(() => this.$refs.assignModal?.open());
-    },
-    openPublishModal() {
-      this.modals.publish = true;
-      this.$nextTick(() => this.$refs.publishModal?.open());
-    },
-    openPublishAssessmentModal() {
-      this.modals.publishAssessment = true;
-      this.$nextTick(() => this.$refs.publishAssessmentModal?.open());
-    },
-    openImportModal() {
-      this.modals.import = true;
-      this.$nextTick(() => this.$refs.importModal?.open());
-    },
-    openUploadModal() {
-      this.modals.upload = true;
-      this.$nextTick(() => this.$refs.uploadModal?.open());
-    },
-    openApplySkillModal() {
-      this.modals.applySkill = true;
-      this.$nextTick(() => this.$refs.applySkillModal?.open());
-    },
-    openDeleteConfModal(name, message, warning, cb) {
-      this.modals.deleteConf = true;
-      this.$nextTick(() => this.$refs.deleteConf?.open(name, message, warning, cb));
-    },
-    action(data) {
-      switch (data.action) {
-        case "downloadSubmission":
-          this.downloadSubmission(data.params.id);
-          break;
-        case "deleteSubmission":
-          this.deleteSubmission(data.params);
-          break;
+    getAssignmentStatus(assignment) {
+      if (assignment.closed) {
+        return "closed";
       }
-    },
-    async deleteSubmission(row) {
-      let warning = "";
-      this.openDeleteConfModal("Delete Submission", "Are you sure you want to delete the submission?", warning, (val) => {
-        if (val) {
-          this.$socket.emit("submissionUpdate", {
-            id: row.id,
-            deleted: true,
-          }, (res) => {
-            if (res.success) {
-              this.eventBus.emit("toast", {
-                title: "Submission deleted",
-                message: "The submission has been deleted",
-                variant: "success",
-              });
-            } else {
-              this.eventBus.emit("toast", {
-                title: "Failed to delete submission",
-                message: res.message,
-                variant: "danger",
-              });
-            }
-          });
-        }
-      });
-    },
-    preprocessGrades() {
-      this.openApplySkillModal();
-    },
-    async downloadSubmission(submissionId) {
-      try {
-        // Get all documents for this submission
-        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submissionId);
 
-        if (!docs || docs.length === 0) {
-          this.eventBus.emit("toast", {
-            title: "No documents found",
-            message: "This submission has no associated documents to download",
-            variant: "warning",
-          });
-          return;
+      const now = new Date();
+      const start = assignment.start ? new Date(assignment.start) : null;
+      const end = assignment.end ? new Date(assignment.end) : null;
+
+      if (start && now < start) {
+        return "notStarted";
+      }
+
+      if (end && now > end) {
+        return "closed";
+      }
+
+      return "open";
+    },
+    maxRevisionsForAssignment(assignment) {
+      return Number(assignment?.maxRevisions || 0);
+    },
+    currentUserMaxRevisionDepth(assignmentId) {
+      const userSubmissions = this.$store.getters["table/submission/getFiltered"](
+        (submission) => submission.assignmentId === assignmentId && submission.userId === this.userId && !submission.deleted
+      ) || [];
+
+      if (userSubmissions.length === 0) {
+        return 0;
+      }
+
+      const submissionById = new Map(userSubmissions.map((submission) => [submission.id, submission]));
+      const depthCache = new Map();
+
+      const getDepth = (submission) => {
+        if (!submission) {
+          return 0;
+        }
+        if (depthCache.has(submission.id)) {
+          return depthCache.get(submission.id);
         }
 
-        // Create a ZIP file to package all documents
-        const zip = new JSZip();
+        const visited = new Set();
+        let depth = 1;
+        let current = submission;
 
-        // Get submission info for folder naming
-        const submission = this.$store.getters["table/submission/get"](submissionId);
-        const user = this.$store.getters["table/user/get"](submission.userId);
-        const folderName = `submission_${submission.extId}_${user?.firstName}_${user?.lastName}`;
-
-        // Download each document and add to ZIP
-        for (const doc of docs) {
-          try {
-            // Request document content from server
-            const response = await new Promise((resolve, reject) => {
-              this.$socket.emit("documentGet", {documentId: doc.id}, (res) => {
-                if (res.success) {
-                  resolve(res.data);
-                } else {
-                  reject(new Error(res.message || "Failed to get document"));
-                }
-              });
-            });
-
-            // Determine file extension based on document type
-            let fileExtension;
-            let fileName;
-
-            switch (doc.type) {
-              case 3: // JSON/Config
-                fileExtension = ".json";
-                break;
-              case 4: // ZIP
-                fileExtension = ".zip";
-                break;
-              default:
-                fileExtension = ".pdf";
-            }
-
-            fileName = `${doc.name}${fileExtension}`;
-
-            // Add file to ZIP
-            if (response.file) {
-              if (typeof response.file === "string") {
-                // If it's a string (like JSON), add as text
-                zip.file(`${folderName}/${fileName}`, response.file, {binary: false});
-              } else {
-                // For binary data
-                zip.file(`${folderName}/${fileName}`, response.file, {binary: true});
-              }
-            } else {
-              this.eventBus.emit("toast", {
-                title: "Document download issue",
-                message: `Could not download ${doc.name}`,
-                variant: "warning",
-              });
-            }
-          } catch (error) {
-            this.eventBus.emit("toast", {
-              title: "Download error",
-              message: `Failed to download ${doc.name}: ${error.message}`,
-              variant: "danger",
-            });
+        while (current?.previousSubmissionId && submissionById.has(current.previousSubmissionId)) {
+          if (visited.has(current.previousSubmissionId)) {
+            break;
           }
+          visited.add(current.previousSubmissionId);
+          depth += 1;
+          current = submissionById.get(current.previousSubmissionId);
         }
 
-        zip.generateAsync({type: "blob"}).then((content) => {
-          FileSaver.saveAs(content, `${folderName}.zip`);
-        });
+        depthCache.set(submission.id, depth);
+        return depth;
+      };
 
-        this.eventBus.emit("toast", {
-          title: "Download complete",
-          message: `Downloaded submission ${submission.extId} with ${docs.length} documents`,
-          variant: "success",
-        });
-      } catch (error) {
-        this.eventBus.emit("toast", {
-          title: "Download failed",
-          message: error.message,
-          variant: "danger",
-        });
+      return Math.max(...userSubmissions.map((submission) => getDepth(submission)));
+    },
+    isRevisionLimitReachedForAssignment(assignment) {
+      const maxRevisions = this.maxRevisionsForAssignment(assignment);
+      if (maxRevisions === 0) {
+        return false;
       }
+      return this.currentUserMaxRevisionDepth(assignment.id) >= maxRevisions;
+    },
+    canUploadSubmissionForAssignment(assignment) {
+      const statusAllowsUpload = this.getAssignmentStatus(assignment) === "open";
+      return statusAllowsUpload && !this.isRevisionLimitReachedForAssignment(assignment);
+    },
+    openUploadModalForAssignment(assignment) {
+      if (this.isRevisionLimitReachedForAssignment(assignment)) {
+        this.eventBus.emit("toast", {
+          title: "Revision limit reached",
+          message: `You have reached the maximum number of revisions (${this.maxRevisionsForAssignment(assignment)}).`,
+          variant: "warning",
+        });
+        return;
+      }
+
+      if (!this.canUploadSubmissionForAssignment(assignment)) {
+        this.eventBus.emit("toast", {
+          title: "Upload not allowed",
+          message: "Submissions are closed for this assignment.",
+          variant: "warning",
+        });
+        return;
+      }
+
+      this.$refs.uploadModal.open(assignment.id);
     },
   },
 };
 </script>
-
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>

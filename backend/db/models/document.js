@@ -330,6 +330,11 @@ module.exports = (sequelize, DataTypes) => {
             projectId: DataTypes.INTEGER,
             submissionId: DataTypes.INTEGER,
             originalFilename: DataTypes.STRING,
+            studyUsageCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
         }, {
             sequelize: sequelize,
             modelName: 'document',
