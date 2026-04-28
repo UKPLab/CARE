@@ -29,14 +29,13 @@
       <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
         <StepSelectStudents 
           v-if="dataSelection.projectId"
-          :project-id="dataSelection.projectId" 
           v-model="submissionSelection" 
+          :project-id="dataSelection.projectId" 
         />
         <!-- We send the project ID and get the selected students back -->
       </div>
       <div v-else>
         <p>Exporting all data</p>
-
         <p>
           Total Studies: {{ studies.length }}<br>
           Total Study Sessions: {{ studySessions.length }}<br>
@@ -50,21 +49,23 @@
           Total Edits: {{ edits.length }}<br>
         </p>
       </div>
-
     </template>
-
-    
-    <template #step-3 v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
+    <template 
+      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      #step-3 
+    >
       <StepOptions 
-        v-model:generateAliases="generateAliases"
-        v-model:fakerSeed="fakerSeed"
-        v-model:gradeFormat="gradeFormat"
+        v-model:generate-aliases="generateAliases"
+        v-model:faker-seed="fakerSeed"
+        v-model:grade-format="gradeFormat"
         :show-grade-format="dataSelection.exportType === 'grades'"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
     </template>
-
-    <template #step-4 v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
+    <template 
+      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      #step-4
+    >
       <StepConfirmDownload 
         v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
         :wait="wait"
@@ -73,7 +74,6 @@
       />
       <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
     </template>
-
   </StepperModal>
 </template>
 
@@ -86,7 +86,6 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import BasicLoading from "@/basic/Loading.vue";
 import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
@@ -100,7 +99,7 @@ import getServerURL from "@/assets/serverUrl.js";
  */
 export default {
   name: "ExportProjectModal",
-  components: { BasicLoading, StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
+  components: { StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {

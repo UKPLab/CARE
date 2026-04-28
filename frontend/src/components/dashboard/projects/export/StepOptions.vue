@@ -6,10 +6,10 @@
 
     <div class="form-check form-switch mb-2">
       <input 
-        class="form-check-input" 
-        type="checkbox" 
         id="aliasSwitch" 
         v-model="aliases"
+        class="form-check-input" 
+        type="checkbox" 
       >
       <label class="form-check-label" for="aliasSwitch">
         <strong>Generate aliases for student names</strong>
