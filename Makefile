@@ -27,6 +27,7 @@ help:
 	@echo "make docker          				Start docker images"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
+	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make clean             				Delete development files"
 	@echo "make lint             				Run linter (only frontend)"
 	@echo "make kill             				Kill all node instances (only unix)"
@@ -128,6 +129,32 @@ recover_db:
 	@echo "Recovering from $${DUMP}"
 	@echo "Recovering int container $${CONTAINER}"
 	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+
+.PHONY: anonymize_dump
+anonymize_dump: backend/node_modules/.uptodate
+	@echo "Creating anonymized dump from $${DUMP}"
+	@set -e; \
+	SIDECAR="care_anon_$$(date +%s)"; \
+	OUTFILE="db_dumps/anonymized_$$(date +%d-%m-%Y_%H_%M_%S).sql"; \
+	echo "Sidecar DB: $$SIDECAR"; \
+	docker exec $${CONTAINER} psql -q -U postgres -c "CREATE DATABASE $$SIDECAR" > /dev/null; \
+	echo "[1/5] Restoring dump into sidecar DB..."; \
+	tr -d '\r' < "db_dumps/$${DUMP}" | \
+	    awk '/^\\connect care$$/{p=1;next} p && /^\\restrict /{next} p && /^\\unrestrict /{next} p{print}' | \
+	    docker exec -i $${CONTAINER} psql -q -U postgres -d $$SIDECAR > /dev/null; \
+	echo "[2/5] Migrating schema..."; \
+	(cd backend && POSTGRES_CAREDB=$$SIDECAR npm run --silent db_migrate); \
+	EXTRA=""; \
+	[ -n "$${SEED}" ] && EXTRA="$$EXTRA --seed $${SEED}"; \
+	[ -n "$${NUM}" ] && EXTRA="$$EXTRA --num $${NUM}"; \
+	echo "[3/5] Anonymizing data..."; \
+	(cd backend && POSTGRES_CAREDB=$$SIDECAR npm run anonymize -- $$EXTRA); \
+	echo "[4/5] Resetting admin password..."; \
+	(cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" POSTGRES_CAREDB=$$SIDECAR npm run --silent set-admin-password); \
+	echo "[5/5] Exporting anonymized dump..."; \
+	docker exec $${CONTAINER} pg_dump -U postgres $$SIDECAR > $$OUTFILE; \
+	docker exec $${CONTAINER} psql -q -U postgres -c "DROP DATABASE $$SIDECAR" > /dev/null; \
+	echo "Done: $$OUTFILE"
 
 .PHONY: admin-password
 admin-password: backend/node_modules/.uptodate

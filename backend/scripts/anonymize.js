@@ -34,6 +34,10 @@ const DELETE_MODELS = [
     'comment_vote',
     'user_role_matching',
     'study_session',
+    'collab',
+    'comment',
+    'annotation',
+    'document_data',
 ];
 
 // Models where the userId column is REASSIGNED to the admin user instead of
@@ -93,9 +97,13 @@ function shuffleArray(arr) {
 
 /**
  * Remove data belonging to the given user IDs using the two-track policy:
- * - DELETE_MODELS: rows are hard-deleted.
+ * - DELETE_MODELS: rows are hard-deleted by userId. Deleting study_session
+ *   automatically cascades to annotation, comment, comment_vote, document_edit,
+ *   document_data, collab, comment_state, and user_environment via the FK
+ *   constraints added in migration 20260429232634.
  * - REASSIGN_MODELS: userId is reassigned to the admin user so shared
  *   resources (projects, studies, etc.) are not lost.
+ *
  * @param {number[]} userIds - IDs of users whose data should be removed
  * @param {number} adminId - ID of the admin user to receive reassigned rows
  * @returns {Promise<void>}
@@ -143,21 +151,23 @@ async function introspectionSafetyNet(userIds) {
         `SELECT table_name, column_name
          FROM information_schema.columns
          WHERE table_schema = 'public'
-           AND table_name NOT IN (:handled)`,
+           AND table_name NOT IN (:handled)
+           AND column_name = 'userId'
+           AND data_type IN ('integer', 'bigint', 'smallint')`,
         { replacements: { handled: [...handledTables] } }
     );
 
-    const userCols = rows.filter(r => r.column_name === 'userId');
+    const userCols = rows;
 
     for (const { table_name, column_name } of userCols) {
         const [deleted] = await db.sequelize.query(
-            `DELETE FROM "${table_name}" WHERE "${column_name}" = ANY(:ids) RETURNING 1`,
+            `DELETE FROM "${table_name}" WHERE "${column_name}" IN (:ids) RETURNING 1`,
             { replacements: { ids: userIds } }
         );
         if (deleted.length > 0) {
             console.warn(
                 `[WARN] Safety net deleted ${deleted.length} rows from ` +
-                `"${table_name}".${column_name} — add a Sequelize association to silence this warning.`
+                `"${table_name}".${column_name} — add the model to DELETE_MODELS or REASSIGN_MODELS in anonymize.js to silence this warning.`
             );
         }
     }
@@ -169,7 +179,7 @@ async function introspectionSafetyNet(userIds) {
  * automatically), and null out all auth secret columns.
  * @returns {Promise<void>}
  */
-async function pseudonymizeAndWipeSecrets() {
+async function pseudonymizeAndWipeSecrets(adminId) {
     const User = db.models['user'];
     const piiColumns = User.accessMap.flatMap(entry => entry.columns);
 
@@ -177,6 +187,17 @@ async function pseudonymizeAndWipeSecrets() {
     console.log(`\nPhase B+C: pseudonymizing ${users.length} surviving users…`);
 
     for (const user of users) {
+        // Skip admin: set-admin-password needs to locate them by their original email
+        if (user.id === adminId) {
+            const updates = {};
+            for (const col of AUTH_SECRET_COLUMNS) {
+                if (!(col in User.getAttributes())) continue;
+                updates[col] = 'ANONYMIZED';
+            }
+            await user.update(updates, { hooks: false });
+            continue;
+        }
+
         const firstName = faker.person.firstName();
         const lastName  = faker.person.lastName();
         const email     = faker.internet.email({ firstName, lastName });
@@ -190,7 +211,8 @@ async function pseudonymizeAndWipeSecrets() {
         }
 
         for (const col of AUTH_SECRET_COLUMNS) {
-            if (col in User.getAttributes()) updates[col] = null;
+            if (!(col in User.getAttributes())) continue;
+            updates[col] = 'ANONYMIZED';
         }
 
         await user.update(updates, { hooks: false });
@@ -225,35 +247,37 @@ async function main() {
         attributes: ['id'],
         paranoid: false,
     });
-    const nonConsentIds = nonConsenters.map(u => u.id);
+    const nonConsentIds = nonConsenters.map(u => u.id).filter(id => id !== adminId);
     console.log(`\nPhase A: ${nonConsentIds.length} non-consenting users to remove…`);
     await removeUserData(nonConsentIds, adminId);
+
+    // Phase A.2: introspection safety net — must run before User.destroy so any
+    // remaining userId references (e.g. collab.userId) are cleaned up first.
+    console.log('\nPhase A.2: schema introspection safety net…');
+    await introspectionSafetyNet(nonConsentIds);
+
     if (nonConsentIds.length > 0) {
         await User.destroy({ where: { id: nonConsentIds }, force: true });
         console.log(`  deleted ${nonConsentIds.length} user rows`);
     }
 
-    // Phase A.2: introspection safety net
-    console.log('\nPhase A.2: schema introspection safety net…');
-    await introspectionSafetyNet(nonConsentIds);
-
     // Optional --num subset reduction
     if (args.num !== null) {
         const survivors = await User.findAll({ attributes: ['id'], paranoid: false });
         if (survivors.length > args.num) {
-            const shuffled = shuffleArray(survivors.map(u => u.id));
+            const shuffled = shuffleArray(survivors.map(u => u.id).filter(id => id !== adminId));
             const toRemove = shuffled.slice(args.num);
             console.log(`\nPhase A (subset): reducing to ${args.num} users, removing ${toRemove.length}…`);
             await removeUserData(toRemove, adminId);
-            await User.destroy({ where: { id: toRemove }, force: true });
             await introspectionSafetyNet(toRemove);
+            await User.destroy({ where: { id: toRemove }, force: true });
         } else {
             console.log(`\n--num ${args.num}: already ≤ ${args.num} consenting users, no subset needed.`);
         }
     }
 
     // Phase B + C: pseudonymize survivors + wipe auth secrets
-    await pseudonymizeAndWipeSecrets();
+    await pseudonymizeAndWipeSecrets(adminId);
 
     console.log('\nAnonymization complete.');
     if (db.sequelize?.close) await db.sequelize.close();
