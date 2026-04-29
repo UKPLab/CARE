@@ -44,8 +44,8 @@ The Frontend
 ------------
 The frontend essentially consists of the following major views:
 
-    1. the landing page (login and register view)
-    2. the first-time setup wizard (shown when no admin account exists)
+    1. the first-time setup wizard (shown when no admin account exists)
+    2. the landing page (login and register view)
     3. the dashboard (connecting all other views)
     4. the annotator (view for annotating documents)
     5. the editor (view for editing documents)
