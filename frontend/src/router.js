@@ -124,10 +124,24 @@ const router = VueRouter.createRouter({
 });
 
 /**
- * If the user is logged in and the setup wizard is not completed, redirect to /wizard
- * so they cannot bypass it by typing /dashboard, /login, etc.
+ * Single navigation guard: registration toggle, /wizard access rules, and forcing
+ * incomplete setup to /wizard only for requireAuth routes (checkLogin flows use
+ * App.vue runCheckLoginFlow to avoid duplicate /auth/check).
  */
 router.beforeEach(async (to, from, next) => {
+    if (to.name === "register") {
+        const isSelfRegistrationEnabled = window.config && window.config["app.register.enabled"] === "true";
+        if (!isSelfRegistrationEnabled) {
+            return next({
+                name: "login",
+                query: {
+                    redirectedFrom: to.query.redirectedFrom,
+                    registrationDisabled: "true"
+                }
+            });
+        }
+    }
+
     if (to.path === "/wizard") {
         try {
             const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
@@ -136,39 +150,24 @@ router.beforeEach(async (to, from, next) => {
             if (d.needsSetup === true) return next();
             if (d.user && d.wizardCompleted === false) return next();
             return next({ path: "/" });
-        } catch (_) {}
-        return next();
-    }
-    if (!to.meta.requireAuth && !to.meta.checkLogin) return next();
-    try {
-        const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
-        if (!r.ok) return next();
-        const d = await r.json();
-        if (d.user && d.wizardCompleted === false) {
-            return next({ path: "/wizard" });
+        } catch (_) {
+            return next();
         }
-    } catch (_) {}
-    next();
-});
+    }
 
-// Navigation guard to check if self-registration is enabled
-router.beforeEach((to, from, next) => {
-    // Check if trying to access register page
-    if (to.name === "register") {
-        // Check if self-registration is enabled
-        const isSelfRegistrationEnabled = window.config && window.config["app.register.enabled"] === "true";
-        if (!isSelfRegistrationEnabled) {
-            // Redirect to login
-            next({
-                name: "login",
-                query: { 
-                    redirectedFrom: to.query.redirectedFrom,
-                    registrationDisabled: "true"
-                }
-            });
-            return;
-        }
+    if (!to.meta.requireAuth && !to.meta.checkLogin) return next();
+
+    if (to.meta.requireAuth) {
+        try {
+            const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
+            if (!r.ok) return next();
+            const d = await r.json();
+            if (d.user && d.wizardCompleted === false) {
+                return next({ path: "/wizard" });
+            }
+        } catch (_) {}
     }
+
     next();
 });
 
