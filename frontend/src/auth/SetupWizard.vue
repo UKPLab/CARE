@@ -191,8 +191,9 @@
                   <div
                     v-if="settingDescription(s.key) || s.description"
                     class="small text-muted mt-1"
-                    v-html="settingDescription(s.key) || s.description"
-                  />
+                  >
+                    {{ settingDescription(s.key) || s.description }}
+                  </div>
                 </div>
                 <div v-if="s.requiredInWizard" class="col-md-6 offset-md-4">
                   <div class="feedback-invalid" :class="{invalid: settingsTouched && !(formSettings[s.key] != null && String(formSettings[s.key]).trim() !== '')}">
@@ -250,8 +251,9 @@
                   <div
                     v-if="settingDescription(s.key) || s.description"
                     class="small text-muted mt-1"
-                    v-html="settingDescription(s.key) || s.description"
-                  />
+                  >
+                    {{ settingDescription(s.key) || s.description }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -358,8 +360,9 @@
                   <div
                     v-if="settingDescription(s.key) || s.description"
                     class="small text-muted mt-1"
-                    v-html="settingDescription(s.key) || s.description"
-                  />
+                  >
+                    {{ settingDescription(s.key) || s.description }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -487,8 +490,9 @@
                 <div
                   v-if="settingDescription(s.key) || s.description"
                   class="small text-muted mt-1"
-                  v-html="settingDescription(s.key) || s.description"
-                />
+                >
+                  {{ settingDescription(s.key) || s.description }}
+                </div>
               </div>
             </div>
           </div>
@@ -649,7 +653,7 @@
  * First-time setup wizard: Admin, General (optional Moodle + JSON import), Mail, Registration, Summary.
  * Fetches /setup/config for steps and wizardSettings. On Finish, calls settingSave and redirects.
  *
- * @author CARE
+ * @author Mohammad Elwan
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
