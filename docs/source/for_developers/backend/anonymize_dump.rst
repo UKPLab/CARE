@@ -75,6 +75,7 @@ What is kept
 ------------
 
 - ``acceptDataSharing`` and ``acceptedAt`` — preserved as proof of consent.
+- ``userName`` — replaced with a new randomly generated animal username.
 - Study structure: workflows, steps, tag sets, templates, configurations.
 - Consenting users' annotations, comments, sessions, and assignments.
 

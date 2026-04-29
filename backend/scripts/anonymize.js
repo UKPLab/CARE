@@ -23,6 +23,7 @@
 
 const db = require('../db');
 const { faker } = require('@faker-js/faker');
+const { generateAnimalUsername } = require('../utils/generator');
 
 // Models where non-consenting user rows are DELETED outright.
 const DELETE_MODELS = [
@@ -202,7 +203,7 @@ async function pseudonymizeAndWipeSecrets(adminId) {
         const lastName  = faker.person.lastName();
         const email     = faker.internet.email({ firstName, lastName });
 
-        const updates = { firstName, lastName, email };
+        const updates = { firstName, lastName, email, userName: generateAnimalUsername() };
 
         for (const col of piiColumns) {
             if (col !== 'firstName' && col !== 'lastName' && col !== 'email') {
