@@ -4,18 +4,14 @@ const { createInitialAdmin } = require("./setupAdmin");
 
 /**
  * Set up a dev admin from ADMIN_EMAIL/ADMIN_PWD and mark the setup wizard
- * complete, skipping the first-time wizard. Active only when DEV_SKIP_WIZARD=true
- * and NODE_ENV !== "production". No-op if an admin already exists.
+ * complete, skipping the first-time wizard. Active only when DEV_SKIP_WIZARD=true.
+ * No-op if an admin already exists.
  *
  * @param {Server} server 
  * @returns {Promise<void>}
  */
 async function setupDevAdmin(server) {
     if (process.env.DEV_SKIP_WIZARD !== "true") {
-        return;
-    }
-    if (process.env.NODE_ENV === "production") {
-        server.logger.warn("DEV_SKIP_WIZARD ignored: NODE_ENV=production");
         return;
     }
 
