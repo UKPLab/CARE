@@ -106,14 +106,16 @@ module.exports = class Server {
         });
 
         this.httpServer = http.createServer(this.app);
-        Promise.resolve(this.refreshMailServer()).then(() => {
+        Promise.resolve(this.initMailServer()).then(() => {
             if (this.mailer) {
                 this.logger.info("Mail server initialized");
             } else {
                 this.logger.warn("Mail server not available!");
             }
+        }).catch((err) => {
+            this.logger.error("initMailServer failed: " + err);
         });
-        Promise.resolve(setupDevAdmin(this));
+        Promise.resolve(setupDevAdmin(this)); // When DEV_SKIP_WIZARD=true only: creates first admin from env and marks wizard complete.
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
@@ -140,24 +142,11 @@ module.exports = class Server {
     }
 
     /**
-     * Re-read mail settings from the database and rebuild the nodemailer transport.
-     * Used at startup and after admin saves mail-related settings (see SettingSocket).
-     * @returns {Promise<void>}
-     */
-    async refreshMailServer() {
-        try {
-            await this.#initMailServer();
-        } catch (err) {
-            this.logger.error("refreshMailServer failed: " + err);
-        }
-    }
-
-    /**
      * Initialize the mail server from current DB settings.
      * Clears any previous transport first so disabled mail or changed mode is reflected.
      * @returns {Promise<void>}
      */
-    async #initMailServer() {
+    async initMailServer() {
         this.mailer = null;
 
         if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
