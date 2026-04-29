@@ -107,6 +107,27 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Mail service settings only (keys under system.mailService.*).
+         * Used for test mail and mail transport helpers without loading all settings.
+         * @returns {Promise<object[]>}
+         */
+        static async getMailServiceSettings() {
+            try {
+                return await Setting.findAll({
+                    where: {
+                        deleted: false,
+                        key: {[Op.like]: 'system.mailService.%'},
+                    },
+                    attributes: ['key', 'value'],
+                    raw: true,
+                });
+            } catch (e) {
+                console.log(e);
+                return [];
+            }
+        }
+
+        /**
          * Set setting value by key
          * @param {string} key setting key
          * @param {string} value setting value

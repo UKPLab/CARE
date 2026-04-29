@@ -4,10 +4,14 @@ const mailTest = require("../utils/mailTest.js");
 const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
 
 /**
- * @param {Array<{ key: string }>|undefined} data Settings payload from settingSave
- * @returns {boolean} True if any saved key is under system.mailService.*
+ * Returns whether a settingSave payload includes any key under system.mailService.*.
+ * Used to decide if the nodemailer transport should be rebuilt after commit.
+ *
+ * @param {object} data     Settings array from settingSave
+ * @param {string} data.key Setting key
+ * @returns {boolean}
  */
-function payloadTouchesMailService(data) {
+function savePayloadTouchesMailService(data) {
     if (!Array.isArray(data)) {
         return false;
     }
@@ -30,6 +34,20 @@ function payloadTouchesMailService(data) {
  * @class SettingSocket
  */
 class SettingSocket extends Socket {
+    /**
+     * Build dashboard settings payload and enrich wizard settings with wizardStep key
+     * (string), so frontend grouping can use the same shape as setup wizard config.
+     * @returns {Promise<object[]>}
+     */
+    async getDashboardSettingsPayload() {
+        const settings = await this.models["setting"].getAll(true);
+        const wizardSettings = await this.models["setting"].getWizardSettings();
+        const wizardStepByKey = new Map(wizardSettings.map((s) => [s.key, s.wizardStep]));
+        return settings.map((setting) => ({
+            ...setting,
+            wizardStep: wizardStepByKey.get(setting.key) || setting.wizardStep || null,
+        }));
+    }
 
     /**
      * Fetches all system settings from the database.
@@ -46,7 +64,7 @@ class SettingSocket extends Socket {
             throw new Error("You do not have permission to access settings.");
         }
 
-        return await this.models["setting"].getAll(true);
+        return await this.getDashboardSettingsPayload();
     }
 
    /**
@@ -64,7 +82,7 @@ class SettingSocket extends Socket {
             throw new Error("You do not have permission to save settings.");
         }
 
-        const shouldRefreshMail = payloadTouchesMailService(data);
+        const shouldRefreshMail = savePayloadTouchesMailService(data);
 
         for (const setting of data) {
             let value = setting.value;
@@ -79,35 +97,35 @@ class SettingSocket extends Socket {
 
         options.transaction.afterCommit(async () => {
             if (shouldRefreshMail) {
-                await this.server.refreshMailServer();
+                await this.server.initMailServer();
             }
             await this.getSocket("AppSocket").sendSettings(true); // Notify all clients of new settings
-            this.emit("settingData", await this.models["setting"].getAll(true)); // Refresh settings on this socket
+            this.emit("settingData", await this.getDashboardSettingsPayload()); // Refresh settings on this socket
         });
 
         return "Settings saved successfully.";
     }
 
     /**
-     * Sends a fixed test email using current DB mail settings.
+     * Sends a fixed test email using current mail settings from the database.
      *
      * @socketEvent mailSendTest
-     * @param {{ to: string }} data Recipient address.
-     * @returns {Promise<string>} Success message.
+     * @param {object} data       The input data from the frontend
+     * @param {string} data.to    Recipient email address
+     * @param {object} options
+     * @returns {Promise<string>} A promise that resolves with a success message once the test email is sent.
+     * @throws {Error}            If the user is not an admin or mail fails
      */
-    async mailSendTest(data) {
+    async mailSendTest(data, options) {
         if (!(await this.isAdmin())) {
             throw new Error("You do not have permission to send test mail.");
         }
-        const to = data && data.to != null ? String(data.to).trim() : "";
-        if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
-            throw new Error("A valid recipient email address is required.");
-        }
 
-        const rows = await this.models["setting"].getAll(false);
-        const map = mailTest.buildMailMapFromSettingsRows(rows);
-        const transport = mailTest.buildTransportFromMailSettings(map);
-        const from = map["system.mailService.senderAddress"] || "";
+        const rows = await this.models["setting"].getMailServiceSettings();
+        const mailSettings = mailTest.buildMailMapFromSettingsRows(rows);
+        const transport = mailTest.buildTransportFromMailSettings(mailSettings);
+        const from = mailSettings["system.mailService.senderAddress"] || "";
+        const to = data && data.to != null ? String(data.to).trim() : "";
         await mailTest.sendFixedTestMail(transport, { from, to });
         return "Test email sent.";
     }

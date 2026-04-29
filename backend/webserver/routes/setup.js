@@ -61,12 +61,7 @@ module.exports = function (server) {
                 return res.status(403).json({ success: false, message: "Test mail is only available during initial setup." });
             }
 
-            const to = req.body && req.body.to != null ? String(req.body.to).trim() : "";
-            if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
-                return res.status(400).json({ success: false, message: "A valid recipient email address is required." });
-            }
-
-            const rows = await server.db.models["setting"].getAll(false);
+            const rows = await server.db.models["setting"].getMailServiceSettings();
             const baseMap = mailTest.buildMailMapFromSettingsRows(rows);
             const overlay = req.body && req.body.settings && typeof req.body.settings === "object" && !Array.isArray(req.body.settings)
                 ? req.body.settings
@@ -80,6 +75,7 @@ module.exports = function (server) {
 
             const transport = mailTest.buildTransportFromMailSettings(map);
             const from = map["system.mailService.senderAddress"] || "";
+            const to = req.body && req.body.to != null ? String(req.body.to).trim() : "";
             await mailTest.sendFixedTestMail(transport, { from, to });
             return res.status(200).json({ success: true, message: "Test email sent." });
         } catch (err) {
