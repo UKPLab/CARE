@@ -431,6 +431,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "templateId",
                 as: "template_contents",
             });
+            Template.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
     }
     Template.init(
