@@ -38,21 +38,38 @@ The target runs the following steps against a temporary sidecar database so the 
    - *Phase C* — set all auth-secret columns (``passwordHash``, ``salt``, ``resetToken``, …) to ``'ANONYMIZED'`` on every account.
 
 5. **Reset admin password** — the admin password is set interactively. The admin's email and data are preserved throughout.
-6. **Export** — ``pg_dump`` writes the sidecar database to ``db_dumps/anonymized_<timestamp>.sql``.
+6. **Export** — ``pg_dump`` writes the sidecar database to ``db_dumps/anonymized_<timestamp>.sql``. Then all document files referenced by surviving records are collected from the local ``files/`` directory and zipped into ``db_dumps/anonymized_<timestamp>_files.zip``.
 7. **Drop sidecar DB** — the temporary database is removed.
 
 Loading the dump
 ----------------
 
-The output is a single-database ``pg_dump``. To load it into an existing CARE instance, place the file in ``db_dumps/`` and use the standard recovery command:
+The target produces two output files in ``db_dumps/``:
+
+- ``anonymized_<timestamp>.sql`` — the anonymized database dump.
+- ``anonymized_<timestamp>_files.zip`` — the document files referenced by surviving records.
+
+To load the dump into an existing CARE instance, place the SQL file in ``db_dumps/`` and use the standard recovery command:
 
 .. code-block:: bash
 
     make recover_db CONTAINER=<container-name-or-id> DUMP=anonymized_<timestamp>.sql
 
+If you need to regenerate the files archive from an existing anonymized SQL dump without re-running the full pipeline, use:
+
+.. code-block:: bash
+
+    make export_dump_files CONTAINER=<container-name-or-id> DUMP=anonymized_<timestamp>.sql
+
+Then extract the files archive into the ``files/`` directory of the target instance:
+
+.. code-block:: bash
+
+    unzip -o db_dumps/anonymized_<timestamp>_files.zip -d files/
+
 .. warning::
 
-   This will override the current database state of the target container.
+   ``recover_db`` will override the current database state of the target container.
 
 What is kept
 ------------
