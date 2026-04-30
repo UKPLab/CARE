@@ -125,8 +125,7 @@ const router = VueRouter.createRouter({
 
 /**
  * Single navigation guard: registration toggle, /wizard access rules, and forcing
- * incomplete setup to /wizard only for requireAuth routes (checkLogin flows use
- * App.vue runCheckLoginFlow to avoid duplicate /auth/check).
+ * incomplete setup to /wizard only for requireAuth routes.
  */
 router.beforeEach(async (to, from, next) => {
     if (to.name === "register") {
@@ -155,7 +154,7 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    if (!to.meta.requireAuth && !to.meta.checkLogin) return next();
+    if (!to.meta.requireAuth) return next();
 
     if (to.meta.requireAuth) {
         try {
