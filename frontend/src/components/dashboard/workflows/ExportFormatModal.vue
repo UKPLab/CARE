@@ -65,13 +65,26 @@ export default {
       filterId: null,
       table: null,
       childTable: null,
+      childTableOptions: null,
+      tableOptions: null,
     };
   },
   methods: {
-    open(id = null, table = null, childTable = null) {
+    /**
+     * Opens the export modal.
+     * @param {number|null} id - ID of a single record to export. If null, all records in the table are exported.
+     * @param {string|null} table - Table name to export from (e.g. "tag_set", "workflow").
+     * @param {string|null} childTable - Optional child table to nest under each parent record (e.g. "tag", "workflow_step").
+     * @param {object|null} tableOptions - Options for the parent table export (currently unused, reserved for future use).
+     * @param {object|null} childTableOptions - Options for child table export.
+     * @param {string} [childTableOptions.key] - Key name to nest children under in the exported object. Defaults to the childTable name.
+     */
+    open(id = null, table = null, childTable = null, tableOptions = null, childTableOptions = null) {
       this.filterId = id;
       this.table = table;
       this.childTable = childTable;
+      this.tableOptions = tableOptions;
+      this.childTableOptions = childTableOptions;
       this.$refs.modal.open();
     },
     close() {
@@ -98,8 +111,7 @@ export default {
       const tableName = this.table;
       const childTableName = this.childTable;
       const items = this.$store.getters[`table/${tableName}/getFiltered`](
-        (w) => (this.filterId === null || w.id === this.filterId)
-      ).map(w => Object.fromEntries(Object.entries(w).filter(([key]) => !attributesToDelete.includes(key))));
+        (w) => (this.filterId === null || w.id === this.filterId));
 
       let result = items;
 
@@ -108,10 +120,11 @@ export default {
         result = items.map(item => {
           const children = this.$store.getters[`table/${childTableName}/getFiltered`](
             (child) => child[fkField] === item.id && !child.deleted
-          ).map(child => Object.fromEntries(Object.entries(child).filter(([key]) => !attributesToDelete.includes(key))));
-          return { ...item, [childTableName]: children };
+          ).map(child => Object.fromEntries(Object.entries(child).filter(([key]) => !attributesToDelete.includes(key) && key !== 'id')));
+          return { ...item, [this.childTableOptions.key || this.childTable]: children };
         });
       }
+      result = result.map(item => Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'id')));
 
       const filename = this.filterId
         ? `${tableName}_${this.filterId}_${Date.now()}`
