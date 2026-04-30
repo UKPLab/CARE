@@ -78,7 +78,7 @@
               </div>
             </div>
             <div class="col-md-6 offset-md-4 my-4">
-              <button class="btn btn-primary" type="submit">Continue</button>
+              <BasicButton class="btn btn-primary" title="Continue" @click="submitAdmin" />
             </div>
           </form>
         </div>
@@ -89,23 +89,19 @@
         <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span>General Settings</span>
           <div class="d-flex flex-wrap gap-2">
-            <button
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
+              text="Download template"
               :disabled="!allSettingsLoaded"
-              :title="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
+              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
               @click="downloadImportTemplate"
-            >
-              Download template
-            </button>
-            <button
+            />
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
-              title="Load settings from a JSON file exported from another CARE instance"
+              text="Import from previous instance"
+              tooltip="Load settings from a JSON file exported from another CARE instance"
               @click="openImportModal"
-            >
-              Import from previous instance
-            </button>
+            />
           </div>
         </div>
         <div class="card-body mx-4 my-4">
@@ -260,15 +256,13 @@
           </template>
 
           <div class="d-flex justify-content-between mt-4">
-            <button v-if="currentStep > 0" class="btn btn-secondary" type="button" @click="onPrevious">Previous</button>
-            <button
+            <BasicButton v-if="currentStep > 0" class="btn btn-secondary" title="Previous" @click="onPrevious" />
+            <BasicButton
               class="btn btn-primary"
               :class="{ 'ms-auto': currentStep === 0 }"
-              type="button"
+              title="Next"
               @click="onStepNext"
-            >
-              Next
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -278,23 +272,19 @@
         <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span>Mail Configuration</span>
           <div class="d-flex flex-wrap gap-2">
-            <button
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
+              text="Download template"
               :disabled="!allSettingsLoaded"
-              :title="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
+              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
               @click="downloadImportTemplate"
-            >
-              Download template
-            </button>
-            <button
+            />
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
-              title="Load settings from a JSON file exported from another CARE instance"
+              text="Import from previous instance"
+              tooltip="Load settings from a JSON file exported from another CARE instance"
               @click="openImportModal"
-            >
-              Import from previous instance
-            </button>
+            />
           </div>
         </div>
         <div class="card-body mx-4 my-4">
@@ -383,20 +373,12 @@
                     placeholder="you@example.com"
                     autocomplete="email"
                   />
-                  <button
+                  <BasicButton
                     class="btn btn-outline-primary flex-shrink-0"
-                    type="button"
+                    :title="testMailSending ? 'Sending...' : 'Send test email'"
                     :disabled="testMailSending || !testMailTo.trim()"
                     @click="sendSetupTestMail"
-                  >
-                    <span
-                      v-if="testMailSending"
-                      class="spinner-border spinner-border-sm me-1"
-                      role="status"
-                      aria-hidden="true"
-                    />
-                    Send test email
-                  </button>
+                  />
                 </div>
               </div>
               <p v-if="testMailMessage" class="small mb-0" :class="testMailError ? 'text-danger' : 'text-success'">
@@ -406,10 +388,8 @@
           </template>
 
           <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-secondary" type="button" @click="onPrevious">Previous</button>
-            <button class="btn btn-primary ms-auto" type="button" @click="onStepNext">
-              Next
-            </button>
+            <BasicButton class="btn btn-secondary" title="Previous" @click="onPrevious" />
+            <BasicButton class="btn btn-primary ms-auto" title="Next" @click="onStepNext" />
           </div>
         </div>
       </div>
@@ -419,23 +399,19 @@
         <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span>User Registration</span>
           <div class="d-flex flex-wrap gap-2">
-            <button
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
+              text="Download template"
               :disabled="!allSettingsLoaded"
-              :title="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
+              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
               @click="downloadImportTemplate"
-            >
-              Download template
-            </button>
-            <button
+            />
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
-              title="Load settings from a JSON file exported from another CARE instance"
+              text="Import from previous instance"
+              tooltip="Load settings from a JSON file exported from another CARE instance"
               @click="openImportModal"
-            >
-              Import from previous instance
-            </button>
+            />
           </div>
         </div>
         <div class="card-body mx-4 my-4">
@@ -521,10 +497,8 @@
           </div>
 
           <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-secondary" type="button" @click="onPrevious">Previous</button>
-            <button class="btn btn-primary ms-auto" type="button" @click="onStepNext">
-              Next
-            </button>
+            <BasicButton class="btn btn-secondary" title="Previous" @click="onPrevious" />
+            <BasicButton class="btn btn-primary ms-auto" title="Next" @click="onStepNext" />
           </div>
         </div>
       </div>
@@ -534,23 +508,19 @@
         <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span>Summary</span>
           <div class="d-flex flex-wrap gap-2">
-            <button
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
+              text="Download template"
               :disabled="!allSettingsLoaded"
-              :title="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
+              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
               @click="downloadImportTemplate"
-            >
-              Download template
-            </button>
-            <button
+            />
+            <BasicButton
               class="btn btn-outline-secondary btn-sm"
-              type="button"
-              title="Load settings from a JSON file exported from another CARE instance"
+              text="Import from previous instance"
+              tooltip="Load settings from a JSON file exported from another CARE instance"
               @click="openImportModal"
-            >
-              Import from previous instance
-            </button>
+            />
           </div>
         </div>
         <div class="card-body mx-4 my-4">
@@ -581,29 +551,25 @@
           </div>
 
           <div v-if="settingsFromFile && Object.keys(settingsFromFile).length" class="mt-4">
-            <button
+            <BasicButton
               class="btn btn-link p-0 text-secondary"
-              type="button"
+              :title="`${showFileSettings ? '▼' : '▶'} Additional settings from file (${Object.keys(settingsFromFile).length})`"
               @click="showFileSettings = !showFileSettings"
-            >
-              {{ showFileSettings ? "▼" : "▶" }} Additional settings from file ({{ Object.keys(settingsFromFile).length }})
-            </button>
+            />
             <ul v-show="showFileSettings" class="list-unstyled mt-2 ms-3 small">
               <li v-for="(v, k) in settingsFromFile" :key="k"><strong>{{ k }}:</strong> {{ v }}</li>
             </ul>
           </div>
 
           <div class="d-flex justify-content-between mt-4">
-            <button v-if="currentStep > 0" class="btn btn-secondary" type="button" @click="onPrevious">Previous</button>
-            <button
+            <BasicButton v-if="currentStep > 0" class="btn btn-secondary" title="Previous" @click="onPrevious" />
+            <BasicButton
               class="btn btn-primary"
               :class="{ 'ms-auto': currentStep === 0 }"
-              type="button"
+              :title="finishing ? 'Saving…' : 'Finish'"
               :disabled="finishing"
               @click="finish"
-            >
-              {{ finishing ? "Saving…" : "Finish" }}
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -664,28 +630,6 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import {downloadObjectsAs} from "@/assets/utils";
 
-/** Order of subsections within each wizard step (from displaySubsection in DB). */
-const SUBSECTION_ORDER = {
-  general: [
-    "Copyright and consent",
-    "Terms and conditions",
-    "Login options",
-    "Landing page links",
-    "Connection",
-    "Course",
-    "Show inputs",
-  ],
-  mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
-  registration: ["Enable registration", "Information requested at registration", "Consent options", "Email verification rate limit"],
-};
-
-function wizardValueToFormString(v) {
-  if (v === null || v === undefined) return "";
-  if (typeof v === "boolean") return v ? "true" : "false";
-  if (typeof v === "object") return JSON.stringify(v);
-  return String(v);
-}
-
 export default {
   name: "SetupWizard",
   components: { IconAsset, BasicButton, BasicEditor, EditorModal, Modal },
@@ -712,6 +656,19 @@ export default {
       testMailSending: false,
       testMailMessage: "",
       testMailError: false,
+      subsectionOrder: {
+        general: [
+          "Copyright and consent",
+          "Terms and conditions",
+          "Login options",
+          "Landing page links",
+          "Connection",
+          "Course",
+          "Show inputs",
+        ],
+        mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
+        registration: ["Enable registration", "Information requested at registration", "Consent options", "Email verification rate limit"],
+      },
     };
   },
   computed: {
@@ -866,7 +823,7 @@ export default {
     if (config.data && config.data.wizardSettings) {
       this.wizardSettings = config.data.wizardSettings;
       this.formSettings = config.data.wizardSettings.reduce((acc, s) => {
-        acc[s.key] = wizardValueToFormString(s.value);
+        acc[s.key] = this.wizardValueToFormString(s.value);
         return acc;
       }, {});
 
@@ -878,40 +835,13 @@ export default {
     if (config.data && Array.isArray(config.data.allSettings)) {
       this.allSettingsFromDb = config.data.allSettings;
     }
-    if (this.hasAdmin && this.$socket && !this.$socket.connected) {
-      this.$socket.connect();
-    }
   },
   methods: {
-    waitForSocketConnect() {
-      return new Promise((resolve, reject) => {
-        if (!this.$socket) {
-          reject(new Error("Socket not available"));
-          return;
-        }
-        if (this.$socket.connected) {
-          resolve(true);
-          return;
-        }
-
-        const onConnect = () => {
-          cleanup();
-          resolve(true);
-        };
-        const onError = (err) => {
-          cleanup();
-          reject(err || new Error("Socket connect error"));
-        };
-        const cleanup = () => {
-          try { this.$socket.off("connect", onConnect); } catch (e) {}
-          try { this.$socket.off("connect_error", onError); } catch (e) {}
-          try { this.$socket.off("error", onError); } catch (e) {}
-        };
-
-        try { this.$socket.on("connect", onConnect); } catch (e) {}
-        try { this.$socket.on("connect_error", onError); } catch (e) {}
-        try { this.$socket.on("error", onError); } catch (e) {}
-      });
+    wizardValueToFormString(v) {
+      if (v === null || v === undefined) return "";
+      if (typeof v === "boolean") return v ? "true" : "false";
+      if (typeof v === "object") return JSON.stringify(v);
+      return String(v);
     },
     /**
      * Handle mail step setting changes.
@@ -938,7 +868,7 @@ export default {
     fieldGroupsForStep(stepType) {
       const settings = (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
       if (!settings.length) return [];
-      const order = SUBSECTION_ORDER[stepType];
+      const order = this.subsectionOrder[stepType];
       const bySubsection = {};
       for (const s of settings) {
         const sub = s.displaySubsection || "";
@@ -1000,9 +930,6 @@ export default {
         );
         if (res.status === 200) {
           this.hasAdmin = true;
-          if (this.$socket && !this.$socket.connected) {
-            this.$socket.connect();
-          }
           return true;
         } else {
           this.showError = true;
@@ -1211,23 +1138,6 @@ export default {
         if (!created) return;
       }
 
-      if (!this.$socket) {
-        this.showError = true;
-        this.errorMessage = "Connection not available. Please reload and try again.";
-        return;
-      }
-
-      if (!this.$socket.connected) {
-        try {
-          this.$socket.connect();
-          await this.waitForSocketConnect();
-        } catch (err) {
-          this.showError = true;
-          this.errorMessage = "Connection not ready. Please try again.";
-          return;
-        }
-      }
-
       const merged = { ...this.formSettings, ...(this.settingsFromFile || {}) };
       if (merged["system.mailService.enabled"] !== "true") {
         merged["app.register.emailVerification"] = "false";
@@ -1238,23 +1148,28 @@ export default {
       }));
       this.finishing = true;
       this.showError = false;
-      this.$socket.emit("settingSave", payload, async (res) => {
-        if (!res.success) {
+      try {
+        const res = await axios.post(
+          getServerURL() + "/setup/complete",
+          { settings: payload },
+          {
+            withCredentials: true,
+            validateStatus: (status) => status === 200 || (status >= 400 && status < 500),
+          }
+        );
+        if (res.status !== 200 || !res.data?.success) {
           this.finishing = false;
           this.showError = true;
-          this.errorMessage = (res && res.message) || "Failed to save settings.";
+          this.errorMessage = res.data?.message || "Failed to save settings.";
           return;
         }
-        try {
-          await axios.patch(getServerURL() + "/setup/state", { wizardCompleted: "true" }, { withCredentials: true });
-          this.$router.push("/dashboard");
-          this.$router.go(0);
-        } catch (err) {
-          this.finishing = false;
-          this.showError = true;
-          this.errorMessage = err?.response?.data?.message || err?.message || "Failed to complete setup.";
-        }
-      });
+        this.$router.push("/dashboard");
+        this.$router.go(0);
+      } catch (err) {
+        this.finishing = false;
+        this.showError = true;
+        this.errorMessage = err?.response?.data?.message || err?.message || "Failed to complete setup.";
+      }
     },
   },
 };

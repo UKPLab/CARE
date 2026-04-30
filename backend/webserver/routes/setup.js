@@ -12,6 +12,7 @@
  */
 module.exports = function (server) {
     const mailTest = require("../utils/mailTest.js");
+    const { saveSettings } = require("../utils/settingSave.js");
     /**
      * GET /setup/config
      * Returns wizard config while initial setup is in progress: needsSetup is true when no
@@ -113,6 +114,47 @@ module.exports = function (server) {
             return res.status(200).json({ success: true });
         } catch (err) {
             server.logger.error("PATCH /setup/state error: " + err);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+    });
+
+    /**
+     * POST /setup/complete
+     * Saves wizard settings and marks setup complete in one flow.
+     */
+    server.app.post("/setup/complete", async function (req, res) {
+        if (!req.user) {
+            return res.status(401).json({ message: "Authentication required." });
+        }
+        const settings = req.body && Array.isArray(req.body.settings) ? req.body.settings : null;
+        if (!settings) {
+            return res.status(400).json({ message: "A settings array is required." });
+        }
+        try {
+            const admins = await server.db.models["user"].getUsersByRole("admin");
+            const isAdmin = admins.some((a) => a.id === req.user.id);
+            if (!isAdmin) {
+                return res.status(403).json({ message: "Admin access required." });
+            }
+
+            const transaction = await server.db.sequelize.transaction();
+            try {
+                const { touchesMailService } = await saveSettings(server.db.models["setting"], settings, {
+                    transaction,
+                });
+                await server.db.models["setting"].set("app.setup.wizardCompleted", "true", { transaction });
+                await transaction.commit();
+                if (touchesMailService) {
+                    await server.initMailServer();
+                }
+            } catch (err) {
+                await transaction.rollback();
+                throw err;
+            }
+
+            return res.status(200).json({ success: true });
+        } catch (err) {
+            server.logger.error("POST /setup/complete error: " + err);
             return res.status(500).json({ message: "Internal server error." });
         }
     });
