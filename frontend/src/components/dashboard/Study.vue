@@ -4,14 +4,6 @@
       <template #headerElements>
         <div class="btn-group gap-2">
           <BasicButton
-              v-if="isAdmin"
-              class="btn-secondary btn-sm"
-              title="Overview"
-              text="Overview"
-              icon="clipboard"
-              @click="openOverviewModal"
-          />
-          <BasicButton
               class="btn-secondary btn-sm"
               title="Saved Templates"
               text="Saved Templates"
@@ -137,7 +129,6 @@ export default {
         bulkAssignments: false,
         singleAssignment: false,
         information: false,
-        overview: false,
         savedTemplates: false,
       },
       options: {
@@ -481,10 +472,6 @@ export default {
     openInformationModal(params) {
       this.modals.information = true;
       this.$nextTick(() => this.$refs.informationModal?.open(params));
-    },
-    openOverviewModal() {
-      this.modals.overview = true;
-      this.$nextTick(() => this.$refs.overviewModal?.open());
     },
     openSavedTemplatesModal() {
       this.modals.savedTemplates = true;
