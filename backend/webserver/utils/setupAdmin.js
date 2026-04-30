@@ -18,12 +18,15 @@ function validationError(message) {
 }
 
 /**
- * Create the first admin account and reassign the 5 Exposé configurations from
- * Bot (userId=2) to the new admin in a single transaction.
+ * Create the first admin account and reassign configurations from Bot (userId=2)
+ * to the new admin in a single transaction.
  *
- * @param {Server} server main server instance
- * @param {{userName: string, email: string, password: string}} input
- * @returns {Promise<object>} created user
+ * @param {Server} server         main server instance
+ * @param {Object} input          setup-admin input
+ * @param {string} input.userName admin user name
+ * @param {string} input.email    admin email address
+ * @param {string} input.password admin password
+ * @returns {Promise<object>}     
  */
 async function createInitialAdmin(server, { userName, email, password }) {
     if (!userName || (typeof userName === 'string' && !userName.trim())) {
@@ -52,15 +55,6 @@ async function createInitialAdmin(server, { userName, email, password }) {
 
     const User = server.db.models['user'];
     const Configuration = server.db.models['configuration'];
-    const { Op } = server.db.Sequelize;
-
-    const EXPOSE_CONFIG_NAMES = [
-        'Exposé assessment configuration',
-        'Exposé feedback configuration',
-        'UKP Exposé Submission Validator',
-        'Exposé assessment configuration (German)',
-        'Exposé feedback configuration (German)',
-    ];
     const BOT_USER_ID = 2;
 
     const transaction = await User.sequelize.transaction();
@@ -83,7 +77,6 @@ async function createInitialAdmin(server, { userName, email, password }) {
             { userId: user.id },
             {
                 where: {
-                    name: { [Op.in]: EXPOSE_CONFIG_NAMES },
                     userId: BOT_USER_ID,
                 },
                 transaction,

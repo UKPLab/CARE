@@ -11,7 +11,7 @@ const { createInitialAdmin } = require('../../utils/setupAdmin');
 function registerSetupRoutes(server) {
     /**
      * Create the first admin account (setup wizard step 1). Allowed only when no admin exists.
-     * Reassigns the Exposé configurations from Bot to the new admin.
+     * Reassigns setup-time Bot-owned configurations to the new admin.
      */
     server.app.post('/auth/setup-admin', async function (req, res) {
         const { userName, email, password } = req.body || {};
