@@ -62,8 +62,8 @@
       <div v-else-if="dataSelection.exportType === 'submissions'">
         <StepSelectStudents 
           v-if="dataSelection.projectId"
-          :project-id="dataSelection.projectId" 
           v-model="submissionSelection" 
+          :project-id="dataSelection.projectId" 
         />
         <!-- We send the project ID and get the selected students back -->
       </div>
@@ -87,15 +87,15 @@
     </template>
 
     
-    <template #step-3 v-if="dataSelection.exportType === 'submissions'">
+    <template v-if="dataSelection.exportType === 'submissions'" #step-3>
       <StepOptions 
-        v-model:generateAliases="generateAliases"
-        v-model:fakerSeed="fakerSeed"
+        v-model:generate-aliases="generateAliases"
+        v-model:faker-seed="fakerSeed"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
     </template>
 
-    <template #step-4 v-if="dataSelection.exportType === 'submissions'">
+    <template v-if="dataSelection.exportType === 'submissions'" #step-4>
       <StepConfirmDownload 
         v-if="dataSelection.exportType === 'submissions'"
         :wait="wait"
