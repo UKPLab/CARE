@@ -14,6 +14,20 @@ const app = Vue.createApp({
     render: () => Vue.h(App)
 });
 
+
+import { createI18n } from 'vue-i18n'
+import messages from '@i18n/messages.js'
+
+export const i18n = createI18n({
+  legacy: true,
+  globalInjection: true,
+  locale: localStorage.getItem('locale') || 'en',
+  fallbackLocale: 'en',
+  messages
+});
+
+app.use(i18n);
+
 // activate devtools in development mode
 // eslint-disable-next-line no-undef
 if (process.env.NODE_ENV !== 'production') {
@@ -22,7 +36,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Bootstrap
 import 'bootstrap/dist/css/bootstrap.css'
-import 'bootstrap/dist/js/bootstrap.bundle.js'
+// import 'bootstrap/dist/js/bootstrap.bundle.js'
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 import "bootstrap-icons/font/bootstrap-icons.css";
 import BootstrapVue3 from "bootstrap-vue-3";

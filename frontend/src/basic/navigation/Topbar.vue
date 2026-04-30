@@ -26,6 +26,9 @@
             :height="30"
           />
         </a>
+
+        <LanguageSwitcher />
+        
         <div id="topbarCustomPlaceholder"/>   
         <div id="topbarCenterPlaceholder"/> 
         <ul
@@ -147,10 +150,11 @@ import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
+import LanguageSwitcher from "@/basic/LanguageSwitcher.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, ConsentUpdateModal, TwoFactorSettingsModal},
+  components: {LoadIcon, LogoSvg, PasswordModal, ConsentUpdateModal, TwoFactorSettingsModal, LanguageSwitcher,},
   data() {
     return {
       showProjectDropdown: false,
