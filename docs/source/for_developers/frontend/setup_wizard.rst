@@ -16,7 +16,7 @@ Backend endpoints used by this flow:
 - ``GET /setup/config``: fetch steps, wizard settings, and full settings snapshot.
 - ``POST /auth/setup-admin``: create the initial admin account.
 - ``POST /setup/test-mail``: send a test mail during setup.
-- ``PATCH /setup/state``: mark setup as completed.
+- ``POST /setup/complete``: persist setup settings and mark setup as completed.
 
 Wizard Steps
 ------------
@@ -75,7 +75,7 @@ To add or change setup fields:
 
 1. Add/update setting rows via migration (including wizard and display metadata).
 2. Ensure the new keys are returned by ``/setup/config``.
-3. If needed, update step-specific logic in ``SetupWizard.vue`` (validation, dependency toggles, and summary rendering).
+3. If needed, update step-specific rendering in ``frontend/src/components/wizard/`` and orchestration logic in ``frontend/src/auth/SetupWizard.vue``.
 4. Verify import/export behavior for the new keys.
 
 To change the setup order or visible steps:
