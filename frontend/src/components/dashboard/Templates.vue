@@ -9,6 +9,13 @@
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Import Templates"
+          text="Import"
+          icon="upload"
+          @click="$refs.importFormatModal.open('template')"
+        />
+        <BasicButton
           class="btn-primary btn-sm"
           title="Add new template"
           text="Add Template"
@@ -32,6 +39,8 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
+    <ExportFormatModal ref="exportFormatModal" title="Export Template" />
+    <ImportFormatModal ref="importFormatModal" title="Import Templates" />
   </template>
   
   <script>
@@ -44,6 +53,8 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
+  import ExportFormatModal from "./workflows/ExportFormatModal.vue";
+  import ImportFormatModal from "./workflows/ImportFormatModal.vue";
   /**
    * Templates dashboard component
    *
@@ -66,6 +77,8 @@
       TemplateDetachModal,
       TemplateUpdateModal,
       PublicTemplatesModal,
+      ExportFormatModal,
+      ImportFormatModal,
     },
     data() {
       return {
@@ -219,6 +232,18 @@
             title: "Source updated",
             action: "openUpdateModal",
           },
+          // Export
+          {
+            icon: "download",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            title: "Export template",
+            action: "export",
+          },
           // Delete - own templates that can be deleted (including copies)
           {
             icon: "trash",
@@ -308,6 +333,9 @@
             break;
           case "openUpdateModal":
             this.$refs.updateModal.open(data.params);
+            break;
+          case "export":
+            this.$refs.exportFormatModal.open(data.params.id, "template");
             break;
         }
       },
