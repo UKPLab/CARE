@@ -96,6 +96,7 @@ export default {
       table: null,
       childTable: null,
       overrides: {},
+      socketOptions: {},
       selectedFile: null,
       parsedData: null,
       selectedItems: [],
@@ -180,10 +181,22 @@ export default {
     },
   },
   methods: {
-    open(table = null, childTable = null, overrides = {}) {
+    /**
+     * Opens the import modal.
+     * @param {string|null} table - Table to import into. If null, emits @itemsSelected instead of writing to socket.
+     * @param {string|null} childTable - Optional child table for nested records (e.g. "workflow_step").
+     * @param {object} [options={}] - Optional configuration.
+     * @param {object} [options.overrides={}] - Fields merged into each imported item, overriding values from the file.
+     * @param {object} [options.socket={}] - Custom socket options (defaults to appDataUpdate with standard payload).
+     * @param {string} [options.socket.name] - Custom socket event name instead of "appDataUpdate".
+     * @param {string} [options.socket.dataKey="data"] - Key under which item data is nested in the payload.
+     * @param {object} [options.socket.extra={}] - Extra top-level fields merged into the socket payload.
+     */
+    open(table = null, childTable = null, { overrides = {}, socket = {} } = {}) {
       this.table = table;
       this.childTable = childTable;
       this.overrides = overrides;
+      this.socketOptions = socket;
       this.reset();
       this.$refs.stepper.open();
     },
@@ -278,16 +291,25 @@ export default {
             ([key]) => !attributesToDelete.includes(key) && key !== this.childTable
           )
         );
-
-        const result = await this.socketEmit("appDataUpdate", {
-          table: this.table,
-          data: { ...itemData, ...this.overrides, userId: this.userId },
-        });
-
+        let result;
+        if (this.socketOptions.name) {
+          const dataKey = this.socketOptions.dataKey || "data";
+          const extra = this.socketOptions.extra || {};
+          result = await this.socketEmit(this.socketOptions.name, {
+            ...extra,
+            [dataKey]: { ...itemData, ...this.overrides, userId: this.userId },
+          });
+        } else {
+          result = await this.socketEmit("appDataUpdate", {
+            table: this.table,
+            data: { ...itemData, ...this.overrides, userId: this.userId },
+          });
+        }
+        
         if (result.success) {
           importedCount++;
 
-          if (this.childTable && children.length > 0) {
+          if (this.childTable && children.length > 0 && !this.socketOptions.name) {
             const fkField = `${tableCamel}Id`;
             const previousField = `${childTableCamel}Previous`;
             let previousId = null;
