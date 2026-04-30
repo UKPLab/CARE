@@ -17,562 +17,68 @@
         </div>
       </div>
 
-      <!-- Step: Admin -->
-      <div v-show="displaySteps[currentStep]?.type === 'admin'" class="card">
-        <div class="card-header step-card-header">Setup – Admin account</div>
-        <div class="card-body mx-4 my-4">
-          <p class="text-muted mb-3">
-            No administrator account exists. Enter credentials now; the account is created on Finish.
-          </p>
-          <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
-          <form @submit.prevent="submitAdmin">
-            <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="setup-username">Username</label>
-              <div class="col-md-6">
-                <input
-                  id="setup-username"
-                  v-model="formData.userName"
-                  autocomplete="username"
-                  class="form-control"
-                  placeholder="admin"
-                  type="text"
-                  @blur="checkVal('userName')"
-                />
-                <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUserName}">
-                  Please provide a user name.
-                </div>
-              </div>
-            </div>
-            <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="setup-email">Email</label>
-              <div class="col-md-6">
-                <input
-                  id="setup-email"
-                  v-model="formData.email"
-                  autocomplete="email"
-                  class="form-control"
-                  placeholder="admin@example.com"
-                  type="email"
-                  @blur="checkVal('email')"
-                />
-                <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
-                  Please provide a valid email.
-                </div>
-              </div>
-            </div>
-            <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="setup-password">Password</label>
-              <div class="col-md-6">
-                <input
-                  id="setup-password"
-                  v-model="formData.password"
-                  autocomplete="new-password"
-                  class="form-control"
-                  placeholder="Min. 8 characters"
-                  type="password"
-                  @blur="checkVal('password')"
-                />
-                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  Please provide a password of at least 8 characters.
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6 offset-md-4 my-4">
-              <BasicButton class="btn btn-primary" title="Continue" @click="submitAdmin" />
-            </div>
-          </form>
-        </div>
-      </div>
+      <SetupWizardAdminStep
+        v-show="displaySteps[currentStep]?.type === 'admin'"
+        :form-data="formData"
+        :validity="validity"
+        :valid-user-name="validUserName"
+        :valid-email="validEmail"
+        :valid-password="validPassword"
+        :show-error="showError"
+        :error-message="errorMessage"
+        @check-val="checkVal"
+        @submit-admin="submitAdmin"
+      />
 
-      <!-- Step: General -->
-      <div v-show="displaySteps[currentStep]?.type === 'general'" class="card">
-        <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <span>General Settings</span>
-          <div class="d-flex flex-wrap gap-2">
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Download template"
-              :disabled="!allSettingsLoaded"
-              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
-              @click="downloadImportTemplate"
-            />
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Import from previous instance"
-              tooltip="Load settings from a JSON file exported from another CARE instance"
-              @click="openImportModal"
-            />
-          </div>
-        </div>
-        <div class="card-body mx-4 my-4">
-          <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
+      <SetupWizardSettingsStep
+        v-show="displaySteps[currentStep]?.type === 'general'"
+        v-bind="generalStepProps"
+        @download-template="downloadImportTemplate"
+        @open-import-modal="openImportModal"
+        @clear-import="clearImport"
+        @previous="onPrevious"
+        @next="onStepNext"
+      />
 
-          <template v-if="settingsFromFile && Object.keys(settingsFromFile).length > 0">
-            <p class="text-success mb-2">
-              Loaded {{ Object.keys(settingsFromFile).length }} setting(s) from file. Click Next to continue to the summary.
-            </p>
-            <button
-              class="btn btn-link btn-sm p-0 text-secondary"
-              type="button"
-              @click="clearImport"
-            >
-              Clear and configure manually instead
-            </button>
-          </template>
-          <template v-else>
-            <p class="text-muted mb-3">
-              Configure copyright notice, consent requirements, guest access, and links shown on the landing page.
-            </p>
+      <SetupWizardSettingsStep
+        v-show="displaySteps[currentStep]?.type === 'mail'"
+        v-bind="mailStepProps"
+        @download-template="downloadImportTemplate"
+        @open-import-modal="openImportModal"
+        @mail-setting-change="onMailSettingChange"
+        @update-test-mail-to="testMailTo = $event"
+        @send-test-mail="sendSetupTestMail"
+        @previous="onPrevious"
+        @next="onStepNext"
+      />
 
-            <div v-for="group in generalFieldGroups" :key="group.title" class="mb-4">
-              <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
-                {{ group.title }}
-              </h6>
-              <div
-                v-for="s in group.settings"
-                :key="s.key"
-                class="form-group row my-2"
-              >
-                <label
-                  class="col-md-4 col-form-label text-md-right"
-                  :for="'set-' + s.key"
-                  @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-                >
-                  {{ settingLabel(s.key) }}
-                </label>
-                <div class="col-md-6 d-flex flex-column">
-                  <template v-if="s.type === 'boolean' || s.type === 'bool'">
-                    <div class="form-check form-switch">
-                      <input
-                        :id="'set-' + s.key"
-                        :checked="formSettings[s.key] === 'true'"
-                        class="form-check-input"
-                        type="checkbox"
-                        @change="formSettings[s.key] = $event.target.checked ? 'true' : 'false'"
-                      />
-                    </div>
-                  </template>
-                  <template v-else-if="s.key === 'app.register.terms'">
-                    <div class="d-flex align-items-center flex-wrap gap-2">
-                      <EditorModal
-                        :model-value="formSettings[s.key]"
-                        :title="'Edit ' + settingLabel(s.key)"
-                        @update:model-value="formSettings[s.key] = $event"
-                      />
-                      <span class="small text-muted">Open the editor to change terms and conditions.</span>
-                    </div>
-                  </template>
-                  <template v-else-if="s.type === 'edits'">
-                    <textarea
-                      :id="'set-' + s.key"
-                      v-model="formSettings[s.key]"
-                      class="form-control w-100"
-                      rows="5"
-                    />
-                  </template>
-                  <input
-                    v-else-if="s.type === 'integer'"
-                    :id="'set-' + s.key"
-                    v-model.number="formSettings[s.key]"
-                    class="form-control"
-                    type="number"
-                  />
-                  <input
-                    v-else
-                    :id="'set-' + s.key"
-                    v-model="formSettings[s.key]"
-                    class="form-control"
-                    type="text"
-                  />
-                  <div
-                    v-if="settingDescription(s.key) || s.description"
-                    class="small text-muted mt-1"
-                  >
-                    {{ settingDescription(s.key) || s.description }}
-                  </div>
-                </div>
-                <div v-if="s.requiredInWizard" class="col-md-6 offset-md-4">
-                  <div class="feedback-invalid" :class="{invalid: settingsTouched && !(formSettings[s.key] != null && String(formSettings[s.key]).trim() !== '')}">
-                    This field is required.
-                  </div>
-                </div>
-              </div>
-            </div>
+      <SetupWizardSettingsStep
+        v-show="displaySteps[currentStep]?.type === 'registration'"
+        v-bind="registrationStepProps"
+        @download-template="downloadImportTemplate"
+        @open-import-modal="openImportModal"
+        @previous="onPrevious"
+        @next="onStepNext"
+      />
 
-            <div v-if="moodleSettingsFlat.length" class="mb-4 mt-4">
-              <h6 class="step-group-heading text-muted border-bottom pb-1 mb-2">
-                Moodle <span class="fw-normal small">(optional)</span>
-              </h6>
-              <p class="small text-muted mb-3">
-                Configure Moodle if you use it for enrollments or submissions. You can change these later under Settings → Moodle.
-              </p>
-              <div
-                v-for="s in moodleSettingsFlat"
-                :key="s.key"
-                class="form-group row my-2"
-              >
-                <label
-                  class="col-md-4 col-form-label text-md-right"
-                  :for="'set-' + s.key"
-                  @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-                >
-                  {{ settingLabel(s.key) }}
-                </label>
-                <div class="col-md-6 d-flex flex-column">
-                  <template v-if="s.type === 'boolean' || s.type === 'bool'">
-                    <div class="form-check form-switch">
-                      <input
-                        :id="'set-' + s.key"
-                        :checked="formSettings[s.key] === 'true'"
-                        class="form-check-input"
-                        type="checkbox"
-                        @change="formSettings[s.key] = $event.target.checked ? 'true' : 'false'"
-                      />
-                    </div>
-                  </template>
-                  <input
-                    v-else-if="s.type === 'integer'"
-                    :id="'set-' + s.key"
-                    v-model.number="formSettings[s.key]"
-                    class="form-control"
-                    type="number"
-                  />
-                  <input
-                    v-else
-                    :id="'set-' + s.key"
-                    v-model="formSettings[s.key]"
-                    class="form-control"
-                    type="text"
-                  />
-                  <div
-                    v-if="settingDescription(s.key) || s.description"
-                    class="small text-muted mt-1"
-                  >
-                    {{ settingDescription(s.key) || s.description }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <div class="d-flex justify-content-between mt-4">
-            <BasicButton v-if="currentStep > 0" class="btn btn-secondary" title="Previous" @click="onPrevious" />
-            <BasicButton
-              class="btn btn-primary"
-              :class="{ 'ms-auto': currentStep === 0 }"
-              title="Next"
-              @click="onStepNext"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Step: Mail -->
-      <div v-show="displaySteps[currentStep]?.type === 'mail'" class="card">
-        <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <span>Mail Configuration</span>
-          <div class="d-flex flex-wrap gap-2">
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Download template"
-              :disabled="!allSettingsLoaded"
-              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
-              @click="downloadImportTemplate"
-            />
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Import from previous instance"
-              tooltip="Load settings from a JSON file exported from another CARE instance"
-              @click="openImportModal"
-            />
-          </div>
-        </div>
-        <div class="card-body mx-4 my-4">
-          <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
-
-          <div class="form-check form-switch mb-3">
-            <input
-              id="mail-enabled"
-              :checked="formSettings['system.mailService.enabled'] === 'true'"
-              class="form-check-input"
-              type="checkbox"
-              @change="formSettings['system.mailService.enabled'] = $event.target.checked ? 'true' : 'false'"
-            />
-            <label class="form-check-label" for="mail-enabled" @click.prevent>
-              Enable email service (required for password reset and email verification)
-            </label>
-          </div>
-
-          <template v-if="mailEnabled">
-            <div v-for="group in mailFieldGroups" :key="group.title" class="mb-4">
-              <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
-                {{ group.title }}
-              </h6>
-              <div
-                v-for="s in group.settings"
-                :key="s.key"
-                class="form-group row my-2"
-              >
-                <label
-                  class="col-md-4 col-form-label text-md-right"
-                  :for="'set-' + s.key"
-                  @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-                >
-                  {{ settingLabel(s.key) }}
-                </label>
-                <div class="col-md-6 d-flex flex-column">
-                  <template v-if="s.type === 'boolean' || s.type === 'bool'">
-                    <div class="form-check form-switch">
-                      <input
-                        :id="'set-' + s.key"
-                        :checked="formSettings[s.key] === 'true'"
-                        class="form-check-input"
-                        type="checkbox"
-                        @change="onMailSettingChange(s.key, $event.target.checked ? 'true' : 'false')"
-                      />
-                    </div>
-                  </template>
-                  <template v-else-if="s.type === 'edits'">
-                    <textarea
-                      :id="'set-' + s.key"
-                      v-model="formSettings[s.key]"
-                      class="form-control w-100"
-                      rows="4"
-                    />
-                  </template>
-                  <input
-                    v-else
-                    :id="'set-' + s.key"
-                    v-model="formSettings[s.key]"
-                    class="form-control"
-                    type="text"
-                  />
-                  <div
-                    v-if="settingDescription(s.key) || s.description"
-                    class="small text-muted mt-1"
-                  >
-                    {{ settingDescription(s.key) || s.description }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="mailEnabled" class="border-top pt-3 mt-4">
-              <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Send test email</h6>
-              <p class="small text-muted mb-2">
-                Sends a short fixed message so you can verify delivery before finishing setup.
-              </p>
-              <div class="form-group row my-2">
-                <label class="col-md-4 col-form-label text-md-right" for="setup-test-mail-to">Recipient</label>
-                <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
-                  <input
-                    id="setup-test-mail-to"
-                    v-model="testMailTo"
-                    class="form-control"
-                    type="email"
-                    placeholder="you@example.com"
-                    autocomplete="email"
-                  />
-                  <BasicButton
-                    class="btn btn-outline-primary flex-shrink-0"
-                    :title="testMailSending ? 'Sending...' : 'Send test email'"
-                    :disabled="testMailSending || !testMailTo.trim()"
-                    @click="sendSetupTestMail"
-                  />
-                </div>
-              </div>
-              <p v-if="testMailMessage" class="small mb-0" :class="testMailError ? 'text-danger' : 'text-success'">
-                {{ testMailMessage }}
-              </p>
-            </div>
-          </template>
-
-          <div class="d-flex justify-content-between mt-4">
-            <BasicButton class="btn btn-secondary" title="Previous" @click="onPrevious" />
-            <BasicButton class="btn btn-primary ms-auto" title="Next" @click="onStepNext" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Step: Registration -->
-      <div v-show="displaySteps[currentStep]?.type === 'registration'" class="card">
-        <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <span>User Registration</span>
-          <div class="d-flex flex-wrap gap-2">
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Download template"
-              :disabled="!allSettingsLoaded"
-              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
-              @click="downloadImportTemplate"
-            />
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Import from previous instance"
-              tooltip="Load settings from a JSON file exported from another CARE instance"
-              @click="openImportModal"
-            />
-          </div>
-        </div>
-        <div class="card-body mx-4 my-4">
-          <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
-          <p class="text-muted mb-3">
-            Configure which information and consents are requested from users during registration.
-          </p>
-
-          <div v-for="group in registrationFieldGroups" :key="group.title" class="mb-4">
-            <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
-              {{ group.title }}
-            </h6>
-            <div
-              v-for="s in group.settings"
-              :key="s.key"
-              class="form-group row my-2"
-            >
-              <label
-                class="col-md-4 col-form-label text-md-right"
-                :for="'set-' + s.key"
-                @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
-              >
-                {{ settingLabel(s.key) }}
-              </label>
-              <div class="col-md-6 d-flex flex-column">
-                <template v-if="s.type === 'boolean' || s.type === 'bool'">
-                  <div class="form-check form-switch">
-                    <input
-                      :id="'set-' + s.key"
-                      :checked="formSettings[s.key] === 'true'"
-                      class="form-check-input"
-                      type="checkbox"
-                      @change="formSettings[s.key] = $event.target.checked ? 'true' : 'false'"
-                    />
-                  </div>
-                </template>
-                <template v-else-if="s.type === 'edits'">
-                  <textarea
-                    :id="'set-' + s.key"
-                    v-model="formSettings[s.key]"
-                    class="form-control w-100"
-                    rows="4"
-                  />
-                </template>
-                <input
-                  v-else
-                  :id="'set-' + s.key"
-                  v-model="formSettings[s.key]"
-                  class="form-control"
-                  type="text"
-                />
-                <div
-                  v-if="settingDescription(s.key) || s.description"
-                  class="small text-muted mt-1"
-                >
-                  {{ settingDescription(s.key) || s.description }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="mailEnabled" class="mb-4">
-            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Email verification</h6>
-            <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="email-verification-reg" @click.prevent>
-                {{ settingLabel("app.register.emailVerification") }}
-              </label>
-              <div class="col-md-6 d-flex flex-column">
-                <div class="form-check form-switch">
-                  <input
-                    id="email-verification-reg"
-                    :checked="formSettings['app.register.emailVerification'] === 'true'"
-                    class="form-check-input"
-                    type="checkbox"
-                    @change="formSettings['app.register.emailVerification'] = $event.target.checked ? 'true' : 'false'"
-                  />
-                </div>
-                <div class="small text-muted mt-1">
-                  Require new users to verify their email address before accessing the application.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-between mt-4">
-            <BasicButton class="btn btn-secondary" title="Previous" @click="onPrevious" />
-            <BasicButton class="btn btn-primary ms-auto" title="Next" @click="onStepNext" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Step: Summary -->
-      <div v-show="displaySteps[currentStep]?.type === 'summary'" class="card">
-        <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <span>Summary</span>
-          <div class="d-flex flex-wrap gap-2">
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Download template"
-              :disabled="!allSettingsLoaded"
-              :tooltip="allSettingsLoaded ? 'Download JSON: full settings snapshot with current wizard values applied' : 'Available after settings load'"
-              @click="downloadImportTemplate"
-            />
-            <BasicButton
-              class="btn btn-outline-secondary btn-sm"
-              text="Import from previous instance"
-              tooltip="Load settings from a JSON file exported from another CARE instance"
-              @click="openImportModal"
-            />
-          </div>
-        </div>
-        <div class="card-body mx-4 my-4">
-          <p class="text-muted mb-3">Review your choices before finishing.</p>
-
-          <div v-if="!hasAdmin" class="mb-4">
-            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Admin</h6>
-            <ul class="list-unstyled mb-0">
-              <li><strong>Username:</strong> {{ formData.userName || "—" }}</li>
-              <li><strong>Email:</strong> {{ formData.email || "—" }}</li>
-              <li><strong>Password:</strong> Password set</li>
-            </ul>
-          </div>
-
-          <div v-for="group in summaryFieldGroups" :key="group.title" class="mb-4">
-            <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">{{ group.title }}</h6>
-            <ul class="list-unstyled ms-2 mb-0">
-              <li v-for="s in group.settings" :key="s.key" class="mb-2">
-                <template v-if="s.key === 'app.register.terms'">
-                  <div class="fw-semibold mb-1">{{ settingLabel(s.key) }}</div>
-                  <BasicEditor :model-value="summarySettingValue(s.key)" :read-only="true" />
-                </template>
-                <template v-else>
-                  <strong>{{ settingLabel(s.key) }}:</strong> {{ summarySettingValue(s.key) }}
-                </template>
-              </li>
-            </ul>
-          </div>
-
-          <div v-if="settingsFromFile && Object.keys(settingsFromFile).length" class="mt-4">
-            <BasicButton
-              class="btn btn-link p-0 text-secondary"
-              :title="`${showFileSettings ? '▼' : '▶'} Additional settings from file (${Object.keys(settingsFromFile).length})`"
-              @click="showFileSettings = !showFileSettings"
-            />
-            <ul v-show="showFileSettings" class="list-unstyled mt-2 ms-3 small">
-              <li v-for="(v, k) in settingsFromFile" :key="k"><strong>{{ k }}:</strong> {{ v }}</li>
-            </ul>
-          </div>
-
-          <div class="d-flex justify-content-between mt-4">
-            <BasicButton v-if="currentStep > 0" class="btn btn-secondary" title="Previous" @click="onPrevious" />
-            <BasicButton
-              class="btn btn-primary"
-              :class="{ 'ms-auto': currentStep === 0 }"
-              :title="finishing ? 'Saving…' : 'Finish'"
-              :disabled="finishing"
-              @click="finish"
-            />
-          </div>
-        </div>
-      </div>
+      <SetupWizardSummaryStep
+        v-show="displaySteps[currentStep]?.type === 'summary'"
+        :all-settings-loaded="allSettingsLoaded"
+        :has-admin="hasAdmin"
+        :form-data="formData"
+        :summary-field-groups="summaryFieldGroups"
+        :settings-from-file="settingsFromFile"
+        :show-file-settings="showFileSettings"
+        :current-step="currentStep"
+        :finishing="finishing"
+        :setting-label="settingLabel"
+        :summary-setting-value="summarySettingValue"
+        @download-template="downloadImportTemplate"
+        @open-import-modal="openImportModal"
+        @toggle-show-file-settings="showFileSettings = !showFileSettings"
+        @previous="onPrevious"
+        @finish="finish"
+      />
 
       <!-- Import JSON Modal -->
       <Modal ref="importModal" name="wizardImportSettings">
@@ -623,16 +129,24 @@
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicEditor from "@/basic/editor/Editor.vue";
-import EditorModal from "@/basic/editor/Modal.vue";
 import Modal from "@/basic/Modal.vue";
+import SetupWizardAdminStep from "@/components/wizard/SetupWizardAdminStep.vue";
+import SetupWizardSettingsStep from "@/components/wizard/SetupWizardSettingsStep.vue";
+import SetupWizardSummaryStep from "@/components/wizard/SetupWizardSummaryStep.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "SetupWizard",
-  components: { IconAsset, BasicButton, BasicEditor, EditorModal, Modal },
+  components: {
+    IconAsset,
+    BasicButton,
+    Modal,
+    SetupWizardAdminStep,
+    SetupWizardSettingsStep,
+    SetupWizardSummaryStep,
+  },
   data() {
     return {
       currentStep: 0,
@@ -762,6 +276,58 @@ export default {
         title: stepTitles[step],
         settings: byStep[step],
       }));
+    },
+    settingsStepBaseProps() {
+      return {
+        allSettingsLoaded: this.allSettingsLoaded,
+        showError: this.showError,
+        errorMessage: this.errorMessage,
+        formSettings: this.formSettings,
+        mailEnabled: this.mailEnabled,
+        testMailTo: this.testMailTo,
+        testMailSending: this.testMailSending,
+        testMailMessage: this.testMailMessage,
+        testMailError: this.testMailError,
+        settingLabel: this.settingLabel,
+        settingDescription: this.settingDescription,
+        currentStep: this.currentStep,
+      };
+    },
+    generalStepProps() {
+      return {
+        ...this.settingsStepBaseProps,
+        stepType: "general",
+        settingsFromFile: this.settingsFromFile,
+        generalFieldGroups: this.generalFieldGroups,
+        moodleSettingsFlat: this.moodleSettingsFlat,
+        mailFieldGroups: [],
+        registrationFieldGroups: [],
+        settingsTouched: this.settingsTouched,
+      };
+    },
+    mailStepProps() {
+      return {
+        ...this.settingsStepBaseProps,
+        stepType: "mail",
+        settingsFromFile: null,
+        generalFieldGroups: [],
+        moodleSettingsFlat: [],
+        mailFieldGroups: this.mailFieldGroups,
+        registrationFieldGroups: [],
+        settingsTouched: false,
+      };
+    },
+    registrationStepProps() {
+      return {
+        ...this.settingsStepBaseProps,
+        stepType: "registration",
+        settingsFromFile: null,
+        generalFieldGroups: [],
+        moodleSettingsFlat: [],
+        mailFieldGroups: [],
+        registrationFieldGroups: this.registrationFieldGroups,
+        settingsTouched: false,
+      };
     },
     validUserName() {
       return typeof this.formData.userName === "string" && this.formData.userName.trim() !== "";
