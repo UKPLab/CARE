@@ -3,7 +3,7 @@
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
-            class="btn-primary btn-sm"
+            class="btn-secondary btn-sm"
             text="Import Configuration"
             title="Import configuration file"
             icon="upload"
@@ -12,6 +12,13 @@
                 name: 'configurationAdd',
               }
             })"
+        />
+        <BasicButton
+            class="btn-secondary btn-sm"
+            text="Export All"
+            title="Export all configurations"
+            icon="download"
+            @click="$refs.exportFormatModal.open(null, 'configuration')"
         />
       </div>
     </template>
@@ -84,8 +91,8 @@
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import ExportFormatModal from "./workflows/ExportFormatModal.vue";
-import ImportFormatModal from "./workflows/ImportFormatModal.vue";
+import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
 import {Editor} from "@/components/editor/editorStore.js";

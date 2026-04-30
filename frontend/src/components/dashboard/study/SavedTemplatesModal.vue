@@ -35,6 +35,13 @@
       />
       <BasicButton
         class="btn btn-secondary"
+        title="Export All Templates"
+        text="Export All"
+        icon="download"
+        @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
+      />
+      <BasicButton
+        class="btn btn-secondary"
         title="Close"
         @click="close"
       />      
@@ -58,8 +65,8 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import ImportFormatModal from "@/components/dashboard/workflows/ImportFormatModal.vue";
-import ExportFormatModal from "@/components/dashboard/workflows/ExportFormatModal.vue";
+import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 /**
  * Modal to show saved study templates
  * 

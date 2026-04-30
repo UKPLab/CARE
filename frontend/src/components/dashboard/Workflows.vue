@@ -65,8 +65,8 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import WorkflowCreateModal from "./workflows/WorkflowCreateModal.vue";
 import WorkflowRenameModal from "./workflows/WorkflowRenameModal.vue";
 import WorkflowEditModal from "./workflows/WorkflowEditModal.vue";
-import ExportFormatModal from "./workflows/ExportFormatModal.vue";
-import ImportFormatModal from "./workflows/ImportFormatModal.vue";
+import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 
 /**
  * Workflows dashboard component

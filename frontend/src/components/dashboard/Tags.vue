@@ -10,6 +10,13 @@
           @click="$refs.importFormatModal.open('tag_set')"
         />
         <BasicButton
+          class="btn-secondary btn-sm"
+          title="Export All Tag Sets"
+          text="Export All"
+          icon="download"
+          @click="$refs.exportFormatModal.open(null, 'tag_set', 'tag', null, { key: 'tags' })"
+        />
+        <BasicButton
           class="btn-primary btn-sm"
           title="Add new tag set"
           icon="plus"
@@ -48,8 +55,8 @@ import BasicTable from "@/basic/Table.vue";
 import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import TagSetModal from "./coordinator/TagSet.vue";
-import ExportFormatModal from "./workflows/ExportFormatModal.vue";
-import ImportFormatModal from "./workflows/ImportFormatModal.vue";
+import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 
 import {mapGetters} from "vuex";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -229,9 +236,7 @@ export default {
           this.selectAsDefault(data.params.id);
           break;
         case "exportTagSet":
-          this.$refs.exportFormatModal.open(data.params.id, "tag_set", "tag", {
-            key: "tags",
-          });
+          this.$refs.exportFormatModal.open(data.params.id, "tag_set", "tag", null, { key: "tags" });
           break;
       }
     },

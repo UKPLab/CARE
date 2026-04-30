@@ -16,6 +16,13 @@
           @click="$refs.importFormatModal.open('template')"
         />
         <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Export All Templates"
+          text="Export All"
+          icon="download"
+          @click="$refs.exportFormatModal.open(null, 'template')"
+        />
+        <BasicButton
           class="btn-primary btn-sm"
           title="Add new template"
           text="Add Template"
@@ -53,8 +60,8 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
-  import ExportFormatModal from "./workflows/ExportFormatModal.vue";
-  import ImportFormatModal from "./workflows/ImportFormatModal.vue";
+  import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+  import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   /**
    * Templates dashboard component
    *
