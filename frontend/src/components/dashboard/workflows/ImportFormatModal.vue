@@ -189,7 +189,7 @@ export default {
      * @param {object} [options.overrides={}] - Fields merged into each imported item, overriding values from the file.
      * @param {object} [options.socket={}] - Custom socket options (defaults to appDataUpdate with standard payload).
      * @param {string} [options.socket.name] - Custom socket event name instead of "appDataUpdate".
-     * @param {string} [options.socket.dataKey="data"] - Key under which item data is nested in the payload.
+     * @param {string} [options.socket.dataKey] - Key under which item data is nested in the payload. If omitted, item data is spread directly into the top-level payload.
      * @param {object} [options.socket.extra={}] - Extra top-level fields merged into the socket payload.
      */
     open(table = null, childTable = null, { overrides = {}, socket = {} } = {}) {
@@ -293,12 +293,13 @@ export default {
         );
         let result;
         if (this.socketOptions.name) {
-          const dataKey = this.socketOptions.dataKey || "data";
+          const dataKey = this.socketOptions.dataKey;
           const extra = this.socketOptions.extra || {};
-          result = await this.socketEmit(this.socketOptions.name, {
-            ...extra,
-            [dataKey]: { ...itemData, ...this.overrides, userId: this.userId },
-          });
+          const itemPayload = { ...itemData, ...this.overrides, userId: this.userId };
+          result = await this.socketEmit(this.socketOptions.name, dataKey
+            ? { ...extra, [dataKey]: itemPayload }
+            : { ...extra, ...itemPayload }
+          );
         } else {
           result = await this.socketEmit("appDataUpdate", {
             table: this.table,
