@@ -4,10 +4,14 @@
       <div class="btn-group gap-2">
         <BasicButton
             class="btn-primary btn-sm"
-            text="Upload Configuration"
-            title="Upload new configuration file"
+            text="Import Configuration"
+            title="Import configuration file"
             icon="upload"
-            @click="$refs.uploadModal.open('configuration')"
+            @click="$refs.importFormatModal.open('configuration', null, {
+              socket:{
+                name: 'configurationAdd',
+              }
+            })"
         />
       </div>
     </template>
@@ -24,7 +28,9 @@
   </Card>
 
   <!-- Upload Modal for JSON configuration files -->
-  <UploadModal ref="uploadModal"/>
+  <ImportFormatModal ref="importFormatModal" title="Import Configuration" />
+  <ExportFormatModal ref="exportFormatModal" title="Export Configuration" />
+
   <ConfirmModal ref="deleteModal"/>
 
   <!-- JSON Configuration Viewer Modal -->
@@ -78,7 +84,8 @@
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import UploadModal from "./documents/UploadModal.vue";
+import ExportFormatModal from "./workflows/ExportFormatModal.vue";
+import ImportFormatModal from "./workflows/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
 import {Editor} from "@/components/editor/editorStore.js";
@@ -96,7 +103,8 @@ export default {
     Card,
     BasicTable,
     BasicButton,
-    UploadModal,
+    ExportFormatModal,
+    ImportFormatModal,
     ConfirmModal,
     Modal,
   },
@@ -142,6 +150,15 @@ export default {
           action: "edit",
         },
         {
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {"btn-outline-secondary": true},
+          },
+          title: "Export configuration",
+          action: "export",
+        },
+        {
           icon: "trash",
           options: {
             iconOnly: true,
@@ -184,6 +201,9 @@ export default {
           break;
         case "delete":
           this.deleteConfiguration(data.params);
+          break;
+        case "export":
+          this.$refs.exportFormatModal.open(data.params.id, "configuration");
           break;
       }
     },
