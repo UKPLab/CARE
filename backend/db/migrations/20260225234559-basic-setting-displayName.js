@@ -284,7 +284,7 @@ const DISPLAY_NAMES = {
     'system.auth.tokenExpiry.passwordReset': 'Password reset token expiry',
     'system.baseUrl': 'Base URL for emails',
     'system.mailService.enabled': 'Mail service enabled',
-    'system.mailService.sendMail.enabled': 'Sendmail enabled (takes precedence over SMTP)',
+    'system.mailService.sendMail.enabled': 'Sendmail enabled (prioritized over SMTP)',
     'system.mailService.sendMail.path': 'Sendmail path',
     'system.mailService.senderAddress': 'Mail sender address',
     'system.mailService.smtp.auth.enabled': 'SMTP auth enabled',
