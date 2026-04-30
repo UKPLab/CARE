@@ -78,6 +78,22 @@ export default {
      * @param {object|null} tableOptions - Options for the parent table export (currently unused, reserved for future use).
      * @param {object|null} childTableOptions - Options for child table export.
      * @param {string} [childTableOptions.key] - Key name to nest children under in the exported object. Defaults to the childTable name.
+     *
+     * @example
+     * Export a single record with no children
+     * this.$refs.exportFormatModal.open(template.id, "template");
+     *
+     * @example
+     * Export all records in a table
+     * this.$refs.exportFormatModal.open(null, "workflow");
+     *
+     * @example
+     * Export a single record with nested children (steps)
+     * this.$refs.exportFormatModal.open(workflow.id, "workflow", "workflow_step");
+     *
+     * @example
+     * Export with a custom key for nested children
+     * this.$refs.exportFormatModal.open(tagSet.id, "tag_set", "tag", null, { key: "tags" });
      */
     open(id = null, table = null, childTable = null, tableOptions = null, childTableOptions = null) {
       this.filterId = id;

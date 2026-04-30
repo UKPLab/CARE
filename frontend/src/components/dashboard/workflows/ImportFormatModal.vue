@@ -191,6 +191,31 @@ export default {
      * @param {string} [options.socket.name] - Custom socket event name instead of "appDataUpdate".
      * @param {string} [options.socket.dataKey] - Key under which item data is nested in the payload. If omitted, item data is spread directly into the top-level payload.
      * @param {object} [options.socket.extra={}] - Extra top-level fields merged into the socket payload.
+     *
+     * @example
+     * Default table mode — imports workflows with nested steps via appDataUpdate
+     * this.$refs.importFormatModal.open("workflow", "workflow_step");
+     *
+     * @example
+     * Emit mode — no table, parent handles the imported items via @itemsSelected
+     * this.$refs.importFormatModal.open();
+     *
+     * @example
+     * Override mode — force template: true on every imported record
+     * this.$refs.importFormatModal.open("study", "study_step", {
+     *   overrides: { template: true },
+     * });
+     *
+     * @example
+     * Custom socket with dataKey — send data to a specific socket event
+     * this.$refs.importFormatModal.open("study", "study_step", {
+     *   socket: {
+     *     name: "studySaveAsTemplate",
+     *     dataKey: "templateData",
+     *     extra: { onlyTemplate: true },
+     *   },
+     * });
+     *
      */
     open(table = null, childTable = null, { overrides = {}, socket = {} } = {}) {
       this.table = table;
