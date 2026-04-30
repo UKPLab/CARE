@@ -1,12 +1,21 @@
 <template>
   <BasicCard title="Tag Sets">
     <template #headerElements>
-      <BasicButton
-        class="btn-primary btn-sm"
-        title="Add new tag set"
-        icon="plus"
-        @click="$refs.tagSetModal.open(0)"
-      />
+      <div class="btn-group gap-2">
+        <BasicButton
+          class="btn-secondary btn-sm"
+          title="Import Tag Sets"
+          text="Import"
+          icon="upload"
+          @click="$refs.importFormatModal.open('tag_set')"
+        />
+        <BasicButton
+          class="btn-primary btn-sm"
+          title="Add new tag set"
+          icon="plus"
+          @click="$refs.tagSetModal.open(0)"
+        />
+      </div>
     </template>
     <template #body>
       <BasicTable
@@ -23,6 +32,8 @@
     ref="tagSetModal"
   />
   <ConfirmModal ref="confirm"/>
+  <ExportFormatModal ref="exportFormatModal" title="Export Tag Set" />
+  <ImportFormatModal ref="importFormatModal" title="Import Tag Sets" />
 </template>
 
 <script>
@@ -37,6 +48,8 @@ import BasicTable from "@/basic/Table.vue";
 import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import TagSetModal from "./coordinator/TagSet.vue";
+import ExportFormatModal from "./workflows/ExportFormatModal.vue";
+import ImportFormatModal from "./workflows/ImportFormatModal.vue";
 
 import {mapGetters} from "vuex";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -44,7 +57,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 export default {
   name: "DashboardTags",
   subscribeTable: ["tag_set", "tag"],
-  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal},
+  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal, ExportFormatModal, ImportFormatModal},
   props: {
     'admin': {
       type: Boolean,
@@ -145,6 +158,17 @@ export default {
           stats: {
             tagSetId: "id",
           }
+        },
+        {
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Export tag set",
+          action: "exportTagSet",
         }
       ];
       return buttons;
@@ -203,6 +227,11 @@ export default {
           break;
         case "defaultTagSet":
           this.selectAsDefault(data.params.id);
+          break;
+        case "exportTagSet":
+          this.$refs.exportFormatModal.open(data.params.id, "tag_set", "tag", {
+            key: "tags",
+          });
           break;
       }
     },
