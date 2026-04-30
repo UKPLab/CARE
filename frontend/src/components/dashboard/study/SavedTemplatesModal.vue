@@ -28,12 +28,27 @@
       />
       <BasicButton
         class="btn btn-secondary"
+        title="Import Template"
+        text="Import"
+        icon="upload"
+        @click="openImport"
+      />
+      <BasicButton
+        class="btn btn-secondary"
         title="Close"
         @click="close"
       />      
     </template>
   </BasicModal>
   <ConfirmModal ref="deleteConf"/>
+  <ImportFormatModal
+    ref="importFormatModal"
+    title="Import Study Templates"
+  />
+  <ExportFormatModal
+    ref="exportFormatModal"
+    title="Export Study Template"
+  />
 </span>
 </template>
 
@@ -43,6 +58,8 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import ImportFormatModal from "@/components/dashboard/workflows/ImportFormatModal.vue";
+import ExportFormatModal from "@/components/dashboard/workflows/ExportFormatModal.vue";
 /**
  * Modal to show saved study templates
  * 
@@ -54,7 +71,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "SavedTemplatesModal",
-  components: { BasicModal, BasicTable, BasicButton, StudyModal, ConfirmModal },
+  components: { BasicModal, BasicTable, BasicButton, StudyModal, ConfirmModal, ImportFormatModal, ExportFormatModal },
   data() {
     return {
       tableOptions: {
@@ -123,6 +140,17 @@ export default {
           title: "Use",
           action: "useTemplate",
         },
+        {
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Export",
+          action: "exportTemplate",
+        },
       ],
     };
   },
@@ -156,7 +184,12 @@ export default {
         this.deleteTemplate(params);
       } else if (action === "useTemplate") {
         this.useTemplate(params);
+      } else if (action === "exportTemplate") {
+        this.exportTemplate(params);
       }
+    },
+    exportTemplate(template) {
+      this.$refs.exportFormatModal.open(template.id, "study", "study_step");
     },
     deleteTemplate(template) {
       this.close();
@@ -195,6 +228,15 @@ export default {
     useTemplate(template) {
       this.close();
       this.$refs.studyCoordinator.open(template.id, null, false, false, true);
+    },
+    openImport() {
+      this.$refs.importFormatModal.open("study", "study_step", {
+        socket: {
+          name: "studySaveAsTemplate",
+          dataKey: "templateData",
+          extra: { onlyTemplate: true },
+        },
+      });
     },
     createTemplate() {
       this.close();
