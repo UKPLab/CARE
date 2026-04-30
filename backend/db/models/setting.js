@@ -129,18 +129,21 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Set setting value by key
-         * @param {string} key setting key
-         * @param {string} value setting value
-         * @returns {Promise<object|null>} setting object
+         * @param {string} key                   setting key
+         * @param {string} value                 setting value
+         * @param {Object} [options]             additional sequelize options
+         * @param {Object} [options.transaction] sequelize transaction
+         * @returns {Promise<object>}            
          */
-        static async set(key, value) {
+        static async set(key, value, options = {}) {
             try {
-                const [instance, created] =
+                const [instance] =
                     await Setting.upsert({
                         key: key,
                         value: value,
                     }, {
-                        conflictFields: ['key']
+                        conflictFields: ['key'],
+                        transaction: options.transaction,
                     });
                 return instance['dataValues'];
             } catch (e) {

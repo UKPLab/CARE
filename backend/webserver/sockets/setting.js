@@ -1,30 +1,6 @@
 const Socket = require("../Socket.js");
 const mailTest = require("../utils/mailTest.js");
-
-const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
-
-/**
- * Returns whether a settingSave payload includes any key under system.mailService.*.
- * Used to decide if the nodemailer transport should be rebuilt after commit.
- *
- * @param {object} data     Settings array from settingSave
- * @param {string} data.key Setting key
- * @returns {boolean}
- */
-function savePayloadTouchesMailService(data) {
-    if (!Array.isArray(data)) {
-        return false;
-    }
-    for (const setting of data) {
-        if (!setting || typeof setting.key !== "string") {
-            continue;
-        }
-        if (setting.key.startsWith(MAIL_SERVICE_KEY_PREFIX)) {
-            return true;
-        }
-    }
-    return false;
-}
+const { saveSettings } = require("../utils/settingSave.js");
 
 /**
  * Handle settings through websocket
@@ -82,21 +58,12 @@ class SettingSocket extends Socket {
             throw new Error("You do not have permission to save settings.");
         }
 
-        const shouldRefreshMail = savePayloadTouchesMailService(data);
-
-        for (const setting of data) {
-            let value = setting.value;
-            if (typeof value === "object") {
-                value = JSON.stringify(value);
-            }
-
-            await this.models["setting"].set(setting.key, value, {
-                transaction: options.transaction,
-            });
-        }
+        const { touchesMailService } = await saveSettings(this.models["setting"], data, {
+            transaction: options.transaction,
+        });
 
         options.transaction.afterCommit(async () => {
-            if (shouldRefreshMail) {
+            if (touchesMailService) {
                 await this.server.initMailServer();
             }
             await this.getSocket("AppSocket").sendSettings(true); // Notify all clients of new settings
