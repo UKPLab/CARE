@@ -24,7 +24,18 @@
     "userNotFoundByEmail": "Benutzer mit dieser E-Mail-Adresse existiert nicht.",
     "invalidCredentials": "Ungültige Anmeldedaten", 
     "termsUpdateError": "Fehler beim Aktualisieren der Zustimmung",
-    "consentUpdateError": "Aktualisierung der Zustimmung fehlgeschlagen"
+    "consentUpdateError": "Aktualisierung der Zustimmung fehlgeschlagen",
+    "twoFactorSessionSaveFailed": "2FA konnte aufgrund eines Sitzungsproblems nicht gestartet werden. Bitte versuchen Sie erneut, sich anzumelden.",
+    "unsupported2FAMethod": "Dieses Konto verwendet eine nicht unterstützte 2FA-Methode. Bitte kontaktieren Sie einen Administrator.",
+    "orcidLoginDisabled": "ORCID-Anmeldung ist derzeit deaktiviert.",
+    "orcidLoginNotReady": "ORCID-Anmeldung ist aktiviert, aber noch nicht vollständig konfiguriert.",
+    "orcidLoginFailed": "ORCID-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "samlLoginDisabled": "SAML-Anmeldung ist derzeit deaktiviert.",
+    "samlLoginNotReady": "SAML-Anmeldung ist aktiviert, aber noch nicht vollständig konfiguriert.",
+    "samlLoginFailed": "SAML-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "loginFailed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "invalidInstitutionalCredentials": "Ungültige institutionelle Anmeldedaten. Bitte versuchen Sie es erneut.",
+    "ldapLoginFailed": "LDAP-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
   },
   "permission": {
     "accessError": "Zugriffsfehler",
@@ -71,7 +82,9 @@
       "usernameNoSpecialChars": "Bitte geben Sie einen gültigen Benutzernamen ohne Sonderzeichen an.",
       "passwordMinLength": "Ihr Passwort muss mindestens 8 Zeichen lang sein.",
       "acceptTermsRequired": "Bitte akzeptieren Sie die Nutzungsbedingungen.",
-      "passwordsDoNotMatch": "Die Passwörter stimmen nicht überein."  
+      "passwordsDoNotMatch": "Die Passwörter stimmen nicht überein.",
+      "provideInstitutionalUsername": "Bitte geben Sie Ihren institutionellen Benutzernamen ein.",
+      "provideInstitutionalPassword": "Bitte geben Sie Ihr institutionelles Passwort ein."
     },
     "documents": {
       "selectValidType": "Bitte wählen Sie einen gültigen Dokumententyp aus.",

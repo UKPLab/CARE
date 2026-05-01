@@ -24,7 +24,18 @@
         "userNotFoundByEmail": "User with this email does not exist.",
         "invalidCredentials": "Invalid User Credentials",
         "termsUpdateError": "Consent Update Error",
-        "consentUpdateError": "Error in updating consent"
+        "consentUpdateError": "Error in updating consent",
+        "twoFactorSessionSaveFailed": "Could not start 2FA due to a session issue. Please try logging in again.",
+        "unsupported2FAMethod": "This account uses an unsupported 2FA method. Please contact an administrator.",
+        "orcidLoginDisabled": "ORCID login is currently disabled.",
+        "orcidLoginNotReady": "ORCID login is enabled but not fully configured.",
+        "orcidLoginFailed": "ORCID login failed. Please try again.",
+        "samlLoginDisabled": "SAML login is currently disabled.",
+        "samlLoginNotReady": "SAML login is enabled but not fully configured.",
+        "samlLoginFailed": "SAML login failed. Please try again.",
+        "loginFailed": "Login failed. Please try again.",
+        "invalidInstitutionalCredentials": "Invalid institutional credentials. Please try again.",
+        "ldapLoginFailed": "LDAP login failed. Please try again."
     },
     "permission": {
         "accessError": "Access Error",
@@ -71,7 +82,9 @@
             "usernameNoSpecialChars": "Please provide a valid username - no special characters.",
             "passwordMinLength": "Password must be at least 8 characters long.",
             "acceptTermsRequired": "Please accept the terms.",
-            "passwordsDoNotMatch": "Passwords do not match."
+            "passwordsDoNotMatch": "Passwords do not match.",
+            "provideInstitutionalUsername": "Please enter your institutional username.",
+            "provideInstitutionalPassword": "Please enter your institutional password."
         },
         "documents": {
             "selectValidType": "Please select a valid document type.",

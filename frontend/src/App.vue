@@ -9,7 +9,7 @@
         class="text disconnect_error"
         :loading="true"
         :size="5"
-        text="Connection error! Reconnecting..."
+        :text="$t('errors.connectionError')"
     />
   </div>
   <div v-if="requireAuth">
@@ -36,6 +36,7 @@
     <router-view/>
   </div>
   <Toast/>
+  <LanguageSwitcher v-if="showStandaloneLanguageSwitcher" :standalone="true"/>
 </template>
 
 <script>
@@ -49,6 +50,7 @@ import ConsentModal from "@/auth/ConsentModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
+import LanguageSwitcher from "@/basic/LanguageSwitcher.vue";
 
 /**
  * Main App Component
@@ -57,7 +59,7 @@ import {computed} from "vue";
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal},
+  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal, LanguageSwitcher},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
@@ -135,12 +137,15 @@ export default {
     },
     appLoadText() {
       if (!this.$socket.connected) {
-        return "Connecting...";
+        return this.$t('common.connecting');
       }
       if (this.appLoadPercent < 100) {
-        return "Load " + this.appLoadStep + " (" + this.appLoadPercent + "%)";
+        return this.$t('common.loadingProgress', {
+          appLoadStep: this.appLoadStep,
+          percent: this.appLoadPercent,
+        });
       }
-      return "Loading...";
+      return this.$t('common.loading');
     },
     acceptStats() {
       if (this.$store.getters["auth/isAuthenticated"]) {
@@ -185,6 +190,9 @@ export default {
           this.$route.meta.requireAuth !== undefined &&
           this.$route.meta.requireAuth
       );
+    },
+    showStandaloneLanguageSwitcher() {
+      return this.hideTopbar;
     },
     mouseDebounceTime() {
       return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);

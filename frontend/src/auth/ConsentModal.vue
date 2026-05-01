@@ -5,6 +5,8 @@
     name="terms"
     disable-keyboard
     remove-close
+    @show="handleModalShow"
+    @hide="handleModalHide"
   >
     <template #title>{{ $t('auth.termsOfService') }}</template>
     <template #body>
@@ -87,6 +89,7 @@ export default {
       acceptStats: false,
       acceptDataSharing: false,
       isAtBottom: false,
+      modalVisible: false,
     };
   },
   computed: {
@@ -112,11 +115,23 @@ export default {
   },
   methods: {
     open() {
+      if (this.modalVisible) {
+        return;
+      }
       this.$refs.modal.open();
       this.$nextTick(() => {
         // Check if content needs scrolling upon opening the modal
         this.checkScrollPosition();
       });
+    },
+    close() {
+      if (this.modalVisible) {
+        this.$refs.modal.close();
+      }
+    },
+    // Public method
+    isVisible() {
+      return this.modalVisible;
     },
     checkScrollPosition() {
       const container = this.$refs.termsContainer;
@@ -137,7 +152,7 @@ export default {
     },
     async handleDecline() {
       this.resetForm();
-      this.$refs.modal.close();
+      this.close();
       await axios.get(getServerURL() + "/auth/logout", {withCredentials: true});
       await this.$router.push("/login");
     },
@@ -150,7 +165,7 @@ export default {
       this.$socket.emit("userConsentUpdate", consentData, (res) => {
         if (res.success) {
           this.resetForm();
-          this.$refs.modal.close();
+          this.close();
           this.$store.commit("auth/SET_USER", res.data);
           this.eventBus.emit("toast", {
             title: this.$t('auth.messages.termsUpdated'),
@@ -169,6 +184,12 @@ export default {
     resetForm() {
       this.acceptStats = false;
       this.acceptDataSharing = false;
+    },
+    handleModalShow() {
+      this.modalVisible = true;
+    },
+    handleModalHide() {
+      this.modalVisible = false;
     },
   },
 };
