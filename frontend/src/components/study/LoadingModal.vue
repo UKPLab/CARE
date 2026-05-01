@@ -111,7 +111,7 @@ export default {
       default: true,
     }
   },
-  emits: ["update:data", "update:ready", "insert-nlp-response"],
+  emits: ["update:data", "update:ready", "insert-nlp-response", "error"],
   data() {
     return {
       error: false,

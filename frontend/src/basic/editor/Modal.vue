@@ -12,8 +12,11 @@
       </button>
     </template>
   </Modal>
-  <LoadIcon class="mx-2" icon-name="border-style"
-            @click="open()"></LoadIcon>
+  <LoadIcon
+    class="mx-2"
+    icon-name="border-style"
+    @click="open()"
+  ></LoadIcon>
 </template>
 
 <script>
