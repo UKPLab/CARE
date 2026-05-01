@@ -1,19 +1,19 @@
 <template>
-  <Card title="Documents">
+  <Card :title="$t('documents.title')">
     <template #headerElements>
       <div class="btn-group gap-2">
       <BasicButton
           class="btn-primary btn-sm"
-          title="Add document"
-          text="Upload document"
+          :title="$t('documents.addDocument')"
+          :text="$t('documents.uploadDocument')"
           icon="upload"
           @click="$refs.uploadModal.open()"
       />
       <BasicButton
           v-if="showCreateButton"
           class="btn-primary btn-sm"
-          title="Create document"
-          text="Create document"
+          :title="$t('documents.createDocument')"
+          :text="$t('documents.createDocument')"
           icon="file-earmark-plus"
           @click="$refs.createModal.open()"
       />
@@ -26,7 +26,6 @@
           :options="options"
           :buttons="buttons"
           @action="action"
-          :max-table-height="'65vh'"
       />
       <EditorDownload ref="editorDownload"/>
     </template>
@@ -52,6 +51,7 @@ import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
 import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Document list component
@@ -64,7 +64,7 @@ import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
  */
 export default {
   name: "DashboardDocument",
-  subscribeTable: ["document", "study", "template"],
+  subscribeTable: ["document", "study"],
   components: {
     StudyModal,
     UploadModal,
@@ -88,25 +88,27 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
-        {name: "ID", key: "id"},
+    };
+  },
+  computed: {
+    columns() {
+      return [
+        {name: this.$t('common.id'), key: "id"},
         {
-          name: "Title",
+          name: this.$t('common.title'),
           key: "name",
           multiline: true,
           width: 5,
         },
-        {name: "Created At", key: "createdAt"},
-        {name: "Type", key: "typeName"},
+        {name: this.$t('common.createdAt'), key: "createdAt"},
+        {name: this.$t('common.type'), key: "typeName"},
         {
-          name: "Public",
+          name: this.$t('common.public'),
           key: "publicBadge",
           type: "badge",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     documents() {
       return this.$store.getters["table/document/getFiltered"](
           (doc) => doc.projectId === this.projectId && doc.type !== 4
@@ -128,7 +130,7 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Access document...",
+          title: this.$t('documents.accessDocument'),
           action: "accessDoc",
           stats:{
             documentId: "id",
@@ -152,7 +154,7 @@ export default {
               value: null
             }
           ],
-          title: "Delete document...",
+          title: this.$t('documents.deleteDocument'),
           action: "deleteDoc",
           stats:{
             documentId: "id",
@@ -176,7 +178,7 @@ export default {
               value: null
             }
           ],
-          title: "Publish document...",
+          title: this.$t('documents.publishDocument'),
           action: "publicDoc",
           stats:{
             documentId: "id",
@@ -200,7 +202,7 @@ export default {
               value: null
             }
           ],
-          title: "Rename document...",
+          title: this.$t('documents.renameDocument'),
           action: "renameDoc",
           stats:{
             documentId: "id",
@@ -222,7 +224,7 @@ export default {
               value: 0,
             },
           ],
-          title: "Open study coordinator...",
+          title: this.$t('documents.openStudyCoordinator'),
           action: "openStudyCoordinator",
           stats: {
             documentId: "id",
@@ -243,7 +245,7 @@ export default {
               key: "type",
               value: 1,
             }],
-          title: "Export delta to a local file",
+          title: this.$t('documents.exportDelta'),
           action: "exportDeltaDoc",
           stats: {
             documentId: "id",
@@ -264,7 +266,7 @@ export default {
               key: "type",
               value: 1,
             }],
-          title: "Export HTML to a local file",
+          title: this.$t('documents.exportHtml'),
           action: "exportHTMLDoc",
           stats: {
             documentId: "id",
@@ -286,7 +288,7 @@ export default {
             value: 0,
           }
         ],
-        title: "Download PDF with annotations",
+        title: this.$t('documents.downloadPdfWithAnnotations'),
         action: "exportWithAnnotations",
       });
     }
@@ -297,10 +299,10 @@ export default {
           .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false && doc.type !== 3)
           .map((d) => {
             let newD = {...d};
-            newD.typeName = d.type === 0 ? "PDF" : d.type === 1 ? "HTML" : "MODAL";
+            newD.typeName = d.type === 0 ? this.$t('documents.types.pdf') : d.type === 1 ? this.$t('documents.types.html') : this.$t('documents.types.modal');
             newD.publicBadge = {
               class: newD.public ? "bg-success" : "bg-danger",
-              text: newD.public ? "Yes" : "No",
+              text: newD.public ? this.$t('common.yes') : this.$t('common.no'),
             };
             return newD;
           });
@@ -358,19 +360,14 @@ export default {
       );
       let warning;
       if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${
-            studies.length
-        } ${studies.length !== 1 ? "studies" : "study"}
-         running on this document. Deleting it will delete the ${
-            studies.length !== 1 ? "studies" : "study"
-        }!`;
+        warning = this.$t('documents.messages.studyWarning', { count: studies.length });
       } else {
         warning = "";
       }
 
       this.$refs.deleteConf.open(
-          "Delete Document",
-          "Are you sure you want to delete the document?",
+          this.$t('documents.messages.deleteTitle'),
+          this.$t('documents.messages.deleteConfirm'),
           warning,
           function (val) {
             if (val) {
@@ -383,8 +380,8 @@ export default {
               }, (result) => {
                 if (!result.success) {
                   this.eventBus.emit('toast', {
-                    title: "Document delete failed",
-                    message: result.message,
+                    title: this.$t('errors.documents.deleteFailed'),
+                    message: resolveApiMessage(result),
                     variant: "danger"
                   });
                 }

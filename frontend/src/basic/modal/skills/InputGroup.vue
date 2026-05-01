@@ -7,7 +7,7 @@
     >
       <h6 class="fw-bold mb-3">{{ group.name }}</h6>
       <div class="mb-3">
-        <label class="form-label">Select base file type:</label>
+        <label class="form-label">{{ $t('common.baseFileType') }}</label>
         <FormSelect
             v-model="baseFileSelections[group.validationConfigurationId]"
             :options="group.fileTypeOptions"
@@ -121,7 +121,7 @@ export default {
       immediate: true,
     },
     baseFileSelections: {
-      handler(_newVal) {
+      handler(newVal) {
         this.$nextTick(() => {
           this.$emit('update:valid', this.isValid);
         });
@@ -144,7 +144,7 @@ export default {
   methods: {
     getValidationConfigurationName(validationConfigurationId) {
       const config = this.configurations.find(c => c.id === validationConfigurationId);
-      return config?.name || `Validation Configuration ${validationConfigurationId}`;
+      return config?.name || this.$t('nlp.inputGroup.validationConfiguration', { id: validationConfigurationId });
     },
     getFileTypeOptions(validationConfigurationId) {
       const config = this.configurations.find(c => c.id === validationConfigurationId);

@@ -1,16 +1,16 @@
 <template>
-  <Card title="Users">
+  <Card :title="$t('users.title')">
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
             class="btn btn-sm btn-secondary"
-            title="Export as CSV"
+            :title="$t('users.stats.exportCsv')"
             icon="cloud-arrow-down"
             @click="downloadBehaviourData('csv')"
         />
         <BasicButton
             class="btn btn-sm btn-secondary"
-            title="Export as JSON"
+            :title="$t('users.stats.exportJson')"
             icon="cloud-arrow-down"
             @click="downloadBehaviourData('json')"
         />
@@ -23,20 +23,18 @@
           :columns="user_table.columns"
           :data="users"
           :options="user_table.options"
-          :max-table-height="'25vh'"
       />
     </template>
   </Card>
   <hr>
   <Card
-      :title="`Stats for ${selectedUsers ? selectedUsers.length : 0} User${selectedUsers && selectedUsers.length !== 1 ? 's': ''}`">
+      :title="$t('users.stats.userStatsTitle', selectedUsers ? selectedUsers.length : 0, { count: selectedUsers ? selectedUsers.length : 0 })">
     <template #body>
       <BasicTable
           ref="stats_table"
           :columns="stats_table.columns"
           :data="stats"
           :options="stats_table.options"
-          :max-table-height="'25vh'"
       />
     </template>
   </Card>
@@ -46,7 +44,8 @@
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import ExportSingle from "@/basic/download/ExportSingle.vue";
+import {downloadObjectsAs, formatLocalizedDate} from "@/assets/utils";
 
 /**
  * Shows various user behavior stats
@@ -62,7 +61,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "UserStatistics",
-  components: {BasicTable, BasicButton, Card},
+  components: {BasicTable, BasicButton, Card, ExportSingle},
   subscribeTable: ["user"],
   props: {
     'admin': {
@@ -84,9 +83,9 @@ export default {
           selectableRows: true,
         },
         columns: [
-          {name: "User", key: "userName", sortable: true},
-          {name: "ID", key: "id", sortable: true},
-          {name: "Last Login", key: "lastLoginAt", sortable: true},
+          {name: this.$t('users.stats.columns.user'), key: "userName", sortable: true},
+          {name: this.$t('users.stats.columns.id'), key: "id", sortable: true},
+          {name: this.$t('users.stats.columns.lastLogin'), key: "lastLoginAt", sortable: true},
         ],
       },
       stats_table: {
@@ -99,10 +98,10 @@ export default {
           pagination: 20
         },
         columns: [
-          {name: "Time", key: "timestamp", sortable: true},
-          {name: "User", key: "userId", sortable: true},
-          {name: "Action", key: "action", sortable: true},
-          {name: "Data", key: "data", sortable: true},
+          {name: this.$t('users.stats.columns.time'), key: "timestamp", sortable: true},
+          {name: this.$t('users.stats.columns.user'), key: "userId", sortable: true},
+          {name: this.$t('users.stats.columns.action'), key: "action", sortable: true},
+          {name: this.$t('users.stats.columns.data'), key: "data", sortable: true},
         ],
       },
       selectedUsers: []
@@ -112,7 +111,7 @@ export default {
     users() {
       return this.$store.getters["table/user/getAll"].map(u => {
         let uNew = {...u};
-        uNew.lastLoginAt = u.lastLoginAt ? (new Date(u.lastLoginAt)).toLocaleDateString() : "-";
+        uNew.lastLoginAt = u.lastLoginAt ? formatLocalizedDate(u.lastLoginAt) : "-";
         return uNew;
       });
     },
@@ -144,8 +143,8 @@ export default {
           downloadObjectsAs(response.data, filename, file_type);
         } else {
           this.eventBus.emit('toast', {
-            title: "Export Failed",
-            message: "Export failed.",
+            title: this.$t('users.stats.toasts.exportFailedTitle'),
+            message: this.$t('users.stats.toasts.exportFailedMessage'),
             variant: "danger"
           });
         }

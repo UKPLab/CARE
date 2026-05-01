@@ -2,8 +2,8 @@
   <BasicCoordinator
       ref="coordinator"
       table="study"
-      :title="isTemplateMode ? 'Template' : 'Study'"
-      :textAdd="isTemplateMode ? 'Create' : 'Add'"
+      :title="isTemplateMode ? $t('studies.template') : $t('studies.study')"
+      :textAdd="isTemplateMode ? $t('common.create') : $t('common.add')"
       :customSubmit="isTemplateMode"
       :defaultValue="{ isTemplateMode: isTemplateMode }"
       @success="success"
@@ -14,11 +14,11 @@
     </template>
     <template #success>
       <div v-if="isTemplateMode">
-        Template has been successfully created.
+        {{ $t('studies.messages.templateCreatedSuccess') }}
       </div>
       <div v-else>
-        The study has been successfully published<br>
-        Participants can join the study under the following link:<br><br>
+        {{ $t('studies.messages.studyPublishedSuccess') }}<br>
+        {{ $t('studies.messages.participantsCanJoin') }}<br><br>
         <a
             :href="link"
             target="_blank"
@@ -30,13 +30,14 @@
           v-if="!isTemplateMode"
           class="btn btn-primary"
           @click="copyURL"
-      >Copy Link
+      >{{ $t('studies.copyLink') }}
       </button>
     </template>
   </BasicCoordinator>
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils";
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 
 /**
@@ -69,9 +70,15 @@ export default {
       return window.location.origin + "/study/" + this.study.hash;
     },
     modalTitle() {
-      const prefix = this.isUsingTemplate ? 'Create' : (this.studyId !== 0 ? 'Edit' : 'New');
-      const suffix = this.isTemplateMode ? 'Template' : 'Study';
-      return `${prefix} ${suffix}`;
+      if (this.isUsingTemplate) {
+        return this.isTemplateMode ? this.$t('studies.modalTitle.createTemplate') : this.$t('studies.modalTitle.createStudy');
+      } 
+
+      if (this.studyId !== 0) {
+        return this.isTemplateMode ? this.$t('studies.modalTitle.editTemplate') : this.$t('studies.modalTitle.editStudy');
+      }
+
+      return this.isTemplateMode ? this.$t('studies.modalTitle.newTemplate') : this.$t('studies.modalTitle.newStudy');
     },
   },
   methods: {
@@ -99,14 +106,14 @@ export default {
           this.$refs.coordinator.$refs.coordinatorModal.waiting = false;
           if (!result.success) {
             this.eventBus.emit('toast', {
-              title: "Template Creation Failed",
-              message: result.message,
+              title: this.$t('errors.studies.templateCreationFailed'),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           } else {
             this.eventBus.emit('toast', {
-              title: "Template Created",
-              message: "The template has been created successfully.",
+              title: this.$t('studies.messages.templateCreated'),
+              message: this.$t('studies.messages.templateCreatedMessage'),
               variant: "success",
             });
             this.studyId = result.data;
@@ -118,10 +125,7 @@ export default {
     },
     success(id) {
       if (!this.isTemplateMode) {
-        const originalStudy = this.$store.getters['table/study/get'](this.studyId);
-        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === originalStudy?.id);
-        const validNewStudy = newStudies.find(s => new Date(s.createdAt) > new Date(originalStudy.createdAt));
-        this.studyId = validNewStudy ? validNewStudy.id : id;
+        this.studyId = id;
         this.isSuccess = true;
       }
     },
@@ -132,14 +136,14 @@ export default {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-          title: "Link copied",
-          message: "Document link copied to clipboard!",
+          title: this.$t('studies.messages.linkCopied'),
+          message: this.$t('studies.messages.linkCopiedMessage'),
           variant: "success"
         });
-      } catch (_error) {
+      } catch ($e) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Could not copy document link to clipboard!",
+          title: this.$t('errors.clipboard.linkNotCopied'),
+          message: this.$t('errors.clipboard.copyFailed'),
           variant: "danger"
         });
       }

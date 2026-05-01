@@ -32,7 +32,7 @@
             <slot :name="'step-' + (currentStep + 1)"/>
           </template>
           <template v-else>
-            <p>Step {{ currentStep + 1 }} is not implemented.</p>
+            <p>{{ $t('common.stepper.stepNotImplemented', { step: currentStep + 1 }) }}</p>
           </template>
         </div>
       </div>
@@ -42,26 +42,26 @@
         <slot name="buttons"/>
         <BasicButton
           v-if="currentStep !== 0"
-          title="Previous"
+          :title="$t('common.previous')"
           class="btn btn-secondary"
           @click="currentStep--"
         />
         <BasicButton
           v-if="currentStep === 0 && showClose"
-          title="Close"
+          :title="$t('common.close')"
           class="btn btn-secondary"
           @click="close"
         />
         <BasicButton
           v-if="currentStep < steps.length - 1"
-          :title="nextText"
+          :title="nextText || $t('common.nextText')"
           :class="['btn', currentStep === 0 && nextText && nextText.toLowerCase().includes('cancel') ? 'btn-danger' : 'btn-primary']"
           :disabled="disabled(currentStep)"
           @click="currentStep++"
         />
         <BasicButton
           v-if="currentStep === steps.length - 1"
-          :title="submitText"
+          :title="submitText || $t('common.submitText')"
           class="btn btn-primary"
           :disabled="disabled(currentStep)"
           @click="submit"
@@ -69,7 +69,7 @@
       </div>
       <div v-else>
         <BasicButton
-          title="Close"
+          :title="$t('common.close')"
           class="btn btn-primary"
           @click="close"
         />
@@ -97,11 +97,11 @@ export default {
     },
     submitText: {
       type: String,
-      default: "Submit"
+      default: null
     },
     nextText: {
       type: String,
-      default: "Next"
+      default: null
     },
     validation: {
       type: Array,

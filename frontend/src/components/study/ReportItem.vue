@@ -4,7 +4,7 @@
     v-else
     id="emptyText"
   >
-    (no text)
+    {{$t('report.noText')}}
   </a>
   <button
     id="cite"
@@ -14,7 +14,7 @@
     data-toggle="tooltip"
     @click="show()"
   >
-    {{ citation ? `(ref. ${citation})` : "(show)" }}
+    {{ citation ? $t('report.ref', {citation}) : $t('report.show') }}
   </button>
 </template>
 

@@ -5,7 +5,7 @@
     name="nlpSkills"
   >
     <template #title>
-      Skill Details
+      {{ $t("nlp.skillDetails") }}
     </template>
     <template #body>
       <div class="modal-body justify-content-center">
@@ -14,7 +14,7 @@
           class="spinner-border m-5 "
           role="status"
         >
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ $t("common.loading") }}</span>
         </div>
         <div v-else>
           <SkillListing ref="skillListing" v-model="config" />
@@ -27,7 +27,7 @@
         data-bs-dismiss="modal"
         type="button"
       >
-        Close
+        {{ $t("common.close") }}
       </button>
     </template>
   </Modal>

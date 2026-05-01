@@ -6,7 +6,7 @@
     >
       <i
         class="bi bi-gear"
-        title="Edit Configuration"
+        :title="$t('basic.configuration.editButton')"
       ></i>
     </button>
     <StepperModal
@@ -14,29 +14,29 @@
       name="configurationStepper"
       :steps="modalSteps"
       :validation="stepValid"
-      submit-text="Save Configuration"
+      :submit-text="$t('basic.configuration.saveButton')"
       @step-change="handleStepChange"
       @submit="submit"
     >
       <template #title>
-        <h5 class="modal-title text-primary">Configuration</h5>
+        <h5 class="modal-title text-primary">{{ $t('basic.configuration.title') }}</h5>
       </template>
       <template #step="{ step }">
         <StepTemplate
           v-if="step?.type === 'general'"
-          title="General Configuration"
+          :title="$t('basic.configuration.stepTitles.general')"
         >
           <template #content>
             <GeneralSettingStep  
-              :modelValue="stepConfig"
               @validation-change="handleGeneralValidationChange"
+              :modelValue="stepConfig"
               @update:form-data="handleGeneralFormDataUpdate"
             />
           </template>
         </StepTemplate>
         <StepTemplate
           v-else-if="step?.type === 'services'"
-          title="Services Configuration"
+          :title="$t('basic.configuration.stepTitles.services')"
         >
           <template #content>
             <ServicesStep
@@ -49,7 +49,7 @@
         </StepTemplate>
         <StepTemplate
           v-else-if="step?.type === 'placeholders'"
-          title="Placeholders Configuration"
+          :title="$t('basic.configuration.stepTitles.placeholders')"
         >
           <template #content>
             <PlaceholdersStep
@@ -159,14 +159,14 @@ export default {
     modalSteps() {
       const steps = [];
       if (this.hasConfigSettings) {
-        steps.push({ title: "General Settings", type: "general" });
-      } 
+        steps.push({ title: this.$t('basic.configuration.steps.general'), type: "general" });
+      }
       if (this.hasConfigServices) {
-        steps.push({ title: "Services", type: "services" });
+        steps.push({ title: this.$t('basic.configuration.steps.services'), type: "services" });
       }
       if (this.hasPlaceholdersStep) {
-          steps.push({ title: "Placeholders", type: "placeholders" });
-        }
+        steps.push({ title: this.$t('basic.configuration.steps.placeholders'), type: "placeholders" });
+      }
       return steps;
     },
     stepValid() {
@@ -190,8 +190,8 @@ export default {
       const isTemplateMode = this.formData?.isTemplateMode || false;
       if (!this.documentId && !isTemplateMode) {
         this.eventBus.emit("toast", {
-          title: "Document Error",
-          message: "You need to select a document.",
+          title: this.$t('errors.documents.documentError'),
+          message: this.$t('errors.documents.noDocumentSelected'),
           variant: "danger",
         });
         return;
@@ -232,8 +232,8 @@ export default {
       this.$emit("update:modelValue", this.stepConfig);
       this.$refs.configurationStepper.close();
       this.eventBus.emit("toast", {
-        title: "Configuration Updated",
-        message: "The configuration data has been successfully updated.",
+        title: this.$t('basic.configuration.toasts.updatedTitle'),
+        message: this.$t('basic.configuration.toasts.updatedMessage'),
         variant: "success",
       });
     },

@@ -89,8 +89,8 @@ export default {
 
       //notify user
        this.eventBus.emit('toast', {
-          title: "Download aborted",
-          message: "The server did not respond. Please try again later.",
+          title: this.$t('errors.download.abortedTitle'),
+          message: this.$t('errors.download.serverTimeout'),
           variant: "danger"
         });
     },
@@ -99,8 +99,8 @@ export default {
       if(this.toDownload.length !== this.downloaded.length){
         this.eventBus.emit('toast',
           {
-            title: "Warning",
-            message: "Another download is in progress. Please wait.",
+            title: this.$t('common.warning'),
+            message: this.$t('errors.download.inProgress'),
             variant: "warning",
             delay: 3000});
         return;
@@ -124,7 +124,7 @@ export default {
       });
 
       // set timer
-      this.timeout = setTimeout(_x => {
+      this.timeout = setTimeout(x => {
         if(this.downloaded.length < this.toDownload.length) {
           this.abortDownload();
         } else {

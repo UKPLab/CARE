@@ -7,7 +7,7 @@
           :required="options.required"
           :class="options.class"
           class="form-control"
-          :placeholder="options.placeholder"
+          :placeholder="translatedPlaceholder"
           :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
           @blur="blur(currentData)"
       />
@@ -37,6 +37,15 @@ export default {
     return {
       currentData: "",
     }
+  },
+  computed: {
+    translatedPlaceholder() {
+      const placeholder = this.options.placeholder;
+      if (typeof placeholder !== "string") {
+        return placeholder;
+      }
+      return this.$te(placeholder) ? this.$t(placeholder) : placeholder;
+    },
   },
   watch: {
     currentData() {

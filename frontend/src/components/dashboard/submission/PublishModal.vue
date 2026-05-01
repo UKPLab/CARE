@@ -7,16 +7,20 @@
     @submit="publishReviewLinks"
   >
     <template #title>
-      <h5 class="modal-title">Publish Reviews</h5>
+      <h5 class="modal-title">
+        {{ isSubmissionMode ? $t('dashboard.publishModal.titleSubmissions') : $t('dashboard.publishModal.titleReviews') }}
+      </h5>
     </template>
+
     <!-- STEP 1: Mode Selection -->
     <template #step-1>
       <div class="mb-3">
-        <label class="form-label"><b>Select Review Mode:</b></label>
+        <label class="form-label">
+          <b>{{ $t('dashboard.publishModal.selectReviewMode') }}</b>
+        </label>
+
         <div class="form-check">
-          <label
-            class="form-check-label"
-          >
+          <label class="form-check-label">
             <input
               v-model="selectedMode"
               class="form-check-input"
@@ -24,14 +28,15 @@
               name="modeSelection"
               value="document"
             />
-            <b>Document-based Reviews</b>
-            <div class="small text-muted">Publish review links based on individual documents</div>
+            <b>{{ $t('dashboard.publishModal.documentBasedReviews') }}</b>
+            <div class="small text-muted">
+              {{ $t('dashboard.publishModal.documentBasedReviewsDescription') }}
+            </div>
           </label>
         </div>
+
         <div class="form-check mt-2">
-          <label
-            class="form-check-label"
-          >
+          <label class="form-check-label">
             <input
               v-model="selectedMode"
               class="form-check-input"
@@ -39,12 +44,15 @@
               name="modeSelection"
               value="submission"
             />
-            <b>Submission-based Reviews</b>
-            <div class="small text-muted">Publish review links based on submissions (multiple documents per submission)</div>
+            <b>{{ $t('dashboard.publishModal.submissionBasedReviews') }}</b>
+            <div class="small text-muted">
+              {{ $t('dashboard.publishModal.submissionBasedReviewsDescription') }}
+            </div>
           </label>
         </div>
       </div>
     </template>
+
     <template #step-2>
       <BasicTable
         v-model="selectedDocuments"
@@ -54,6 +62,7 @@
         :max-table-height="400"
       />
     </template>
+
     <template #step-3>
       <BasicTable
         v-model="selectedSessions"
@@ -63,13 +72,12 @@
         :max-table-height="400"
       />
     </template>
+
     <template #step-4>
       <div class="mb-3">
-        <label
-          for="text_format"
-          class="form-label"
-          ><b>Text Format:</b></label
-        >
+        <label for="text_format" class="form-label">
+          <b>{{ $t('dashboard.publishModal.textFormat') }}</b>
+        </label>
         <textarea
           id="text_format"
           v-model="text_format"
@@ -78,30 +86,31 @@
         ></textarea>
         <div class="small">
           <p>
-            <span>The placeholder <code>~SESSION_LINKS~</code> will be replaced with the review links.<br /></span>
+            <span>{{ $t('dashboard.publishModal.placeholderSessionLinks') }}<br /></span>
             <span v-if="linkCollection === 'studies'">
-              The placeholder <code>~USERNAME~</code> will be replaced with the CARE username of the document owner.
+              {{ $t('dashboard.publishModal.placeholderUsername') }}
             </span>
           </p>
         </div>
       </div>
+
       <div class="mb-3">
-        <label
-          for="publishMethod"
-          class="form-label"
-          ><b>Link Collection:</b></label
-        >
+        <label for="publishMethod" class="form-label">
+          <b>{{ $t('dashboard.publishModal.linkCollection') }}</b>
+        </label>
         <select
           id="publishMethod"
           v-model="linkCollection"
           class="form-select"
         >
-          <option value="studies">based on Studies (session links for each study)</option>
-          <option value="sessions">based on Sessions (links for own sessions)</option>
+          <option value="studies">{{ $t('dashboard.publishModal.basedOnStudies') }}</option>
+          <option value="sessions">{{ $t('dashboard.publishModal.basedOnSessions') }}</option>
         </select>
       </div>
+
       <div class="mb-3">
-        <p><b>Links:</b></p>
+        <p><b>{{ $t('dashboard.publishModal.links') }}</b></p>
+
         <ul v-if="linkCollection === 'studies'">
           <li
             v-for="doc in formattedStudies"
@@ -113,15 +122,18 @@
                 v-for="session in doc.sessions"
                 :key="session"
               >
-                {{ session.firstName }} {{ session.lastName }} (<a
+                {{ session.firstName }} {{ session.lastName }} (
+                <a
                   :href="session.link"
                   target="_blank"
-                  >{{ session.link }}</a
-                >)
+                >
+                  {{ session.link }}
+                </a>)
               </li>
             </ul>
           </li>
         </ul>
+
         <ul v-else-if="linkCollection === 'sessions'">
           <li
             v-for="session in formattedSessions"
@@ -133,24 +145,25 @@
                 v-for="s in session"
                 :key="s"
               >
-                {{ s.document.documentName }} (<a
+                {{ s.document.documentName }} (
+                <a
                   :href="s.link"
                   target="_blank"
-                  >{{ s.link }}</a
-                >)
+                >
+                  {{ s.link }}
+                </a>)
               </li>
             </ul>
           </li>
         </ul>
       </div>
     </template>
+
     <template #step-5>
       <div class="mb-3">
-        <label
-          for="publishMethod"
-          class="form-label"
-          ><b>Publishing Method:</b></label
-        >
+        <label for="publishMethod" class="form-label">
+          <b>{{ $t('dashboard.publishModal.publishMethod') }}</b>
+        </label>
         <select
           id="publishMethod"
           v-model="publishMethod"
@@ -166,12 +179,14 @@
           </option>
         </select>
       </div>
+
       <div
         v-if="isSubmissionMode"
         class="small"
       >
-        <p>Choose "Download CSV" to export the generated feedback text for each recipient.</p>
+        <p>{{ $t('dashboard.publishModal.chooseDownloadCSV') }}</p>
       </div>
+
       <div v-if="publishMethod === 'moodle'">
         <MoodleOptions
           ref="moodleOptionsForm"
@@ -187,7 +202,7 @@
 import BasicTable from "@/basic/Table.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 
 /**
  * Modal for publish the review links to Moodle
@@ -252,21 +267,20 @@ export default {
     },
     steps() {
       return [
-        { title: "Mode" },
-        { title: this.isSubmissionMode ? "Submission" : "Document" },
-        { title: "Session" },
-        { title: "Confirmation" },
-        { title: "Publishing" },
+        { title: this.$t('dashboard.publishModal.stepMode') },
+        { title: this.isSubmissionMode ? this.$t('dashboard.publishModal.stepSubmissionSelection') : this.$t('dashboard.publishModal.stepDocumentSelection') },
+        { title: this.$t('dashboard.publishModal.stepSessionSelection') },
+        { title: this.$t('dashboard.publishModal.stepConfirmation') },
+        { title: this.$t('dashboard.publishModal.stepPublishingOptions') },
       ];
     },
     stepValid() {
       return [
-        true, // Step 1: Mode Selection always true
-        this.selectedDocuments.length > 0, // Step 2: Documents/Submissions selected
-        this.selectedSessions.length > 0, // Step 3: Sessions selected
-        true, // Step 4: Confirmation always valid
-        // Only require Moodle options if moodle is selected
-        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""), // Step 5: Publishing options
+        true,
+        this.selectedDocuments.length > 0,
+        this.selectedSessions.length > 0,
+        true,
+        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""),
       ];
     },
     usersWithExtId() {
@@ -300,16 +314,13 @@ export default {
       if (!this.isSubmissionMode) {
         return this.documents
           .map((document) => {
-            // find all study steps that are associated with this document
             const studySteps = this.studySteps.filter((step) => step.documentId === document.id);
-            // get unique study ids from the study steps
             const studyIds = [...new Set(studySteps.map((step) => step.studyId))].filter((id) => this.studies.find((s) => s.id === id));
 
             if (studyIds.length === 0) {
               return null;
             }
 
-            // get sessions for each study
             const studySessionIds = this.studySessions.filter((session) => studyIds.includes(session.studyId)).map((session) => session.id);
             if (studySessionIds.length === 0) {
               return null;
@@ -335,12 +346,10 @@ export default {
           .filter((s) => s !== null);
       }
 
-      // submission mode: aggregate sessions across documents belonging to the submission
       return this.submissions
         .map((submission) => {
           const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submission.id);
 
-          // per document, collect closed studyIds
           const docSummaries = docs.map((doc) => {
             const steps = this.studySteps.filter((step) => step.documentId === doc.id);
             const closedStudyIds = [...new Set(steps.map((s) => s.studyId))].filter((id) => this.studies.find((st) => st.id === id));
@@ -389,14 +398,12 @@ export default {
           const study = this.studies.find((s) => s.id === session.studyId);
           const user = this.users.find((u) => u.id === session.userId);
 
-          // resolve document per session in submission mode
           let docRef = null;
           if (this.isSubmissionMode && d.documents) {
             const found = d.documents.find((doc) => doc.studyIds.includes(session.studyId)) || null;
             docRef = found
               ? {
                   ...found,
-                  // carry owner info from submission-level row
                   extId: d.extId,
                   firstName: d.firstName,
                   lastName: d.lastName,
@@ -426,7 +433,6 @@ export default {
     },
     formattedStudies() {
       if (this.isSubmissionMode) {
-        // group by actual document from sessions
         const docMap = {};
         this.selectedSessions.forEach((s) => {
           if (s.document && s.document.id) {
@@ -450,7 +456,6 @@ export default {
         });
     },
     formattedSessions() {
-      // group by userId
       return this.selectedSessions.reduce((acc, session) => {
         const key = session.userId;
         if (!acc[key]) {
@@ -463,35 +468,35 @@ export default {
     documentTableColumns() {
       if (!this.isSubmissionMode) {
         return [
-          { name: "extId", key: "extId" },
-          { name: "First Name", key: "firstName" },
-          { name: "Last Name", key: "lastName" },
-          { name: "Document Title", key: "documentName" },
-          { name: "Studies", key: "studies" },
-          { name: "Sessions", key: "sessions" },
+          { name: this.$t('dashboard.publishModal.columns.extId'), key: "extId" },
+          { name: this.$t('common.firstName'), key: "firstName" },
+          { name: this.$t('common.lastName'), key: "lastName" },
+          { name: this.$t('dashboard.publishModal.columns.documentTitle'), key: "documentName" },
+          { name: this.$t('dashboard.publishModal.columns.studies'), key: "studies" },
+          { name: this.$t('dashboard.publishModal.columns.sessions'), key: "sessions" },
         ];
       }
       return [
-        { name: "extId", key: "extId" },
-        { name: "Submission ID", key: "submissionId" },
-        { name: "Group", key: "group" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Studies", key: "studies" },
-        { name: "Sessions", key: "sessions" },
+        { name: this.$t('dashboard.publishModal.columns.extId'), key: "extId" },
+        { name: this.$t('dashboard.publishModal.columns.submissionId'), key: "submissionId" },
+        { name: this.$t('dashboard.publishModal.columns.group'), key: "group" },
+        { name: this.$t('common.firstName'), key: "firstName" },
+        { name: this.$t('common.lastName'), key: "lastName" },
+        { name: this.$t('dashboard.publishModal.columns.studies'), key: "studies" },
+        { name: this.$t('dashboard.publishModal.columns.sessions'), key: "sessions" },
       ];
     },
     sessionTableColumns() {
       return [
-        { name: "Study Name", key: "studyName" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Document Title", key: "documentName" },
+        { name: this.$t('dashboard.publishModal.columns.studyName'), key: "studyName" },
+        { name: this.$t('common.firstName'), key: "firstName" },
+        { name: this.$t('common.lastName'), key: "lastName" },
+        { name: this.$t('dashboard.publishModal.columns.documentTitle'), key: "documentName" },
       ];
     },
     publishMethodOptions() {
       return [
-        { value: "csv", label: "Download CSV", disabled: false },
+        { value: "csv", label: this.$t('dashboard.publishModal.downloadCSV'), disabled: false },
         { value: "moodle", label: "Moodle", disabled: false },
         { value: "email", label: "Email", disabled: true },
       ];
@@ -504,18 +509,22 @@ export default {
     },
   },
   methods: {
+    tUserRole(roleName) {
+      const key = `users.roles.${roleName}`;
+      const translated = this.$t(key);
+      return translated === key ? roleName : translated;
+    },
     getUserRoles(userId) {
       const roleMatchings = this.userRoleMatchings.filter((urm) => urm.userId === userId && !urm.deleted);
       return roleMatchings
         .map((urm) => {
           const role = this.userRoles.find((ur) => ur.id === urm.userRoleId);
-          return role ? role.name : "Unknown";
+          return role ? this.tUserRole(role.name) : this.$t('common.unknown');
         })
         .join(", ");
     },
     open() {
       this.reset();
-      // set default publish method per mode
       this.publishMethod = "csv";
       this.$refs.reviewStepper.open();
     },
@@ -542,12 +551,13 @@ export default {
                 text: this.text_format.replace("~SESSION_LINKS~", this.formattedSessions[userId].map((s) => s.link).join("\n")),
               };
             });
+
       if (this.publishMethod === "csv") {
         this.downloadCSV();
         this.$refs.reviewStepper.close();
         this.eventBus.emit("toast", {
-          title: "Publish study session links",
-          message: "CSV successfully generated and exported",
+          title: this.$t('dashboard.publishModal.publishReviewLinks'),
+          message: this.$t('dashboard.publishModal.csvSuccessfullyGenerated'),
           variant: "success",
         });
         return;
@@ -565,14 +575,14 @@ export default {
           if (res.success) {
             this.$refs.reviewStepper.close();
             this.eventBus.emit("toast", {
-              title: "Reviews published",
-              message: "The review links have been successfully published!",
+              title: this.$t('dashboard.publishModal.reviewsPublished'),
+              message: this.$t('dashboard.publishModal.reviewLinksPublished'),
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to publish reviews",
-              message: res.message,
+              title: this.$t('dashboard.publishModal.failedPublishReviews'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }

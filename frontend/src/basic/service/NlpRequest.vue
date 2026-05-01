@@ -18,11 +18,7 @@ export default {
       type: Array,
       required: true,
       default: () => [],
-    },
-    studySessionId: {
-      type: Number,
-      required: true,
-    },
+    }
   },
   props: {
     skill: {
@@ -44,10 +40,6 @@ export default {
     },
     documentData: {
       type: Object,
-      required: true,
-    },
-    documentId: {
-      type: Number,
       required: true,
     },
     service: {
@@ -175,8 +167,10 @@ export default {
       this.timeoutId = setTimeout(() => {
         if (this.status === 'pending') {
           this.eventBus.emit('toast', {
-            title: "NLP Service Request",
-            message: "Timeout in request for skill: " + this.skill,
+            title: this.$t('nlp.request.title'),
+            message: this.$t('nlp.request.timeout', { 
+              skill: this.skill 
+            }),
             variant: "danger"
           });
           this.status = 'timeout';
@@ -184,18 +178,9 @@ export default {
         this.timeoutId = null;
       }, this.nlpRequestTimeout);
     },
-    markSkipped() {
-      if (this.timeoutId) {
-        clearTimeout(this.timeoutId);
-        this.timeoutId = null;
-      }
-
-      this.saveResult({skipped: true});
-      this.status = 'skipped';
-    },
     saveResult(result) {
       const entries = Object.keys(result || {}).map(k => ({
-        documentId: this.documentId,
+        documentId: this.studyStep?.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
         key: `${this.skillKey}_${k}`,

@@ -6,8 +6,8 @@
   >  
     <template v-if="toolbarVisible">       
       <TopBarButton
-        title="Reset"
-        text="Reset"
+        :title="$t('common.reset')"
+        :text="$t('common.reset')"
         :disabled="isZooming"
         @click="$emit('reset')"
       />      
@@ -21,18 +21,21 @@
         :disabled="isZooming"
         @click="$emit('zoom-out')"
       />      
-      <BasicForm
-        :model-value="zoomFormData"
-        :fields="zoomFields"
-        @update:model-value="$emit('update:zoomFormData', $event)"
-      />
+      <!-- Zoom Percentage Form -->
+      <div >
+        <BasicForm
+          :model-value="zoomFormData"
+          :fields="zoomFields"
+          @update:model-value="$emit('update:zoomFormData', $event)"
+        />
+      </div>
     </template>
 
     <!-- Toggle Button (always visible) -->
     <button 
       class="toolbar-toggle-btn" 
-      :title="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'" 
-      @click="toggleToolbar"
+      @click="toggleToolbar" 
+      :title="toolbarVisible ? $t('components.pdftoolbar.minToolbar') : $t('components.pdftoolbar.showToolbar')"
     >
       <LoadIcon :icon-name="toolbarVisible ? 'chevron-right' : 'tools'" :size="20" />
     </button>
@@ -75,7 +78,25 @@ export default {
   emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset'],
   data() {
     return {
-      baseZoomOptions: this.generateZoomOptions(50, 200, 10),
+      zoomFields: [
+        {
+          key: "zoom",
+          type: "select",
+          options: [
+            { value: 0.5, name: "50%" },
+            { value: 0.6, name: "60%" },
+            { value: 0.7, name: "70%" },
+            { value: 0.8, name: "80%" },
+            { value: 0.9, name: "90%" },
+            { value: 1.0, name: "100%" },
+            { value: 1.1, name: "110%" },
+            { value: 1.2, name: "120%" },
+            { value: 1.3, name: "130%" },
+            { value: 1.4, name: "140%" },
+            { value: 1.5, name: "150%" },
+          ],
+        },
+      ],
     };
   },
   computed: {
@@ -87,46 +108,10 @@ export default {
         this.$emit('update:model-value', value);
       },
     },
-    zoomPercentage() {
-      return Math.round((this.zoomFormData.zoom || 1) * 100);
-    },
-    zoomFields() {
-      const currentZoom = this.zoomPercentage;
-      let options = [...this.baseZoomOptions];
-      
-      // If current zoom is outside the base range or not in the list, add it temporarily
-      const existingOption = options.find(opt => opt.value === this.zoomFormData.zoom);
-      if (!existingOption) {
-        options.push({
-          value: this.zoomFormData.zoom,
-          name: `${currentZoom}%`
-        });
-        // Sort options by value
-        options.sort((a, b) => a.value - b.value);
-      }
-      
-      return [
-        {
-          key: "zoom",
-          type: "select",
-          options: options,
-        },
-      ];
-    },
   },
   methods: {
     toggleToolbar() {
       this.toolbarVisible = !this.toolbarVisible;
-    },
-    generateZoomOptions(min, max, step) {
-      const options = [];
-      for (let i = min; i <= max; i += step) {
-        options.push({
-          value: i / 100,
-          name: `${i}%`
-        });
-      }
-      return options;
     },
   },
 };
@@ -144,6 +129,7 @@ export default {
   gap: 12px;
   padding: 8px 16px;
   min-height: 48px;
+  position: relative;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: flex-end;
@@ -219,5 +205,32 @@ export default {
 .pdf-toolbar.loading :deep(.form-select) {
   pointer-events: none;
   opacity: 0.6;
+}
+
+.zoom-form-wrapper {
+  min-width: 100px;
+}
+
+.zoom-form-wrapper :deep(.form-label) {
+  display: none;
+}
+
+.zoom-form-wrapper :deep(.form-select) {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.zoom-form-wrapper :deep(.form-select:hover) {
+  border-color: #007bff;
+}
+
+.zoom-form-wrapper :deep(.form-select:focus) {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
 }
 </style>

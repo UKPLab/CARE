@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="editorModal" :props="$props" size="lg" name="editorModal">
+  <Modal ref="editorModal" :props="$props" lg name="editorModal">
     <template #title>
       <h5 class="modal-title">{{ title }}</h5>
     </template>
@@ -8,7 +8,7 @@
     </template>
     <template #footer>
       <button class="btn btn-secondary" data-bs-dismiss="modal" type="button"
-              @click="$refs.editorModal.close()">Close
+              @click="$refs.editorModal.close()">{{ $t('common.close') }}
       </button>
     </template>
   </Modal>

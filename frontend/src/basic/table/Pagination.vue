@@ -1,21 +1,13 @@
 <template>
   <div class="container ">
-    <div class="row justify-content-md-end align-items-center">
-      <div
-        v-if="totalItems > 0"
-        class="col-md-auto"
-      >
-        <span class="text-muted">
-          {{ rangeText }}
-        </span>
-      </div>
+    <div class="row justify-content-md-end">
       <div
         v-if="itemsPerPageListSelect.length > 0"
         class="col-md-auto">
         <div class="input-group">
           <span
             class="input-group-text"
-            title="Items per page">
+            :title="$t('common.itemsPerPage')">
             <LoadIcon icon-name="list-ul"/>
           </span>
           <select
@@ -28,34 +20,25 @@
             >
               {{ item }}
             </option>
-            <option :value="0">All</option>
+            <option
+              :value="0">
+              {{ $t('common.all') }}
+            </option>
           </select>
         </div>
       </div>
       <div class="col-md-auto">
-        <nav aria-label="Pagination">
-          <ul class="pagination mb-0">
-            <!-- First Page Link -->
-            <li
-              :class="{ disabled: currentPage === 1 }"
-              class="page-item"
-            >
-              <button
-                class="page-link"
-                :disabled="currentPage === 1"
-                @click="changePage(1)"
-              >
-                First
-              </button>
-            </li>
+        <nav
+          :aria-label="$t('common.label')"
+        >
+          <ul class="pagination">
             <!-- Previous Page Link -->
             <li
-              :class="{ disabled: currentPage === 1 }"
+              :class="{'disabled':(currentPage ===1)}"
               class="page-item"
             >
               <button
                 class="page-link"
-                :disabled="currentPage === 1"
                 @click="changePage(currentPage - 1)"
               >
                 <span aria-hidden="true">&laquo;</span>
@@ -90,28 +73,14 @@
             </li>
             <!-- Next Page Link -->
             <li
-              :class="{ disabled: currentPage === pages }"
+              :class="{'disabled':(currentPage === pages)}"
               class="page-item"
             >
               <button
                 class="page-link"
-                :disabled="currentPage === pages"
                 @click="changePage(currentPage + 1)"
               >
                 <span aria-hidden="true">&raquo;</span>
-              </button>
-            </li>
-            <!-- Last Page Link -->
-            <li
-              :class="{ disabled: currentPage === pages }"
-              class="page-item"
-            >
-              <button
-                class="page-link"
-                :disabled="currentPage === pages"
-                @click="changePage(pages)"
-              >
-                Last
               </button>
             </li>
           </ul>
@@ -166,37 +135,15 @@ export default {
       type: Number,
       required: false,
       default: 10
-    },
-    totalItems: {
-      type: Number,
-      required: false,
-      default: 0,
-    },
+    }
   },
   emits: ["updatePage", "updateItemsPerPage"],
   data() {
     return {
       page: 1,
       itemsPerPageSelect: 10,
-      itemsPerPageListSelect: [],
-    };
-  },
-  computed: {
-    rangeText() {
-      if (this.totalItems === 0) {
-        return "";
-      }
-
-      // Handle "All" items case
-      if (this.itemsPerPageSelect === 0) {
-        return `Showing 1-${this.totalItems} of ${this.totalItems}`;
-      }
-
-      const startItem = (this.currentPage - 1) * this.itemsPerPageSelect + 1;
-      const endItem = Math.min(this.currentPage * this.itemsPerPageSelect, this.totalItems);
-
-      return `Showing ${startItem}-${endItem} of ${this.totalItems}`;
-    },
+      itemsPerPageListSelect: []
+    }
   },
   watch: {
     itemsPerPageSelect: function (newVal) {

@@ -6,23 +6,24 @@
             class="text-center"
             style="margin-bottom: 20px"
         >
-          <LogoSvg
+          <IconAsset
               :height="200"
+              name="logo"
           />
         </div>
 
         <div class="card">
           <div class="card-header">
-            Reset Password
+            {{ $t('auth.resetPassword') }}
           </div>
 
           <div class="card-body mx-4 my-4">
             <!-- Loading State -->
             <div v-if="validatingToken" class="text-center">
               <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+                <span class="visually-hidden">{{ $t('common.loading') }}</span>
               </div>
-              <p class="mt-3">Validating reset token...</p>
+              <p class="mt-3">{{ $t('auth.messages.validatingResetToken') }}</p>
             </div>
 
             <!-- Error State -->
@@ -37,24 +38,24 @@
             <!-- Form - only show when token is validated and not successful yet -->
             <div v-if="!isSuccess && tokenValidated && !validatingToken">
               <BasicForm
-                ref="resetForm"
                 v-model="formData"
                 :fields="fields"
+                ref="resetForm"
               />
             </div>
 
               <BasicButton
                   v-if="!isSuccess && tokenValidated && !validatingToken"
                   class="btn btn-primary w-full max-w-xs mt-4 "
-                  text="Reset Password"
+                  :text="$t('auth.resetPassword')"
                   @click="checkForm"
               />
 
               <BasicButton
                   v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
                   :class="isSuccess ? 'btn btn-success w-full max-w-xs' : 'btn btn-secondary w-full max-w-xs'"
-                  :text="isSuccess ? 'Return to Login' : 'Back to Login'"
                   @click="toLogin"
+                  :text="isSuccess ? $t('auth.returnToLogin') : $t('auth.backToLogin')"
               />
           </div>
         </div>
@@ -71,15 +72,16 @@
  *
  * @author: Karim Ouf
  */
-import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthResetPassword",
-  components: {LogoSvg, BasicForm, BasicButton},
+  components: {IconAsset, BasicForm, BasicButton},
   data() {
     return {
       showError: false,
@@ -91,13 +93,17 @@ export default {
         newPassword: "",
         confirmPassword: ""
       },
-      fields: [
+    }
+  },
+  computed: {
+    fields() {
+      return [
         {
           key: "newPassword",
           type: "password",
           required: true,
-          placeholder: "Enter new password (minimum 8 characters, no emojis or spaces-only)",
-          invalidText: "Password must be at least 8 characters. Use letters, numbers, and standard punctuation.",
+          placeholder: this.$t('auth.placeholders.newPasswordPlaceholder'),
+          invalidText: this.$t('errors.validation.auth.passwordMinLength'),
           pattern: ".{8,}",
           default: "",
           size: 12,
@@ -106,25 +112,19 @@ export default {
           key: "confirmPassword",
           type: "password",
           required: true,
-          placeholder: "Confirm new password",
-          invalidText: "Passwords do not match.",
+          placeholder: this.$t('auth.placeholders.confirmPasswordPlaceholder'),
+          invalidText: this.$t('errors.validation.auth.passwordsDoNotMatch'),
           pattern: ".{8,}",
           default: "",
           size: 12,
         }
-      ],
-    }
-  },
-  computed: {
+      ];
+    },
     resetToken() {
       return this.$route.query.token;
     },
     validPassword() {
-      const p = this.formData.newPassword || "";
-      return p.length >= 8
-        && !/^\s*$/.test(p)
-        && !/[\x00-\x1F\x7F]/.test(p)
-        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
+      return this.formData.newPassword && this.formData.newPassword.length >= 8;
     },
     validConfirmPassword() {
       return this.formData.newPassword === this.formData.confirmPassword;
@@ -137,7 +137,7 @@ export default {
     // Check if token is present
     if (!this.resetToken) {
       this.showError = true;
-      this.errorMessage = "Invalid reset link. Please request a new password reset.";
+      this.errorMessage = this.$t('errors.auth.invalidResetLink');
       this.validatingToken = false;
       return;
     }
@@ -160,11 +160,11 @@ export default {
           this.tokenValidated = true;
         } else {
           this.showError = true;
-          this.errorMessage = response.data.message || "Invalid or expired reset token.";
+          this.errorMessage = resolveApiMessage(response.data, 'errors.auth.invalidOrExpiredToken');
         }
       } catch (error) {
         this.showError = true;
-        this.errorMessage = "Failed to validate reset token. Please try again.";
+        this.errorMessage = this.$t('errors.auth.failedToValidateToken');
         console.error('Token validation error:', error);
       } finally {
         this.validatingToken = false;
@@ -174,7 +174,7 @@ export default {
       // Ensure token is validated first
       if (!this.tokenValidated) {
         this.showError = true;
-        this.errorMessage = "Invalid reset token. Please request a new password reset.";
+        this.errorMessage = this.$t('errors.auth.invalidResetToken');
         return;
       }
       
@@ -182,7 +182,7 @@ export default {
       if (this.$refs.resetForm && this.$refs.resetForm.validate) {
         if (!this.$refs.resetForm.validate()) {
           this.showError = true;
-          this.errorMessage = "Please ensure passwords meet the requirements.";
+          this.errorMessage = this.$t('errors.validation.ensurePasswordRequirements');
           return;
         }
       }
@@ -192,7 +192,7 @@ export default {
         await this.resetPassword();
       } else {
         this.showError = true;
-        this.errorMessage = "Please fill in all fields correctly.";
+        this.errorMessage = this.$t('errors.validation.fillAllFields');
       }
     },
     async resetPassword() {
@@ -214,14 +214,14 @@ export default {
           
           this.isSuccess = true;
           this.showError = true; // Using this to show success message
-          this.errorMessage = "Password has been successfully reset. You can now login with your new password.";
+          this.errorMessage = resolveApiMessage(response.data, 'auth.messages.passwordResetSuccess');
         } else {
           this.showError = true;
-          this.errorMessage = response.data.message || "Failed to reset password.";
+          this.errorMessage = resolveApiMessage(response.data, 'errors.auth.failedToResetPassword');
         }
       } catch (error) {
         this.showError = true;
-        this.errorMessage = "Failed to reset password. Please try again later.";
+        this.errorMessage = this.$t('errors.auth.failedToResetPassword');
         console.error('Reset password error:', error);
       }
     },

@@ -1,9 +1,9 @@
 <template>
   <div class="container">
-    <h1>Active Study Sessions</h1>
+    <h1>{{ $t('studies.dashboard.activeSessions.title') }}</h1>
     <div v-if="!studiesFiltered || studiesFiltered.length === 0">
       <p class="fs-6">
-        You have no active study sessions. Enter a study by clicking on the study link or create your own study.
+        {{ $t('studies.dashboard.activeSessions.noSessions') }}
       </p>
     </div>
     <div v-else>
@@ -27,7 +27,7 @@
               icon-name="stopwatch"
               style="margin-right:0.5rem"
             />
-            <span>{{ s.end !== null ? studyTimes[s.id] : 'no due date' }}</span>
+            <span>{{ s.end !== null ? studyTimes[s.id] : $t('studies.dashboard.noDueDate')}}</span>
           </template>
         </Card>
         <hr>
@@ -36,10 +36,10 @@
   </div>
 
   <div class="container">
-    <h1>Closed Study Sessions</h1>
+    <h1>{{ $t('studies.dashboard.closedSessions.title') }}</h1>
     <div v-if="!studiesClosed || studiesClosed.length === 0">
       <p class="fs-6">
-        You have no closed study sessions.
+        {{ $t('studies.dashboard.closedSessions.noSessions') }}
       </p>
     </div>
     <div v-else>
@@ -104,18 +104,18 @@ export default {
           const firstName = this.$store.getters["table/user/get"](study.userId)?.firstName;
             const lastName = this.$store.getters["table/user/get"](study.userId)?.lastName;
           if (this.canReadPrivateInformation && firstName && lastName) {
-            study.title = study.name ? `Study: ${study.name} (from ${firstName} ${lastName})` : '<no name>';
+            study.title = study.name ? this.$t('studies.dashboard.studyTitleWithAuthor', { name: study.name, author: `${firstName} ${lastName}` }) : this.$t('studies.dashboard.noName');
           } else {
-            study.title = study.name ? `Study: ${study.name}` : '<no name>';
+            study.title = study.name ? this.$t('studies.dashboard.studyTitle', { name: study.name }) : this.$t('studies.dashboard.noName');
           }
           return study;
         });
     },
     studiesFiltered() {
-      return this.studies.filter(s => this.isStudyAvailable(s));
+      return this.studies.filter(s => !this.isStudyClosed(s));
     },
     studiesClosed() {
-      return this.studies.filter(s => !this.isStudyAvailable(s));
+      return this.studies.filter(s => this.isStudyClosed(s));
     },
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
@@ -137,20 +137,16 @@ export default {
         this.$socket.emit("studySessionSubscribe", {studyId: studyId});
       }
     },
-    isStudyAvailable(study) {
-      if (!study) {
-        return false;
-      }
-      if (study.closed !== null) {
-        return false;
-      }
-      if (!study.multipleSubmit && study.end) {
-        const endDate = new Date(study.end);
-        if (!isNaN(endDate.getTime()) && endDate < new Date()) {
-          return false;
+    isStudyClosed(study) {
+      if (study) {
+        if (study.closed) {
+          return true;
+        }
+        if (!study.multipleSubmit && study.end && new Date(study.end) < Date.now()) {
+          return true;
         }
       }
-      return true;
+      return false;
     },
   }
 }

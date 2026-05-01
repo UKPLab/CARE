@@ -4,18 +4,18 @@
     name="pdfDownload"
   >
     <template #title>
-      Download PDF
+      {{ $t('documents.downloadPdf.title') }}
     </template>
     <template #body>
       <div v-if="!isLoading" class="form-check mt-3">
         <input
-          id="downloadWithAnnotations"
-          v-model="downloadWithAnnotations"
           class="form-check-input"
           type="checkbox"
+          id="downloadWithAnnotations"
+          v-model="downloadWithAnnotations"
         />
         <label class="form-check-label" for="downloadWithAnnotations">
-          Include annotations in PDF
+          {{ $t('documents.downloadPdf.includeAnnotations') }}
         </label>
       </div>
       <Loading :loading="isLoading" text="Preparing your PDF..." />
@@ -25,13 +25,13 @@
         <BasicButton
           class="btn btn-secondary"
           :disabled="isLoading"
-          title="Cancel"
+          :title="$t('common.cancel')"
           @click="$refs.pdfDownloadModal.close()"
         />
         <BasicButton
           class="btn btn-primary"
           :disabled="isLoading"
-          title="Download"
+          :title="$t('common.download')"
           @click="confirmPDFDownload"
         />
       </span>
@@ -43,7 +43,7 @@
 import Modal from "@/basic/Modal.vue";
 import Loading from "@/basic/Loading.vue";
 import BasicButton from "@/basic/Button.vue";
-import { downloadDocument } from "@/assets/utils";
+import { downloadDocument, resolveApiMessage } from "@/assets/utils";
 
 /**
  * DownloadPDFModal - Modal for downloading a PDF document
@@ -91,17 +91,17 @@ export default {
               );
               this.$refs.pdfDownloadModal.close();
               this.eventBus.emit("toast", {
-                title: "PDF downloaded successfully",
-                message: "Your PDF with annotations has been downloaded.",
+                title: this.$t('documents.downloadPdf.toasts.successTitle'),
+                message: this.$t('documents.downloadPdf.toasts.successMessageWithAnnotations'),
                 variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Failed to download the PDF",
+                title: this.$t('documents.downloadPdf.toasts.failedTitle'),
                 message:
                   res.data && res.data.message
-                    ? res.data.message
-                    : "Unknown error",
+                    ? resolveApiMessage(res.data)
+                    : this.$t('documents.downloadPdf.toasts.unknownError'),
                 variant: "danger",
               });
               this.isLoading = false;
@@ -132,17 +132,17 @@ export default {
               );
               this.$refs.pdfDownloadModal.close();
               this.eventBus.emit("toast", {
-                title: "PDF downloaded successfully",
-                message: "Your PDF has been downloaded.",
+                title: this.$t('documents.downloadPdf.toasts.successTitle'),
+                message: this.$t('documents.downloadPdf.toasts.successMessage'),
                 variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Failed to download the PDF",
+                title: this.$t('documents.downloadPdf.toasts.failedTitle'),
                 message:
                   res.data && res.data.message
-                    ? res.data.message
-                    : "Unknown error",
+                    ? resolveApiMessage(res.data)
+                    : this.$t('documents.downloadPdf.toasts.unknownError'),
                 variant: "danger",
               });
               this.$refs.pdfDownloadModal.close();

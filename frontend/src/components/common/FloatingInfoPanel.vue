@@ -8,22 +8,22 @@
     @mouseleave="onMouseLeave"
   >
     <div class="info-panel-header">
-      <h6 class="mb-2">{{ selectedItem.name }}</h6>
+      <h6 class="mb-2">{{ translateMaybeKey(selectedItem.name) }}</h6>
     </div>
     <div class="info-panel-content">
       <div v-if="selectedItem.description" class="mb-3">
-        <strong>Description:</strong>
-        <p class="mb-0 mt-1">{{ selectedItem.description }}</p>
+        <strong>{{ $t('infoPanel.description')}}</strong>
+        <p class="mb-0 mt-1">{{ translateMaybeKey(selectedItem.description) }}</p>
       </div>
       
       <!-- Show maximum points for rubric groups only (groups have maxScore) -->
       <div v-if="selectedItem.maxScore !== undefined" class="mb-3">
-        <strong>Maximum Points:</strong>
-        <span class="badge bg-secondary ms-2">{{ selectedItem.maxScore }} P</span>
+        <strong>{{ $t('infoPanel.maxPoints')}}</strong>
+        <span class="badge bg-secondary ms-2">{{ selectedItem.maxScore }} {{ $t('infoPanel.pointsAbbreviation')}}</span>
       </div>
       
       <div v-if="selectedItem.scoring && selectedItem.scoring.length > 0">
-        <strong>Scoring Criteria:</strong>
+        <strong>{{ $t('infoPanel.scoringCriteria')}}</strong>
         <div class="scoring-list mt-2">
           <div 
             v-for="(option, index) in selectedItem.scoring" 
@@ -31,8 +31,8 @@
             class="scoring-item p-2 border rounded mb-2 border-secondary"
           >
             <div class="d-flex justify-content-between align-items-start">
-              <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} P</span>
-              <span class="flex-grow-1">{{ option.description }}</span>
+              <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} {{ $t('infoPanel.pointsAbbreviation')}}</span>
+              <span class="flex-grow-1">{{ translateMaybeKey(option.description) }}</span>
             </div>
           </div>
         </div>
@@ -42,6 +42,8 @@
 </template>
 
 <script>
+import LoadIcon from "@/basic/Icon.vue";
+
 /**
  * FloatingInfoPanel Component
  * 
@@ -52,6 +54,7 @@
  */
 export default {
   name: "FloatingInfoPanel",
+  components: { LoadIcon },
   
   props: {
     show: {
@@ -103,7 +106,7 @@ export default {
   
   data() {
     return {
-      localIsPinned: this.isPinned,
+      isPinned: false,
       isHovering: false,
       closeTimer: null,
       panelStyle: {}
@@ -111,15 +114,12 @@ export default {
   },
   
   watch: {
-    isPinned(newVal) {
-      this.localIsPinned = newVal;
-    },
     show(newVal) {
       if (newVal) {
         this.calculatePosition();
         this.clearCloseTimer();
       } else {
-        this.localIsPinned = false;
+        this.isPinned = false;
         this.isHovering = false;
         this.clearCloseTimer();
       }
@@ -157,6 +157,12 @@ export default {
   },
   
   methods: {
+    translateMaybeKey(value) {
+      if (!value || typeof value !== "string") {
+        return value;
+      }
+      return this.$te(value) ? this.$t(value) : value;
+    },
     calculatePosition() {
       if (!this.referenceElement) return;
       
@@ -239,10 +245,12 @@ export default {
     },
     
     togglePin() {
-      this.localIsPinned = !this.localIsPinned;
-      this.$emit('pin-changed', this.localIsPinned);
+      console.log("Toggling pin state:", this.isPinned);
+      this.isPinned = !this.isPinned;
+      console.log("Pin state changed to:", this.isPinned);
+      this.$emit('pin-changed', this.isPinned);
       
-      if (!this.localIsPinned) {
+      if (!this.isPinned) {
         this.requestClose();
       }
     },
@@ -254,16 +262,18 @@ export default {
     },
     
     onMouseLeave() {
+      console.log("Mouse left info panel");
       this.isHovering = false;
       this.$emit('mouse-leave');
       this.requestClose();
     },
     
     requestClose() {
-      if (this.localIsPinned) return;
+      if (this.isPinned) return;
+      console.log("Requesting close of info panel after delay:", this.closeDelay);
       this.clearCloseTimer();
       this.closeTimer = setTimeout(() => {
-        if (!this.localIsPinned && !this.isHovering) {
+        if (!this.isPinned && !this.isHovering) {
           this.$emit('close-requested');
         }
       }, this.closeDelay);
@@ -296,19 +306,19 @@ export default {
     },
     
     close() {
-      this.localIsPinned = false;
+      this.isPinned = false;
       this.isHovering = false;
       this.clearCloseTimer();
       this.$emit('update:show', false);
     },
     
     pin() {
-      this.localIsPinned = true;
+      this.isPinned = true;
       this.$emit('pin-changed', true);
     },
     
     unpin() {
-      this.localIsPinned = false;
+      this.isPinned = false;
       this.$emit('pin-changed', false);
       this.requestClose();
     }

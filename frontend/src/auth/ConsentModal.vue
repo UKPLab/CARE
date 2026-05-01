@@ -5,10 +5,8 @@
     name="terms"
     disable-keyboard
     remove-close
-    @show="handleModalShow"
-    @hide="handleModalHide"
   >
-    <template #title> Terms</template>
+    <template #title>{{ $t('auth.termsOfService') }}</template>
     <template #body>
       <div class="terms-wrapper" :class="{ 'is-bottom': isAtBottom }">
         <div 
@@ -29,7 +27,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I agree to my data being made available for research purposes
+          {{ $t('auth.acceptDataSharing') }}
         </label>
       </div>
       <div
@@ -42,7 +40,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I allow the collection of behaviour statistics for research purpose
+          {{ $t('auth.acceptStatsBehavior') }}
         </label>
       </div>
     </template>
@@ -53,14 +51,14 @@
           class="btn btn-secondary"
           @click="handleDecline"
         >
-          Decline
+          {{ $t('common.decline') }}
         </button>
         <button
           type="button"
           class="btn btn-primary"
           @click="handleAccept"
         >
-          Accept & Continue
+          {{ $t('auth.acceptAndContinue') }}
         </button>
       </div>
     </template>
@@ -79,6 +77,7 @@ import Modal from "@/basic/Modal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import BasicEditor from "@/basic/editor/Editor.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ConsentModal",
@@ -88,7 +87,6 @@ export default {
       acceptStats: false,
       acceptDataSharing: false,
       isAtBottom: false,
-      modalVisible: false,
     };
   },
   computed: {
@@ -114,23 +112,11 @@ export default {
   },
   methods: {
     open() {
-      if (this.modalVisible) {
-        return;
-      }
       this.$refs.modal.open();
       this.$nextTick(() => {
         // Check if content needs scrolling upon opening the modal
         this.checkScrollPosition();
       });
-    },
-    close() {
-      if (this.modalVisible) {
-        this.$refs.modal.close();
-      }
-    },
-    // Public method
-    isVisible() {
-      return this.modalVisible;
     },
     checkScrollPosition() {
       const container = this.$refs.termsContainer;
@@ -151,7 +137,7 @@ export default {
     },
     async handleDecline() {
       this.resetForm();
-      this.close();
+      this.$refs.modal.close();
       await axios.get(getServerURL() + "/auth/logout", {withCredentials: true});
       await this.$router.push("/login");
     },
@@ -164,17 +150,17 @@ export default {
       this.$socket.emit("userConsentUpdate", consentData, (res) => {
         if (res.success) {
           this.resetForm();
-          this.close();
+          this.$refs.modal.close();
           this.$store.commit("auth/SET_USER", res.data);
           this.eventBus.emit("toast", {
-            title: "Terms successful updated",
-            message: "The terms are successfully updated",
+            title: this.$t('auth.messages.termsUpdated'),
+            message: this.$t('auth.messages.termsUpdatedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Error in updating terms",
-            message: res.message,
+            title: this.$t('errors.auth.termsUpdateError'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -183,12 +169,6 @@ export default {
     resetForm() {
       this.acceptStats = false;
       this.acceptDataSharing = false;
-    },
-    handleModalShow() {
-      this.modalVisible = true;
-    },
-    handleModalHide() {
-      this.modalVisible = false;
     },
   },
 };

@@ -5,7 +5,7 @@
       class="flex-grow-1 text-end"
     >
       {{ displayText }}
-      <span v-if="'unit' in options"> {{ options.unit }}</span>
+      <span v-if="'unit' in options"> {{ $te(options.unit) ? $t(options.unit) : options.unit }}</span>
     </span>
     <input
       :id="options.key"
@@ -51,7 +51,7 @@ export default {
           (item) => item.from === Number(this.currentData)
         );
         if (mapping) {
-          return mapping.to;
+          return this.$te(mapping.to) ? this.$t(mapping.to) : mapping.to;
         }
       }
       return this.currentData;

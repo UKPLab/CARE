@@ -4,7 +4,7 @@
       <button
           class="btn btn-outline-secondary"
           type="button"
-          title="Copy config"
+          :title="$t('nlp.copyConfig')"
           @click="copyConfig"
       >
         <LoadIcon
@@ -15,7 +15,7 @@
       <button
         class="btn btn-outline-secondary"
         type="button"
-        title="Download config"
+        :title="$t('nlp.downloadConfig')"
         @click="downloadConfig"
       >
         <LoadIcon
@@ -28,7 +28,7 @@
         :class="commandEditorActive ? 'active' : ''"
         :aria-pressed="commandEditorActive"
         type="button"
-        title="Send command"
+        :title="$t('nlp.sendCommand')"
         @click="commandEditorActive=!commandEditorActive"
       >
         <LoadIcon
@@ -51,7 +51,7 @@
       </div>
       <div class="row py-2">
         <span class="fs-5">
-          Example
+          {{ $t("common.example") }}
         </span>
       </div>
       <div class="row">
@@ -59,7 +59,7 @@
           <div class="container border border-1 rounded-3 h-100">
             <div class="row mb-2 py-3">
               <div class="col justify-content-center">
-                <span class="fs-6 badge bg-success">Input</span>
+                <span class="fs-6 badge bg-success">{{ $t("common.input") }}</span>
               </div>
             </div>
             <div class="row justify-content-center">
@@ -73,7 +73,7 @@
           <div class="container border border-1 rounded-3 h-100">
             <div class="row mb-2 py-3">
               <div class="col justify-content-center">
-                <span class="fs-6 badge bg-primary">Output</span>
+                <span class="fs-6 badge bg-primary">{{ $t("common.output") }}</span>
               </div>
             </div>
             <div class="row justify-content-center">
@@ -87,7 +87,7 @@
     </div>
     <hr>
     <span class="fs-5">
-      Config
+      {{ $t("common.config") }}
     </span>
     <div
         class="overflow-auto py-2"
@@ -118,7 +118,7 @@
   </div>
   <div v-else>
     <span class="text-danger">
-      The provided service is invalid. Please consult with the service provider.
+      {{ $t("errors.nlp.invalidService") }}
     </span>
   </div>
 </template>
@@ -213,21 +213,21 @@ export default {
         try {
           await navigator.clipboard.writeText(JSON.stringify(this.currentData, null, 2));
           this.eventBus.emit('toast', {
-            title: "Config copied",
-            message: "Skill configuration copied to clipboard!",
+            title: this.$t("nlp.configCopied"),
+            message: this.$t("nlp.skillConfigCopied"),
             variant: "success"
           });
-        } catch (_error) {
+        } catch ($e) {
           this.eventBus.emit('toast', {
-            title: "Config not copied",
-            message: "Could not copy skill configuration to clipboard!",
+            title: this.$t("errors.clipboard.configNotCopied"),
+            message: this.$t("errors.clipboard.skillConfigCopyFailed"),
             variant: "danger"
           });
         }
       } else {
         this.eventBus.emit('toast', {
-          title: "Config not copied",
-          message: "Configuration not loaded or empty, cannot copy.",
+          title: this.$t("errors.clipboard.configNotCopied"),
+          message: this.$t("errors.nlp.configCopyFailed"),
           variant: "danger"
         });
       }
@@ -237,14 +237,14 @@ export default {
         downloadObjectsAs(this.currentData, `${this.currentData.name}`, "json");
 
         this.eventBus.emit('toast', {
-          title: "Download Success",
-          message: `Downloaded ${this.currentData.name} configuration`,
+          title: this.$t("nlp.downloadSuccess"),
+          message: this.$t("nlp.downloadedConfigMessage", { name: this.currentData.name }),
           variant: "success"
         });
       } else {
         this.eventBus.emit('toast', {
-          title: "Download Failed",
-          message: `Failed to download skill config, as it is no loaded`,
+          title: this.$t("errors.nlp.downloadFailed"),
+          message: this.$t("errors.nlp.configDownloadFailed"),
           variant: "danger"
         });
       }

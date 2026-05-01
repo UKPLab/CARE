@@ -3,7 +3,7 @@
     <div
         class="d-flex justify-content-between align-items-center py-2"
         style="cursor: pointer"
-        @click="$emit('toggle')"
+        @click="toggleCriterion"
     >
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
@@ -13,7 +13,7 @@
           />
         </span>
         <span class="criterion-name">
-          {{ criterion.name || 'Unnamed criterion' }}
+          {{ criterion.name || $t('assessment.criteria.unnamedCriterion') }}
         </span>
       </div>
 
@@ -34,6 +34,7 @@
         <span
             class="badge"
             :class="(readOnly || isSaved) ? 'bg-success' : 'bg-secondary'"
+            :title="`isSaved: ${isSaved}`"
         >
           {{ displayScore }} P
         </span>
@@ -45,12 +46,12 @@
         class="criterion-assessment mt-2 px-3 pb-2"
     >
       <div class="assessment-text">
-        <strong>Justification:</strong>
+        <strong>{{ $t('assessment.criteria.justification') }}</strong>
 
         <!-- Read-only view -->
         <div v-if="!isEditing" class="assessment-content">
           <p class="mb-0 mt-1">
-            {{ state.assessment || 'No justification provided' }}
+            {{ state.assessment || $t('assessment.criteria.noJustification') }}
           </p>
         </div>
 
@@ -58,13 +59,11 @@
         <div v-else class="assessment-edit-form">
           <div class="mb-3">
             <textarea
-                ref="assessmentTextarea"
                 v-model="localAssessment"
                 class="form-control assessment-textarea"
-                placeholder="Edit the justification..."
+                :placeholder="$t('assessment.criteria.editPlaceholder')"
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
-                @input="autoResizeTextarea"
             ></textarea>
           </div>
         </div>
@@ -78,22 +77,21 @@
             class="d-flex justify-content-between align-items-center"
         >
           <div>
-            <BasicButton
+            <button
                 v-if="!readOnly"
-                class="btn-outline-primary btn-sm"
-                title="Edit"
-                text=""
-                icon="pen"
-                :props="{ criterionName: criterion.name }"
-                @click="startEdit"
-            />
+                class="btn btn-outline-primary btn-sm"
+                :title="$t('assessment.criteria.edit')"
+                @click.stop="startEdit"
+            >
+              <LoadIcon icon-name="pen" :size="14"/>
+            </button>
           </div>
 
           <div v-if="!readOnly" class="d-flex align-items-center gap-2">
             <select
                 v-model.number="scoreProxy"
                 class="form-select form-select-sm score-dropdown"
-                title="Change score"
+                :title="$t('assessment.criteria.changeScore')"
             >
               <!-- Use scoring list if present -->
               <template v-if="hasScoringList">
@@ -118,37 +116,34 @@
               </template>
             </select>
 
-            <BasicButton
-                :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
-                :title="isSaved ? 'Assessment saved' : 'Save assessment'"
-                text=""
-                icon="floppy"
-                :props="{ criterionName: criterion.name }"
-                @click="saveAssessment"
-            />
+            <button
+                :class="['btn btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
+                :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
+                @click.stop="saveAssessment"
+            >
+              <LoadIcon icon-name="floppy" :size="14"/>
+            </button>
           </div>
         </div>
 
         <!-- Editing actions -->
         <div v-else class="d-flex gap-2">
-          <BasicButton
+          <button
               v-if="!readOnly"
-              class="btn-primary btn-sm"
-              title="Save"
-              text=""
-              icon="floppy"
-              :props="{ criterionName: criterion.name }"
-              @click="saveEdit"
-          />
-          <BasicButton
+              class="btn btn-primary btn-sm"
+              :title="$t('assessment.criteria.saveEdit')"
+              @click.stop="saveEdit"
+          >
+            <LoadIcon icon-name="floppy" :size="14"/>
+          </button>
+          <button
               v-if="!readOnly"
-              class="btn-secondary btn-sm"
-              title="Cancel"
-              text=""
-              icon="x-lg"
-              :props="{ criterionName: criterion.name }"
-              @click="cancelEdit"
-          />
+              class="btn btn-secondary btn-sm"
+              :title="$t('assessment.criteria.cancel')"
+              @click.stop="cancelEdit"
+          >
+            <LoadIcon icon-name="x-lg" :size="14"/>
+          </button>
         </div>
       </div>
     </div>
@@ -162,11 +157,10 @@
  * @author Akash Gundapuneni, Dennis Zyska
  */
 import LoadIcon from "@/basic/Icon.vue";
-import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AssessmentCriteria",
-  components: {LoadIcon, BasicButton},
+  components: {LoadIcon},
   props: {
     criterion: {
       type: Object,
@@ -181,21 +175,16 @@ export default {
       required: false,
       default: false,
     },
-    isExpanded: {
-      type: Boolean,
-      default: false,
-    },
   },
   emits: [
     "update:modelValue",
     "open-info-panel",
     "close-info-panel",
     "toggle-info-panel-pin",
-    "toggle",
-    "saved-and-next",
   ],
   data() {
     return {
+      isExpanded: false,
       localAssessment: "",
     };
   },
@@ -280,6 +269,9 @@ export default {
     },
   },
   methods: {
+    toggleCriterion() {
+      this.isExpanded = !this.isExpanded;
+    },
     startEdit() {
       if (this.readOnly) return;
       this.localAssessment = this.state.assessment || "";
@@ -287,9 +279,6 @@ export default {
         ...this.state,
         isEditing: true,
       };
-      this.$nextTick(() => {
-        this.autoResizeTextarea();
-      });
     },
     saveEdit() {
       if (this.readOnly) return;
@@ -314,19 +303,11 @@ export default {
         ...this.state,
         isSaved: true,
       };
-      this.$emit("saved-and-next");
     },
     getTextareaRows(text) {
       if (!text) return 3;
       const lines = text.split("\n").length;
       return Math.min(Math.max(lines, 3), 10);
-    },
-    autoResizeTextarea() {
-      const textarea = this.$refs.assessmentTextarea;
-      if (textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-      }
     },
   },
 };
@@ -377,7 +358,6 @@ export default {
   border-radius: 6px;
   font-size: 0.9rem;
   resize: vertical;
-  overflow: hidden;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 

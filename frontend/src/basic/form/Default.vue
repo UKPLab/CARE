@@ -12,7 +12,7 @@
         :maxlength="options.maxLength"
         :min="options.min"
         :name="options.key"
-        :placeholder="options.placeholder"
+        :placeholder="translatedPlaceholder"
         :required="options.required"
         :type="options.type"
         class="form-control"
@@ -63,6 +63,15 @@ export default {
     return {
       currentData: "",
     };
+  },
+  computed: {
+    translatedPlaceholder() {
+      const placeholder = this.options.placeholder;
+      if (typeof placeholder !== "string") {
+        return placeholder;
+      }
+      return this.$te(placeholder) ? this.$t(placeholder) : placeholder;
+    },
   },
   watch: {
     currentData() {

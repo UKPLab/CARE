@@ -16,12 +16,12 @@
       </div>
       
       <div v-else class="alert alert-info">
-        No {{ getTableType() }} available for selection.
+        {{ $t('errors.file.noTableAvailable', { tableType: getTableType() }) }}
       </div>
     </div>
     
     <div v-else class="alert alert-info">
-      No file selection parameters found. All parameters are using configuration-based inputs.
+      {{ $t('errors.file.noParameters') }}
     </div>
   </div>
 </template>
@@ -126,11 +126,11 @@ export default {
         const user = this.$store.getters["table/user/get"](submission.userId);
         return {
           id: submission.id,
-          userName: user ? user.userName : "N/A",
-          firstName: user ? user.firstName : "N/A",
-          lastName: user ? user.lastName : "N/A",
+          userName: user ? user.userName : this.$t('common.na'),
+          firstName: user ? user.firstName : this.$t('common.na'),
+          lastName: user ? user.lastName : this.$t('common.na'),
           group: (submission.group !== null && submission.group !== undefined && submission.group !== '') ? submission.group : '',
-          data_existing: dataExists ? 'Yes' : 'No',
+          data_existing: dataExists ? this.$t('common.yes') : this.$t('common.no'),
           createdAt: submission.createdAt,
         };
       });
@@ -141,27 +141,27 @@ export default {
       const files = this.modelValue[this.tableParam.name];
       
       if (files && Array.isArray(files) && files.length > 0) {
-        return `Files selected for ${this.tableParam.name}: ${files.length} file(s)`;
+        return this.$t('nlp.inputFiles.filesSelectedFor', { param: this.tableParam.name, count: files.length });
       }
-      return `Please select files for parameter: ${this.tableParam.name}`;
+      return this.$t('nlp.inputFiles.selectFilesFor', { param: this.tableParam.name });
     },
     documentColumns() {
       return [
-        { key: 'id', name: 'ID' },
-        { key: 'name', name: 'Document Name' },
-        { key: 'type', name: 'Type' },
-        { key: 'createdAt', name: 'Created At' },
+        { key: 'id', name: this.$t('common.id') },
+        { key: 'name', name: this.$t('common.name') },
+        { key: 'type', name: this.$t('common.type') },
+        { key: 'createdAt', name: this.$t('common.createdAt') },
       ];
     },
     submissionColumns() {
       return [
-        { key: 'id', name: 'ID' },
-        { key: 'userName', name: 'User Name' },
-        { key: 'firstName', name: 'First Name' },
-        { key: 'lastName', name: 'Last Name'},
-        { key: 'group', name: 'GroupID', filter: this.groupFilterOptions },
-        { key: 'data_existing', name: 'Data Existing', filter: this.dataExistingFilterOptions },
-        { key: 'createdAt', name: 'Created At' },
+        { key: 'id', name: this.$t('common.id') },
+        { key: 'userName', name: this.$t('common.userName') },
+        { key: 'firstName', name: this.$t('common.firstName') },
+        { key: 'lastName', name: this.$t('common.lastName') },
+        { key: 'group', name: this.$t('common.groupId'), filter: this.groupFilterOptions },
+        { key: 'data_existing', name: this.$t('common.dataExisting'), filter: this.dataExistingFilterOptions },
+        { key: 'createdAt', name: this.$t('common.createdAt') },
       ];
     },
     /**
@@ -190,7 +190,7 @@ export default {
         .map((g) => ({ key: g, name: g }));
       
       if (hasEmptyGroups) {
-        options.unshift({ key: '', name: 'No GroupID' });
+        options.unshift({ key: '', name: this.$t('nlp.inputFiles.noGroupId') });
       }
       
       return options;
@@ -289,7 +289,7 @@ export default {
   },
   methods: {
     getTableType() {
-      return this.currentTableType === 'document' ? 'Documents' : 'Submissions';
+      return this.currentTableType === 'document' ? this.$t('nlp.inputFiles.documents') : this.$t('nlp.inputFiles.submissions');
     },
     syncSelectedFiles(savedSelection) {
       if (savedSelection && Array.isArray(savedSelection) && savedSelection.length > 0) {

@@ -11,16 +11,8 @@
           id="viewerContainer"
           ref="viewer"
           class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll; position: relative;"
+          style="overflow-y: scroll;"
         >
-          <!-- Read-Only Toolbar Bar -->
-          <div
-            v-if="!toolbarVisible && finalReadOnly"
-            class="readonly-toolbar-bar"
-          >
-            <LoadIcon icon-name="lock-fill" :size="16" />
-            <span class="readonly-toolbar-text">Read-Only Mode</span>
-          </div>
           <div
             :id="`editor-container-${studyStepId}`"
             @paste="onPaste"
@@ -45,16 +37,12 @@ import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
-import {downloadDocument} from "@/assets/utils.js";
-import LoadIcon from "@/basic/Icon.vue";
+import {downloadDocument, resolveApiMessage} from "@/assets/utils.js";
 
 const Delta = Quill.import('delta');
 
 export default {
   name: "EditorView",
-  components: {
-    LoadIcon,
-  },
   fetch_data: ["document_edit"],
   subscribeTable: ["document_data"],
   inject: {
@@ -91,11 +79,6 @@ export default {
     pendingNlpInsertion: {
       default: null,
     },
-    currentStudyStep: {
-      type: Object,
-      required: false,
-      default: null
-    },
   },
   emits: ["update:data"],
   data() {
@@ -114,12 +97,6 @@ export default {
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
-    },
-    componentReadOnly() {
-      return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
-    },
-    finalReadOnly() {
-      return this.readOnly || this.componentReadOnly;
     },
     allEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
@@ -155,7 +132,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
     toolbarVisible() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.finalReadOnly;
+      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
     },
     editorOptions() {
       const toolsMap = {
@@ -234,17 +211,15 @@ export default {
         this.processEdits(appliedEdits);
     },
     
-    finalReadOnly: {
+    readOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
-        const toolbar = this.editor.getEditor().getModule("toolbar");
-        if (toolbar && toolbar.container) {
-          if (newReadOnly) {
-            toolbar.container.style = "display:none"
-          } else {
-            toolbar.container.style = "display:block"
-          }
+        if (newReadOnly) {
+          this.editor.getEditor().getModule("toolbar").container.style = "display:none"
+        } else {
+          this.editor.getEditor().getModule("toolbar").container.style = "display:block"
         }
+
       }
     },
   },
@@ -268,7 +243,7 @@ export default {
         });
       }
 
-      this.editor.getEditor().enable(!this.finalReadOnly);
+      this.editor.getEditor().enable(!this.readOnly);
       this.editor.getEditor().on('text-change', this.handleTextChange);
       // Store event handler references for cleanup
       this.selectEditHandler = (data) => {
@@ -327,8 +302,8 @@ export default {
       this.$socket.emit("documentOpen", {documentId: this.documentId}, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Document Open Error",
-            message: res.message,
+            title: this.$t('errors.documents.documentOpenError'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -346,8 +321,8 @@ export default {
     this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
       if (!res.success) {
         this.eventBus.emit("toast", {
-          title: "Document Close Error",
-          message: res.message,
+          title: this.$t('errors.documents.documentCloseError'),
+          message: resolveApiMessage(res),
           variant: "danger",
         });
       }
@@ -373,6 +348,7 @@ export default {
       }
     },
     addText(text) {
+      console.log("Adding text to editor:", text);
       if (!text || !this.editor) {
         return;
       }
@@ -400,8 +376,8 @@ export default {
           this.emitContentForPlaceholders();
         } else {
           this.eventBus.emit("toast", {
-            title: "No Cursor Position",
-            message: "Please click in the editor to set the cursor position before inserting a placeholder.",
+            title: this.$t('errors.editor.cursorPositionError.title'),
+            message: this.$t('errors.editor.cursorPositionError.message'),
             variant: "warning",
           });
         }
@@ -452,6 +428,7 @@ export default {
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
+        console.log("Delta buffer length:", this.deltaBuffer.length);
         this.debouncedProcessDelta();
 
         this.emitContentForPlaceholders();
@@ -474,8 +451,8 @@ export default {
             if (!res.success) {
               quill.setContents(backup);
               this.eventBus.emit("toast", {
-                title: "Previous edit failed; try again",
-                message: res.message,
+                title: this.$t('errors.editor.previousEditFailed'),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }
@@ -499,6 +476,23 @@ export default {
               }
             })
     },
+
+    async leave() {
+      if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
+        return new Promise((resolve) => {
+          this.$refs.leavePageConf.open(
+            this.$t('editor.unsavedWarning.unsavedChanges'),
+            this.$t('editor.unsavedWarning.unsavedChangesMessage'),
+            null,
+            function (val) {
+              return resolve(val);
+            }
+          );
+        });
+      } else {
+        return true;
+      }
+    },
     async initializeEditorWithContent(deltas) {
       if (this.editor) {
         this.editor.getEditor().setContents(deltas);
@@ -517,7 +511,7 @@ export default {
     },
     handleDocumentError(error) {
       this.eventBus.emit('toast', {
-        title: "Document error",
+        title: this.$t('errors.documents.documentError'),
         message: error.message,
         variant: "danger"
       });
@@ -525,7 +519,7 @@ export default {
     downloadDocumentAsHTML() {
       const editorContent = this.editor.getEditor().root.innerHTML;
       const document = this.$store.getters["table/document/getByHash"](this.documentHash);
-      const documentName = document ? document.name : "document";
+      const documentName = document ? document.name : this.$t('documents.documentDefaultName');
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
     },
@@ -534,20 +528,5 @@ export default {
 </script>
 
 <style scoped>
-.readonly-toolbar-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: #f3f3f3;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 0px;
-  color: #666;
-  font-size: 14px;
-}
 
-.readonly-toolbar-text {
-  font-weight: 500;
-}
 </style>

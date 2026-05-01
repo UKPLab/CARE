@@ -1,7 +1,54 @@
 import { FileSaver } from "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
 import yaml from "js-yaml";
+import { i18n } from '../main.js';
 
+export function resolveApiMessage(response, fallbackKey = 'errors.server.unknownError') {
+    if (response && response.key) {
+        return i18n.global.t(response.key, response.params || {});
+    }
+    if (response && response.message) {
+        if (i18n.global.te(response.message)) {
+            return i18n.global.t(response.message);
+        }
+        return response.message;
+    }
+    return i18n.global.t(fallbackKey);
+}
+
+function getCurrentLocale() {
+    const locale = i18n?.global?.locale;
+    if (typeof locale === "string") {
+        return locale;
+    }
+    return locale?.value;
+}
+
+function toValidDate(value) {
+    if (value === null || value === undefined || value === "") {
+        return null;
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatLocalizedDate(value, options = {}) {
+    const date = toValidDate(value);
+    if (!date) return "";
+    return date.toLocaleDateString(getCurrentLocale(), options);
+}
+
+export function formatLocalizedTime(value, options = {}) {
+    const date = toValidDate(value);
+    if (!date) return "";
+    return date.toLocaleTimeString(getCurrentLocale(), options);
+}
+
+export function formatLocalizedDateTime(value, options = {}) {
+    const date = toValidDate(value);
+    if (!date) return "";
+    return date.toLocaleString(getCurrentLocale(), options);
+}
 
 /**
  * Returns a copy of the object, for which only the provided attributes by keys are included (whitelisting).

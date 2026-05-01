@@ -4,8 +4,8 @@
       <Editor
         v-model="currentData"
         class="form-control p-0 editor-wrapper"
-        :max-length="options.maxLength"
         @blur="blur(currentData)"
+        :max-length="options.maxLength"
       />
     </template>
   </FormElement>

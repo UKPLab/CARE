@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="filterModal" name="filterModal" title="Filter" size="xl" @hide="hide">
+  <BasicModal ref="filterModal" name="filterModal" :title="$t('common.filter')" size="xl" @hide="hide">
     <template v-if="currentData" #body>
       <!-- TODO: BasicTable now comes with a :max-table-height property to control its height, 
        so we may not the .table-scroll-container here. However, since FilterModal is not in use, 
@@ -16,14 +16,13 @@
         v-model="currentData.selected"
         :columns="dataTableColumns"
         :data="dataTable"
-        :options="dataTableOptions"
-        :max-table-height="'60vh'" />
+        :options="dataTableOptions"/>
       </div>
     </template>
 
     <template #footer>
       <BasicButton
-        title="Save"
+        :title="$t('common.save')"
         class="btn btn-primary"
         @click="$refs.filterModal.close()"
       />
@@ -101,17 +100,17 @@ export default {
     dataTableColumns() {
       if (this.currentData.options && this.currentData.options.table === "user") {
         return [
-          {name: "ID", key: "id"},
-          {name: "extId", key: "extId"},
-          {name: "First Name", key: "firstName"},
-          {name: "Last Name", key: "lastName"},
-          {name: "Number of Assignments", key: "studySessions"},
-          {name: "Documents", key: "documents", width: 1, sortable: true},
-          {name: "Roles", key: "rolesNames"},
+          {name: this.$t('common.id'), key: "id"},
+          {name: this.$t('dashboard.projects.extId'), key: "extId"},
+          {name: this.$t('common.firstName'), key: "firstName"},
+          {name: this.$t('common.lastName'), key: "lastName"},
+          {name: this.$t('dashboard.projects.numberOfAssignments'), key: "studySessions"},
+          {name: this.$t('documents.title'), key: "documents", width: 1, sortable: true},
+          {name: this.$t('dashboard.projects.roles'), key: "rolesNames"},
         ]
       }
       return [
-        {name: "ID", key: "id"},
+        {name: this.$t('common.id'), key: "id"},
       ];
     },
     filterSelectionFields() {
@@ -119,9 +118,9 @@ export default {
         {
           key: "table",
           type: "select",
-          label: "From which should be filtered?",
+          label: this.$t('dashboard.projects.filterTable'),
           options: [
-            {name: "User", value: "user"},
+            {name: this.$t('common.user'), value: "user"},
           ],
           required: true,
         },

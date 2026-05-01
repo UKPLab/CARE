@@ -7,7 +7,7 @@
     size="lg"
   >
     <template #title>
-      <h5 class="modal-title">Saved Templates</h5>
+      <h5 class="modal-title">{{$t('studies.savedTemplates')}}</h5>
     </template>
     <template #body>
       <BasicTable
@@ -16,19 +16,18 @@
         :options="tableOptions"
         :buttons="tableButtons"
         @action="handleAction"
-        :max-table-height="'60vh'"
       />
     </template>
     <template #footer>
       <BasicButton
         class="btn btn-primary"
-        title="Create Template"
-        name="Create Template"
+        :title="$t('dashboard.study.createTemplate')"
+        :name="$t('dashboard.study.createTemplate')"
         @click="createTemplate"
       />
       <BasicButton
         class="btn btn-secondary"
-        title="Close"
+        :title="$t('common.close')"
         @click="close"
       />      
     </template>
@@ -43,6 +42,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 /**
  * Modal to show saved study templates
  * 
@@ -67,32 +67,32 @@ export default {
         search: true,
       },
       columns: [
-        { name: "Name", key: "name" },
-        { name: "Created At", key: "createdAt", sortable: true },
+        { name: this.$t('common.name'), key: "name" },
+        { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
         {
-          name: "Resumable",
+          name: this.$t('studies.columns.resumable'),
           key: "resumable",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Collaborative",
+          name: this.$t('studies.columns.collaborative'),
           key: "collab",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Multiple Submissions",
+          name: this.$t('studies.columns.multipleSubmissions'),
           key: "multipleSubmit",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
@@ -106,7 +106,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Delete",
+          title: this.$t('common.delete'),
           filter: [
             {key: "showDeleteTemplateButton", value: true},
           ],
@@ -120,7 +120,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Use",
+          title: this.$t('common.use'),
           action: "useTemplate",
         },
       ],
@@ -132,7 +132,7 @@ export default {
         return {
           id: s.id,
           name: s.name,
-          createdAt: new Date(s.createdAt).toLocaleDateString(),
+          createdAt: formatLocalizedDate(s.createdAt),
           resumable: s.resumable,
           collab: s.collab,
           multipleSubmit: s.multipleSubmit,
@@ -159,12 +159,11 @@ export default {
       }
     },
     deleteTemplate(template) {
-      this.close();
       this.$refs.deleteConf.open(
-        "Delete Template",
-        "Are you sure you want to delete this template?",
+        this.$t('dashboard.study.deleteTemplate'),
+        this.$t('dashboard.study.deleteTemplatePrompt'),
         "",
-        (val) => {
+        function (val) {
           if (val) {
             this.$socket.emit("appDataUpdate", {
               table: "study",
@@ -175,20 +174,19 @@ export default {
             }, (result) => {
               if (result.success) {
                 this.eventBus.emit('toast', {
-                  title: "Study template deleted",
-                  message: "The study template has been deleted",
+                  title: this.$t('dashboard.study.studyTemplateDeleted'),
+                  message: this.$t('dashboard.study.studyTemplateDeletedMessage'),
                   variant: "success"
                 });
               } else {
                 this.eventBus.emit('toast', {
-                  title: "Study template deletion failed",
-                  message: result.message,
+                  title: this.$t('dashboard.study.deletionFailed'),
+                  message: resolveApiMessage(result),
                   variant: "danger"
                 });
               }
             });
           }
-          this.$nextTick(() => this.open());
         }
       );
     },

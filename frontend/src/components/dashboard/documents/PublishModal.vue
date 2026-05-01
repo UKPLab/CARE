@@ -1,7 +1,7 @@
 <template>
   <Modal ref="publishModal" name="documentPublish" :props="{documentId: id}">
     <template #title>
-      Publish Document
+      {{ $t('documents.publishDocument') }}
     </template>
     <template #body>
       <div v-if="success">
@@ -9,8 +9,8 @@
           class="alert alert-success"
           role="alert"
         >
-          Document successfully published!<br>
-          The document is available under the following link:<br><br>
+          {{ $t('documents.messages.documentPublished') }}<br>
+          {{ $t('documents.messages.documentAvailableAt') }}<br><br>
           <a
             :href="link"
             target="_blank"
@@ -18,8 +18,8 @@
         </div>
       </div>
       <div v-else>
-        Do you really want to publish the document? <br>
-        <b>This can not be undone!</b>
+        {{ $t('documents.messages.publishConfirm') }} <br>
+        <b>{{ $t('documents.messages.cannotBeUndone') }}</b>
       </div>
     </template>
 
@@ -30,12 +30,12 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          title="Close"
           @click="close"
+          :title="$t('common.close')"
         />
         <BasicButton
           class="btn btn-primary"
-          title="Copy Link"
+          :title="$t('studies.copyLink')"
           @click="copyURL"
         />
       </span>
@@ -45,12 +45,12 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          title="Abort"
+          :title="$t('common.abort')"
           @click="close"
         />
         <BasicButton
           class="btn btn-danger me-2"
-          title="Yes, publish it!"
+          :title="$t('documents.yesPublish')"
           @click="publish"
         />
       </span>
@@ -61,6 +61,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /* PublishModal.vue - modal for publishing a document
 
@@ -107,16 +108,16 @@ export default {
           if (!res.success) {
             this.$refs.publishModal.close();
             this.eventBus.emit("toast", {
-              title: "Document not published",
-              message: res.message,
+              title: this.$t('errors.documents.documentNotPublished'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           } else {
             this.success = true;
             this.$refs.publishModal.waiting = false;
             this.eventBus.emit('toast', {
-              title: "Document published",
-              message: "Successful published tagset!",
+              title: this.$t('documents.messages.documentPublishedTitle'),
+              message: this.$t('documents.messages.publishedSuccess'),
               variant: "success"
             });
           }
@@ -137,14 +138,14 @@ export default {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-          title: "Link copied",
-          message: "Document link copied to clipboard!",
+          title: this.$t('studies.messages.linkCopied'),
+          message: this.$t('documents.messages.linkCopiedMessage'),
           variant: "success"
         });
-      } catch (_error) {
+      } catch ($e) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Could not copy document link to clipboard!",
+          title: this.$t('errors.clipboard.linkNotCopied'),
+          message: this.$t('errors.clipboard.copyFailed'),
           variant: "danger"
         });
       }

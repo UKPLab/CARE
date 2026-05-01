@@ -4,10 +4,10 @@
       <slot :id="options.key" :blur="validate" name="element"/>
       <div v-if="invalidField" class="feedback-invalid">
         <span v-if="options.invalidText"> {{ options.invalidText }}</span>
-        <span v-else>The input is invalid.</span>
+        <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
       <div v-else-if="options.required && emptyField" class="feedback-invalid">
-        This field is required.
+        {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
     <div v-else>
@@ -15,9 +15,9 @@
         v-if="'label' in options"
         :for="options.key"
         class="form-label"
-      >{{ options.label }}</label>
+      >{{ translateText(options.label) }}</label>
       <FormHelp
-        :help="options.help"
+        :help="translateText(options.help)"
       />
       <div class="input-group">
         <div
@@ -33,11 +33,11 @@
 
       </div>
       <div v-if="invalidField" class="feedback-invalid">
-        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
-        <span v-else>The input is invalid.</span>
+        <span v-if="options.invalidText"> {{ translateText(options.invalidText) }}</span>
+        <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
       <div v-else-if="options.required && emptyField" class="feedback-invalid">
-        This field is required.
+        {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
   </fieldset>
@@ -80,6 +80,12 @@ export default {
     this.eventBus.off('resetFormField', this.resetFieldState)
   },
   methods: {
+    translateText(value) {
+      if (typeof value !== "string") {
+        return value;
+      }
+      return this.$te(value) ? this.$t(value) : value;
+    },
     validate(data) {
       if (data === true) {
         this.invalidField = false;

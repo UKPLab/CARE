@@ -8,7 +8,7 @@
     @step-change="handleStepChange"
   >
     <template #title>
-      <span>Import Moodle Submissions</span>
+      <span>{{ $t('dashboard.importModal.title') }}</span>
     </template>
     <!-- Moodle Options Step -->
     <template #step-1>
@@ -32,7 +32,7 @@
     <template #step-3>
       <div class="p-3">
         <div class="mb-3">
-          <h4 class="mb-3">Assign Group</h4>
+          <h4 class="mb-3">{{ $t('dashboard.importModal.assignGroup') }}</h4>
           <BasicForm
             v-model="formData"
             :fields="formFields"
@@ -52,33 +52,32 @@
     <!-- Confirm Step -->
     <template #step-4>
       <div class="confirm-container">
-        <h4 class="mb-3">Confirm Import Settings</h4>
+        <h4 class="mb-3">{{ $t('dashboard.importModal.confirmImport') }}</h4>
         <div class="card mb-3">
           <div class="card-body bg-light">
-            <h5 class="card-title">Import Summary</h5>
+            <h5 class="card-title">{{ $t('dashboard.importModal.importSummary') }}</h5>
             <ul class="list-unstyled mb-0">
-              <li>• Submissions to import: {{ selectedSubmissions.length }}</li>
-              <li>• Group Number: {{ formData.group }}</li>
+              <li>• {{ $t('dashboard.importModal.submissionsToImport') }} {{ selectedSubmissions.length }}</li>
+              <li>• {{ $t('dashboard.importModal.groupNumberLabel') }} {{ formData.group }}</li>
               <li>
-                • Validation schema:
-                {{ selectedValidatorData?.name || "None selected" }}
+                • {{ $t('dashboard.importModal.validationSchema') }}
+                {{ selectedValidatorData?.name || $t('dashboard.importModal.noneSelected') }}
               </li>
-              <li>• Total submissions: {{ selectedSubmissions.length }}</li>
-              <li v-if="selectedValidatorData">• Required files: {{ selectedValidatorData.files.join(", ") }}</li>
+              <li>• {{ $t('dashboard.importModal.totalSubmissions') }} {{ selectedSubmissions.length }}</li>
+              <li v-if="selectedValidatorData">• {{ $t('dashboard.importModal.requiredFiles') }} {{ selectedValidatorData.files.join(", ") }}</li>
             </ul>
           </div>
         </div>
         <div class="alert alert-info">
-          <strong>Validation Details:</strong><br />
+          <strong>{{ $t('dashboard.importModal.validationDetails') }}</strong><br />
           <span v-if="selectedValidatorData">
-            This will validate ZIP file contents according to the "<strong>{{ selectedValidatorData.name }}</strong
-            >" schema. Submissions must contain all required files: {{ selectedValidatorData.files.join(", ") }}.
+            {{ $t('dashboard.importModal.validationWillCheck', { name: selectedValidatorData.name, files: selectedValidatorData.files.join(", ") }) }}
           </span>
-          <span v-else> No validation schema selected. Submissions will be imported without validation. </span>
+          <span v-else> {{ $t('dashboard.importModal.noValidationSelected') }} </span>
         </div>
         <p>
-          Are you sure you want to import
-          <strong>{{ selectedSubmissions.length }}</strong> {{ message }}?
+          {{ $t('dashboard.importModal.areYouSure', { count: selectedSubmissions.length, message: message })
+          }}
         </p>
       </div>
     </template>
@@ -86,25 +85,25 @@
     <template #step-5>
       <div class="result-container">
         <div v-if="importResults && importResults.successCount != null">
-          Successfully imported <strong>{{ importResults.successCount }}</strong> submissions
+          {{ $t('dashboard.importModal.successfullyImported', { count: importResults.successCount }) }}
           <div
             v-if="importResults.errors && importResults.errors.length > 0"
             class="error-container"
           >
-            Failed to import the following submissions:
+            {{ $t('dashboard.importModal.failedToImport') }}
             <ul
               v-for="(error, index) in importResults.errors"
               :key="index"
             >
               <li>
-                User with the User ID <strong>{{ error.userId }}</strong> cannot be imported: {{ error.message }}
+                {{ $t('dashboard.importModal.userCannotBeImported', { userId: error.userId, message: resolveApiMessage(error) }) }}
               </li>
             </ul>
           </div>
-          <div v-if="importResults?.errors?.length > 0" class="link-container">
+          <div class="link-container">
             <BasicButton
               class="btn btn-outline-primary"
-              title="Download Error CSV"
+              :title="$t('dashboard.importModal.downloadErrorCSV')"
               @click="downloadFileAsCSV"
             />
           </div>
@@ -121,7 +120,7 @@ import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import ValidatorSelector from "./ValidatorSelector.vue";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -130,10 +129,10 @@ import { downloadObjectsAs } from "@/assets/utils.js";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, BasicButton, BasicForm, ValidatorSelector, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
   data() {
     return {
-      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Configure" }, { title: "Confirm" }, { title: "Result" }],
+      steps: [{title: this.$t('dashboard.importModal.stepMoodle')}, {title: this.$t('dashboard.importModal.stepPreview')}, {title: this.$t('dashboard.importModal.stepConfigure')}, {title: this.$t('dashboard.importModal.stepConfirm')}, {title: this.$t('dashboard.importModal.stepResult')}],
       moodleOptions: {},
       selectedValidatorId: 0,
       selectedValidatorData: null,
@@ -143,8 +142,6 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
-        pagination: 10,
-        search: true,
         selectableRows: true,
         groupBy: {
           key: "submissionId",
@@ -153,22 +150,22 @@ export default {
       },
       tableColumns: [
         {
-          name: "Duplicate",
+          name: this.$t('dashboard.importModal.columns.duplicate'),
           key: "exists",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", default: "No" },
+            keyMapping: { true: this.$t('common.yes'), default: this.$t('common.no') },
           },
           filter: [
-            { key: false, name: "New" },
-            { key: true, name: "Duplicate" },
+            { key: false, name: this.$t('dashboard.importModal.filters.new') },
+            { key: true, name: this.$t('dashboard.importModal.filters.duplicate') },
           ],
         },
-        { name: "External ID", key: "submissionId" },
-        { name: "User ID", key: "userId" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "File Count", key: "fileCount" },
+        { name: this.$t('dashboard.importModal.columns.externalId'), key: "submissionId" },
+        { name: this.$t('dashboard.importModal.columns.userId'), key: "userId" },
+        { name: this.$t('common.firstName'), key: "firstName" },
+        { name: this.$t('common.lastName'), key: "lastName" },
+        { name: this.$t('dashboard.importModal.columns.fileCount'), key: "fileCount" },
       ],
       formData: {
         group: null
@@ -176,9 +173,9 @@ export default {
       formFields: [
         {
           key: "group",
-          label: "Group Number",
+          label: this.$t('dashboard.importModal.groupNumber'),
           type: "number",
-          placeholder: "Enter group number",
+          placeholder: this.$t('dashboard.importModal.groupNumberPlaceholder'),
           min: 0,
           class: "form-control",
           required: true,
@@ -195,19 +192,15 @@ export default {
     stepValid() {
       return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, true];
     },
-    currentProject() {
-      console.log("current project id", this.$store.getters["settings/getValueAsInt"]("projects.default"));
-      return this.$store.getters["settings/getValueAsInt"]("projects.default");
-    },
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
       if (currentStep === 2) {
-        return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
+        return this.selectedSubmissions.length > 1 ? this.$t('dashboard.importModal.submissionPlural') : this.$t('dashboard.importModal.submissionSingular');
       }
       if (currentStep === 3) {
-        return this.importedSubmissions.length > 1 ? "submissions" : "submission";
+        return this.importedSubmissions.length > 1 ? this.$t('dashboard.importModal.submissionPlural') : this.$t('dashboard.importModal.submissionSingular');
       }
-      return "submissions";
+      return this.$t('dashboard.importModal.submissionPlural');
     },
     users() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
@@ -233,7 +226,6 @@ export default {
           submissionId: submission.submissionId,
           exists: submission.exists,
           userId: user?.id,
-          userExtId: user?.extId,
           firstName: user?.firstName,
           lastName: user?.lastName,
           fileCount: files.length,
@@ -259,8 +251,13 @@ export default {
     },
     downloadFileAsCSV() {
       const filename = `submissions_${Date.now()}`;
-      const {errors} = this.importResults;
-      downloadObjectsAs(errors, filename, "csv");
+      const users = this.importResults.errors.map((err) => ({
+        userId: err.userId,
+        firstName: err.firstName,
+        lastName: err.lastName,
+        message: resolveApiMessage(err),
+      }));
+      downloadObjectsAs(users, filename, "csv");
     },
     handleStepChange(step) {
       switch (step) {
@@ -282,8 +279,8 @@ export default {
         } else {
           this.$refs.importStepper.reset();
           this.eventBus.emit("toast", {
-            title: "Failed to get student submissions from Moodle",
-            message: res.message,
+            title: this.$t('dashboard.importModal.failedGetSubmissions'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -295,9 +292,7 @@ export default {
         {
           submissions: this.selectedSubmissions.map((s) => ({
             submissionId: s.submissionId,
-            projectId: this.currentProject,
             userId: s.userId,
-            userExtId: s.userExtId,
             firstName: s.firstName,
             lastName: s.lastName,
             files: s.files,
@@ -312,19 +307,30 @@ export default {
           if (res.success) {
             const { downloadedSubmissions = [], downloadedErrors = [] } = res["data"] || {};
             this.importedSubmissions = downloadedSubmissions;
-            this.importResults = {
-              successCount: downloadedSubmissions.length,
-              errors: downloadedErrors,
-            };
+            // Process import results for display
+            this.processImportResults({ downloadedSubmissions, downloadedErrors });
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to import submission from Moodle",
-              message: res.message,
+              title: this.$t('dashboard.importModal.failedImportSubmissions'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
         }
       );
+    },
+    processImportResults({ downloadedSubmissions = [], downloadedErrors = [] } = {}) {
+      this.importResults = {
+        successCount: downloadedSubmissions.length,
+        errors: downloadedErrors.map((e) => ({
+          userId: e.userId,
+          firstName: e.firstName,
+          lastName: e.lastName,
+          key: e.key,
+          params: e.params,
+          message: e.message,
+        })),
+      };
     },
   },
 };

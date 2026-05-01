@@ -2,13 +2,13 @@
   <div class="placeholders-step">
     <!-- Short Preview -->
     <div v-if="shortPreview" class="short-preview mb-4">
-      <h6 class="section-title">Document Preview</h6>
+      <h6 class="section-title">{{ $t('modals.placeholders.documentPreview') }}</h6>
       <div class="preview-content" v-html="shortPreview"></div>
     </div>
 
     <!-- Placeholder Legend -->
     <div v-if="placeholders.length" class="legend mb-4">
-      <h6 class="section-title">Placeholder Legend</h6>
+      <h6 class="section-title">{{ $t('modals.placeholders.placeholderLegend') }}</h6>
       <div class="legend-items">
         <span v-for="(placeholder, index) in placeholders" :key="index" class="legend-item"
           :style="{ color: placeholderColors[index] }">
@@ -19,7 +19,7 @@
 
     <!-- Placeholders Configuration -->
     <div v-if="placeholders.length" class="placeholders-config mb-4">
-      <h6 class="section-title">Configure Placeholders</h6>
+      <h6 class="section-title">{{ $t('modals.placeholders.configurePlaceholders') }}</h6>
 
       <div v-for="(placeholder, index) in placeholders" :key="index" class="placeholder-item mb-3">
         <div class="placeholder-header mb-2">
@@ -32,10 +32,10 @@
         <!-- Comparison Type (requires 2 inputs) -->
         <div v-if="placeholder.type === placeholderType.comparison" class="comparison-inputs">
           <div class="input-group mb-2">
-            <label class="form-label">First Data Source:</label>
+            <label class="form-label">{{ $t('modals.placeholders.firstDataSource') }}</label>
             <select :value="formData[index]?.dataInput?.[0]?.value || ''"
-              class="form-control" @change="updateComparisonInput(index, 0, $event.target.value)">
-              <option value="">Select first data source...</option>
+              @change="updateComparisonInput(index, 0, $event.target.value)" class="form-control">
+              <option value="">{{ $t('modals.placeholders.selectFirstDataSource') }}</option>
               <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-0`"
                 :value="source.value" :data-step-id="source.stepId">
                 {{ source.name }}
@@ -44,10 +44,10 @@
           </div>
 
           <div class="input-group mb-2">
-            <label class="form-label">Second Data Source:</label>
+            <label class="form-label">{{ $t('modals.placeholders.secondDataSource') }}</label>
             <select :value="formData[index]?.dataInput?.[1]?.value || ''"
-              class="form-control" @change="updateComparisonInput(index, 1, $event.target.value)">
-              <option value="">Select second data source...</option>
+              @change="updateComparisonInput(index, 1, $event.target.value)" class="form-control">
+              <option value="">{{ $t('modals.placeholders.selectSecondDataSource') }}</option>
               <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-1`"
                 :value="source.value" :data-step-id="source.stepId">
                 {{ source.name }}
@@ -58,10 +58,10 @@
 
         <!-- Single Input Types (text, chart) -->
         <div v-else class="single-input">
-          <label class="form-label">Data Source:</label>
+          <label class="form-label">{{ $t('modals.placeholders.dataSource') }}</label>
           <select :value="formData[index]?.dataInput?.value || ''"
-            class="form-control" @change="updateSingleInput(index, $event.target.value)">
-            <option value="">Select data source...</option>
+            @change="updateSingleInput(index, $event.target.value)" class="form-control">
+            <option value="">{{ $t('modals.placeholders.selectDataSource') }}</option>
             <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}`"
               :value="source.value" :data-step-id="source.stepId">
               {{ source.name }}
@@ -74,13 +74,15 @@
     <!-- No Placeholders Message -->
     <div v-else class="no-content">
       <div class="alert alert-info" role="alert">
-        No placeholders found in the document.
+        {{ $t('modals.placeholders.noPlaceholders') }}
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils";
+import StepTemplate from "@/basic/modal/StepTemplate.vue";
 import Quill from "quill";
 
 /**
@@ -91,6 +93,9 @@ import Quill from "quill";
  */
 export default {
   name: "PlaceholdersStep",
+  components: {
+    StepTemplate
+  },
   props: {
     modelValue: {
       type: Array,
@@ -161,7 +166,7 @@ export default {
       immediate: true
     },
     formData: {
-      handler(_newVal) {
+      handler(newVal) {
         const updated = {
           text: this.formatPlaceholder(this.placeholderType.text),
           chart: this.formatPlaceholder(this.placeholderType.chart),
@@ -249,16 +254,16 @@ export default {
           } else {
             console.error("Invalid document content:", response);
             this.eventBus?.emit("toast", {
-              title: "Document Error",
-              message: "The document content is invalid or empty. Please try again.",
+              title: this.$t('modals.placeholders.documentError'),
+              message: this.$t('modals.placeholders.invalidDocumentContent'),
               variant: "danger",
             });
           }
         } else {
           console.error("Failed to fetch document content:", response);
           this.eventBus.emit("toast", {
-            title: "Document Error",
-            message: response.message || "Failed to fetch the document.",
+            title: this.$t('modals.placeholders.documentError'),
+            message: resolveApiMessage(response) || this.$t('modals.placeholders.failedToFetchDocument'),
             variant: "danger",
           });
         }
@@ -405,8 +410,16 @@ export default {
           // Editor
           case 2:
             sources.push(
-              { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
-              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
+              {
+                value: "firstVersion",
+                name: this.$t("modals.placeholders.firstVersionStep", { step: stepIndex }),
+                stepId: stepIndex
+              },
+              {
+                value: "currentVersion",
+                name: this.$t("modals.placeholders.currentVersionStep", { step: stepIndex }),
+                stepId: stepIndex
+              }
             );
             break;
           // Modal

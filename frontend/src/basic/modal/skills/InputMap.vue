@@ -1,6 +1,6 @@
 <template>
   <div v-if="skillName" class="input-map mb-3">
-    <h6 class="text-secondary">Input Mapping</h6>
+    <h6 class="text-secondary">{{ $t('nlp.inputMap.inputMapping') }}</h6>
     <div
         v-for="input in skillInputs"
         :key="input"
@@ -15,7 +15,7 @@
       />
     </div>
 
-    <h6 class="text-secondary mt-4">Output Mapping</h6>
+    <h6 class="text-secondary mt-4">{{ $t('nlp.inputMap.outputMapping') }}</h6>
     <div
         v-for="output in skillOutputs"
         :key="output"
@@ -184,57 +184,64 @@ export default {
     applySkillsDataSources() {
       const sources = [...this.configurationSources];
 
-      // Always add document/submission
-      sources.unshift(
-          {
-            value: "document",
-            name: "<Documents>",
-            requiresTableSelection: true,
-            type: "document",
-            table: "document",
-          },
-          {
-            value: "submission",
-            name: "<Submissions>",
-            requiresTableSelection: true,
-            type: "submission",
-            table: "submission",
-          }
-      );
+      if (!this.tableBasedParameter) {
+        sources.unshift(
+            {
+              value: "document",
+              name: "<Documents>",
+              requiresTableSelection: true,
+              type: "document",
+              table: "document"
+            },
+            {
+              value: "submission",
+              name: "<Submissions>",
+              requiresTableSelection: true,
+              type: "submission",
+              table: "submission"
+            }
+        );
+      }
 
       return sources;
     },
     dataSourcesByInput() {
       const dict = {};
       this.skillInputs.forEach(input => {
-        const sources = [
-          {
-            value: "document",
-            name: "<Documents>",
-            requiresTableSelection: true,
-            table: "document",
-            type: "document",
-          },
-          {
-            value: "submission",
-            name: "<Submissions>",
-            requiresTableSelection: true,
-            table: "submission",
-            type: "submission",
-          },
-          ...this.configurationSources,
-        ];
+        const sources = [...this.configurationSources];
+
+        if (!this.tableBasedParameter || this.tableBasedParameter === input) {
+          sources.unshift(
+              {
+                value: "document",
+                name: "<Documents>",
+                requiresTableSelection: true,
+                table: "document",
+                type: "document"
+              },
+              {
+                value: "submission",
+                name: "<Submissions>",
+                requiresTableSelection: true,
+                table: "submission",
+                type: "submission"
+              }
+          );
+        }
 
         dict[input] = sources;
       });
       return dict;
     },
     availableDataSources() {
+      let sources = [];
       if (this.studyBased) {
-        return this.getSourcesUpToCurrentStep(this.workflowStepIndex);
+        sources = this.getSourcesUpToCurrentStep(this.workflowStepIndex);
+      } else {
+        sources = this.applySkillsDataSources;
       }
-      // non-study-based: just use the skill-based sources
-      return this.applySkillsDataSources;
+
+      return sources;
     },
     workflowStepIndex() {
       return this.orderedWorkflowSteps.findIndex(
@@ -245,7 +252,7 @@ export default {
       const sources = [
         {
           value: 'saveInDocumentData',
-          name: 'Save in Document Data',
+          name: this.$t('nlp.inputMap.saveInDocumentData'),
           type: 'documentData',
         }
       ];
@@ -255,7 +262,7 @@ export default {
       if (workflow?.stepType === 2) {
         sources.push({
           value: 'insertIntoEditor',
-          name: 'Insert into Editor',
+          name: this.$t('nlp.inputMap.insertIntoEditor'),
           type: 'editor',
         });
       }
@@ -346,13 +353,8 @@ export default {
       this.isUpdatingFromWithin = true;
 
       if (source && source.requiresTableSelection) {
-        // Clear any other inputs that currently use a table-based source
         Object.keys(this.inputMappings).forEach(paramName => {
-          if (
-              paramName !== input &&
-              this.inputMappings[paramName] &&
-              this.inputMappings[paramName].requiresTableSelection
-          ) {
+          if (paramName !== input && this.inputMappings[paramName] && this.inputMappings[paramName].requiresTableSelection) {
             this.inputMappings[paramName] = null;
           }
         });
@@ -360,19 +362,18 @@ export default {
 
       this.inputMappings = {
         ...this.inputMappings,
-        [input]: source,
+        [input]: source
       };
 
-      this.$emit("update:modelValue", {
+      this.$emit('update:modelValue', {
         ...this.inputMappings,
-        output: {...this.outputMappings},
+        output: {...this.outputMappings}
       });
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
       });
     },
-
     updateOutputMapping(output, source) {
       this.isUpdatingFromWithin = true;
 
@@ -535,8 +536,7 @@ export default {
       return sources;
     },
   }
-}
-;
+};
 </script>
 
 <style scoped>

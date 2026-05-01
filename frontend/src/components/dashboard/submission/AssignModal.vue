@@ -6,14 +6,14 @@
       @submit="assignGroup"
   >
     <template #title>
-      <h5 class="modal-title">Assign Group</h5>
+      <h5 class="modal-title">{{ $t('dashboard.submission.assignGroup.title') }}</h5>
     </template>
 
     <template #step-1>
       <div class="step-1-header w-100">
         <div class="percentage-control w-100">
           <label class="form-label mb-1">
-            Apply percentage of current selection (randomly chosen):
+            {{ $t('dashboard.submission.assignGroup.applyPercentage') }}
           </label>
 
           <div class="d-flex align-items-center gap-2 w-100">
@@ -25,7 +25,11 @@
                 class="flex-grow-1"
             />
             <span class="small text-muted text-nowrap">
-              {{ selectionPercentage }}% → {{ selectionTargetCount }} of {{ selectedSubmissions.length }}
+              {{ $t('dashboard.submission.assignGroup.targetCount', {
+                percentage: selectionPercentage,
+                target: selectionTargetCount,
+                total: selectedSubmissions.length
+              }) }}
             </span>
 
             <button
@@ -34,7 +38,7 @@
                 :disabled="selectedSubmissions.length === 0"
                 @click="applySelectionPercentage"
             >
-              Apply
+              {{ $t('dashboard.submission.assignGroup.applyButton') }}
             </button>
           </div>
 
@@ -59,14 +63,14 @@
     </template>
     <template #step-3>
       <div class="summary-container">
-        <h6>Assignment Summary</h6>
-        <div class="summary-item"><strong>Number of Submissions:</strong> {{ selectedSubmissions.length }}</div>
-        <div class="summary-item"><strong>Group Number:</strong> {{ data.group }}</div>
-        <div class="summary-item"><strong>Additional Settings:</strong> {{ data.settings ?? "N/A" }}</div>
-        <div class="summary-item"><strong>Copy Submissions:</strong> {{ data.copySubmissions ? "Yes" : "No" }}</div>
+        <h6>{{ $t('dashboard.submission.assignGroup.summaryTitle') }}</h6>
+        <div class="summary-item"><strong>{{ $t('dashboard.submission.assignGroup.numberOfSubmissions') }}</strong> {{ selectedSubmissions.length }}</div>
+        <div class="summary-item"><strong>{{ $t('dashboard.submission.assignGroup.groupNumberLabel') }}</strong> {{ data.group }}</div>
+        <div class="summary-item"><strong>{{ $t('dashboard.submission.assignGroup.additionalSettingsLabel') }}</strong> {{ data.settings ?? $t('common.na') }}</div>
+        <div class="summary-item"><strong>{{ $t('dashboard.submission.assignGroup.copySubmissionsLabel') }}</strong> {{ data.copySubmissions ? $t('common.yes') : $t('common.no') }}</div>
         <div class="alert alert-info mt-3">
           <i class="bi bi-info-circle"></i>
-          Please review the information above before submitting.
+          {{ $t('dashboard.submission.assignGroup.reviewNote') }}
         </div>
       </div>
     </template>
@@ -77,6 +81,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 
 /**
  * Submission group modal component
@@ -89,7 +94,7 @@ import BasicForm from "@/basic/Form.vue";
 export default {
   name: "AssignModal",
   components: {BasicForm, BasicTable, StepperModal},
-  subscribeTable: ["submission", "user", "document", "document_data"],
+  subscribeTable: ["submission", "user", "document"],
   data() {
     return {
       selectedSubmissions: [],
@@ -99,13 +104,13 @@ export default {
         copySubmissions: false,
       },
       selectionPercentage: 100,
-      steps: [{title: "Select Submissions"}, {title: "Group Settings"}, {title: "Review & Confirm"}],
+      steps: [{title: this.$t('dashboard.submission.assignGroup.stepOne')}, {title: this.$t('dashboard.submission.assignGroup.stepTwo')}, {title: this.$t('dashboard.submission.assignGroup.stepThree')}],
       formFields: [
         {
           key: "group",
-          label: "Group Number",
+          label: this.$t('dashboard.submission.assignGroup.groupNumber'),
           type: "number",
-          placeholder: "Enter group number",
+          placeholder: this.$t('dashboard.submission.assignGroup.groupNumberPlaceholder'),
           min: 0,
           class: "form-control",
           required: true,
@@ -113,20 +118,20 @@ export default {
         },
         {
           key: "settings",
-          label: "Additional Settings",
+          label: this.$t('dashboard.submission.assignGroup.additionalSettings'),
           type: "textarea",
-          placeholder: "Enter any additional settings",
+          placeholder: this.$t('dashboard.submission.assignGroup.additionalSettingsPlaceholder'),
           class: "form-control",
           default: "",
         },
         {
           key: "copySubmissions",
-          label: "Copy Submissions",
+          label: this.$t('dashboard.submission.assignGroup.copySubmissions'),
           type: "checkbox",
           required: true,
           options: [
             {
-              label: "Create copies of the selected submissions with the specified group number.",
+              label: this.$t('dashboard.submission.assignGroup.createCopyiesOfSubmissionsLabel'),
               value: true,
             },
           ],
@@ -143,7 +148,6 @@ export default {
         scrollX: true,
         singleSelect: false,
         search: true,
-        pagination: 10,
       },
     };
   },
@@ -159,16 +163,12 @@ export default {
     submissionTable() {
       return this.submissions.map((s) => {
         const user = this.$store.getters["table/user/get"](s.userId);
-        const documents = this.$store.getters["table/document/getByKey"]('submissionId', s.id);
-        const docIds = documents.map(d => d.id);
-        const dataExists = docIds.some(docId => this.$store.getters["table/document_data/getByKey"]('documentId', docId).length > 0);
         return {
           id: s.id,
           firstName: user.firstName,
           lastName: user.lastName,
           group: s.group ?? "-",
-          data_existing: dataExists ? "Yes" : "No",
-          createdAt: new Date(s.createdAt).toLocaleDateString(),
+          createdAt: formatLocalizedDate(s.createdAt),
           additionalSettings: s.additionalSettings
               ? {icon: "gear-fill", color: "blue", title: s.additionalSettings}
               : {icon: "gear", color: "gray", title: "No additional settings"},
@@ -177,12 +177,11 @@ export default {
     },
     submissionColumns() {
       return [
-        {name: "First Name", key: "firstName", sortable: true},
-        {name: "Last Name", key: "lastName", sortable: true},
-        {name: "Group", key: "group", sortable: true, filter: this.groupFilterOptions},
-        {name: "Data Existing", key: "data_existing", sortable: true, filter: this.dataExistingFilterOptions},
-        {name: "Created At", key: "createdAt", sortable: true},
-        {name: "Additional Settings", key: "additionalSettings", type: "icon", sortable: false},
+        {name: this.$t('common.firstName'), key: "firstName", sortable: true},
+        {name: this.$t('common.lastName'), key: "lastName", sortable: true},
+        {name: this.$t('common.groupId'), key: "group", sortable: true, filter: this.groupFilterOptions},
+        {name: this.$t('common.createdAt'), key: "createdAt", sortable: true},
+        {name: this.$t('dashboard.submission.assignGroup.columns.additionalSettings'), key: "additionalSettings", type: "icon", sortable: false},
       ];
     },
     groupFilterOptions() {
@@ -207,19 +206,10 @@ export default {
           .map((g) => ({key: g, name: g}));
 
       if (hasEmptyGroups) {
-        options.unshift({key: '', name: 'No GroupID'});
+        options.unshift({key: '', name: this.$t('dashboard.submission.assignGroup.filters.noGroupId')});
       }
 
       return options;
-    },
-    dataExistingFilterOptions() {
-      const options = new Set();
-      (this.submissionTable || []).forEach((s) => {
-        options.add(String(s.data_existing));
-      });
-      return Array.from(options)
-          .sort()
-          .map((val) => ({key: val, name: val}));
     },
     stepValid() {
       return [
@@ -272,15 +262,18 @@ export default {
       this.$socket.emit("submissionAssignGroup", requestParams, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Group Assigned",
-            message: `Successfully assigned ${submissionIds.length} submission(s) to group ${this.data.group}`,
+            title: this.$t('dashboard.submission.assignGroup.successTitle'),
+            message: this.$t('dashboard.submission.assignGroup.successMessage', {
+              count: submissionIds.length,
+              group: this.data.group
+            }),
             variant: "success",
           });
           this.$refs.assignStepper.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to assign group",
-            message: res.message,
+            title: this.$t('dashboard.submission.assignGroup.failureTitle'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
           this.$refs.assignStepper.setWaiting(false);

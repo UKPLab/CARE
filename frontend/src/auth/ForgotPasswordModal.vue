@@ -2,26 +2,26 @@
   <!-- Forgot Password Modal -->
   <BasicModal ref="forgotPasswordModal" name="forgotPasswordModal">
     <template #title>
-      Forgot password
+      {{ $t('auth.forgotPassword') }}
     </template>
     <template #body>
       <div v-if="!forgotPassword.success">
         <div class="form-group">
-          <label for="resetEmail" class="form-label">Email Address</label>
+          <label for="resetEmail" class="form-label">{{ $t('auth.emailAddress') }}</label>
           <input
             id="resetEmail"
             v-model="forgotPassword.email"
             type="email"
             class="form-control"
-            placeholder="Enter your email address"
+            :placeholder="$t('auth.emailAddress')"
             required
             :class="{ 'is-invalid': !forgotPasswordValidEmail && forgotPassword.email.length > 0 }"
           >
           <div v-if="!forgotPasswordValidEmail && forgotPassword.email.length > 0" class="invalid-feedback">
-            Please provide a valid email address.
+            {{ $t('errors.validation.auth.provideEmail') }}
           </div>
           <small class="form-text text-muted">
-            We'll send password reset instructions to this email address.
+            {{ $t('auth.messages.passwordResetInstructions') }}
           </small>
         </div>
       </div>
@@ -37,7 +37,7 @@
     <template #footer>
       <BasicButton
         v-if="!forgotPassword.success"
-        text="Cancel"
+        :text="$t('common.cancel')"
         class="btn btn-secondary"
         data-bs-dismiss="modal"
         @click="resetForm"
@@ -46,14 +46,14 @@
         v-if="!forgotPassword.success"
         :disabled="!forgotPasswordValidEmail || forgotPassword.isLoading"
         class="btn btn-primary"
-        :text="forgotPassword.isLoading ? 'Sending...' : 'Send Reset Email'"
+        :text="forgotPassword.isLoading ? $t('modals.sending') : $t('modals.sendResetEmail')"
         @click="sendResetEmail"
       >
         <span v-if="forgotPassword.isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
       </BasicButton>
       <BasicButton
         v-if="forgotPassword.success"
-        text="Close"
+        :text="$t('common.close')"
         class="btn btn-success"
         data-bs-dismiss="modal"
         @click="resetForm"
@@ -74,6 +74,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ForgotPasswordModal",
@@ -149,7 +150,7 @@ export default {
 
         if (response.status === 200) {
           this.forgotPassword.success = true;
-          this.forgotPassword.message = response.data.message || "Password reset link has been sent to your email address.";
+          this.forgotPassword.message = resolveApiMessage(response.data, 'auth.messages.passwordResetLinkSent');
           
           // Emit success event for parent components to handle
           this.$emit('reset-email-sent', {
@@ -160,14 +161,14 @@ export default {
           // Show toast notification if eventBus is available
           if (this.eventBus) {
             this.eventBus.emit("toast", {
-              title: "Password Reset",
+              title: this.$t('modals.passwordReset'),
               message: this.forgotPassword.message,
               variant: "success",
             });
           }
         } else {
           this.forgotPassword.error = true;
-          this.forgotPassword.message = response.data.message || "Failed to send password reset email.";
+          this.forgotPassword.message = resolveApiMessage(response.data, 'errors.auth.failedToSendResetEmail');
           
           // Emit error event for parent components to handle
           this.$emit('reset-email-error', {
@@ -178,15 +179,15 @@ export default {
           // Show toast notification if eventBus is available
           if (this.eventBus) {
             this.eventBus.emit("toast", {
-              title: "Password Reset Error",
+              title: this.$t('errors.auth.passwordResetFailed'),
               message: this.forgotPassword.message,
               variant: "danger",
             });
           }
         }
-      } catch (_error) {
+      } catch (error) {
         this.forgotPassword.error = true;
-        this.forgotPassword.message = "An unexpected error occurred. Please try again.";
+        this.forgotPassword.message = this.$t('errors.server.unexpectedError');
         
         // Emit error event for parent components to handle
         this.$emit('reset-email-error', {
@@ -197,7 +198,7 @@ export default {
         // Show toast notification if eventBus is available
         if (this.eventBus) {
           this.eventBus.emit("toast", {
-            title: "Password Reset Error",
+            title: this.$t('errors.auth.passwordResetFailed'),
             message: this.forgotPassword.message,
             variant: "danger",
           });

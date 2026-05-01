@@ -1,48 +1,48 @@
 <template>
-  <Card title="Users">
+  <Card :title="$t('users.title')">
     <template #headerElements>
-      <div class="btn-group gap-2">
+      <div class="d-flex flex-wrap gap-2">
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Download Users"
-            text="Download Users"
+            :title="$t('users.downloadUsers')"
+            :text="$t('users.downloadUsers')"
             icon="download"
             @click="downloadUsers"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Rights Management"
-            text="Rights Management"
-            icon="shield-lock"
-            @click="openRightsManagementModal"
+            :title="$t('users.assignRoles')"
+            :text="$t('users.assignRoles')"
+            icon="person-bounding-box"
+            @click="$refs.assignRolesModal.open()"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Upload Password"
-            text="Upload Password"
+            :title="$t('users.uploadPassword')"
+            :text="$t('users.uploadPassword')"
             icon="key"
-            @click="openUploadModal"
+            @click="$refs.uploadModal.open()"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Import via CSV"
-            text="Import CSV"
+            :title="$t('users.importCsv')"
+            :text="$t('users.importCsv')"
             icon="filetype-csv"
-            @click="openImportModal('csv')"
+            @click="$refs.importModal.open('csv')"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Import via Moodle"
-            text="Import via Moodle"
+            :title="$t('users.importViaMoodle')"
+            :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
-            @click="openImportModal('moodle')"
+            @click="$refs.importModal.open('moodle')"
         />
         <BasicButton
             class="btn btn-primary btn-sm"
-            title="Add User"
-            text="Add User"
+            :title="$t('users.addUser')"
+            :text="$t('users.addUser')"
             icon="person-plus"
-            @click="openUserAddModal"
+            @click="$refs.userAddModal.open()"
         />
       </div>
     </template>
@@ -53,38 +53,29 @@
           :options="options"
           :buttons="buttons"
           @action="chooseAction"
-          :max-table-height="'65vh'"
       />
     </template>
   </Card>
   <DetailsModal
-      v-if="modals.details"
       ref="detailsModal"
       @update-user="fetchUsers"
-      @hide="modals.details = false"
   />
-  <RightsModal v-if="modals.rights" ref="rightsModal" @hide="modals.rights = false"/>
-  <RightsManagementModal
-    v-if="modals.rightsManagement"
-    ref="rightsManagementModal"
+  <RightsModal ref="rightsModal" />
+  <AssignRolesModal
+    ref="assignRolesModal"
     @update-user="fetchUsers"
-    @hide="modals.rightsManagement = false"
   />
-  <PasswordModal v-if="modals.password" ref="passwordModal" @hide="modals.password = false"/>
+  <PasswordModal ref="passwordModal" />
   <ImportModal
-      v-if="modals.import"
       ref="importModal"
       @update-user="fetchUsers"
-      @hide="modals.import = false"
   />
-  <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
+  <UploadModal ref="uploadModal"/>
   <UserAddModal
-      v-if="modals.userAdd"
       ref="userAddModal"
       @update-user="fetchUsers"
-      @hide="modals.userAdd = false"
   />
-  <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
+  <ConfirmModal ref="confirmModal"/>
 </template>
 
 <script>
@@ -93,18 +84,18 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
-import RightsManagementModal from "./users/RightsManagementModal.vue";
+import AssignRolesModal from "./users/AssignRolesModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
 
 /**
  * Display user list by users' role
  *
- * @author: Linyin Huang, Karim Ouf, Dennis Zyska
+ * @author: Linyin Huang
  */
 export default {
   name: "DashboardUsers",
@@ -115,7 +106,7 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
-    RightsManagementModal,
+    AssignRolesModal,
     BasicButton,
     ImportModal,
     UploadModal,
@@ -131,16 +122,6 @@ export default {
   },
   data() {
     return {
-      modals: {
-        details: false,
-        rights: false,
-        rightsManagement: false,
-        password: false,
-        import: false,
-        upload: false,
-        userAdd: false,
-        confirm: false,
-      },
       options: {
         striped: true,
         hover: true,
@@ -154,23 +135,25 @@ export default {
           order: "ASC",
         },
       },
-      columns: [
-        {name: "ID", key: "id", sortable: true, fixed: "left"},
-        {name: "First Name", key: "firstName", fixed: "left"},
-        {name: "Last Name", key: "lastName"},
-        {name: "User", key: "userName"},
-        {name: "Email", key: "email"},
-        {name: "Accept Terms", key: "acceptTerms", sortable: true},
-        {name: "Accept Stats", key: "acceptStats", sortable: true},
-        {name: "Accept Data Sharing", key: "acceptDataSharing", sortable: true},
-        {name: "Verified", key: "emailVerified"},
-        {name: "Last Login", key: "lastLoginAt", sortable: true},
-      ],
       // Possible values for role here are all the roles in the DB.
       role: "all",
     };
   },
   computed: {
+    columns() {
+      return [
+        {name: this.$t('common.id'), key: "id", sortable: true, fixed: "left"},
+        {name: this.$t('users.columns.firstName'), key: "firstName", fixed: "left"},
+        {name: this.$t('users.columns.lastName'), key: "lastName"},
+        {name: this.$t('users.columns.userName'), key: "userName"},
+        {name: this.$t('users.columns.email'), key: "email"},
+        {name: this.$t('users.columns.acceptTerms'), key: "acceptTerms", sortable: true},
+        {name: this.$t('users.columns.acceptStats'), key: "acceptStats", sortable: true},
+        {name: this.$t('users.columns.acceptDataSharing'), key: "acceptDataSharing", sortable: true},
+        {name: this.$t('users.columns.verified'), key: "emailVerified"},
+        {name: this.$t('users.columns.lastLogin'), key: "lastLoginAt", sortable: true},
+      ];
+    },
     users() {
       return this.$store.getters["admin/getUsersByRole"].map((user) => {
         return this.formatUserData(user);
@@ -202,7 +185,7 @@ export default {
     buttons() {
       return [
         {
-          title: "Edit User",
+          title: this.$t('users.editUser'),
           action: "editUser",
           stats: {
             userId: "id",
@@ -216,7 +199,7 @@ export default {
           },
         },
         {
-          title: "View Rights",
+          title: this.$t('users.viewRights'),
           action: "viewRights",
           stats: {
             userId: "id",
@@ -230,7 +213,7 @@ export default {
           },
         },
         {
-          title: "Reset Password",
+          title: this.$t('users.resetPassword'),
           action: "resetPassword",
           stats: {
             userId: "id",
@@ -244,7 +227,7 @@ export default {
           },
         },
         {
-          title: "Delete User",
+          title: this.$t('users.deleteUser'),
           action: "deleteUser",
           stats: {
             userId: "id",
@@ -264,51 +247,20 @@ export default {
     this.fetchUsers();
   },
   methods: {
-    openDetailsModal(userId) {
-      this.modals.details = true;
-      this.$nextTick(() => this.$refs.detailsModal?.open(userId));
-    },
-    openRightsModal(userId) {
-      this.modals.rights = true;
-      this.$nextTick(() => this.$refs.rightsModal?.open(userId));
-    },
-    openRightsManagementModal() {
-      this.modals.rightsManagement = true;
-      this.$nextTick(() => this.$refs.rightsManagementModal?.open());
-    },
-    openPasswordModal(userId) {
-      this.modals.password = true;
-      this.$nextTick(() => this.$refs.passwordModal?.open(userId));
-    },
-    openImportModal(type) {
-      this.modals.import = true;
-      this.$nextTick(() => this.$refs.importModal?.open(type));
-    },
-    openUploadModal() {
-      this.modals.upload = true;
-      this.$nextTick(() => this.$refs.uploadModal?.open());
-    },
-    openUserAddModal() {
-      this.modals.userAdd = true;
-      this.$nextTick(() => this.$refs.userAddModal?.open());
-    },
-    openConfirmModal(name, message, warning, cb) {
-      this.modals.confirm = true;
-      this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
-    },
     fetchUsers() {
       this.$socket.emit("userGetByRole", {role: this.role}, (response) => {
         if (!response.success) {
           this.eventBus.emit("toast", {
-            title: "Error fetching users",
-            message: response.message,
+            title: this.$t('errors.users.errorFetchingUsers'),
+            // Use resolveApiMessage to handle both new (key/params) and legacy (message) error formats
+            message: resolveApiMessage(response),
             variant: "danger",
           });
         }
       });
     },
     formatUserData(user) {
-      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+      const formatDate = (date) => (date ? formatLocalizedDate(date) : "-");
 
       return {
         ...user,
@@ -335,16 +287,16 @@ export default {
       }
     },
     openUserDetailsModal(user) {
-      this.openDetailsModal(user.id);
+      this.$refs.detailsModal.open(user.id);
     },
     openViewRightsModal(user) {
-      this.openRightsModal(user.id);
+      this.$refs.rightsModal.open(user.id);
     },
     openResetPasswordModal(user) {
-      this.openPasswordModal(user.id);
+      this.$refs.passwordModal.open(user.id);
     },
     deleteUser(user) {
-      this.openConfirmModal("Delete User", "Are you sure you want to delete this user?", null, (val) => {
+      this.$refs.confirmModal.open(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {
         if (val) {
           this.$socket.emit(
               "appDataUpdate",
@@ -358,15 +310,15 @@ export default {
               (result) => {
                 if (result.success) {
                   this.eventBus.emit("toast", {
-                    title: "User deleted",
-                    message: "User has been deleted",
+                    title: this.$t('users.messages.userDeleted'),
+                    message: this.$t('users.messages.userDeletedMessage'),
                     variant: "success",
                   });
                   this.fetchUsers();
                 } else {
                   this.eventBus.emit("toast", {
-                    title: "User not deleted",
-                    message: result.message,
+                    title: this.$t('errors.users.userNotDeleted'),
+                    message: resolveApiMessage(result),
                     variant: "danger",
                   });
                 }

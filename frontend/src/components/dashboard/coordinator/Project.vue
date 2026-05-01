@@ -2,7 +2,7 @@
   <BasicCoordinator
     ref="coordinator"
     table="project"
-    title="Project"
+    :title="$t('dashboard.projects.coordinator.title')"
   />
 </template>
 

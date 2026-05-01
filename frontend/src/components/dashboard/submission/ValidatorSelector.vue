@@ -29,7 +29,7 @@
             :key="validator.id"
             :value="validator.id"
           >
-            {{ validator.name }}
+            {{ translateMaybeKey(validator.name) }}
           </option>
         </select>
       </div>
@@ -38,7 +38,7 @@
       v-if="showWarning"
       class="alert alert-warning"
     >
-      <strong>Note:</strong> {{ warningText }}
+       <strong>{{ $t('common.note') }}:</strong> {{ warningText }}
     </div>
     <div
       v-if="showPreview"
@@ -52,7 +52,7 @@
         >
           <div class="mb-3">
             <p class="text-muted mb-2">
-              {{ selectedValidatorData.description }}
+              {{ translateMaybeKey(selectedValidatorData.description) }}
             </p>
           </div>
           <div class="mb-3">
@@ -178,6 +178,12 @@ export default {
     },
   },
   methods: {
+    translateMaybeKey(value) {
+      if (!value || typeof value !== "string") {
+        return value;
+      }
+      return this.$te(value) ? this.$t(value) : value;
+    },
     handleValidatorChange(event) {
       const validatorId = Number(event.target.value);
       if (validatorId === this.modelValue) return;

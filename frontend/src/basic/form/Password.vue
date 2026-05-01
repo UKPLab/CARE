@@ -8,7 +8,7 @@
         v-model="currentData"
         :class="options.class"
         :name="options.key"
-        :placeholder="options.placeholder"
+        :placeholder="translatedPlaceholder"
         :required="options.required"
         :pattern="options.pattern"
         :type="isPasswordVisible ? 'text' : 'password'"
@@ -55,6 +55,15 @@ export default {
       currentData: "",
       isPasswordVisible: false,
     };
+  },
+  computed: {
+    translatedPlaceholder() {
+      const placeholder = this.options.placeholder;
+      if (typeof placeholder !== "string") {
+        return placeholder;
+      }
+      return this.$te(placeholder) ? this.$t(placeholder) : placeholder;
+    },
   },
   watch: {
     currentData() {

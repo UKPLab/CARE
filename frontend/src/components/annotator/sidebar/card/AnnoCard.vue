@@ -19,9 +19,9 @@
             @click.stop="handleCheckIconClick"
           >
             <LoadIcon
-              :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
-              :size="18"
-              :style="{ cursor: 'pointer' }"
+              icon-name="check-square"
+              :size="16"
+              :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
               class="check-icon"
             />
           </div>
@@ -36,10 +36,10 @@
         </div>
         <div class="col text-end">
           <span v-if="annotation">
-            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+            {{ formatLocalizedDate(annotation.updatedAt) }}
           </span>
           <span v-else>
-            {{ new Date(comment.updatedAt).toLocaleDateString() }}
+            {{ formatLocalizedDate(comment.updatedAt) }}
           </span>
         </div>
       </div>
@@ -48,6 +48,7 @@
         <div v-if="editingTag && annotationId" class="d-flex align-items-center">
           <select
             v-model="selectedTagId"
+            @change="saveTagChange"
             class="form-select form-select-md"
             :style="{
               display: 'inline-block',
@@ -56,7 +57,6 @@
               fontSize: 'small',
               fontStyle: 'italic'
             }"
-            @change="saveTagChange"
           >
             <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
               {{ tag.name }}
@@ -66,7 +66,7 @@
                   :loading="false"
                   :props="$props"
                   icon="x-square-fill"
-                  title="Cancel"
+                  :title="$t('common.cancel')"
                   @click="editingTag = false"
           />
         </div>
@@ -100,15 +100,15 @@
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="floppy-fill"
-                  title="Save"
+                  icon="save-fill"
+                  :title="$t('common.save')"
                   @click="save"
               />
               <SidebarButton
                   :loading="false"
                   :props="$props"
                   icon="x-square-fill"
-                  title="Cancel"
+                  :title="$t('common.cancel')"
                   @click="cancel"
               />
             </div>
@@ -123,12 +123,12 @@
                   class="btn btn-light btn-sm"
                   data-placement="top"
                   data-toggle="tooltip"
-                  title="Reply"
+                  :title="$t('common.reply')"
                   type="button"
                   @click="showReplies = !showReplies; maxComments = defaultNumComments"
               >
                 <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
-                <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
+                <span>{{ showReplies ? $t('common.hide') : $t('common.show') }} {{ $t('annotator.replies') }} ({{ numberReplies }})</span>
               </button>
             </div>
             <div
@@ -139,7 +139,7 @@
                   :loading="false"
                   :props="$props"
                   icon="reply-fill"
-                  title="Reply"
+                  :title="$t('common.reply')"
                   @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
               />
               <NLPService
@@ -147,7 +147,7 @@
                   :data="summarizationRequestData"
                   :skill="summarizationSkillName"
                   icon-name="file-text"
-                  title="Summarize"
+                  :title="$t('common.summarize')"
                   type="button"
                   @response="summarizeResponse"
               />
@@ -157,7 +157,7 @@
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
-                  title="Edit"
+                  :title="$t('common.edit')"
                   @click="edit"
               />
               <SidebarButton
@@ -165,7 +165,7 @@
                 :loading="false"
                 :props="$props"
                 icon="tag"
-                title="Edit main tag"
+                :title="$t('tags.editMainTag')"
                 @click="toggleEditTag"
             />
               <SidebarButton
@@ -173,7 +173,7 @@
                   :loading="false"
                   :props="$props"
                   icon="trash3"
-                  title="Delete"
+                  :title="$t('common.delete')"
                   @click="remove"
               />
             </div>
@@ -197,25 +197,25 @@
           </span>
           <div class="btn-group">
             <button
-            v-if="showExtenderButton"
             class="btn btn-light btn-sm"
+            v-if="showExtenderButton"
             @click="maxComments+=5"
             >
-              Show more
+              {{ $t('common.showMore') }}
             </button>
             <button
-            v-if="!showExtenderButton && numChildComments > defaultNumComments"
             class="btn btn-light btn-sm"
+            v-if="!showExtenderButton && numChildComments > defaultNumComments"
             @click="maxComments=defaultNumComments"
             >
-              Show less
+              {{ $t('common.showLess') }}
             </button>
             <button
-            v-if="maxComments > defaultNumComments"
             class="btn btn-light btn-sm"
+            v-if="maxComments > defaultNumComments"
             @click="maxComments=defaultNumComments; showReplies = !showReplies"
             >
-              Hide replies
+              {{ $t('common.hideReplies') }}
             </button>
           </div>
             
@@ -232,6 +232,7 @@ import SidebarButton from "./Button.vue"
 import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 
 /** Annotation elements
  *
@@ -462,6 +463,7 @@ export default {
     }
   },
   methods: {
+    formatLocalizedDate,
     getColor(tagId) {
       if (tagId) {
         const tag = this.$store.getters['table/tag/get'](tagId);
@@ -531,16 +533,16 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Annotation Update Failed",
-              message: res.message,
+              title: this.$t('errors.annotator.annotationUpdateFailed'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
             return //to ensure we dont save the comment if the annotation update fails
           }
         });
       }
-      this.$refs.main_comment?.save();
-      this.$refs.collab?.removeCollab();
+      this.$refs.main_comment.save();
+      this.$refs.collab.removeCollab();
     },
     cancel() {
       if (this.annotationId) {
@@ -554,8 +556,8 @@ export default {
           }, (result) => {
             if (!result.success) {
               this.eventBus.emit("toast", {
-                title: "Annotation not retrieved",
-                message: result.message,
+                title: this.$t('errors.annotator.annotationNotRetrieved'),
+                message: resolveApiMessage(result),
                 variant: "danger",
               });
 
@@ -571,8 +573,8 @@ export default {
           }, (res) => {
             if (!res.success) {
               this.eventBus.emit("toast", {
-                title: "Comments not retrieved",
-                message: res.message,
+                title: this.$t('errors.annotator.commentsNotRetrieved'),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }
@@ -603,8 +605,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Tag Update Failed",
-              message: res.message,
+              title: this.$t('errors.tags.tagUpdateFailed'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -621,8 +623,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Annotation Update Failed",
-              message: res.message,
+              title: this.$t('errors.annotator.annotationUpdateFailed'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -634,8 +636,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Comment not updated",
-              message: res.message,
+              title: this.$t('errors.annotator.commentNotUpdated'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -659,8 +661,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Comment not updated",
-            message: res.message,
+            title: this.$t('errors.annotator.commentNotUpdated'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -757,7 +759,7 @@ export default {
 }
 
 .check-icon:hover {
-  color: #007bff !important;
+  color: #28a745 !important;
 }
 
 .header-hoverable {

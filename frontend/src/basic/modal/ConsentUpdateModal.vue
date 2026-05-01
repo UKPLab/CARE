@@ -4,7 +4,7 @@
       size="lg"
       name="ConsentUpdateModal">
     <template #title>
-      <span>Update Consent</span>
+      <span>{{ $t('auth.updateConsent') }}</span>
     </template>
     <template #body>
       <div
@@ -17,7 +17,7 @@
               class="consent-input"
               type="checkbox"
           />
-          I agree to my data being made available for research purposes
+          {{ $t('auth.acceptDataSharing') }}
         </label>
       </div>
       <div
@@ -30,19 +30,19 @@
               class="consent-input"
               type="checkbox"
           />
-          I allow the collection of behaviour statistics for research purposes
+          {{ $t('auth.acceptStatsBehavior') }}
         </label>
       </div>
     </template>
     <template #footer>
       <span class="btn-group">
         <BasicButton
-            title="Cancel"
+            :title="$t('common.cancel')"
             class="btn btn-secondary"
             @click="$refs.modal.close()"
         />
         <BasicButton
-            title="Confirm"
+            :title="$t('common.confirm')"
             class="btn btn-primary"
             @click="confirm"
         />
@@ -54,6 +54,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for updating user's consent
@@ -106,14 +107,14 @@ export default {
           this.$refs.modal.close();
           this.$store.commit("auth/SET_USER", res.data);
           this.eventBus.emit("toast", {
-            title: "Consent successful updated",
-            message: "The consent are successfully updated",
+            title: this.$t('auth.messages.consentUpdated'),
+            message: this.$t('auth.messages.consentUpdatedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Error in updating consent",
-            message: res.message,
+            title: this.$t('errors.auth.consentUpdateError'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

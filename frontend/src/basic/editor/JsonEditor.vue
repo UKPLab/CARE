@@ -1,7 +1,7 @@
 <template>
   <blockquote
-      v-show="content"
       ref="top"
+      v-show="content"
       class="blockquote fs-6 position-relative"
       @mouseover="showControls=true"
       @mouseleave="showControls=false"
@@ -11,12 +11,12 @@
         class="bg-light border-start"
         @dblclick="toEditMode(true)"
     >
-      <div v-show="showControls" class="button-group position-absolute top-0 end-0 opacity-50 pe-1">
+      <div class="button-group position-absolute top-0 end-0 opacity-50 pe-1" v-show="showControls">
         <button
-            v-show="!editMode"
             class="btn"
-            title="Copy"
             @click="(e) => {e.stopPropagation(); copy()}"
+            :title="$t('common.copy')"
+            v-show="!editMode"
         >
           <LoadIcon
               class="me-1"
@@ -25,10 +25,10 @@
           />
         </button>
         <button
-            v-show="!editMode && !readOnly"
             class="btn"
-            title="Edit"
             @click="(e) => {e.stopPropagation(); toEditMode(true)}"
+            :title="$t('common.edit')"
+            v-show="!editMode && !readOnly"
         >
           <LoadIcon
               class="me-1"
@@ -37,10 +37,10 @@
           />
         </button>
         <button
-            v-show="editMode && !readOnly"
             class="btn"
-            title="Edit"
             @click="(e) => {e.stopPropagation(); toEditMode(false)}"
+            :title="$t('common.edit')"
+            v-show="editMode && !readOnly"
         >
           <LoadIcon
               class="me-1"
@@ -50,8 +50,8 @@
         </button>
       </div>
       <form v-if="editMode">
-        <textarea v-model="contentText" :rows="contentText.split('\n').length" class="code form-check-input w-100 h-100"
-                  title="Edit JSON" type="text"> </textarea>
+        <textarea :rows="contentText.split('\n').length" v-model="contentText" class="code form-check-input w-100 h-100"
+                  :title="$t('editor.editJson')" type="text"> </textarea>
       </form>
     </div>
   </blockquote>
@@ -137,7 +137,7 @@ export default {
 
     try {
       window.removeEventListener("click", this.leaveEditModeListener);
-    } catch (_error) {
+    } catch (e) {
       // do nothing
     }
   },
@@ -152,7 +152,7 @@ export default {
       try {
         JSON.parse(this.contentText);
         return true;
-      } catch (_error) {
+      } catch (e) {
         return false;
       }
     },
@@ -193,21 +193,21 @@ export default {
         try {
           await navigator.clipboard.writeText(JSON.stringify(this.content, null, 2));
           this.eventBus.emit('toast', {
-            title: "Json copied",
-            message: "Json copied to clipboard!",
+            title: this.$t('editor.copyJsonSuccess.title'),
+            message: this.$t('editor.copyJsonSuccess.message'),
             variant: "success"
           });
-        } catch (_error) {
+        } catch ($e) {
           this.eventBus.emit('toast', {
-            title: "Json not copied",
-            message: "Could not copy json to clipboard!",
+            title: this.$t('errors.file.copyJsonError.title'),
+            message: this.$t('errors.file.copyJsonError.notCopiedMsg'),
             variant: "danger"
           });
         }
       } else {
         this.eventBus.emit('toast', {
-          title: "Json not copied",
-          message: "Json not loaded or empty, cannot copy.",
+          title: this.$t('errors.file.copyJsonError.title'),
+          message: this.$t('errors.file.copyJsonError.notLoadedMsg'),
           variant: "danger"
         });
       }

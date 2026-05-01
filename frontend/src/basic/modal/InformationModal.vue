@@ -5,7 +5,7 @@
     name="informationModal"
   >
     <template #title>
-      <h5 class="modal-title text-primary">Details</h5>
+      <h5 class="modal-title text-primary">{{ $t('common.details') }}</h5>
     </template>
     <template #body>
       <div class="information-container p-3">
@@ -33,7 +33,7 @@
     </template>
     <template #footer>
       <div class="d-flex justify-content-end">
-        <BasicButton class="btn btn-outline-secondary" title="Close" @click="close" />
+        <BasicButton class="btn btn-outline-secondary" @click="close" :title="$t('common.close')" />
       </div>
     </template>
   </BasicModal>
@@ -77,7 +77,7 @@ export default {
     },
     transformValue(value) {
       if (value === null) {
-        return "Not yet set";
+        return this.$t('common.notSet');
       }
       if (typeof value === "string" && value.startsWith("<p>")) {
         const parser = new DOMParser();

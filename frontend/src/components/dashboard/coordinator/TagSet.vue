@@ -2,7 +2,9 @@
   <BasicCoordinator
     ref="coordinator"
     table="tag_set"
-    title="Tag Set"
+    :title="$t('tags.tagSet')"
+    :new-title-key="'tags.modalTitle.newTagSet'"
+    :edit-title-key="'tags.modalTitle.editTagSet'"
   />
 </template>
 
@@ -36,14 +38,14 @@ export default {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-          title: "Link copied",
-          message: "Document link copied to clipboard!",
+          title: this.$t('studies.messages.linkCopied'),
+          message: this.$t('documents.messages.linkCopiedMessage'),
           variant: "success"
         });
-      } catch (_error) {
+      } catch ($e) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Could not copy document link to clipboard!",
+          title: this.$t('errors.clipboard.linkNotCopied'),
+          message: this.$t('errors.clipboard.copyFailed'),
           variant: "danger"
         });
       }

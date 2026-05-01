@@ -3,69 +3,70 @@
     ref="assignProjectStepper"
     :steps="assignSteps"
     :validation="stepValid"
-    submit-text="Assign"
+    :submit-text="$t('common.assign')"
     @step-change="handleAssignStepChange"
     @submit="handleAssignSubmit"
   >
     <template #title>
-      <span>Assign Projects to Users</span>
+      <span>{{ $t('dashboard.projects.assignProjectsToUsers') }}</span>
     </template>
 
     <template #step-1>
       <div class="mb-3">
-        <h6>Select projects to assign:</h6>
+        <h6>{{ $t('dashboard.projects.selectProjectToAssign') }}</h6>
         <BasicForm
           ref="dataSelectionForm"
           v-model="dataSelection"
           :fields="dataSelectionFields"
         />
         <small class="text-muted">{{
-          dataSelection.project ? "1 project selected" : "0 projects selected"
+          dataSelection.project ?  $t('dashboard.projects.OneProjectSelected')  : $t('dashboard.projects.ZeroProjectsSelected')
         }}</small>
       </div>
     </template>
 
     <template #step-2>
       <div class="mb-3">
-        <h6>Select users to assign projects to:</h6>
+        <h6>{{ $t('dashboard.projects.selectUsersToAssignProjectsTo') }}</h6>
         <BasicTable
           v-model="userSelection"
-          :columns="table.columns"
+          :columns="tableColumns"
           :data="users"
           :options="table.options"
-          :max-table-height="'60vh'"
         />
         <small class="text-muted"
-          >{{ Object.keys(userSelection || {}).length }} user(s) selected</small
+          >{{ Object.keys(userSelection || {}).length }} {{ $t('dashboard.projects.usersSelected') }}</small
         >
       </div>
     </template>
 
     <template #step-3>
       <div class="mb-3">
-        <h6>Confirm assignment:</h6>
+        <h6>{{ $t('dashboard.projects.confirmAssignment') }}</h6>
         <div class="alert alert-info">
-          <strong>Summary:</strong><br />
-          You are about to assign <strong>1</strong> project to
-          <strong>{{ Object.keys(userSelection || {}).length }}</strong>
-          user(s).
+          <strong>{{ $t('dashboard.projects.summary') }}</strong><br />
+          <i18n-t keypath="dashboard.projects.aboutToAssign" tag="span">
+             <template #projectCount><strong>1</strong></template>
+             <template #userCount>
+              <strong>{{ Object.keys(userSelection || {}).length }}</strong>
+            </template>
+          </i18n-t>
         </div>
 
         <div class="alert alert-warning">
-          <strong>Note:</strong> By assigning users to this project, the project
-          will automatically be made public.
+          <strong>{{ $t('dashboard.projects.noteLabel') }}</strong> {{ $t('dashboard.projects.noteBody') }}
         </div>
 
         <div class="row">
           <div class="col-md-6">
-            <h6 class="text-primary">Selected Project:</h6>
+            <h6 class="text-primary">{{ $t('dashboard.projects.selectedProjects') }}</h6>
             <div v-if="dataSelection.project" class="mb-1">
               <i class="bi bi-folder me-1"></i>
               {{ getProject(dataSelection.project).name }}
             </div>
           </div>
           <div class="col-md-6">
-            <h6 class="text-success">Selected Users:</h6>
+            <h6 class="text-success">{{ $t('dashboard.projects.selectedUsers') }}</h6>
             <ul class="list-unstyled">
               <li
                 v-for="user in Object.values(userSelection || {})"
@@ -87,6 +88,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AssignProjectModal",
@@ -97,11 +99,6 @@ export default {
   },
   data() {
     return {
-      assignSteps: [
-        { title: "Select Projects" },
-        { title: "Select Users" },
-        { title: "Confirm" },
-      ],
       dataSelection: [],
       userSelection: [],
       table: {
@@ -113,18 +110,26 @@ export default {
           small: false,
           selectableRows: true,
           pagination: 10,
-          search: true,
         },
-        columns: [
-          { name: "User Id", key: "id", sortable: true },
-          { name: "First Name", key: "firstName", sortable: true },
-          { name: "Last Name", key: "lastName", sortable: true },
-          { name: "Email", key: "email", sortable: true },
-        ],
       },
     };
   },
   computed: {
+    assignSteps() {
+    return [
+      { title: this.$t('dashboard.projects.selectProjects') },
+      { title: this.$t('dashboard.projects.selectUsers') },
+      { title: this.$t('common.confirm') },
+      ];
+    },
+  tableColumns() {
+    return [
+      { name: this.$t('common.userId'), key: "id", sortable: true },
+      { name: this.$t('common.firstName'), key: "firstName", sortable: true },
+      { name: this.$t('common.lastName'), key: "lastName", sortable: true },
+      { name: this.$t('users.columns.email'), key: "email", sortable: true },
+      ];
+    },
     projects() {
       return this.$store.getters["table/project/getAll"];
     },
@@ -138,7 +143,7 @@ export default {
       return [
         {
           key: "project",
-          label: "Select Project",
+          label: this.$t('dashboard.projects.selectProject'),
           type: "select",
           default: 1,
           options: this.projects.map((project) => ({
@@ -161,8 +166,8 @@ export default {
 
       if (!projectId || this.userSelection.length === 0) {
         this.eventBus.emit("toast", {
-          title: "Assignment failed",
-          message: "Please select a project and at least one user.",
+          title: this.$t('dashboard.projects.assignmentFailed'),
+          message: this.$t('dashboard.projects.selectMessage'),
           variant: "danger",
         });
         return;
@@ -182,8 +187,8 @@ export default {
           (result) => {
             if (!result.success) {
               this.eventBus.emit("toast", {
-                title: "Project assignment failed",
-                message: result.message,
+                title: this.$t('dashboard.projects.projectAssignmentFailed'),
+                message: resolveApiMessage(result),
                 variant: "danger",
               });
               return;
@@ -203,15 +208,15 @@ export default {
         (result) => {
           if (!result || !result.success) {
             this.eventBus.emit("toast", {
-              title: "Assignment failed",
-              message: result?.message || "Unknown error",
+              title: this.$t('dashboard.projects.assignmentFailed'),
+              message: resolveApiMessage(result) || this.$t('errors.server.unknownError'),
               variant: "danger",
             });
             return;
           }
           this.eventBus.emit("toast", {
-            title: "Project assigned",
-            message: `The project has been successfully assigned to ${userIds.length} user(s).`,
+            title: this.$t('dashboard.projects.projectAssigned'),
+            message: this.$t('dashboard.projects.successfullyAssignedMessage', { count: userIds.length }),
             variant: "success",
           });
           this.close();

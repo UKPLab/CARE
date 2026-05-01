@@ -14,9 +14,9 @@
       v-if="'label' in options"
       :for="options.key"
       class="form-label"
-    >{{ options.label }}</label>
+    >{{ $te(options.label) ? $t(options.label) : options.label }}</label>
     <FormHelp
-      :help="options.help"
+    :help="$te(options.help) ? $t(options.help) : options.help"
     />
   </span>
 </template>
