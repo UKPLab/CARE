@@ -372,6 +372,23 @@ module.exports = class Server {
                 await this.availSockets[socket.id][socketName].init();
             });
 
+            // If a recording is in progress and this new connection isn't in the
+            // participant list, notify the recording's owner that the activity
+            // won't be captured.
+            if (this.activeRecordingId && this.activeRecordingOwnerSocketId) {
+                const participants = this.activeParticipantSocketIds || [];
+                if (!participants.includes(socket.id)) {
+                    const ownerSocket = this.io.sockets.sockets.get(this.activeRecordingOwnerSocketId);
+                    if (ownerSocket) {
+                        ownerSocket.emit("toast", {
+                            title: "Uncaptured connection",
+                            message: "Uncaptured connection detected — not part of this recording",
+                            variant: "warning",
+                        });
+                    }
+                }
+            }
+
             socket.on("disconnect", async (reason) => {
                 try {
                     this.logger.debug("Socket disconnected: " + reason);

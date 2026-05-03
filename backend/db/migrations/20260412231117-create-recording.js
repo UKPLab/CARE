@@ -43,6 +43,11 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
       },
+      participantSocketIds: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: null,
+      },
       excludeEvents: {
         type: Sequelize.JSONB,
         allowNull: true,

@@ -3,9 +3,11 @@ const Socket = require("../Socket.js");
 /**
  * Recorder Socket
  *
- * Captures WebSocket events across connected users for stress-test replay.
- * Recording is a server-wide toggle — admin chooses which users to include,
- * or leaves the list empty to record everyone.
+ * Captures WebSocket events across connected sockets for stress-test replay.
+ * Recording is a server-wide toggle — admin chooses which active sessions
+ * (sockets) to include. Pure session-based selection: only the listed
+ * socketIds are recorded. New connections during a recording are NOT
+ * automatically captured (a warning toast goes to the recording owner).
  */
 class RecorderSocket extends Socket {
 
@@ -16,14 +18,14 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Returns true if this user should be recorded under the current configuration.
+     * Returns true if this socket should be recorded under the current configuration.
      */
-    isUserIncluded(userId) {
-        const participants = this.server.activeParticipantUserIds;
+    isSessionIncluded(socketId) {
+        const participants = this.server.activeParticipantSocketIds;
         if (!participants || participants.length === 0) {
-            return true; // empty / null = record everyone
+            return false;
         }
-        return participants.includes(userId);
+        return participants.includes(socketId);
     }
 
     attachListeners() {
@@ -91,9 +93,14 @@ class RecorderSocket extends Socket {
             throw new Error("A recording is already in progress");
         }
 
-        const participantUserIds = Array.isArray(data?.participantUserIds) && data.participantUserIds.length > 0
-            ? data.participantUserIds
+        const participantSocketIds = Array.isArray(data?.participantSocketIds) && data.participantSocketIds.length > 0
+            ? data.participantSocketIds
             : null;
+
+        if (!participantSocketIds) {
+            throw new Error("At least one session must be selected");
+        }
+
         const excludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
             ? data.excludeEvents
             : null;
@@ -103,20 +110,22 @@ class RecorderSocket extends Socket {
             status: "recording",
             startTime: new Date(),
             userId: this.userId,
-            participantUserIds,
+            participantSocketIds,
             excludeEvents,
         }, options);
 
         this.server.activeRecordingId = recording.id;
-        this.server.activeParticipantUserIds = participantUserIds;
-        this.server.activeExcludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
-            ? data.excludeEvents
-            : null;
+        this.server.activeParticipantSocketIds = participantSocketIds;
+        this.server.activeRecordingOwnerSocketId = this.socket.id;
+        this.server.activeExcludeEvents = excludeEvents;
 
-        // Attach listeners on included users' sockets
+        console.log("[startRecording] activeParticipantSocketIds:", this.server.activeParticipantSocketIds);
+        console.log("[startRecording] all available socketIds:", Object.keys(this.server.availSockets));
         for (const socketId of Object.keys(this.server.availSockets)) {
             const recorder = this.server.availSockets[socketId]["RecorderSocket"];
-            if (recorder && recorder.isUserIncluded(recorder.userId)) {
+            const included = recorder ? recorder.isSessionIncluded(recorder.socket.id) : "no recorder";
+            console.log(`[startRecording] socket ${socketId}: included=${included}`);
+            if (recorder && recorder.isSessionIncluded(recorder.socket.id)) {
                 recorder.attachListeners();
             }
         }
@@ -140,7 +149,8 @@ class RecorderSocket extends Socket {
         );
 
         this.server.activeRecordingId = null;
-        this.server.activeParticipantUserIds = null;
+        this.server.activeParticipantSocketIds = null;
+        this.server.activeRecordingOwnerSocketId = null;
         this.server.activeExcludeEvents = null;
 
         const traces = await this.models["trace"].findAll({
@@ -154,6 +164,7 @@ class RecorderSocket extends Socket {
                 id: t.id,
                 recordingId: t.recordingId,
                 userId: t.userId,
+                socketId: t.socketId,
                 action: t.action,
                 direction: t.direction,
                 startTime: t.startTime,
@@ -172,6 +183,7 @@ class RecorderSocket extends Socket {
             id: t.id,
             recordingId: t.recordingId,
             userId: t.userId,
+            socketId: t.socketId,
             action: t.action,
             direction: t.direction,
             startTime: t.startTime,
@@ -180,31 +192,52 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Returns userIds of all currently connected sockets, deduplicated.
-     * Used by the Start Recording modal to show who's online right now.
+     * Returns one entry per active socket connection (= session).
+     * Used by the Start Recording modal to populate the session selection table.
+     * Offline users have no sessions and are not returned.
      */
-    async getOnlineUsers(data, options) {
-        const sessionCountByUser = {};
+    async getOnlineSessions(data, options) {
+        const userIds = new Set();
+        const sessions = [];
         for (const socketId of Object.keys(this.server.availSockets)) {
             const bucket = this.server.availSockets[socketId];
-            const anySocket = Object.values(bucket)[0];
-            if (anySocket && anySocket.userId) {
-                sessionCountByUser[anySocket.userId] = (sessionCountByUser[anySocket.userId] || 0) + 1;
+            const userSocket = bucket["UserSocket"];
+            if (userSocket && userSocket.userId) {
+                userIds.add(userSocket.userId);
+                sessions.push({
+                    socketId,
+                    userId: userSocket.userId,
+                    connectedAt: userSocket.connectedAt || null,
+                });
             }
         }
-        return Object.entries(sessionCountByUser).map(([userId, sessionCount]) => ({
-            userId: parseInt(userId, 10),
-            sessionCount,
+
+        // Resolve userNames in one query
+        const userMap = {};
+        if (userIds.size > 0) {
+            const users = await this.models["user"].findAll({
+                where: { id: Array.from(userIds) },
+            });
+            for (const u of users) {
+                userMap[u.id] = u.userName;
+            }
+        }
+
+        return sessions.map(s => ({
+            ...s,
+            userName: userMap[s.userId] || "Unknown",
         }));
+        console.log("[getOnlineSessions] returning:", JSON.stringify(result, null, 2));
+        return result;
     }
 
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
         this.createSocket("recorderStop", this.stopRecording, {}, false);
         this.createSocket("recordingGetTraces", this.getTraces, {}, false);
-        this.createSocket("recordingGetOnlineUsers", this.getOnlineUsers, {}, false);
+        this.createSocket("recordingGetOnlineSessions", this.getOnlineSessions, {}, false);
 
-        if (this.server.activeRecordingId && this.isUserIncluded(this.userId)) {
+        if (this.server.activeRecordingId && this.isSessionIncluded(this.socket.id)) {
             this.attachListeners();
         }
     }

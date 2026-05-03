@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
             endTime: DataTypes.DATE,
             userId: DataTypes.INTEGER,
             participantUserIds: DataTypes.JSONB,
+            participantSocketIds: DataTypes.JSONB,
             excludeEvents: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,

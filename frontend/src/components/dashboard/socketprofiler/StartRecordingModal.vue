@@ -18,12 +18,16 @@
         />
       </div>
       <div class="mb-3">
-        <label class="form-label fw-bold">Select Users to Record</label>
+        <label class="form-label fw-bold">Select Sessions to Record</label>
+        <p class="text-muted small">
+          Each row is one active connection. Only the selected sessions will be recorded.
+          New connections that appear during recording are not auto-included.
+        </p>
         <BasicTable
-          v-model="selectedUsers"
-          :columns="userTableColumns"
-          :data="userTable"
-          :options="userTableOptions"
+          v-model="selectedSessions"
+          :columns="sessionTableColumns"
+          :data="sessionTable"
+          :options="sessionTableOptions"
           :max-table-height="250"
         />
       </div>
@@ -85,7 +89,7 @@
       <BasicButton
         class="btn-primary"
         :text="startButtonText"
-        :disabled="selectedUsers.length === 0"
+        :disabled="selectedSessions.length === 0"
         @click="confirm"
       />
     </template>
@@ -99,13 +103,12 @@ import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "StartRecordingModal",
-  subscribeTable: ["user"],
   components: { BasicModal, BasicButton, BasicTable },
   data() {
     return {
       recordingName: "",
-      selectedUsers: [],
-      onlineSessions: {},
+      selectedSessions: [],
+      onlineSessions: [], // [{socketId, userId, userName, connectedAt}]
       excludeEvents: ["stats", "subscribeAppData", "unsubscribeAppData"],
       customExcludeEvent: "",
       customExcludes: [],
@@ -114,7 +117,7 @@ export default {
         "subscribeAppData",
         "unsubscribeAppData",
       ],
-      userTableOptions: {
+      sessionTableOptions: {
         striped: true,
         hover: true,
         bordered: false,
@@ -127,41 +130,33 @@ export default {
     };
   },
   computed: {
-    users() {
-      return this.$store.getters["table/user/getAll"];
-    },
     currentUserId() {
       return this.$store.getters["auth/getUserId"];
     },
-    userTable() {
-      return this.users.map(u => ({
-        ...u,
-        userName: u.userName || "N/A",
-        firstName: u.firstName || "Unknown",
-        lastName: u.lastName || "Unknown",
-        online: this.onlineSessions[u.id] ? "Yes" : "",
-        sessions: this.onlineSessions[u.id] || 0,
+    currentSocketId() {
+      return this.$socket.id;
+    },
+    sessionTable() {
+      return this.onlineSessions.map(s => ({
+        ...s,
+        // BasicTable likely needs a unique `id` field for selection tracking
+        id: s.socketId,
+        socketIdShort: s.socketId ? s.socketId.substring(0, 8) + "…" : "",
+        connectedAtDisplay: s.connectedAt ? new Date(s.connectedAt).toLocaleTimeString() : "—",
+        isCurrent: s.socketId === this.currentSocketId ? "(this tab)" : "",
       }));
     },
-    userTableColumns() {
+    sessionTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "Username", key: "userName" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        {
-          name: "Online",
-          key: "online",
-          filter: [
-            { key: "Yes", name: "Online" },
-            { key: "", name: "Offline" },
-          ],
-        },
-        { name: "Sessions", key: "sessions", sortable: true },
+        { name: "User ID", key: "userId", sortable: true },
+        { name: "Username", key: "userName", sortable: true },
+        { name: "Session", key: "socketIdShort" },
+        { name: "Connected", key: "connectedAtDisplay" },
+        { name: "", key: "isCurrent" },
       ];
     },
     startButtonText() {
-      return "Record " + this.selectedUsers.length + " User(s)";
+      return "Record " + this.selectedSessions.length + " Session(s)";
     },
     allExcludeEvents() {
       return [...this.excludeEvents, ...this.customExcludes];
@@ -170,25 +165,21 @@ export default {
   methods: {
     open() {
       this.recordingName = "Recording " + new Date().toLocaleString();
-      this.selectedUsers = [];
-      this.onlineSessions = {};
+      this.selectedSessions = [];
+      this.onlineSessions = [];
       this.excludeEvents = ["stats", "subscribeAppData", "unsubscribeAppData"];
       this.customExcludeEvent = "";
       this.customExcludes = [];
 
-      this.$socket.emit("recordingGetOnlineUsers", {}, (res) => {
+      this.$socket.emit("recordingGetOnlineSessions", {}, (res) => {
         if (res.success) {
-          const map = {};
-          (res.data || []).forEach(entry => {
-            map[entry.userId] = entry.sessionCount;
-          });
-          this.onlineSessions = map;
+          this.onlineSessions = res.data || [];
         }
-        // Pre-select admin AFTER onlineSessions is set, so userTable is stable
-        // and the object reference in selectedUsers matches what the table renders
-        const adminUser = this.userTable.find(u => u.id === this.currentUserId);
-        if (adminUser) {
-          this.selectedUsers = [adminUser];
+        // Pre-select the current tab's session AFTER onlineSessions is set,
+        // so sessionTable is stable and the object reference matches.
+        const ownRow = this.sessionTable.find(s => s.socketId === this.currentSocketId);
+        if (ownRow) {
+          this.selectedSessions = [ownRow];
         }
       });
 
@@ -208,18 +199,18 @@ export default {
       this.customExcludes = this.customExcludes.filter(e => e !== event);
     },
     confirm() {
-      const participantUserIds = this.selectedUsers.map(u => u.id);
+      const participantSocketIds = this.selectedSessions.map(s => s.socketId);
 
       this.$socket.emit("recorderStart", {
         name: this.recordingName,
-        participantUserIds,
+        participantSocketIds,
         excludeEvents: this.allExcludeEvents,
       }, (res) => {
         if (res.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
             title: "Recording started",
-            message: "Recording " + this.selectedUsers.length + " user(s), excluding " + this.allExcludeEvents.length + " event type(s)",
+            message: "Recording " + this.selectedSessions.length + " session(s), excluding " + this.allExcludeEvents.length + " event type(s)",
             variant: "success",
           });
         } else {
