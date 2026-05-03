@@ -26,13 +26,29 @@
             :height="30"
           />
         </a>
-        <div id="topbarCustomPlaceholder"/>   
-        <div id="topbarCenterPlaceholder"/> 
+        <div id="topbarCustomPlaceholder"/>
+        <div id="topbarCenterPlaceholder"/>
         <ul
           id="topBarNavItems"
           class="navbar-nav ms-auto mt-2 mt-lg-0"
-        />   
+        />
         <ul class="navbar-nav">
+          <li
+            v-if="showRecordingIcon"
+            class="nav-item me-3 d-flex align-items-center"
+          >
+            <span
+              class="recording-icon"
+              :class="{ 'cursor-pointer': isAdmin }"
+              :title="recordingTooltip"
+              @click="onRecordingIconClick"
+            >
+              <LoadIcon
+                name="record-circle"
+                :size="18"
+              />
+            </span>
+          </li>
           <li class="nav-item me-3">
             <div
               v-if="!isProjectButtonHidden && isInDashboard"
@@ -90,14 +106,14 @@
                 <a class="dropdown-item display-username">
                   Signed in as {{ username }}
                 </a>
-                <a 
+                <a
                   class="dropdown-item"
                   href="#"
                   @click="$refs.twoFactorSettingsModal.open()"
                 >
                   Configure 2FA
                 </a>
-                <a 
+                <a
                   v-if="consentEnabled"
                   class="dropdown-item"
                   href="#"
@@ -105,7 +121,7 @@
                 >
                   Update consent
                 </a>
-                <a 
+                <a
                   class="dropdown-item"
                   href="#"
                   @click="$refs.passwordModal.open(userId)"
@@ -158,6 +174,8 @@ export default {
   },
   subscribeTable: [{
     table: 'project',
+  }, {
+    table: 'recording',
   }],
   computed: {
     allProjects() {
@@ -186,6 +204,31 @@ export default {
     },
     consentEnabled() {
       return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
+    },
+    isAdmin() {
+      return this.$store.getters["auth/isAdmin"];
+    },
+    activeRecording() {
+      const recordings = this.$store.getters["table/recording/getAll"] || [];
+      return recordings.find(r => r.status === "recording") || null;
+    },
+    isParticipant() {
+      const rec = this.activeRecording;
+      if (!rec || !this.$socket?.id) return false;
+      const sockets = rec.participantSocketIds || [];
+      return sockets.includes(this.$socket.id);
+    },
+    showRecordingIcon() {
+      if (!this.activeRecording) return false;
+      // Admins always see the icon during a recording.
+      // Non-admins see it only if their socket is in the participant list.
+      return this.isAdmin || this.isParticipant;
+    },
+    recordingTooltip() {
+      if (this.isAdmin) {
+        return "Recording in progress — return to Socket Profiler to stop";
+      }
+      return "You're being recorded for testing purposes";
     },
   },
   mounted() {
@@ -220,6 +263,11 @@ export default {
       } else {
         await this.$router.push('/dashboard');
       }
+    },
+    onRecordingIconClick() {
+      // Admins jump to the Socket Profiler dashboard to manage the recording.
+      // Non-admin participants: no action — they can't stop recordings.
+      
     },
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');
@@ -310,6 +358,22 @@ body.sidebar-exists #backButton {
 .project-box:hover {
   background-color: darkblue;
   color: white;
+}
+
+.recording-icon {
+  display: inline-flex;
+  align-items: center;
+  color: #dc3545;
+  animation: recording-pulse 1.6s ease-in-out infinite;
+}
+
+.recording-icon.cursor-pointer {
+  cursor: pointer;
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 </style>

@@ -8,15 +8,7 @@
       Start Recording
     </template>
     <template #body>
-      <div class="mb-3">
-        <label class="form-label fw-bold">Recording Name</label>
-        <input
-          v-model="recordingName"
-          type="text"
-          class="form-control"
-          placeholder="Enter a name for this recording"
-        />
-      </div>
+      
       <div class="mb-3">
         <label class="form-label fw-bold">Select Sessions to Record</label>
         <p class="text-muted small">
@@ -106,7 +98,6 @@ export default {
   components: { BasicModal, BasicButton, BasicTable },
   data() {
     return {
-      recordingName: "",
       selectedSessions: [],
       onlineSessions: [], // [{socketId, userId, userName, connectedAt}]
       excludeEvents: ["stats", "subscribeAppData", "unsubscribeAppData"],
@@ -164,7 +155,6 @@ export default {
   },
   methods: {
     open() {
-      this.recordingName = "Recording " + new Date().toLocaleString();
       this.selectedSessions = [];
       this.onlineSessions = [];
       this.excludeEvents = ["stats", "subscribeAppData", "unsubscribeAppData"];
@@ -202,7 +192,6 @@ export default {
       const participantSocketIds = this.selectedSessions.map(s => s.socketId);
 
       this.$socket.emit("recorderStart", {
-        name: this.recordingName,
         participantSocketIds,
         excludeEvents: this.allExcludeEvents,
       }, (res) => {
@@ -220,7 +209,7 @@ export default {
             variant: "danger",
           });
         }
-      });
+      });s
     },
   },
 };

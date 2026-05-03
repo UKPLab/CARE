@@ -150,7 +150,23 @@ export default {
       this.$refs.startRecordingModal.open();
     },
     stopActiveRecording() {
-      this.eventBus.emit("recording:stop");
+      const id = this.activeRecordingId;
+      if (!id) return;
+
+      this.$socket.emit("recorderStop", { id }, (res) => {
+        if (res.success) {
+          const payload = res.data || res;
+          const recordingId = payload.id ?? id;
+          const traces = payload.traces || [];
+          this.$refs.recordingModal.open(recordingId, traces);
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to stop recording",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     editRecording(row) {
       this.$socket.emit("recordingGetTraces", { id: row.id }, (res) => {

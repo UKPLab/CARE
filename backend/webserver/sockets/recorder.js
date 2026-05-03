@@ -119,12 +119,10 @@ class RecorderSocket extends Socket {
         this.server.activeRecordingOwnerSocketId = this.socket.id;
         this.server.activeExcludeEvents = excludeEvents;
 
-        console.log("[startRecording] activeParticipantSocketIds:", this.server.activeParticipantSocketIds);
-        console.log("[startRecording] all available socketIds:", Object.keys(this.server.availSockets));
+
         for (const socketId of Object.keys(this.server.availSockets)) {
             const recorder = this.server.availSockets[socketId]["RecorderSocket"];
             const included = recorder ? recorder.isSessionIncluded(recorder.socket.id) : "no recorder";
-            console.log(`[startRecording] socket ${socketId}: included=${included}`);
             if (recorder && recorder.isSessionIncluded(recorder.socket.id)) {
                 recorder.attachListeners();
             }
@@ -227,8 +225,7 @@ class RecorderSocket extends Socket {
             ...s,
             userName: userMap[s.userId] || "Unknown",
         }));
-        console.log("[getOnlineSessions] returning:", JSON.stringify(result, null, 2));
-        return result;
+
     }
 
     init() {
