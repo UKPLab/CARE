@@ -92,6 +92,44 @@ module.exports = class AIService extends Service {
         return Number.isFinite(numericCost) ? numericCost : null;
     }
 
+    #extractInputText(messages) {
+        if (!Array.isArray(messages) || messages.length === 0) {
+            return null;
+        }
+        const text = messages
+            .map((message) => {
+                const role = typeof message?.role === "string" ? message.role.trim() : "";
+                const content = message?.content;
+                let normalizedContent = "";
+                if (typeof content === "string") {
+                    normalizedContent = content.trim();
+                } else if (Array.isArray(content)) {
+                    normalizedContent = content
+                        .map((part) => {
+                            if (typeof part === "string") return part;
+                            if (part && typeof part === "object" && typeof part.text === "string") {
+                                return part.text;
+                            }
+                            return "";
+                        })
+                        .filter(Boolean)
+                        .join("\n")
+                        .trim();
+                } else if (content !== null && content !== undefined) {
+                    normalizedContent = String(content).trim();
+                }
+                if (!normalizedContent) {
+                    return "";
+                }
+                return role ? `[${role}] ${normalizedContent}` : normalizedContent;
+            })
+            .filter(Boolean)
+            .join("\n\n")
+            .trim();
+
+        return text || null;
+    }
+
     #stringifyReasoningValue(value) {
         if (typeof value === "string") {
             const trimmed = value.trim();
@@ -245,10 +283,7 @@ module.exports = class AIService extends Service {
                 userId: client?.userId,
                 aiModelId,
                 requestId: data?.__requestId || null,
-                input: JSON.stringify({
-                    model: data?.model,
-                    messages: data?.messages,
-                }),
+                input: this.#extractInputText(data?.messages),
                 status: "failed",
                 requestStart,
             });
@@ -268,10 +303,7 @@ module.exports = class AIService extends Service {
             userId: client?.userId,
             aiModelId,
             requestId: id || data?.__requestId || null,
-            input: JSON.stringify({
-                model: data?.model,
-                messages: data?.messages,
-            }),
+            input: this.#extractInputText(data?.messages),
             output: JSON.stringify(choices),
             reasoning: this.#extractReasoningText(payload),
             inputTokens: usage?.prompt_tokens ?? null,
@@ -415,11 +447,7 @@ module.exports = class AIService extends Service {
                 userId: client?.userId,
                 aiModelId,
                 requestId: null,
-                input: JSON.stringify({
-                    model: resolvedModel,
-                    messages: params.messages,
-                    isTest: true,
-                }),
+                input: this.#extractInputText(params.messages),
                 status: "test_failed",
                 requestStart,
             });
@@ -453,11 +481,7 @@ module.exports = class AIService extends Service {
             userId: client?.userId,
             aiModelId,
             requestId: payload?.id || null,
-            input: JSON.stringify({
-                model: resolvedModel,
-                messages: params.messages,
-                isTest: true,
-            }),
+            input: this.#extractInputText(params.messages),
             output: outputText || null,
             reasoning: this.#extractReasoningText(payload),
             inputTokens: usage?.prompt_tokens ?? null,

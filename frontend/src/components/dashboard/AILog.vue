@@ -68,13 +68,16 @@ export default {
       },
       columns: [
         { name: "Time", key: "createdAt", type: "datetime", sortable: true },
-        { name: "Request ID", key: "requestId", sortable: true },
+        // { name: "Request ID", key: "requestId", sortable: true },
         { name: "Model", key: "modelName", sortable: true },
         { name: "Status", key: "statusBadge", type: "badge", sortable: true, sortKey: "status" },
         { name: "Input Tokens", key: "inputTokens", sortable: true },
         { name: "Output Tokens", key: "outputTokens", sortable: true },
         { name: "Total Tokens", key: "totalTokens", sortable: true },
         { name: "Cost (USD)", key: "costDisplay", sortable: true, sortKey: "costs" },
+        // { name: "Input", key: "input", type: "text", sortable: false },
+        // { name: "Output", key: "output", type: "text", sortable: false },
+        // { name: "Reasoning", key: "reasoning", type: "text", sortable: false },
       ],
     };
   },
