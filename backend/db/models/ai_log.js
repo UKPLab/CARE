@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         inputTokens: DataTypes.INTEGER,
         outputTokens: DataTypes.INTEGER,
         reasoningTokens: DataTypes.INTEGER,
-        total_tokens: DataTypes.INTEGER,
+        totalTokens: DataTypes.INTEGER,
         costs: DataTypes.FLOAT,
         status: DataTypes.STRING,
         requestStart: DataTypes.DATE,
