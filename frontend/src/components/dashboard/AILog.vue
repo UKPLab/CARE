@@ -75,9 +75,6 @@ export default {
         { name: "Output Tokens", key: "outputTokens", sortable: true },
         { name: "Total Tokens", key: "totalTokens", sortable: true },
         { name: "Cost (USD)", key: "costDisplay", sortable: true, sortKey: "costs" },
-        { name: "Input", key: "input", multiline: 2 },
-        { name: "Output", key: "output", multiline: 2 },
-        { name: "Reasoning", key: "reasoning", multiline: 2 },
       ],
     };
   },
@@ -121,9 +118,6 @@ export default {
           totalTokens: this.toNumber(log.totalTokens),
           costs: this.toNumber(log.costs),
           costDisplay: this.formatCurrency(log.costs),
-          input: this.safePreview(log.input),
-          output: this.safePreview(log.output),
-          reasoning: this.safePreview(log.reasoning),
           statusBadge: this.getStatusBadge(log.status),
         }))
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -142,19 +136,6 @@ export default {
         minimumFractionDigits: 2,
         maximumFractionDigits: 6,
       });
-    },
-    safePreview(value) {
-      if (value === null || value === undefined || value === "") {
-        return "-";
-      }
-      if (typeof value === "string") {
-        return value;
-      }
-      try {
-        return JSON.stringify(value);
-      } catch (_error) {
-        return String(value);
-      }
     },
     getStatusBadge(status) {
       const statusText = (status || "unknown").toString();

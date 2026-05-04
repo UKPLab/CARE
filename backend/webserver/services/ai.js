@@ -464,7 +464,7 @@ module.exports = class AIService extends Service {
             outputTokens: usage?.completion_tokens ?? null,
             totalTokens: usage?.total_tokens ?? null,
             costs: this.#extractResponseCost(payload),
-            status: "test_success",
+            status: "success",
             requestStart,
         });
 
