@@ -64,7 +64,10 @@
       "failedTitle": "PDF-Download fehlgeschlagen",
       "unknownError": "Unbekannter Fehler"
     }
-  }
+  },
+  "templateOptional": "Vorlage (optional):",
+  "noTemplateCreateEmpty": "Keine (leeres Dokument erstellen)",
+  "templatePrefillHint": "Wählen Sie eine Vorlage aus, um den Dokumentinhalt vorauszufüllen (Typ 4: Dokument - Allgemein)"
 }
 
 

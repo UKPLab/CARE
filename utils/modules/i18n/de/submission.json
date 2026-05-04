@@ -8,7 +8,8 @@
             "manualImport": "Manueller Import",
             "importMoodle": "Import über Moodle",
             "viewProcessing": "Verarbeitung anzeigen",
-            "applySkills": "Fähigkeiten anwenden"
+            "applySkills": "Fähigkeiten anwenden",
+            "publishAssessment": "Bewertung veröffentlichen"
         },
         "tooltips": {
             "assignGroup": "Gruppe zuweisen",
@@ -18,7 +19,8 @@
             "importMoodle": "Import über Moodle",
             "viewProcessing": "Verarbeitungsfortschritt anzeigen",
             "applySkills": "Fähigkeiten anwenden",
-            "processingActive": "Verarbeitung aktiv"
+            "processingActive": "Verarbeitung aktiv",
+            "publishAssessment": "Bewertung veröffentlichen"
         },
         "columns": {
             "id": "ID",

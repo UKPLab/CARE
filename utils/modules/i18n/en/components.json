@@ -27,6 +27,26 @@
     "pdftoolbar":{
         "minToolbar": "Minimize Toolbar",
         "showToolbar": "Show Toolbar"
+    },
+    "documentRoute": {
+        "errors": {
+        "goToDashboard": "Go to Dashboard",
+        "documentNotFoundTitle": "Document Not Found",
+        "accessDeniedTitle": "Access Denied",
+        "fileMissingTitle": "File Not Available",
+        "documentErrorTitle": "Document Error",
+        "unexpectedError": "An unexpected error occurred."
+        }
+    },
+    "studyRoute": {
+        "errors": {
+        "goToDashboard": "Go to Dashboard",
+        "studyNotFoundTitle": "Study Not Found",
+        "accessDeniedTitle": "Access Denied",
+        "filesMissingTitle": "Files Not Available",
+        "documentNotFoundTitle": "Document Not Found",
+        "unexpectedError": "An unexpected error occurred.",
+        "foreignUnstartedSession": "This study session has not been started yet and belongs to another user."
+        }
     }
-
 }

@@ -1,5 +1,8 @@
 {
   "title": "Documents",
+  "templateOptional": "Template (optional):",
+  "noTemplateCreateEmpty": "None (create empty document)",
+  "templatePrefillHint": "Select a template to pre-fill the document content (Type 4: Document - General)",
   "document": "Document",
   "documentDefaultName": "document",
   "addDocument": "Add document",

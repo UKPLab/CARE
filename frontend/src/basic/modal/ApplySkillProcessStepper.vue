@@ -4,19 +4,19 @@
     :steps="processingSteps"
     :validation="[true, true]"
     :current-step="currentStep"
-    :next-text="isCompleted ? 'Confirm' : cancelNextText"
-    submit-text="Confirm"
+    :next-text="isCompleted ? $t('common.confirm') : (cancelNextText || $t('nlp.preprocessing.cancelButton'))"
+    :submit-text="$t('common.confirm')"
     :show-close="showClose"
     @submit="handleSubmit"
   >
     <template #title>
-      <h5 class="modal-title text-primary">{{ title }}</h5>
+      <h5 class="modal-title text-primary">{{ title || $t('nlp.preprocessing.cancelApplySkills') }}</h5>
     </template>
 
     <template #step-1>
       <div class="mb-3">
         <div class="d-flex align-items-center mb-2">
-          <span class="me-2">Processed:</span>
+          <span class="me-2">{{ $t('nlp.preprocessing.processStepper.stats.processed') }}</span>
           <strong>{{ processedCount }} / {{ totalCount }}</strong>
         </div>
         <div class="progress mb-3" style="height: 20px;">
@@ -33,22 +33,22 @@
         </div>
 
         <div class="mt-2 text-muted">
-          Current request running time: <strong>{{ currentRequestElapsedTime }}</strong>
+          {{ $t('nlp.preprocessing.processStepper.stats.currentRuntime') }} <strong>{{ currentRequestElapsedTime }}</strong>
           <span v-if="isTimeoutExceeded" class="text-warning ms-2">
             <i class="bi bi-exclamation-triangle-fill"></i>
-            Taking longer than expected
+            {{ $t('nlp.preprocessing.processStepper.stats.takingLonger') }}
           </span>
         </div>
         <div class="mt-2 text-muted">
-          Estimated time per request: <strong>{{ estimatedTimePerRequest }}</strong>
+          {{ $t('nlp.preprocessing.processStepper.stats.estimatedPerRequest') }} <strong>{{ estimatedTimePerRequest }}</strong>
         </div>
         <div class="mt-2 text-muted">
-          Estimated time remaining: <strong>{{ estimatedTimeRemaining }}</strong>
+          {{ $t('nlp.preprocessing.processStepper.stats.estimatedRemaining') }} <strong>{{ estimatedTimeRemaining }}</strong>
         </div>
 
         <!-- Errors Display -->
         <div v-if="hasErrors" class="mt-3">
-          <h6 class="text-danger">Errors Encountered</h6>
+          <h6 class="text-danger">{{ $t('nlp.preprocessing.processStepper.errors.title') }}</h6>
           <div 
             v-for="(error, index) in errorsList" 
             :key="index" 
@@ -57,7 +57,7 @@
           >
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <strong>Error:</strong> 
+                <strong>{{ $t('nlp.preprocessing.processStepper.errors.errorLabel') }}</strong> 
                 {{ error.message }}
               </div>
               <small class="text-muted ms-2">
@@ -65,17 +65,17 @@
               </small>
             </div>
             <small v-if="error.submissionId" class="text-muted">
-              Submission ID: {{ error.submissionId }}
+              {{ $t('nlp.preprocessing.processStepper.errors.submissionId') }}: {{ error.submissionId }}
             </small>
             <small v-else-if="error.documentId" class="text-muted">
-              Document ID: {{ error.documentId }}
+              {{ $t('nlp.preprocessing.processStepper.errors.documentId') }}: {{ error.documentId }}
             </small>
           </div>
         </div>
 
-        <h6 class="mt-4">Submissions in Queue</h6>
+        <h6 class="mt-4">{{ $t('nlp.preprocessing.processStepper.queue.title') }}</h6>
         <div v-if="remainingSubmissions.length === 0" class="text-muted fst-italic">
-          No submissions in queue. Processing the last request...
+          {{ $t('nlp.preprocessing.processStepper.queue.empty') }}
         </div>
         <BasicTable
           v-else
@@ -88,8 +88,8 @@
 
     <template #step-2>
       <div class="mb-3">
-        <h5>Cancel Processing</h5>
-        <p>Are you sure you want to cancel the remaining requests?</p>
+        <h5>{{ $t('nlp.preprocessing.processStepper.cancel.title') }}</h5>
+        <p>{{ $t('nlp.preprocessing.processStepper.cancel.message') }}</p>
       </div>
     </template>
   </StepperModal>
@@ -105,7 +105,7 @@ export default {
   props: {
     title: { 
       type: String,
-      default: "Cancel Apply Skills" 
+      default: null 
     },
     preprocess: { 
       type: Object, 
@@ -125,7 +125,7 @@ export default {
     },
     cancelNextText: { 
       type: String, 
-      default: "Cancel Preprocess" 
+      default: null
     },
   },
   emits: ["cancel", "confirm"],
@@ -148,12 +148,12 @@ export default {
       // When completed, only show 1 step so the button becomes "Confirm" (submitText)
       if (this.isCompleted) {
         return [
-          { title: 'Processing Complete' }
+          { title: this.$t('nlp.preprocessing.processStepper.steps.complete') }
         ];
       }
       return [
-        { title: 'Processing Progress' },
-        { title: 'Confirm Cancellation' }
+        { title: this.$t('nlp.preprocessing.processStepper.steps.progress') },
+        { title: this.$t('nlp.preprocessing.processStepper.steps.confirmCancel') }
       ];
     },
     isProcessingActive() {
@@ -227,30 +227,30 @@ export default {
     },
     remainingColumns() {
       return [
-        { key: 'id', name: 'ID' },
-        { key: 'name', name: 'Submission Name' },
-        { key: 'userName', name: 'User' },
+        { key: 'id', name: this.$t('nlp.preprocessing.processStepper.queue.columns.id') },
+        { key: 'name', name: this.$t('nlp.preprocessing.processStepper.queue.columns.submissionName') },
+        { key: 'userName', name: this.$t('nlp.preprocessing.processStepper.queue.columns.user') },
       ];
     },
     estimatedTimeRemaining() {
       const stats = this.getProcessingStats();
       if (!stats) {
-        return "Calculating...";
+        return this.$t('nlp.preprocessing.processStepper.stats.calculating');
       }
       let remainingMs = Math.max(0, Math.round(stats.avgPerItemMs * stats.remaining - stats.timeOnCurrentMs));
       const diff = Math.round(remainingMs / 1000);
       if (diff < 1) {
-        return "Almost done...";
+        return this.$t('nlp.preprocessing.processStepper.stats.almostDone');
       }
       return this.formatDurationSeconds(diff);
     },
     estimatedTimePerRequest() {
       const stats = this.getProcessingStats();
       if (!stats) {
-        return "Calculating...";
+        return this.$t('nlp.preprocessing.processStepper.stats.calculating');
       }
       const timeInSeconds = stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
-      return timeInSeconds ? this.formatDurationSeconds(timeInSeconds) : "Calculating...";
+      return timeInSeconds ? this.formatDurationSeconds(timeInSeconds) : this.$t('nlp.preprocessing.processStepper.stats.calculating');
     },
     hasErrors() {
       const errors = this.preprocess?.errors;
@@ -294,20 +294,20 @@ export default {
     formatDurationSeconds(totalSeconds) {
       const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
       if (seconds < 60) {
-        return `${seconds}s`;
+        return this.$t('common.time.seconds', { sec: seconds });
       }
       if (seconds < 3600) {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
+        return this.$t('common.time.minutesSeconds', { min: mins, sec: secs });
       }
       const hours = Math.floor(seconds / 3600);
       const mins = Math.floor((seconds % 3600) / 60);
       const secs = seconds % 60;
-      return `${hours}h ${mins}m ${secs}s`;
+      return this.$t('common.time.hoursMinutesSeconds', { h: hours, min: mins, sec: secs });
     },
     formatElapsedSince(startMs) {
-      if (!startMs) return "0s";
+      if (!startMs) return this.$t('common.time.seconds', { sec: 0 });
       const diffSeconds = Math.max(0, Math.floor((this.now - startMs) / 1000));
       return this.formatDurationSeconds(diffSeconds);
     },

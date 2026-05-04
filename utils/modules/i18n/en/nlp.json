@@ -60,7 +60,10 @@
             "cancellationFailedTitle": "Preprocessing Cancellation Failed",
             "startedTitle": "Preprocessing Started",
             "startedMsg": "Preprocessing has been initiated.",
-            "nowRunningMsg": "Preprocessing is now running. Progress shown in the modal."
+            "nowRunningMsg": "Preprocessing is now running. Progress shown in the modal.",
+            "completeTitle": "Preprocessing Complete",
+            "completeMsg": "Review the results below.",
+            "confirmationFailedTitle": "Confirmation Failed"
         },
         "setupStepper": {
             "title": "Apply Skills",
@@ -75,9 +78,16 @@
             "closeModalMessage": "Current selections will be lost if you close this modal. Are you sure you want to continue?"
         },
         "processStepper": {
+            "errors": {
+                "title": "Errors Encountered",
+                "errorLabel": "Error:",
+                "submissionId": "Submission ID",
+                "documentId": "Document ID"
+            },
             "steps": {
                 "progress": "Processing Progress",
-                "confirmCancel": "Confirm Cancellation"
+                "confirmCancel": "Confirm Cancellation",
+                "complete": "Processing Complete"
             },
             "stats": {
                 "processed": "Processed:",
@@ -85,7 +95,8 @@
                 "estimatedPerRequest": "Estimated time per request:",
                 "estimatedRemaining": "Estimated time remaining:",
                 "calculating": "Calculating...",
-                "almostDone": "Almost done..."
+                "almostDone": "Almost done...",
+                "takingLonger": "Taking longer than expected"
             },
             "queue": {
                 "title": "Submissions in Queue",

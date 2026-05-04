@@ -1,58 +1,58 @@
 <template>
-  <Card title="Submissions">
+  <Card :title="$t('submission.dashboard.title')">
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
             class="btn-secondary btn-sm"
-            text="Assign Group"
-            title="Assign Group"
+            :text="$t('submission.dashboard.buttons.assignGroup')"
+            :title="$t('submission.dashboard.tooltips.assignGroup')"
             icon="folder-check"
             @click="openAssignModal"
         />
 
         <BasicButton
             class="btn-secondary btn-sm"
-            text="Publish Reviews"
-            title="Publish Reviews"
+            :text="$t('submission.dashboard.buttons.publishReviews')"
+            :title="$t('submission.dashboard.tooltips.publishReviews')"
             icon="upload"
             @click="openPublishModal"
         />
 
         <BasicButton
             class="btn-secondary btn-sm"
-            text="Publish Assessment"
-            title="Publish Assessment"
+            :text="$t('submission.dashboard.buttons.publishAssessment')"
+            :title="$t('submission.dashboard.tooltips.publishAssessment')"
             icon="clipboard-data"
             @click="openPublishAssessmentModal"
         />
 
         <BasicButton
             class="btn-secondary btn-sm"
-            text="Manual Import"
-            title="Manual Import"
+            :text="$t('submission.dashboard.buttons.manualImport')"
+            :title="$t('submission.dashboard.tooltips.manualImport')"
             icon="file-earmark-arrow-up"
             @click="openUploadModal"
         />
 
         <BasicButton
             class="btn-primary btn-sm"
-            text="Import via Moodle"
-            title="Import via Moodle"
+            :text="$t('submission.dashboard.buttons.importMoodle')"
+            :title="$t('submission.dashboard.tooltips.importMoodle')"
             icon="box-arrow-in-down"
             @click="openImportModal"
         />
 
         <BasicButton
             :class="isProcessingActive ? 'btn-warning btn-sm position-relative' : 'btn-success btn-sm'"
-            :text="isProcessingActive ? 'View Processing' : 'Apply Skills'"
-            :title="isProcessingActive ? 'View Processing Progress' : 'Apply Skills'"
+            :text="isProcessingActive ? $t('submission.dashboard.buttons.viewProcessing') : $t('submission.dashboard.buttons.applySkills')"
+            :title="isProcessingActive ? $t('submission.dashboard.tooltips.viewProcessing') : $t('submission.dashboard.tooltips.applySkills')"
             :icon="isProcessingActive ? 'hourglass-split' : 'gear-fill'"
             @click="preprocessGrades"
         >
     <span
         v-if="isProcessingActive"
         class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-      <span class="visually-hidden">Processing active</span>
+      <span class="visually-hidden">{{ $t('submission.dashboard.tooltips.processingActive') }}</span>
     </span>
         </BasicButton>
       </div>
@@ -92,6 +92,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 import ApplySkillModal from "@/basic/modal/ApplySkillModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Submission list component
@@ -142,13 +143,13 @@ export default {
         search: true,
       },
       tableColumns: [
-        {name: "ID", key: "id"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Submission ID", key: "extId"},
-        {name: "Group", key: "group", sortable: true},
-        {name: "Validation ID", key: "validationConfigurationId", sortable: true},
-        {name: "Created At", key: "createdAt"},
+        {name: this.$t('submission.dashboard.columns.id'), key: "id"},
+        {name: this.$t('submission.dashboard.columns.firstName'), key: "firstName"},
+        {name: this.$t('submission.dashboard.columns.lastName'), key: "lastName"},
+        {name: this.$t('submission.dashboard.columns.submissionId'), key: "extId"},
+        {name: this.$t('submission.dashboard.columns.group'), key: "group", sortable: true},
+        {name: this.$t('submission.dashboard.columns.validationId'), key: "validationConfigurationId", sortable: true},
+        {name: this.$t('submission.dashboard.columns.createdAt'), key: "createdAt"},
       ],
       tableButtons: [
         {
@@ -159,7 +160,7 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Download submission files",
+          title: this.$t('submission.dashboard.actions.download'),
           action: "downloadSubmission",
           stats: {
             submissionId: "id",
@@ -188,7 +189,7 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Delete submission",
+          title: this.$t('submission.dashboard.actions.delete'),
           action: "deleteSubmission",
           stats: {
             submissionId: "id",
@@ -219,8 +220,8 @@ export default {
         return {
           id: s.id,
           extId: s.extId,
-          firstName: user ? user.firstName : "Unknown",
-          lastName: user ? user.lastName : "Unknown",
+          firstName: user ? user.firstName : this.$t('common.unknown'),
+          lastName: user ? user.lastName : this.$t('common.unknown'),
           createdAt: new Date(s.createdAt).toLocaleDateString(),
           validationConfigurationId: s.validationConfigurationId ?? "-",
           group: s.group ?? "-",
@@ -299,27 +300,31 @@ export default {
     },
     async deleteSubmission(row) {
       let warning = "";
-      this.openDeleteConfModal("Delete Submission", "Are you sure you want to delete the submission?", warning, (val) => {
-        if (val) {
-          this.$socket.emit("submissionUpdate", {
-            id: row.id,
-            deleted: true,
-          }, (res) => {
-            if (res.success) {
-              this.eventBus.emit("toast", {
-                title: "Submission deleted",
-                message: "The submission has been deleted",
-                variant: "success",
-              });
-            } else {
-              this.eventBus.emit("toast", {
-                title: "Failed to delete submission",
-                message: res.message,
-                variant: "danger",
-              });
-            }
-          });
-        }
+      this.openDeleteConfModal(
+        this.$t('submission.dashboard.delete.title'),
+        this.$t('submission.dashboard.delete.message'),
+        warning,
+        (val) => {
+          if (val) {
+            this.$socket.emit("submissionUpdate", {
+              id: row.id,
+              deleted: true,
+            }, (res) => {
+              if (res.success) {
+                this.eventBus.emit("toast", {
+                  title: this.$t('submission.dashboard.toasts.deleteSuccessTitle'),
+                  message: this.$t('submission.dashboard.toasts.deleteSuccessMessage'),
+                  variant: "success",
+                });
+              } else {
+                this.eventBus.emit("toast", {
+                  title: this.$t('submission.dashboard.toasts.deleteFailedTitle'),
+                  message: resolveApiMessage(res),
+                  variant: "danger",
+                });
+              }
+            });
+          }
       });
     },
     preprocessGrades() {
@@ -332,8 +337,8 @@ export default {
 
         if (!docs || docs.length === 0) {
           this.eventBus.emit("toast", {
-            title: "No documents found",
-            message: "This submission has no associated documents to download",
+            title: this.$t('submission.dashboard.toasts.noDocumentsTitle'),
+            message: this.$t('submission.dashboard.toasts.noDocumentsMessage'),
             variant: "warning",
           });
           return;
@@ -356,7 +361,7 @@ export default {
                 if (res.success) {
                   resolve(res.data);
                 } else {
-                  reject(new Error(res.message || "Failed to get document"));
+                  reject(new Error(resolveApiMessage(res) || res.message));
                 }
               });
             });
@@ -389,15 +394,15 @@ export default {
               }
             } else {
               this.eventBus.emit("toast", {
-                title: "Document download issue",
-                message: `Could not download ${doc.name}`,
+                title: this.$t('submission.dashboard.toasts.downloadIssueTitle'),
+                message: this.$t('submission.dashboard.toasts.downloadIssueMessage', { name: doc.name }),
                 variant: "warning",
               });
             }
           } catch (error) {
             this.eventBus.emit("toast", {
-              title: "Download error",
-              message: `Failed to download ${doc.name}: ${error.message}`,
+              title: this.$t('submission.dashboard.toasts.downloadErrorTitle'),
+              message: this.$t('submission.dashboard.toasts.downloadErrorMessage', { name: doc.name, error: error.message }),
               variant: "danger",
             });
           }
@@ -408,13 +413,13 @@ export default {
         });
 
         this.eventBus.emit("toast", {
-          title: "Download complete",
-          message: `Downloaded submission ${submission.extId} with ${docs.length} documents`,
+          title: this.$t('submission.dashboard.toasts.downloadCompleteTitle'),
+          message: this.$t('submission.dashboard.toasts.downloadCompleteMessage', { id: submission.extId, count: docs.length }),
           variant: "success",
         });
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Download failed",
+          title: this.$t('submission.dashboard.toasts.downloadFailedTitle'),
           message: error.message,
           variant: "danger",
         });

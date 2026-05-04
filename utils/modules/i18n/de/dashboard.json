@@ -101,7 +101,23 @@
     "mainSettings": "Haupteinstellungen der Anwendung",
     "sensitiveDataNote": "Hinweis: Stellen Sie sicher, dass keine sensiblen Daten enthalten sind!",
     "toolbarNote": "Hinweis: Wenn die Toolbar deaktiviert ist, werden alle Tools ausgeblendet!",
-    "nlpSupport": "NLP-Unterstützung aktivieren/deaktivieren"
+    "nlpSupport": "NLP-Unterstützung aktivieren/deaktivieren",
+    "changeUserSettings": "Benutzereinstellungen ändern",
+    "exportJson": "JSON exportieren",
+    "importJson": "JSON importieren",
+    "saveSettings": "Einstellungen speichern",
+    "saveSettingsUnsaved": "Einstellungen speichern (ungespeicherte Änderungen)",
+    "rememberToSaveBefore": "Denken Sie daran, nach Änderungen auf",
+    "rememberToSaveAfter": "zu klicken.",
+    "importSettings": "Einstellungen importieren",
+    "importDescription": "Wählen Sie eine zuvor heruntergeladene Einstellungsdatei aus. Nur bestehende Schlüssel werden aktualisiert.",
+    "messages": {
+      "unsavedChangesWarning": "Sie haben ungespeicherte Änderungen in Ihren Einstellungen. Möchten Sie wirklich ohne Speichern verlassen?",
+      "settingsLoaded": "Einstellungen geladen",
+      "settingsLoadedMessage": "Die Einstellungen wurden erfolgreich geladen.",
+      "settingsImported": "Einstellungen importiert",
+      "updatedSettings": "{count} bestehende Einstellung(en) aktualisiert."
+    }
   },
   "study": {
     "addSingleAssignment": "Einzelne Zuweisung hinzufügen",
@@ -393,6 +409,18 @@
             "selectDoc": "Dokument auswählen",
             "newEmptyDoc": "Neues leeres Dokument"
         }
-    }
+  },
+  "assessment": {
+      "title": "Bewertung"
+  },
+  "errors": {
+      "permission": {
+        "accessError": "Zugriffsfehler!"
+      },
+      "studies": {
+        "sessionNotFinished": "Studiensitzung nicht abgeschlossen",
+        "stepUpdateFailed": "Aktualisierung des Studienschritts fehlgeschlagen"
+      }
+  }
 }
 

@@ -60,7 +60,10 @@
       "cancellationFailedTitle": "Abbruch der Vorverarbeitung fehlgeschlagen",
       "startedTitle": "Vorverarbeitung gestartet",
       "startedMsg": "Die Vorverarbeitung wurde initiiert.",
-      "nowRunningMsg": "Die Vorverarbeitung läuft jetzt. Der Fortschritt wird im Modal angezeigt."
+      "nowRunningMsg": "Die Vorverarbeitung läuft jetzt. Der Fortschritt wird im Modal angezeigt.",
+      "completeTitle": "Vorverarbeitung abgeschlossen",
+      "completeMsg": "Überprüfe die Ergebnisse unten.",
+      "confirmationFailedTitle": "Bestätigung fehlgeschlagen"
     },
     "setupStepper": {
       "title": "Skills anwenden",
@@ -75,9 +78,16 @@
       "closeModalMessage": "Wenn Sie dieses Modal schließen, gehen Ihre aktuellen Auswahlen verloren. Möchten Sie wirklich fortfahren?"
     },
     "processStepper": {
+      "errors": {
+        "title": "Fehler aufgetreten",
+        "errorLabel": "Fehler:",
+        "submissionId": "Abgabe-ID",
+        "documentId": "Dokument-ID"
+      },
       "steps": {
         "progress": "Verarbeitungsfortschritt",
-        "confirmCancel": "Abbruch bestätigen"
+        "confirmCancel": "Abbruch bestätigen",
+        "complete": "Verarbeitung abgeschlossen"
       },
       "stats": {
         "processed": "Verarbeitet:",
@@ -85,7 +95,8 @@
         "estimatedPerRequest": "Geschätzte Zeit pro Anfrage:",
         "estimatedRemaining": "Geschätzte verbleibende Zeit:",
         "calculating": "Wird berechnet...",
-        "almostDone": "Fast fertig..."
+        "almostDone": "Fast fertig...",
+        "takingLonger": "Dauert länger als erwartet"
       },
       "queue": {
         "title": "Einreichungen in der Warteschlange",

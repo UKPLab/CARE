@@ -13,7 +13,7 @@
         @blur="onBlur(blur)"
       />
       <div v-if="parseError" class="invalid-feedback">
-        Invalid JSON: {{ parseError }}
+        {{ $t('errors.validation.invalidJson', { error: parseError }) }}
       </div>
     </template>
   </FormElement>

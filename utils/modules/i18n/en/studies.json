@@ -1,6 +1,7 @@
 {
   "title": "Studies",
   "study": "Study",
+  "overview": "Overview",
   "template": "Template",
   "sessions": "Sessions",
   "savedTemplates": "Saved Templates",
@@ -50,7 +51,8 @@
     "resumable": "Resumable",
     "collaborative": "Collaborative",
     "multipleSubmissions": "Multiple Submissions",
-    "timeLimit": "Time Limit"
+    "timeLimit": "Time Limit",
+    "sessionStartFinishEmails": "Session Start/Finish Emails"
   },
   "status": {
     "notStarted": "Not started",

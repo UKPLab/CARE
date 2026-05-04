@@ -11,7 +11,7 @@
       <input
         v-model="searchTerm"
         type="text"
-        placeholder="Search tags"
+        :placeholder="$t('annotator.searchTags')"
         class="form-control"
         @mouseup.stop
       />
@@ -42,7 +42,7 @@
     <button
       v-if="shouldShowExtender"
       class="expand-btn btn "
-      title="Expand Adder"
+      :title="$t('annotator.expandAdder')"
       @click="isExtended=true"
     >
     <i class="bi bi-three-dots"></i>
@@ -60,6 +60,7 @@
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "PDFAdder",
@@ -332,8 +333,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Annotation Update Failed",
-            message: res.message,
+            title: this.$t('errors.annotator.annotationUpdateFailed'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -345,8 +346,8 @@ export default {
     async _onSelection(event) {
       if (this.assignableTags.length === 0) {
         this.eventBus.emit('toast', {
-          title: "Empty Tagset",
-          message: "No tagset or an empty tagset have been selected. Cannot make annotations.",
+          title: this.$t('errors.tags.emptyTagset.title'),
+          message: this.$t('errors.tags.emptyTagset.message'),
           variant: "danger"
         });
 

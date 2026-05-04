@@ -8,7 +8,8 @@
         "manualImport": "Manual Import",
         "importMoodle": "Import via Moodle",
         "viewProcessing": "View Processing",
-        "applySkills": "Apply Skills"
+        "applySkills": "Apply Skills",
+        "publishAssessment": "Publish Assessment"
       },
       "tooltips": {
         "assignGroup": "Assign Group",
@@ -18,7 +19,8 @@
         "importMoodle": "Import via Moodle",
         "viewProcessing": "View Processing Progress",
         "applySkills": "Apply Skills",
-        "processingActive": "Processing active"
+        "processingActive": "Processing active",
+        "publishAssessment": "Publish Assessment"
       },
       "columns": {
         "id": "ID",

@@ -23,6 +23,7 @@ import moodle from './moodle.json'
 import submission from './submission.json'
 import sidebar from './sidebar.json'
 import components from './components.json'
+import workflow from "./workflow.json";
 
 export default {
   common,
@@ -50,4 +51,5 @@ export default {
   submission,
   sidebar,
   components,
+  workflow,
 }

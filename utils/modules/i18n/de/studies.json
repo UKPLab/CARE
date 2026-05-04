@@ -1,5 +1,6 @@
 {
   "title": "Studien",
+  "overview": "Übersicht",
   "study": "Studie",
   "template": "Vorlage",
   "sessions": "Sitzungen",
@@ -50,7 +51,8 @@
     "resumable": "Fortsetzbar",
     "collaborative": "Kollaborativ",
     "multipleSubmissions": "Mehrfacheinreichungen",
-    "timeLimit": "Zeitlimit"
+    "timeLimit": "Zeitlimit",
+    "sessionStartFinishEmails": "E-Mails zum Start/Abschluss der Sitzung"
   },
   "status": {
     "notStarted": "Nicht gestartet",

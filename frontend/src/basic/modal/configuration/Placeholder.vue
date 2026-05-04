@@ -5,14 +5,14 @@
       <span :style="{ color: placeholderColor, fontWeight: 'bold' }">
         #{{ index + 1 }}
       </span>
-      Add here the information for the placeholder:
+      {{ $t('modals.placeholders.addInformation') }}
     </h6>
 
     <!-- Input Fields -->
     <div v-if="fields.length">
       <div v-for="field in filteredFields" :key="field.name" class="mb-3">
         <label :for="'field-' + field.name + '-' + index" class="form-label">
-          {{ field.label }}
+          {{ translateMaybeKey(field.label) }}
         </label>
 
         <FormSelect
@@ -31,7 +31,7 @@
           :value="formData[field.name]"
           type="text"
           class="form-control"
-          :placeholder="field.placeholder"
+          :placeholder="translateMaybeKey(field.placeholder)"
           :required="field.required"
           @input="onFieldUpdate(field.name, $event.target.value)"
         />
@@ -95,6 +95,12 @@ export default {
     }
   },
   methods: {
+    translateMaybeKey(value) {
+      if (!value || typeof value !== "string") {
+        return value;
+      }
+      return this.$te(value) ? this.$t(value) : value;
+    },
     onFieldUpdate(key, value) {
       this.$emit('update:formData', { ...this.formData, [key]: value });
     }

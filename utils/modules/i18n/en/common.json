@@ -89,9 +89,9 @@
         "seconds": "{sec}s",
         "minutesSeconds": "{min}m {sec}s",
         "hoursMinutesSeconds": "{h}h {min}m {sec}s",
-        "minutes": "min"
+        "minutes": "min",
+        "lessThanMinutes": "<{min}min"
     },
-
     "reply": "Reply",
     "hide": "Hide",
     "showMore": "Show more",
@@ -114,6 +114,6 @@
     "refresh": "Refresh",
     "configure": "Configure",
     "anonymous": "Anonymous",
-    "unlimited": "unlimited"
-
+    "unlimited": "unlimited",
+    "none": "None"
 }

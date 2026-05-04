@@ -102,7 +102,23 @@
         "mainSettings": "Main settings of the application",
         "sensitiveDataNote": "Note: Make sure that no sensitive data are present!",
         "toolbarNote": "Note: When the toolbar is disabled, all the tools will be hidden!",
-        "nlpSupport": "Activate/Deactivate NLP support"
+        "nlpSupport": "Activate/Deactivate NLP support",
+        "changeUserSettings": "Change User Settings",
+        "exportJson": "Export JSON",
+        "importJson": "Import JSON",
+        "saveSettings": "Save Settings",
+        "saveSettingsUnsaved": "Save Settings (Unsaved changes)",
+        "rememberToSaveBefore": "Remember to click",
+        "rememberToSaveAfter": "after making changes.",
+        "importSettings": "Import Settings",
+        "importDescription": "Select a previous downloaded settings file. Only existing keys will be updated.",
+        "messages": {
+        "unsavedChangesWarning": "You have unsaved changes in your settings. Are you sure you want to leave without saving?",
+        "settingsLoaded": "Settings Loaded",
+        "settingsLoadedMessage": "Settings have been successfully loaded.",
+        "settingsImported": "Settings imported",
+        "updatedSettings": "Updated {count} existing setting(s)."
+        }
     },
     "study": {
         "addSingleAssignment": "Add Single Assignment",
@@ -393,6 +409,18 @@
         "fields": {
             "selectDoc": "Select Document",
             "newEmptyDoc": "New Empty Document"
+        }
+    },
+    "assessment": {
+        "title": "Assessment"
+    },
+    "errors": {
+        "permission": {
+            "accessError": "Access Error!"
+        },
+        "studies": {
+            "sessionNotFinished": "Study Session not finished",
+            "stepUpdateFailed": "Study Step update failed"
         }
     }
 }

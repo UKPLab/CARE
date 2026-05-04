@@ -1,0 +1,17 @@
+{
+  "inspectStep": "Schritt prüfen",
+  "general": "Allgemein",
+  "stepType": "Schritttyp",
+  "navigation": "Navigation",
+  "previousStep": "Vorheriger Schritt",
+  "allowBackward": "Zurückgehen erlauben",
+  "documentReference": "Dokumentreferenz",
+  "firstStep": "Erster Schritt",
+  "configuration": "Konfiguration",
+  "noConfigurationDefined": "Keine Konfiguration definiert.",
+  "stepTypes": {
+    "annotator": "Annotator",
+    "editor": "Editor",
+    "modal": "Modal"
+  }
+}

@@ -23,5 +23,20 @@
     "history": "Verlauf",
     "configurator": "Konfigurator",
     "readOnly": "Schreibgeschützt",
-    "downloadDocument": "Dokument herunterladen"
+    "downloadDocument": "Dokument herunterladen",
+    "annotator": {
+        "annotations": "Anmerkungen",
+        "submitReview": "Review absenden",
+        "report": "Melden",
+        "accept": "Akzeptieren",
+        "reject": "Ablehnen",
+        "hideStudyComments": "Studienkommentare ausblenden",
+        "showStudyComments": "Studienkommentare anzeigen",
+        "deactivateNlpSupport": "NLP-Unterstützung deaktivieren",
+        "activateNlpSupport": "NLP-Unterstützung aktivieren",
+        "downloadAnnotations": "Anmerkungen herunterladen",
+        "documentSubscribeError": "Fehler beim Abonnieren des Dokuments",
+        "searchTags": "Tags suchen",
+        "expandAdder": "Adder erweitern"
+    }
 }

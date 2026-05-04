@@ -73,6 +73,7 @@
         "requiredFileMissingInZip": "Required file missing in ZIP {zipFileName}: {file}",
         "tooManyMatchesInZip": "Too many matches for {file} in ZIP {zipFileName}: found {found}, max {max}",
         "zipReadError": "Error reading ZIP file {fileName}: {message}",
+        "invalidJson": "Invalid JSON: {error}",
         "auth": {
             "provideUsername": "Please provide a valid username.",
             "providePassword": "Please provide a valid password of at least 8 characters.",
@@ -84,7 +85,8 @@
             "acceptTermsRequired": "Please accept the terms.",
             "passwordsDoNotMatch": "Passwords do not match.",
             "provideInstitutionalUsername": "Please enter your institutional username.",
-            "provideInstitutionalPassword": "Please enter your institutional password."
+            "provideInstitutionalPassword": "Please enter your institutional password.",
+            "passwordRequirements": "Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis."
         },
         "documents": {
             "selectValidType": "Please select a valid document type.",
