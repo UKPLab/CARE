@@ -9,6 +9,20 @@ module.exports = (sequelize, DataTypes) => {
          * When a credential is soft-deleted, soft-delete dependent ai_model rows (and their shares).
          * When a credential is disabled, disable dependent ai_model rows (non-deleted only).
          */
+        /**
+         * Bulk updates do not populate Sequelize instance hooks, so they are missing from
+         * `transaction.changes` and clients never receive `ai_modelRefresh`. Append instances here.
+         */
+        static #appendInstancesToTransactionChanges(transaction, instances) {
+            if (!transaction || !instances?.length) {
+                return;
+            }
+            transaction.changes = transaction.changes || [];
+            for (const inst of instances) {
+                transaction.changes.push(inst);
+            }
+        }
+
         static async #cascadeModelsAfterCredentialWrite(credentialId, data, transaction) {
             const id = Number(credentialId);
             if (!Number.isInteger(id) || id <= 0) {
@@ -40,6 +54,14 @@ module.exports = (sequelize, DataTypes) => {
                         {where: {aiModelId: modelIds, deleted: false}, transaction},
                     );
                 }
+
+                if (modelIds.length > 0) {
+                    const modelInstances = await AiModel.findAll({
+                        where: {id: modelIds},
+                        transaction,
+                    });
+                    AiCredential.#appendInstancesToTransactionChanges(transaction, modelInstances);
+                }
                 return;
             }
 
@@ -48,6 +70,11 @@ module.exports = (sequelize, DataTypes) => {
                     {enabled: false},
                     {where: {aiCredentialId: id, deleted: false}, transaction},
                 );
+                const disabledModelInstances = await AiModel.findAll({
+                    where: {aiCredentialId: id, deleted: false},
+                    transaction,
+                });
+                AiCredential.#appendInstancesToTransactionChanges(transaction, disabledModelInstances);
             }
         }
 
