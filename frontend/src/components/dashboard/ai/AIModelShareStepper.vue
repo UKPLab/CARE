@@ -39,38 +39,47 @@
         />
         <small class="text-muted">Required. Access expires on this date.</small>
       </div>
+      <small class="text-muted">Next step: select {{ shareAudienceLabel.toLowerCase() }}.</small>
+    </template>
+    <template #step-2>
       <div v-if="isLoadingShareData" class="text-muted mb-2">
         Loading share options...
       </div>
-      <BasicTable
-        v-else-if="shareForm.mode === 'users'"
-        :model-value="selectedRowsForTable"
-        :columns="shareSelectionColumns"
-        :data="shareSelectionData"
-        :options="shareSelectionTableOptions"
-        :max-table-height="360"
-        @update:model-value="onSelectionRowsUpdate"
-      />
-      <BasicTable
-        v-else-if="shareForm.mode === 'roles'"
-        :model-value="selectedRowsForTable"
-        :columns="shareSelectionColumns"
-        :data="shareSelectionData"
-        :options="shareSelectionTableOptions"
-        :max-table-height="360"
-        @update:model-value="onSelectionRowsUpdate"
-      />
-      <BasicTable
-        v-else
-        :model-value="selectedRowsForTable"
-        :columns="shareSelectionColumns"
-        :data="shareSelectionData"
-        :options="shareStudyTableOptions"
-        :max-table-height="360"
-        @update:model-value="onSelectionRowsUpdate"
-      />
+      <div v-else-if="shareForm.mode === 'users'" @click="syncSelectionFromTable" @change="syncSelectionFromTable">
+        <BasicTable
+          ref="shareSelectionTable"
+          :model-value="selectedRowsForTable"
+          :columns="shareSelectionColumns"
+          :data="shareSelectionData"
+          :options="shareSelectionTableOptions"
+          :max-table-height="360"
+          @update:model-value="onSelectionRowsUpdate"
+        />
+      </div>
+      <div v-else-if="shareForm.mode === 'roles'" @click="syncSelectionFromTable" @change="syncSelectionFromTable">
+        <BasicTable
+          ref="shareSelectionTable"
+          :model-value="selectedRowsForTable"
+          :columns="shareSelectionColumns"
+          :data="shareSelectionData"
+          :options="shareSelectionTableOptions"
+          :max-table-height="360"
+          @update:model-value="onSelectionRowsUpdate"
+        />
+      </div>
+      <div v-else @click="syncSelectionFromTable" @change="syncSelectionFromTable">
+        <BasicTable
+          ref="shareSelectionTable"
+          :model-value="selectedRowsForTable"
+          :columns="shareSelectionColumns"
+          :data="shareSelectionData"
+          :options="shareStudyTableOptions"
+          :max-table-height="360"
+          @update:model-value="onSelectionRowsUpdate"
+        />
+      </div>
     </template>
-    <template #step-2>
+    <template #step-3>
       <div class="mb-3">
         <div><strong>Model:</strong> {{ selectedShareModel?.name || "-" }}</div>
         <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
@@ -143,13 +152,15 @@ export default {
   computed: {
     shareSteps() {
       return [
-        { title: "Select Audience" },
+        { title: "User Case" },
+        { title: "Select Users" },
         { title: "Review & Save" },
       ];
     },
     shareStepValidation() {
       return [
-        !this.isLoadingShareData && this.activeSelectionIds.length > 0 && !!this.shareForm.expiryDate,
+        !!this.shareForm.mode && !!this.shareForm.expiryDate,
+        !this.isLoadingShareData && this.activeSelectionIds.length > 0,
         !this.isSavingShare,
       ];
     },
@@ -246,6 +257,13 @@ export default {
         this.selectedStudyIds = nextIds;
       } else {
         this.selectedUserIds = nextIds;
+      }
+    },
+    syncSelectionFromTable() {
+      const tableRef = this.$refs.shareSelectionTable;
+      const selectedRows = Array.isArray(tableRef?.currentData) ? tableRef.currentData : null;
+      if (selectedRows) {
+        this.onSelectionRowsUpdate(selectedRows);
       }
     },
     emitAiServiceCommand(command, data = {}) {

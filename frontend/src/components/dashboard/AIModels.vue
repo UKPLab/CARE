@@ -273,8 +273,13 @@ export default {
       }, (result) => {
         if (!result.success) {
           this.toastError(result.message || "Failed to update credential");
+          return;
         }
+        this.refreshAiModelTable();
       });
+    },
+    refreshAiModelTable() {
+      this.$socket.emit("appData", { table: "ai_model" }, () => {});
     },
     deleteCredential(row) {
       this.$refs.confirmModal.open(
@@ -316,7 +321,9 @@ export default {
       }, (result) => {
         if (!result.success) {
           this.toastError(result.message || "Failed to update model");
+          return;
         }
+        this.refreshAiModelTable();
       });
     },
     deleteModel(row) {
