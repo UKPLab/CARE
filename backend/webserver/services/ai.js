@@ -21,7 +21,8 @@ module.exports = class AIService extends Service {
             cmdTypes: [
                 "chatCompletion",
                 "abortChatCompletion",
-                "getStatus"
+                "getStatus",
+                "testModel"
             ],
             resTypes: []
         });
@@ -45,6 +46,8 @@ module.exports = class AIService extends Service {
                 return await this.abortChatCompletion(data);
             case "getStatus":
                 return await this.getStatus();
+            case "testModel":
+                return await this.testModel(client, data);
             default:
                 return await super.command(client, command, data);
         }
@@ -129,5 +132,118 @@ module.exports = class AIService extends Service {
             this.logger.error("Failed to get LLM status: " + err.message);
             return {online: false, error: err.message};
         }
+    }
+
+    /**
+     * Test if a model is usable with the selected credential.
+     *
+     * @param {object} client
+     * @param {object} data
+     * @param {number} data.credentialId
+     * @param {string} data.model
+     * @param {object} [data.additionalParameters]
+     * @returns {Promise<{ok:boolean, preview?:string}>}
+     */
+    async testModel(client, data) {
+        const rpc = this.#getRPC();
+        if (!rpc) {
+            throw new Error("LiteLLM service is not available");
+        }
+        if (!(await rpc.isOnline())) {
+            throw new Error("LiteLLM service is not connected");
+        }
+
+        const credentialId = Number(data?.credentialId);
+        const model = typeof data?.model === "string" ? data.model.trim() : "";
+        const provider = typeof data?.provider === "string" ? data.provider.trim() : "";
+        if (!Number.isInteger(credentialId) || credentialId <= 0) {
+            throw new Error("Missing or invalid credentialId");
+        }
+        if (!model) {
+            throw new Error("Missing model");
+        }
+
+        let resolvedModel = model;
+        if (provider) {
+            const normalizedProvider = provider.toLowerCase().replace(/\s+inference$/, "").trim();
+            const providerPrefix = `${normalizedProvider}/`;
+            if (!resolvedModel.toLowerCase().startsWith(providerPrefix)) {
+                resolvedModel = `${providerPrefix}${resolvedModel}`;
+            }
+        }
+        if (!resolvedModel.includes("/")) {
+            throw new Error("Provider is required when model name has no provider prefix");
+        }
+
+        const credential = await this.server.db.models["ai_credential"].getById(credentialId, {
+            attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+        });
+        if (!credential || credential.deleted) {
+            throw new Error("Credential not found");
+        }
+        if (!client?.userId || credential.userId !== client.userId) {
+            throw new Error("You are not allowed to access this credential");
+        }
+        if (!credential.enabled) {
+            throw new Error("Credential is disabled");
+        }
+
+        const params = {
+            model: resolvedModel,
+            messages: [{role: "user", content: "ping"}],
+            max_tokens: 16,
+            api_key: credential.apiKey,
+        };
+        if (credential.apiBaseUrl) {
+            params.api_base = credential.apiBaseUrl;
+        }
+        if (credential.apiVersion) {
+            params.api_version = credential.apiVersion;
+        }
+        if (
+            data?.additionalParameters &&
+            typeof data.additionalParameters === "object" &&
+            !Array.isArray(data.additionalParameters)
+        ) {
+            const reservedKeys = new Set([
+                "model",
+                "messages",
+                "api_key",
+                "api_base",
+                "api_version",
+                "max_tokens",
+            ]);
+            const safeAdditionalParameters = Object.fromEntries(
+                Object.entries(data.additionalParameters)
+                    .filter(([key]) => !reservedKeys.has(key))
+            );
+            Object.assign(params, safeAdditionalParameters);
+        }
+
+        const response = await rpc.chatCompletion(params);
+        const payload = response?.data !== undefined ? response.data : response;
+        const content = payload?.choices?.[0]?.message?.content;
+
+        let outputText = "";
+        if (typeof content === "string") {
+            outputText = content;
+        } else if (Array.isArray(content)) {
+            outputText = content
+                .map((part) => {
+                    if (typeof part === "string") {
+                        return part;
+                    }
+                    if (part && typeof part === "object" && typeof part.text === "string") {
+                        return part.text;
+                    }
+                    return "";
+                })
+                .filter(Boolean)
+                .join("\n");
+        } else if (content !== undefined && content !== null) {
+            outputText = String(content);
+        }
+
+        return {ok: true, outputText};
     }
 };

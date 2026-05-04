@@ -112,12 +112,12 @@
       <template #body>
         <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label">Model Name</label>
+            <label class="form-label">Name</label>
             <input
               v-model="modelForm.name"
               type="text"
               class="form-control"
-            placeholder="Model profile name"
+            placeholder="Name"
             />
           </div>
           <div class="col-md-6">
@@ -138,7 +138,7 @@
             >
               <option :value="null">Select credential</option>
               <option
-                v-for="credential in credentialRows.filter(c => c.enabled)"
+                v-for="credential in selectableCredentialRows"
                 :key="credential.id"
                 :value="credential.id"
               >
@@ -148,12 +148,12 @@
           </div>
 
           <div class="col-md-12">
-            <label class="form-label">Model ID</label>
+            <label class="form-label">Model Name</label>
             <input
               v-model="modelForm.model"
               type="text"
               class="form-control"
-            placeholder="Model identifier"
+            placeholder="Model name"
             />
           </div>
 
@@ -194,6 +194,14 @@
       <template #footer>
         <button class="btn btn-secondary" type="button" @click="$refs.modelModal.close()">
           Cancel
+        </button>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          :disabled="isTestingModel"
+          @click="testModel"
+        >
+          {{ isTestingModel ? "Testing..." : "Test Model" }}
         </button>
         <button class="btn btn-primary" type="button" @click="saveModel">
           {{ modelForm.id ? "Update" : "Create" }}
@@ -247,6 +255,7 @@ export default {
       ],
       credentialForm: this.getEmptyCredentialForm(),
       modelForm: this.getEmptyModelForm(),
+      isTestingModel: false,
     };
   },
   computed: {
@@ -285,6 +294,11 @@ export default {
           class: model.enabled ? "bg-success" : "bg-secondary",
         },
       }));
+    },
+    selectableCredentialRows() {
+      return this.credentialRows.filter((credential) =>
+        credential.enabled || credential.id === this.modelForm.aiCredentialId
+      );
     },
     credentialButtons() {
       return [
@@ -489,7 +503,7 @@ export default {
         return;
       }
       if (!this.modelForm.model.trim()) {
-        this.toastError("Model ID is required");
+        this.toastError("Model name is required");
         return;
       }
       if (!this.modelForm.aiCredentialId) {
@@ -527,6 +541,46 @@ export default {
           this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
         } else {
           this.toastError(result.message || "Failed to save model");
+        }
+      });
+    },
+    testModel() {
+      if (!this.modelForm.model.trim()) {
+        this.toastError("Model name is required");
+        return;
+      }
+      if (!this.modelForm.aiCredentialId) {
+        this.toastError("Credential is required");
+        return;
+      }
+
+      let additionalParameters = {};
+      if (this.modelForm.additionalParameters?.trim()) {
+        try {
+          additionalParameters = JSON.parse(this.modelForm.additionalParameters);
+        } catch (_error) {
+          this.toastError("Additional parameters must be valid JSON");
+          return;
+        }
+      }
+
+      this.isTestingModel = true;
+      this.$socket.emit("serviceCommand", {
+        service: "AIService",
+        command: "testModel",
+        data: {
+          credentialId: this.modelForm.aiCredentialId,
+          provider: this.modelForm.provider?.trim() || null,
+          model: this.modelForm.model.trim(),
+          additionalParameters,
+        },
+      }, (result) => {
+        this.isTestingModel = false;
+        if (result?.success) {
+          const outputText = result.data?.outputText ? String(result.data.outputText) : "";
+          this.toastSuccess(outputText ? `Model test successful. Output: ${outputText}` : "Model test successful.");
+        } else {
+          this.toastError(result?.message || "Model test failed");
         }
       });
     },
