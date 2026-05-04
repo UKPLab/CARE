@@ -35,7 +35,7 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
         references: {
-          model: 'study',
+          model: 'user_role',
           key: 'id',
         },
         onDelete: 'CASCADE',
