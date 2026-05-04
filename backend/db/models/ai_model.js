@@ -4,6 +4,24 @@ const MetaModel = require('../MetaModel.js');
 module.exports = (sequelize, DataTypes) => {
     class AiModel extends MetaModel {
         static autoTable = true;
+
+        static async validateCredentialOwnership(aiModel, options = {}) {
+            if (!aiModel.aiCredentialId) {
+                return;
+            }
+
+            const credential = await sequelize.models.ai_credential.findByPk(aiModel.aiCredentialId, {
+                transaction: options.transaction,
+            });
+
+            if (!credential || credential.deleted) {
+                throw new Error("Selected AI credential does not exist");
+            }
+
+            if (credential.userId !== aiModel.userId) {
+                throw new Error("Selected AI credential does not belong to this user");
+            }
+        }
     }
 
     AiModel.init({
@@ -23,6 +41,14 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'ai_model',
         tableName: 'ai_model',
+        hooks: {
+            beforeCreate: async (aiModel, options) => {
+                await AiModel.validateCredentialOwnership(aiModel, options);
+            },
+            beforeUpdate: async (aiModel, options) => {
+                await AiModel.validateCredentialOwnership(aiModel, options);
+            },
+        },
     });
 
     return AiModel;
