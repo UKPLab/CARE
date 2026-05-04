@@ -50,8 +50,13 @@
         </button>
       </div>
       <form v-if="editMode">
-        <textarea v-model="contentText" :rows="contentText.split('\n').length" class="code form-check-input w-100 h-100"
-                  title="Edit JSON" type="text"> </textarea>
+        <textarea
+          v-model="contentText"
+          :rows="contentText.split('\n').length"
+          class="code form-check-input w-100 h-100"
+          title="Edit JSON"
+          type="text"
+        > </textarea>
       </form>
     </div>
   </blockquote>

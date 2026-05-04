@@ -59,8 +59,8 @@
           :data="users"
           :options="options"
           :buttons="buttons"
-          @action="chooseAction"
           :max-table-height="'65vh'"
+          @action="chooseAction"
       />
     </template>
   </Card>

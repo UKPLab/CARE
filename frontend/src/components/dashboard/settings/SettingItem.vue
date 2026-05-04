@@ -110,8 +110,14 @@ export default {
   components: { LoadIcon, EditorModal, LogoSvg },
   subscribeTable: ["template"],
   props: {
-    group: Object,
-    title: String
+    group: {
+      type: Object,
+      default: () => ({})
+    },
+    title: {
+      type: String,
+      default: ''
+    }
   },
   data() {
     return {
