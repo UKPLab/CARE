@@ -39,7 +39,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
   name: "DashboardAssignments",
-  subscribeTable: ["assignment", "assignment_role", "user_role", "user"],
+  subscribeTable: ["assignment", "assignment_share", "user_role", "user"],
   components: {
     Card,
     BasicTable,
@@ -242,14 +242,14 @@ export default {
         return acc;
       }, {});
       return this.assignments.map((assignment) => {
-        const entries = this.$store.getters["table/assignment_role/getFiltered"]((e) => e.assignmentId === assignment.id) || [];
+        const entries = this.$store.getters["table/assignment_share/getFiltered"]((e) => e.assignmentId === assignment.id) || [];
         const assignedRoles = entries
           .map((e) => (e.roleId ? rolesById[e.roleId] : null) || (e.userId ? usersById[e.userId] : null))
           .filter(Boolean)
           .join(", ") || "-";
         return {
           ...assignment,
-          isOwner: this.isAssignmentOwner(assignment),
+          isOwner: assignment.userId === this.userId,
           canEditAssignment: this.isAssignmentOwner(assignment) || this.canEditAssignments,
           canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
           submissionStatus: this.getSubmissionStatus(assignment),

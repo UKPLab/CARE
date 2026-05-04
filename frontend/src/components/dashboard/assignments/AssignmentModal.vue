@@ -82,7 +82,7 @@ import BasicTable from "@/basic/Table.vue";
 export default {
 	name: "AssignmentModal",
 	components: { StepperModal, BasicForm, BasicTable },
-	subscribeTable: ["assignment", "user_role", "user", "assignment_role", "study", "workflow", "configuration"],
+	subscribeTable: ["assignment", "user_role", "user", "assignment_share", "study", "workflow", "configuration"],
 	data() {
 		return {
 			assignmentId: 0,
@@ -133,7 +133,7 @@ export default {
 			return (this.$store.getters["table/user/getAll"] || []).filter((user) => !user.deleted);
 		},
 		existingAssignmentRoles() {
- 			return this.$store.getters["table/assignment_role/getFiltered"]((e) => e.assignmentId === this.assignmentId) || [];
+ 			return this.$store.getters["table/assignment_share/getFiltered"]((e) => e.assignmentId === this.assignmentId) || [];
 		},
 		stepValidation() {
 			return [
@@ -182,7 +182,7 @@ export default {
 				if (assignment) {
 					this.formData = { ...this.formData, ...assignment };
 
-					const entries = (this.$store.getters["table/assignment_role/getAll"] || [])
+					const entries = (this.$store.getters["table/assignment_share/getAll"] || [])
 						.filter(e => e.assignmentId === assignmentId && !e.deleted);
 
 						const roleIds = new Set(entries.filter(e => e.roleId).map(e => e.roleId));
@@ -235,7 +235,7 @@ export default {
 
 				const savedAssignmentId = assignmentResult.data?.id || assignmentResult.data || payload.id || this.assignmentId;
 
-				const existing = (this.$store.getters["table/assignment_role/getAll"] || [])
+				const existing = (this.$store.getters["table/assignment_share/getAll"] || [])
 					.filter(e => e.assignmentId === savedAssignmentId && !e.deleted);
 
 				// Diff existing entries against current selection
@@ -252,11 +252,11 @@ export default {
 						.map(r => ({ assignmentId: savedAssignmentId, roleId: Number(r.id), userId: null }));
 
 				for (const entry of toDelete) {
-					this.$socket.emit("appDataUpdate", { table: "assignment_role", data: { id: entry.id, deleted: true } });
+					this.$socket.emit("appDataUpdate", { table: "assignment_share", data: { id: entry.id, deleted: true } });
 				}
 
 				for (const entry of toCreate) {
-					this.$socket.emit("appDataUpdate", { table: "assignment_role", data: entry });
+					this.$socket.emit("appDataUpdate", { table: "assignment_share", data: entry });
 				}
 
 				this.$refs.stepperModal.setWaiting(false);
