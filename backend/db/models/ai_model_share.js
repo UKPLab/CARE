@@ -3,7 +3,7 @@ const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
     class AiModelShare extends MetaModel {
-        static autoTable = true;
+        static autoTable = false;
     }
 
     AiModelShare.init({
