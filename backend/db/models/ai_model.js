@@ -4,6 +4,14 @@ const MetaModel = require('../MetaModel.js');
 module.exports = (sequelize, DataTypes) => {
     class AiModel extends MetaModel {
         static autoTable = true;
+        static accessMap = [
+            {
+                table: "ai_model_share",
+                by: "aiModelId",
+                target: "id",
+                columns: this.getAttributes(),
+            },
+        ];
 
         static async validateCredentialOwnership(aiModel, options = {}) {
             if (!aiModel.aiCredentialId) {
@@ -20,6 +28,17 @@ module.exports = (sequelize, DataTypes) => {
 
             if (credential.userId !== aiModel.userId) {
                 throw new Error("Selected AI credential does not belong to this user");
+            }
+        }
+
+        static validateModelOwnership(aiModel, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+
+            if (Number(aiModel.userId) !== currentUserId) {
+                throw new Error("You can only update AI models that you own");
             }
         }
     }
@@ -43,9 +62,11 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ai_model',
         hooks: {
             beforeCreate: async (aiModel, options) => {
+                AiModel.validateModelOwnership(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
             beforeUpdate: async (aiModel, options) => {
+                AiModel.validateModelOwnership(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
         },

@@ -30,6 +30,17 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+      studyId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: 'study',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      },
       roleId: {
         type: Sequelize.INTEGER,
         allowNull: true,

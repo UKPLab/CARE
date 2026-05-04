@@ -1,4 +1,5 @@
 const Service = require("../Service.js");
+const {Op} = require("sequelize");
 
 /**
  * AIService - handles AI / LLM requests from the frontend.
@@ -22,7 +23,10 @@ module.exports = class AIService extends Service {
                 "chatCompletion",
                 "abortChatCompletion",
                 "getStatus",
-                "testModel"
+                "testModel",
+                "getModelShareOptions",
+                "getModelShareConfig",
+                "shareModel"
             ],
             resTypes: []
         });
@@ -48,6 +52,12 @@ module.exports = class AIService extends Service {
                 return await this.getStatus();
             case "testModel":
                 return await this.testModel(client, data);
+            case "getModelShareOptions":
+                return await this.getModelShareOptions(client);
+            case "getModelShareConfig":
+                return await this.getModelShareConfig(client, data);
+            case "shareModel":
+                return await this.shareModel(client, data);
             default:
                 return await super.command(client, command, data);
         }
@@ -186,6 +196,27 @@ module.exports = class AIService extends Service {
             ?? payload?.provider_specific_fields?.thinking
             ?? null
         );
+    }
+
+    async #assertModelOwnership(ownerUserId, aiModelId) {
+        const normalizedModelId = Number(aiModelId);
+        if (!Number.isInteger(normalizedModelId) || normalizedModelId <= 0) {
+            throw new Error("Missing or invalid aiModelId");
+        }
+        const aiModel = await this.server.db.models["ai_model"].findOne({
+            where: {
+                id: normalizedModelId,
+                deleted: false,
+            },
+            raw: true,
+        });
+        if (!aiModel) {
+            throw new Error("AI model not found");
+        }
+        if (Number(aiModel.userId) !== Number(ownerUserId)) {
+            throw new Error("You can only manage shares for models that you own");
+        }
+        return aiModel;
     }
 
     async #resolveAiModelId(userId, data = {}) {
@@ -350,6 +381,314 @@ module.exports = class AIService extends Service {
         } catch (err) {
             this.logger.error("Failed to get LLM status: " + err.message);
             return {online: false, error: err.message};
+        }
+    }
+
+    async getModelShareOptions(client) {
+        const ownerUserId = Number(client?.userId);
+        if (!Number.isInteger(ownerUserId) || ownerUserId <= 0) {
+            throw new Error("Invalid user context");
+        }
+
+        const studies = await this.server.db.models["study"].findAll({
+            where: {
+                userId: ownerUserId,
+                deleted: false,
+            },
+            attributes: ["id", "name"],
+            order: [["name", "ASC"]],
+            raw: true,
+        });
+
+        const users = await this.server.db.models["user"].findAll({
+            where: {
+                deleted: false,
+                id: {
+                    [Op.ne]: ownerUserId,
+                },
+            },
+            attributes: ["id", "firstName", "lastName", "userName", "email"],
+            order: [["firstName", "ASC"], ["lastName", "ASC"], ["userName", "ASC"]],
+            raw: true,
+        });
+
+        const normalizedUsers = users.map((user) => {
+            const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+            const fallback = user.userName || user.email || `User ${user.id}`;
+            return {
+                id: user.id,
+                label: fullName ? `${fullName} (${fallback})` : fallback,
+            };
+        });
+
+        const normalizedStudies = studies.map((study) => ({
+            id: study.id,
+            label: study.name || `Study ${study.id}`,
+        }));
+        const roles = await this.server.db.models["user_role"].findAll({
+            where: {
+                deleted: false,
+            },
+            attributes: ["id", "name"],
+            order: [["name", "ASC"]],
+            raw: true,
+        });
+        const normalizedRoles = roles.map((role) => ({
+            id: role.id,
+            label: role.name || `Role ${role.id}`,
+        }));
+
+        return {
+            users: normalizedUsers,
+            studies: normalizedStudies,
+            roles: normalizedRoles,
+        };
+    }
+
+    async getModelShareConfig(client, data) {
+        const ownerUserId = Number(client?.userId);
+        const aiModel = await this.#assertModelOwnership(ownerUserId, data?.aiModelId);
+
+        const shares = await this.server.db.models["ai_model_share"].findAll({
+            where: {
+                aiModelId: aiModel.id,
+                deleted: false,
+            },
+            attributes: ["id", "userId", "studyId", "roleId", "expiryDate"],
+            raw: true,
+        });
+
+        const userIds = [...new Set(
+            shares
+                .map((share) => Number(share.userId))
+                .filter((value) => Number.isInteger(value) && value > 0)
+        )];
+        const studyIds = [...new Set(
+            shares
+                .map((share) => Number(share.studyId))
+                .filter((value) => Number.isInteger(value) && value > 0)
+        )];
+        const roleIds = [...new Set(
+            shares
+                .map((share) => Number(share.roleId))
+                .filter((value) => Number.isInteger(value) && value > 0)
+        )];
+        const expiryCandidates = shares
+            .map((share) => share.expiryDate ? new Date(share.expiryDate) : null)
+            .filter((value) => value && !Number.isNaN(value.getTime()));
+        const expiryDate = expiryCandidates.length > 0
+            ? new Date(Math.max(...expiryCandidates.map((value) => value.getTime()))).toISOString()
+            : null;
+
+        return {
+            userIds,
+            roleIds,
+            studyId: studyIds[0] || null,
+            expiryDate,
+            mode: studyIds.length > 0 ? "study" : (roleIds.length > 0 ? "roles" : "users"),
+        };
+    }
+
+    async shareModel(client, data) {
+        const ownerUserId = Number(client?.userId);
+        const aiModel = await this.#assertModelOwnership(ownerUserId, data?.aiModelId);
+        const mode = data?.mode === "study" ? "study" : (data?.mode === "roles" ? "roles" : "users");
+        const rawExpiryDate = typeof data?.expiryDate === "string" ? data.expiryDate.trim() : "";
+        if (!rawExpiryDate) {
+            throw new Error("Expiry date is required");
+        }
+        let expiryDate = null;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(rawExpiryDate)) {
+            const [yearText, monthText, dayText] = rawExpiryDate.split("-");
+            const year = Number(yearText);
+            const month = Number(monthText);
+            const day = Number(dayText);
+            expiryDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+        } else {
+            expiryDate = new Date(rawExpiryDate);
+        }
+        if (Number.isNaN(expiryDate.getTime())) {
+            throw new Error("Expiry date is invalid");
+        }
+        if (expiryDate <= new Date()) {
+            throw new Error("Expiry date must be in the future");
+        }
+        const transaction = await this.server.db.sequelize.transaction();
+
+        try {
+            await this.server.db.models["ai_model_share"].update(
+                {
+                    deleted: true,
+                    deletedAt: new Date(),
+                },
+                {
+                    where: {
+                        aiModelId: aiModel.id,
+                        deleted: false,
+                    },
+                    transaction,
+                }
+            );
+
+            const rowsToCreate = [];
+
+            if (mode === "study") {
+                const studyId = Number(data?.studyId);
+                if (!Number.isInteger(studyId) || studyId <= 0) {
+                    throw new Error("Please select a study");
+                }
+                const study = await this.server.db.models["study"].findOne({
+                    where: {
+                        id: studyId,
+                        userId: ownerUserId,
+                        deleted: false,
+                    },
+                    raw: true,
+                    transaction,
+                });
+                if (!study) {
+                    throw new Error("Selected study is invalid");
+                }
+
+                const sessions = await this.server.db.models["study_session"].findAll({
+                    where: {
+                        studyId,
+                        deleted: false,
+                    },
+                    attributes: ["userId"],
+                    raw: true,
+                    transaction,
+                });
+                const participantUserIds = [...new Set(
+                    sessions
+                        .map((session) => Number(session.userId))
+                        .filter((userId) => Number.isInteger(userId) && userId > 0 && userId !== ownerUserId)
+                )];
+
+                if (participantUserIds.length === 0) {
+                    throw new Error("Selected study has no participants to share with");
+                }
+
+                for (const userId of participantUserIds) {
+                    rowsToCreate.push({
+                        aiModelId: aiModel.id,
+                        userId,
+                        studyId,
+                        roleId: null,
+                        expiryDate,
+                        deleted: false,
+                    });
+                }
+            } else if (mode === "roles") {
+                const requestedRoleIds = Array.isArray(data?.roleIds) ? data.roleIds : [];
+                const roleIds = [...new Set(
+                    requestedRoleIds
+                        .map((value) => Number(value))
+                        .filter((value) => Number.isInteger(value) && value > 0)
+                )];
+                if (roleIds.length === 0) {
+                    throw new Error("Please select at least one role");
+                }
+
+                const validRoles = await this.server.db.models["user_role"].findAll({
+                    where: {
+                        id: roleIds,
+                        deleted: false,
+                    },
+                    attributes: ["id"],
+                    raw: true,
+                    transaction,
+                });
+                const validRoleIds = new Set(validRoles.map((role) => Number(role.id)));
+                const invalidRoleCount = roleIds.filter((roleId) => !validRoleIds.has(roleId)).length;
+                if (invalidRoleCount > 0) {
+                    throw new Error("One or more selected roles are invalid");
+                }
+
+                const roleMatches = await this.server.db.models["user_role_matching"].findAll({
+                    where: {
+                        userRoleId: roleIds,
+                        deleted: false,
+                    },
+                    attributes: ["userId", "userRoleId"],
+                    raw: true,
+                    transaction,
+                });
+                const uniqueRoleUserPairs = new Set();
+                for (const roleMatch of roleMatches) {
+                    const userId = Number(roleMatch.userId);
+                    const roleId = Number(roleMatch.userRoleId);
+                    if (!Number.isInteger(userId) || userId <= 0 || userId === ownerUserId) {
+                        continue;
+                    }
+                    if (!Number.isInteger(roleId) || roleId <= 0) {
+                        continue;
+                    }
+                    uniqueRoleUserPairs.add(`${userId}:${roleId}`);
+                }
+                if (uniqueRoleUserPairs.size === 0) {
+                    throw new Error("No users found for selected role(s)");
+                }
+
+                for (const pair of uniqueRoleUserPairs) {
+                    const [userIdText, roleIdText] = pair.split(":");
+                    rowsToCreate.push({
+                        aiModelId: aiModel.id,
+                        userId: Number(userIdText),
+                        studyId: null,
+                        roleId: Number(roleIdText),
+                        expiryDate,
+                        deleted: false,
+                    });
+                }
+            } else {
+                const requestedUserIds = Array.isArray(data?.userIds) ? data.userIds : [];
+                const userIds = [...new Set(
+                    requestedUserIds
+                        .map((value) => Number(value))
+                        .filter((value) => Number.isInteger(value) && value > 0 && value !== ownerUserId)
+                )];
+
+                if (userIds.length === 0) {
+                    throw new Error("Please select at least one user");
+                }
+
+                const validUsers = await this.server.db.models["user"].findAll({
+                    where: {
+                        id: userIds,
+                        deleted: false,
+                    },
+                    attributes: ["id"],
+                    raw: true,
+                    transaction,
+                });
+                const validUserIds = new Set(validUsers.map((user) => Number(user.id)));
+                const invalidCount = userIds.filter((userId) => !validUserIds.has(userId)).length;
+                if (invalidCount > 0) {
+                    throw new Error("One or more selected users are invalid");
+                }
+
+                for (const userId of userIds) {
+                    rowsToCreate.push({
+                        aiModelId: aiModel.id,
+                        userId,
+                        studyId: null,
+                        roleId: null,
+                        expiryDate,
+                        deleted: false,
+                    });
+                }
+            }
+
+            if (rowsToCreate.length > 0) {
+                await this.server.db.models["ai_model_share"].bulkCreate(rowsToCreate, {transaction});
+            }
+
+            await transaction.commit();
+            return {ok: true, sharedCount: rowsToCreate.length};
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
         }
     }
 

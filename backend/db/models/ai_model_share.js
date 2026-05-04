@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
     AiModelShare.init({
         aiModelId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
+        studyId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
         expiryDate: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
