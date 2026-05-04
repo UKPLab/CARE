@@ -33,16 +33,34 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
+        references: {
+          model: 'document',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       },
       studySessionId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
+        references: {
+          model: 'study_session',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       },
       studyStepId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
+        references: {
+          model: 'study_step',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       },
       requestId: {
         type: Sequelize.STRING,
