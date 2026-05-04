@@ -44,34 +44,37 @@
       </div>
       <BasicTable
         v-else-if="shareForm.mode === 'users'"
-        v-model="shareSelections.users"
+        :model-value="selectedRowsForTable"
         :columns="shareSelectionColumns"
         :data="shareSelectionData"
         :options="shareSelectionTableOptions"
         :max-table-height="360"
+        @update:model-value="onSelectionRowsUpdate"
       />
       <BasicTable
         v-else-if="shareForm.mode === 'roles'"
-        v-model="shareSelections.roles"
+        :model-value="selectedRowsForTable"
         :columns="shareSelectionColumns"
         :data="shareSelectionData"
         :options="shareSelectionTableOptions"
         :max-table-height="360"
+        @update:model-value="onSelectionRowsUpdate"
       />
       <BasicTable
         v-else
-        v-model="shareSelections.studies"
+        :model-value="selectedRowsForTable"
         :columns="shareSelectionColumns"
         :data="shareSelectionData"
         :options="shareStudyTableOptions"
         :max-table-height="360"
+        @update:model-value="onSelectionRowsUpdate"
       />
     </template>
     <template #step-2>
       <div class="mb-3">
         <div><strong>Model:</strong> {{ selectedShareModel?.name || "-" }}</div>
         <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
-        <div><strong>Selected:</strong> {{ activeShareSelections.length }}</div>
+        <div><strong>Selected:</strong> {{ activeSelectionIds.length }}</div>
         <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
       </div>
       <BasicTable
@@ -109,11 +112,9 @@ export default {
         roles: [],
         studies: [],
       },
-      shareSelections: {
-        users: [],
-        roles: [],
-        studies: [],
-      },
+      selectedUserIds: [],
+      selectedRoleIds: [],
+      selectedStudyIds: [],
       shareSelectionTableOptions: {
         striped: true,
         hover: true,
@@ -143,12 +144,12 @@ export default {
     shareSteps() {
       return [
         { title: "Select Audience" },
-        { title: "Review & Send" },
+        { title: "Review & Save" },
       ];
     },
     shareStepValidation() {
       return [
-        !this.isLoadingShareData && this.activeShareSelections.length > 0 && !!this.shareForm.expiryDate,
+        !this.isLoadingShareData && this.activeSelectionIds.length > 0 && !!this.shareForm.expiryDate,
         !this.isSavingShare,
       ];
     },
@@ -179,14 +180,27 @@ export default {
       }
       return this.shareTargets.users.map((user) => ({ ...user, type: "User" }));
     },
-    activeShareSelections() {
+    activeSelectionIds() {
       if (this.shareForm.mode === "roles") {
-        return this.shareSelections.roles;
+        return this.selectedRoleIds;
       }
       if (this.shareForm.mode === "study") {
-        return this.shareSelections.studies;
+        return this.selectedStudyIds;
       }
-      return this.shareSelections.users;
+      return this.selectedUserIds;
+    },
+    selectedIdSet() {
+      return new Set(
+        (this.activeSelectionIds || [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0)
+      );
+    },
+    selectedRowsForTable() {
+      return this.shareSelectionData.filter((row) => this.selectedIdSet.has(Number(row.id)));
+    },
+    activeShareSelections() {
+      return this.selectedRowsForTable;
     },
     shareAudienceLabel() {
       if (this.shareForm.mode === "roles") return "Roles";
@@ -221,9 +235,18 @@ export default {
       const day = pad(date.getDate());
       return `${year}-${month}-${day}`;
     },
-    getShareTargetByIds(targets, ids) {
-      const idSet = new Set((ids || []).map((id) => Number(id)));
-      return (targets || []).filter((entry) => idSet.has(Number(entry.id)));
+    normalizeIdList(ids) {
+      return [...new Set((ids || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+    },
+    onSelectionRowsUpdate(rows) {
+      const nextIds = this.normalizeIdList((rows || []).map((row) => row.id));
+      if (this.shareForm.mode === "roles") {
+        this.selectedRoleIds = nextIds;
+      } else if (this.shareForm.mode === "study") {
+        this.selectedStudyIds = nextIds;
+      } else {
+        this.selectedUserIds = nextIds;
+      }
     },
     emitAiServiceCommand(command, data = {}) {
       return new Promise((resolve, reject) => {
@@ -252,11 +275,9 @@ export default {
 
       this.selectedShareModel = row;
       this.shareForm = this.getEmptyShareForm();
-      this.shareSelections = {
-        users: [],
-        roles: [],
-        studies: [],
-      };
+      this.selectedUserIds = [];
+      this.selectedRoleIds = [];
+      this.selectedStudyIds = [];
       this.isLoadingShareData = true;
       this.$refs.shareStepper.open();
 
@@ -275,9 +296,9 @@ export default {
           mode: ["users", "roles", "study"].includes(shareConfig?.mode) ? shareConfig.mode : "users",
           expiryDate: shareConfig?.expiryDate ? this.toDateInputString(shareConfig.expiryDate) : "",
         };
-        this.shareSelections.users = this.getShareTargetByIds(this.shareTargets.users, shareConfig?.userIds || []);
-        this.shareSelections.roles = this.getShareTargetByIds(this.shareTargets.roles, shareConfig?.roleIds || []);
-        this.shareSelections.studies = this.getShareTargetByIds(this.shareTargets.studies, shareConfig?.studyId ? [shareConfig.studyId] : []);
+        this.selectedUserIds = this.normalizeIdList(shareConfig?.userIds);
+        this.selectedRoleIds = this.normalizeIdList(shareConfig?.roleIds);
+        this.selectedStudyIds = shareConfig?.studyId ? [Number(shareConfig.studyId)] : [];
       } catch (error) {
         this.toastError(error.message || "Failed to load share data");
       } finally {
@@ -300,21 +321,21 @@ export default {
         return;
       }
       if (this.shareForm.mode === "study") {
-        const studyId = this.shareSelections.studies?.[0]?.id;
+        const studyId = this.selectedStudyIds[0];
         if (!studyId) {
           this.toastError("Please select a study");
           return;
         }
         payload.studyId = studyId;
       } else if (this.shareForm.mode === "roles") {
-        const roleIds = (this.shareSelections.roles || []).map((role) => role.id);
+        const roleIds = [...this.selectedRoleIds];
         if (roleIds.length === 0) {
           this.toastError("Please select at least one role");
           return;
         }
         payload.roleIds = roleIds;
       } else {
-        const userIds = (this.shareSelections.users || []).map((user) => user.id);
+        const userIds = [...this.selectedUserIds];
         if (userIds.length === 0) {
           this.toastError("Please select at least one user");
           return;

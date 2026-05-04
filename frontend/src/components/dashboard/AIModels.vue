@@ -64,9 +64,9 @@ import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import AICredential from "@/components/dashboard/ai-models/AICredential.vue";
-import AIModel from "@/components/dashboard/ai-models/AIModel.vue";
-import AIModelShareStepper from "@/components/dashboard/ai-models/AIModelShareStepper.vue";
+import AICredential from "@/components/dashboard/ai/AICredential.vue";
+import AIModel from "@/components/dashboard/ai/AIModel.vue";
+import AIModelShareStepper from "@/components/dashboard/ai/AIModelShareStepper.vue";
 
 export default {
   name: "DashboardAIModels",
