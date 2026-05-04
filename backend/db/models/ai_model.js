@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
             if (credential.userId !== aiModel.userId) {
                 throw new Error("Selected AI credential does not belong to this user");
             }
+
+            if (!credential.enabled && aiModel.enabled) {
+                throw new Error("Cannot enable this model while its credential is disabled");
+            }
         }
 
         static validateModelOwnership(aiModel, options = {}) {
