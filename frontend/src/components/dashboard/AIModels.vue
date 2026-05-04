@@ -55,6 +55,8 @@
       :current-user-id="currentUserId"
     />
 
+    <AIOverview ref="aiOverview" />
+
     <ConfirmModal ref="confirmModal" />
   </div>
 </template>
@@ -67,6 +69,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AICredential from "@/components/dashboard/ai/AICredential.vue";
 import AIModel from "@/components/dashboard/ai/AIModel.vue";
 import AIModelShareStepper from "@/components/dashboard/ai/AIModelShareStepper.vue";
+import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
 
 export default {
   name: "DashboardAIModels",
@@ -79,6 +82,7 @@ export default {
     AICredential,
     AIModel,
     AIModelShareStepper,
+    AIOverview,
   },
   data() {
     return {
@@ -185,6 +189,12 @@ export default {
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
+          icon: "info-circle",
+          title: "Model overview",
+          action: "modelOverview",
+          options: { iconOnly: true, specifiers: { "btn-outline-info": true } },
+        },
+        {
           icon: "toggle2-on",
           title: "Disable model",
           action: "toggleModel",
@@ -233,6 +243,9 @@ export default {
     },
     onModelAction(data) {
       switch (data.action) {
+        case "modelOverview":
+          this.$refs.aiOverview.open(data.params);
+          break;
         case "editModel":
           this.openModelModal(data.params);
           break;

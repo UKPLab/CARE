@@ -26,7 +26,8 @@ module.exports = class AIService extends Service {
                 "testModel",
                 "getModelShareOptions",
                 "getModelShareConfig",
-                "shareModel"
+                "shareModel",
+                "getModelOverview"
             ],
             resTypes: []
         });
@@ -58,6 +59,8 @@ module.exports = class AIService extends Service {
                 return await this.getModelShareConfig(client, data);
             case "shareModel":
                 return await this.shareModel(client, data);
+            case "getModelOverview":
+                return await this.getModelOverview(client, data);
             default:
                 return await super.command(client, command, data);
         }
@@ -486,6 +489,130 @@ module.exports = class AIService extends Service {
             studyId: studyIds[0] || null,
             expiryDate,
             mode: studyIds.length > 0 ? "study" : (roleIds.length > 0 ? "roles" : "users"),
+        };
+    }
+
+    async getModelOverview(client, data) {
+        const viewerUserId = Number(client?.userId);
+        if (!Number.isInteger(viewerUserId) || viewerUserId <= 0) {
+            throw new Error("Invalid user context");
+        }
+        const aiModelId = Number(data?.aiModelId);
+        if (!Number.isInteger(aiModelId) || aiModelId <= 0) {
+            throw new Error("Missing or invalid aiModelId");
+        }
+
+        const aiModel = await this.server.db.models["ai_model"].findOne({
+            where: {
+                id: aiModelId,
+                deleted: false,
+            },
+            raw: true,
+        });
+        if (!aiModel) {
+            throw new Error("AI model not found");
+        }
+
+        const now = new Date();
+        const isOwner = Number(aiModel.userId) === viewerUserId;
+
+        const viewerShare = await this.server.db.models["ai_model_share"].findOne({
+            where: {
+                aiModelId,
+                userId: viewerUserId,
+                deleted: false,
+                expiryDate: {[Op.gt]: now},
+            },
+            attributes: ["expiryDate"],
+            raw: true,
+        });
+
+        if (!isOwner && !viewerShare) {
+            throw new Error("You do not have access to this model");
+        }
+
+        const recipientLabel = (user, uid) => {
+            if (!user) return `User ${uid}`;
+            const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+            const fb = user.userName || user.email || `User ${user.id}`;
+            return fullName ? `${fullName} (${fb})` : fb;
+        };
+
+        let shareRecipients = [];
+        if (isOwner) {
+            const shares = await this.server.db.models["ai_model_share"].findAll({
+                where: {
+                    aiModelId,
+                    deleted: false,
+                    expiryDate: {[Op.gt]: now},
+                },
+                raw: true,
+                order: [["expiryDate", "ASC"]],
+            });
+
+            const userIds = [...new Set(shares.map((s) => Number(s.userId)).filter((id) => Number.isInteger(id) && id > 0))];
+            const roleIds = [...new Set(shares.map((s) => Number(s.roleId)).filter((id) => Number.isInteger(id) && id > 0))];
+            const studyIds = [...new Set(shares.map((s) => Number(s.studyId)).filter((id) => Number.isInteger(id) && id > 0))];
+
+            const users = userIds.length > 0
+                ? await this.server.db.models["user"].findAll({
+                    where: {id: userIds, deleted: false},
+                    attributes: ["id", "firstName", "lastName", "userName", "email"],
+                    raw: true,
+                })
+                : [];
+            const userById = Object.fromEntries(users.map((u) => [Number(u.id), u]));
+
+            const roles = roleIds.length > 0
+                ? await this.server.db.models["user_role"].findAll({
+                    where: {id: roleIds, deleted: false},
+                    attributes: ["id", "name"],
+                    raw: true,
+                })
+                : [];
+            const roleById = Object.fromEntries(roles.map((r) => [Number(r.id), r]));
+
+            const studies = studyIds.length > 0
+                ? await this.server.db.models["study"].findAll({
+                    where: {
+                        id: studyIds,
+                        userId: Number(aiModel.userId),
+                        deleted: false,
+                    },
+                    attributes: ["id", "name"],
+                    raw: true,
+                })
+                : [];
+            const studyById = Object.fromEntries(studies.map((st) => [Number(st.id), st]));
+
+            shareRecipients = shares.map((share) => {
+                const uid = Number(share.userId);
+                let accessVia = "direct";
+                let viaLabel = null;
+                if (share.studyId) {
+                    accessVia = "study";
+                    const sid = Number(share.studyId);
+                    viaLabel = studyById[sid]?.name || `Study ${sid}`;
+                } else if (share.roleId) {
+                    accessVia = "role";
+                    const rid = Number(share.roleId);
+                    viaLabel = roleById[rid]?.name || `Role ${rid}`;
+                }
+                return {
+                    recipientLabel: recipientLabel(userById[uid], uid),
+                    accessVia,
+                    viaLabel,
+                    expiryDate: share.expiryDate,
+                };
+            });
+        }
+
+        return {
+            isOwner,
+            viewerShare: !isOwner && viewerShare
+                ? {expiryDate: viewerShare.expiryDate}
+                : null,
+            shareRecipients,
         };
     }
 
