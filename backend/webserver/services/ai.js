@@ -2,15 +2,12 @@ const Service = require("../Service.js");
 const {Op} = require("sequelize");
 
 /**
- * AIService - handles AI / LLM requests from the frontend.
+ * AIService — AI / LLM and model-sharing RPC handlers.
  *
- * The client emits a `serviceCommand` with an ack callback and gets the
- * response back on that same callback (no `serviceRefresh` push events).
+ * Client: `serviceCommand` + ack callback → `{ success, data }` or `{ success: false, message }`.
  *
- * Supported commands:
- *   - chatCompletion(data): forward the payload to LiteLLM as-is
- *   - abortChatCompletion(data): abort an in-flight LiteLLM request by id
- *   - getStatus():          report whether LiteLLM is reachable
+ * Commands: chatCompletion, abortChatCompletion, getStatus, testModel,
+ *           getModelShareOptions, getModelShareConfig, shareModel, getModelOverview.
  *
  * @class
  * @author Akash Gundapuneni
@@ -27,50 +24,31 @@ module.exports = class AIService extends Service {
                 "getModelShareOptions",
                 "getModelShareConfig",
                 "shareModel",
-                "getModelOverview"
+                "getModelOverview",
             ],
-            resTypes: []
+            resTypes: [],
         });
     }
 
-    /**
-     * Route a command to the matching handler.
-     * Return values / thrown errors are forwarded to the client's ack callback
-     * by Socket.createSocket as {success, data} or {success:false, message}.
-     *
-     * @param {object} client
-     * @param {string} command
-     * @param {object} data
-     * @returns {Promise<*>}
-     */
     async command(client, command, data) {
-        switch (command) {
-            case "chatCompletion":
-                return await this.chatCompletion(client, data);
-            case "abortChatCompletion":
-                return await this.abortChatCompletion(data);
-            case "getStatus":
-                return await this.getStatus();
-            case "testModel":
-                return await this.testModel(client, data);
-            case "getModelShareOptions":
-                return await this.getModelShareOptions(client);
-            case "getModelShareConfig":
-                return await this.getModelShareConfig(client, data);
-            case "shareModel":
-                return await this.shareModel(client, data);
-            case "getModelOverview":
-                return await this.getModelOverview(client, data);
-            default:
-                return await super.command(client, command, data);
+        const handlers = {
+            chatCompletion: () => this.chatCompletion(client, data),
+            abortChatCompletion: () => this.abortChatCompletion(data),
+            getStatus: () => this.getStatus(),
+            testModel: () => this.testModel(client, data),
+            getModelShareOptions: () => this.getModelShareOptions(client),
+            getModelShareConfig: () => this.getModelShareConfig(client, data),
+            shareModel: () => this.shareModel(client, data),
+            getModelOverview: () => this.getModelOverview(client, data),
+        };
+        if (handlers[command]) {
+            return handlers[command]();
         }
+        return super.command(client, command, data);
     }
 
-    /**
-     * @returns {Object|null} The LiteLLMRPC instance, or null if not registered.
-     */
     #getRPC() {
-        return this.server.rpcs['LiteLLMRPC'] || null;
+        return this.server.rpcs.LiteLLMRPC || null;
     }
 
     #normalizeProvider(provider) {
@@ -201,17 +179,24 @@ module.exports = class AIService extends Service {
         );
     }
 
-    async #assertModelOwnership(ownerUserId, aiModelId) {
+    #requireClientUserId(client) {
+        const id = Number(client?.userId);
+        if (!Number.isInteger(id) || id <= 0) {
+            throw new Error("Invalid user context");
+        }
+        return id;
+    }
+
+    /** @param {import("sequelize").Transaction} [transaction] */
+    async #assertModelOwnership(ownerUserId, aiModelId, transaction) {
         const normalizedModelId = Number(aiModelId);
         if (!Number.isInteger(normalizedModelId) || normalizedModelId <= 0) {
             throw new Error("Missing or invalid aiModelId");
         }
-        const aiModel = await this.server.db.models["ai_model"].findOne({
-            where: {
-                id: normalizedModelId,
-                deleted: false,
-            },
+        const aiModel = await this.server.db.models.ai_model.findOne({
+            where: {id: normalizedModelId, deleted: false},
             raw: true,
+            transaction,
         });
         if (!aiModel) {
             throw new Error("AI model not found");
@@ -220,6 +205,121 @@ module.exports = class AIService extends Service {
             throw new Error("You can only manage shares for models that you own");
         }
         return aiModel;
+    }
+
+    async #loadAiModelRow(aiModelId) {
+        const id = Number(aiModelId);
+        if (!Number.isInteger(id) || id <= 0) {
+            throw new Error("Missing or invalid aiModelId");
+        }
+        const row = await this.server.db.models.ai_model.findOne({
+            where: {id, deleted: false},
+            raw: true,
+        });
+        if (!row) {
+            throw new Error("AI model not found");
+        }
+        return row;
+    }
+
+    #uniquePositiveInts(values, pick = (x) => Number(x)) {
+        return [...new Set((values || []).map(pick).filter((n) => Number.isInteger(n) && n > 0))];
+    }
+
+    /** Same display string as share-picker labels; null if user row missing. */
+    #userDisplayLabel(user) {
+        if (!user) return null;
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+        const fallback = user.userName || user.email || `User ${user.id}`;
+        return fullName ? `${fullName} (${fallback})` : fallback;
+    }
+
+    #shareAggregatesFromRows(shares) {
+        const userIds = this.#uniquePositiveInts(shares.map((s) => s.userId));
+        const studyIds = this.#uniquePositiveInts(shares.map((s) => s.studyId));
+        const roleIds = this.#uniquePositiveInts(shares.map((s) => s.roleId));
+        const expiryCandidates = shares
+            .map((share) => (share.expiryDate ? new Date(share.expiryDate) : null))
+            .filter((value) => value && !Number.isNaN(value.getTime()));
+        const expiryDate = expiryCandidates.length > 0
+            ? new Date(Math.max(...expiryCandidates.map((value) => value.getTime()))).toISOString()
+            : null;
+        return {userIds, studyIds, roleIds, expiryDate};
+    }
+
+    async #loadShareEnrichmentMaps(shares, ownerUserId) {
+        const userIds = this.#uniquePositiveInts(shares.map((s) => s.userId));
+        const roleIds = this.#uniquePositiveInts(shares.map((s) => s.roleId));
+        const studyIds = this.#uniquePositiveInts(shares.map((s) => s.studyId));
+
+        const users = userIds.length === 0 ? [] : await this.server.db.models.user.findAll({
+            where: {id: userIds, deleted: false},
+            attributes: ["id", "firstName", "lastName", "userName", "email"],
+            raw: true,
+        });
+        const userById = Object.fromEntries(users.map((u) => [Number(u.id), u]));
+
+        const roles = roleIds.length === 0 ? [] : await this.server.db.models.user_role.findAll({
+            where: {id: roleIds, deleted: false},
+            attributes: ["id", "name"],
+            raw: true,
+        });
+        const roleById = Object.fromEntries(roles.map((r) => [Number(r.id), r]));
+
+        const studies = studyIds.length === 0 ? [] : await this.server.db.models.study.findAll({
+            where: {
+                id: studyIds,
+                userId: Number(ownerUserId),
+                deleted: false,
+            },
+            attributes: ["id", "name"],
+            raw: true,
+        });
+        const studyById = Object.fromEntries(studies.map((st) => [Number(st.id), st]));
+
+        return {userById, roleById, studyById};
+    }
+
+    #mapShareToRecipient(share, maps) {
+        const uid = Number(share.userId);
+        let accessVia = "direct";
+        let viaLabel = null;
+        if (share.studyId) {
+            accessVia = "study";
+            const sid = Number(share.studyId);
+            viaLabel = maps.studyById[sid]?.name || `Study ${sid}`;
+        } else if (share.roleId) {
+            accessVia = "role";
+            const rid = Number(share.roleId);
+            viaLabel = maps.roleById[rid]?.name || `Role ${rid}`;
+        }
+        return {
+            recipientLabel: this.#userDisplayLabel(maps.userById[uid]) || `User ${uid}`,
+            accessVia,
+            viaLabel,
+            expiryDate: share.expiryDate,
+        };
+    }
+
+    #parseShareExpiryInput(rawExpiryDate) {
+        const raw = typeof rawExpiryDate === "string" ? rawExpiryDate.trim() : "";
+        if (!raw) {
+            throw new Error("Expiry date is required");
+        }
+        let expiryDate;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            const [yearText, monthText, dayText] = raw.split("-");
+            expiryDate = new Date(Number(yearText), Number(monthText) - 1, Number(dayText), 23, 59, 59, 999);
+        } else {
+            expiryDate = new Date(raw);
+        }
+        if (Number.isNaN(expiryDate.getTime())) {
+            throw new Error("Expiry date is invalid");
+        }
+        if (expiryDate <= new Date()) {
+            throw new Error("Expiry date must be in the future");
+        }
+        return expiryDate;
     }
 
     async #resolveAiModelId(userId, data = {}) {
@@ -253,7 +353,7 @@ module.exports = class AIService extends Service {
             where.provider = normalizedProvider;
         }
 
-        const aiModel = await this.server.db.models["ai_model"].findOne({
+        const aiModel = await this.server.db.models.ai_model.findOne({
             where,
             order: [["updatedAt", "DESC"]],
             raw: true,
@@ -263,7 +363,7 @@ module.exports = class AIService extends Service {
 
     async #logAiCall(logData) {
         try {
-            await this.server.db.models["ai_log"].add({
+            await this.server.db.models.ai_log.add({
                 userId: logData.userId,
                 aiModelId: logData.aiModelId || null,
                 requestId: logData.requestId || null,
@@ -282,19 +382,6 @@ module.exports = class AIService extends Service {
         }
     }
 
-    /**
-     * Forward a chat completion request to LiteLLM.
-     * Payload (model, messages, api_key, ...) is passed through untouched.
-     *
-     * The full response is logged server-side; only `choices` is returned
-     * to the frontend. Add more fields here if a client needs them.
-     *
-     * @param {object} data
-     * @param {string} data.model
-     * @param {Array<Object>} data.messages
-     * @returns {Promise<{choices: Array<Object>}>}
-     * @throws {Error} if LiteLLM is unavailable or the call fails
-     */
     async chatCompletion(client, data) {
         const rpc = this.#getRPC();
         if (!rpc) {
@@ -326,7 +413,7 @@ module.exports = class AIService extends Service {
         const payload = response.data !== undefined ? response.data : response;
 
         const {choices = [], usage, model, id} = payload || {};
-        const finishReasons = choices.map(c => c.finish_reason).filter(Boolean);
+        const finishReasons = choices.map((c) => c.finish_reason).filter(Boolean);
         this.logger.info(
             `chatCompletion: id=${id} model=${model} ` +
             `tokens=${usage ? usage.total_tokens : "N/A"} ` +
@@ -351,29 +438,15 @@ module.exports = class AIService extends Service {
         return {choices};
     }
 
-    /**
-     * Abort an in-flight chat completion request.
-     *
-     * @param {object} data
-     * @param {string} data.requestId frontend-generated request id
-     * @param {string} [data.reason] diagnostic reason for logs
-     * @returns {Promise<object>}
-     */
     async abortChatCompletion(data) {
         const rpc = this.#getRPC();
         if (!rpc || !(await rpc.isOnline())) {
             return {aborted: false, message: "LiteLLM service is not connected"};
         }
 
-        return await rpc.abortChatCompletion(data && data.requestId, data && data.reason);
+        return rpc.abortChatCompletion(data && data.requestId, data && data.reason);
     }
 
-    /**
-     * Report LiteLLM connection status.
-     * Never throws - returns an object so the UI can render state directly.
-     *
-     * @returns {Promise<{online: boolean, error?: string}>}
-     */
     async getStatus() {
         const rpc = this.#getRPC();
         if (!rpc) {
@@ -388,100 +461,56 @@ module.exports = class AIService extends Service {
     }
 
     async getModelShareOptions(client) {
-        const ownerUserId = Number(client?.userId);
-        if (!Number.isInteger(ownerUserId) || ownerUserId <= 0) {
-            throw new Error("Invalid user context");
-        }
+        const ownerUserId = this.#requireClientUserId(client);
 
-        const studies = await this.server.db.models["study"].findAll({
-            where: {
-                userId: ownerUserId,
-                deleted: false,
-            },
-            attributes: ["id", "name"],
-            order: [["name", "ASC"]],
-            raw: true,
-        });
-
-        const users = await this.server.db.models["user"].findAll({
-            where: {
-                deleted: false,
-                id: {
-                    [Op.ne]: ownerUserId,
-                },
-            },
-            attributes: ["id", "firstName", "lastName", "userName", "email"],
-            order: [["firstName", "ASC"], ["lastName", "ASC"], ["userName", "ASC"]],
-            raw: true,
-        });
-
-        const normalizedUsers = users.map((user) => {
-            const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-            const fallback = user.userName || user.email || `User ${user.id}`;
-            return {
-                id: user.id,
-                label: fullName ? `${fullName} (${fallback})` : fallback,
-            };
-        });
-
-        const normalizedStudies = studies.map((study) => ({
-            id: study.id,
-            label: study.name || `Study ${study.id}`,
-        }));
-        const roles = await this.server.db.models["user_role"].findAll({
-            where: {
-                deleted: false,
-            },
-            attributes: ["id", "name"],
-            order: [["name", "ASC"]],
-            raw: true,
-        });
-        const normalizedRoles = roles.map((role) => ({
-            id: role.id,
-            label: role.name || `Role ${role.id}`,
-        }));
+        const [studies, users, roles] = await Promise.all([
+            this.server.db.models.study.findAll({
+                where: {userId: ownerUserId, deleted: false},
+                attributes: ["id", "name"],
+                order: [["name", "ASC"]],
+                raw: true,
+            }),
+            this.server.db.models.user.findAll({
+                where: {deleted: false, id: {[Op.ne]: ownerUserId}},
+                attributes: ["id", "firstName", "lastName", "userName", "email"],
+                order: [["firstName", "ASC"], ["lastName", "ASC"], ["userName", "ASC"]],
+                raw: true,
+            }),
+            this.server.db.models.user_role.findAll({
+                where: {deleted: false},
+                attributes: ["id", "name"],
+                order: [["name", "ASC"]],
+                raw: true,
+            }),
+        ]);
 
         return {
-            users: normalizedUsers,
-            studies: normalizedStudies,
-            roles: normalizedRoles,
+            users: users.map((user) => ({
+                id: user.id,
+                label: this.#userDisplayLabel(user),
+            })),
+            studies: studies.map((study) => ({
+                id: study.id,
+                label: study.name || `Study ${study.id}`,
+            })),
+            roles: roles.map((role) => ({
+                id: role.id,
+                label: role.name || `Role ${role.id}`,
+            })),
         };
     }
 
     async getModelShareConfig(client, data) {
-        const ownerUserId = Number(client?.userId);
+        const ownerUserId = this.#requireClientUserId(client);
         const aiModel = await this.#assertModelOwnership(ownerUserId, data?.aiModelId);
 
-        const shares = await this.server.db.models["ai_model_share"].findAll({
-            where: {
-                aiModelId: aiModel.id,
-                deleted: false,
-            },
+        const shares = await this.server.db.models.ai_model_share.findAll({
+            where: {aiModelId: aiModel.id, deleted: false},
             attributes: ["id", "userId", "studyId", "roleId", "expiryDate"],
             raw: true,
         });
 
-        const userIds = [...new Set(
-            shares
-                .map((share) => Number(share.userId))
-                .filter((value) => Number.isInteger(value) && value > 0)
-        )];
-        const studyIds = [...new Set(
-            shares
-                .map((share) => Number(share.studyId))
-                .filter((value) => Number.isInteger(value) && value > 0)
-        )];
-        const roleIds = [...new Set(
-            shares
-                .map((share) => Number(share.roleId))
-                .filter((value) => Number.isInteger(value) && value > 0)
-        )];
-        const expiryCandidates = shares
-            .map((share) => share.expiryDate ? new Date(share.expiryDate) : null)
-            .filter((value) => value && !Number.isNaN(value.getTime()));
-        const expiryDate = expiryCandidates.length > 0
-            ? new Date(Math.max(...expiryCandidates.map((value) => value.getTime()))).toISOString()
-            : null;
+        const {userIds, studyIds, roleIds, expiryDate} = this.#shareAggregatesFromRows(shares);
 
         return {
             userIds,
@@ -493,32 +522,15 @@ module.exports = class AIService extends Service {
     }
 
     async getModelOverview(client, data) {
-        const viewerUserId = Number(client?.userId);
-        if (!Number.isInteger(viewerUserId) || viewerUserId <= 0) {
-            throw new Error("Invalid user context");
-        }
-        const aiModelId = Number(data?.aiModelId);
-        if (!Number.isInteger(aiModelId) || aiModelId <= 0) {
-            throw new Error("Missing or invalid aiModelId");
-        }
-
-        const aiModel = await this.server.db.models["ai_model"].findOne({
-            where: {
-                id: aiModelId,
-                deleted: false,
-            },
-            raw: true,
-        });
-        if (!aiModel) {
-            throw new Error("AI model not found");
-        }
+        const viewerUserId = this.#requireClientUserId(client);
+        const aiModel = await this.#loadAiModelRow(data?.aiModelId);
 
         const now = new Date();
         const isOwner = Number(aiModel.userId) === viewerUserId;
 
-        const viewerShare = await this.server.db.models["ai_model_share"].findOne({
+        const viewerShare = await this.server.db.models.ai_model_share.findOne({
             where: {
-                aiModelId,
+                aiModelId: aiModel.id,
                 userId: viewerUserId,
                 deleted: false,
                 expiryDate: {[Op.gt]: now},
@@ -531,130 +543,40 @@ module.exports = class AIService extends Service {
             throw new Error("You do not have access to this model");
         }
 
-        const recipientLabel = (user, uid) => {
-            if (!user) return `User ${uid}`;
-            const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-            const fb = user.userName || user.email || `User ${user.id}`;
-            return fullName ? `${fullName} (${fb})` : fb;
-        };
-
         let shareRecipients = [];
         if (isOwner) {
-            const shares = await this.server.db.models["ai_model_share"].findAll({
+            const shares = await this.server.db.models.ai_model_share.findAll({
                 where: {
-                    aiModelId,
+                    aiModelId: aiModel.id,
                     deleted: false,
                     expiryDate: {[Op.gt]: now},
                 },
                 raw: true,
                 order: [["expiryDate", "ASC"]],
             });
-
-            const userIds = [...new Set(shares.map((s) => Number(s.userId)).filter((id) => Number.isInteger(id) && id > 0))];
-            const roleIds = [...new Set(shares.map((s) => Number(s.roleId)).filter((id) => Number.isInteger(id) && id > 0))];
-            const studyIds = [...new Set(shares.map((s) => Number(s.studyId)).filter((id) => Number.isInteger(id) && id > 0))];
-
-            const users = userIds.length > 0
-                ? await this.server.db.models["user"].findAll({
-                    where: {id: userIds, deleted: false},
-                    attributes: ["id", "firstName", "lastName", "userName", "email"],
-                    raw: true,
-                })
-                : [];
-            const userById = Object.fromEntries(users.map((u) => [Number(u.id), u]));
-
-            const roles = roleIds.length > 0
-                ? await this.server.db.models["user_role"].findAll({
-                    where: {id: roleIds, deleted: false},
-                    attributes: ["id", "name"],
-                    raw: true,
-                })
-                : [];
-            const roleById = Object.fromEntries(roles.map((r) => [Number(r.id), r]));
-
-            const studies = studyIds.length > 0
-                ? await this.server.db.models["study"].findAll({
-                    where: {
-                        id: studyIds,
-                        userId: Number(aiModel.userId),
-                        deleted: false,
-                    },
-                    attributes: ["id", "name"],
-                    raw: true,
-                })
-                : [];
-            const studyById = Object.fromEntries(studies.map((st) => [Number(st.id), st]));
-
-            shareRecipients = shares.map((share) => {
-                const uid = Number(share.userId);
-                let accessVia = "direct";
-                let viaLabel = null;
-                if (share.studyId) {
-                    accessVia = "study";
-                    const sid = Number(share.studyId);
-                    viaLabel = studyById[sid]?.name || `Study ${sid}`;
-                } else if (share.roleId) {
-                    accessVia = "role";
-                    const rid = Number(share.roleId);
-                    viaLabel = roleById[rid]?.name || `Role ${rid}`;
-                }
-                return {
-                    recipientLabel: recipientLabel(userById[uid], uid),
-                    accessVia,
-                    viaLabel,
-                    expiryDate: share.expiryDate,
-                };
-            });
+            const maps = await this.#loadShareEnrichmentMaps(shares, aiModel.userId);
+            shareRecipients = shares.map((share) => this.#mapShareToRecipient(share, maps));
         }
 
         return {
             isOwner,
-            viewerShare: !isOwner && viewerShare
-                ? {expiryDate: viewerShare.expiryDate}
-                : null,
+            viewerShare: !isOwner && viewerShare ? {expiryDate: viewerShare.expiryDate} : null,
             shareRecipients,
         };
     }
 
     async shareModel(client, data) {
-        const ownerUserId = Number(client?.userId);
-        const aiModel = await this.#assertModelOwnership(ownerUserId, data?.aiModelId);
+        const ownerUserId = this.#requireClientUserId(client);
         const mode = data?.mode === "study" ? "study" : (data?.mode === "roles" ? "roles" : "users");
-        const rawExpiryDate = typeof data?.expiryDate === "string" ? data.expiryDate.trim() : "";
-        if (!rawExpiryDate) {
-            throw new Error("Expiry date is required");
-        }
-        let expiryDate = null;
-        if (/^\d{4}-\d{2}-\d{2}$/.test(rawExpiryDate)) {
-            const [yearText, monthText, dayText] = rawExpiryDate.split("-");
-            const year = Number(yearText);
-            const month = Number(monthText);
-            const day = Number(dayText);
-            expiryDate = new Date(year, month - 1, day, 23, 59, 59, 999);
-        } else {
-            expiryDate = new Date(rawExpiryDate);
-        }
-        if (Number.isNaN(expiryDate.getTime())) {
-            throw new Error("Expiry date is invalid");
-        }
-        if (expiryDate <= new Date()) {
-            throw new Error("Expiry date must be in the future");
-        }
+        const expiryDate = this.#parseShareExpiryInput(data?.expiryDate);
         const transaction = await this.server.db.sequelize.transaction();
 
         try {
-            await this.server.db.models["ai_model_share"].update(
-                {
-                    deleted: true,
-                    deletedAt: new Date(),
-                },
-                {
-                    where: {
-                        aiModelId: aiModel.id,
-                        deleted: false,
-                    },
-                    transaction,
-                }
+            const aiModel = await this.#assertModelOwnership(ownerUserId, data?.aiModelId, transaction);
+
+            await this.server.db.models.ai_model_share.update(
+                {deleted: true, deletedAt: new Date()},
+                {where: {aiModelId: aiModel.id, deleted: false}, transaction},
             );
 
             const rowsToCreate = [];
@@ -664,12 +586,8 @@ module.exports = class AIService extends Service {
                 if (!Number.isInteger(studyId) || studyId <= 0) {
                     throw new Error("Please select a study");
                 }
-                const study = await this.server.db.models["study"].findOne({
-                    where: {
-                        id: studyId,
-                        userId: ownerUserId,
-                        deleted: false,
-                    },
+                const study = await this.server.db.models.study.findOne({
+                    where: {id: studyId, userId: ownerUserId, deleted: false},
                     raw: true,
                     transaction,
                 });
@@ -677,11 +595,8 @@ module.exports = class AIService extends Service {
                     throw new Error("Selected study is invalid");
                 }
 
-                const sessions = await this.server.db.models["study_session"].findAll({
-                    where: {
-                        studyId,
-                        deleted: false,
-                    },
+                const sessions = await this.server.db.models.study_session.findAll({
+                    where: {studyId, deleted: false},
                     attributes: ["userId"],
                     raw: true,
                     transaction,
@@ -707,36 +622,24 @@ module.exports = class AIService extends Service {
                     });
                 }
             } else if (mode === "roles") {
-                const requestedRoleIds = Array.isArray(data?.roleIds) ? data.roleIds : [];
-                const roleIds = [...new Set(
-                    requestedRoleIds
-                        .map((value) => Number(value))
-                        .filter((value) => Number.isInteger(value) && value > 0)
-                )];
+                const roleIds = this.#uniquePositiveInts(Array.isArray(data?.roleIds) ? data.roleIds : []);
                 if (roleIds.length === 0) {
                     throw new Error("Please select at least one role");
                 }
 
-                const validRoles = await this.server.db.models["user_role"].findAll({
-                    where: {
-                        id: roleIds,
-                        deleted: false,
-                    },
+                const validRoles = await this.server.db.models.user_role.findAll({
+                    where: {id: roleIds, deleted: false},
                     attributes: ["id"],
                     raw: true,
                     transaction,
                 });
                 const validRoleIds = new Set(validRoles.map((role) => Number(role.id)));
-                const invalidRoleCount = roleIds.filter((roleId) => !validRoleIds.has(roleId)).length;
-                if (invalidRoleCount > 0) {
+                if (roleIds.some((roleId) => !validRoleIds.has(roleId))) {
                     throw new Error("One or more selected roles are invalid");
                 }
 
-                const roleMatches = await this.server.db.models["user_role_matching"].findAll({
-                    where: {
-                        userRoleId: roleIds,
-                        deleted: false,
-                    },
+                const roleMatches = await this.server.db.models.user_role_matching.findAll({
+                    where: {userRoleId: roleIds, deleted: false},
                     attributes: ["userId", "userRoleId"],
                     raw: true,
                     transaction,
@@ -745,12 +648,8 @@ module.exports = class AIService extends Service {
                 for (const roleMatch of roleMatches) {
                     const userId = Number(roleMatch.userId);
                     const roleId = Number(roleMatch.userRoleId);
-                    if (!Number.isInteger(userId) || userId <= 0 || userId === ownerUserId) {
-                        continue;
-                    }
-                    if (!Number.isInteger(roleId) || roleId <= 0) {
-                        continue;
-                    }
+                    if (!Number.isInteger(userId) || userId <= 0 || userId === ownerUserId) continue;
+                    if (!Number.isInteger(roleId) || roleId <= 0) continue;
                     uniqueRoleUserPairs.add(`${userId}:${roleId}`);
                 }
                 if (uniqueRoleUserPairs.size === 0) {
@@ -769,29 +668,23 @@ module.exports = class AIService extends Service {
                     });
                 }
             } else {
-                const requestedUserIds = Array.isArray(data?.userIds) ? data.userIds : [];
-                const userIds = [...new Set(
-                    requestedUserIds
-                        .map((value) => Number(value))
-                        .filter((value) => Number.isInteger(value) && value > 0 && value !== ownerUserId)
-                )];
+                const userIds = this.#uniquePositiveInts(
+                    Array.isArray(data?.userIds) ? data.userIds : [],
+                    (value) => Number(value),
+                ).filter((uid) => uid !== ownerUserId);
 
                 if (userIds.length === 0) {
                     throw new Error("Please select at least one user");
                 }
 
-                const validUsers = await this.server.db.models["user"].findAll({
-                    where: {
-                        id: userIds,
-                        deleted: false,
-                    },
+                const validUsers = await this.server.db.models.user.findAll({
+                    where: {id: userIds, deleted: false},
                     attributes: ["id"],
                     raw: true,
                     transaction,
                 });
                 const validUserIds = new Set(validUsers.map((user) => Number(user.id)));
-                const invalidCount = userIds.filter((userId) => !validUserIds.has(userId)).length;
-                if (invalidCount > 0) {
+                if (userIds.some((userId) => !validUserIds.has(userId))) {
                     throw new Error("One or more selected users are invalid");
                 }
 
@@ -808,7 +701,7 @@ module.exports = class AIService extends Service {
             }
 
             if (rowsToCreate.length > 0) {
-                await this.server.db.models["ai_model_share"].bulkCreate(rowsToCreate, {transaction});
+                await this.server.db.models.ai_model_share.bulkCreate(rowsToCreate, {transaction});
             }
 
             await transaction.commit();
@@ -819,16 +712,6 @@ module.exports = class AIService extends Service {
         }
     }
 
-    /**
-     * Test if a model is usable with the selected credential.
-     *
-     * @param {object} client
-     * @param {object} data
-     * @param {number} data.credentialId
-     * @param {string} data.model
-     * @param {object} [data.additionalParameters]
-     * @returns {Promise<{ok:boolean, preview?:string}>}
-     */
     async testModel(client, data) {
         const rpc = this.#getRPC();
         if (!rpc) {
@@ -853,7 +736,7 @@ module.exports = class AIService extends Service {
             throw new Error("Provider is required when model name has no provider prefix");
         }
 
-        const credential = await this.server.db.models["ai_credential"].getById(credentialId, {
+        const credential = await this.server.db.models.ai_credential.getById(credentialId, {
             attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
         });
         if (!credential || credential.deleted) {
@@ -891,11 +774,12 @@ module.exports = class AIService extends Service {
                 "api_version",
                 "max_tokens",
             ]);
-            const safeAdditionalParameters = Object.fromEntries(
-                Object.entries(data.additionalParameters)
-                    .filter(([key]) => !reservedKeys.has(key))
+            Object.assign(
+                params,
+                Object.fromEntries(
+                    Object.entries(data.additionalParameters).filter(([key]) => !reservedKeys.has(key))
+                )
             );
-            Object.assign(params, safeAdditionalParameters);
         }
 
         const requestStart = new Date();
@@ -929,12 +813,8 @@ module.exports = class AIService extends Service {
         } else if (Array.isArray(content)) {
             outputText = content
                 .map((part) => {
-                    if (typeof part === "string") {
-                        return part;
-                    }
-                    if (part && typeof part === "object" && typeof part.text === "string") {
-                        return part.text;
-                    }
+                    if (typeof part === "string") return part;
+                    if (part && typeof part === "object" && typeof part.text === "string") return part.text;
                     return "";
                 })
                 .filter(Boolean)
