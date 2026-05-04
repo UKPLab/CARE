@@ -11,7 +11,7 @@ const navElements = [
   },
   {
     name: 'AIModels',
-    icon: 'cpu',
+    icon: 'robot',
     order: 3,
     admin: false,
     path: 'ai_models',

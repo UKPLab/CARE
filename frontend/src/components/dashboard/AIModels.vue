@@ -569,6 +569,7 @@ export default {
         service: "AIService",
         command: "testModel",
         data: {
+          aiModelId: this.modelForm.id || null,
           credentialId: this.modelForm.aiCredentialId,
           provider: this.modelForm.provider?.trim() || null,
           model: this.modelForm.model.trim(),

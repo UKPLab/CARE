@@ -18,8 +18,10 @@ module.exports = (sequelize, DataTypes) => {
         reasoning: DataTypes.TEXT,
         inputTokens: DataTypes.INTEGER,
         outputTokens: DataTypes.INTEGER,
-        reasoningTokens: DataTypes.INTEGER,
-        totalTokens: DataTypes.INTEGER,
+        totalTokens: {
+            type: DataTypes.INTEGER,
+            field: 'total_tokens',
+        },
         costs: DataTypes.FLOAT,
         status: DataTypes.STRING,
         requestStart: DataTypes.DATE,

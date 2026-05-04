@@ -21,7 +21,7 @@ module.exports = {
       },
       aiModelId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'ai_model',
           key: 'id',
@@ -85,11 +85,6 @@ module.exports = {
         defaultValue: null,
       },
       outputTokens: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
-      },
-      reasoningTokens: {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,

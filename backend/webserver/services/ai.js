@@ -41,7 +41,7 @@ module.exports = class AIService extends Service {
     async command(client, command, data) {
         switch (command) {
             case "chatCompletion":
-                return await this.chatCompletion(data);
+                return await this.chatCompletion(client, data);
             case "abortChatCompletion":
                 return await this.abortChatCompletion(data);
             case "getStatus":
@@ -60,6 +60,156 @@ module.exports = class AIService extends Service {
         return this.server.rpcs['LiteLLMRPC'] || null;
     }
 
+    #normalizeProvider(provider) {
+        return typeof provider === "string"
+            ? provider.toLowerCase().replace(/\s+inference$/, "").trim()
+            : "";
+    }
+
+    #resolveModelWithProvider(provider, model) {
+        const rawModel = typeof model === "string" ? model.trim() : "";
+        if (!rawModel) {
+            return "";
+        }
+        const normalizedProvider = this.#normalizeProvider(provider);
+        if (!normalizedProvider) {
+            return rawModel;
+        }
+        const providerPrefix = `${normalizedProvider}/`;
+        return rawModel.toLowerCase().startsWith(providerPrefix)
+            ? rawModel
+            : `${providerPrefix}${rawModel}`;
+    }
+
+    #extractResponseCost(payload) {
+        if (!payload || typeof payload !== "object") {
+            return null;
+        }
+        const cost = payload.response_cost
+            ?? payload._hidden_params?.response_cost
+            ?? null;
+        const numericCost = Number(cost);
+        return Number.isFinite(numericCost) ? numericCost : null;
+    }
+
+    #stringifyReasoningValue(value) {
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            return trimmed || null;
+        }
+        if (Array.isArray(value)) {
+            const text = value
+                .map((part) => {
+                    if (typeof part === "string") return part;
+                    if (part && typeof part === "object" && typeof part.text === "string") return part.text;
+                    return "";
+                })
+                .filter(Boolean)
+                .join("\n")
+                .trim();
+            return text || null;
+        }
+        if (value && typeof value === "object") {
+            const asJson = JSON.stringify(value);
+            return asJson === "{}" ? null : asJson;
+        }
+        return null;
+    }
+
+    #extractReasoningText(payload) {
+        if (!payload || typeof payload !== "object") {
+            return null;
+        }
+        const choices = Array.isArray(payload.choices) ? payload.choices : [];
+        const chunks = [];
+        for (const choice of choices) {
+            const message = choice?.message || {};
+            const candidates = [
+                message?.reasoning,
+                message?.reasoning_content,
+                message?.thinking,
+                choice?.reasoning,
+                choice?.reasoning_content,
+                choice?.provider_specific_fields?.reasoning,
+                choice?.provider_specific_fields?.reasoning_content,
+                choice?.provider_specific_fields?.thinking,
+            ];
+            for (const candidate of candidates) {
+                const text = this.#stringifyReasoningValue(candidate);
+                if (text) chunks.push(text);
+            }
+        }
+        if (chunks.length > 0) {
+            return chunks.join("\n\n");
+        }
+        return this.#stringifyReasoningValue(
+            payload?.provider_specific_fields?.reasoning
+            ?? payload?.provider_specific_fields?.reasoning_content
+            ?? payload?.provider_specific_fields?.thinking
+            ?? null
+        );
+    }
+
+    async #resolveAiModelId(userId, data = {}) {
+        const explicitId = Number(data?.aiModelId);
+        if (Number.isInteger(explicitId) && explicitId > 0) {
+            return explicitId;
+        }
+
+        const modelCandidates = [];
+        const rawModel = typeof data?.model === "string" ? data.model.trim() : "";
+        const resolvedModel = this.#resolveModelWithProvider(data?.provider, rawModel);
+        if (rawModel) modelCandidates.push(rawModel);
+        if (resolvedModel && resolvedModel !== rawModel) modelCandidates.push(resolvedModel);
+        if (resolvedModel.includes("/")) {
+            const modelWithoutProvider = resolvedModel.slice(resolvedModel.indexOf("/") + 1);
+            if (modelWithoutProvider && !modelCandidates.includes(modelWithoutProvider)) {
+                modelCandidates.push(modelWithoutProvider);
+            }
+        }
+        if (modelCandidates.length === 0) {
+            return null;
+        }
+
+        const normalizedProvider = this.#normalizeProvider(data?.provider);
+        const where = {
+            userId,
+            deleted: false,
+            model: modelCandidates,
+        };
+        if (normalizedProvider) {
+            where.provider = normalizedProvider;
+        }
+
+        const aiModel = await this.server.db.models["ai_model"].findOne({
+            where,
+            order: [["updatedAt", "DESC"]],
+            raw: true,
+        });
+        return aiModel?.id || null;
+    }
+
+    async #logAiCall(logData) {
+        try {
+            await this.server.db.models["ai_log"].add({
+                userId: logData.userId,
+                aiModelId: logData.aiModelId || null,
+                requestId: logData.requestId || null,
+                input: logData.input || null,
+                output: logData.output || null,
+                reasoning: logData.reasoning || null,
+                inputTokens: logData.inputTokens ?? null,
+                outputTokens: logData.outputTokens ?? null,
+                totalTokens: logData.totalTokens ?? null,
+                costs: logData.costs ?? null,
+                status: logData.status || null,
+                requestStart: logData.requestStart || null,
+            });
+        } catch (err) {
+            this.logger.warn("Failed to write ai_log entry: " + err.message);
+        }
+    }
+
     /**
      * Forward a chat completion request to LiteLLM.
      * Payload (model, messages, api_key, ...) is passed through untouched.
@@ -73,7 +223,7 @@ module.exports = class AIService extends Service {
      * @returns {Promise<{choices: Array<Object>}>}
      * @throws {Error} if LiteLLM is unavailable or the call fails
      */
-    async chatCompletion(data) {
+    async chatCompletion(client, data) {
         const rpc = this.#getRPC();
         if (!rpc) {
             this.logger.error("LiteLLM RPC is not registered");
@@ -84,7 +234,26 @@ module.exports = class AIService extends Service {
             throw new Error("LiteLLM service is not connected");
         }
 
-        const response = await rpc.chatCompletion(data);
+        const requestStart = new Date();
+        const aiModelId = await this.#resolveAiModelId(client?.userId, data);
+
+        let response;
+        try {
+            response = await rpc.chatCompletion(data);
+        } catch (err) {
+            await this.#logAiCall({
+                userId: client?.userId,
+                aiModelId,
+                requestId: data?.__requestId || null,
+                input: JSON.stringify({
+                    model: data?.model,
+                    messages: data?.messages,
+                }),
+                status: "failed",
+                requestStart,
+            });
+            throw err;
+        }
         const payload = response.data !== undefined ? response.data : response;
 
         const {choices = [], usage, model, id} = payload || {};
@@ -94,6 +263,24 @@ module.exports = class AIService extends Service {
             `tokens=${usage ? usage.total_tokens : "N/A"} ` +
             `finish=${finishReasons.join(",") || "N/A"}`
         );
+
+        await this.#logAiCall({
+            userId: client?.userId,
+            aiModelId,
+            requestId: id || data?.__requestId || null,
+            input: JSON.stringify({
+                model: data?.model,
+                messages: data?.messages,
+            }),
+            output: JSON.stringify(choices),
+            reasoning: this.#extractReasoningText(payload),
+            inputTokens: usage?.prompt_tokens ?? null,
+            outputTokens: usage?.completion_tokens ?? null,
+            totalTokens: usage?.total_tokens ?? null,
+            costs: this.#extractResponseCost(payload),
+            status: "success",
+            requestStart,
+        });
 
         return {choices};
     }
@@ -163,14 +350,7 @@ module.exports = class AIService extends Service {
             throw new Error("Missing model");
         }
 
-        let resolvedModel = model;
-        if (provider) {
-            const normalizedProvider = provider.toLowerCase().replace(/\s+inference$/, "").trim();
-            const providerPrefix = `${normalizedProvider}/`;
-            if (!resolvedModel.toLowerCase().startsWith(providerPrefix)) {
-                resolvedModel = `${providerPrefix}${resolvedModel}`;
-            }
-        }
+        let resolvedModel = this.#resolveModelWithProvider(provider, model);
         if (!resolvedModel.includes("/")) {
             throw new Error("Provider is required when model name has no provider prefix");
         }
@@ -220,9 +400,34 @@ module.exports = class AIService extends Service {
             Object.assign(params, safeAdditionalParameters);
         }
 
-        const response = await rpc.chatCompletion(params);
+        const requestStart = new Date();
+        const aiModelId = await this.#resolveAiModelId(client?.userId, {
+            aiModelId: data?.aiModelId,
+            provider,
+            model,
+        });
+
+        let response;
+        try {
+            response = await rpc.chatCompletion(params);
+        } catch (err) {
+            await this.#logAiCall({
+                userId: client?.userId,
+                aiModelId,
+                requestId: null,
+                input: JSON.stringify({
+                    model: resolvedModel,
+                    messages: params.messages,
+                    isTest: true,
+                }),
+                status: "test_failed",
+                requestStart,
+            });
+            throw err;
+        }
         const payload = response?.data !== undefined ? response.data : response;
         const content = payload?.choices?.[0]?.message?.content;
+        const usage = payload?.usage || {};
 
         let outputText = "";
         if (typeof content === "string") {
@@ -243,6 +448,25 @@ module.exports = class AIService extends Service {
         } else if (content !== undefined && content !== null) {
             outputText = String(content);
         }
+
+        await this.#logAiCall({
+            userId: client?.userId,
+            aiModelId,
+            requestId: payload?.id || null,
+            input: JSON.stringify({
+                model: resolvedModel,
+                messages: params.messages,
+                isTest: true,
+            }),
+            output: outputText || null,
+            reasoning: this.#extractReasoningText(payload),
+            inputTokens: usage?.prompt_tokens ?? null,
+            outputTokens: usage?.completion_tokens ?? null,
+            totalTokens: usage?.total_tokens ?? null,
+            costs: this.#extractResponseCost(payload),
+            status: "test_success",
+            requestStart,
+        });
 
         return {ok: true, outputText};
     }
