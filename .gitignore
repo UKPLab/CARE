@@ -14,12 +14,13 @@ backend/sessions
 backend/node_modules
 backend/logs
 backend/coverage
-logs/
+
 # ignore build files
 dist/
 frontend/node_modules
 node_modules
 package-lock.json
+version.json
 
 #modules
 utils/modules/editor-delta-conversion/node_modules
