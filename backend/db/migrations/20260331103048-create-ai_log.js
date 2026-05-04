@@ -88,8 +88,7 @@ module.exports = {
       },
       status: {
         type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 'success',
+        allowNull: true,
       },
       requestStart: {
         type: Sequelize.DATE,

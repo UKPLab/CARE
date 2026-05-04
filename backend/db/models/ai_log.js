@@ -4,9 +4,6 @@ const MetaModel = require('../MetaModel.js');
 module.exports = (sequelize, DataTypes) => {
     class AiLog extends MetaModel {
         static autoTable = true;
-
-        static associate(models) {
-        }
     }
 
     AiLog.init({

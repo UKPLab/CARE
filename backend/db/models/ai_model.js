@@ -4,17 +4,6 @@ const MetaModel = require('../MetaModel.js');
 module.exports = (sequelize, DataTypes) => {
     class AiModel extends MetaModel {
         static autoTable = true;
-
-        static associate(models) {
-            AiModel.belongsTo(models['user'], {
-                foreignKey: 'userId',
-                as: 'creator',
-            });
-            AiModel.belongsTo(models['ai_credential'], {
-                foreignKey: 'aiCredentialId',
-                as: 'credential',
-            });
-        }
     }
 
     AiModel.init({
