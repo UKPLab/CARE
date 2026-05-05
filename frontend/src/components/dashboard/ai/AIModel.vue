@@ -168,11 +168,6 @@ export default {
         credential.enabled || credential.id === this.modelForm.aiCredentialId
       );
     },
-    selectedCredentialRow() {
-      return this.credentialRows.find((credential) =>
-        Number(credential.id) === Number(this.modelForm.aiCredentialId)
-      ) || null;
-    },
     canLoadModelOptions() {
       return !!this.modelForm.aiCredentialId;
     },
@@ -278,9 +273,6 @@ export default {
       const payload = {
         id: this.modelForm.id || 0,
         name: this.modelForm.name.trim(),
-        provider: this.modelForm.model.includes("/")
-          ? this.modelForm.model.split("/")[0]
-          : (this.selectedCredentialRow?.name || null),
         model: this.modelForm.model.trim(),
         aiCredentialId: this.modelForm.aiCredentialId,
         description: this.modelForm.description?.trim() || null,

@@ -122,8 +122,6 @@ export default {
     credentialRows() {
       return this.credentials.map((credential) => ({
         ...credential,
-        apiBaseUrl: credential.apiBaseUrl || "-",
-        apiVersion: credential.apiVersion || "-",
         status: {
           text: credential.enabled ? "Enabled" : "Disabled",
           class: credential.enabled ? "bg-success" : "bg-secondary",

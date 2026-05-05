@@ -93,8 +93,8 @@ export default {
           id: row.id,
           name: row.name || "",
           apiKey: "",
-          apiBaseUrl: row.apiBaseUrl === "-" ? "" : (row.apiBaseUrl || ""),
-          apiVersion: row.apiVersion === "-" ? "" : (row.apiVersion || ""),
+          apiBaseUrl: row.apiBaseUrl || "",
+          apiVersion: row.apiVersion || "",
           enabled: !!row.enabled,
         };
       }

@@ -151,8 +151,8 @@ export default {
   computed: {
     shareSteps() {
       return [
-        { title: "User Case" },
-        { title: "Select Users" },
+        { title: "Share Settings" },
+        { title: `Select ${this.shareAudienceLabel}` },
         { title: "Review & Save" },
       ];
     },
