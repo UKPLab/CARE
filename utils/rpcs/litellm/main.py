@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import threading
 import socketio
 import litellm
@@ -220,13 +221,29 @@ def create_app():
         logger.info(f"getValidModels from {sid}: provider={provider or 'auto'}")
 
         try:
-            valid_models = litellm.get_valid_models(
-                check_provider_endpoint=True,
-                custom_llm_provider=provider or None,
-                api_key=api_key,
-                api_base=api_base,
-                api_version=api_version,
-            )
+            kwargs = {
+                "check_provider_endpoint": True,
+                "custom_llm_provider": provider or None,
+                "api_key": api_key,
+                "api_base": api_base,
+                "api_version": api_version,
+            }
+            kwargs = {k: v for k, v in kwargs.items() if v is not None}
+            valid_models = None
+
+            while True:
+                try:
+                    valid_models = litellm.get_valid_models(**kwargs)
+                    break
+                except TypeError as type_error:
+                    # LiteLLM function signatures differ by version; gracefully
+                    # drop unknown kwargs and retry.
+                    match = re.search(r"unexpected keyword argument '([^']+)'", str(type_error))
+                    unexpected_key = match.group(1) if match else None
+                    if not unexpected_key or unexpected_key not in kwargs:
+                        raise
+                    kwargs.pop(unexpected_key, None)
+
             models = sorted({str(model) for model in (valid_models or []) if model})
             return {"success": True, "data": {"models": models}}
         except Exception as e:
