@@ -40,7 +40,8 @@ module.exports = {
       },
       provider: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
+        defaultValue: null,
       },
       description: {
         type: Sequelize.TEXT,
