@@ -16,7 +16,7 @@
         </div>
 
         <div class="col-md-12">
-          <label class="form-label">Credential</label>
+          <label class="form-label">Your Credentials</label>
           <select
             v-model="modelForm.aiCredentialId"
             class="form-select"
