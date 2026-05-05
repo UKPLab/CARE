@@ -180,58 +180,102 @@ class StudySocket extends Socket {
     }
 
     /**
-     * Closes all studies associated with a given project ID in a loop.
-     * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
-     * 
+     * Closes studies for a project in a loop (entire project or an explicit id list from the client).
+     * Each close uses its own transaction. Emits progressUpdate after every item (current / total) when data.progressId is set.
+     *
      * @socketEvent studyCloseBulk
      * @param data The data required for the bulk close operation.
      * @param data.projectId the project ID of the studies to close
      * @param data.ignoreClosedState if true, also close studies that are already closed
-     * @param data.progressId the ID of the progress bar to update
+     * @param data.progressId optional id for progressUpdate events
+     * @param data.bulkCloseUseIdList if true, only studyIds / studyIdsJson are processed (must belong to projectId; not deleted or template)
+     * @param data.studyIds list of study ids when using bulkCloseUseIdList
+     * @param data.studyIdsJson JSON array string of ids when using bulkCloseUseIdList
      * @param options Additional configuration parameters (currently unused).
-     * @returns {Promise<void>} A promise that resolves (with no value) once all studies in the project have been processed.
+     * @returns {Promise<{ closedCount: number }>} Number of studies successfully closed in this run.
      */
     async closeBulk(data, options) {
+        const projectId = Number(data.projectId);
+        const ignoreClosedState = data.ignoreClosedState === true;
+        const progressId = data.progressId;
+        let studies;
 
-        const studies = await this.models['study'].getAllByKey('projectId', data.projectId);
-        for (const study of studies) {
-            if (study.closed) {
-                if (!("ignoreClosedState" in data) || !data.ignoreClosedState) {
-                    continue;
+        if (data.bulkCloseUseIdList) {
+            let idList = Array.isArray(data.studyIds) ? data.studyIds : [];
+            if (idList.length === 0 && typeof data.studyIdsJson === "string") {
+                try {
+                    const parsed = JSON.parse(data.studyIdsJson);
+                    if (Array.isArray(parsed)) {
+                        idList = parsed;
+                    }
+                } catch (e) {
+                    this.logger.error("studyCloseBulk: invalid studyIdsJson", e);
                 }
             }
-            const transaction = await this.server.db.sequelize.transaction();
-
-            try {
-
-                await this.models['study'].updateById(study.id, {closed: true, userIdClosed: this.userId}, {transaction: transaction});
-                const notifySessions = data.notifySessions === true;
-                transaction.afterCommit(async () => {
-                    this.broadcastTransactionChanges(transaction);
-                    // Send study closed emails after transaction commits (optional, based on notifySessions flag)
-                    if (notifySessions) {
-                        try {
-                            const updatedStudy = await this.models['study'].getById(study.id);
-                            await this.sendStudyClosedEmails(updatedStudy);
-                        } catch (error) {
-                            this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
-                        }
-                    }
-                });
-                await transaction.commit();
-            } catch (e) {
-                this.logger.error(e);
-                await transaction.rollback();
+            const ids = [...new Set(idList.map((id) => Number(id)).filter((n) => Number.isFinite(n)))];
+            if (ids.length === 0) {
+                return { closedCount: 0 };
             }
-
-            // update frontend progress
-            this.socket.emit("progressUpdate", {
-                id: data["progressId"], current: studies.indexOf(study) + 1, total: studies.length,
-            });
-
+            const fetched = await this.models["study"].getAllByKeyValues("id", ids);
+            const byId = new Map(fetched.map((s) => [s.id, s]));
+            studies = ids
+                .map((id) => byId.get(id))
+                .filter(
+                    (s) =>
+                        s &&
+                        Number(s.projectId) === projectId &&
+                        !s.deleted &&
+                        !s.template,
+                );
+        } else {
+            studies = await this.models["study"].getAllByKey("projectId", data.projectId);
         }
 
+        let closedCount = 0;
+        const total = studies.length;
 
+        for (let i = 0; i < total; i++) {
+            const study = studies[i];
+            const skipBecauseClosed = study.closed && !ignoreClosedState;
+
+            if (!skipBecauseClosed) {
+                const transaction = await this.server.db.sequelize.transaction();
+                try {
+                    await this.models["study"].updateById(
+                        study.id,
+                        { closed: true, userIdClosed: this.userId },
+                        { transaction },
+                    );
+                    const notifySessions = data.notifySessions === true;
+                    transaction.afterCommit(async () => {
+                        this.broadcastTransactionChanges(transaction);
+                        if (notifySessions) {
+                            try {
+                                const updatedStudy = await this.models["study"].getById(study.id);
+                                await this.sendStudyClosedEmails(updatedStudy);
+                            } catch (error) {
+                                this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
+                            }
+                        }
+                    });
+                    await transaction.commit();
+                    closedCount++;
+                } catch (e) {
+                    this.logger.error(e);
+                    await transaction.rollback();
+                }
+            }
+
+            if (progressId) {
+                this.socket.emit("progressUpdate", {
+                    id: progressId,
+                    current: i + 1,
+                    total,
+                });
+            }
+        }
+
+        return { closedCount };
     }
 
     async init() {

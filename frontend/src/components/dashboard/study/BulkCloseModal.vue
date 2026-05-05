@@ -8,21 +8,19 @@
       <span>Bulk Close Studies</span>
     </template>
     <template #body>
-      <div>
-        <p class="mb-3">
+      <div class="bulk-close-body">
+        <p class="mb-3 bulk-close-intro">
           Filter and select open studies to close. Only studies in the current project are affected.
         </p>
-        <BasicTable
-          v-model="selectedStudies"
-          :columns="columns"
-          :data="tableRows"
-          :options="tableOptions"
-          :max-table-height="'50vh'"
-        />
-        <p class="text-muted small mb-0">
-          {{ scopeSummary }}
-        </p>
-        <div class="form-check mt-3">
+        <div class="bulk-close-table-host">
+          <BasicTable
+            v-model="selectedStudies"
+            :columns="columns"
+            :data="tableRows"
+            :options="tableOptions"
+          />
+        </div>
+        <div class="form-check mt-3 bulk-close-notify">
           <input
             id="notifySessionsCheckbox"
             v-model="notifySessions"
@@ -42,7 +40,7 @@
     <template #footer>
       <div>
         <BasicButton
-          :title="confirmButtonTitle"
+          title="Close studies"
           :disabled="selectedStudies.length === 0"
           class="btn btn-primary"
           @click="closeMatchingStudies"
@@ -170,21 +168,6 @@ export default {
         })
         .sort((a, b) => a.name.localeCompare(b.name));
     },
-    selectedCount() {
-      return this.selectedStudies.length;
-    },
-    scopeSummary() {
-      const n = this.selectedCount;
-      if (n === 0) {
-        return `No studies selected. Showing ${this.tableRows.length} open studies.`;
-      }
-      return `${n} ${n === 1 ? "study selected" : "studies selected"} for closing.`;
-    },
-    confirmButtonTitle() {
-      return this.selectedCount === 0
-        ? "No studies to close"
-        : `Close ${this.selectedCount} ${this.selectedCount === 1 ? "study" : "studies"}`;
-    },
   },
   methods: {
     open() {
@@ -243,6 +226,46 @@ export default {
 </script>
 
 <style scoped>
+/* Cap body height so the table host gets a bounded flex column; only .table-wrapper scrolls */
+.bulk-close-body {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 14rem);
+  min-height: 0;
+}
+
+.bulk-close-intro,
+.bulk-close-notify {
+  flex-shrink: 0;
+}
+
+/* BasicTable fragment: only .table-wrapper scrolls; search, selection line, pagination stay visible */
+.bulk-close-table-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bulk-close-table-host > :deep(.input-group) {
+  flex-shrink: 0;
+}
+
+.bulk-close-table-host > :deep(.table-wrapper) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bulk-close-table-host > :deep(.text-end.text-muted) {
+  flex-shrink: 0;
+}
+
+.bulk-close-table-host > :deep(div.container) {
+  flex-shrink: 0;
+}
+
 .form-check-label {
   cursor: pointer;
 }

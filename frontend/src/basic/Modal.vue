@@ -53,6 +53,10 @@
                     aria-valuemax="100"
                 >
                   {{ progressPercent }}%
+                  <span
+                    v-if="progressData && progressData.total > 0"
+                    class="ms-1"
+                  >({{ progressData.current }} / {{ progressData.total }})</span>
                 </div>
               </div>
             </div>
