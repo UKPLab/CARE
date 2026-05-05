@@ -1,5 +1,6 @@
 import inspect
 import importlib
+import asyncio
 import logging
 import os
 import threading
@@ -158,7 +159,7 @@ def create_app():
     @sio.on("chatCompletion")
     def chat_completion(sid, data):
         """
-        Passthrough to litellm.completion(). Caller supplies `model` and
+        Passthrough to litellm Router completion. Caller supplies `model` and
         `messages` (required); all other keys are forwarded verbatim, so the
         caller controls provider, API key, and any extra parameters.
         """
@@ -180,7 +181,14 @@ def create_app():
 
         logger.info(f"chatCompletion from {sid}: model={model} requestId={request_id}")
 
-        request_state = {"cancelled": False}
+        request_state = {
+            "cancelled": False,
+            "done": threading.Event(),
+            "response": None,
+            "error": None,
+            "loop": None,
+            "task": None,
+        }
         with active_requests_lock:
             active_requests[request_id] = request_state
 
@@ -191,19 +199,44 @@ def create_app():
             if "timeout" not in completion_params and timeout_ms:
                 completion_params["timeout"] = int(timeout_ms) / 1000
 
-            router = build_router(model, completion_params)
-            response = router.completion(
-                model=model,
-                messages=messages,
-                **completion_params,
-            )
+            def run_async_completion():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    router = build_router(model, completion_params)
+                    task = loop.create_task(router.acompletion(
+                        model=model,
+                        messages=messages,
+                        **completion_params,
+                    ))
+                    with active_requests_lock:
+                        request_state["loop"] = loop
+                        request_state["task"] = task
+                    request_state["response"] = loop.run_until_complete(task)
+                except asyncio.CancelledError:
+                    request_state["error"] = RuntimeError("Request aborted")
+                except Exception as exc:
+                    request_state["error"] = exc
+                finally:
+                    request_state["done"].set()
+                    try:
+                        loop.stop()
+                    except Exception:
+                        pass
+                    loop.close()
+
+            worker = threading.Thread(target=run_async_completion, daemon=True)
+            worker.start()
+            request_state["done"].wait()
 
             if request_state["cancelled"]:
-                logger.info(f"chatCompletion aborted after provider returned: requestId={request_id}")
-                return {
-                    "success": False,
-                    "message": "Not implemented: provider-level abort is unavailable; request was marked aborted",
-                }
+                logger.info(f"chatCompletion aborted: requestId={request_id}")
+                return {"success": False, "message": "Request aborted"}
+
+            if request_state["error"] is not None:
+                raise request_state["error"]
+
+            response = request_state["response"]
 
             # Return the full response as-is. ModelResponse is a pydantic
             # model, so model_dump() gives the complete OpenAI-compatible
@@ -266,11 +299,7 @@ def create_app():
     @sio.on("abortChatCompletion")
     def abort_chat_completion(sid, data):
         """
-        Mark an in-flight completion as cancelled.
-
-        LiteLLM's synchronous completion API does not expose a provider-level
-        abort handle, so this records cancellation for result suppression while
-        the per-request LiteLLM timeout caps the provider call.
+        Mark an in-flight completion as cancelled and cancel the async task.
         """
         data = data or {}
         request_id = data.get("requestId")
@@ -283,10 +312,21 @@ def create_app():
             request_state = active_requests.get(request_id)
             if request_state:
                 request_state["cancelled"] = True
+                task = request_state.get("task")
+                loop = request_state.get("loop")
+            else:
+                task = None
+                loop = None
 
         if not request_state:
             logger.info(f"abortChatCompletion ignored for inactive requestId={request_id}")
             return {"success": True, "data": {"aborted": False, "message": "Request is not active"}}
+
+        try:
+            if task and loop and not task.done():
+                loop.call_soon_threadsafe(task.cancel)
+        except Exception as exc:
+            logger.warning(f"abortChatCompletion cancellation warning: requestId={request_id} {exc}")
 
         logger.info(f"abortChatCompletion marked requestId={request_id}: {reason}")
         return {"success": True, "data": {"aborted": True}}
