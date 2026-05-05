@@ -196,7 +196,7 @@ async function testModel(service, client, data) {
             aiModelId,
             requestId: null,
             input: h.extractInputText(params.messages),
-            status: "test_failed",
+            status: "failed",
             requestStart,
         });
         throw err;
