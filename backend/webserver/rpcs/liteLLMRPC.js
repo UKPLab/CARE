@@ -1,5 +1,4 @@
 const RPC = require("../RPC.js");
-const {randomUUID} = require("crypto");
 
 const ACK_TIMEOUT_BUFFER_MS = 5000;
 
@@ -36,10 +35,13 @@ module.exports = class LiteLLMRPC extends RPC {
      */
     async chatCompletion(data) {
         const {
-            __requestId: requestId = randomUUID(),
+            __requestId: requestId,
             __timeoutMs: requestedTimeoutMs,
             ...params
         } = data || {};
+        if (!requestId) {
+            throw new Error("Missing __requestId for chatCompletion");
+        }
         const timeoutOverride = Number(requestedTimeoutMs);
         const timeoutMs = Number.isFinite(timeoutOverride) && timeoutOverride > 0
             ? Math.min(timeoutOverride, this.timeout)

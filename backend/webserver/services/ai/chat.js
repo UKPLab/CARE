@@ -1,5 +1,6 @@
 "use strict";
 
+const {randomUUID} = require("crypto");
 const h = require("./helpers");
 const rt = require("./runtime");
 
@@ -21,15 +22,21 @@ async function chatCompletion(service, client, data) {
 
     const requestStart = new Date();
     const aiModelId = await rt.resolveAiModelId(service.server, client?.userId, data);
+    const requestId = typeof data?.__requestId === "string" && data.__requestId.trim()
+        ? data.__requestId.trim()
+        : randomUUID();
 
     let response;
     try {
-        response = await rpc.chatCompletion(data);
+        response = await rpc.chatCompletion({
+            ...(data || {}),
+            __requestId: requestId,
+        });
     } catch (err) {
         await rt.logAiCall(service, {
             userId: client?.userId,
             aiModelId,
-            requestId: data?.__requestId || null,
+            requestId,
             input: h.extractInputText(data?.messages),
             status: "failed",
             requestStart,
@@ -49,7 +56,7 @@ async function chatCompletion(service, client, data) {
     await rt.logAiCall(service, {
         userId: client?.userId,
         aiModelId,
-        requestId: id || data?.__requestId || null,
+        requestId,
         input: h.extractInputText(data?.messages),
         output: JSON.stringify(choices),
         reasoning: payload?.reasoning_content || null,
@@ -195,13 +202,17 @@ async function testModel(service, client, data) {
     });
 
     let response;
+    const requestId = randomUUID();
     try {
-        response = await rpc.chatCompletion(params);
+        response = await rpc.chatCompletion({
+            ...params,
+            __requestId: requestId,
+        });
     } catch (err) {
         await rt.logAiCall(service, {
             userId: client?.userId,
             aiModelId,
-            requestId: null,
+            requestId,
             input: h.extractInputText(params.messages),
             status: "failed",
             requestStart,
@@ -231,7 +242,7 @@ async function testModel(service, client, data) {
     await rt.logAiCall(service, {
         userId: client?.userId,
         aiModelId,
-        requestId: payload?.id || null,
+        requestId,
         input: h.extractInputText(params.messages),
         output: outputText || null,
         reasoning: payload?.reasoning_content || null,
