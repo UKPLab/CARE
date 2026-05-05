@@ -1,12 +1,11 @@
 import inspect
 import importlib
 import logging
-import json
 import os
 import threading
-import urllib.request
 import socketio
 import litellm
+from litellm import Router
 
 
 def create_app():
@@ -19,6 +18,7 @@ def create_app():
     active_requests_lock = threading.Lock()
     litellm_config_lock = threading.Lock()
     missing_config = object()
+    default_router_retries = int(os.environ.get("LITELLM_ROUTER_RETRIES", "2"))
 
     def normalized_provider(provider):
         return str(provider or "").strip().lower().replace(" ", "_")
@@ -90,29 +90,46 @@ def create_app():
                 continue
             os.environ[key] = value
 
-    def default_openai_compatible_base(provider):
-        if provider == "groq":
-            return "https://api.groq.com/openai/v1"
-        return None
-
-    def fetch_openai_compatible_models(provider, api_key, api_base):
-        base_url = (api_base or default_openai_compatible_base(provider) or "").rstrip("/")
-        if not base_url:
+    def normalize_model_list(raw_models):
+        if not isinstance(raw_models, list):
             return []
-        request = urllib.request.Request(
-            f"{base_url}/models",
-            headers={"Authorization": f"Bearer {api_key}"},
-            method="GET",
-        )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = json.loads(response.read().decode("utf-8"))
         models = []
-        for item in payload.get("data", []):
-            model_id = item.get("id") if isinstance(item, dict) else None
-            if not model_id:
+        for item in raw_models:
+            if not item:
                 continue
-            models.append(f"{provider}/{model_id}" if provider and not model_id.startswith(f"{provider}/") else model_id)
-        return models
+            as_text = str(item).strip()
+            if as_text:
+                models.append(as_text)
+        return list(dict.fromkeys(models))
+
+    def build_router(model, completion_params):
+        fallback_models = normalize_model_list(completion_params.pop("fallback_models", []))
+        model_order = [model] + [m for m in fallback_models if m != model]
+
+        router_model_list = []
+        for model_name in model_order:
+            litellm_params = {"model": model_name}
+            for key in ("api_key", "api_base", "api_version"):
+                if completion_params.get(key) is not None:
+                    litellm_params[key] = completion_params[key]
+            router_model_list.append({"model_name": model_name, "litellm_params": litellm_params})
+
+        retries = completion_params.get("num_retries")
+        if retries is None:
+            retries = default_router_retries
+        else:
+            try:
+                retries = int(retries)
+            except Exception:
+                retries = default_router_retries
+
+        router_kwargs = {
+            "model_list": router_model_list,
+            "num_retries": max(0, retries),
+        }
+        if fallback_models:
+            router_kwargs["fallbacks"] = [{model: fallback_models}]
+        return Router(**router_kwargs)
 
     @sio.event
     def connect(sid, environ, auth):
@@ -174,7 +191,8 @@ def create_app():
             if "timeout" not in completion_params and timeout_ms:
                 completion_params["timeout"] = int(timeout_ms) / 1000
 
-            response = litellm.completion(
+            router = build_router(model, completion_params)
+            response = router.completion(
                 model=model,
                 messages=messages,
                 **completion_params,
@@ -236,8 +254,6 @@ def create_app():
                     fn = get_valid_models_fn()
                     kwargs = get_valid_models_kwargs(fn, provider, api_key, api_base, api_version)
                     valid_models = fn(**kwargs)
-                    if not valid_models:
-                        valid_models = fetch_openai_compatible_models(provider, api_key, api_base)
                 finally:
                     restore_litellm_config(snapshot)
 
