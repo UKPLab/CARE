@@ -112,7 +112,6 @@ export default {
       required: true,
     },
   },
-  emits: ["saved"],
   data() {
     return {
       shareForm: this.getEmptyShareForm(),
@@ -371,7 +370,6 @@ export default {
           message: "Model sharing updated",
           variant: "success",
         });
-        this.$emit("saved");
       } catch (error) {
         this.toastError(error.message || "Failed to save model sharing");
       } finally {

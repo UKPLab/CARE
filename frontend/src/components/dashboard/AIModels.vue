@@ -93,10 +93,10 @@ export default {
       },
       credentialColumns: [
         { name: "Name", key: "name", sortable: true },
-        { name: "Status", key: "status", type: "badge" },
         { name: "Base URL", key: "apiBaseUrl", sortable: true },
         { name: "Version", key: "apiVersion", sortable: true },
         { name: "Models", key: "modelCount", type: "badge" },
+        { name: "Status", key: "status", type: "badge" },
         { name: "Created", key: "createdAt", type: "datetime", sortable: true },
       ],
       modelColumns: [
@@ -105,7 +105,7 @@ export default {
         { name: "Model ID", key: "model", sortable: true },
         { name: "Credential", key: "credentialName", sortable: true },
         { name: "Status", key: "status", type: "badge" },
-        { name: "Updated", key: "updatedAt", type: "datetime", sortable: true },
+        { name: "Created", key: "createdAt", type: "datetime", sortable: true },
       ],
     };
   },

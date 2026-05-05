@@ -30,7 +30,6 @@ module.exports = class RPC {
     async init() {
         await this.reset();
 
-        // connect to test service
         this.socket = io_client(this.url,
             {
                 reconnection: true,
@@ -77,7 +76,7 @@ module.exports = class RPC {
 
         // Handle reconnection attempts
         socket.on("reconnection_attempt", () => {
-            self.logger.error("RPC Test Reconnection attempt...");
+            self.logger.error("RPC reconnection attempt...");
         });
 
         // establishing a connection

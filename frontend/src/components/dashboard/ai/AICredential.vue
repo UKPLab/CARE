@@ -80,7 +80,6 @@ function getEmptyCredentialForm() {
 export default {
   name: "AICredential",
   components: { BasicModal },
-  emits: ["saved"],
   data() {
     return {
       credentialForm: getEmptyCredentialForm(),
@@ -129,7 +128,6 @@ export default {
         if (result.success) {
           this.$refs.credentialModal.close();
           this.toastSuccess(this.credentialForm.id ? "Credential updated" : "Credential created");
-          this.$emit("saved");
         } else {
           this.toastError(result.message || "Failed to save credential");
         }

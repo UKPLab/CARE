@@ -153,7 +153,6 @@ export default {
       default: () => [],
     },
   },
-  emits: ["saved"],
   data() {
     return {
       modelForm: getEmptyModelForm(),
@@ -296,7 +295,6 @@ export default {
         if (result.success) {
           this.$refs.modelModal.close();
           this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
-          this.$emit("saved");
         } else {
           this.toastError(result.message || "Failed to save model");
         }

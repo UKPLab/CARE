@@ -1,7 +1,5 @@
 "use strict";
 
-const h = require("./helpers");
-
 function getRPC(server) {
     return server.rpcs.LiteLLMRPC || null;
 }
@@ -35,11 +33,9 @@ async function resolveAiModelId(server, userId, data = {}) {
 
     const modelCandidates = [];
     const rawModel = typeof data?.model === "string" ? data.model.trim() : "";
-    const resolvedModel = rawModel;
     if (rawModel) modelCandidates.push(rawModel);
-    if (resolvedModel && resolvedModel !== rawModel) modelCandidates.push(resolvedModel);
-    if (resolvedModel.includes("/")) {
-        const modelWithoutProvider = resolvedModel.slice(resolvedModel.indexOf("/") + 1);
+    if (rawModel.includes("/")) {
+        const modelWithoutProvider = rawModel.slice(rawModel.indexOf("/") + 1);
         if (modelWithoutProvider && !modelCandidates.includes(modelWithoutProvider)) {
             modelCandidates.push(modelWithoutProvider);
         }
