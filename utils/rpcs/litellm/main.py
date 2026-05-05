@@ -1,5 +1,3 @@
-import inspect
-import importlib
 import asyncio
 import logging
 import os
@@ -17,79 +15,7 @@ def create_app():
     sio = socketio.Server(async_mode='threading', ping_timeout=120, ping_interval=25)
     active_requests = {}
     active_requests_lock = threading.Lock()
-    litellm_config_lock = threading.Lock()
-    missing_config = object()
     default_router_retries = int(os.environ.get("LITELLM_ROUTER_RETRIES", "2"))
-
-    def normalized_provider(provider):
-        return str(provider or "").strip().lower().replace(" ", "_")
-
-    def get_valid_models_fn():
-        fn = getattr(litellm, "get_valid_models", None)
-        if fn:
-            return fn
-        return getattr(importlib.import_module("litellm.utils"), "get_valid_models")
-
-    def get_valid_models_kwargs(fn, provider, api_key, api_base, api_version):
-        possible_kwargs = {
-            "check_provider_endpoint": True,
-            "custom_llm_provider": provider,
-            "api_key": api_key,
-            "api_base": api_base,
-            "api_version": api_version,
-        }
-        signature = inspect.signature(fn)
-        accepts_kwargs = any(
-            param.kind == inspect.Parameter.VAR_KEYWORD
-            for param in signature.parameters.values()
-        )
-        if accepts_kwargs:
-            return {key: value for key, value in possible_kwargs.items() if value}
-        return {
-            key: value
-            for key, value in possible_kwargs.items()
-            if value and key in signature.parameters
-        }
-
-    def provider_api_key_env(provider):
-        clean_provider = normalized_provider(provider).upper()
-        return f"{clean_provider}_API_KEY" if clean_provider else None
-
-    def set_litellm_credential(provider, api_key, api_base, api_version):
-        config_keys = ["api_key", "api_base", "api_version"]
-        if provider:
-            config_keys.append(f"{provider}_key")
-        env_key = provider_api_key_env(provider)
-        snapshot = {
-            "litellm": {
-                key: getattr(litellm, key) if hasattr(litellm, key) else missing_config
-                for key in config_keys
-            },
-            "env": {
-                env_key: os.environ.get(env_key, missing_config)
-            } if env_key else {},
-        }
-        litellm.api_key = api_key
-        if provider:
-            setattr(litellm, f"{provider}_key", api_key)
-        if env_key:
-            os.environ[env_key] = api_key
-        litellm.api_base = api_base or None
-        litellm.api_version = api_version or None
-        return snapshot
-
-    def restore_litellm_config(snapshot):
-        for key, value in snapshot["litellm"].items():
-            if value is missing_config:
-                if hasattr(litellm, key):
-                    delattr(litellm, key)
-                continue
-            setattr(litellm, key, value)
-        for key, value in snapshot["env"].items():
-            if value is missing_config:
-                os.environ.pop(key, None)
-                continue
-            os.environ[key] = value
 
     def normalize_model_list(raw_models):
         if not isinstance(raw_models, list):
@@ -227,7 +153,20 @@ def create_app():
 
             worker = threading.Thread(target=run_async_completion, daemon=True)
             worker.start()
-            request_state["done"].wait()
+            wait_timeout_ms = timeout_ms if timeout_ms else 120000
+            wait_timeout_seconds = max(1, int(wait_timeout_ms) / 1000) + 5
+            completed = request_state["done"].wait(wait_timeout_seconds)
+            if not completed:
+                with active_requests_lock:
+                    request_state["cancelled"] = True
+                    task = request_state.get("task")
+                    loop = request_state.get("loop")
+                try:
+                    if task and loop and not task.done():
+                        loop.call_soon_threadsafe(task.cancel)
+                except Exception as exc:
+                    logger.warning(f"chatCompletion timeout cancellation warning: requestId={request_id} {exc}")
+                raise TimeoutError("chatCompletion timed out waiting for provider response")
 
             if request_state["cancelled"]:
                 logger.info(f"chatCompletion aborted: requestId={request_id}")
@@ -270,7 +209,7 @@ def create_app():
         runtime config for this request instead of requiring provider env vars.
         """
         data = data or {}
-        provider = normalized_provider(data.get("provider"))
+        provider = str(data.get("provider") or "").strip().lower().replace(" ", "_")
         api_key = data.get("apiKey")
         api_base = data.get("apiBaseUrl")
         api_version = data.get("apiVersion")
@@ -281,15 +220,13 @@ def create_app():
         logger.info(f"getValidModels from {sid}: provider={provider or 'auto'}")
 
         try:
-            with litellm_config_lock:
-                snapshot = set_litellm_credential(provider, api_key, api_base, api_version)
-                try:
-                    fn = get_valid_models_fn()
-                    kwargs = get_valid_models_kwargs(fn, provider, api_key, api_base, api_version)
-                    valid_models = fn(**kwargs)
-                finally:
-                    restore_litellm_config(snapshot)
-
+            valid_models = litellm.get_valid_models(
+                check_provider_endpoint=True,
+                custom_llm_provider=provider or None,
+                api_key=api_key,
+                api_base=api_base,
+                api_version=api_version,
+            )
             models = sorted({str(model) for model in (valid_models or []) if model})
             return {"success": True, "data": {"models": models}}
         except Exception as e:
