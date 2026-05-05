@@ -67,6 +67,9 @@
         />
         <!-- We send the project ID and get the selected students back -->
       </div>
+      <div v-else-if="dataSelection.exportType === 'documents'">
+        <p> You're about to download all documents in one zip. </p>
+      </div>
       <div v-else>
         <p>Exporting all data</p>
 
@@ -180,6 +183,11 @@ export default {
           true,
           true
         ];
+      } else if (this.dataSelection.exportType === "documents") {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          true,
+        ];
       }
       return [
         !!this.dataSelection.projectId && !!this.dataSelection.exportType,
@@ -192,6 +200,11 @@ export default {
           { title: "Settings" },
           { title: "Select Students" },
           { title: "Options" },
+          { title: "Confirm Download" }
+        ];
+      } else if (this.dataSelection.exportType === 'documents') {
+        return [
+          { title: "Settings" },
           { title: "Confirm Download" }
         ];
       }
@@ -219,6 +232,7 @@ export default {
           options: [
             {name: "Export a list of all reviewers", value: "reviewerList"},
             {name: "Export submissions", value: "submissions"},
+            {name: "Export documents", value:"documents"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -290,6 +304,8 @@ export default {
         this.downloadReviewerList();
       } else if (this.dataSelection.exportType === "submissions") {
         this.downloadSubmissions();
+      } else if (this.dataSelection.exportType === "documents") {
+        this.downloadDocuments();
       } else {
         this.downloadAllData();
       }
@@ -362,6 +378,22 @@ export default {
           userIds: selectedUserIds,
           generateAliases: this.generateAliases,
           fakerSeed: this.generateAliases ? this.fakerSeed : null
+        });
+
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadDocuments() {
+      try {
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'documents',
+          userIds: [],
+          generateAliases: false,
+          fakerSeed: null
         });
 
         this.$refs.exportStepper.close();
