@@ -12,16 +12,18 @@
         <p class="mb-3">
           Filter and select open studies to close. Only studies in the current project are affected.
         </p>
-        <BasicTable
-          v-model="selectedStudies"
-          :columns="columns"
-          :data="tableRows"
-          :options="tableOptions"
-          :max-table-height="'50vh'"
-        />
-        <p class="text-muted small mb-0">
-          {{ scopeSummary }}
+        <p class="text-muted small mb-2">
+          Tip: Click a funnel icon in a column header, then select one or more values. The icon turns blue when a filter is active.
         </p>
+        <div class="bulk-close-table">
+          <BasicTable
+            v-model="selectedStudies"
+            :columns="columns"
+            :data="tableRows"
+            :options="tableOptions"
+            :max-table-height="'50vh'"
+          />
+        </div>
         <div class="form-check mt-3">
           <input
             id="notifySessionsCheckbox"
@@ -104,9 +106,11 @@ export default {
         .filter(id => id != null)
         .map(id => {
           const wf = this.$store.getters["table/workflow/get"](id);
+          const workflowName = wf?.name ? wf.name : `Workflow ${id}`;
           return {
             value: id,
-            name: wf?.name ? `${wf.name} (id ${id})` : `Workflow ${id}`,
+            key: workflowName,
+            name: `${workflowName} (id ${id})`,
           };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -139,7 +143,7 @@ export default {
           sortable: true,
           multiline: true,
           width: 3,
-          filter: this.workflowOptions.map((opt) => ({ key: opt.name, name: opt.name })),
+          filter: this.workflowOptions.map((opt) => ({ key: opt.key, name: opt.name })),
         },
         {
           name: "User",
@@ -152,7 +156,7 @@ export default {
           name: "Group",
           key: "ownerGroup",
           sortable: true,
-          width: 1,
+          width: 2,
           filter: this.groupOptions,
         },
         {
@@ -187,13 +191,6 @@ export default {
     selectedCount() {
       return this.selectedStudies.length;
     },
-    scopeSummary() {
-      const n = this.selectedCount;
-      if (n === 0) {
-        return `No studies selected. Showing ${this.tableRows.length} open studies.`;
-      }
-      return `${n} ${n === 1 ? "study selected" : "studies selected"} for closing.`;
-    },
     guestUserIds() {
       const roles = this.$store.getters["table/user_role/getAll"] || [];
       const guestRole = roles.find((r) => r.name === "guest" && !r.deleted);
@@ -204,9 +201,7 @@ export default {
       return new Set(matchings.map((m) => Number(m.userId)));
     },
     confirmButtonTitle() {
-      return this.selectedCount === 0
-        ? "No studies to close"
-        : `Close ${this.selectedCount} ${this.selectedCount === 1 ? "study" : "studies"}`;
+      return "Close studies";
     },
   },
   methods: {
@@ -268,5 +263,9 @@ export default {
 <style scoped>
 .form-check-label {
   cursor: pointer;
+}
+
+.bulk-close-table :deep(thead th) {
+  white-space: nowrap;
 }
 </style>
