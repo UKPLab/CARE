@@ -281,7 +281,7 @@ export default {
         name: this.modelForm.name.trim(),
         provider: this.modelForm.model.includes("/")
           ? this.modelForm.model.split("/")[0]
-          : (this.selectedCredentialRow?.name || "litellm"),
+          : (this.selectedCredentialRow?.name || null),
         model: this.modelForm.model.trim(),
         aiCredentialId: this.modelForm.aiCredentialId,
         description: this.modelForm.description?.trim() || null,

@@ -49,8 +49,7 @@ function extractInputText(messages) {
 function userDisplayLabel(user) {
     if (!user) return null;
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-    const fallback = user.userName || user.email || `User ${user.id}`;
-    return fullName ? `${fullName} (${fallback})` : fallback;
+    return fullName || null;
 }
 
 function uniquePositiveInts(values, pick = (x) => Number(x)) {
@@ -98,14 +97,14 @@ function mapShareToRecipient(share, maps) {
     if (share.studyId) {
         accessVia = "study";
         const sid = Number(share.studyId);
-        viaLabel = maps.studyById[sid]?.name || `Study ${sid}`;
+        viaLabel = maps.studyById[sid]?.name || null;
     } else if (share.roleId) {
         accessVia = "role";
         const rid = Number(share.roleId);
-        viaLabel = maps.roleById[rid]?.name || `Role ${rid}`;
+        viaLabel = maps.roleById[rid]?.name || null;
     }
     return {
-        recipientLabel: userDisplayLabel(maps.userById[uid]) || `User ${uid}`,
+        recipientLabel: userDisplayLabel(maps.userById[uid]),
         accessVia,
         viaLabel,
         expiryDate: share.expiryDate,
