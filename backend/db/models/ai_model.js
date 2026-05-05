@@ -52,7 +52,6 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         name: DataTypes.STRING,
         model: DataTypes.STRING,
-        provider: DataTypes.STRING,
         description: DataTypes.TEXT,
         additionalParameters: DataTypes.JSONB,
         enabled: DataTypes.BOOLEAN,

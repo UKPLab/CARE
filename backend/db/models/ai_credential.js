@@ -108,6 +108,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         name: DataTypes.STRING,
         apiKey: DataTypes.TEXT,
+        provider: DataTypes.STRING,
         apiBaseUrl: DataTypes.STRING,
         apiVersion: DataTypes.STRING,
         enabled: DataTypes.BOOLEAN,

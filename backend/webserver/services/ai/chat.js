@@ -108,7 +108,7 @@ async function getValidModels(service, client, data) {
     }
 
     const credential = await service.server.db.models.ai_credential.getById(credentialId, {
-        attributes: ["id", "userId", "name", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
         throw new Error("Credential not found");
@@ -119,8 +119,13 @@ async function getValidModels(service, client, data) {
     if (!credential.enabled) {
         throw new Error("Credential is disabled");
     }
+    const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
+    if (!provider) {
+        throw new Error("Credential provider is required to load models");
+    }
 
     return rpc.getValidModels({
+        provider,
         apiKey: credential.apiKey,
         apiBaseUrl: credential.apiBaseUrl || null,
         apiVersion: credential.apiVersion || null,

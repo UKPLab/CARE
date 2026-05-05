@@ -93,6 +93,7 @@ export default {
       },
       credentialColumns: [
         { name: "Name", key: "name", sortable: true },
+        { name: "Provider", key: "provider", sortable: true },
         { name: "Base URL", key: "apiBaseUrl", sortable: true },
         { name: "Version", key: "apiVersion", sortable: true },
         { name: "Models", key: "modelCount", type: "badge" },
@@ -134,13 +135,14 @@ export default {
     },
     modelRows() {
       const credentialsById = this.credentials.reduce((acc, credential) => {
-        acc[credential.id] = credential.name;
+        acc[credential.id] = credential;
         return acc;
       }, {});
 
       return this.models.map((model) => ({
         ...model,
-        credentialName: model.aiCredentialId ? (credentialsById[model.aiCredentialId] || "Unknown") : "None",
+        provider: credentialsById[model.aiCredentialId]?.provider || "",
+        credentialName: model.aiCredentialId ? (credentialsById[model.aiCredentialId]?.name || "Unknown") : "None",
         status: {
           text: model.enabled ? "Enabled" : "Disabled",
           class: model.enabled ? "bg-success" : "bg-secondary",

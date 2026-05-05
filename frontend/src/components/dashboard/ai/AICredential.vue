@@ -23,6 +23,18 @@
         />
       </div>
       <div class="mb-3">
+        <label class="form-label">Provider</label>
+        <input
+          v-model="credentialForm.provider"
+          type="text"
+          class="form-control"
+          placeholder="LiteLLM provider, e.g. openai, anthropic, gemini"
+        />
+        <small class="text-muted">
+          Required for loading available models from provider endpoints.
+        </small>
+      </div>
+      <div class="mb-3">
         <label class="form-label">API Base URL (optional)</label>
         <input
           v-model="credentialForm.apiBaseUrl"
@@ -71,6 +83,7 @@ function getEmptyCredentialForm() {
     id: 0,
     name: "",
     apiKey: "",
+    provider: "",
     apiBaseUrl: "",
     apiVersion: "",
     enabled: true,
@@ -93,6 +106,7 @@ export default {
           id: row.id,
           name: row.name || "",
           apiKey: "",
+          provider: row.provider || "",
           apiBaseUrl: row.apiBaseUrl || "",
           apiVersion: row.apiVersion || "",
           enabled: !!row.enabled,
@@ -109,10 +123,15 @@ export default {
         this.toastError("API key is required for new credentials");
         return;
       }
+      if (!this.credentialForm.provider.trim()) {
+        this.toastError("Provider is required");
+        return;
+      }
 
       const payload = {
         id: this.credentialForm.id || 0,
         name: this.credentialForm.name.trim(),
+        provider: this.credentialForm.provider?.trim().toLowerCase() || null,
         apiBaseUrl: this.credentialForm.apiBaseUrl?.trim() || null,
         apiVersion: this.credentialForm.apiVersion?.trim() || null,
         enabled: !!this.credentialForm.enabled,

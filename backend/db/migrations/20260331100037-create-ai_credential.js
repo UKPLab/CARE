@@ -27,6 +27,11 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: false,
       },
+      provider: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
       apiBaseUrl: {
         type: Sequelize.STRING,
         allowNull: true,
