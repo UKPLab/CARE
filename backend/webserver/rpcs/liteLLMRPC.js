@@ -67,6 +67,25 @@ module.exports = class LiteLLMRPC extends RPC {
     }
 
     /**
+     * Fetch models available for the supplied credential.
+     *
+     * @param {Object} data
+     * @param {string} [data.provider]
+     * @param {string} data.apiKey
+     * @param {string} [data.apiBaseUrl]
+     * @param {string} [data.apiVersion]
+     * @returns {Promise<Object>}
+     */
+    async getValidModels(data) {
+        const response = await this.emit("getValidModels", data || {}, this.timeout);
+        if (!response['success']) {
+            this.logger.error("getValidModels error: " + response['message']);
+            throw new Error(response['message']);
+        }
+        return response.data || {models: []};
+    }
+
+    /**
      * Ask the Python bridge to abort an in-flight chat completion.
      *
      * @param {string} requestId

@@ -81,6 +81,42 @@ async function getStatus(service) {
     }
 }
 
+async function getValidModels(service, client, data) {
+    const rpc = rt.getRPC(service.server);
+    if (!rpc) {
+        throw new Error("LiteLLM service is not available");
+    }
+    if (!(await rpc.isOnline())) {
+        throw new Error("LiteLLM service is not connected");
+    }
+
+    const credentialId = Number(data?.credentialId);
+    if (!Number.isInteger(credentialId) || credentialId <= 0) {
+        throw new Error("Missing or invalid credentialId");
+    }
+
+    const credential = await service.server.db.models.ai_credential.getById(credentialId, {
+        attributes: ["id", "userId", "name", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+    });
+    if (!credential || credential.deleted) {
+        throw new Error("Credential not found");
+    }
+    if (!client?.userId || credential.userId !== client.userId) {
+        throw new Error("You are not allowed to access this credential");
+    }
+    if (!credential.enabled) {
+        throw new Error("Credential is disabled");
+    }
+    const provider = h.normalizeProvider(credential.name);
+
+    return rpc.getValidModels({
+        provider,
+        apiKey: credential.apiKey,
+        apiBaseUrl: credential.apiBaseUrl || null,
+        apiVersion: credential.apiVersion || null,
+    });
+}
+
 async function testModel(service, client, data) {
     const rpc = rt.getRPC(service.server);
     if (!rpc) {
@@ -92,17 +128,11 @@ async function testModel(service, client, data) {
 
     const credentialId = Number(data?.credentialId);
     const model = typeof data?.model === "string" ? data.model.trim() : "";
-    const provider = typeof data?.provider === "string" ? data.provider.trim() : "";
     if (!Number.isInteger(credentialId) || credentialId <= 0) {
         throw new Error("Missing or invalid credentialId");
     }
     if (!model) {
         throw new Error("Missing model");
-    }
-
-    let resolvedModel = h.resolveModelWithProvider(provider, model);
-    if (!resolvedModel.includes("/")) {
-        throw new Error("Provider is required when model name has no provider prefix");
     }
 
     const credential = await service.server.db.models.ai_credential.getById(credentialId, {
@@ -119,7 +149,7 @@ async function testModel(service, client, data) {
     }
 
     const params = {
-        model: resolvedModel,
+        model,
         messages: [{role: "user", content: "ping"}],
         max_tokens: 16,
         api_key: credential.apiKey,
@@ -154,7 +184,6 @@ async function testModel(service, client, data) {
     const requestStart = new Date();
     const aiModelId = await rt.resolveAiModelId(service.server, client?.userId, {
         aiModelId: data?.aiModelId,
-        provider,
         model,
     });
 
@@ -214,5 +243,6 @@ module.exports = {
     chatCompletion,
     abortChatCompletion,
     getStatus,
+    getValidModels,
     testModel,
 };

@@ -5,7 +5,7 @@
     </template>
     <template #body>
       <div class="row g-3">
-        <div class="col-md-6">
+        <div class="col-md-12">
           <label class="form-label">Name</label>
           <input
             v-model="modelForm.name"
@@ -14,21 +14,13 @@
             placeholder="Name"
           />
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Provider</label>
-          <input
-            v-model="modelForm.provider"
-            type="text"
-            class="form-control"
-            placeholder="Provider name"
-          />
-        </div>
 
         <div class="col-md-12">
           <label class="form-label">Credential</label>
           <select
             v-model="modelForm.aiCredentialId"
             class="form-select"
+            @change="clearModelOptions"
           >
             <option :value="null">Select credential</option>
             <option
@@ -42,13 +34,42 @@
         </div>
 
         <div class="col-md-12">
-          <label class="form-label">Model Name</label>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label mb-0">Model Name</label>
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              type="button"
+              :disabled="!canLoadModelOptions || isLoadingModels"
+              @click="loadModelOptions"
+            >
+              {{ isLoadingModels ? "Loading..." : "Load Models" }}
+            </button>
+          </div>
+          <select
+            v-if="modelOptionValues.length"
+            v-model="modelForm.model"
+            class="form-select"
+          >
+            <option value="">Select model</option>
+            <option
+              v-for="model in modelOptionValues"
+              :key="model"
+              :value="model"
+            >
+              {{ model }}
+            </option>
+          </select>
           <input
+            v-else
             v-model="modelForm.model"
             type="text"
             class="form-control"
             placeholder="Model name"
           />
+          <small v-if="modelLookupError" class="text-danger">{{ modelLookupError }}</small>
+          <small v-else class="text-muted">
+            Select a credential, then load models from LiteLLM.
+          </small>
         </div>
 
         <div class="col-md-12">
@@ -111,7 +132,6 @@ function getEmptyModelForm() {
   return {
     id: 0,
     name: "",
-    provider: "",
     model: "",
     aiCredentialId: null,
     description: "",
@@ -138,6 +158,9 @@ export default {
     return {
       modelForm: getEmptyModelForm(),
       isTestingModel: false,
+      isLoadingModels: false,
+      modelOptions: [],
+      modelLookupError: "",
     };
   },
   computed: {
@@ -146,10 +169,29 @@ export default {
         credential.enabled || credential.id === this.modelForm.aiCredentialId
       );
     },
+    selectedCredentialRow() {
+      return this.credentialRows.find((credential) =>
+        Number(credential.id) === Number(this.modelForm.aiCredentialId)
+      ) || null;
+    },
+    canLoadModelOptions() {
+      return !!this.modelForm.aiCredentialId;
+    },
+    modelOptionValues() {
+      if (this.modelOptions.length === 0) {
+        return [];
+      }
+      const options = new Set(this.modelOptions);
+      if (this.modelForm.model?.trim()) {
+        options.add(this.modelForm.model.trim());
+      }
+      return [...options].sort((a, b) => a.localeCompare(b));
+    },
   },
   methods: {
     open(row = null) {
       this.modelForm = getEmptyModelForm();
+      this.clearModelOptions();
       if (row) {
         if (Number(row.userId) !== Number(this.currentUserId)) {
           this.toastError("Only model owners can edit this model");
@@ -158,7 +200,6 @@ export default {
         this.modelForm = {
           id: row.id,
           name: row.name || "",
-          provider: row.provider || "",
           model: row.model || "",
           aiCredentialId: row.aiCredentialId || null,
           description: row.description || "",
@@ -168,13 +209,52 @@ export default {
       }
       this.$refs.modelModal.open();
     },
+    clearModelOptions() {
+      this.modelOptions = [];
+      this.modelLookupError = "";
+    },
+    emitAiServiceCommand(command, data = {}) {
+      return new Promise((resolve, reject) => {
+        this.$socket.emit("serviceCommand", {
+          service: "AIService",
+          command,
+          data,
+        }, (result) => {
+          if (result?.success) {
+            resolve(result.data);
+          } else {
+            reject(new Error(result?.message || "AI service request failed"));
+          }
+        });
+      });
+    },
+    async loadModelOptions() {
+      if (!this.modelForm.aiCredentialId) {
+        this.toastError("Credential is required");
+        return;
+      }
+
+      this.isLoadingModels = true;
+      this.modelLookupError = "";
+      try {
+        const result = await this.emitAiServiceCommand("getValidModels", {
+          credentialId: this.modelForm.aiCredentialId,
+        });
+        this.modelOptions = Array.isArray(result?.models) ? result.models : [];
+        if (this.modelOptions.length === 0) {
+          this.modelLookupError = "No models were returned for this credential.";
+        }
+      } catch (error) {
+        this.modelOptions = [];
+        this.modelLookupError = error.message || "Failed to load models";
+        this.toastError(this.modelLookupError);
+      } finally {
+        this.isLoadingModels = false;
+      }
+    },
     saveModel() {
       if (!this.modelForm.name.trim()) {
         this.toastError("Model name is required");
-        return;
-      }
-      if (!this.modelForm.provider.trim()) {
-        this.toastError("Provider is required");
         return;
       }
       if (!this.modelForm.model.trim()) {
@@ -199,7 +279,9 @@ export default {
       const payload = {
         id: this.modelForm.id || 0,
         name: this.modelForm.name.trim(),
-        provider: this.modelForm.provider.trim(),
+        provider: this.modelForm.model.includes("/")
+          ? this.modelForm.model.split("/")[0]
+          : (this.selectedCredentialRow?.name || "litellm"),
         model: this.modelForm.model.trim(),
         aiCredentialId: this.modelForm.aiCredentialId,
         description: this.modelForm.description?.trim() || null,
@@ -247,7 +329,6 @@ export default {
         data: {
           aiModelId: this.modelForm.id || null,
           credentialId: this.modelForm.aiCredentialId,
-          provider: this.modelForm.provider?.trim() || null,
           model: this.modelForm.model.trim(),
           additionalParameters,
         },
