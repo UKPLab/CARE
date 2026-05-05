@@ -3,6 +3,11 @@
 const h = require("./helpers");
 const rt = require("./runtime");
 
+function parseNumericCost(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
 async function chatCompletion(service, client, data) {
     const rpc = rt.getRPC(service.server);
     if (!rpc) {
@@ -47,11 +52,11 @@ async function chatCompletion(service, client, data) {
         requestId: id || data?.__requestId || null,
         input: h.extractInputText(data?.messages),
         output: JSON.stringify(choices),
-        reasoning: h.extractReasoningText(payload),
+        reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
         outputTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
-        costs: h.extractResponseCost(payload),
+        costs: parseNumericCost(payload?.response_cost),
         status: "success",
         requestStart,
     });
@@ -229,11 +234,11 @@ async function testModel(service, client, data) {
         requestId: payload?.id || null,
         input: h.extractInputText(params.messages),
         output: outputText || null,
-        reasoning: h.extractReasoningText(payload),
+        reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
         outputTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
-        costs: h.extractResponseCost(payload),
+        costs: parseNumericCost(payload?.response_cost),
         status: "success",
         requestStart,
     });

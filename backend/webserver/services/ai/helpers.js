@@ -8,17 +8,6 @@ function requireClientUserId(client) {
     return id;
 }
 
-function extractResponseCost(payload) {
-    if (!payload || typeof payload !== "object") {
-        return null;
-    }
-    const cost = payload.response_cost
-        ?? payload._hidden_params?.response_cost
-        ?? null;
-    const numericCost = Number(cost);
-    return Number.isFinite(numericCost) ? numericCost : null;
-}
-
 function extractInputText(messages) {
     if (!Array.isArray(messages) || messages.length === 0) {
         return null;
@@ -55,64 +44,6 @@ function extractInputText(messages) {
         .trim();
 
     return text || null;
-}
-
-function stringifyReasoningValue(value) {
-    if (typeof value === "string") {
-        const trimmed = value.trim();
-        return trimmed || null;
-    }
-    if (Array.isArray(value)) {
-        const text = value
-            .map((part) => {
-                if (typeof part === "string") return part;
-                if (part && typeof part === "object" && typeof part.text === "string") return part.text;
-                return "";
-            })
-            .filter(Boolean)
-            .join("\n")
-            .trim();
-        return text || null;
-    }
-    if (value && typeof value === "object") {
-        const asJson = JSON.stringify(value);
-        return asJson === "{}" ? null : asJson;
-    }
-    return null;
-}
-
-function extractReasoningText(payload) {
-    if (!payload || typeof payload !== "object") {
-        return null;
-    }
-    const choices = Array.isArray(payload.choices) ? payload.choices : [];
-    const chunks = [];
-    for (const choice of choices) {
-        const message = choice?.message || {};
-        const candidates = [
-            message?.reasoning,
-            message?.reasoning_content,
-            message?.thinking,
-            choice?.reasoning,
-            choice?.reasoning_content,
-            choice?.provider_specific_fields?.reasoning,
-            choice?.provider_specific_fields?.reasoning_content,
-            choice?.provider_specific_fields?.thinking,
-        ];
-        for (const candidate of candidates) {
-            const text = stringifyReasoningValue(candidate);
-            if (text) chunks.push(text);
-        }
-    }
-    if (chunks.length > 0) {
-        return chunks.join("\n\n");
-    }
-    return stringifyReasoningValue(
-        payload?.provider_specific_fields?.reasoning
-        ?? payload?.provider_specific_fields?.reasoning_content
-        ?? payload?.provider_specific_fields?.thinking
-        ?? null
-    );
 }
 
 function userDisplayLabel(user) {
@@ -183,9 +114,7 @@ function mapShareToRecipient(share, maps) {
 
 module.exports = {
     requireClientUserId,
-    extractResponseCost,
     extractInputText,
-    extractReasoningText,
     userDisplayLabel,
     uniquePositiveInts,
     shareAggregatesFromRows,

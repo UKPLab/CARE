@@ -59,6 +59,39 @@ def create_app():
             router_kwargs["fallbacks"] = [{model: fallback_models}]
         return Router(**router_kwargs)
 
+    def normalize_reasoning_content(response_data):
+        if not isinstance(response_data, dict):
+            return None
+        direct = response_data.get("reasoning_content")
+        if isinstance(direct, str) and direct.strip():
+            return direct.strip()
+
+        for choice in response_data.get("choices", []) or []:
+            message = choice.get("message") if isinstance(choice, dict) else None
+            if isinstance(message, dict):
+                for key in ("reasoning_content", "reasoning", "thinking"):
+                    value = message.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+            if isinstance(choice, dict):
+                for key in ("reasoning_content", "reasoning"):
+                    value = choice.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+        return None
+
+    def normalize_response_cost(response_data):
+        if not isinstance(response_data, dict):
+            return None
+        cost = response_data.get("response_cost")
+        if cost is None and isinstance(response_data.get("_hidden_params"), dict):
+            cost = response_data["_hidden_params"].get("response_cost")
+        try:
+            numeric_cost = float(cost)
+            return numeric_cost
+        except (TypeError, ValueError):
+            return None
+
     @sio.event
     def connect(sid, environ, auth):
         logger.info(f"Connection established with {sid}")
@@ -190,6 +223,8 @@ def create_app():
                 response_data = dict(response)
 
             usage = response_data.get("usage") or {}
+            response_data["reasoning_content"] = normalize_reasoning_content(response_data)
+            response_data["response_cost"] = normalize_response_cost(response_data)
             logger.info(
                 f"chatCompletion success: model={response_data.get('model')}, "
                 f"tokens={usage.get('total_tokens', 'N/A')}"
