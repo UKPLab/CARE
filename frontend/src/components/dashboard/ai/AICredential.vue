@@ -5,7 +5,13 @@
     </template>
     <template #body>
       <div class="mb-3">
-        <label class="form-label">Credential Name</label>
+        <label class="form-label">
+          Credential Name
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="A display name for your API credential."
+          />
+        </label>
         <input
           v-model="credentialForm.name"
           type="text"
@@ -14,7 +20,13 @@
         />
       </div>
       <div class="mb-3">
-        <label class="form-label">API Key</label>
+        <label class="form-label">
+          API Key
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="Enter your API key. Leave empty while editing to keep the existing key."
+          />
+        </label>
         <input
           v-model="credentialForm.apiKey"
           type="password"
@@ -23,19 +35,31 @@
         />
       </div>
       <div class="mb-3">
-        <label class="form-label">Provider</label>
+        <label class="form-label">
+          Provider
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="Enter the provider name from where you got your API key from, e.g. openai, anthropic, gemini."
+          />
+        </label>
         <input
           v-model="credentialForm.provider"
           type="text"
           class="form-control"
-          placeholder="LiteLLM provider, e.g. openai, anthropic, gemini"
+          placeholder="Provider name, e.g. openai, anthropic, gemini"
         />
         <small class="text-muted">
           Required for loading available models from provider endpoints.
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label">API Base URL (optional)</label>
+        <label class="form-label">
+          API Base URL (optional)
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="Optional custom endpoint for proxies, local providers, or hosted compatible APIs."
+          />
+        </label>
         <input
           v-model="credentialForm.apiBaseUrl"
           type="text"
@@ -44,7 +68,13 @@
         />
       </div>
       <div class="mb-3">
-        <label class="form-label">API Version (optional)</label>
+        <label class="form-label">
+          API Version (optional)
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="Optional API version, commonly needed for Azure/OpenAI-compatible deployments."
+          />
+        </label>
         <input
           v-model="credentialForm.apiVersion"
           type="text"

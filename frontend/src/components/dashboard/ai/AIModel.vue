@@ -6,7 +6,13 @@
     <template #body>
       <div class="row g-3">
         <div class="col-md-12">
-          <label class="form-label">Name</label>
+          <label class="form-label">
+            Name
+            <i
+              class="bi bi-info-circle text-muted ms-1"
+              title="A display name for this AI model inside CARE."
+            />
+          </label>
           <input
             v-model="modelForm.name"
             type="text"
@@ -16,7 +22,13 @@
         </div>
 
         <div class="col-md-12">
-          <label class="form-label">Your Credentials</label>
+          <label class="form-label">
+            Your Credentials
+            <i
+              class="bi bi-info-circle text-muted ms-1"
+              title="Select the credential that you want to use to access the model."
+            />
+          </label>
           <select
             v-model="modelForm.aiCredentialId"
             class="form-select"
@@ -35,7 +47,13 @@
 
         <div class="col-md-12">
           <div class="d-flex justify-content-between align-items-center mb-1">
-            <label class="form-label mb-0">Model Name</label>
+            <label class="form-label mb-0">
+              Model Name
+              <i
+                class="bi bi-info-circle text-muted ms-1"
+                title="Select the model you want to use, e.g. gpt-4o or claude-3-5-sonnet."
+              />
+            </label>
             <button
               class="btn btn-outline-secondary btn-sm"
               type="button"
@@ -73,16 +91,28 @@
         </div>
 
         <div class="col-md-12">
-          <label class="form-label">Description (optional)</label>
+          <label class="form-label">
+            Description (optional)
+            <i
+              class="bi bi-info-circle text-muted ms-1"
+              title="Optional notes to help identify when this model should be used."
+            />
+          </label>
           <textarea
             v-model="modelForm.description"
             class="form-control"
             rows="2"
           />
-        </div>
+      </div>
 
         <div class="col-md-12">
-          <label class="form-label">Additional Parameters (JSON, optional)</label>
+          <label class="form-label">
+            Additional Parameters (JSON, optional)
+            <i
+              class="bi bi-info-circle text-muted ms-1"
+              title="Optional parameters as JSON, such as temperature, top_p, or fallback_models. see documentation for more details."
+            />
+          </label>
           <textarea
             v-model="modelForm.additionalParameters"
             class="form-control"
