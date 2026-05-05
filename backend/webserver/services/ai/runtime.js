@@ -35,7 +35,7 @@ async function resolveAiModelId(server, userId, data = {}) {
 
     const modelCandidates = [];
     const rawModel = typeof data?.model === "string" ? data.model.trim() : "";
-    const resolvedModel = h.resolveModelWithProvider(data?.provider, rawModel);
+    const resolvedModel = rawModel;
     if (rawModel) modelCandidates.push(rawModel);
     if (resolvedModel && resolvedModel !== rawModel) modelCandidates.push(resolvedModel);
     if (resolvedModel.includes("/")) {
@@ -48,15 +48,11 @@ async function resolveAiModelId(server, userId, data = {}) {
         return null;
     }
 
-    const normalizedProvider = h.normalizeProvider(data?.provider);
     const where = {
         userId,
         deleted: false,
         model: modelCandidates,
     };
-    if (normalizedProvider) {
-        where.provider = normalizedProvider;
-    }
 
     const aiModel = await server.db.models.ai_model.findOne({
         where,

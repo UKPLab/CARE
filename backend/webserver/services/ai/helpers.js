@@ -8,27 +8,6 @@ function requireClientUserId(client) {
     return id;
 }
 
-function normalizeProvider(provider) {
-    return typeof provider === "string"
-        ? provider.toLowerCase().replace(/\s+inference$/, "").trim()
-        : "";
-}
-
-function resolveModelWithProvider(provider, model) {
-    const rawModel = typeof model === "string" ? model.trim() : "";
-    if (!rawModel) {
-        return "";
-    }
-    const normalizedProvider = normalizeProvider(provider);
-    if (!normalizedProvider) {
-        return rawModel;
-    }
-    const providerPrefix = `${normalizedProvider}/`;
-    return rawModel.toLowerCase().startsWith(providerPrefix)
-        ? rawModel
-        : `${providerPrefix}${rawModel}`;
-}
-
 function extractResponseCost(payload) {
     if (!payload || typeof payload !== "object") {
         return null;
@@ -204,8 +183,6 @@ function mapShareToRecipient(share, maps) {
 
 module.exports = {
     requireClientUserId,
-    normalizeProvider,
-    resolveModelWithProvider,
     extractResponseCost,
     extractInputText,
     extractReasoningText,

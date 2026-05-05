@@ -107,10 +107,12 @@ async function getValidModels(service, client, data) {
     if (!credential.enabled) {
         throw new Error("Credential is disabled");
     }
-    const provider = h.normalizeProvider(credential.name);
+    const providerHint = typeof credential.name === "string"
+        ? credential.name.trim().toLowerCase()
+        : "";
 
     return rpc.getValidModels({
-        provider,
+        provider: providerHint || null,
         apiKey: credential.apiKey,
         apiBaseUrl: credential.apiBaseUrl || null,
         apiVersion: credential.apiVersion || null,
