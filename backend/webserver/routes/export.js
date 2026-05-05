@@ -59,10 +59,10 @@ module.exports = function (server) {
 
             const users = await server.db.models.user.findAll({ where: { id: userIds } });
 
-            // if (userIds.length === 0) {
-            //     console.warn(`Export aborted: No authorized users to export.`);
-            //     return res.status(400).send("No authorized users to export.");
-            // }
+            if (userIds.length === 0 && exportType != 'documents') {
+                console.warn(`Export aborted: No authorized users to export.`);
+                return res.status(400).send("No authorized users to export.");
+            }
 
             // build user mapping for aliases
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
