@@ -49,8 +49,13 @@ async function createInitialAdmin(server, { userName, email, password }) {
         throw validationError('E-Mail already taken.');
     }
 
-    if (!password || (typeof password === 'string' && password.length < 8)) {
-        throw validationError('Password does not meet requirements (min 8 characters).');
+    const p = typeof password === "string" ? password : "";
+    const validPassword = p.length >= 8
+        && !/^\s*$/.test(p)
+        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
+    if (!validPassword) {
+        throw validationError("Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis.");
     }
 
     const User = server.db.models['user'];
