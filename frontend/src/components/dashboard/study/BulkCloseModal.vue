@@ -4,12 +4,12 @@
     name="bulk-close-modal"
   >
     <template #title>
-      <span>Bulk Close Studies</span>
+      <span>{{$t('dashboard.study.bulkCloseStudies')}}</span>
     </template>
     <template #body>
       <div>
         <p>
-          Are you sure you want to close all open studies?
+          {{$t('dashboard.study.closeStudiesPrompt')}}
         </p>
         <div class="form-check mt-3">
           <input
@@ -22,7 +22,7 @@
             class="form-check-label"
             for="notifySessionsCheckbox"
           >
-            Send email notification to participants with open sessions
+            {{$t('dashboard.study.sendEmailToParticipants')}}
           </label>
         </div>
       </div>
@@ -31,7 +31,7 @@
     <template #footer>
       <div>
         <BasicButton
-          title="Close All Studies"
+          :title="$t('dashboard.study.closeAllStudies')"
           class="btn btn-primary"
           @click="closeAllStudies"
         />
@@ -44,6 +44,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for bulk closing studies
@@ -82,15 +83,15 @@ export default {
         this.$refs.bulkCloseModal.stopProgress();
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "All studies closed",
-            message: "All open studies have been closed",
+            title: this.$t('dashboard.study.allStudiesClosed'),
+            message: this.$t('dashboard.study.allStudiesClosedMessage'),
             variant: "success",
           });
           this.$refs.bulkCloseModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to close all studies",
-            message: res.message,
+            title: this.$t('dashboard.study.failedToClose'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

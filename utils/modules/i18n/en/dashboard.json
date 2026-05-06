@@ -237,7 +237,8 @@
         "workflowStepOption": "<Workflow> Step {index} ({type})",
         "revisedDocument": "<Document> Revised Document",
         "workflowMapping": "Workflow Mapping",
-        "studySessionSelection": "Study Session Selection"
+        "studySessionSelection": "Study Session Selection",
+        "sendEmailToParticipants": "Send email notification to participants with open sessions"
     },
     "users": {
         "manageRightsFor": "Manage rights for",

@@ -236,7 +236,8 @@
     "workflowStepOption": "<Workflow> Schritt {index} ({type})",
     "revisedDocument": "<Document> Überarbeitetes Dokument",
     "workflowMapping": "Workflow-Zuordnung",
-    "studySessionSelection": "Studien-Sitzungsauswahl"
+    "studySessionSelection": "Studien-Sitzungsauswahl",
+    "sendEmailToParticipants": "E-Mail-Benachrichtigung an Teilnehmer mit offenen Sitzungen senden"
   },
   "users": {
     "manageRightsFor": "Berechtigungen verwalten für",
