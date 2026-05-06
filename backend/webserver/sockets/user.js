@@ -451,6 +451,9 @@ class UserSocket extends Socket {
 
 
     init() {
+        
+        // broadcast user monitor stats on connection
+        this.broadcastStats();
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
         this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);

@@ -369,20 +369,12 @@ module.exports = class Server {
             socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 
-            await Promise.all(
+          
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
                 this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
 
                 await this.availSockets[socket.id][socketName].init();
-            }));
-
-            // broadcast user monitor stats on connection
-            try {
-                const userSock = this.availSockets[socket.id]['UserSocket'];
-                if (userSock) await userSock.broadcastStats(socket.id);
-            } catch (e) {
-                this.logger.warn("Failed to broadcast stats on connection: " + e);
-            }
+            })
 
             socket.on("disconnect", async (reason) => {
                 try {
