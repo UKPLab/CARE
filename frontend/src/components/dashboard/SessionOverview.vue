@@ -1,81 +1,61 @@
 <template>
-  <BasicModal
-    ref="overviewModal"
-    name="overviewModal"
-    size="xl"
-  >
-    <template #title>
-      <h5 class="modal-title">Study Sessions Overview</h5>
-    </template>
-    <template #body>
-      <div class="filters-container mb-3">
-        <div class="d-flex-col align-items-center gap-3">
-          <div class="form-check form-switch">                  
-            <label class="form-check-label" for="showOpenStudiesSwitch">
-                show only open studies
-            </label>
-             <input
-              id="showOpenStudiesSwitch"
-              v-model="filters.showOpenStudies"
-              class="form-check-input"
-              type="checkbox"
-              role="switch"
+  <div class="container-fluid">
+    <h1>Study Sessions Overview</h1>
+    <div class="filters-container mb-3">
+      <div class="d-flex-col align-items-center gap-3">
+        <div class="form-check form-switch">
+          <label class="form-check-label" for="showOpenStudiesSwitch">
+            show only open studies
+          </label>
+          <input
+            id="showOpenStudiesSwitch"
+            v-model="filters.showOpenStudies"
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+          >
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label for="workflowSelect" class="mb-0">Filter Workflow type:</label>
+          <select
+            id="workflowSelect"
+            v-model="filters.workflowType"
+            class="form-select form-select-sm"
+            style="width: auto;"
+          >
+            <option value="all">All Workflows</option>
+            <option
+              v-for="workflow in workflowTypes"
+              :key="workflow.id"
+              :value="workflow.id.toString()"
             >
-          </div>          
-          <div class="d-flex align-items-center gap-2">
-            <label for="workflowSelect" class="mb-0">Filter Workflow type:</label>
-            <select
-              id="workflowSelect"
-              v-model="filters.workflowType"
-              class="form-select form-select-sm"
-              style="width: auto;"
-            >
-              <option value="all">All Workflows</option>
-              <option
-                v-for="workflow in workflowTypes"
-                :key="workflow.id"
-                :value="workflow.id.toString()"
-              >
-                {{ workflow.name }}
-              </option>
-            </select>
-          </div>
+              {{ workflow.name }}
+            </option>
+          </select>
         </div>
       </div>
-      <BasicTable
-        :columns="columns"
-        :data="filteredStudySessions"
-        :options="tableOptions"
-        :max-table-height="'60vh'"
-        @action="handleAction"
-      />
-    </template>
-    <template #footer>
-      <BasicButton
-        class="btn btn-secondary"
-        title="Close"
-        @click="close"
-      />
-    </template>
-  </BasicModal>
+    </div>
+    <BasicTable
+      :columns="columns"
+      :data="filteredStudySessions"
+      :options="tableOptions"
+      @action="handleAction"
+      :max-table-height="'70vh'"
+    />
+  </div>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
 import BasicTable from "@/basic/Table.vue";
-import BasicButton from "@/basic/Button.vue";
 
 /**
- * Modal to show an overview of all study sessions
- * 
- * This modal displays all study sessions in a table format,
- * allowing administrators to view session details, status, and user information.
- * 
+ * Dashboard page showing an overview of all study sessions
+ *
  * @author: Karim Ouf
  */
 export default {
-  name: "OverViewModal",
-  components: { BasicModal, BasicTable, BasicButton },
+  name: "SessionOverview",
+  components: { BasicTable },
   subscribeTable: ["study_session", "study", "workflow", "user", "study_step"],
   data() {
     return {
@@ -128,14 +108,13 @@ export default {
       const sessions = this.$store.getters["table/study_session/getAll"] || [];
       const studies = this.$store.getters["table/study/getAll"] || [];
 
-      
       return sessions.map((session) => {
         const study = studies.find(s => s.id === session.studyId);
         const currentStepIndex = this.$store.getters["table/study_step/get"](session.studyStepIdMax)?.stepNumber ?? null;
         const studySteps = this.$store.getters["table/study_step/getFiltered"](
           (step) => step.studyId === session.studyId
         );
-        
+
         return {
           id: session.id,
           studyId: session.studyId,
@@ -145,7 +124,7 @@ export default {
           currentStep: currentStepIndex !== null ? `Step ${currentStepIndex}` : 'N/A',
           createdAt: new Date(session.createdAt).toLocaleString(),
           updatedAt: new Date(session.updatedAt).toLocaleString(),
-          numSteps: studySteps.length,  
+          numSteps: studySteps.length,
           status: session.end === null ? "Running" : "Finished",
           hash: session.hash,
         };
@@ -156,7 +135,6 @@ export default {
         const study = this.$store.getters["table/study/get"](session.studyId);
         if (!study) return false;
 
-        // Filter by study closed status
         if (this.filters.showOpenStudies && study.closed !== null) {
           return false;
         }
@@ -164,9 +142,7 @@ export default {
           return false;
         }
 
-
-        // Filter by workflow type
-        if (this.filters.workflowType !== "all" && 
+        if (this.filters.workflowType !== "all" &&
             study.workflowId.toString() !== this.filters.workflowType) {
           return false;
         }
@@ -177,27 +153,21 @@ export default {
   },
   methods: {
     getWorkflowType(workflowId) {
-        const workflow = this.$store.getters["table/workflow/get"](workflowId);
-        return workflow ? workflow.name : "Unknown";
+      const workflow = this.$store.getters["table/workflow/get"](workflowId);
+      return workflow ? workflow.name : "Unknown";
     },
     getUserName(userId) {
-        const user = this.$store.getters["table/user/get"](userId);
-        if (user) {
-            return {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            };
-        }
+      const user = this.$store.getters["table/user/get"](userId);
+      if (user) {
         return {
-            firstName: "Unknown",
-            lastName: "",
+          firstName: user.firstName,
+          lastName: user.lastName,
         };
-    },
-    open() {
-      this.$refs.overviewModal.open();
-    },
-    close() {
-      this.$refs.overviewModal.close();
+      }
+      return {
+        firstName: "Unknown",
+        lastName: "",
+      };
     },
     handleAction({ action, params }) {
       if (action === "openSession") {
@@ -214,10 +184,6 @@ export default {
 </script>
 
 <style scoped>
-.modal-title {
-  font-weight: bold;
-}
-
 .filters-container {
   padding: 1rem;
   background-color: #f8f9fa;
