@@ -1,4 +1,5 @@
 <template>
+  <div>
   <Card title="Users">
     <template #headerElements>
       <div class="d-flex align-items-center flex-wrap gap-2">
@@ -98,8 +99,8 @@
     ref="activeSessionsModal"
     :stats="monitorStats"
     @hide="modals.activeSessions = false"
-/>
-
+  />
+  </div>
 </template>
 
 <script>
@@ -159,14 +160,6 @@ export default {
         confirm: false,
         activeSessions: false,
       },
-      monitorStats: {
-        activeSessions: 0,
-        activeUsers: 0,
-        connectedUsers: [],
-        sessions: [],
-        loading: true,
-        error: null,
-      },
       options: {
         striped: true,
         hover: true,
@@ -204,6 +197,9 @@ export default {
     };
   },
   computed: {
+    monitorStats() {
+    return this.$store.getters["admin/getMonitorStats"];
+  },
     users() {
       const activeIds = new Set(this.monitorStats.connectedUsers.map(u => u.userId));
       return this.$store.getters["admin/getUsersByRole"].map((user) => {
@@ -316,20 +312,11 @@ export default {
       ];
     },
   },
-  sockets: {
-    monitorStatsUpdate(data) {
-      this.handleMonitorUpdate(data);
-    },
-  },
+  
   mounted() {
     this.fetchUsers();
     this.$socket.emit("userMonitorSubscribe", {}, (response) => {
-      if (response?.success) {
-        this.monitorStats = { ...this.monitorStats, ...response.data, loading: false, error: null };
-      } else {
-        this.monitorStats.loading = false;
-        this.monitorStats.error = response?.message ?? "Monitor unavailable";
-      }
+        this.$store.commit("admin/SOCKET_monitorStatsUpdate", response);
     });
   },
   beforeUnmount() {
@@ -458,11 +445,6 @@ export default {
       const userId = params ? params.id : null;
       this.modals.activeSessions = true;
       this.$nextTick(() => this.$refs.activeSessionsModal?.open(userId));
-    },
-    handleMonitorUpdate(data) {
-      if (data) {
-        this.monitorStats = { ...data, loading: false, error: null };
-      }
     },
   },
 };

@@ -1,6 +1,6 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
-const {inject, parseUserAgent} = require("../../utils/generic");
+const {inject} = require("../../utils/generic");
 const _ = require("lodash");
 const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
@@ -420,7 +420,7 @@ class UserSocket extends Socket {
     async broadcastStats(excludeSocketId = null) {
         try {
             const stats = await this.buildStats(excludeSocketId);
-            this.io.to(MONITOR_USERS_ROOM).emit("monitorStatsUpdate", stats);
+            this.io.to(MONITOR_USERS_ROOM).emit("monitorStatsUpdate", {success: true, data: stats});
         } catch (error) {
             this.logger.error("Error broadcasting monitor stats: " + error);
         }
