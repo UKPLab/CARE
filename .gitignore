@@ -21,6 +21,7 @@ dist/
 frontend/node_modules
 node_modules
 package-lock.json
+version.json
 
 #modules
 utils/modules/editor-delta-conversion/node_modules
