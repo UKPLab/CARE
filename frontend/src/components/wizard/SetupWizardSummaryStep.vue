@@ -36,10 +36,10 @@
           <li v-for="s in group.settings" :key="s.key" class="mb-2">
             <template v-if="s.key === 'app.register.terms'">
               <div class="fw-semibold mb-1">{{ settingLabel(s.key) }}</div>
-              <BasicEditor :model-value="summarySettingValue(s.key)" :read-only="true" />
+              <BasicEditor :model-value="resolvedSummaryValue(s.key)" :read-only="true" />
             </template>
             <template v-else>
-              <strong>{{ settingLabel(s.key) }}:</strong> {{ summarySettingValue(s.key) }}
+              <strong>{{ settingLabel(s.key) }}:</strong> {{ resolvedSummaryValue(s.key) }}
             </template>
           </li>
         </ul>
@@ -74,6 +74,10 @@
 import BasicButton from "@/basic/Button.vue";
 import BasicEditor from "@/basic/editor/Editor.vue";
 
+/**
+ * Renders the first-time setup wizard summary step: admin recap, grouped settings for review,
+ * optional imported JSON (expandable), import/download actions, and previous or finish controls.
+ */
 export default {
   name: "SetupWizardSummaryStep",
   components: { BasicButton, BasicEditor },
@@ -87,6 +91,14 @@ export default {
       required: true,
     },
     formData: {
+      type: Object,
+      required: true,
+    },
+    wizardSettings: {
+      type: Array,
+      required: true,
+    },
+    formSettings: {
       type: Object,
       required: true,
     },
@@ -111,16 +123,20 @@ export default {
       type: Boolean,
       required: true,
     },
-    settingLabel: {
-      type: Function,
-      required: true,
-    },
-    summarySettingValue: {
-      type: Function,
-      required: true,
-    },
   },
   emits: ["download-template", "open-import-modal", "toggle-show-file-settings", "previous", "finish"],
+  methods: {
+    settingLabel(key) {
+      const s = (this.wizardSettings || []).find((x) => x.key === key);
+      return s?.displayName || key;
+    },
+    resolvedSummaryValue(key) {
+      if (this.settingsFromFile && Object.prototype.hasOwnProperty.call(this.settingsFromFile, key)) {
+        return this.settingsFromFile[key];
+      }
+      return this.formSettings[key] != null ? this.formSettings[key] : "—";
+    },
+  },
 };
 </script>
 

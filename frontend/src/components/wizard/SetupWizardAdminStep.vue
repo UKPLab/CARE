@@ -1,6 +1,8 @@
 <template>
   <div class="card">
-    <div class="card-header step-card-header">Setup – Admin account</div>
+    <div class="card-header step-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span>Setup – Admin account</span>
+    </div>
     <div class="card-body mx-4 my-4">
       <p class="text-muted mb-3">
         No administrator account exists. Enter credentials now; the account is created on Finish.
@@ -12,12 +14,13 @@
           <div class="col-md-6">
             <input
               id="setup-username"
-              v-model="formData.userName"
+              :value="formData.userName"
               autocomplete="username"
               class="form-control"
               placeholder="admin"
               type="text"
               @blur="$emit('check-val', 'userName')"
+              @input="$emit('update-admin-field', 'userName', $event.target.value)"
             />
             <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUserName}">
               Please provide a user name.
@@ -29,12 +32,13 @@
           <div class="col-md-6">
             <input
               id="setup-email"
-              v-model="formData.email"
+              :value="formData.email"
               autocomplete="email"
               class="form-control"
               placeholder="admin@example.com"
               type="email"
               @blur="$emit('check-val', 'email')"
+              @input="$emit('update-admin-field', 'email', $event.target.value)"
             />
             <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
               Please provide a valid email.
@@ -46,20 +50,21 @@
           <div class="col-md-6">
             <input
               id="setup-password"
-              v-model="formData.password"
+              :value="formData.password"
               autocomplete="new-password"
               class="form-control"
               placeholder="Min. 8 characters"
               type="password"
               @blur="$emit('check-val', 'password')"
+              @input="$emit('update-admin-field', 'password', $event.target.value)"
             />
             <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-              Please provide a password of at least 8 characters.
+              Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis.
             </div>
           </div>
         </div>
         <div class="col-md-6 offset-md-4 my-4">
-          <BasicButton class="btn btn-primary" title="Continue" @click="$emit('submit-admin')" />
+          <BasicButton class="btn btn-primary" title="Next" @click="$emit('submit-admin')" />
         </div>
       </form>
     </div>
@@ -69,6 +74,10 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 
+/**
+ * Renders the first-time setup wizard admin account step: username, email, password, and
+ * validation text under each field when the value is invalid.
+ */
 export default {
   name: "SetupWizardAdminStep",
   components: { BasicButton },
@@ -102,7 +111,7 @@ export default {
       required: true,
     },
   },
-  emits: ["check-val", "submit-admin"],
+  emits: ["check-val", "submit-admin", "update-admin-field"],
 };
 </script>
 

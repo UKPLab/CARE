@@ -18,7 +18,7 @@
       </div>
 
       <SetupWizardAdminStep
-        v-show="displaySteps[currentStep]?.type === 'admin'"
+        v-show="displaySteps[currentStep]?.key === 'admin'"
         :form-data="formData"
         :validity="validity"
         :valid-user-name="validUserName"
@@ -28,51 +28,73 @@
         :error-message="errorMessage"
         @check-val="checkVal"
         @submit-admin="submitAdmin"
+        @update-admin-field="setAdminField"
       />
 
-      <SetupWizardSettingsStep
-        v-show="displaySteps[currentStep]?.type === 'general'"
-        v-bind="generalStepProps"
+      <SetupWizardGeneralStep
+        v-show="displaySteps[currentStep]?.key === 'general'"
+        :wizard-settings="wizardSettings"
+        :form-settings="formSettings"
+        :settings-from-file="settingsFromFile"
+        :settings-touched="settingsTouched"
+        :show-error="showError"
+        :error-message="errorMessage"
+        :all-settings-loaded="allSettingsLoaded"
+        :current-step="currentStep"
         @download-template="downloadImportTemplate"
         @open-import-modal="openImportModal"
         @clear-import="clearImport"
+        @update:value="setWizardSettingValue"
         @previous="onPrevious"
         @next="onStepNext"
       />
 
-      <SetupWizardSettingsStep
-        v-show="displaySteps[currentStep]?.type === 'mail'"
-        v-bind="mailStepProps"
+      <SetupWizardMailStep
+        v-show="displaySteps[currentStep]?.key === 'mail'"
+        :wizard-settings="wizardSettings"
+        :form-settings="formSettings"
+        :show-error="showError"
+        :error-message="errorMessage"
+        :all-settings-loaded="allSettingsLoaded"
+        :test-mail-to="testMailTo"
+        :test-mail-sending="testMailSending"
+        :test-mail-message="testMailMessage"
+        :test-mail-error="testMailError"
         @download-template="downloadImportTemplate"
         @open-import-modal="openImportModal"
-        @mail-setting-change="onMailSettingChange"
+        @update:value="setWizardSettingValue"
         @update-test-mail-to="testMailTo = $event"
         @send-test-mail="sendSetupTestMail"
         @previous="onPrevious"
         @next="onStepNext"
       />
 
-      <SetupWizardSettingsStep
-        v-show="displaySteps[currentStep]?.type === 'registration'"
-        v-bind="registrationStepProps"
+      <SetupWizardRegistrationStep
+        v-show="displaySteps[currentStep]?.key === 'registration'"
+        :wizard-settings="wizardSettings"
+        :form-settings="formSettings"
+        :show-error="showError"
+        :error-message="errorMessage"
+        :all-settings-loaded="allSettingsLoaded"
         @download-template="downloadImportTemplate"
         @open-import-modal="openImportModal"
+        @update:value="setWizardSettingValue"
         @previous="onPrevious"
         @next="onStepNext"
       />
 
       <SetupWizardSummaryStep
-        v-show="displaySteps[currentStep]?.type === 'summary'"
+        v-show="displaySteps[currentStep]?.key === 'summary'"
         :all-settings-loaded="allSettingsLoaded"
         :has-admin="hasAdmin"
         :form-data="formData"
+        :wizard-settings="wizardSettings"
+        :form-settings="formSettings"
         :summary-field-groups="summaryFieldGroups"
         :settings-from-file="settingsFromFile"
         :show-file-settings="showFileSettings"
         :current-step="currentStep"
         :finishing="finishing"
-        :setting-label="settingLabel"
-        :summary-setting-value="summarySettingValue"
         @download-template="downloadImportTemplate"
         @open-import-modal="openImportModal"
         @toggle-show-file-settings="showFileSettings = !showFileSettings"
@@ -123,7 +145,7 @@
 <script>
 /**
  * First-time setup wizard: Admin, General (optional Moodle + JSON import), Mail, Registration, Summary.
- * Fetches /setup/config for steps and wizardSettings. On Finish, calls settingSave and redirects.
+ * Loads /setup/config (steps, wizardStepTypes, and wizardSettings). On Finish uses POST /setup/complete.
  *
  * @author Mohammad Elwan
  */
@@ -131,7 +153,9 @@ import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
 import Modal from "@/basic/Modal.vue";
 import SetupWizardAdminStep from "@/components/wizard/SetupWizardAdminStep.vue";
-import SetupWizardSettingsStep from "@/components/wizard/SetupWizardSettingsStep.vue";
+import SetupWizardGeneralStep from "@/components/wizard/SetupWizardGeneralStep.vue";
+import SetupWizardMailStep from "@/components/wizard/SetupWizardMailStep.vue";
+import SetupWizardRegistrationStep from "@/components/wizard/SetupWizardRegistrationStep.vue";
 import SetupWizardSummaryStep from "@/components/wizard/SetupWizardSummaryStep.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -144,13 +168,16 @@ export default {
     BasicButton,
     Modal,
     SetupWizardAdminStep,
-    SetupWizardSettingsStep,
+    SetupWizardGeneralStep,
+    SetupWizardMailStep,
+    SetupWizardRegistrationStep,
     SetupWizardSummaryStep,
   },
   data() {
     return {
       currentStep: 0,
       steps: [],
+      wizardStepTypes: [],
       wizardSettings: [],
       hasAdmin: false,
       formData: { userName: "admin", email: "", password: "" },
@@ -170,19 +197,6 @@ export default {
       testMailSending: false,
       testMailMessage: "",
       testMailError: false,
-      subsectionOrder: {
-        general: [
-          "Copyright and consent",
-          "Terms and conditions",
-          "Login options",
-          "Landing page links",
-          "Connection",
-          "Course",
-          "Show inputs",
-        ],
-        mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification"],
-        registration: ["Enable registration", "Information requested at registration", "Consent options", "Email verification rate limit"],
-      },
     };
   },
   computed: {
@@ -195,68 +209,15 @@ export default {
         : null;
     },
     displaySteps() {
-      const stepTypes = ["admin", "general", "mail", "registration", "summary"];
-      let filtered = this.steps.filter((s) => stepTypes.includes(s.type));
+      const stepKeys = ["admin", "general", "mail", "registration", "summary"];
+      let filtered = this.steps.filter((s) => stepKeys.includes(s.key));
       if (this.hasAdmin) {
-        filtered = filtered.filter((s) => s.type !== "admin");
+        filtered = filtered.filter((s) => s.key !== "admin");
       }
       if (this.settingsFromFile && Object.keys(this.settingsFromFile).length > 0) {
-        filtered = filtered.filter((s) => !["mail", "registration"].includes(s.type));
+        filtered = filtered.filter((s) => !["mail", "registration"].includes(s.key));
       }
       return filtered;
-    },
-    generalFieldGroups() {
-      return this.fieldGroupsForStep("general");
-    },
-    moodleSettingsFlat() {
-      const list = (this.wizardSettings || []).filter((s) => s.wizardStep === "moodle");
-      return [...list].sort((a, b) => (a.wizardOrder || 0) - (b.wizardOrder || 0));
-    },
-    mailEnabled() {
-      return this.formSettings["system.mailService.enabled"] === "true";
-    },
-    mailFieldGroups() {
-      const sendmailEnabled = this.formSettings["system.mailService.sendMail.enabled"] === "true";
-      const smtpEnabled = this.formSettings["system.mailService.smtp.enabled"] === "true";
-      const sendmailKey = "system.mailService.sendMail.enabled";
-      const smtpKey = "system.mailService.smtp.enabled";
-
-      const groups = this.fieldGroupsForStep("mail")
-        .map((g) => ({
-          ...g,
-          settings: (g.settings || []).filter((s) => s.key !== "system.mailService.enabled"),
-        }))
-        .filter((g) => g.settings.length > 0);
-
-      const filteredGroups = groups.filter((g) => {
-        if (sendmailEnabled && g.title === "SMTP") return false;
-        if (smtpEnabled && g.title === "Sendmail") return false;
-        return true;
-      });
-
-      const normalizedGroups = filteredGroups
-        .map((g) => {
-          if (g.title === "Sendmail" && !sendmailEnabled) {
-            return { ...g, settings: g.settings.filter((s) => s.key === sendmailKey) };
-          }
-          if (g.title === "SMTP" && !smtpEnabled) {
-            return { ...g, settings: g.settings.filter((s) => s.key === smtpKey) };
-          }
-          return g;
-        })
-        .filter((g) => g.settings.length > 0);
-
-      const forgotPassword = (this.wizardSettings || []).find((s) => s.key === "app.login.forgotPassword");
-      if (forgotPassword && this.mailEnabled) {
-        normalizedGroups.push({ title: "Features that use email", settings: [forgotPassword] });
-      }
-      return normalizedGroups;
-    },
-    registrationFieldGroups() {
-      return this.fieldGroupsForStep("registration").map((g) => ({
-        ...g,
-        settings: (g.settings || []).filter((s) => s.key !== "app.register.terms"),
-      })).filter((g) => g.settings.length > 0);
     },
     summaryFieldGroups() {
       const stepTitles = {
@@ -277,58 +238,6 @@ export default {
         settings: byStep[step],
       }));
     },
-    settingsStepBaseProps() {
-      return {
-        allSettingsLoaded: this.allSettingsLoaded,
-        showError: this.showError,
-        errorMessage: this.errorMessage,
-        formSettings: this.formSettings,
-        mailEnabled: this.mailEnabled,
-        testMailTo: this.testMailTo,
-        testMailSending: this.testMailSending,
-        testMailMessage: this.testMailMessage,
-        testMailError: this.testMailError,
-        settingLabel: this.settingLabel,
-        settingDescription: this.settingDescription,
-        currentStep: this.currentStep,
-      };
-    },
-    generalStepProps() {
-      return {
-        ...this.settingsStepBaseProps,
-        stepType: "general",
-        settingsFromFile: this.settingsFromFile,
-        generalFieldGroups: this.generalFieldGroups,
-        moodleSettingsFlat: this.moodleSettingsFlat,
-        mailFieldGroups: [],
-        registrationFieldGroups: [],
-        settingsTouched: this.settingsTouched,
-      };
-    },
-    mailStepProps() {
-      return {
-        ...this.settingsStepBaseProps,
-        stepType: "mail",
-        settingsFromFile: null,
-        generalFieldGroups: [],
-        moodleSettingsFlat: [],
-        mailFieldGroups: this.mailFieldGroups,
-        registrationFieldGroups: [],
-        settingsTouched: false,
-      };
-    },
-    registrationStepProps() {
-      return {
-        ...this.settingsStepBaseProps,
-        stepType: "registration",
-        settingsFromFile: null,
-        generalFieldGroups: [],
-        moodleSettingsFlat: [],
-        mailFieldGroups: [],
-        registrationFieldGroups: this.registrationFieldGroups,
-        settingsTouched: false,
-      };
-    },
     validUserName() {
       return typeof this.formData.userName === "string" && this.formData.userName.trim() !== "";
     },
@@ -338,13 +247,18 @@ export default {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
     },
     validPassword() {
-      return typeof this.formData.password === "string" && this.formData.password.length >= 8;
+      const p = this.formData.password || "";
+      return typeof p === "string"
+        && p.length >= 8
+        && !/^\s*$/.test(p)
+        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     adminFormValid() {
       return this.validUserName && this.validEmail && this.validPassword;
     },
-    currentStepType() {
-      return this.displaySteps[this.currentStep]?.type;
+    currentStepKey() {
+      return this.displaySteps[this.currentStep]?.key;
     },
     settingsStepValid() {
       if (this.settingsFromFile && Object.keys(this.settingsFromFile).length > 0) {
@@ -355,8 +269,8 @@ export default {
         });
         return missing.length === 0;
       }
-      const stepType = this.currentStepType;
-      const stepSettings = (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
+      const stepKey = this.currentStepKey;
+      const stepSettings = (this.wizardSettings || []).filter((s) => s.wizardStep === stepKey);
       const required = stepSettings.filter((s) => s.requiredInWizard);
       return required.every(
         (s) => this.formSettings[s.key] != null && String(this.formSettings[s.key]).trim() !== ""
@@ -386,6 +300,9 @@ export default {
     if (config.data && config.data.steps) {
       this.steps = config.data.steps;
     }
+    if (config.data && Array.isArray(config.data.wizardStepTypes)) {
+      this.wizardStepTypes = config.data.wizardStepTypes;
+    }
     if (config.data && config.data.wizardSettings) {
       this.wizardSettings = config.data.wizardSettings;
       this.formSettings = config.data.wizardSettings.reduce((acc, s) => {
@@ -410,11 +327,12 @@ export default {
       return String(v);
     },
     /**
-     * Handle mail step setting changes.
-     * @param {string} key - Setting key
-     * @param {string} value - New value ('true' or 'false')
+     * Handle setting change from General, Mail, or Registration. Turning sendmail or SMTP on
+     * clears the other transport.
+     * @param {string} key          - Setting key
+     * @param {string|number} value - New value
      */
-    onMailSettingChange(key, value) {
+    setWizardSettingValue(key, value) {
       this.formSettings[key] = value;
 
       const sendmailKey = "system.mailService.sendMail.enabled";
@@ -426,46 +344,8 @@ export default {
         this.formSettings[sendmailKey] = "false";
       }
     },
-    /**
-     * Group wizard settings by displaySubsection for a given step.
-     * @param {string} stepType - general, mail, registration, moodle
-     * @returns {Array<{title: string, settings: object[]}>}
-     */
-    fieldGroupsForStep(stepType) {
-      const settings = (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
-      if (!settings.length) return [];
-      const order = this.subsectionOrder[stepType];
-      const bySubsection = {};
-      for (const s of settings) {
-        const sub = s.displaySubsection || "";
-        if (!bySubsection[sub]) bySubsection[sub] = [];
-        bySubsection[sub].push(s);
-      }
-      const result = [];
-      if (order) {
-        for (const title of order) {
-          if (bySubsection[title]?.length) {
-            result.push({ title, settings: bySubsection[title] });
-          }
-        }
-      }
-      for (const [title, settingsList] of Object.entries(bySubsection)) {
-        if (!order || !order.includes(title)) {
-          result.push({ title: title || "", settings: settingsList });
-        }
-      }
-      return result.length ? result : [{ title: "", settings }];
-    },
-    settingsForStep(stepType) {
-      return (this.wizardSettings || []).filter((s) => s.wizardStep === stepType);
-    },
-    settingLabel(key) {
-      const s = (this.wizardSettings || []).find((x) => x.key === key);
-      return s?.displayName || key;
-    },
-    settingDescription(key) {
-      const s = (this.wizardSettings || []).find((x) => x.key === key);
-      return s?.description || null;
+    setAdminField(field, value) {
+      this.formData[field] = value;
     },
     checkVal(key) {
       this.validity[key] = true;
@@ -509,7 +389,7 @@ export default {
       }
     },
     onPrevious() {
-      if (this.displaySteps[this.currentStep]?.type === "summary") {
+      if (this.displaySteps[this.currentStep]?.key === "summary") {
         this.clearImport();
       }
       this.currentStep--;
@@ -517,7 +397,7 @@ export default {
     onStepNext() {
       this.settingsTouched = true;
       if (!this.settingsStepValid) {
-        if (this.settingsFromFile && Object.keys(this.settingsFromFile).length > 0 && this.currentStepType === "general") {
+        if (this.settingsFromFile && Object.keys(this.settingsFromFile).length > 0 && this.currentStepKey === "general") {
           this.showError = true;
           const required = (this.wizardSettings || []).filter((s) => s.requiredInWizard);
           const missing = required.filter((s) => {
@@ -624,7 +504,7 @@ export default {
           this.importFile = null;
           if (this.$refs.jsonFileInput) this.$refs.jsonFileInput.value = "";
           const nextSteps = this.displaySteps || [];
-          const summaryIndex = nextSteps.findIndex((s) => s?.type === "summary");
+          const summaryIndex = nextSteps.findIndex((s) => s?.key === "summary");
           this.currentStep = summaryIndex >= 0 ? summaryIndex : Math.max(nextSteps.length - 1, 0);
           this.$refs.importModal.close();
           this.showError = false;
@@ -687,12 +567,6 @@ export default {
         }
       }
       return out;
-    },
-    summarySettingValue(key) {
-      if (this.settingsFromFile && Object.prototype.hasOwnProperty.call(this.settingsFromFile, key)) {
-        return this.settingsFromFile[key];
-      }
-      return this.formSettings[key] != null ? this.formSettings[key] : "—";
     },
     async finish() {
       this.settingsTouched = true;
