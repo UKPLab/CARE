@@ -6,12 +6,12 @@
       size="xl"
       @submit="createAssignments">
     <template #title>
-      <h5 class="modal-title">Create bulk assignment</h5>
+      <h5 class="modal-title">{{$t('dashboard.study.createBulkAssignment')}}</h5>
     </template>
 
     <template v-if="templates.length === 0" #error>
-      <p class="text-center text-danger">There are not study templates available!</p>
-      <p class="text-center">Please create a study template to proceed!</p>
+      <p class="text-center text-danger">{{$t('dashboard.study.noStudyTemplatesAvailable')}}</p>
+      <p class="text-center">{{$t('dashboard.study.createTemplateToProceed')}}</p>
     </template>
 
     <template #step-1>
@@ -20,18 +20,18 @@
           v-model="templateSelection"
           :fields="templateSelectionFields"
       />
-      <div class="mt-3"><strong>Workflow Steps:</strong></div>
+      <div class="mt-3"><strong>{{$t('dashboard.study.workflowSteps')}}</strong></div>
       <ul class="list-group">
         <li
             v-for="(workflowStep, index) in workflowSteps"
             :key="workflowStep.id" class="list-group-item"
             :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
-          Workflow Step {{ index + 1 }}:
-          {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
+          {{$t('dashboard.study.workflowStepWithIndex', {index: index + 1})}}
+          {{ getStepTypeName(workflowStep.stepType) }}
         </li>
       </ul>
       <div class="mt-3">
-        <label class="form-label"><strong>Assignment should be based on:</strong></label>
+        <label class="form-label"><strong>{{$t('dashboard.study.assignmentBase')}}</strong></label>
         <FormSelect
             v-model="assignmentTypeSelection.type"
             :options="assignmentTypeFields"
@@ -46,7 +46,7 @@
             id="emailNotifyCheck"
           />
           <label class="form-check-label" for="emailNotifyCheck">
-            <strong>Send email notification to reviewer</strong>
+            <strong>{{ $t('dashboard.study.sendEmailNotificationToReviewer') }}</strong>
           </label>
         </div>
       </div>
@@ -54,9 +54,9 @@
 
     <template #step-2>
       <div v-if="assignmentType === 'study_session'">
-        <h6 class="text-secondary">Target Workflow Selection</h6>
+        <h6 class="text-secondary">{{ $t('dashboard.study.targetWorkflowSelection') }}</h6>
         <div class="mb-3">
-          <label class="form-label"><strong>Select Target Workflow:</strong></label>
+          <label class="form-label"><strong>{{ $t('dashboard.study.selectTargetWorkflow') }}</strong></label>
           <FormSelect
               v-model="targetWorkflowId"
               :options="workflowOptions"
@@ -64,8 +64,8 @@
         </div>
 
         <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
-          <h6 class="text-secondary mt-4">Workflow Step Mapping</h6>
-          <p class="text-muted">Map each source workflow step (from template) to a target workflow step:</p>
+          <h6 class="text-secondary mt-4">{{ $t('dashboard.study.workflowStepMapping') }}</h6>
+          <p class="text-muted">{{ $t('dashboard.study.mapWorkflowStepToTarget') }}</p>
 
           <div
               v-for="(templateStep, index) in workflowSteps"
@@ -73,7 +73,12 @@
               class="mb-3"
           >
             <label class="form-label">
-              <strong>Source Step {{ index + 1 }} ({{ getStepTypeName(templateStep.stepType) }}) → Target Step:</strong>
+              <strong>
+                {{ $t('dashboard.study.sourceStepTargetStep', {
+                  index: index + 1,
+                  stepType: getStepTypeName(templateStep.stepType)
+                }) }}
+              </strong>
             </label>
             <FormSelect
                 v-model="workflowMapping[templateStep.id]"
@@ -84,7 +89,7 @@
 
 
         <div>
-          <h6 class="text-secondary mt-4">New Study Owner</h6>
+          <h6 class="text-secondary mt-4">{{ $t('dashboard.study.newStudyOwner') }}</h6>
           <div class="form-check">
             <input
                 id="owner-session"
@@ -94,7 +99,7 @@
                 value="session_owner"
             />
             <label class="form-check-label" for="owner-session">
-              User of the study session
+              {{ $t('dashboard.study.userOfStudySession') }}
             </label>
           </div>
 
@@ -107,7 +112,7 @@
                 value="study_owner"
             />
             <label class="form-check-label" for="owner-current-user">
-              Owner of the study
+              {{ $t('dashboard.study.ownerOfStudy') }}
             </label>
           </div>
         </div>
@@ -137,14 +142,14 @@
         <div class="form-check">
           <input id="filterHasDocumentsCheckbox" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
           <label class="form-check-label" for="filterHasDocumentsCheckbox">
-            Filter only users with documents
+            {{ $t('dashboard.study.filterUsersWithDocuments') }}
           </label>
           <br>
           <input
               id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input"
               type="checkbox">
           <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
-            Filter only users from previous selected documents
+            {{ $t('dashboard.study.filterUsersFromPreviousDocuments') }}
           </label>
         </div>
         <BasicTable
@@ -162,14 +167,14 @@
         <div class="form-check">
           <input id="filterHasDocumentsCheckbox4" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
           <label class="form-check-label" for="filterHasDocumentsCheckbox4">
-            Filter only users with documents
+            {{ $t('dashboard.study.filterUsersWithDocuments') }}
           </label>
           <br>
           <input
               id="filterSelectedDocumentsCheckbox4" v-model="filterSelectedDocuments" class="form-check-input"
               type="checkbox">
           <label class="form-check-label" for="filterSelectedDocumentsCheckbox4">
-            Filter only users from previous selected documents
+            {{ $t('dashboard.study.filterUsersFromPreviousDocuments') }}
           </label>
         </div>
         <BasicTable
@@ -189,7 +194,7 @@
 
         <div v-if="reviewerSelectionMode['mode'] === 'role'">
           <div class="mt-2">
-            Define the number of reviews that each user of the role should perform:
+            {{ $t('dashboard.study.defineTheNumberOfReviews') }}
           </div>
           <BasicForm
               v-if="roleSelectionFields.length > 0"
@@ -199,16 +204,16 @@
               :fields="roleSelectionFields"
           />
           <div v-else>
-            <p class="text-center text-danger mt-4">There are no roles available!</p>
-            <p class="text-center">Please select reviewers with roles or change selection mode!</p>
+            <p class="text-center text-danger mt-4">{{ $t('dashboard.study.noRolesAvailable') }}</p>
+            <p class="text-center">{{ $t('dashboard.study.selectReviewersOrChangeMode') }}</p>
           </div>
         </div>
         <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
           <div class="mt-2">
-            Distribute the documents between the selected reviewers:
+            {{ $t('dashboard.study.discontributeDocuments') }}
           </div>
           <div class="mb-4">
-            Remaining Assignments: <strong>{{ remainingAssignments }}</strong>
+            {{ $t('dashboard.study.remainingAssignments') }} <strong>{{ remainingAssignments }}</strong>
           </div>
 
           <BasicForm
@@ -218,7 +223,7 @@
           />
         </div>
         <div v-else>
-          Please select a reviewer selection mode
+          {{ $t('dashboard.study.selectMode') }}
         </div>
       </div>
     </template>
@@ -233,7 +238,7 @@
 
         <div v-if="reviewerSelectionMode['mode'] === 'role'">
           <div class="mt-2">
-            Define the number of reviews that each user of the role should perform:
+            {{ $t('dashboard.study.defineTheNumberOfReviews') }}
           </div>
           <BasicForm
               v-if="roleSelectionFields.length > 0"
@@ -243,16 +248,16 @@
               :fields="roleSelectionFields"
           />
           <div v-else>
-            <p class="text-center text-danger mt-4">There are no roles available!</p>
-            <p class="text-center">Please select reviewers with roles or change selection mode!</p>
+            <p class="text-center text-danger mt-4">{{ $t('dashboard.study.noRolesAvailable') }}</p>
+            <p class="text-center">{{ $t('dashboard.study.selectReviewersOrChangeMode') }}</p>
           </div>
         </div>
         <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
           <div class="mt-2">
-            Distribute the documents between the selected reviewers:
+            {{ $t('dashboard.study.discontributeDocuments') }}
           </div>
           <div class="mb-4">
-            Remaining Assignments: <strong>{{ remainingAssignments }}</strong>
+            {{ $t('dashboard.study.remainingAssignments') }} <strong>{{ remainingAssignments }}</strong>
           </div>
 
           <BasicForm
@@ -262,26 +267,24 @@
           />
         </div>
         <div v-else>
-          Please select a reviewer selection mode
+          {{ $t('dashboard.study.selectMode') }}
         </div>
       </div>
       <div v-else>
         <p>
-          Are you sure you want to create the assignment with the following details?
+          {{ $t('dashboard.study.createAssignmentConfirmPrompt') }}
         </p>
         <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
-          <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own
-          document.
+          <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.notReviewOwnDocument') }}
           <br>
-          This could lead to a failure in the assignment process, <br>
-          so make sure that the values are set correctly for a successful assignment.
+          {{ $t('dashboard.study.warning1') }} <br>
+          {{ $t('dashboard.study.warning2') }}
         </p>
         <p v-else class="text-warning">
-          <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a
-          corresponding study session.
+          <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.sessionUserSelectionWarning') }}
           <br>
           <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
-            The following reviewers do not have matching study sessions:
+            {{ $t('dashboard.study.reviewersWithoutMatchingStudySessions') }}
             <ul>
               <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
                 {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
@@ -289,33 +292,33 @@
             </ul>
           </span>
           <span v-else>
-            All selected reviewers have matching study sessions.
+            {{ $t('dashboard.study.allReviewersHaveMatchingStudySessions') }}
           </span>
         </p>
 
         <div class="container">
           <div class="row mb-2">
-            <div class="col-2"><strong>Template:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.template') }}</strong></div>
             <div class="col-8">{{ template.name }}</div>
           </div>
           <div class="row mb-2">
-            <div class="col-2"><strong>Workflow:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.workflow') }}</strong></div>
             <div class="col-8">{{ workflow.name }}</div>
           </div>
           <div class="row mb-2">
-            <div class="col-2"><strong>Documents:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.documents') }}</strong></div>
             <div class="col-8">{{ selectedAssignments.length }}</div>
           </div>
           <div class="row mb-2">
-            <div class="col-2"><strong>Reviewers:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
             <div class="col-8">{{ selectedReviewer.length }}</div>
           </div>
           <div class="row mb-2">
-            <div class="col-2"><strong>Reviews to create:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.reviewsToCreate') }}</strong></div>
             <div class="col-8">{{ numberOfReviews }}</div>
           </div>
           <div class="row mb-2">
-            <div class="col-2"><strong>Selection Mode:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.selectionMode') }}</strong></div>
             <div class="col-8">
               {{
                 reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name
@@ -324,7 +327,7 @@
           </div>
           <div v-if="reviewerSelectionMode.mode === 'role'">
             <div class="row mb-2">
-              <div class="col-2"><strong>Roles:</strong></div>
+              <div class="col-2"><strong>{{ $t('dashboard.study.roles') }}</strong></div>
               <div class="col-8">
                 <ul>
                   <li v-for="(value, key) in listOfSelectedRoles" :key="key">
@@ -336,7 +339,7 @@
           </div>
           <div v-if="reviewerSelectionMode.mode === 'reviewer'">
             <div class="row mb-2">
-              <div class="col-2"><strong>Reviewers:</strong></div>
+              <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
               <div class="col-8">
                 <ul>
                   <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
@@ -352,21 +355,19 @@
 
     <template #step-6>
       <p>
-        Are you sure you want to create the assignment with the following details?
+        {{ $t('dashboard.study.createAssignmentConfirmPrompt') }}
       </p>
       <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
-        <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own
-        document.
+        <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.notReviewOwnDocument') }}
         <br>
-        This could lead to a failure in the assignment process, <br>
-        so make sure that the values are set correctly for a successful assignment.
+        {{ $t('dashboard.study.warning1') }} <br>
+        {{ $t('dashboard.study.warning2') }}
       </p>
       <p v-else class="text-warning">
-        <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding
-        study session.
+        <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.sessionUserSelectionWarning') }}
         <br>
         <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
-          The following reviewers do not have matching study sessions:
+          {{ $t('dashboard.study.reviewersWithoutMatchingStudySessions') }}
           <ul>
             <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
               {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
@@ -374,40 +375,42 @@
           </ul>
         </span>
         <span v-else>
-          All selected reviewers have matching study sessions.
+          {{ $t('dashboard.study.allReviewersHaveMatchingStudySessions') }}
         </span>
       </p>
 
       <div class="container">
         <div class="row mb-2">
-          <div class="col-2"><strong>Template:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.template') }}</strong></div>
           <div class="col-8">{{ template.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Workflow:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.workflow') }}</strong></div>
           <div class="col-8">{{ workflow.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Documents:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.documents') }}</strong></div>
           <div class="col-8">{{ selectedAssignments.length }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Reviewers:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
           <div class="col-8">{{ selectedReviewer.length }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Reviews to create:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.reviewsToCreate') }}</strong></div>
           <div class="col-8">{{ numberOfReviews }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Selection Mode:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.selectionMode') }}</strong></div>
           <div class="col-8">
-            {{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}
+            {{
+              reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name
+            }}
           </div>
         </div>
         <div v-if="reviewerSelectionMode.mode === 'role'">
           <div class="row mb-2">
-            <div class="col-2"><strong>Roles:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.roles') }}</strong></div>
             <div class="col-8">
               <ul>
                 <li v-for="(value, key) in listOfSelectedRoles" :key="key">
@@ -419,7 +422,7 @@
         </div>
         <div v-if="reviewerSelectionMode.mode === 'reviewer'">
           <div class="row mb-2">
-            <div class="col-2"><strong>Reviewers:</strong></div>
+            <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
             <div class="col-8">
               <ul>
                 <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
@@ -439,7 +442,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 
 /**
  * Modal for bulk creating assignments
@@ -636,15 +639,15 @@ export default {
               id: session.id,
               studyId: session.studyId,
               userId: this.newStudyOwner === 'session_owner' ? user.id : studyOwner.id,
-              completeUserName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
-              firstName: user ? user.firstName : 'Unknown',
-              lastName: user ? user.lastName : 'Unknown',
-              studyCompleteUserName: studyOwner ? `${studyOwner.firstName} ${studyOwner.lastName}` : 'Unknown User',
+              completeUserName: user ? `${user.firstName} ${user.lastName}` : this.$t('dashboard.study.unknownUser'),
+              firstName: user ? user.firstName : this.$t('common.unknown'),
+              lastName: user ? user.lastName : this.$t('common.unknown'),
+              studyCompleteUserName: studyOwner ? `${studyOwner.firstName} ${studyOwner.lastName}` : this.$t('dashboard.study.unknownUser'),
               studyUserId: studyOwner.userId,
-              studyFirstName: studyOwner ? studyOwner.firstName : 'Unknown',
-              studyLastName: studyOwner ? studyOwner.lastName : 'Unknown',
+              studyFirstName: studyOwner ? studyOwner.firstName : this.$t('common.unknown'),
+              studyLastName: studyOwner ? studyOwner.lastName : this.$t('common.unknown'),
               workflowType: this.getWorkflowType(study.workflowId),
-              submissionGroup: submission && submission.group ? submission.group : 'N/A',
+              submissionGroup: submission && submission.group ? submission.group : this.$t('common.na'),
               status: session.end === null ? "Running" : "Finished",
               createdAt: new Date(session.createdAt).toLocaleString(),
             };
@@ -652,21 +655,21 @@ export default {
     },
     studySessionsTableColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "Session User Name", key: "completeUserName", sortable: true},
-        {name: "Study Owner User Name", key: "studyCompleteUserName", sortable: true},
-        {name: "Workflow Type", key: "workflowType", sortable: true},
-        {name: "Created At", key: "createdAt", sortable: true},
-        {name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('dashboard.study.sessionUserName'), key: "completeUserName", sortable: true},
+        {name: this.$t('dashboard.study.studyOwnerUserName'), key: "studyCompleteUserName", sortable: true},
+        {name: this.$t('dashboard.study.workflowType'), key: "workflowType", sortable: true},
+        {name: this.$t('common.createdAt'), key: "createdAt", sortable: true},
+        {name: this.$t('dashboard.study.submissionGroup'), key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
         {
-          name: "Status",
+          name: this.$t('common.status'),
           key: "status",
           type: "badge",
           sortable: true,
           typeOptions: {
             keyMapping: {
-              Running: "Running",
-              Finished: "Finished",
+              Running: this.$t('dashboard.study.running'),
+              Finished: this.$t('dashboard.study.finished'),
             },
             classMapping: {
               Running: "bg-primary",
@@ -679,41 +682,41 @@ export default {
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
         let newD = {...d};
-        newD.type = d.type === 0 ? "PDF" : "HTML";
+        newD.type = d.type === 0 ? this.$t('documents.types.pdf') : this.$t('documents.types.html');
         const user = this.$store.getters["table/user/get"](d.userId)
-        newD.firstName = (user) ? user.firstName : "Unknown";
-        newD.lastName = (user) ? user.lastName : "Unknown";
+        newD.firstName = (user) ? user.firstName : this.$t('common.unknown');
+        newD.lastName = (user) ? user.lastName : this.$t('common.unknown');
         return newD;
       })
     },
     documentsTableColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "Document", key: "name"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('documents.document'), key: "name"},
+        {name: this.$t('common.firstName'), key: "firstName"},
+        {name: this.$t('common.lastName'), key: "lastName"},
       ]
     },
     submissionsTable() {
       return this.submissions.map((s) => {
         let newS = {...s};
         const user = this.$store.getters["table/user/get"](s.userId);
-        newS.name = s.name || `Submission ${s.id}`;
-        newS.userName = user ? user.userName : "N/A";
-        newS.firstName = user ? user.firstName : "Unknown";
-        newS.lastName = user ? user.lastName : "Unknown";
+        newS.name = s.name || this.$t('dashboard.study.submissionWithId', { id: s.id });
+        newS.userName = user ? user.userName : this.$t('common.na');
+        newS.firstName = user ? user.firstName : this.$t('common.unknown');
+        newS.lastName = user ? user.lastName : this.$t('common.unknown');
         newS.group = (s.group !== null && s.group !== undefined && s.group !== '') ? s.group : '';
         return newS;
       });
     },
     submissionColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "User Name", key: "userName"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Group ID", key: "group", filter: this.groupFilterOptions},
-        {name: "Created At", key: "createdAt"},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('common.userName'), key: "userName"},
+        {name: this.$t('common.firstName'), key: "firstName"},
+        {name: this.$t('common.lastName'), key: "lastName"},
+        {name: this.$t('common.groupId'), key: "group", filter: this.groupFilterOptions},
+        {name: this.$t('common.createdAt'), key: "createdAt"},
       ]
     },
     reviewerTable() {
@@ -763,13 +766,13 @@ export default {
     },
     reviewerTableColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "extId", key: "extId"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Number of Assignments", key: "studySessions"},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('common.extId'), key: "extId"},
+        {name: this.$t('common.firstName'), key: "firstName"},
+        {name: this.$t('common.lastName'), key: "lastName"},
+        {name: this.$t('dashboard.projects.numberOfAssignments'), key: "studySessions"},
         {
-          name: "Documents",
+          name: this.$t('dashboard.study.documents'),
           key: "documents",
           filter: {
             type: "numeric",
@@ -778,7 +781,7 @@ export default {
           },
         },
         {
-          name: "Roles",
+          name: this.$t('dashboard.study.roles'),
           key: "rolesNames",
           filter: this.reviewerRoles.map(r => ({key: r, name: r})),
         },
@@ -806,7 +809,7 @@ export default {
           .map((g) => ({key: g, name: g}));
 
       if (hasEmptyGroups) {
-        options.unshift({key: '', name: 'No GroupID'});
+        options.unshift({key: '', name: this.$t('nlp.inputFiles.noGroupId')});
       }
 
       return options;
@@ -817,20 +820,20 @@ export default {
     steps() {
       if (this.assignmentType === 'study_session') {
         return [
-          {title: "Template Selection"},
-          {title: "Workflow Mapping"},
-          {title: "Study Session Selection"},
-          {title: "Reviewer Selection"},
-          {title: "Distribution"},
-          {title: "Confirmation"}
+          {title: this.$t('dashboard.study.templateSelection')},
+          {title: this.$t('dashboard.study.workflowMapping')},
+          {title: this.$t('dashboard.study.studySessionSelection')},
+          {title: this.$t('dashboard.study.reviewerSelection')},
+          {title: this.$t('dashboard.study.distribution')},
+          {title: this.$t('common.confirmation')}
         ];
       }
       return [
-        {title: "Template Selection"},
-        {title: "Document Selection"},
-        {title: "Reviewer Selection"},
-        {title: "Distribution"},
-        {title: "Confirmation"}
+        {title: this.$t('dashboard.study.templateSelection')},
+        {title: this.$t('dashboard.study.documentSelection')},
+        {title: this.$t('dashboard.study.reviewerSelection')},
+        {title: this.$t('dashboard.study.distribution')},
+        {title: this.$t('common.confirmation')}
       ];
     },
     workflowOptions() {
@@ -889,7 +892,7 @@ export default {
       return [
         {
           key: "template",
-          label: "Template",
+          label: this.$t('studies.template'),
           type: "select",
           options: this.templates.map(template => ({
             name: template.name,
@@ -902,9 +905,9 @@ export default {
     assignmentTypeFields() {
       return {
         options: [
-          {value: 'document', name: 'Documents'},
-          {value: 'submission', name: 'Submissions'},
-          {value: 'study_session', name: 'Study Sessions'}
+          {value: 'document', name: this.$t('documents.title')},
+          {value: 'submission', name: this.$t('nlp.inputFiles.submissions')},
+          {value: 'study_session', name: this.$t('dashboard.study.studySessions')}
         ]
       };
     },
@@ -916,7 +919,7 @@ export default {
     emailTemplateOptions() {
       return {
         options: [
-          {value: null, name: 'None (no email will be sent)'},
+          {value: null, name: this.$t('dashboard.study.noEmailWillBeSent')},
           ...this.emailTemplates.map(t => ({
             value: t.id,
             name: t.name
@@ -927,16 +930,16 @@ export default {
     reviewerSelectionModeFields() {
       const baseOptions = [
         {
-          name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
+          name: this.$t('dashboard.study.roleBasedSelection'),
           value: "role"
         },
-        {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
+        {name: this.$t('dashboard.study.reviewerBasedSelection'), value: "reviewer"},
       ];
 
       // Add session_user option only for study_session assignment type
       if (this.assignmentType === 'study_session') {
         baseOptions.push({
-          name: "Session user-based selection (assign each study session to its original user)",
+          name: this.$t('dashboard.study.sessionUserBasedSelection'),
           value: "session_user"
         });
       }
@@ -944,7 +947,7 @@ export default {
       return [
         {
           key: "mode",
-          label: "Reviewer Selection Mode",
+          label: this.$t('dashboard.study.reviewerSelectionMode'),
           type: "select",
           options: baseOptions,
           required: true,
@@ -954,25 +957,25 @@ export default {
     roleSelectionFields() {
       return this.selectedReviewerRoles.map(roleId => ({
         key: this.roles.find((role) => role.id === roleId).id,
-        label: "Number of reviews for role: " + this.roles.find((role) => role.id === roleId).name,
+        label: this.$t('dashboard.study.nameOfReviewsForRole') + this.roles.find((role) => role.id === roleId).name,
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
         max: 10,
         step: 1,
-        unit: 'review(s)'
+        unit: this.$t('dashboard.study.reviews')
       }));
     },
     reviewerSelectionFields() {
       return this.selectedReviewer.map(user => ({
         key: user.id,
-        label: "Number of reviews for user: " + user.firstName + " " + user.lastName,
+        label: this.$t('dashboard.study.nameofReviewsForUsers') + user.firstName + " " + user.lastName,
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
         max: Number(this.remainingAssignments + Number(this.reviewerSelection[user.id])),
         step: 1,
-        unit: 'review(s)'
+        unit: this.$t('dashboard.study.reviews')
       }));
     },
   },
@@ -1016,16 +1019,16 @@ export default {
     },
     getWorkflowType(workflowId) {
       const workflow = this.$store.getters["table/workflow/get"](workflowId);
-      return workflow ? workflow.name : "Unknown";
+      return workflow ? workflow.name : this.$t('common.unknown');
     },
     getStepTypeName(stepType) {
       switch (stepType) {
         case 1:
-          return 'Annotator';
+          return this.$t('dashboard.study.annotator');
         case 2:
-          return 'Editor';
+          return this.$t('dashboard.study.editor');
         default:
-          return 'Unknown';
+          return this.$t('common.unknown');
       }
     },
     getTargetStepOptions(stepType, currentStepId) {
@@ -1050,7 +1053,10 @@ export default {
       const options = orderedSteps
           .filter(step => step.stepType === stepType)
           .map((step) => ({
-            name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
+            name: this.$t('dashboard.study.workflowStepOption', {
+              index: stepPositionMap.get(step.id),
+              type: this.getStepTypeName(step.stepType)
+            }),
             value: step.id,
           }));
 
@@ -1065,7 +1071,7 @@ export default {
           );
           if (previousSourceStep && previousSourceStep.stepType === 1) {
             options.unshift({
-              name: '<Document> Revised Document',
+              name: this.$t('dashboard.study.revisedDocument'),
               value: 'previousSubmission',
             });
           }
@@ -1185,14 +1191,14 @@ export default {
           }
           this.$refs.assignmentStepper.close();
           this.eventBus.emit("toast", {
-            title: "Assignment created",
-            message: "The assignment has been created successfully",
+            title: this.$t('dashboard.study.assignmentCreated'),
+            message: this.$t('dashboard.study.assignmentCreatedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to create assignment",
-            message: res.message,
+            title: this.$t('dashboard.study.failedToCreateAssignment'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

@@ -239,5 +239,26 @@
     "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Project",
     "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Project (Control)",
     "annotation_workflow": "Annotation Workflow"
+  },
+  "assignUserSession": {
+    "title": "Assign Users to Study Session",
+    "noSessionSelected": "No study session selected!",
+    "selectSessionToProceed": "Please select a study session to proceed.",
+    "selectUsers": "Select Users",
+    "selectUsersDescription": "Select the users you want to assign to this study session.",
+    "confirmCopy": "Are you sure you want to copy this study session for the following users?",
+    "studySessionId": "Study Session ID:",
+    "originalUser": "Original User:",
+    "selectedUsers": "Selected Users:",
+    "usersAssignedToCopy": "Users assigned to study session copy:",
+    "steps": {
+      "userSelection": "User Selection",
+      "confirmation": "Confirmation"
+    },
+    "toasts": {
+      "copiedTitle": "Study sessions copied",
+      "copiedMessage": "Successfully copied study session to {count} user(s).",
+      "copyFailed": "Copy failed"
+    }
   }
 }

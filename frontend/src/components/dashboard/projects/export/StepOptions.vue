@@ -1,7 +1,7 @@
 <template>
   <div class="mt-2 mb-3 p-3 bg-light border rounded">
     <h6 class="mb-3 pb-2 border-bottom text-muted">
-      Options
+      {{ $t('dashboard.projects.exportOptions.title') }}
     </h6>
 
     <div class="form-check form-switch mb-2">
@@ -12,12 +12,14 @@
         v-model="aliases"
       >
       <label class="form-check-label" for="aliasSwitch">
-        <strong>Generate aliases for student names</strong>
+        <strong>{{ $t('dashboard.projects.exportOptions.generateAliases') }}</strong>
       </label>
     </div>
     
     <div v-if="aliases">
-      <label for="fakerSeedInput" class="form-label small mb-1">Custom Seed (Optional):</label>
+      <label for="fakerSeedInput" class="form-label small mb-1">
+        {{ $t('dashboard.projects.exportOptions.customSeedOptional') }}
+      </label>
       <input 
         id="fakerSeedInput"
         v-model.number="seed" 
@@ -25,10 +27,12 @@
         class="form-control form-control-sm" 
         max="999999999"
         style="max-width: 200px;"
-        placeholder="e.g. 846569412"
+        :placeholder="$t('dashboard.projects.exportOptions.seedPlaceholder')"
       >
       <small class="text-muted d-block mt-1">
-        Using the same seed ensures consistent aliases for your own exports. <strong>Note:</strong> Aliases are tied to your account and won't match other users' exports.
+        {{ $t('dashboard.projects.exportOptions.seedHint') }}
+        <strong>{{ $t('dashboard.projects.exportOptions.noteLabel') }}</strong>
+        {{ $t('dashboard.projects.exportOptions.accountSpecificHint') }}
       </small>
     </div>
   </div>

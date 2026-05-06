@@ -33,9 +33,16 @@
         "submissions": "Submissions",
         "review_documents": "Review Documents",
         "configurations": "Configurations",
+        "templates": "Templates",
+        "workflows": "Workflows",
         "groups": {
             "default": "Default",
-            "admin": "Admin"
+            "admin": "Admin",
+            "home": "Home",
+            "study": "Study",
+            "manage": "Manage",
+            "settings": "Settings",
+            "ai": "AI"
         }
     }
 }

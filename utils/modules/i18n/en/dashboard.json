@@ -51,7 +51,12 @@
         "columns": {
             "name": "Project name",
             "public": "Public",
-            "closed": "Closed"
+            "closed": "Closed",
+            "username": "Username",
+            "studentName": "Student Name",
+            "files": "Files",
+            "acceptedDataSharing": "Accepted Data Sharing",
+            "lastSubmitted": "Last Submitted"
         },
         "actions": {
             "copy": "Copy project",
@@ -83,7 +88,18 @@
                 "placeholder": "My project description"
             },
             "publicSwitch": "Is the project public?"
-        }
+        },
+        "exportOptions": {
+            "title": "Options",
+            "generateAliases": "Generate aliases for student names",
+            "customSeedOptional": "Custom Seed (Optional):",
+            "seedPlaceholder": "e.g. 846569412",
+            "seedHint": "Using the same seed ensures consistent aliases for your own exports.",
+            "noteLabel": "Note:",
+            "accountSpecificHint": "Aliases are tied to your account and won't match other users' exports."
+        },
+        "exportSelectSubmissions": "Select Submissions to Download:",
+        "noSubmissionsFound": "No submissions found for this project."
     },
     "settings": {
         "selectSetting": "Select setting",
@@ -195,7 +211,33 @@
         "studySessionDeleted": "Study Session deleted",
         "studySessionHasBeenDeleted": "Study session has been deleted",
         "studySessionNotDeleted": "Study Session not deleted",
-        "studySessionCopiedMessage": "Study session link copied to clipboard!"
+        "studySessionCopiedMessage": "Study session link copied to clipboard!",
+        "sendEmailNotificationToReviewer": "Send email notification to reviewer",
+        "targetWorkflowSelection": "Target Workflow Selection",
+        "selectTargetWorkflow": "Select Target Workflow:",
+        "workflowStepMapping": "Workflow Step Mapping",
+        "mapWorkflowStepToTarget": "Map each source workflow step (from template) to a target workflow step:",
+        "sourceStepTargetStep": "Source Step {index} ({stepType}) → Target Step:",
+        "newStudyOwner": "New Study Owner",
+        "userOfStudySession": "User of the study session",
+        "ownerOfStudy": "Owner of the study",
+        "sessionUserSelectionWarning": "In session user-based selection mode, each selected reviewer must have a corresponding study session.",
+        "reviewersWithoutMatchingStudySessions": "The following reviewers do not have matching study sessions:",
+        "allReviewersHaveMatchingStudySessions": "All selected reviewers have matching study sessions.",
+        "unknownUser": "Unknown User",
+        "running": "Running",
+        "finished": "Finished",
+        "sessionUserName": "Session User Name",
+        "studyOwnerUserName": "Study Owner User Name",
+        "workflowType": "Workflow Type",
+        "submissionGroup": "Submission Group",
+        "studySessions": "Study Sessions",
+        "noEmailWillBeSent": "None (no email will be sent)",
+        "sessionUserBasedSelection": "Session user-based selection (assign each study session to its original user)",
+        "workflowStepOption": "<Workflow> Step {index} ({type})",
+        "revisedDocument": "<Document> Revised Document",
+        "workflowMapping": "Workflow Mapping",
+        "studySessionSelection": "Study Session Selection"
     },
     "users": {
         "manageRightsFor": "Manage rights for",

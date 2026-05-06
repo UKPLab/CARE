@@ -238,5 +238,26 @@
     "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Projekt",
     "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Projekt (Kontrolle)",
     "annotation_workflow": "Anmerkungs-Workflow"
+  },
+  "assignUserSession": {
+    "title": "Benutzer zur Studiensitzung zuweisen",
+    "noSessionSelected": "Keine Studiensitzung ausgewählt!",
+    "selectSessionToProceed": "Bitte wählen Sie eine Studiensitzung aus, um fortzufahren.",
+    "selectUsers": "Benutzer auswählen",
+    "selectUsersDescription": "Wählen Sie die Benutzer aus, denen diese Studiensitzung zugewiesen werden soll.",
+    "confirmCopy": "Möchten Sie diese Studiensitzung wirklich für die folgenden Benutzer kopieren?",
+    "studySessionId": "Studiensitzungs-ID:",
+    "originalUser": "Ursprünglicher Benutzer:",
+    "selectedUsers": "Ausgewählte Benutzer:",
+    "usersAssignedToCopy": "Benutzer, denen die Kopie der Studiensitzung zugewiesen wird:",
+    "steps": {
+      "userSelection": "Benutzerauswahl",
+      "confirmation": "Bestätigung"
+    },
+    "toasts": {
+      "copiedTitle": "Studiensitzungen kopiert",
+      "copiedMessage": "Studiensitzung erfolgreich für {count} Benutzer kopiert.",
+      "copyFailed": "Kopieren fehlgeschlagen"
+    }
   }
 }

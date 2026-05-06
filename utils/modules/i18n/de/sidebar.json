@@ -33,9 +33,16 @@
         "submissions": "Einreichungen",
         "review_documents": "Dokumentpruefung",
         "configurations": "Konfigurationen",
+        "templates": "Vorlagen",
+        "workflows": "Workflows",
         "groups": {
             "default": "Standard",
-            "admin": "Administrator"
+            "admin": "Administrator",
+            "home": "Start",
+            "study": "Studium",
+            "manage": "Verwalten",
+            "settings": "Einstellungen",
+            "ai": "KI"
         }
     }
 }

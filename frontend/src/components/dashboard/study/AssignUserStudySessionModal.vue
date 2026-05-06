@@ -6,17 +6,17 @@
       size="xl"
       @submit="assignUsers">
     <template #title>
-      <h5 class="modal-title">Assign Users to Study Session</h5>
+      <h5 class="modal-title">{{ $t('studies.assignUserSession.title') }}</h5>
     </template>
 
     <template v-if="!studySession" #error>
-      <p class="text-center text-danger">No study session selected!</p>
-      <p class="text-center">Please select a study session to proceed.</p>
+      <p class="text-center text-danger">{{ $t('studies.assignUserSession.noSessionSelected') }}</p>
+      <p class="text-center">{{ $t('studies.assignUserSession.selectSessionToProceed') }}</p>
     </template>
 
     <template #step-1>
-      <h6 class="text-secondary mb-3">Select Users</h6>
-      <p class="text-muted">Select the users you want to assign to this study session.</p>
+      <h6 class="text-secondary mb-3">{{ $t('studies.assignUserSession.selectUsers') }}</h6>
+      <p class="text-muted">{{ $t('studies.assignUserSession.selectUsersDescription') }}</p>
       <BasicTable
           v-model="selectedUsers"
           :columns="userTableColumns"
@@ -28,25 +28,25 @@
 
     <template #step-2>
       <p>
-        Are you sure you want to copy this study session for the following users?
+        {{ $t('studies.assignUserSession.confirmCopy') }}
       </p>
 
       <div class="container">
         <div class="row mb-2">
-          <div class="col-3"><strong>Study Session ID:</strong></div>
+          <div class="col-3"><strong>{{ $t('studies.assignUserSession.studySessionId') }}</strong></div>
           <div class="col-9">{{ studySession?.id }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-3"><strong>Original User:</strong></div>
+          <div class="col-3"><strong>{{ $t('studies.assignUserSession.originalUser') }}</strong></div>
           <div class="col-9">{{ originalUserName }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-3"><strong>Selected Users:</strong></div>
+          <div class="col-3"><strong>{{ $t('studies.assignUserSession.selectedUsers') }}</strong></div>
           <div class="col-9">{{ selectedUsers.length }}</div>
         </div>
       </div>
 
-      <h6 class="text-secondary mt-3">Users assigned to study session copy:</h6>
+      <h6 class="text-secondary mt-3">{{ $t('studies.assignUserSession.usersAssignedToCopy') }}</h6>
       <ul class="list-group">
         <li
             v-for="user in selectedUsers"
@@ -63,6 +63,7 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for assigning users to a study session using a stepper
@@ -93,8 +94,8 @@ export default {
   computed: {
     steps() {
       return [
-        {title: "User Selection"},
-        {title: "Confirmation"},
+        { title: this.$t('studies.assignUserSession.steps.userSelection') },
+        { title: this.$t('studies.assignUserSession.steps.confirmation') },
       ];
     },
     stepValid() {
@@ -110,17 +111,17 @@ export default {
       return this.$store.getters["admin/getSystemRoles"] || [];
     },
     originalUserName() {
-      if (!this.studySession?.userId) return "Unknown";
+      if (!this.studySession?.userId) return this.$t('common.unknown');
       const user = this.$store.getters["table/user/get"](this.studySession.userId);
-      return user ? `${user.firstName} ${user.lastName} (${user.userName})` : "Unknown";
+      return user ? `${user.firstName} ${user.lastName} (${user.userName})` : this.$t('common.unknown');
     },
     userTable() {
       return this.users.map((u) => {
         let newU = {
           ...u,
-          userName: u.userName || "N/A",
-          firstName: u.firstName || "Unknown",
-          lastName: u.lastName || "Unknown",
+          userName: u.userName || this.$t('common.na'),
+          firstName: u.firstName || this.$t('common.unknown'),
+          lastName: u.lastName || this.$t('common.unknown'),
         };
         newU.rolesNames = (u.roles || [])
           .map((role) => {
@@ -139,14 +140,14 @@ export default {
     },
     userTableColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "Username", key: "userName"},
-        {name: "First Name", key: "firstName", sortable: true},
-        {name: "Last Name", key: "lastName", sortable: true},
+        { name: this.$t('common.id'), key: "id" },
+        { name: this.$t('users.columns.userName'), key: "userName" },
+        { name: this.$t('users.columns.firstName'), key: "firstName", sortable: true },
+        { name: this.$t('users.columns.lastName'), key: "lastName", sortable: true },
         {
-          name: "Roles",
+          name: this.$t('users.columns.roles'),
           key: "rolesNames",
-          filter: this.userRoles.map(r => ({key: r, name: r})),
+          filter: this.userRoles.map(r => ({ key: r, name: r })),
         },
       ];
     },
@@ -179,14 +180,14 @@ export default {
         if (res.success) {
           this.close();
           this.eventBus.emit("toast", {
-            title: "Study sessions copied",
-            message: `Successfully copied study session to ${this.selectedUsers.length} user(s).`,
+            title: this.$t('studies.assignUserSession.toasts.copiedTitle'),
+            message: this.$t('studies.assignUserSession.toasts.copiedMessage', { count: this.selectedUsers.length }),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Copy failed",
-            message: res.message,
+            title: this.$t('studies.assignUserSession.toasts.copyFailed'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

@@ -50,7 +50,12 @@
     "columns": {
       "name": "Projektname",
       "public": "Öffentlich",
-      "closed": "Geschlossen"
+      "closed": "Geschlossen",
+      "username": "Benutzername",
+      "studentName": "Name des Studierenden",
+      "files": "Dateien",
+      "acceptedDataSharing": "Datenfreigabe akzeptiert",
+      "lastSubmitted": "Zuletzt eingereicht"
     },
     "actions": {
       "copy": "Projekt kopieren",
@@ -82,7 +87,18 @@
         "placeholder": "Meine Projektbeschreibung"
       },
       "publicSwitch": "Ist das Projekt öffentlich?"
-    }
+    },
+    "exportOptions": {
+      "title": "Optionen",
+      "generateAliases": "Aliase für Studierendennamen generieren",
+      "customSeedOptional": "Benutzerdefinierter Seed (optional):",
+      "seedPlaceholder": "z. B. 846569412",
+      "seedHint": "Der gleiche Seed sorgt für konsistente Aliase in Ihren eigenen Exporten.",
+      "noteLabel": "Hinweis:",
+      "accountSpecificHint": "Aliase sind an Ihr Konto gebunden und stimmen nicht mit den Exporten anderer Benutzer überein."
+    },
+    "exportSelectSubmissions": "Einreichungen zum Herunterladen auswählen:",
+    "noSubmissionsFound": "Keine Einreichungen für dieses Projekt gefunden."
   },
   "settings": {
     "selectSetting": "Einstellung auswählen",
@@ -194,7 +210,33 @@
     "studySessionDeleted": "Studiensitzung gelöscht",
     "studySessionHasBeenDeleted": "Die Studiensitzung wurde gelöscht",
     "studySessionNotDeleted": "Studiensitzung nicht gelöscht",
-    "studySessionCopiedMessage": "Studiensitzungslink in die Zwischenablage kopiert!"
+    "studySessionCopiedMessage": "Studiensitzungslink in die Zwischenablage kopiert!",
+    "sendEmailNotificationToReviewer": "E-Mail-Benachrichtigung an Gutachter senden",
+    "targetWorkflowSelection": "Ziel-Workflow-Auswahl",
+    "selectTargetWorkflow": "Ziel-Workflow auswählen:",
+    "workflowStepMapping": "Workflow-Schritt-Zuordnung",
+    "mapWorkflowStepToTarget": "Ordnen Sie jeden Quell-Workflow-Schritt (aus der Vorlage) einem Ziel-Workflow-Schritt zu:",
+    "sourceStepTargetStep": "Quellschritt {index} ({stepType}) → Zielschritt:",
+    "newStudyOwner": "Neuer Studieninhaber",
+    "userOfStudySession": "Benutzer der Studien-Sitzung",
+    "ownerOfStudy": "Inhaber der Studie",
+    "sessionUserSelectionWarning": "Im sitzungsbasierten Auswahlmodus muss jeder ausgewählte Gutachter eine entsprechende Studien-Sitzung haben.",
+    "reviewersWithoutMatchingStudySessions": "Die folgenden Gutachter haben keine passenden Studien-Sitzungen:",
+    "allReviewersHaveMatchingStudySessions": "Alle ausgewählten Gutachter haben passende Studien-Sitzungen.",
+    "unknownUser": "Unbekannter Benutzer",
+    "running": "Läuft",
+    "finished": "Abgeschlossen",
+    "sessionUserName": "Sitzungs-Benutzername",
+    "studyOwnerUserName": "Studieninhaber-Benutzername",
+    "workflowType": "Workflow-Typ",
+    "submissionGroup": "Einreichungsgruppe",
+    "studySessions": "Studien-Sitzungen",
+    "noEmailWillBeSent": "Keine (Es wird keine E-Mail gesendet)",
+    "sessionUserBasedSelection": "Sitzungsbasierte Auswahl (jede Studien-Sitzung dem ursprünglichen Benutzer zuweisen)",
+    "workflowStepOption": "<Workflow> Schritt {index} ({type})",
+    "revisedDocument": "<Document> Überarbeitetes Dokument",
+    "workflowMapping": "Workflow-Zuordnung",
+    "studySessionSelection": "Studien-Sitzungsauswahl"
   },
   "users": {
     "manageRightsFor": "Berechtigungen verwalten für",
