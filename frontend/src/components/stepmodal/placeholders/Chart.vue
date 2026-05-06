@@ -93,6 +93,12 @@ export default {
       };
     },
   },
+  watch: {
+    config: {
+      handler: 'renderChart',
+      deep: true,
+    },
+  },
   mounted() {
     Chart.register(...registerables);
     if (this.chartConfig) {
@@ -110,12 +116,6 @@ export default {
       if (this.chartInstance) {
         this.chartInstance.destroy();
       }
-    },
-  },  
-  watch: {
-    config: {
-      handler: 'renderChart',
-      deep: true,
     },
   },
 };
