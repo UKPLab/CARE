@@ -13,7 +13,7 @@ to the regular application flow.
 
 Backend endpoints used by this flow:
 
-- ``GET /setup/config``: fetch steps, wizard settings, and full settings snapshot.
+- ``GET /setup/config``: fetch steps (``key``, ``title``, ``description``, ``order``, ``typeId``), ``wizardStepTypes`` (``id``, ``key``), wizard settings, and full settings snapshot.
 - ``POST /auth/setup-admin``: create the initial admin account.
 - ``POST /setup/test-mail``: send a test mail during setup.
 - ``POST /setup/complete``: persist setup settings and mark setup as completed.
@@ -32,6 +32,21 @@ The current step sequence is:
 .. note::
 
    Moodle-related wizard settings are currently grouped under **General** via subsection metadata.
+
+Frontend components
+-------------------
+
+Step components live under ``frontend/src/components/wizard/``.
+
+- ``SetupWizardAdminStep.vue``: create the first admin account
+- ``SetupWizardGeneralStep.vue``: general settings and Moodle block
+- ``SetupWizardMailStep.vue``: mail service, provider fields and send test email
+- ``SetupWizardRegistrationStep.vue``: registration and consent fields
+- ``SetupWizardSummaryStep.vue``: review and finish
+
+``SetupWizard.vue`` keeps ``formData`` for the admin account fields and ``formSettings`` for all other setting values edited in the wizard.
+``wizardSettings`` supplies display names and subsection grouping for the settings and summary steps.
+Credential changes use ``update-admin-field``; setting field changes run through ``setWizardSettingValue``. Navigation, JSON import, and test mail use additional events on the parent.
 
 How Settings Are Rendered
 -------------------------
