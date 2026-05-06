@@ -9,6 +9,7 @@ module.exports = {
             { key: 'general', order: 2, title: 'General Settings', description: 'Copyright, consent, guest login, external links', type: 'general', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
             { key: 'mail', order: 3, title: 'Mail Configuration', description: 'Enable email service and configure SMTP/sendmail', type: 'mail', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
             { key: 'registration', order: 4, title: 'User Registration', description: 'What is required at signup', type: 'registration', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
+            { key: 'moodle', order: 5, title: 'Moodle Settings', description: 'Optional Moodle API settings', type: 'moodle', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
             { key: 'summary', order: 6, title: 'Summary', description: 'Review your choices before finishing', type: 'summary', deleted: false, createdAt: now, updatedAt: now, deletedAt: null },
         ], {});
     },

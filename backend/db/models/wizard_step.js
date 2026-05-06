@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "wizardStepId",
                 as: "settings",
             });
+            WizardStep.belongsTo(models["wizard_step_type"], {
+                foreignKey: "wizardStepTypeId",
+                as: "wizardStepType",
+            });
         }
     }
 
@@ -39,8 +43,8 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            type: {
-                type: DataTypes.STRING,
+            wizardStepTypeId: {
+                type: DataTypes.INTEGER,
                 allowNull: false,
             },
             deleted: {
