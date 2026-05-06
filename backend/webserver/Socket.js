@@ -924,7 +924,7 @@ module.exports = class Socket {
                         userId: inst.userId,
                         userName: await inst.resolveUserName(inst.userId),
                         connectedAt: inst.socket.connectedAt,
-                        browser: inst.browser,
+                        browser: inst.socket.browser,
                     };
                 })
             )

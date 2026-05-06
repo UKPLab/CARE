@@ -451,11 +451,6 @@ class UserSocket extends Socket {
 
 
     init() {
-        this.browser = parseUserAgent(this.socket.request.headers["user-agent"]);
-
-        // Broadcast on new connection; fires before Server.js removes the entry on disconnect
-        this.broadcastStats();
-
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
         this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
