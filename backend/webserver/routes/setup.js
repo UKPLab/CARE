@@ -18,6 +18,7 @@ module.exports = function (server) {
      * Returns wizard config while initial setup is in progress: needsSetup is true when no
      * admin exists; steps, wizardSettings, and wizardSettingsByStep (grouped by general,
      * mail, registration) are returned until app.setup.wizardCompleted is true.
+     * Each step includes typeId (FK to wizard_step_type). wizardStepTypes lists id for setup UI.
      * Moodle fields appear in the General wizard step in the UI. When setup is fully
      * complete, returns empty steps and wizardSettings.
      */
@@ -28,14 +29,30 @@ module.exports = function (server) {
             const wizardCompleted = (await server.db.models["setting"].get("app.setup.wizardCompleted")) === "true";
 
             if (!needsSetup && wizardCompleted) {
-                return res.status(200).json({ needsSetup: false, steps: [], wizardSettings: [] });
+                return res.status(200).json({
+                    needsSetup: false,
+                    steps: [],
+                    wizardSettings: [],
+                    wizardStepTypes: [],
+                });
             }
 
             const WizardStep = server.db.models["wizard_step"];
-            const steps = await WizardStep.findAll({
+            const WizardStepType = server.db.models["wizard_step_type"];
+            const stepRows = await WizardStep.findAll({
                 where: { deleted: false },
                 order: [["order", "ASC"]],
-                attributes: ["key", "title", "description", "type", "order"],
+                attributes: ["key", "title", "description", "order", "wizardStepTypeId"],
+                raw: true,
+            });
+            const steps = stepRows.map((row) => {
+                const { wizardStepTypeId, ...rest } = row;
+                return { ...rest, typeId: wizardStepTypeId };
+            });
+
+            const wizardStepTypes = await WizardStepType.findAll({
+                attributes: ["id", "key"],
+                order: [["id", "ASC"]],
                 raw: true,
             });
 
@@ -43,7 +60,14 @@ module.exports = function (server) {
             const wizardSettingsByStep = await server.db.models["setting"].getWizardSettingsByStep();
             const allSettings = await server.db.models["setting"].getAll(false);
 
-            return res.status(200).json({ needsSetup, steps, wizardSettings, wizardSettingsByStep, allSettings });
+            return res.status(200).json({
+                needsSetup,
+                steps,
+                wizardStepTypes,
+                wizardSettings,
+                wizardSettingsByStep,
+                allSettings,
+            });
         } catch (err) {
             server.logger.error("GET /setup/config error: " + err);
             return res.status(500).json({ message: "Internal server error." });
