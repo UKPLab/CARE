@@ -4,14 +4,6 @@
       <template #headerElements>
         <div class="btn-group gap-2">
           <BasicButton
-              v-if="isAdmin"
-              class="btn-secondary btn-sm"
-              title="Overview"
-              text="Overview"
-              icon="clipboard"
-              @click="openOverviewModal"
-          />
-          <BasicButton
               class="btn-secondary btn-sm"
               title="Saved Templates"
               text="Saved Templates"
@@ -71,7 +63,6 @@
     <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
     <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
-    <OverViewModal v-if="modals.overview" ref="overviewModal" @hide="modals.overview = false"/>
     <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>
 </template>
@@ -89,7 +80,6 @@ import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
-import OverViewModal from "./study/OverViewModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -110,8 +100,7 @@ export default {
     BulkAssignmentsModal,
     SingleAssignmentModal,
     InformationModal,
-    SavedTemplatesModal,
-    OverViewModal
+    SavedTemplatesModal
   },
   inject: {
     acceptStats: {
@@ -140,7 +129,6 @@ export default {
         bulkAssignments: false,
         singleAssignment: false,
         information: false,
-        overview: false,
         savedTemplates: false,
       },
       options: {
@@ -484,10 +472,6 @@ export default {
     openInformationModal(params) {
       this.modals.information = true;
       this.$nextTick(() => this.$refs.informationModal?.open(params));
-    },
-    openOverviewModal() {
-      this.modals.overview = true;
-      this.$nextTick(() => this.$refs.overviewModal?.open());
     },
     openSavedTemplatesModal() {
       this.modals.savedTemplates = true;
