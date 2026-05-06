@@ -209,7 +209,7 @@ export default {
             variant: "danger",
           });
         }
-      });s
+      });
     },
   },
 };

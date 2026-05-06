@@ -5,9 +5,15 @@ const { replayUserTraces } = require('../replay/worker');
 
 /**
  * Handles replaying recorded socket events for stress testing.
- * Uses a scaling-correctness approach: replays one user's traces,
- * verifies all pass, adds another user in parallel, and scales
- * until something breaks.
+ *
+ * Scaling mode (pooled): all selected recordings' sessions are combined
+ * into one pool of N sessions. Iteration K runs K * N parallel sockets,
+ * cycling through the pool with wraparound (linear add per iteration).
+ *
+ * Example: recording A=[a1, a2], recording B=[b3], maxIterations=3
+ *   Iteration 1: [a1, a2, b3]                              (3 sockets)
+ *   Iteration 2: [a1, a2, b3, a1, a2, b3]                  (6 sockets)
+ *   Iteration 3: [a1, a2, b3, a1, a2, b3, a1, a2, b3]      (9 sockets)
  *
  * @type {ReplayerSocket}
  * @class ReplayerSocket
@@ -15,52 +21,89 @@ const { replayUserTraces } = require('../replay/worker');
 class ReplayerSocket extends Socket {
 
     /**
-     * Run a scaling-correctness replay for a recording.
-     * @param {Object} data - The input data from the frontend
-     * @param {number} data.recordingId - ID of the recording to replay
+     * Pool sessions from all selected recordings and run a single scaling test
+     * across the combined pool.
+     * @param {Object} data - Input data from the frontend
+     * @param {Array<number>} data.recordingIds - IDs of recordings whose sessions get pooled
      * @param {string} data.timingMode - "realtime" or "fast"
+     * @param {boolean} data.continueOnFailure - If true, scaling continues past failed iterations
+     * @param {number} data.maxIterations - How many scaling iterations to run (required, > 0)
      * @param {Object} options - Additional configuration parameter
-     * @param {Object} options.transaction - Sequelize DB transaction options
-     * @returns {Promise<Array<Object>>} Results per scaling level
-     * @throws {Error} If recordingId is missing or recording has no traces
+     * @returns {Promise<Array<Object>>} Iteration results
+     * @throws {Error} If recordingIds is missing/empty, maxIterations invalid, or pool is empty
      */
     async replayRun(data, options) {
-        const { recordingId, timingMode = 'fast' } = data;
+        const {
+            recordingIds,
+            timingMode = 'fast',
+            continueOnFailure = false,
+            maxIterations,
+        } = data;
 
-        if (!recordingId) {
-            throw new Error('recordingId is required');
+        if (!Array.isArray(recordingIds) || recordingIds.length === 0) {
+            throw new Error('recordingIds must be a non-empty array');
+        }
+        if (!Number.isInteger(maxIterations) || maxIterations < 1) {
+            throw new Error('maxIterations must be a positive integer');
         }
 
-        const recording = await this.models['recording'].findByPk(recordingId);
-        if (!recording) {
-            throw new Error('Recording not found');
+        // Pool sessions from every selected recording
+        const pool = await this.buildSessionPool(recordingIds);
+
+        if (pool.sessions.length === 0) {
+            throw new Error('No replayable sessions found in selected recordings');
         }
-
-        const traces = await this.models['trace'].findAll({
-            where: { recordingId, direction: true, deleted: false },
-            order: [['startTime', 'ASC']],
-        });
-
-        if (traces.length === 0) {
-            throw new Error('No traces found for this recording');
-        }
-
-        const sessionMap = this.groupTracesBySocket(traces);
-        const sessionKeys = Array.from(sessionMap.keys());
-
-        if (sessionKeys.length === 0) {
-            throw new Error('No user-tagged traces found');
-        }
-
-        const userIds = [...new Set([...sessionMap.values()].map(s => s.userId))];
-        const users = await this.models['user'].findAll({
-            where: { id: userIds },
-        });
-        const userMap = new Map(users.map(u => [u.id, u]));
 
         const serverUrl = `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
 
-        return await this.runScalingTest(sessionKeys, sessionMap, userMap, serverUrl, timingMode);
+        const iterations = await this.runScalingTest(
+            pool, serverUrl, timingMode, continueOnFailure, maxIterations
+        );
+
+        return iterations;
+    }
+
+    /**
+     * Load all selected recordings' traces and combine them into one pool of
+     * sessions. Each session keeps a reference to its source recording so we
+     * can label results with the recording name.
+     *
+     * @param {Array<number>} recordingIds - Recordings to pool
+     * @returns {Promise<{sessions: Array, userMap: Map}>} Pooled sessions and the user lookup needed for replay
+     */
+    async buildSessionPool(recordingIds) {
+        const sessions = [];
+        const userIdSet = new Set();
+
+        for (const recordingId of recordingIds) {
+            const recording = await this.models['recording'].findByPk(recordingId);
+            if (!recording) continue;
+
+            const traces = await this.models['trace'].findAll({
+                where: { recordingId, direction: true, deleted: false },
+                order: [['startTime', 'ASC']],
+            });
+            if (traces.length === 0) continue;
+
+            const sessionMap = this.groupTracesBySocket(traces);
+            for (const [key, session] of sessionMap) {
+                sessions.push({
+                    sessionKey: key,
+                    userId: session.userId,
+                    traces: session.traces,
+                    recordingId,
+                    recordingName: recording.name,
+                });
+                userIdSet.add(session.userId);
+            }
+        }
+
+        const users = await this.models['user'].findAll({
+            where: { id: Array.from(userIdSet) },
+        });
+        const userMap = new Map(users.map(u => [u.id, u]));
+
+        return { sessions, userMap };
     }
 
     /**
@@ -74,8 +117,6 @@ class ReplayerSocket extends Socket {
         const map = new Map();
         for (const t of traces) {
             if (!t.userId) continue;
-            // Use socketId as the session key; fall back to a synthetic key
-            // for legacy recordings so they still replay (collapsed by user).
             const key = t.socketId || `user-${t.userId}`;
             if (!map.has(key)) {
                 map.set(key, { userId: t.userId, traces: [] });
@@ -86,44 +127,63 @@ class ReplayerSocket extends Socket {
     }
 
     /**
-     * Execute the scaling-correctness loop, adding one session per iteration.
-     * @param {Array<string>} sessionKeys - Ordered list of session keys (socketIds or fallback) to scale through
-     * @param {Map<string, {userId: number, traces: Array<Object>}>} sessionMap - Map of session key to its user and traces
-     * @param {Map<number, Object>} userMap - Map of userId to user row
+     * Execute the scaling-correctness loop on the pooled session list.
+     * Iteration K runs K * N parallel sockets, cycling through the pool
+     * with wraparound (linear add: each iteration adds one full copy of
+     * the pool to the previous iteration's count).
+     *
+     * Stops at first failure unless continueOnFailure is true.
+     *
+     * @param {{sessions: Array, userMap: Map}} pool - Combined session pool from buildSessionPool
      * @param {string} serverUrl - Target server URL
      * @param {string} timingMode - "realtime" or "fast"
-     * @returns {Promise<Array<Object>>} Results per iteration
+     * @param {boolean} continueOnFailure - If true, scaling continues past failed iterations
+     * @param {number} maxIterations - Number of iterations to run
+     * @returns {Promise<Array<Object>>} Iteration results
      */
-    async runScalingTest(sessionKeys, sessionMap, userMap, serverUrl, timingMode) {
+    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations) {
         const allResults = [];
+        const N = pool.sessions.length;
 
-        for (let level = 1; level <= sessionKeys.length; level++) {
-            const activeKeys = sessionKeys.slice(0, level);
+        for (let level = 1; level <= maxIterations; level++) {
+            // Iteration K runs K full copies of the pool. Total sockets = K * N.
+            // Sessions are picked with wraparound, so iteration K's list is
+            // pool[0], pool[1], ..., pool[N-1], pool[0], pool[1], ... (K times).
+            const totalSockets = level * N;
+            const activeSessions = [];
+            for (let i = 0; i < totalSockets; i++) {
+                activeSessions.push(pool.sessions[i % N]);
+            }
 
             this.sendToast(
-                `Iteration ${level}/${sessionKeys.length}: replaying ${activeKeys.length} session(s)`,
+                `Iteration ${level}/${maxIterations}: ${totalSockets} parallel session(s)`,
                 'Replay',
                 'info'
             );
 
             const levelResults = await Promise.all(
-                activeKeys.map(key => {
-                    const session = sessionMap.get(key);
-                    const user = userMap.get(session.userId);
-                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode);
+                activeSessions.map(session => {
+                    const user = pool.userMap.get(session.userId);
+                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode)
+                        .then(result => ({
+                            ...result,
+                            sessionKey: session.sessionKey,
+                            recordingId: session.recordingId,
+                            recordingName: session.recordingName,
+                        }));
                 })
             );
 
             const levelFailed = levelResults.some(r => r.failed > 0);
             allResults.push({
                 level,
-                users: activeKeys.length,
+                sessions: totalSockets,
                 results: levelResults,
                 passed: !levelFailed,
             });
 
-            if (levelFailed) {
-                this.sendToast(`Replay failed at iteration ${level}`, 'Replay', 'danger');
+            if (levelFailed && !continueOnFailure) {
+                this.sendToast(`Replay stopped at iteration ${level}`, 'Replay', 'danger');
                 break;
             }
         }

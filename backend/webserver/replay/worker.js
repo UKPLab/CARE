@@ -14,7 +14,7 @@ const { createAuthenticatedClient, cleanupSession } = require('./auth');
 function emitWithTimeout(client, action, payload, timeoutMs) {
     return new Promise((resolve) => {
         const timer = setTimeout(() => {
-            resolve({ success: true, timedOut: true });
+            resolve({ success: false, timedOut: true, message: `No ack within ${timeoutMs}ms` });
         }, timeoutMs);
 
         client.emit(action, payload || {}, (response) => {

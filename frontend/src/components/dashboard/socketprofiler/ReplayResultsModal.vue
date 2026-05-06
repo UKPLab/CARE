@@ -8,7 +8,11 @@
       Replay Results
     </template>
     <template #body>
+      <!-- Top-level summary -->
       <div class="d-flex gap-4 mb-3">
+        <div>
+          <span class="fw-bold">Iterations:</span> {{ summary.iterations }}
+        </div>
         <div>
           <span class="fw-bold">Total Traces:</span> {{ summary.total }}
         </div>
@@ -18,28 +22,34 @@
         <div>
           <span class="fw-bold text-danger">Failed:</span> {{ summary.failed }}
         </div>
-        <div>
-          <span class="fw-bold">Iterations:</span> {{ summary.levels }}
-        </div>
       </div>
-      <div v-for="level in results" :key="level.level" class="mb-4">
-        <h6 :class="level.passed ? 'text-success' : 'text-danger'">
-          Iteration {{ level.level }} — {{ level.users }} user(s) — {{ level.passed ? 'PASSED' : 'FAILED' }}
-        </h6>
-        <div v-for="userResult in level.results" :key="userResult.userId" class="mb-3">
+
+      <!-- One section per iteration -->
+      <div v-for="iteration in results" :key="iteration.level" class="iteration-section mb-3 p-3">
+        <h5 :class="iteration.passed ? 'text-success' : 'text-danger'">
+          Iteration {{ iteration.level }} — {{ iteration.sessions }} parallel session(s) — {{ iteration.passed ? 'PASSED' : 'FAILED' }}
+        </h5>
+
+        <div v-for="(sessionResult, idx) in iteration.results" :key="idx" class="mb-3">
           <p class="mb-1 fw-bold">
-            {{ userResult.userName }} (ID: {{ userResult.userId }})
-            — {{ userResult.passed }}/{{ userResult.total }} passed
+            {{ sessionResult.userName }} (User ID: {{ sessionResult.userId }})
+            <span class="text-muted small">— from {{ sessionResult.recordingName || 'Recording ' + sessionResult.recordingId }}</span>
+            — {{ sessionResult.passed }}/{{ sessionResult.total }} passed
           </p>
           <BasicTable
             :columns="traceColumns"
-            :data="mergeTraces(userResult)"
+            :data="mergeTraces(sessionResult, iteration.level, idx)"
             :options="traceTableOptions"
             :buttons="traceButtons"
             :max-table-height="300"
             @action="handleTraceAction"
           />
-          <div v-if="selectedTrace && selectedTraceUser === userResult.userId" class="db-changes-panel mt-2 p-3">
+          <div
+            v-if="selectedTrace
+                  && selectedTraceLevel === iteration.level
+                  && selectedTraceSessionIdx === idx"
+            class="db-changes-panel mt-2 p-3"
+          >
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="fw-bold">
                 DB Changes for: <code>{{ selectedTrace.action }}</code>
@@ -92,7 +102,8 @@ export default {
     return {
       results: [],
       selectedTrace: null,
-      selectedTraceUser: null,
+      selectedTraceLevel: null,
+      selectedTraceSessionIdx: null,
       traceTableOptions: {
         striped: true,
         hover: true,
@@ -151,21 +162,22 @@ export default {
       let total = 0;
       let passed = 0;
       let failed = 0;
-      for (const level of this.results) {
-        for (const r of level.results) {
+      for (const iteration of this.results) {
+        for (const r of (iteration.results || [])) {
           total += r.total;
           passed += r.passed;
           failed += r.failed;
         }
       }
-      return { total, passed, failed, levels: this.results.length };
+      return { iterations: this.results.length, total, passed, failed };
     },
   },
   methods: {
     open(results) {
-      this.results = results;
+      this.results = results || [];
       this.selectedTrace = null;
-      this.selectedTraceUser = null;
+      this.selectedTraceLevel = null;
+      this.selectedTraceSessionIdx = null;
       this.$refs.modal.open();
     },
     close() {
@@ -173,17 +185,19 @@ export default {
     },
     clearSelection() {
       this.selectedTrace = null;
-      this.selectedTraceUser = null;
+      this.selectedTraceLevel = null;
+      this.selectedTraceSessionIdx = null;
     },
     handleTraceAction(data) {
       if (data.action === "viewDbChanges") {
         this.selectedTrace = data.params;
-        this.selectedTraceUser = data.params.userId;
+        this.selectedTraceLevel = data.params.level;
+        this.selectedTraceSessionIdx = data.params.sessionIdx;
       }
     },
-    mergeTraces(userResult) {
+    mergeTraces(sessionResult, level, sessionIdx) {
       const all = [];
-      for (const l of userResult.latencies) {
+      for (const l of (sessionResult.latencies || [])) {
         all.push({
           id: l.traceId,
           action: l.action,
@@ -192,10 +206,11 @@ export default {
           message: "",
           dbChanges: l.dbChanges || [],
           hasDbChanges: (l.dbChanges && l.dbChanges.length > 0) ? "Yes" : "",
-          userId: userResult.userId,
+          level,
+          sessionIdx,
         });
       }
-      for (const e of userResult.errors) {
+      for (const e of (sessionResult.errors || [])) {
         all.push({
           id: e.traceId || 0,
           action: e.action,
@@ -204,7 +219,8 @@ export default {
           message: e.message,
           dbChanges: e.dbChanges || [],
           hasDbChanges: (e.dbChanges && e.dbChanges.length > 0) ? "Yes" : "",
-          userId: userResult.userId,
+          level,
+          sessionIdx,
         });
       }
       all.sort((a, b) => a.id - b.id);
@@ -220,5 +236,11 @@ export default {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 4px;
+}
+
+.iteration-section {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background-color: #fafafa;
 }
 </style>

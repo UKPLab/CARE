@@ -32,6 +32,7 @@
     </template>
   </Card>
   <StartRecordingModal ref="startRecordingModal" />
+  <StartReplayModal ref="startReplayModal" @replay-start="onReplayStart" />
   <RecordingModal ref="recordingModal" />
   <ReplayResultsModal ref="replayResultsModal" />
 </template>
@@ -42,6 +43,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import RecordingModal from "./socketprofiler/RecordingModal.vue";
 import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
+import StartReplayModal from "./socketprofiler/StartReplayModal.vue";
 import ReplayResultsModal from "./socketprofiler/ReplayResultsModal.vue";
 
 export default {
@@ -57,6 +59,7 @@ export default {
     BasicButton,
     RecordingModal,
     StartRecordingModal,
+    StartReplayModal,
     ReplayResultsModal,
   },
   data() {
@@ -136,7 +139,7 @@ export default {
     action(data) {
       switch (data.action) {
         case "replayRecording":
-          this.replayRecording(data.params);
+          this.openReplayModal(data.params);
           break;
         case "editRecording":
           this.editRecording(data.params);
@@ -182,13 +185,21 @@ export default {
         }
       });
     },
-    replayRecording(row) {
+    openReplayModal(row) {
+      this.$refs.startReplayModal.open(row.id);
+    },
+    onReplayStart({ recordingIds, timingMode, continueOnFailure, maxIterations }) {
       this.eventBus.emit("toast", {
         title: "Replay started",
-        message: "Replaying recording: " + row.name,
+        message: `Replaying ${recordingIds.length} recording(s)`,
         variant: "info",
       });
-      this.$socket.emit("replayRun", { recordingId: row.id, timingMode: "fast" }, (res) => {
+      this.$socket.emit("replayRun", {
+        recordingIds,
+        timingMode,
+        continueOnFailure,
+        maxIterations,
+      }, (res) => {
         if (res.success) {
           this.$refs.replayResultsModal.open(res.data);
         } else {
