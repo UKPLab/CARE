@@ -89,20 +89,12 @@
                         placeholder="you@example.com"
                         autocomplete="email"
                     />
-                    <button
+                    <BasicButton
                         class="btn btn-outline-primary flex-shrink-0"
-                        type="button"
+                        :title="mailTestSending ? 'Sending...' : 'Send test email'"
                         :disabled="mailTestSending || !mailTestTo.trim()"
                         @click="sendMailTest"
-                    >
-                      <span
-                          v-if="mailTestSending"
-                          class="spinner-border spinner-border-sm me-1"
-                          role="status"
-                          aria-hidden="true"
-                      />
-                      Send test email
-                    </button>
+                    />
                   </div>
                 </div>
                 <p v-if="mailTestMessage" class="small mb-0" :class="mailTestError ? 'text-danger' : 'text-success'">
