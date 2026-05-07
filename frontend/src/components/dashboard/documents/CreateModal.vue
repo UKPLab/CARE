@@ -21,8 +21,13 @@
             {{ $t('errors.validation.documents.selectValidType') }}
           </div>
           <label class="form-label mt-3">{{ $t('documents.nameOfDocument') }}</label>
-          <input v-model="name" class="form-control" name="file" type="text"
-                 @keyup.enter="create"/>
+          <input
+            v-model="name"
+            class="form-control"
+            name="file"
+            type="text"
+            @keyup.enter="create"
+          />
           <label class="form-label mt-3">{{ $t('documents.templateOptional') }}</label>
           <select
             v-model="templateId"
@@ -47,8 +52,12 @@
         <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
           {{ $t('common.close') }}
         </button>
-        <button class="btn btn-primary" type="button" @click="create"
-                @keyup.enter="create">
+        <button
+          class="btn btn-primary"
+          type="button"
+          @click="create"
+          @keyup.enter="create"
+        >
           {{ $t('common.create') }}
         </button>
       </div>

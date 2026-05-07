@@ -25,6 +25,7 @@
           :data="docs"
           :options="options"
           :buttons="buttons"
+          :max-table-height="'65vh'"
           @action="action"
       />
       <EditorDownload ref="editorDownload"/>

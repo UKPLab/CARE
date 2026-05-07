@@ -15,6 +15,7 @@
         :data="savedTemplates"
         :options="tableOptions"
         :buttons="tableButtons"
+        :max-table-height="'60vh'"
         @action="handleAction"
       />
     </template>

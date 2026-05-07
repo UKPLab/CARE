@@ -79,6 +79,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   name: "ForgotPasswordModal",
   components: { BasicModal, BasicButton },
+  emits: ['reset-email-sent', 'reset-email-error'],
   data() {
     return {
       forgotPassword: {

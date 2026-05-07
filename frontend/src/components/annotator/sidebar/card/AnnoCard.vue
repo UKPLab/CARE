@@ -289,48 +289,6 @@ export default {
       maxComments: 3,
     }
   },
-  watch: {
-    commentState: {
-    immediate: true,
-    handler(newVal) {
-      if (newVal) {
-        this.collapsed = newVal.state === 1 ? true : false;
-      }
-    }
-  },
-    collapsed(newValue) {
-      if(!this.commentState){
-        this.$socket.emit("appDataUpdate", {
-          table: "comment_state",
-          data: {
-            userId: this.userId,
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            commentId: this.commentId,
-            state: newValue? 1 : 0,
-          }
-        });
-      } else {
-        this.$socket.emit("appDataUpdate", {
-          table: "comment_state",
-          data: {
-            id: this.commentState.id,
-            state: newValue? 1 : 0,
-          }
-        });
-      }    
-      if(this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "commentToggleCollapse",
-          data: {
-            commentId: this.commentId,
-            state: newValue,
-          }
-        });
-      }
-    }
-  },
   computed: {
     defaultNumComments() {
       return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
@@ -453,6 +411,48 @@ export default {
             && this.summarizationActivated;
       return null;
     },
+  },
+  watch: {
+    commentState: {
+    immediate: true,
+    handler(newVal) {
+      if (newVal) {
+        this.collapsed = newVal.state === 1 ? true : false;
+      }
+    }
+  },
+    collapsed(newValue) {
+      if(!this.commentState){
+        this.$socket.emit("appDataUpdate", {
+          table: "comment_state",
+          data: {
+            userId: this.userId,
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            commentId: this.commentId,
+            state: newValue? 1 : 0,
+          }
+        });
+      } else {
+        this.$socket.emit("appDataUpdate", {
+          table: "comment_state",
+          data: {
+            id: this.commentState.id,
+            state: newValue? 1 : 0,
+          }
+        });
+      }    
+      if(this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "commentToggleCollapse",
+          data: {
+            commentId: this.commentId,
+            state: newValue,
+          }
+        });
+      }
+    }
   },
   mounted() {
     if (this.comment.draft) {

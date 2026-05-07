@@ -7,13 +7,21 @@
       <Editor ref="editor" v-model="currentData"></Editor>
     </template>
     <template #footer>
-      <button class="btn btn-secondary" data-bs-dismiss="modal" type="button"
-              @click="$refs.editorModal.close()">{{ $t('common.close') }}
+      <button
+        class="btn btn-secondary"
+        data-bs-dismiss="modal"
+        type="button"
+        @click="$refs.editorModal.close()"
+      >
+        {{ $t('common.close') }}
       </button>
     </template>
   </Modal>
-  <LoadIcon class="mx-2" icon-name="border-style"
-            @click="open()"></LoadIcon>
+  <LoadIcon
+    class="mx-2"
+    icon-name="border-style"
+    @click="open()"
+  ></LoadIcon>
 </template>
 
 <script>

@@ -522,6 +522,21 @@ Publish a Tag Set
 
 -----
 
+Publish a Document
+-------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to publish a document, so that other logged-in users can
+     access it.
+
+   :Acceptance:
+     - From the document list, I can publish a document I own.
+     - Once published, other logged-in users can open the document via its URL.
+
+-----
+
 Annotator
 ~~~~~~~~~
 
@@ -707,6 +722,66 @@ Document Notes
        a note for the current document.
      - My note is saved and persists across sessions.
      - I can edit or clear my note at any time.
+
+-----
+
+Download Annotations from the Annotator
+-----------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to download the annotations visible in the annotator
+     sidebar, so that I can process or archive them locally.
+
+   :Settings:
+     ``annotator.download.enabledBeforeStudyClosing``
+
+   :Acceptance:
+     - A download button in the annotator sidebar lets me export the currently visible
+       annotations as a JSON file.
+     - Outside a study session, the download is always available.
+     - Inside a study session, the download is only available if
+       ``annotator.download.enabledBeforeStudyClosing`` is enabled or the study is already
+       closed.
+     - When ``annotator.download.enabledBeforeStudyClosing`` is disabled, annotations from
+       still-open study sessions are excluded from the annotation list entirely.
+
+-----
+
+Download PDF with Embedded Annotations
+----------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to download a PDF with my annotations embedded directly
+     in the file, so that I can share an annotated version without needing access to CARE.
+
+   :Settings:
+     ``editor.document.showButtonPDFDownload``
+
+   :Acceptance:
+     - From the annotator or document list, I can open a download dialog.
+     - I can choose whether to include annotations embedded in the PDF.
+     - The downloaded file reflects the document with or without annotations as selected.
+
+-----
+
+Real-time Collaborative Annotation
+------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to annotate a document simultaneously with other users
+     in real time, so that we can collaboratively review the same document together.
+
+   :Acceptance:
+     - When a study is configured with collaborative mode, all participants in that study
+       annotate the same document and see each other's highlights and comments as they are
+       created.
+     - An indicator is shown when another user is currently editing a comment.
 
 -----
 
@@ -930,6 +1005,72 @@ Study Notifications
      - When my study session starts, I receive a notification email.
      - When my study session is finished, I receive a notification email.
      - When the study is closed by the owner, I receive a notification email.
+
+-----
+
+Bulk Close Studies
+-------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to close multiple studies at once, so that I can
+     efficiently mark a batch of studies as finished.
+
+   :Acceptance:
+     - From the studies dashboard, I can select multiple studies I own and close them in
+       one action.
+     - Progress is shown during the bulk close operation.
+     - After completion, all selected studies are marked as closed and no new sessions can
+       be created for them.
+
+-----
+
+Submit Multiple Times in a Study Session
+-----------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to submit my study session multiple times, so that I can
+     update my work after an initial submission.
+
+   :Acceptance:
+     - When a study is configured to allow multiple submissions, I can submit my session
+       more than once.
+
+-----
+
+Reopen a Participant's Finished Session
+-----------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant** (study owner), I want to reopen a finished session, so that the
+     participant can continue editing their work.
+
+   :Acceptance:
+     - From the study sessions overview, I can reopen a finished session belonging to my
+       study.
+     - After reopening, the participant can continue editing the session.
+
+-----
+
+Create a Copy of a Study Session
+----------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant** (study owner), I want to create a copy of a study session, so
+     that I can use it independently without affecting the original session.
+
+   :Acceptance:
+     - From the study sessions overview, I can create a copy of a session belonging to a
+       study I own.
+     - The copy is an independent session with the same content as the original.
+     - The original session remains unchanged.
 
 -----
 
@@ -1256,6 +1397,24 @@ Export Project Data
 
 -----
 
+Anonymise Author in ZIP Export
+--------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to anonymise author information when exporting a project
+     containing LaTeX documents, so that reviewer identities are hidden in the exported
+     files.
+
+   :Acceptance:
+     - When exporting a project that contains ZIP/LaTeX documents, I can choose to
+       anonymise author information.
+     - When enabled, ``\author{}`` fields in ``.tex`` files within the ZIP are replaced
+       with anonymised names.
+
+-----
+
 Admin Features
 ~~~~~~~~~~~~~~
 
@@ -1343,6 +1502,22 @@ Manage Users
 
      - When I try to create a user with an already-registered username or email, I see an
        error.
+
+-----
+
+Manage Role Rights
+-------------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to assign and revoke rights for user roles, so that I can
+     control what each role is permitted to do on the platform.
+
+   :Acceptance:
+     - From the admin area, I can view the rights assigned to each role.
+     - I can assign additional rights to a role or revoke existing ones.
+     - Changes take effect immediately for all users with that role.
 
 -----
 
@@ -1605,6 +1780,24 @@ Create and Manage Study Templates
 
 -----
 
+Sync and Detach Study Templates
+---------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to sync a template with its source or detach it to make
+     it independent, so that I can either keep it up to date with the original or customise
+     it freely.
+
+   :Acceptance:
+     - When a template is linked to a source template, I can sync it to apply the latest
+       changes from the source.
+     - I can detach a linked template to make it independent, after which changes to the
+       source no longer affect it.
+
+-----
+
 Grade a Study Session
 ----------------------
 
@@ -1721,199 +1914,6 @@ Debug NLP Skills
      - The response is shown immediately and a history of test messages and responses is
        visible.
      - I can view and download the configuration of each skill.
-
------
-
-Download Annotations from the Annotator
------------------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to download the annotations visible in the annotator
-     sidebar, so that I can process or archive them locally.
-
-   :Settings:
-     ``annotator.download.enabledBeforeStudyClosing``
-
-   :Acceptance:
-     - A download button in the annotator sidebar lets me export the currently visible
-       annotations as a JSON file.
-     - Outside a study session, the download is always available.
-     - Inside a study session, the download is only available if
-       ``annotator.download.enabledBeforeStudyClosing`` is enabled or the study is already
-       closed.
-     - When ``annotator.download.enabledBeforeStudyClosing`` is disabled, annotations from
-       still-open study sessions are excluded from the annotation list entirely.
-
------
-
-Download PDF with Embedded Annotations
-----------------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to download a PDF with my annotations embedded directly
-     in the file, so that I can share an annotated version without needing access to CARE.
-
-   :Settings:
-     ``editor.document.showButtonPDFDownload``
-
-   :Acceptance:
-     - From the annotator or document list, I can open a download dialog.
-     - I can choose whether to include annotations embedded in the PDF.
-     - The downloaded file reflects the document with or without annotations as selected.
-
------
-
-Publish a Document
--------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to publish a document, so that other logged-in users can
-     access it.
-
-   :Acceptance:
-     - From the document list, I can publish a document I own.
-     - Once published, other logged-in users can open the document via its URL.
-
------
-
-Bulk Close Studies
--------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to close multiple studies at once, so that I can
-     efficiently mark a batch of studies as finished.
-
-   :Acceptance:
-     - From the studies dashboard, I can select multiple studies I own and close them in
-       one action.
-     - Progress is shown during the bulk close operation.
-     - After completion, all selected studies are marked as closed and no new sessions can
-       be created for them.
-
------
-
-Manage Role Rights
--------------------
-
-.. container:: user-story
-
-   :Story:
-     As an **Admin**, I want to assign and revoke rights for user roles, so that I can
-     control what each role is permitted to do on the platform.
-
-   :Acceptance:
-     - From the admin area, I can view the rights assigned to each role.
-     - I can assign additional rights to a role or revoke existing ones.
-     - Changes take effect immediately for all users with that role.
-
------
-
-Real-time Collaborative Annotation
-------------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to annotate a document simultaneously with other users
-     in real time, so that we can collaboratively review the same document together.
-
-   :Acceptance:
-     - When a study is configured with collaborative mode, all participants in that study
-       annotate the same document and see each other's highlights and comments as they are
-       created.
-     - An indicator is shown when another user is currently editing a comment.
-
------
-
-Anonymise Author in ZIP Export
---------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to anonymise author information when exporting a project
-     containing LaTeX documents, so that reviewer identities are hidden in the exported
-     files.
-
-   :Acceptance:
-     - When exporting a project that contains ZIP/LaTeX documents, I can choose to
-       anonymise author information.
-     - When enabled, ``\author{}`` fields in ``.tex`` files within the ZIP are replaced
-       with anonymised names.
-
------
-
-Submit Multiple Times in a Study Session
------------------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to submit my study session multiple times, so that I can
-     update my work after an initial submission.
-
-   :Acceptance:
-     - When a study is configured to allow multiple submissions, I can submit my session
-       more than once.
-
------
-
-Reopen a Participant's Finished Session
------------------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant** (study owner), I want to reopen a finished session, so that the
-     participant can continue editing their work.
-
-   :Acceptance:
-     - From the study sessions overview, I can reopen a finished session belonging to my
-       study.
-     - After reopening, the participant can continue editing the session.
-
------
-
-Create a Copy of a Study Session
-----------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant** (study owner), I want to create a copy of a study session, so
-     that I can use it independently without affecting the original session.
-
-   :Acceptance:
-     - From the study sessions overview, I can create a copy of a session belonging to a
-       study I own.
-     - The copy is an independent session with the same content as the original.
-     - The original session remains unchanged.
-
------
-
-Sync and Detach Study Templates
----------------------------------
-
-.. container:: user-story
-
-   :Story:
-     As a **Participant**, I want to sync a template with its source or detach it to make
-     it independent, so that I can either keep it up to date with the original or customise
-     it freely.
-
-   :Acceptance:
-     - When a template is linked to a source template, I can sync it to apply the latest
-       changes from the source.
-     - I can detach a linked template to make it independent, after which changes to the
-       source no longer affect it.
 
 -----
 

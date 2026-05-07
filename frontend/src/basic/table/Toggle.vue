@@ -33,11 +33,13 @@ export default {
     },
     options: {
       type: Object,
-      required: false
+      required: false,
+      default: () => ({})
     },
     params: {
       type: Object,
       required: false,
+      default: () => ({})
     }
   },
   emits: ['action'],

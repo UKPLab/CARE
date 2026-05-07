@@ -21,8 +21,8 @@
         </button>
       </div>
     </div>
-    <div class="row" v-if="showPayload">
-      <JsonEditor :content="data.data" readOnly/>
+    <div v-if="showPayload" class="row">
+      <JsonEditor :content="data.data" read-only/>
     </div>
   </div>
 </template>

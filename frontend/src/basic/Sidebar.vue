@@ -148,6 +148,33 @@ import debounce from "lodash.debounce";
 export default {
   name: "BasicSidebar",
   components: {LoadIcon, TopBarButton},
+  inject: {
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    documentId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    acceptStats: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    currentStudyStep: {
+      type: Number,
+      required: false,
+      default: null
+    }
+  },
   props: {
     activeSideBar: {
       type: String,
@@ -179,34 +206,7 @@ export default {
       default: true
     },
   },
-  emits: ['sidebar-change', 'sidebar-action', 'resize', 'sidebar-visibility-change'],
-  inject: {
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    documentId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    acceptStats: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    currentStudyStep: {
-      type: Number,
-      required: false,
-      default: null
-    }
-  },
+  emits: ['sidebar-change', 'sidebar-action', 'resize', 'sidebar-visibility-change', 'copy'],
   data() {
     return {
       internalActiveSlot: null,
@@ -222,36 +222,6 @@ export default {
       sidebarContainerDom: undefined,
       originalWidth: undefined
     };
-  },
-  mounted() {
-    // Initialize width properties from props after component is mounted
-    this.width = this.sidebarWidth;
-    this.minWidth = this.minSidebarWidth;
-    this.maxWidth = this.maxSidebarWidth;
-    this.originalWidth = this.width;
-    this.internalActiveSlot = this.activeSideBar || null;
-
-    this.initDragController();
-    this.initHoverController();
-    this.onResize();
-    window.addEventListener('resize', this.onResize);
-
-    // Emit the current active sidebar view after mount
-    this.$emit('sidebar-change', this.resolvedActiveSlot);
-    this.visibilityChange();
-
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.onResize);
-  },
-  watch: {
-    isSidebarVisible(newVal) {
-      if (newVal) {
-        this.width = this.originalWidth;
-        this.isFixed = false;
-        this.isHovering = false;
-      }
-    }
   },
   computed: {
     availableSlots() {
@@ -337,6 +307,36 @@ export default {
         'mh-100': true
       };
     }
+  },
+  watch: {
+    isSidebarVisible(newVal) {
+      if (newVal) {
+        this.width = this.originalWidth;
+        this.isFixed = false;
+        this.isHovering = false;
+      }
+    }
+  },
+  mounted() {
+    // Initialize width properties from props after component is mounted
+    this.width = this.sidebarWidth;
+    this.minWidth = this.minSidebarWidth;
+    this.maxWidth = this.maxSidebarWidth;
+    this.originalWidth = this.width;
+    this.internalActiveSlot = this.activeSideBar || null;
+
+    this.initDragController();
+    this.initHoverController();
+    this.onResize();
+    window.addEventListener('resize', this.onResize);
+
+    // Emit the current active sidebar view after mount
+    this.$emit('sidebar-change', this.resolvedActiveSlot);
+    this.visibilityChange();
+
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.onResize);
   },
   methods: {
     changeView(slotName) {

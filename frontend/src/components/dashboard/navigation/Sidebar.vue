@@ -279,6 +279,31 @@ export default {
     },
   },
 
+  watch: {
+    defaultGroupedElements(newGroups) {
+      newGroups.forEach(group => {
+        if (!(group.key in this.groupStates)) {
+          this.groupStates[group.key] = false;
+        }
+      });
+    },
+    $route(to) {
+      const toPath = to.path.toLowerCase().replace(/\/$/, '');
+
+      this.resetPreview();
+
+      this.$nextTick(() => {
+        requestAnimationFrame(() => {
+          if (toPath === '/dashboard') {
+            this.closeAllGroups();
+          } else {
+            this.syncSidebarWithRoute();
+          }
+        });
+      });
+    },
+  },
+
   mounted() {
     document.body.classList.add('sidebar-exists');
 
@@ -478,31 +503,6 @@ export default {
       const key = `sidebar.nav.${element.path}`;
       const translated = this.$t(key);
       return translated === key ? element.name : translated;
-    },
-  },
-
-  watch: {
-    defaultGroupedElements(newGroups) {
-      newGroups.forEach(group => {
-        if (!(group.key in this.groupStates)) {
-          this.groupStates[group.key] = false;
-        }
-      });
-    },
-    $route(to) {
-      const toPath = to.path.toLowerCase().replace(/\/$/, '');
-
-      this.resetPreview();
-
-      this.$nextTick(() => {
-        requestAnimationFrame(() => {
-          if (toPath === '/dashboard') {
-            this.closeAllGroups();
-          } else {
-            this.syncSidebarWithRoute();
-          }
-        });
-      });
     },
   },
 };

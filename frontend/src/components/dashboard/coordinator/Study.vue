@@ -4,8 +4,8 @@
       table="study"
       :title="isTemplateMode ? $t('studies.template') : $t('studies.study')"
       :textAdd="isTemplateMode ? $t('common.create') : $t('common.add')"
-      :customSubmit="isTemplateMode"
-      :defaultValue="{ isTemplateMode: isTemplateMode }"
+      :custom-submit="isTemplateMode"
+      :default-value="{ isTemplateMode: isTemplateMode }"
       @success="success"
       @submit="handleSubmit"
   >

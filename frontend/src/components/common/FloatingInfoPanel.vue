@@ -101,7 +101,10 @@ export default {
     'pin-changed',
     'mouse-enter',
     'mouse-leave',
-    'close-requested'
+    'close-requested',
+    'update:selectedItem',
+    'update:referenceElement',
+    'update:show'
   ],
   
   data() {

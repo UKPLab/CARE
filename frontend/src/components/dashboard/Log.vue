@@ -6,6 +6,7 @@
         :columns="columns"
         :data="data"
         :options="options"
+        :max-table-height="'65vh'"
         @pagination-update="paginationUpdate"
       />
     </template>

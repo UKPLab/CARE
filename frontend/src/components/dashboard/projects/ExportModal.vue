@@ -64,6 +64,14 @@
           {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}
         </p>
       </div>
+      <div v-else-if="dataSelection.exportType === 'submissions'">
+        <StepSelectStudents 
+          v-if="dataSelection.projectId"
+          v-model="submissionSelection" 
+          :project-id="dataSelection.projectId" 
+        />
+        <!-- We send the project ID and get the selected students back -->
+      </div>
       <div v-else>
         <p>{{ $t('dashboard.projects.exportingAllData') }}</p>
 
@@ -82,6 +90,26 @@
       </div>
 
     </template>
+
+    
+    <template v-if="dataSelection.exportType === 'submissions'" #step-3>
+      <StepOptions 
+        v-model:generate-aliases="generateAliases"
+        v-model:faker-seed="fakerSeed"
+      />
+      <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+    </template>
+
+    <template v-if="dataSelection.exportType === 'submissions'" #step-4>
+      <StepConfirmDownload 
+        v-if="dataSelection.exportType === 'submissions'"
+        :wait="wait"
+        :generate-aliases="generateAliases"
+        :submission-selection="submissionSelection"
+      />
+      <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
+    </template>
+
   </StepperModal>
 </template>
 

@@ -65,8 +65,8 @@
           :data="submissionTable"
           :options="tableOptions"
           :buttons="tableButtons"
-          @action="action"
           :max-table-height="'65vh'"
+          @action="action"
       />
     </template>
   </Card>
@@ -229,6 +229,14 @@ export default {
       });
     },
   },
+  watch: {
+    isProcessingActive(val) {
+      if (val) {
+        this.modals.applySkill = true;
+        this.$nextTick(() => this.$refs.applySkillModal?.open());
+      }
+    },
+  },
   mounted() {
     // Get initial state
     this.$socket.emit("serviceCommand", {
@@ -250,14 +258,6 @@ export default {
       command: "unsubscribeBackgroundTaskUpdates",
       data: {}
     });
-  },
-  watch: {
-    isProcessingActive(val) {
-      if (val) {
-        this.modals.applySkill = true;
-        this.$nextTick(() => this.$refs.applySkillModal?.open());
-      }
-    },
   },
   methods: {
     openAssignModal() {

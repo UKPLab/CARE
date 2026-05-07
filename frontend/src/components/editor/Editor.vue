@@ -7,6 +7,7 @@
       <BasicSidebar
           v-if="!sidebarDisabled && defaultActiveSidebar && studySessionId === null"
           ref="sidebar"
+          :is-shown="isShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"

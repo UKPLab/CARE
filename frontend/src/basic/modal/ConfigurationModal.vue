@@ -28,8 +28,8 @@
         >
           <template #content>
             <GeneralSettingStep  
+              :model-value="stepConfig"
               @validation-change="handleGeneralValidationChange"
-              :modelValue="stepConfig"
               @update:form-data="handleGeneralFormDataUpdate"
             />
           </template>
@@ -40,8 +40,8 @@
         >
           <template #content>
             <ServicesStep
-              :modelValue="stepConfig"
-              :currentStepperStep="currentStepperStep"
+              :model-value="stepConfig"
+              :current-stepper-step="currentStepperStep"
               @validation-change="handleServicesValidationChange"
               @update:form-data="handleServicesFormDataUpdate"
             />
@@ -53,7 +53,7 @@
         >
           <template #content>
             <PlaceholdersStep
-              :modelValue="stepConfig"
+              :model-value="stepConfig"
               @update:form-data="handlePlaceholdersFormDataUpdate"
               @validation-change="handlePlaceholdersValidationChange"
             />
@@ -86,6 +86,20 @@ export default {
   name: "ConfigurationModal",
   components: { StepperModal, StepTemplate, GeneralSettingStep, ServicesStep, PlaceholdersStep },
   subscribeTable: ["document", "submission", "configuration", "GeneralSettingStep"],
+  inject: {
+    formData: {
+      default: () => null,
+    },
+  },
+  provide() {
+    return {
+      studyStepId: computed(() => this.studyStepId),
+      workflowSteps: computed(() => this.workflowSteps),
+      documentId: computed(() => this.documentId),
+      studySessionId: computed(() => this.studySessionId),
+      isTemplateMode: computed(() => this.formData?.isTemplateMode || false),
+    };
+  },
   props: {
     modelValue: {
       type: Object,
@@ -111,20 +125,6 @@ export default {
       required: true,
       default: () => [],
     },
-  },
-  inject: {
-    formData: {
-      default: () => null,
-    },
-  },
-  provide() {
-    return {
-      studyStepId: computed(() => this.studyStepId),
-      workflowSteps: computed(() => this.workflowSteps),
-      documentId: computed(() => this.documentId),
-      studySessionId: computed(() => this.studySessionId),
-      isTemplateMode: computed(() => this.formData?.isTemplateMode || false),
-    };
   },  
   emits: ["update:modelValue"],
   data() {

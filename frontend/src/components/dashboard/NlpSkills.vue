@@ -23,6 +23,7 @@
           :data="data"
           :options="options"
           :buttons="buttons"
+          :max-table-height="'65vh'"
           @action="action"
       />
     </template>
