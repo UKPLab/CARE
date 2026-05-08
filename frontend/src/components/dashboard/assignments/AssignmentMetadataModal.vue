@@ -115,61 +115,6 @@ export default {
     assignment() {
       return this.assignmentId ? this.$store.getters["table/assignment/get"](this.assignmentId) : null;
     },
-    usersById() {
-      const users = this.$store.getters["table/user/getAll"] || [];
-      return new Map(users.map((user) => [Number(user.id), user]));
-    },
-    submissionsInAssignment() {
-      return this.$store.getters["table/submission/getFiltered"](
-        (submission) => submission.assignmentId === this.assignmentId && !submission.deleted
-      ) || [];
-    },
-    documentsBySubmissionId() {
-      const documents = this.$store.getters["table/document/getAll"] || [];
-      return documents.reduce((acc, document) => {
-        if (document.deleted) {
-          return acc;
-        }
-        if (!acc.has(document.submissionId)) {
-          acc.set(document.submissionId, []);
-        }
-        acc.get(document.submissionId).push(document);
-        return acc;
-      }, new Map());
-    },
-    metadataByDocumentId() {
-      const metadata = this.$store.getters["table/document_metadata/getAll"] || [];
-      return metadata.reduce((acc, row) => {
-        if (row.deleted) {
-          return acc;
-        }
-        if (!acc.has(row.documentId)) {
-          acc.set(row.documentId, []);
-        }
-        acc.get(row.documentId).push(row);
-        return acc;
-      }, new Map());
-    },
-    submissionsByExtId() {
-      const map = new Map();
-      for (const submission of this.submissionsInAssignment) {
-        const owner = this.usersById.get(Number(submission.userId));
-        if (owner?.extId != null) {
-          map.set(Number(owner.extId), submission);
-        }
-      }
-      return map;
-    },
-    submissionsByEmail() {
-      const map = new Map();
-      for (const submission of this.submissionsInAssignment) {
-        const owner = this.usersById.get(Number(submission.userId));
-        if (owner?.email) {
-          map.set(String(owner.email).trim().toLowerCase(), submission);
-        }
-      }
-      return map;
-    },
     stepValid() {
       return [this.allocations.length > 0, true, true];
     },
@@ -180,12 +125,7 @@ export default {
       this.allocations = [];
       this.fileName = "";
       this.parseError = "";
-      this.preview = {
-        matchedCount: 0,
-        unmatchedCount: 0,
-        overwrittenCount: 0,
-        skippedCount: 0,
-      };
+      this.resetPreview();
       this.result = {};
       this.$refs.metadataImportStepper.open();
     },
@@ -261,54 +201,29 @@ export default {
         });
       });
     },
-    matchAllocationToSubmission(allocation) {
-      if (allocation.extId != null && this.submissionsByExtId.has(Number(allocation.extId))) {
-        return this.submissionsByExtId.get(Number(allocation.extId));
-      }
-
-      const email = allocation.email ? String(allocation.email).trim().toLowerCase() : "";
-      if (email && this.submissionsByEmail.has(email)) {
-        return this.submissionsByEmail.get(email);
-      }
-
-      return null;
-    },
-    rebuildPreview() {
-      let matchedCount = 0;
-      let unmatchedCount = 0;
-      let overwrittenCount = 0;
-      let skippedCount = 0;
-
-      for (const allocation of this.allocations) {
-        const submission = this.matchAllocationToSubmission(allocation);
-        if (!submission) {
-          unmatchedCount += 1;
-          continue;
-        }
-
-        const documents = this.documentsBySubmissionId.get(submission.id) || [];
-        if (documents.length === 0) {
-          skippedCount += 1;
-          continue;
-        }
-
-        matchedCount += 1;
-
-        const hasExistingTopic = documents.some((document) => {
-          const rows = this.metadataByDocumentId.get(document.id) || [];
-          return rows.some((row) => row.metaKey === "topic");
-        });
-        if (hasExistingTopic) {
-          overwrittenCount += 1;
-        }
-      }
-
+    resetPreview() {
       this.preview = {
-        matchedCount,
-        unmatchedCount,
-        overwrittenCount,
-        skippedCount,
+        matchedCount: 0,
+        unmatchedCount: 0,
+        overwrittenCount: 0,
+        skippedCount: 0,
       };
+    },
+    loadPreview() {
+      this.$refs.metadataImportStepper.setWaiting(true);
+      this.$socket.emit("documentPreviewTopicAllocation", {
+        assignmentId: this.assignmentId,
+        allocations: this.allocations,
+      }, (res) => {
+        this.$refs.metadataImportStepper.setWaiting(false);
+        if (res.success) {
+          this.preview = res.data || {};
+        } else {
+          this.allocations = [];
+          this.resetPreview();
+          this.parseError = res.message || "Failed to build topic allocation preview.";
+        }
+      });
     },
     async handleFileChange(event) {
       const file = event.target.files?.[0];
@@ -316,6 +231,7 @@ export default {
 
       this.fileName = file.name;
       this.parseError = "";
+      this.result = {};
 
       try {
         let rows = [];
@@ -332,15 +248,10 @@ export default {
         }
 
         this.allocations = rows;
-        this.rebuildPreview();
+        this.loadPreview();
       } catch (error) {
         this.allocations = [];
-        this.preview = {
-          matchedCount: 0,
-          unmatchedCount: 0,
-          overwrittenCount: 0,
-          skippedCount: 0,
-        };
+        this.resetPreview();
         this.parseError = error.message || "Failed to parse topic allocation report.";
       }
     },

@@ -847,17 +847,38 @@ class DocumentSocket extends Socket {
      * @returns {Object}
      */
     buildTopicMetadataValue(topicAllocation, context = {}) {
+        const topic = topicAllocation.topic ?? null;
+        const extId = topicAllocation.extId ?? null;
         return {
-            topicId: topicAllocation.topicId ?? null,
-            topicName: topicAllocation.topicName ?? null,
-            source: topicAllocation.source || "moodle.ratingallocate",
-            moodleUserId: Number(topicAllocation.moodleUserId),
+            topic,
+            source: topicAllocation.source || "moodle.ratingallocate.report",
+            extId: extId != null ? Number(extId) : null,
             assignmentId: context.assignmentId ?? null,
             moodleAssignmentId: context.moodleAssignmentId ?? null,
             courseId: context.courseId ?? null,
             published: Boolean(topicAllocation.published),
             importedAt: new Date().toISOString(),
             raw: topicAllocation.raw || null,
+        };
+    }
+
+    /**
+     * Normalize one topic allocation row into the backend canonical shape.
+     *
+     * @param {Object} allocation
+     * @returns {Object}
+     */
+    normalizeTopicAllocation(allocation = {}) {
+        const extId = allocation.extId ?? null;
+        const email = allocation.email ?? null;
+        const topic = allocation.topic ?? null;
+
+        return {
+            ...allocation,
+            extId: extId != null ? Number(extId) : null,
+            email: email ? String(email).trim() : null,
+            topic: topic ? String(topic).trim() : null,
+            source: allocation.source || "moodle.ratingallocate.report",
         };
     }
 
@@ -903,7 +924,7 @@ class DocumentSocket extends Socket {
      * @param {Object} options
      * @returns {Promise<Object>}
      */
-    async importTopicAllocation(data, options = {}) {
+    async buildTopicAllocationPlan(data, options = {}) {
         const assignmentId = Number(data.assignmentId || 0);
         if (!assignmentId) {
             throw new Error("Assignment ID is required.");
@@ -931,7 +952,7 @@ class DocumentSocket extends Socket {
         const users = await this.models["user"].getAll({transaction: options.transaction});
         const usersById = new Map(users.map((user) => [Number(user.id), user]));
 
-        const submissionByMoodleUserId = new Map();
+        const submissionByExtId = new Map();
         const submissionByEmail = new Map();
 
         for (const submission of submissions) {
@@ -941,7 +962,7 @@ class DocumentSocket extends Socket {
             }
 
             if (owner.extId != null) {
-                submissionByMoodleUserId.set(Number(owner.extId), submission);
+                submissionByExtId.set(Number(owner.extId), submission);
             }
 
             if (owner.email) {
@@ -949,88 +970,105 @@ class DocumentSocket extends Socket {
             }
         }
 
+        const documents = submissions.length > 0
+            ? await this.models["document"].findAll({
+                where: {
+                    submissionId: submissions.map((submission) => submission.id),
+                    deleted: false,
+                },
+                raw: true,
+                transaction: options.transaction,
+            })
+            : [];
+
+        const documentsBySubmissionId = documents.reduce((acc, document) => {
+            if (!acc.has(document.submissionId)) {
+                acc.set(document.submissionId, []);
+            }
+            acc.get(document.submissionId).push(document);
+            return acc;
+        }, new Map());
+
+        const existingTopicRows = documents.length > 0
+            ? await this.models["document_metadata"].findAll({
+                where: {
+                    documentId: documents.map((document) => document.id),
+                    metaKey: "topic",
+                    deleted: false,
+                },
+                raw: true,
+                transaction: options.transaction,
+            })
+            : [];
+
+        const topicDocumentIds = new Set(existingTopicRows.map((row) => Number(row.documentId)));
+
         const matched = [];
         const unmatched = [];
         const overwritten = [];
         const skipped = [];
 
-        for (const allocation of allocations) {
-            const moodleUserId = allocation.moodleUserId != null ? Number(allocation.moodleUserId) : null;
-            const emailAddress = allocation.emailAddress ? String(allocation.emailAddress).trim().toLowerCase() : "";
+        for (const rawAllocation of allocations) {
+            const allocation = this.normalizeTopicAllocation(rawAllocation);
+            const extId = allocation.extId != null ? Number(allocation.extId) : null;
+            const email = allocation.email ? String(allocation.email).trim().toLowerCase() : "";
             const submission = (
-                (moodleUserId != null && submissionByMoodleUserId.get(moodleUserId))
-                || (emailAddress && submissionByEmail.get(emailAddress))
+                (extId != null && submissionByExtId.get(extId))
+                || (email && submissionByEmail.get(email))
                 || null
             );
 
             if (!submission) {
                 unmatched.push({
-                    moodleUserId,
-                    emailAddress: allocation.emailAddress || null,
-                    topicName: allocation.topicName || null,
+                    extId: extId,
+                    email: allocation.email || null,
+                    topic: allocation.topic || null,
                     message: "No submission owner match found in this assignment.",
                 });
                 continue;
             }
 
-            const documents = await this.models["document"].findAll({
-                where: {
-                    submissionId: submission.id,
-                    deleted: false,
-                },
-                raw: true,
-                transaction: options.transaction,
-            });
+            const submissionDocuments = documentsBySubmissionId.get(submission.id) || [];
 
-            if (documents.length === 0) {
+            if (submissionDocuments.length === 0) {
                 skipped.push({
                     submissionId: submission.id,
                     userId: submission.userId,
-                    topicName: allocation.topicName || null,
+                    extId: extId,
+                    email: allocation.email || null,
+                    topic: allocation.topic || null,
                     message: "Submission has no documents.",
                 });
                 continue;
             }
 
-            const metadataRows = await Promise.all(
-                documents.map((document) => this.models["document_metadata"].findOne({
-                    where: {
-                        documentId: document.id,
-                        metaKey: "topic",
-                        deleted: false,
-                    },
-                    raw: true,
-                    transaction: options.transaction,
-                }))
-            );
-            const hasExistingTopic = metadataRows.some(Boolean);
-
-            await this.attachTopicMetadataToDocuments({
-                documentIds: documents.map((document) => document.id),
-                userId: submission.userId,
-                topicAllocation: allocation,
-                assignmentId,
-                moodleOptions: data.moodleOptions || {},
-            }, options);
+            const hasExistingTopic = submissionDocuments.some((document) => topicDocumentIds.has(Number(document.id)));
 
             matched.push({
                 submissionId: submission.id,
                 userId: submission.userId,
-                topicName: allocation.topicName || null,
-                documentCount: documents.length,
+                extId: extId,
+                email: allocation.email || null,
+                topic: allocation.topic || null,
+                topicAllocation: allocation,
+                documentIds: submissionDocuments.map((document) => document.id),
+                documentCount: submissionDocuments.length,
             });
 
             if (hasExistingTopic) {
                 overwritten.push({
                     submissionId: submission.id,
                     userId: submission.userId,
-                    topicName: allocation.topicName || null,
+                    extId: extId,
+                    email: allocation.email || null,
+                    topic: allocation.topic || null,
                     message: "Existing topic metadata overwritten.",
                 });
             }
         }
 
         return {
+            assignmentId,
             matchedCount: matched.length,
             unmatchedCount: unmatched.length,
             overwrittenCount: overwritten.length,
@@ -1039,6 +1077,56 @@ class DocumentSocket extends Socket {
             unmatched,
             overwritten,
             skipped,
+        };
+    }
+
+    /**
+     * Preview topic allocation import without mutating documents.
+     *
+     * @param {Object} data
+     * @param {Object} options
+     * @returns {Promise<Object>}
+     */
+    async previewTopicAllocation(data, options = {}) {
+        return await this.buildTopicAllocationPlan(data, options);
+    }
+
+    /**
+     * Import topic allocations for existing submissions in one assignment.
+     *
+     * @param {Object} data
+     * @param {Object} options
+     * @returns {Promise<Object>}
+     */
+    async uploadTopicAllocation(data, options = {}) {
+        const plan = await this.buildTopicAllocationPlan(data, options);
+
+        for (const match of plan.matched) {
+            await this.attachTopicMetadataToDocuments({
+                documentIds: match.documentIds,
+                userId: match.userId,
+                topicAllocation: match.topicAllocation,
+                assignmentId: plan.assignmentId,
+                moodleOptions: data.moodleOptions || {},
+            }, options);
+        }
+
+        return {
+            matchedCount: plan.matchedCount,
+            unmatchedCount: plan.unmatchedCount,
+            overwrittenCount: plan.overwrittenCount,
+            skippedCount: plan.skippedCount,
+            matched: plan.matched.map((entry) => ({
+                submissionId: entry.submissionId,
+                userId: entry.userId,
+                extId: entry.extId,
+                email: entry.email,
+                topic: entry.topic,
+                documentCount: entry.documentCount,
+            })),
+            unmatched: plan.unmatched,
+            overwritten: plan.overwritten,
+            skipped: plan.skipped,
         };
     }
 
@@ -1830,7 +1918,8 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
-        this.createSocket("documentImportTopicAllocation", this.importTopicAllocation, {}, true);
+        this.createSocket("documentPreviewTopicAllocation", this.previewTopicAllocation, {}, false);
+        this.createSocket("documentImportTopicAllocation", this.uploadTopicAllocation, {}, true);
     }
 };
 
