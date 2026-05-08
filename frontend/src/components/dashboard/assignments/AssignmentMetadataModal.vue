@@ -66,7 +66,8 @@
         <div v-if="(result.unmatched || []).length > 0" class="warning-container">
           Unmatched report rows:
           <ul v-for="(entry, index) in result.unmatched" :key="`unmatched-${index}`">
-            <li>User <strong>{{ entry.moodleUserId || entry.emailAddress || "unknown" }}</strong>: {{ entry.message }}</li>
+            <li>User <strong>{{ entry.extId || entry.email || "unknown" }}</strong>: {{ entry.message }}
+            </li>
           </ul>
         </div>
         <div v-if="(result.skipped || []).length > 0" class="warning-container">
@@ -149,7 +150,7 @@ export default {
         return acc;
       }, new Map());
     },
-    submissionsByMoodleUserId() {
+    submissionsByExtId() {
       const map = new Map();
       for (const submission of this.submissionsInAssignment) {
         const owner = this.usersById.get(Number(submission.userId));
@@ -188,32 +189,55 @@ export default {
       this.result = {};
       this.$refs.metadataImportStepper.open();
     },
+    /**
+     * Recursively flattens a nested data structure into a single-dimensional array of objects
+     * as the allocation.json from Moodle may look like: [[{ id: "1" }, { id: "2" }]]
+     * @param {*} payload - The data to flatten. Can be a nested array, a single object, or other types.
+     * @returns {Object[]} A flattened array containing only the extracted objects.
+     * 
+     * @example
+     * // Input: [[{ id: "1" }, { id: "2" }]]
+     * // Output: [{ id: "1" }, { id: "2" }]
+     * const flatData = this.flattenRows(payload);
+    */
     flattenRows(payload) {
+      // If the payload is an array, recurse into its elements
       if (Array.isArray(payload)) {
+        // flatMap executes the recursion and flattens the returned arrays by one level
         return payload.flatMap((entry) => this.flattenRows(entry));
       }
+
+      // If the payload is a valid object (and not null), wrap it in an array to be flattened by the caller
       if (payload && typeof payload === "object") {
         return [payload];
       }
+
+      // Return an empty array for primitive types or null/undefined to exclude them from the final result
       return [];
     },
     normalizeRow(row) {
-      const moodleUserId = row?.moodleUserId ?? row?.userid ?? row?.userId ?? row?.id ?? null;
-      const topicName = row?.topicName ?? row?.topicname ?? row?.choice ?? row?.topic ?? row?.title ?? null;
-      const emailAddress = row?.emailAddress ?? row?.emailaddress ?? row?.email ?? null;
+      if (!row || typeof row !== 'object') return null;
 
-      if (moodleUserId == null || !topicName) {
-        return null;
-      }
+      // Define a key value mapping method
+      const findValue = (keys) => {
+        const foundKey = keys.find(key => row[key] !== undefined && row[key] !== null);
+        return row[foundKey];
+      };
+
+      const extId = findValue(['id', 'ID']);
+      const topic = findValue(['topic', 'topicname', 'choice', 'Choice', 'title']);
+      const email = findValue(['emailAddress', 'emailaddress', 'email']);
+
+      if (extId == null || !topic) return null;
 
       return {
-        moodleUserId: Number(moodleUserId),
-        topicId: row?.topicId ?? row?.topicid ?? row?.choiceid ?? topicName,
-        topicName: String(topicName).trim(),
-        emailAddress: emailAddress ? String(emailAddress).trim() : null,
-        source: "moodle.ratingallocate.report",
-        published: true,
-        raw: row,
+        extId: Number(extId),
+        topic: String(topic).trim(),
+        email: email ? String(email).trim() : null,
+        // TODO: Comment out the following properties for testing purpose
+        // source: "moodle.ratingallocate.report",
+        // published: true,
+        // raw: row,
       };
     },
     async parseJson(file) {
@@ -238,13 +262,13 @@ export default {
       });
     },
     matchAllocationToSubmission(allocation) {
-      if (allocation.moodleUserId != null && this.submissionsByMoodleUserId.has(Number(allocation.moodleUserId))) {
-        return this.submissionsByMoodleUserId.get(Number(allocation.moodleUserId));
+      if (allocation.extId != null && this.submissionsByExtId.has(Number(allocation.extId))) {
+        return this.submissionsByExtId.get(Number(allocation.extId));
       }
 
-      const emailAddress = allocation.emailAddress ? String(allocation.emailAddress).trim().toLowerCase() : "";
-      if (emailAddress && this.submissionsByEmail.has(emailAddress)) {
-        return this.submissionsByEmail.get(emailAddress);
+      const email = allocation.email ? String(allocation.email).trim().toLowerCase() : "";
+      if (email && this.submissionsByEmail.has(email)) {
+        return this.submissionsByEmail.get(email);
       }
 
       return null;
@@ -288,9 +312,7 @@ export default {
     },
     async handleFileChange(event) {
       const file = event.target.files?.[0];
-      if (!file) {
-        return;
-      }
+      if (!file) return;
 
       this.fileName = file.name;
       this.parseError = "";
