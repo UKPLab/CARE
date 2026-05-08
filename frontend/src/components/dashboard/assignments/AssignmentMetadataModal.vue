@@ -43,10 +43,10 @@
         <div class="card">
           <div class="card-body bg-light">
             <div><strong>Assignment:</strong> {{ assignment?.name || `Assignment #${assignmentId}` }}</div>
-            <div><strong>Matched submissions:</strong> {{ preview.matchedCount }}</div>
+            <div><strong>Will update submissions:</strong> {{ preview.matchedCount }}</div>
             <div><strong>Rows without submission match:</strong> {{ preview.unmatchedCount }}</div>
-            <div><strong>Submissions with existing topics to overwrite:</strong> {{ preview.overwrittenCount }}</div>
-            <div><strong>Matched submissions without documents:</strong> {{ preview.skippedCount }}</div>
+            <div><strong>Will overwrite existing topics:</strong> {{ preview.overwrittenCount }}</div>
+            <div><strong>Will skip matched submissions without documents:</strong> {{ preview.skippedCount }}</div>
           </div>
         </div>
       </div>
@@ -54,27 +54,37 @@
 
     <template #step-3>
       <div class="p-3">
-        <div class="mb-2">
-          Updated <strong>{{ result.matchedCount || 0 }}</strong> submissions.
+        <div v-if="hasResult">
+          <div class="mb-2">
+            <span v-if="result.matchedCount > 0">
+              Updated <strong>{{ result.matchedCount }}</strong> submissions.
+            </span>
+            <span v-else>
+              No submissions were updated.
+            </span>
+          </div>
+          <div v-if="(result.overwritten || []).length > 0" class="warning-container">
+            Overwritten existing topics:
+            <ul v-for="(entry, index) in result.overwritten" :key="`overwritten-${index}`">
+              <li>Submission <strong>{{ entry.submissionId }}</strong>: {{ entry.message }}</li>
+            </ul>
+          </div>
+          <div v-if="(result.unmatched || []).length > 0" class="warning-container">
+            Unmatched report rows:
+            <ul v-for="(entry, index) in result.unmatched" :key="`unmatched-${index}`">
+              <li>User <strong>{{ entry.extId || entry.email || "unknown" }}</strong>: {{ entry.message }}
+              </li>
+            </ul>
+          </div>
+          <div v-if="(result.skipped || []).length > 0" class="warning-container">
+            Skipped submissions:
+            <ul v-for="(entry, index) in result.skipped" :key="`skipped-${index}`">
+              <li>Submission <strong>{{ entry.submissionId }}</strong>: {{ entry.message }}</li>
+            </ul>
+          </div>
         </div>
-        <div v-if="(result.overwritten || []).length > 0" class="warning-container">
-          Overwritten existing topics:
-          <ul v-for="(entry, index) in result.overwritten" :key="`overwritten-${index}`">
-            <li>Submission <strong>{{ entry.submissionId }}</strong>: {{ entry.message }}</li>
-          </ul>
-        </div>
-        <div v-if="(result.unmatched || []).length > 0" class="warning-container">
-          Unmatched report rows:
-          <ul v-for="(entry, index) in result.unmatched" :key="`unmatched-${index}`">
-            <li>User <strong>{{ entry.extId || entry.email || "unknown" }}</strong>: {{ entry.message }}
-            </li>
-          </ul>
-        </div>
-        <div v-if="(result.skipped || []).length > 0" class="warning-container">
-          Skipped submissions:
-          <ul v-for="(entry, index) in result.skipped" :key="`skipped-${index}`">
-            <li>Submission <strong>{{ entry.submissionId }}</strong>: {{ entry.message }}</li>
-          </ul>
+        <div v-else class="text-muted">
+          Import has not been run yet.
         </div>
       </div>
     </template>
@@ -114,6 +124,9 @@ export default {
   computed: {
     assignment() {
       return this.assignmentId ? this.$store.getters["table/assignment/get"](this.assignmentId) : null;
+    },
+    hasResult() {
+      return Object.keys(this.result || {}).length > 0;
     },
     stepValid() {
       return [this.allocations.length > 0, true, true];
