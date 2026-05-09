@@ -1,0 +1,38 @@
+{
+  "placeholders": {
+    "warning": "Warnung:",
+    "invalidPlaceholdersMessage": "Die folgenden Platzhalter sind für {templateType}-Templates nicht gültig:",
+    "invalidPlaceholdersIgnored": "Diese Platzhalter werden ignoriert, wenn das Template verwendet wird.",
+    "failedToLoad": "Platzhalter konnten nicht geladen werden",
+    "help": {
+      "emailGeneral": {
+        "username": "Der Benutzername der Person, die die E-Mail erhält. Bei Passwort-Zurücksetzung, Verifizierung oder Registrierung ist dies der Benutzer, um dessen Konto es in der E-Mail geht.",
+        "firstName": "Der Vorname der Person, die die E-Mail erhält.",
+        "lastName": "Der Nachname der Person, die die E-Mail erhält.",
+        "link": "Die URL, die in der E-Mail enthalten ist, z. B. für Passwort-Zurücksetzung, Verifizierung oder Registrierung."
+      },
+      "emailStudySession": {
+        "username": "Die Person, die diese E-Mail erhält. Bei Benachrichtigungen zum Start und Abschluss einer Session ist dies immer der Owner der Submission.",
+        "link": "Die URL zum Öffnen des Reviews (read-only). Wird für den Start und Abschluss einer Session verwendet."
+      },
+      "emailAssignment": {
+        "username": "Der Benutzername des Reviewers, dem die Aufgabe zugewiesen wurde.",
+        "assignmentType": "Gibt an, wie die Arbeit zugewiesen wurde: \"document\" (Review nach Dokument) oder \"submission\" (Review nach Submission).",
+        "assignmentName": "Der Name des Assignments oder der Study, dem bzw. der der Reviewer zugewiesen wurde.",
+        "link": "Die URL, über die der Reviewer seine Review-Session öffnen und starten kann. Dieser Link muss verwendet werden, um die zugewiesene Aufgabe zu beginnen."
+      },
+      "emailStudyClose": {
+        "username": "Der Benutzername des Session-Owners, der eine offene Session hatte, als die Study geschlossen wurde.",
+        "studyName": "Der Name der Study, die geschlossen wurde."
+      }
+    }
+  },
+  "types": {
+    "emailGeneral": "E-Mail - Allgemein",
+    "emailStudySession": "E-Mail - Study Session",
+    "emailAssignment": "E-Mail - Assignment",
+    "documentGeneral": "Dokument - Allgemein",
+    "documentStudy": "Dokument - Study",
+    "emailStudyClose": "E-Mail - Study Close"
+  }
+}

@@ -85,7 +85,6 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
-import AssignRolesModal from "./users/AssignRolesModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
@@ -107,7 +106,6 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
-    AssignRolesModal,
     BasicButton,
     ImportModal,
     UploadModal,

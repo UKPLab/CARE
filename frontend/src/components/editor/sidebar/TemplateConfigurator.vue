@@ -2,16 +2,17 @@
     <div>
       <!-- Warning banner for invalid placeholders -->
       <div v-if="invalidPlaceholders.length > 0" class="alert alert-warning mb-3">
-        <strong>Warning:</strong> The following placeholders are not valid for {{ templateTypeName }} templates:
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.invalidPlaceholdersMessage", { templateType: templateTypeName }) }}
         <ul class="mb-0 mt-2">
           <li v-for="ph in invalidPlaceholders" :key="ph">~{{ ph }}~</li>
         </ul>
-        These placeholders will be ignored when the template is used.
+        {{ $t("templates.placeholders.invalidPlaceholdersIgnored") }}
       </div>
   
       <div class="card shadow mb-4 configurator">
         <div class="card-header bg-white">
-          <h3 class="card-title fw-bold mb-0">Placeholders</h3>
+          <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
@@ -47,7 +48,7 @@
                     class="btn btn-primary btn-sm d-flex align-items-center"
                     @click="handlePlaceholderClick(placeholder)"
                   >
-                    <i class="bi bi-plus-lg me-1"></i> Add
+                    <i class="bi bi-plus-lg me-1"></i> {{ $t("common.add") }}
                   </button>
                 </div>
               </div>
@@ -60,6 +61,7 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
+  import { resolveApiMessage } from "@/assets/utils";
   /**
    * Template Configurator sidebar component
    *
@@ -104,9 +106,16 @@
         return this.template?.type || null;
       },
       templateTypeName() {
-        if (!this.templateType) return "Unknown";
-        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close" };
-        return types[this.templateType] || "Unknown";
+        if (!this.templateType) return this.$t("common.unknown");
+        const types = {
+          1: this.$t("templates.types.emailGeneral"),
+          2: this.$t("templates.types.emailStudySession"),
+          3: this.$t("templates.types.emailAssignment"),
+          4: this.$t("templates.types.documentGeneral"),
+          5: this.$t("templates.types.documentStudy"),
+          6: this.$t("templates.types.emailStudyClose"),
+        };
+        return types[this.templateType] || this.$t("common.unknown");
       },
       availablePlaceholders() {
         if (!this.templateType || !this.placeholderConfigs[this.templateType]) {
@@ -151,8 +160,8 @@
             }
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to load placeholders",
-              message: result.message || "Unknown error",
+              title: this.$t("templates.placeholders.failedToLoad"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -170,24 +179,24 @@
 
         const longDescriptions = {
           1: { // Email - General
-            username: "The username of the person receiving the email. For password reset, verification, or registration emails this is the user whose account the email is about.",
-            firstName: "The first name of the person receiving the email.",
-            lastName: "The last name of the person receiving the email.",
-            link: "The URL included in the email (e.g. password reset, verification, or registration).",
+            username: this.$t("templates.placeholders.help.emailGeneral.username"),
+            firstName: this.$t("templates.placeholders.help.emailGeneral.firstName"),
+            lastName: this.$t("templates.placeholders.help.emailGeneral.lastName"),
+            link: this.$t("templates.placeholders.help.emailGeneral.link"),
           },
           2: { // Email - Study Session
-            username: "The person receiving this email. For session start and session finish notifications this is always the submission owner.",
-            link: "The URL to open the review (read-only). Used for session start and session finish.",
+            username: this.$t("templates.placeholders.help.emailStudySession.username"),
+            link: this.$t("templates.placeholders.help.emailStudySession.link"),
           },
           3: { // Email - Assignment
-            username: "The username of the reviewer who is assigned to the task.",
-            assignmentType: "How the work is assigned: \"document\" (review by document) or \"submission\" (review by submission).",
-            assignmentName: "The name of the assignment or study the reviewer is assigned to.",
-            link: "The URL for the reviewer to open and start their review session. They must use this link to begin the assigned task.",
+            username: this.$t("templates.placeholders.help.emailAssignment.username"),
+            assignmentType: this.$t("templates.placeholders.help.emailAssignment.assignmentType"),
+            assignmentName: this.$t("templates.placeholders.help.emailAssignment.assignmentName"),
+            link: this.$t("templates.placeholders.help.emailAssignment.link"),
           },
           6: { // Email - Study Close
-            username: "The username of the session owner who had an open session when the study was closed.",
-            studyName: "The name of the study that was closed.",
+            username: this.$t("templates.placeholders.help.emailStudyClose.username"),
+            studyName: this.$t("templates.placeholders.help.emailStudyClose.studyName"),
           },
         };
 

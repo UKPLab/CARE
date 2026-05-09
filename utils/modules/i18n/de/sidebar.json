@@ -44,5 +44,8 @@
             "settings": "Einstellungen",
             "ai": "KI"
         }
-    }
+    },
+    "textPlaceholderHelp": "Zeigt einen einzelnen Wert aus einem vorherigen Editor-Schritt oder einer NLP-Skill-Ausgabe an. Verwenden Sie dies, wenn Sie ein bestimmtes Datenelement wie ein Textfeld, eine Zahl oder ein Label aus einem früheren Schritt Ihres Workflows anzeigen möchten.",
+    "singleChartHelp": "Zeigt ein Diagramm an, das aus Labels und Werten aus vorherigen Schritten oder NLP-Skills erstellt wird. Das Diagramm visualisiert automatisch die konfigurierte Datenstruktur und erleichtert so die Darstellung numerischer oder kategorialer Daten.",
+    "comparisonChartHelp": "Vergleicht zwei Datenquellen, z. B. zwei Dokumentversionen oder NLP-Ausgaben, und visualisiert das Ergebnis. Dies ist nützlich, um Unterschiede zwischen Versionen anzuzeigen, Ausgaben aus verschiedenen Schritten zu vergleichen oder Änderungen über die Zeit hervorzuheben."
 }
