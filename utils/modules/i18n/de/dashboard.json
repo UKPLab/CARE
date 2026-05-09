@@ -237,7 +237,12 @@
     "revisedDocument": "<Document> Überarbeitetes Dokument",
     "workflowMapping": "Workflow-Zuordnung",
     "studySessionSelection": "Studien-Sitzungsauswahl",
-    "sendEmailToParticipants": "E-Mail-Benachrichtigung an Teilnehmer mit offenen Sitzungen senden"
+    "sendEmailToParticipants": "E-Mail-Benachrichtigung an Teilnehmer mit offenen Sitzungen senden",
+    "targetWorkflow": "Ziel-Workflow",
+    "selectedStudySession": "Ausgewählte Studien-Sitzung",
+    "sessionWithId": "Sitzung {id}",
+    "stepType": "Schritttyp",
+    "stepOption": "Schritt {index}: {type}"
   },
   "users": {
     "manageRightsFor": "Berechtigungen verwalten für",
@@ -432,7 +437,8 @@
       "firstName": "Vorname",
       "lastName": "Nachname",
       "userName": "Benutzername"
-    }
+    },
+    "fileLabel": "{format}-Datei:"
   },
   "systemRoles": {
         "regular": "Standardnutzer",

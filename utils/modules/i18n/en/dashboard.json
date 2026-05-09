@@ -238,7 +238,12 @@
         "revisedDocument": "<Document> Revised Document",
         "workflowMapping": "Workflow Mapping",
         "studySessionSelection": "Study Session Selection",
-        "sendEmailToParticipants": "Send email notification to participants with open sessions"
+        "sendEmailToParticipants": "Send email notification to participants with open sessions",
+        "targetWorkflow": "Target Workflow",
+        "selectedStudySession": "Selected Study Session",
+        "sessionWithId": "Session {id}",
+        "stepType": "Step Type",
+        "stepOption": "Step {index}: {type}"
     },
     "users": {
         "manageRightsFor": "Manage rights for",
@@ -433,7 +438,8 @@
             "firstName": "First Name",
             "lastName": "Last Name",
             "userName": "Username"
-        }
+        },
+        "fileLabel": "{format} File:"
     },
     "systemRoles": {
         "regular": "regular",

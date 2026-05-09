@@ -7,12 +7,12 @@
       @submit="createAssignment"
     >
     <template #title>
-      <h5 class="modal-title">Create Assignment</h5>
+      <h5 class="modal-title">{{$t('dashboard.study.createAssignment')}}</h5>
     </template>
 
     <template v-if="templates.length === 0" #error>
-      <p class="text-center text-danger">There are not study templates available!</p>
-      <p class="text-center">Please create a study template to proceed!</p>
+      <p class="text-center text-danger">{{$t('dashboard.study.noStudyTemplatesAvailable')}}</p>
+      <p class="text-center">{{$t('dashboard.study.createTemplateToProceed')}}</p>
     </template>
     <template #step-1>
       <BasicForm
@@ -20,18 +20,18 @@
           v-model="templateSelection"
           :fields="templateSelectionFields"
       />
-      <div class="mt-3"><strong>Workflow Steps:</strong></div>
+      <div class="mt-3"><strong>{{$t('dashboard.study.workflowSteps')}}</strong></div>
       <ul class="list-group">
         <li
             v-for="(workflowStep, index) in workflowSteps"
             :key="workflowStep.id" class="list-group-item"
             :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
-          Workflow Step {{ index + 1 }}:
-          {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
+            {{$t('dashboard.study.workflowStepWithIndex', {index: index + 1})}}
+            {{ getStepTypeName(workflowStep.stepType) }}
         </li>
       </ul>
       <div class="mt-3">
-        <label class="form-label"><strong>Assignment should be based on:</strong></label>
+        <label class="form-label"><strong>{{$t('dashboard.study.assignmentBase')}}</strong></label>
         <FormSelect
             v-model="assignmentTypeSelection.type"
             :options="assignmentTypeFields"
@@ -46,16 +46,16 @@
             class="form-check-input"
           />
           <label class="form-check-label" for="emailNotifyCheck">
-            <strong>Send email notification to reviewer</strong>
+            <strong>{{$t('dashboard.study.sendEmailNotificationToReviewer')}}</strong>
           </label>
         </div>
       </div>
     </template>
     <template #step-2>
       <div v-if="assignmentType === 'study_session'">
-        <h6 class="text-secondary">Target Workflow Selection</h6>
+        <h6 class="text-secondary">{{ $t('dashboard.study.targetWorkflowSelection') }}</h6>
         <div class="mb-3">
-          <label class="form-label"><strong>Select Target Workflow:</strong></label>
+          <label class="form-label"><strong>{{ $t('dashboard.study.selectTargetWorkflow') }}</strong></label>
           <FormSelect
               v-model="targetWorkflowId"
               :options="workflowOptions"
@@ -63,8 +63,8 @@
         </div>
 
         <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
-          <h6 class="text-secondary mt-4">Workflow Step Mapping</h6>
-          <p class="text-muted">Map each source workflow step (from template) to a target workflow step:</p>
+          <h6 class="text-secondary mt-4">{{ $t('dashboard.study.workflowStepMapping') }}</h6>
+          <p class="text-muted">{{ $t('dashboard.study.mapWorkflowStepToTarget') }}</p>
           
           <div
               v-for="(workflowStep, index) in workflowSteps"
@@ -72,7 +72,7 @@
               class="mb-3"
           >
             <label class="form-label">
-              <strong>Source Step {{ index + 1 }}: {{ getStepTypeName(workflowStep.stepType) }}</strong> → Target Step:
+              <strong>{{ $t('dashboard.study.sourceStepTargetStep', { index: index + 1, stepType: getStepTypeName(workflowStep.stepType) }) }}</strong>
             </label>
             <FormSelect
                 v-model="workflowMapping[workflowStep.id]"
@@ -123,25 +123,25 @@
       </div>
       <div v-else>
         <p>
-          Are you sure you want to create the assignment with the following details?
+          {{$t('dashboard.study.createAssignmentConfirmPrompt')}}
         </p>
         <div>
-          <strong>Template:</strong> {{ template.name }}
+          <strong>{{$t('dashboard.study.template')}}</strong> {{ template.name }}
         </div>
         <div>
-          <strong>Workflow:</strong> {{ workflow.name }}
+          <strong>{{$t('dashboard.study.workflow')}}</strong> {{ workflow.name }}
         </div>
         <div>
-          <strong>Assignment Type:</strong> {{ assignmentType === 'document' ? 'Document' : 'Submission' }}
+          <strong>{{$t('dashboard.study.assignmentType')}}</strong> {{ assignmentType === 'document' ? $t('documents.document') : $t('common.submission') }}
         </div>
         <div v-if="assignmentType === 'document'">
-          <strong>Workflow Assignments:</strong>
+          <strong>{{$t('dashboard.study.workflowAssignments')}}</strong>
           <ul>
             <li
                 v-for="(stepAssignment, index) in workflowStepsAssignments"
                 :key="stepAssignment.id"
             >
-              - Workflow Step {{ index + 1 }}:
+              - {{$t('dashboard.study.workflowStepWithIndex', {index: index + 1})}}
               <span v-if="stepAssignment.documentId && documents.find(doc => doc.id === stepAssignment.documentId)">
                       {{ documents.find(doc => doc.id === stepAssignment.documentId).name }}
                       ({{
@@ -152,13 +152,13 @@
                 }})
                     </span>
               <span v-else>
-                      Create new document
+                      {{$t('documents.createNewDocument')}}
                     </span>
             </li>
           </ul>
         </div>
         <div>
-          <strong>Reviewers:</strong>
+          <strong>{{$t('dashboard.study.reviewers')}}</strong>
           <ul>
             <li
                 v-for="reviewer in selectedReviewer"
@@ -172,26 +172,26 @@
     <template #step-5>
       <div>
         <p>
-          Are you sure you want to create the assignment with the following details?
+          {{$t('dashboard.study.createAssignmentConfirmPrompt')}}
         </p>
         <div>
-          <strong>Template:</strong> {{ template.name }}
+          <strong>{{$t('dashboard.study.template')}}</strong> {{ template.name }}
         </div>
         <div>
-          <strong>Workflow:</strong> {{ workflow.name }}
+          <strong>{{$t('dashboard.study.workflow')}}</strong> {{ workflow.name }}
         </div>
         <div>
-          <strong>Assignment Type:</strong> Study Session
+          <strong>{{$t('dashboard.study.assignmentType')}}</strong> {{$t('dashboard.study.studySessions')}}
         </div>
         <div>
-          <strong>Target Workflow:</strong> {{ getWorkflowType(targetWorkflowId) }}
+          <strong>{{$t('dashboard.study.targetWorkflow')}}</strong> {{ getWorkflowType(targetWorkflowId) }}
         </div>
         <div>
-          <strong>Selected Study Session:</strong> 
-          {{ selectedAssignment.length > 0 ? `Session ${selectedAssignment[0].id}` : 'None' }}
+          <strong>{{$t('dashboard.study.selectedStudySession')}}</strong>
+          {{ selectedAssignment.length > 0 ? $t('dashboard.study.sessionWithId', { id: selectedAssignment[0].id }) : $t('common.none') }}
         </div>
         <div>
-          <strong>Reviewers:</strong>
+          <strong>{{$t('dashboard.study.reviewers')}}</strong>
           <ul>
             <li
                 v-for="reviewer in selectedReviewer"
@@ -210,6 +210,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for bulk creating assignments
@@ -253,16 +254,18 @@ export default {
       studySessionSelections: [[]],
       targetWorkflowId: null,
       workflowMapping: {},
-      studyStepsTableColumns: [
-        { name: "Step Type", key: "stepTypeName", sortable: true },
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Study Name", key: "studyName", sortable: true },
-        { name: "Workflow Type", key: "workflowType", sortable: true },
-      ],
     };
   },
   computed: {
+    studyStepsTableColumns() {
+      return [
+        { name: this.$t('dashboard.study.stepType'), key: "stepTypeName", sortable: true },
+        { name: this.$t('common.firstName'), key: "firstName", sortable: true },
+        { name: this.$t('common.lastName'), key: "lastName", sortable: true },
+        { name: this.$t('dashboard.study.studyName'), key: "studyName", sortable: true },
+        { name: this.$t('dashboard.study.workflowType'), key: "workflowType", sortable: true },
+      ];
+    },
     assignmentType() {
       return this.assignmentTypeSelection.type || 'document';
     },
@@ -323,7 +326,7 @@ export default {
       return [
         {
           key: "template",
-          label: "Template",
+          label: this.$t('studies.template'),
           type: "select",
           options: this.templates.map(template => ({
             name: template.name,
@@ -336,9 +339,9 @@ export default {
     assignmentTypeFields() {
       return {
         options: [
-          {value: 'document', name: 'Documents'},
-          {value: 'submission', name: 'Submissions'},
-          {value: "study_session", name: "Study Sessions"}
+          {value: 'document', name: this.$t('documents.title')},
+          {value: 'submission', name: this.$t('nlp.inputFiles.submissions')},
+          {value: 'study_session', name: this.$t('dashboard.study.studySessions')}
         ]
       };
     },
@@ -350,7 +353,7 @@ export default {
     emailTemplateOptions() {
       return {
         options: [
-          {value: null, name: 'None (no email will be sent)'},
+          {value: null, name: this.$t('dashboard.study.noEmailWillBeSent')},
           ...this.emailTemplates.map(t => ({
             value: t.id,
             name: t.name
@@ -431,42 +434,42 @@ export default {
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
         let newD = {...d};
-        newD.type = d.type === 0 ? "PDF" : "HTML";
+        newD.type = d.type === 0 ? this.$t('documents.types.pdf') : this.$t('documents.types.html');
         const user = this.$store.getters["table/user/get"](d.userId)
-        newD.firstName = (user) ? user.firstName : "Unknown";
-        newD.lastName = (user) ? user.lastName : "Unknown";
+        newD.firstName = (user) ? user.firstName : this.$t('common.unknown');
+        newD.lastName = (user) ? user.lastName : this.$t('common.unknown');
         return newD;
       })
     },
     documentsTableColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "Document", key: "name"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('documents.document'), key: "name"},
+        {name: this.$t('common.firstName'), key: "firstName"},
+        {name: this.$t('common.lastName'), key: "lastName"},
       ]
     },
     submissionsTable() {
       return this.submissions.map((s) => {
         let newS = {...s};
         const user = this.$store.getters["table/user/get"](s.userId);
-        newS.name = s.name || `Submission ${s.id}`;
-        newS.userName = user ? user.userName : "N/A";
-        newS.firstName = user ? user.firstName : "Unknown";
-        newS.lastName = user ? user.lastName : "Unknown";
+        newS.name = s.name || this.$t('dashboard.study.submissionWithId', { id: s.id });
+        newS.userName = user ? user.userName : this.$t('common.na');
+        newS.firstName = user ? user.firstName : this.$t('common.unknown');
+        newS.lastName = user ? user.lastName : this.$t('common.unknown');
         newS.group = (s.group !== null && s.group !== undefined && s.group !== '') ? s.group : '';
         return newS;
       });
     },
     submissionColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "Submission Name", key: "name"},
-        {name: "User Name", key: "userName"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Group ID", key: "group", filter: this.groupFilterOptions},
-        {name: "Created At", key: "createdAt"},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('nlp.preprocessing.processStepper.queue.columns.submissionName'), key: "name"},
+        {name: this.$t('common.userName'), key: "userName"},
+        {name: this.$t('common.firstName'), key: "firstName"},
+        {name: this.$t('common.lastName'), key: "lastName"},
+        {name: this.$t('common.groupId'), key: "group", filter: this.groupFilterOptions},
+        {name: this.$t('common.createdAt'), key: "createdAt"},
       ]
     },
      studySessionsTable() {
@@ -486,10 +489,10 @@ export default {
             id: session.id,
             studyId: session.studyId,
             userId: session.userId,
-            firstName: user ? user.firstName : 'Unknown',
-            lastName: user ? user.lastName : 'Unknown',
+            firstName: user ? user.firstName : this.$t('common.unknown'),
+            lastName: user ? user.lastName : this.$t('common.unknown'),
             workflowType: this.getWorkflowType(study.workflowId),
-            submissionGroup: submission && submission.group ? submission.group : 'N/A',
+            submissionGroup: submission && submission.group ? submission.group : this.$t('common.na'),
             status: session.end === null ? "Running" : "Finished",
             createdAt: new Date(session.createdAt).toLocaleString(),
           };
@@ -497,21 +500,21 @@ export default {
     },
     studySessionsTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Workflow Type", key: "workflowType", sortable: true },
-        { name: "Created At", key: "createdAt", sortable: true },
-        { name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.groupFilterOptions},
+        { name: this.$t('common.id'), key: "id" },
+        { name: this.$t('common.firstName'), key: "firstName", sortable: true },
+        { name: this.$t('common.lastName'), key: "lastName", sortable: true },
+        { name: this.$t('dashboard.study.workflowType'), key: "workflowType", sortable: true },
+        { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
+        { name: this.$t('dashboard.study.submissionGroup'), key: "submissionGroup", sortable: true, filter: this.groupFilterOptions },
         {
-          name: "Status",
+          name: this.$t('common.status'),
           key: "status",
           type: "badge",
           sortable: true,
           typeOptions: {
             keyMapping: {
-              Running: "Running",
-              Finished: "Finished",
+              Running: this.$t('dashboard.study.running'),
+              Finished: this.$t('dashboard.study.finished'),
             },
             classMapping: {
               Running: "bg-primary",
@@ -547,13 +550,13 @@ export default {
             stepTypeName: this.getStepTypeName(step.stepType),
             documentId: step.documentId,
             studyStepPrevious: step.studyStepPrevious,
-            studyName: study ? study.name : 'Unknown',
+            studyName: study ? study.name : this.$t('common.unknown'),
             workflowType: `${this.getWorkflowType(study ? study.workflowId : null)}`,
             userId: session.userId,
-            firstName: user ? user.firstName : 'Unknown',
-            lastName: user ? user.lastName : 'Unknown',
-            sessionStart: session.start ? new Date(session.start).toLocaleString() : 'N/A',
-            sessionEnd: session.end ? new Date(session.end).toLocaleString() : 'N/A',
+            firstName: user ? user.firstName : this.$t('common.unknown'),
+            lastName: user ? user.lastName : this.$t('common.unknown'),
+            sessionStart: session.start ? new Date(session.start).toLocaleString() : this.$t('common.na'),
+            sessionEnd: session.end ? new Date(session.end).toLocaleString() : this.$t('common.na'),
             status: session.end === null ? "Running" : "Finished",
           });
         });
@@ -584,16 +587,13 @@ export default {
     },
     reviewerTableColumns() {
       return [
-        {name: "ID", key: "id"},
-        {name: "extId", key: "extId"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Number of Assignments", key: "studySessions"},
-        {name: "Documents", key: "documents"},
-        {
-          name: "Roles",
-          key: "rolesNames",
-        }
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('common.extId'), key: "extId"},
+        {name: this.$t('common.firstName'), key: "firstName"},
+        {name: this.$t('common.lastName'), key: "lastName"},
+        {name: this.$t('dashboard.projects.numberOfAssignments'), key: "studySessions"},
+        {name: this.$t('documents.title'), key: "documents"},
+        {name: this.$t('dashboard.projects.roles'), key: "rolesNames"}
       ]
     },
     groupFilterOptions() {
@@ -618,7 +618,7 @@ export default {
           .map((g) => ({key: g, name: g}));
 
       if (hasEmptyGroups) {
-        options.unshift({key: '', name: 'No GroupID'});
+        options.unshift({key: '', name: this.$t('nlp.inputFiles.noGroupId')});
       }
 
       return options;
@@ -626,18 +626,18 @@ export default {
     steps() {
       if (this.assignmentType === 'study_session') {
         return [
-          {title: "Template Selection"},
-          {title: "Workflow Mapping"},
-          {title: "Study Session Selection"},
-          {title: "Reviewer Selection"},
-          {title: "Confirmation"}
+          {title: this.$t('dashboard.study.templateSelection')},
+          {title: this.$t('dashboard.study.workflowMapping')},
+          {title: this.$t('dashboard.study.studySessionSelection')},
+          {title: this.$t('dashboard.study.reviewerSelection')},
+          {title: this.$t('common.confirmation')}
         ];
       }
       return [
-        {title: "Template Selection"},
-        {title: "Assignment Selection"},
-        {title: "Reviewer Selection"},
-        {title: "Confirmation"}
+        {title: this.$t('dashboard.study.templateSelection')},
+        {title: this.$t('dashboard.study.assignmentSelection')},
+        {title: this.$t('dashboard.study.reviewerSelection')},
+        {title: this.$t('common.confirmation')}
       ];
     },
     workflowOptions() {
@@ -704,9 +704,9 @@ export default {
 
     getStepTypeName(stepType) {
       switch (stepType) {
-        case 1: return 'Annotator';
-        case 2: return 'Editor';
-        default: return 'Unknown';
+        case 1: return this.$t('dashboard.study.annotator');
+        case 2: return this.$t('dashboard.study.editor');
+        default: return this.$t('common.unknown');
       }
     },
     getTargetStepOptions(stepType, currentStepId) {
@@ -731,7 +731,10 @@ export default {
       const options = orderedSteps
         .filter(step => step.stepType === stepType)
         .map((step) => ({
-          name: `Step ${stepPositionMap.get(step.id)}: ${this.getStepTypeName(step.stepType)}`,
+          name: this.$t('dashboard.study.stepOption', {
+            index: stepPositionMap.get(step.id),
+            type: this.getStepTypeName(step.stepType)
+          }),
           value: step.id,
         }));
       
@@ -746,7 +749,7 @@ export default {
           );
           if (previousSourceStep && previousSourceStep.stepType === 1) {
             options.unshift({
-              name: '<Document> Revised Document',
+              name: this.$t('dashboard.study.revisedDocument'),
               value: 'previousSubmission',
             });
           }
@@ -759,7 +762,7 @@ export default {
     },
     getWorkflowType(workflowId) {
         const workflow = this.$store.getters["table/workflow/get"](workflowId);
-        return workflow ? workflow.name : "Unknown";
+        return workflow ? workflow.name : this.$t('common.unknown');
     },
     getUserName(userId) {
       const user = this.$store.getters["table/user/get"](userId);
@@ -770,8 +773,8 @@ export default {
         };
       }
       return {
-        firstName: "Unknown",
-        lastName: "Unknown",
+        firstName: this.$t('common.unknown'),
+        lastName: this.$t('common.unknown'),
       };
     },
     userStudySessions(userId) {
@@ -845,14 +848,14 @@ export default {
         if (res.success) {
           this.$refs.assignmentStepper.close();
           this.eventBus.emit("toast", {
-            title: "Assignment created",
-            message: "The assignment has been created successfully",
+            title: this.$t('dashboard.study.assignmentCreated'),
+            message: this.$t('dashboard.study.assignmentCreatedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to create assignment",
-            message: res.message,
+            title: this.$t('dashboard.study.failedToCreateAssignment'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

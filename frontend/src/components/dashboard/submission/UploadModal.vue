@@ -6,7 +6,7 @@
     @submit="uploadSubmission"
   >
     <template #title>
-      <h5 class="modal-title">Upload Submission</h5>
+      <h5 class="modal-title">{{ $t("dashboard.uploadModal.title") }}</h5>
     </template>
     <template #step-1>
       <BasicTable
@@ -20,7 +20,7 @@
     <template #step-2>
       <div class="p-3">
         <div class="mb-3">
-          <h4 class="mb-3">Assign Group</h4>
+          <h4 class="mb-3">{{ $t("dashboard.uploadModal.assignGroup") }}</h4>
           <BasicForm
             v-model="formData"
             :fields="formFields"
@@ -47,6 +47,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import ValidatorSelector from "./ValidatorSelector.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Moodle assignment upload component
@@ -66,13 +67,17 @@ export default {
       selectedValidatorId: 0,
       selectedValidatorData: null,
       files: null,
-      steps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
+      steps: [
+        { title: this.$t("dashboard.uploadModal.stepSelectUser") },
+        { title: this.$t("dashboard.uploadModal.stepSelectConfig") },
+        { title: this.$t("dashboard.uploadModal.stepUploadFile") },
+      ],
       selectionTable: [
-        { name: "ID", key: "id", sortable: true },
-        { name: "extId", key: "extId", sortable: true },
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Username", key: "userName", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.extId"), key: "extId", sortable: true },
+        { name: this.$t("common.firstName"), key: "firstName", sortable: true },
+        { name: this.$t("common.lastName"), key: "lastName", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName", sortable: true },
       ],
       selectionTableOptions: {
         striped: true,
@@ -93,9 +98,9 @@ export default {
       formFields: [
         {
           key: "group",
-          label: "Group Number",
+          label: this.$t("dashboard.uploadModal.groupNumber"),
           type: "number",
-          placeholder: "Enter group number",
+          placeholder: this.$t("dashboard.uploadModal.groupNumberPlaceholder"),
           min: 0,
           class: "form-control",
           required: true,
@@ -123,7 +128,7 @@ export default {
         const format = fileFormat.toLowerCase();
         return {
           key: format,
-          label: `${format.toUpperCase()} File:`,
+          label: this.$t("dashboard.uploadModal.fileLabel", { format: format.toUpperCase() }),
           type: "file",
           accept: `.${format}`,
           class: "form-control",
@@ -158,8 +163,8 @@ export default {
     uploadSubmission() {
       if (!this.files) {
         this.eventBus.emit("toast", {
-          title: "Invalid file(s)",
-          message: "Please upload all required files.",
+          title: this.$t("dashboard.uploadModal.invalidFiles"),
+          message: this.$t("dashboard.uploadModal.pleaseUploadFiles"),
           variant: "danger",
         });
         return;
@@ -175,8 +180,8 @@ export default {
       this.$socket.emit("documentUploadSingleSubmission", singleSubmission, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Uploaded file",
-            message: "File successfully uploaded!",
+            title: this.$t("dashboard.uploadModal.uploadedFile"),
+            message: this.$t("dashboard.uploadModal.fileSuccessfullyUploaded"),
             variant: "success",
           });
           this.$refs.uploadStepper.close();
@@ -184,8 +189,8 @@ export default {
           // Reset the files variable as the user will reupload the files without closing the modal, which leads to wrong files.
           this.files = null;
           this.eventBus.emit("toast", {
-            title: "Failed to upload the file",
-            message: res.message,
+            title: this.$t("dashboard.uploadModal.failedUploadFile"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
           this.$refs.uploadStepper.setWaiting(false);
