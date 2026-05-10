@@ -296,7 +296,7 @@
       "provideLastName": "Bitte geben Sie den Nachnamen an",
       "provideUsername": "Bitte geben Sie den Benutzernamen an – keine Sonderzeichen",
       "passwordMinLength": "Das Passwort sollte mindestens 8 Zeichen lang sein",
-      "emailExample": "email@example.com"
+      "emailExample": "email{'@'}example.com"
     },
     "passwordLabel": "Passwort:",
     "userCreationCompleted": "Benutzererstellung abgeschlossen",

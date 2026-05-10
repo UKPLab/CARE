@@ -115,5 +115,10 @@
     "configure": "Configure",
     "anonymous": "Anonymous",
     "unlimited": "unlimited",
-    "none": "None"
+    "none": "None",
+    "languages": {
+        "en": "English",
+        "de": "Deutsch",
+        "fr": "Français"
+    }
 }

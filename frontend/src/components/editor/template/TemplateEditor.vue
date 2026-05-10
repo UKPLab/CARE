@@ -28,7 +28,7 @@
         @hide="onNewLanguageModalHide"
       >
         <template #title>
-          New language
+          {{ $t("templates.editor.newLanguage") }}
         </template>
         <template #body>
           <div v-html="newLanguageModalMessage" />
@@ -39,14 +39,14 @@
             type="button"
             @click="chooseNewLanguageEmpty"
           >
-            Create Empty
+            {{ $t("templates.editor.createEmpty") }}
           </button>
           <button
             class="btn btn-primary"
             type="button"
             @click="chooseNewLanguageCopied"
           >
-            Copy Content
+            {{ $t("templates.editor.copyContent") }}
           </button>
         </template>
       </BasicModal>
@@ -71,13 +71,14 @@
   import {Editor} from "@/components/editor/editorStore.js";
   import Loader from "@/basic/Loading.vue";
   import BasicModal from "@/basic/Modal.vue";
+  import { resolveApiMessage } from "@/assets/utils";
   
   const Delta = Quill.import('delta');
 
   const SUPPORTED_LANGUAGES = [
-    { code: "en", label: "English" },
-    { code: "de", label: "Deutsch" },
-    { code: "fr", label: "Français" },
+    { code: "en", labelKey: "common.languages.en" },
+    { code: "de", labelKey: "common.languages.de" },
+    { code: "fr", labelKey: "common.languages.fr" },
   ];
   
   export default {
@@ -284,8 +285,8 @@
       this.$socket.emit("templateClose", { templateId: this.templateId, language: this.selectedLanguage }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Template save failed",
-            message: res.message || "",
+            title: this.$t("templates.editor.toasts.templateSaveFailed"),
+            message: resolveApiMessage(res),
             variant: "danger"
           });
         }
@@ -360,7 +361,7 @@
                 this.$emit("update:data", studyData);
               }
             } else {
-              this.handleTemplateError(res.error || { message: res.message || "Failed to load template" });
+              this.handleTemplateError(res.error || res || { message: this.$t("templates.editor.toasts.failedToLoadTemplate") });
             }
           }
         );
@@ -382,15 +383,16 @@
         const wrapper = document.createElement("span");
         wrapper.className = "ql-languageSelector ql-picker";
 
-        const currentLabel = SUPPORTED_LANGUAGES.find(l => l.code === this.selectedLanguage)?.label || this.selectedLanguage;
+        const currentLanguage = SUPPORTED_LANGUAGES.find(l => l.code === this.selectedLanguage);
+        const currentLabel = currentLanguage ? this.$t(currentLanguage.labelKey) : this.selectedLanguage;
         wrapper.innerHTML = `
-          <span class="ql-picker-label" title="Language">${currentLabel}
+          <span class="ql-picker-label" title="${this.$t("templates.editor.language")}">${currentLabel}
             <svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>
           </span>
           <span class="ql-picker-options">
             ${this.languageOptions.map(code => {
               const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-              return `<span class="ql-picker-item" data-value="${code}">${lang ? lang.label : code}</span>`;
+              return `<span class="ql-picker-item" data-value="${code}">${lang ? this.$t(lang.labelKey) : code}</span>`;
             }).join("")}
           </span>
         `;
@@ -415,7 +417,7 @@
             if (labelEl) {
               const lang = SUPPORTED_LANGUAGES.find(l => l.code === value);
               const svg = labelEl.querySelector("svg");
-              labelEl.innerHTML = (lang ? lang.label : value) + (svg ? svg.outerHTML : "");
+              labelEl.innerHTML = (lang ? this.$t(lang.labelKey) : value) + (svg ? svg.outerHTML : "");
             }
             this.selectLanguage(value);
           });
@@ -438,7 +440,7 @@
         const label = this.languageSelectorEl?.querySelector('.ql-picker-label');
         if (label) {
           const lang = SUPPORTED_LANGUAGES.find(l => l.code === this.selectedLanguage);
-          const labelText = lang ? lang.label : this.selectedLanguage;
+          const labelText = lang ? this.$t(lang.labelKey) : this.selectedLanguage;
           const svg = label.querySelector("svg");
           label.innerHTML = labelText + (svg ? svg.outerHTML : "");
         }
@@ -451,7 +453,7 @@
         if (!optionsEl) return;
         optionsEl.innerHTML = this.languageOptions.map(code => {
           const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-          return `<span class="ql-picker-item" data-value="${code}">${lang ? lang.label : code}</span>`;
+          return `<span class="ql-picker-item" data-value="${code}">${lang ? this.$t(lang.labelKey) : code}</span>`;
         }).join("");
         wrapper.querySelectorAll(".ql-picker-item").forEach(item => {
           item.addEventListener("click", (e) => {
@@ -462,7 +464,7 @@
             if (labelEl) {
               const lang = SUPPORTED_LANGUAGES.find(l => l.code === value);
               const svg = labelEl.querySelector("svg");
-              labelEl.innerHTML = (lang ? lang.label : value) + (svg ? svg.outerHTML : "");
+              labelEl.innerHTML = (lang ? this.$t(lang.labelKey) : value) + (svg ? svg.outerHTML : "");
             }
             this.selectLanguage(value);
           });
@@ -482,7 +484,7 @@
         const isNew = !this.availableLanguages.includes(value);
         if (isNew) {
           this.pendingNewLanguage = value;
-          this.newLanguageModalMessage = "A new language is being added for this template. Copy current content into this language?<br><br><strong>Leaving the current language will save the content in it.</strong>";
+          this.newLanguageModalMessage = this.$t("templates.editor.newLanguageMessage");
           this.$refs.newLanguageModal.openModal();
         } else {
           this.saveCurrentAndSwitchTo(value);
@@ -517,8 +519,8 @@
           (closeRes) => {
             if (!closeRes.success) {
               this.eventBus.emit("toast", {
-                title: "Template save failed",
-                message: closeRes.message || "",
+                title: this.$t("templates.editor.toasts.templateSaveFailed"),
+                message: resolveApiMessage(closeRes),
                 variant: "danger"
               });
               return;
@@ -538,8 +540,8 @@
                   this.$nextTick(() => this.updateLanguageSelectorLabel());
                 } else {
                   this.eventBus.emit("toast", {
-                    title: "Failed to add language",
-                    message: res.message || "",
+                    title: this.$t("templates.editor.toasts.failedToAddLanguage"),
+                    message: resolveApiMessage(res),
                     variant: "danger"
                   });
                 }
@@ -556,8 +558,8 @@
           (res) => {
             if (!res.success) {
               this.eventBus.emit("toast", {
-                title: "Template save failed",
-                message: res.message || "",
+                title: this.$t("templates.editor.toasts.templateSaveFailed"),
+                message: resolveApiMessage(res),
                 variant: "danger"
               });
               return;
@@ -600,8 +602,8 @@
             this.emitContentForPlaceholders();
           } else {
             this.eventBus.emit("toast", {
-              title: "No Cursor Position",
-              message: "Please click in the editor to set the cursor position before inserting a placeholder.",
+              title: this.$t("templates.editor.toasts.noCursorPosition.title"),
+              message: this.$t("templates.editor.toasts.noCursorPosition.message"),
               variant: "warning",
             });
           }
@@ -668,8 +670,8 @@
               if (!res.success) {
                 quill.setContents(backup);
                 this.eventBus.emit("toast", {
-                  title: "Previous edit failed; try again",
-                  message: res.message,
+                  title: this.$t("templates.editor.toasts.previousEditFailed"),
+                  message: resolveApiMessage(res),
                   variant: "danger",
                 });
               }
@@ -694,10 +696,10 @@
       },
       handleTemplateError(error) {
         this.eventBus.emit('toast', {
-          title: "Template error",
-          message: error.message,
-          variant: "danger"
-        });
+        title: this.$t("templates.editor.toasts.templateError"),
+        message: resolveApiMessage(error),
+        variant: "danger"
+      });
       },
     }
   };

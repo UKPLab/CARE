@@ -34,5 +34,23 @@
     "documentGeneral": "Document - General",
     "documentStudy": "Document - Study",
     "emailStudyClose": "Email - Study Close"
+  },
+  "editor": {
+    "newLanguage": "New language",
+    "createEmpty": "Create Empty",
+    "copyContent": "Copy Content",
+    "language": "Language",
+    "newLanguageMessage": "A new language is being added for this template. Copy current content into this language?<br><br><strong>Leaving the current language will save the content in it.</strong>",
+    "toasts": {
+        "templateSaveFailed": "Template save failed",
+        "failedToLoadTemplate": "Failed to load template",
+        "failedToAddLanguage": "Failed to add language",
+        "noCursorPosition": {
+        "title": "No Cursor Position",
+        "message": "Please click in the editor to set the cursor position before inserting a placeholder."
+        },
+        "previousEditFailed": "Previous edit failed; try again",
+        "templateError": "Template error"
+    }
   }
 }

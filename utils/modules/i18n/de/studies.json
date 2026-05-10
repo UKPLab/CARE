@@ -21,7 +21,8 @@
   "finishStudyAgain": "Studie erneut beenden",
   "returnToDashboard": "Zum Dashboard zurückkehren",
   "backToDashboard": "Zurück zum Dashboard",
-  "openSessions": "Offene Sitzungen",
+  "openSessionsBig": "Offene Sitzungen",
+  "openSessionsSmall": "offene Sitzungen",
   "openSessionsForStudy": "Sitzungen für {name} öffnen",
   "resumeSession": "Sitzung fortsetzen",
   "startSession": "Sitzung starten",
@@ -40,6 +41,8 @@
   "clickFinishToSubmit": "Mit einem Klick auf \"Beenden\" reichen Sie Ihre Ergebnisse ein.",
   "timeExpired": "Die Zeit ist abgelaufen, es sind keine Änderungen mehr möglich.",
   "nameOfStudy": "Name der Studie:",
+  "foreignUnstartedSession": "Diese Studien-Sitzung wurde noch nicht gestartet und gehört einem anderen Benutzer.",
+  "cannotResumeSession": "Sie können diese Sitzung nicht starten oder fortsetzen.",
   "columns": {
     "status": "Status",
     "created": "Erstellt am",
@@ -52,7 +55,8 @@
     "collaborative": "Kollaborativ",
     "multipleSubmissions": "Mehrfacheinreichungen",
     "timeLimit": "Zeitlimit",
-    "sessionStartFinishEmails": "E-Mails zum Start/Abschluss der Sitzung"
+    "sessionStartFinishEmails": "E-Mails zum Start/Abschluss der Sitzung",
+    "parentSessionId": "Übergeordnete Sitzungs-ID"
   },
   "status": {
     "notStarted": "Nicht gestartet",
@@ -113,7 +117,11 @@
       "Mache einen schnellen Plausibilitätscheck...",
       "Konsultiere die Weisheit der Menge...",
       "Fast geschafft..."
-    ]
+    ],
+    "errorTitle": "Fehler beim Laden des Studienschritts",
+    "processingTitle": "NLP-Anfragen werden verarbeitet",
+    "failedTitle": "NLP-Anfragen fehlgeschlagen",
+    "readyTitle": "Studienschritt bereit"
   },
   "dashboard": {
     "activeSessions": {

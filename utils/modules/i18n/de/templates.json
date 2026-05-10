@@ -34,5 +34,23 @@
     "documentGeneral": "Dokument - Allgemein",
     "documentStudy": "Dokument - Study",
     "emailStudyClose": "E-Mail - Study Close"
+  },
+  "editor": {
+    "newLanguage": "Neue Sprache",
+    "createEmpty": "Leer erstellen",
+    "copyContent": "Inhalt kopieren",
+    "language": "Sprache",
+    "newLanguageMessage": "Für dieses Template wird eine neue Sprache hinzugefügt. Soll der aktuelle Inhalt in diese Sprache kopiert werden?<br><br><strong>Beim Verlassen der aktuellen Sprache wird deren Inhalt gespeichert.</strong>",
+    "toasts": {
+        "templateSaveFailed": "Template konnte nicht gespeichert werden",
+        "failedToLoadTemplate": "Template konnte nicht geladen werden",
+        "failedToAddLanguage": "Sprache konnte nicht hinzugefügt werden",
+        "noCursorPosition": {
+        "title": "Keine Cursorposition",
+        "message": "Klicken Sie bitte in den Editor, um die Cursorposition zu setzen, bevor Sie einen Platzhalter einfügen."
+        },
+        "previousEditFailed": "Vorherige Bearbeitung fehlgeschlagen; versuchen Sie es erneut",
+        "templateError": "Template-Fehler"
+    }
   }
 }

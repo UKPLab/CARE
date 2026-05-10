@@ -21,7 +21,8 @@
   "finishStudyAgain": "Finish Study Again",
   "returnToDashboard": "Return to dashboard",
   "backToDashboard": "Back to Dashboard",
-  "openSessions": "Open Sessions",
+  "openSessionsBig": "Open Sessions",
+  "openSessionsSmall": "open Sessions",
   "openSessionsForStudy": "Open sessions for {name}",
   "resumeSession": "Resume session",
   "startSession": "Start session",
@@ -40,6 +41,8 @@
   "clickFinishToSubmit": "With a click on the finish button, you can submit your results.",
   "timeExpired": "The time has expired, no more changes are possible.",
   "nameOfStudy": "Name of the study:",
+  "foreignUnstartedSession": "This study session has not been started yet and belongs to another user.",
+  "cannotResumeSession": "You cannot start or resume this session.",
   "columns": {
     "status": "Status",
     "created": "Created",
@@ -52,7 +55,8 @@
     "collaborative": "Collaborative",
     "multipleSubmissions": "Multiple Submissions",
     "timeLimit": "Time Limit",
-    "sessionStartFinishEmails": "Session Start/Finish Emails"
+    "sessionStartFinishEmails": "Session Start/Finish Emails",
+    "parentSessionId": "Parent Session ID"
   },
   "status": {
     "notStarted": "Not started",
@@ -113,7 +117,11 @@
       "Running a quick plausibility pass...",
       "Consulting the wisdom of the crowd...",
       "Almost ready..."
-    ]
+    ],
+    "errorTitle": "Error Loading Study Step",
+    "processingTitle": "Processing NLP Requests",
+    "failedTitle": "NLP Requests Failed",
+    "readyTitle": "Study Step Ready"
   },
   "dashboard": {
       "activeSessions": {

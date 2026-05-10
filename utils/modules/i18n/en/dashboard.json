@@ -297,7 +297,7 @@
             "provideLastName": "please provide the last name",
             "provideUsername": "please provide the username - no special characters",
             "passwordMinLength": "password should be at least 8 characters long",
-            "emailExample": "email@example.com"
+            "emailExample": "email{'@'}example.com"
         },
         "passwordLabel": "Password:",
         "userCreationCompleted": "User Creation Completed",

@@ -1,7 +1,7 @@
 {
     "title": "Assessment",
     "noConfiguration": "No Assessment Configuration available.",
-    "totalPoints": "{points} P",
+    "totalPoints": "{points} / {maxPoints} P",
     "criteria": {
         "unnamedCriterion": "Unnamed criterion",
         "justification": "Justification:",
@@ -16,6 +16,8 @@
     },
     "rubric": {
         "unnamedRubric": "Unnamed rubric",
-        "noCriteria": "No criteria defined for this rubric."
+        "noCriteria": "No criteria defined for this rubric.",
+        "scoreTitle": "Rubric: {score} / {max} P",
+        "scoreBadge": "{score} P"
     }
 }
