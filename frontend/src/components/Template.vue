@@ -21,6 +21,7 @@
   
   import Loader from "@/basic/Loading.vue";
   import Editor from "@/components/editor/Editor.vue"
+  import { resolveApiMessage } from "@/assets/utils";
   
   export default {
     name: "TemplateRoute",
@@ -38,8 +39,8 @@
         } else {
           if (res && !res.success) {
             this.eventBus.emit("toast", {
-              title: "Template save failed",
-              message: res.message || "",
+              title: this.$t("templates.editor.toasts.templateSaveFailed"),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -89,8 +90,8 @@
       templateError: function (data) {
         if (data.templateId === this.templateIdNum) {
           this.eventBus.emit('toast', {
-            title: "Template Error",
-            message: data.message,
+            title: this.$t("templates.editor.toasts.templateError"),
+            message: resolveApiMessage(data),
             variant: "danger"
           });
           this.$router.push("/dashboard/templates");

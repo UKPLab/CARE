@@ -7,7 +7,7 @@
         </div>
 
         <div class="card">
-          <div class="card-header">Two-Factor Authentication</div>
+          <div class="card-header">{{ $t("auth.twoFactor.verifyTotp.title") }}</div>
 
           <div class="card-body mx-4 my-4">
             <p v-if="showError" class="text-danger text-center">
@@ -20,10 +20,10 @@
 
             <div class="text-center mb-4">
               <p class="text-muted mb-1">
-                Open your authenticator app and enter the 6-digit code
+                {{ $t("auth.twoFactor.verifyTotp.descriptionLine1") }}
               </p>
               <p class="text-muted small mb-0">
-                This is the second step to verify your identity.
+                {{ $t("auth.twoFactor.verifyTotp.descriptionLine2") }}
               </p>
             </div>
 
@@ -31,7 +31,7 @@
               <label
                 class="col-md-4 col-form-label text-md-right"
                 for="totpCode"
-                >Authenticator Code</label
+                >{{ $t("auth.twoFactor.verifyTotp.authenticatorCode") }}</label
               >
               <div class="col-md-6">
                 <input
@@ -40,7 +40,7 @@
                   autocomplete="one-time-code"
                   autofocus
                   class="form-control text-center otp-input"
-                  placeholder="Enter 6-digit code"
+                  :placeholder="$t('auth.twoFactor.verifyTotp.codePlaceholder')"
                   required
                   type="text"
                   maxlength="6"
@@ -52,7 +52,7 @@
                   class="feedback-invalid"
                   :class="{ invalid: validity['token'] && !validToken }"
                 >
-                  Please provide a valid 6-digit code.
+                  {{ $t("auth.twoFactor.verifyTotp.invalidCode") }}
                 </div>
               </div>
             </div>
@@ -67,21 +67,21 @@
                   v-if="isSubmitting"
                   class="spinner-border spinner-border-sm me-2"
                 ></span>
-                {{ isSubmitting ? "Verifying..." : "Verify" }}
+                {{ isSubmitting ? $t("auth.twoFactor.verifyTotp.verifying") : $t("auth.twoFactor.verifyTotp.verify") }}
               </button>
               <button
                 class="btn btn-link"
                 type="button"
                 @click="cancelVerification"
               >
-                Cancel
+                {{ $t("common.cancel") }}
               </button>
             </div>
 
             <div class="text-center text-muted small">
-              <p class="mb-0">Codes refresh every 30 seconds.</p>
+              <p class="mb-0">{{ $t("auth.twoFactor.verifyTotp.refreshHint") }}</p>
               <p class="mb-0">
-                Make sure your device time is correct if codes are not accepted.
+                {{ $t("auth.twoFactor.verifyTotp.timeHint") }}
               </p>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default {
 
         if (response.status === 200) {
           this.showSuccess = true;
-          this.successMessage = "Verification successful! Redirecting...";
+          this.successMessage = this.$t("auth.twoFactor.verifyTotp.success.verificationSuccessful");
 
           setTimeout(() => {
             this.$router.push(this.$route.query.redirectedFrom || "/dashboard");
@@ -173,13 +173,13 @@ export default {
           this.showError = true;
           this.errorMessage =
             response.data.message ||
-            "Invalid verification code. Please try again.";
+            this.$t("auth.twoFactor.verifyTotp.errors.invalidCode");
         }
       } catch (error) {
         this.showError = true;
         this.errorMessage =
           error.response?.data?.message ||
-          "Failed to verify code. Please try again.";
+          this.$t("auth.twoFactor.verifyTotp.errors.verifyFailed");
       } finally {
         this.isSubmitting = false;
       }

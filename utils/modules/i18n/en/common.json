@@ -5,6 +5,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
+    "continue": "Continue",
     "abort": "Abort",
     "decline": "Decline",
     "confirm": "Confirm",
@@ -120,5 +121,7 @@
         "en": "English",
         "de": "Deutsch",
         "fr": "Français"
-    }
+    },
+    "enabled": "Enabled",
+    "disabled": "Disabled"
 }

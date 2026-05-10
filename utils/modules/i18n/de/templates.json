@@ -52,5 +52,40 @@
         "previousEditFailed": "Vorherige Bearbeitung fehlgeschlagen; versuchen Sie es erneut",
         "templateError": "Template-Fehler"
     }
+  },
+  "dashboard": {
+    "title": "Vorlagen",
+    "browsePublicTemplates": "Öffentliche Vorlagen durchsuchen",
+    "publicTemplates": "Öffentliche Vorlagen",
+    "addNewTemplate": "Neue Vorlage hinzufügen",
+    "addTemplate": "Vorlage hinzufügen",
+    "chooseType": "Typ auswählen",
+    "actions": {
+        "editTemplate": "Vorlage bearbeiten",
+        "editContent": "Inhalt bearbeiten",
+        "viewContentReadOnly": "Inhalt anzeigen (schreibgeschützt)",
+        "publishTemplate": "Vorlage veröffentlichen",
+        "publishedCannotBeUnpublished": "Veröffentlicht (kann nicht zurückgezogen werden)",
+        "sourceUpdated": "Quelle aktualisiert",
+        "deleteTemplate": "Vorlage löschen"
+    },
+    "status": {
+        "published": "Veröffentlicht",
+        "draft": "Entwurf",
+        "updateAvailable": "Update verfügbar",
+        "sourceUnavailable": "Quelle nicht verfügbar"
+    },
+    "toasts": {
+        "templateDetached": {
+        "title": "Vorlage getrennt",
+        "message": "Sie können diese Vorlage jetzt bearbeiten"
+        },
+        "detachFailed": "Trennen fehlgeschlagen",
+        "templateDeleteFailed": "Löschen der Vorlage fehlgeschlagen"
+    },
+    "confirmDelete": {
+        "title": "Vorlage löschen",
+        "message": "Möchten Sie \"{name}\" wirklich löschen?"
+    }
   }
 }

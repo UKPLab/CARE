@@ -2,6 +2,9 @@
     "form": {
        "placeholders": {
             "documentBracket": "<Document>"
+      },
+      "collapsible": {
+        "advancedSettings": "Advanced Settings"
       }
     },
     "configuration": {
@@ -64,5 +67,28 @@
     "export": {
       "successTitle": "Export Success",
       "successMessage": "Exported {id}"
+    },
+    "graph": {
+      "inspectNode": "Inspect node",
+      "copyNode": "Copy node",
+      "addNodeBefore": "Add node before",
+      "addNodeAfter": "Add node after",
+      "removeNode": "Remove node",
+      "editNode": "Edit node",
+      "pasteCopiedNode": "Paste copied node",
+      "pasteBeforeSelectedNode": "Paste before selected node",
+      "pasteAfterSelectedNode": "Paste after selected node",
+      "readOnly": "You cannot edit this graph",
+      "confirmRemove": {
+        "title": "Remove Node",
+        "message": "Do you really want to remove the selected node?",
+        "warning": "All subsequent nodes will also be removed!"
+      }
+    },
+    "workflowStepEditor": {
+      "title": "Workflow Step",
+      "errors": {
+        "addNextNode": "Error adding next node: {error}"
+      }
     }
 }

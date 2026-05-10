@@ -7,7 +7,7 @@
         </div>
 
         <div class="card">
-          <div class="card-header">Two-Factor Authentication</div>
+          <div class="card-header">{{ $t("auth.twoFactor.verifyEmail.title") }}</div>
 
           <div class="card-body mx-4 my-4">
             <p v-if="showError" class="text-danger text-center">
@@ -19,15 +19,15 @@
             </p>
             <div class="text-center mb-4">
               <p class="text-muted">
-                We've sent a verification code to your email
+                {{ $t("auth.twoFactor.verifyEmail.descriptionLine1") }}
                 <br />
-                Please enter the code below to complete your login.
+                {{ $t("auth.twoFactor.verifyEmail.descriptionLine2") }}
               </p>
             </div>
 
             <div class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="otp"
-                >Verification Code</label
+                >{{ $t("auth.twoFactor.verifyEmail.verificationCode") }}</label
               >
               <div class="col-md-6">
                 <input
@@ -36,7 +36,7 @@
                   autocomplete="one-time-code"
                   autofocus
                   class="form-control text-center otp-input"
-                  placeholder="Enter 6-digit code"
+                  :placeholder="$t('auth.twoFactor.verifyEmail.codePlaceholder')"
                   required
                   type="text"
                   maxlength="6"
@@ -48,7 +48,7 @@
                   class="feedback-invalid"
                   :class="{ invalid: validity['otp'] && !validOTP }"
                 >
-                  Please provide a valid 6-digit code.
+                  {{ $t("auth.twoFactor.verifyEmail.invalidCode") }}
                 </div>
               </div>
             </div>
@@ -63,7 +63,7 @@
                   v-if="isSubmitting"
                   class="spinner-border spinner-border-sm me-2"
                 ></span>
-                {{ isSubmitting ? "Verifying..." : "Verify" }}
+                {{ isSubmitting ? $t("auth.twoFactor.verifyEmail.verifying") : $t("auth.twoFactor.verifyEmail.verify") }}
               </button>
               <button
                 class="btn btn-link"
@@ -78,15 +78,14 @@
                 type="button"
                 @click="cancelVerification"
               >
-                Cancel
+                {{ $t("common.cancel") }}
               </button>
             </div>
 
             <div class="text-center text-muted small">
-              <p>The code will expire in 10 minutes.</p>
+              <p>{{ $t("auth.twoFactor.verifyEmail.expirationHint") }}</p>
               <p>
-                Didn't receive the code? Check your spam folder or click "Resend
-                Code".
+                {{ $t("auth.twoFactor.verifyEmail.resendHint") }}
               </p>
             </div>
           </div>
@@ -136,12 +135,12 @@ export default {
     },
     resendButtonText() {
       if (this.isResending) {
-        return "Sending...";
+        return this.$t("auth.twoFactor.verifyEmail.sending");
       }
       if (this.resendCooldown > 0) {
-        return `Resend code in(${this.resendCooldown}s)`;
+        return this.$t("auth.twoFactor.verifyEmail.resendCodeIn", { seconds: this.resendCooldown });
       }
-      return "Resend Code";
+      return this.$t("auth.twoFactor.verifyEmail.resendCode");
     },
   },
   beforeMount() {
@@ -206,7 +205,7 @@ export default {
         this.showError = true;
         this.errorMessage =
           error.response?.data?.message ||
-          "Failed to load verification status. Please login again.";
+          this.$t("auth.twoFactor.verifyEmail.errors.loadStatusFailed");
       }
     },
     async checkForm() {
@@ -236,7 +235,7 @@ export default {
 
         if (response.status === 200) {
           this.showSuccess = true;
-          this.successMessage = "Verification successful! Redirecting...";
+          this.successMessage = this.$t("auth.twoFactor.verifyEmail.success.verificationSuccessful");
 
           // Redirect to dashboard
           setTimeout(() => {
@@ -246,13 +245,13 @@ export default {
           this.showError = true;
           this.errorMessage =
             response.data.message ||
-            "Invalid verification code. Please try again.";
+            this.$t("auth.twoFactor.verifyEmail.errors.invalidCode");
         }
       } catch (error) {
         this.showError = true;
         this.errorMessage =
           error.response?.data?.message ||
-          "Failed to verify code. Please try again.";
+          this.$t("auth.twoFactor.verifyEmail.errors.verifyFailed");
       } finally {
         this.isSubmitting = false;
       }
@@ -281,22 +280,22 @@ export default {
         if (response.status === 200) {
           this.showSuccess = true;
           this.successMessage =
-            "A new verification code has been sent to your Email";
+            this.$t("auth.twoFactor.verifyEmail.success.codeSent");
 
           this.applyCooldownFromResponse(response.data);
         } else if (response.status === 429) {
           this.showError = true;
           this.errorMessage =
-            response.data.message || "Please wait before requesting another code.";
+            response.data.message || this.$t("auth.twoFactor.verifyEmail.errors.waitBeforeResend");
           this.applyCooldownFromResponse(response.data);
         } else {
           this.showError = true;
           this.errorMessage =
-            response.data.message || "Failed to resend code. Please try again.";
+            response.data.message || this.$t("auth.twoFactor.verifyEmail.errors.resendFailed");
         }
       } catch (error) {
         this.showError = true;
-        this.errorMessage = "Failed to resend code. Please try again.";
+        this.errorMessage = this.$t("auth.twoFactor.verifyEmail.errors.resendFailed");
       } finally {
         this.isResending = false;
       }

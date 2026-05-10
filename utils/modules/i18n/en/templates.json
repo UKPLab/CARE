@@ -50,7 +50,42 @@
         "message": "Please click in the editor to set the cursor position before inserting a placeholder."
         },
         "previousEditFailed": "Previous edit failed; try again",
-        "templateError": "Template error"
+        "templateError": "Template Error"
+    }
+  },
+  "dashboard": {
+    "title": "Templates",
+    "browsePublicTemplates": "Browse public templates",
+    "publicTemplates": "Public Templates",
+    "addNewTemplate": "Add new template",
+    "addTemplate": "Add Template",
+    "chooseType": "Choose Type",
+    "actions": {
+        "editTemplate": "Edit template",
+        "editContent": "Edit content",
+        "viewContentReadOnly": "View content (read-only)",
+        "publishTemplate": "Publish template",
+        "publishedCannotBeUnpublished": "Published (cannot be unpublished)",
+        "sourceUpdated": "Source updated",
+        "deleteTemplate": "Delete template"
+    },
+    "status": {
+        "published": "Published",
+        "draft": "Draft",
+        "updateAvailable": "Update available",
+        "sourceUnavailable": "Source unavailable"
+    },
+    "toasts": {
+        "templateDetached": {
+        "title": "Template detached",
+        "message": "You can now edit this template"
+        },
+        "detachFailed": "Detach failed",
+        "templateDeleteFailed": "Template delete failed"
+    },
+    "confirmDelete": {
+        "title": "Delete Template",
+        "message": "Are you sure you want to delete \"{name}\"?"
     }
   }
 }

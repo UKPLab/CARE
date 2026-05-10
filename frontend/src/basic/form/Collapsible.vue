@@ -2,7 +2,7 @@
   <div class="card my-3">
     <div class="card-header" style="cursor: pointer" @click="toggleCollapse">
       <LoadIcon :icon-name="isCollapsed ? 'arrow-right-short' : 'arrow-down-short'" class="me-1"></LoadIcon>
-      {{ title }}
+      {{ title || $t("basic.form.collapsible.advancedSettings") }}
       <span v-if="description" class="text-secondary ms-2">
         <small>{{ description }}</small>
       </span>
@@ -27,7 +27,7 @@ export default {
   props: {
     title: {
       type: String,
-      default: "Advanced Settings"
+      default: null
     },
     description: {
       type: String,

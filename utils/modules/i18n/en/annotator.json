@@ -16,5 +16,8 @@
     "activateNlpSupport": "Activate NLP support",
     "downloadAnnotations": "Download Annotations",
     "documentSubscribeError": "Document subscribe error",
-    "replies": "Replies"
+    "replies": "Replies",
+    "pdfPage": {
+        "loadingPage": "Loading Page {pageNumber}"
+    }
 }

@@ -2,7 +2,10 @@
     "form": {
        "placeholders": {
             "documentBracket": "<Dokument>"
-      }
+        },
+        "collapsible": {
+          "advancedSettings": "Erweiterte Einstellungen"
+        }
     },
     "configuration": {
       "title": "Konfiguration",
@@ -64,5 +67,28 @@
     "export": {
       "successTitle": "Export erfolgreich",
       "successMessage": "{id} erfolgreich exportiert"
+    },
+    "graph": {
+      "inspectNode": "Knoten prüfen",
+      "copyNode": "Knoten kopieren",
+      "addNodeBefore": "Knoten davor hinzufügen",
+      "addNodeAfter": "Knoten danach hinzufügen",
+      "removeNode": "Knoten entfernen",
+      "editNode": "Knoten bearbeiten",
+      "pasteCopiedNode": "Kopierten Knoten einfügen",
+      "pasteBeforeSelectedNode": "Vor ausgewähltem Knoten einfügen",
+      "pasteAfterSelectedNode": "Nach ausgewähltem Knoten einfügen",
+      "readOnly": "Sie können diesen Graphen nicht bearbeiten",
+      "confirmRemove": {
+        "title": "Knoten entfernen",
+        "message": "Möchten Sie den ausgewählten Knoten wirklich entfernen?",
+        "warning": "Alle nachfolgenden Knoten werden ebenfalls entfernt!"
+      }
+    },
+    "workflowStepEditor": {
+      "title": "Workflow-Schritt",
+      "errors": {
+        "addNextNode": "Fehler beim Hinzufügen des nächsten Knotens: {error}"
+      }
     }
 }

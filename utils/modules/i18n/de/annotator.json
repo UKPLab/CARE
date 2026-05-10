@@ -16,5 +16,8 @@
     "activateNlpSupport": "NLP-Unterstützung aktivieren",
     "downloadAnnotations": "Anmerkungen herunterladen",
     "documentSubscribeError": "Dokumentabonnement-Fehler",
-    "replies": "Antworten"
+    "replies": "Antworten",
+    "pdfPage": {
+        "loadingPage": "Seite {pageNumber} wird geladen"
+    }
 }
