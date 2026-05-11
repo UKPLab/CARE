@@ -48,4 +48,4 @@ utils/rpcs/moodleAPI/moodle_api/__pycache__
 *.pyc 
 email-mappings.py
 gitleaks-clean.sh
-.mailmap
+.mailmap.DS_Store
