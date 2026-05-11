@@ -253,6 +253,7 @@ export default {
     this.tickHandle = setInterval(() => {
       this.now = Date.now();
     }, 1000);
+  },
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
     if (this.tickHandle) {
