@@ -63,7 +63,10 @@ module.exports = (sequelize, DataTypes) => {
         ];
 
         static associate(models) {
-            // no associations for now
+            Configuration.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
     }
 

@@ -1,5 +1,5 @@
 <template>
-  <LoadIcon v-tooltip :icon-name="value" :color="color" :title="title" />
+  <LoadIcon v-tooltip :icon-name="value" :color="color" :title="title" :size="size"/>
 </template>
 
 <script>
@@ -29,6 +29,11 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    size: {
+      type: Number,
+      required: false,
+      default: 16
     }
   },
 }

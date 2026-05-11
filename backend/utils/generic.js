@@ -61,3 +61,17 @@ exports.generateError = function generateError(code, message) {
     error.code = code;
     return error;
 }
+
+  /**
+     * Reduces a full User-Agent string to a readable browser label.
+     * @param {string|undefined} ua
+     * @returns {string}
+  */
+exports.parseUserAgent = function parseUserAgent(ua) {
+    if (!ua) return "Unknown";
+    if (ua.includes("Edg")) return "Edge";
+    if (ua.includes("Chrome")) return "Chrome";
+    if (ua.includes("Firefox")) return "Firefox";
+    if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+    return ua.substring(0, 60);
+}
