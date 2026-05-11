@@ -39,6 +39,8 @@ const DELETE_MODELS = [
     'comment',
     'annotation',
     'document_data',
+    'document',
+    'study',
 ];
 
 // Models where the userId column is REASSIGNED to the admin user instead of
@@ -50,8 +52,6 @@ const REASSIGN_MODELS = [
     'configuration',
     'tag',
     'tag_set',
-    'document',
-    'study',
 ];
 
 // Auth secret columns always wiped on surviving users (Phase C).
@@ -219,6 +219,20 @@ async function pseudonymizeAndWipeSecrets(adminId) {
         await user.update(updates, { hooks: false });
     }
 }
+async function removeAffectedStudies(userIds) {
+    const rows = await db.sequelize.query(
+        `SELECT DISTINCT ss."studyId"
+         FROM study_step ss
+         JOIN document d ON ss."documentId" = d.id
+         WHERE d."userId" IN (:userIds)`,
+        { replacements: { userIds }, type: db.Sequelize.QueryTypes.SELECT }
+    );
+    const ids = rows.map(r => r.studyId);
+    if (ids.length === 0) return;
+    console.log(`  deleting ${ids.length} studies referencing non-consenting documents`);
+    await db.models['study'].destroy({ where: { id: ids }, force: true });
+} 
+
 
 async function main() {
     const args = parseArgs(process.argv.slice(2));
@@ -250,6 +264,7 @@ async function main() {
     });
     const nonConsentIds = nonConsenters.map(u => u.id).filter(id => id !== adminId);
     console.log(`\nPhase A: ${nonConsentIds.length} non-consenting users to remove…`);
+    await removeAffectedStudies(nonConsentIds);
     await removeUserData(nonConsentIds, adminId);
 
     // Phase A.2: introspection safety net — must run before User.destroy so any
@@ -273,7 +288,7 @@ async function main() {
             await introspectionSafetyNet(toRemove);
             await User.destroy({ where: { id: toRemove }, force: true });
         } else {
-            console.log(`\n--num ${args.num}: already ≤ ${args.num} consenting users, no subset needed.`);
+            console.log(`\n num of consenting users: ${survivors.length} already ≤ --num ${args.num}, no subset needed/possible.`);
         }
     }
 

@@ -5,15 +5,29 @@
 // annotation → comment → comment_vote chain, eliminating the need for
 // manual ordering in application code.
 const CASCADE_FKS = [
+    { table: 'study_step',    column: 'documentId', refTable: 'document', refColumn: 'id' },
+    { table: 'study_session',    column: 'studyId', refTable: 'study', refColumn: 'id' },    
+    { table: 'annotation',    column: 'documentId', refTable: 'document', refColumn: 'id' },
     { table: 'annotation',    column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
     { table: 'comment',       column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
     { table: 'comment',       column: 'annotationId',   refTable: 'annotation',    refColumn: 'id' },
+    { table: 'comment',       column: 'documentId',   refTable: 'document',    refColumn: 'id' },
     { table: 'comment_vote',  column: 'commentId',      refTable: 'comment',       refColumn: 'id' },
-    { table: 'document_edit', column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
-    { table: 'document_data', column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
-    { table: 'collab',        column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
+    { table: 'comment_state',  column: 'commentId',      refTable: 'comment',       refColumn: 'id' },
     { table: 'comment_state',    column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
+    { table: 'comment_state',  column: 'studyStepId',      refTable: 'study_step',       refColumn: 'id' },
+    { table: 'comment_state',  column: 'documentId',      refTable: 'document',       refColumn: 'id' },
+    { table: 'comment',  column: 'parentCommentId',      refTable: 'comment',       refColumn: 'id' },    
+    { table: 'document_edit', column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
+    { table: 'document_edit', column: 'documentId', refTable: 'document', refColumn: 'id'},
+    { table: 'document_data', column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
+    { table: 'document_data', column: 'studyStepId', refTable: 'study_step', refColumn: 'id' },
+    { table: 'document_data', column: 'documentId', refTable: 'document', refColumn: 'id' },
+    { table: 'collab',        column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
+    { table: 'collab',        column: 'documentId', refTable: 'document', refColumn: 'id' },
+    { table: 'user_environment',    column: 'studyStepId', refTable: 'study_step', refColumn: 'id' },
     { table: 'user_environment', column: 'studySessionId', refTable: 'study_session', refColumn: 'id' },
+    { table: 'user_environment', column: 'documentId', refTable: 'document', refColumn: 'id' },
 ];
 
 module.exports = {
