@@ -149,7 +149,7 @@
         {{ isTestingModel ? "Testing..." : "Test Model" }}
       </button>
       <button class="btn btn-primary" type="button" @click="saveModel">
-        {{ modelForm.id ? "Update" : "Create" }}
+        {{ modelForm.id ? "Update" : "Add" }}
       </button>
     </template>
   </BasicModal>
