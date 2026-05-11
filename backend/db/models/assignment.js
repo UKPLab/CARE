@@ -93,9 +93,9 @@ module.exports = (sequelize, DataTypes) => {
 		];
 
 		/**
-		 * Apply visibility filter for assignments based on assignment_role.
+		 * Apply visibility filter for assignments based on assignment_share.
 		 * A user can see an assignment if they are the owner (userId), or if the
-		 * assignment's assignment_role entry has their userId or one of their roleIds.
+		 * assignment's assignment_share entry has their userId or one of their roleIds.
 		 *
 		 * @param {number} userId - The ID of the user to build the filter for.
 		 * @returns {object} Sequelize where-clause filter object.
@@ -103,13 +103,13 @@ module.exports = (sequelize, DataTypes) => {
 		static async getUserFilter(userId) {
 			const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
 
-			// Step 1: build the assignment_role query — rows belonging to this user directly or via role
+			// Step 1: build the assignment_share query — rows belonging to this user directly or via role
 			const roleOrConditions = [{ userId }];
 			if (Array.isArray(roleIds) && roleIds.length > 0) {
 				roleOrConditions.push({ roleId: { [Op.in]: roleIds } });
 			}
 			// Step 2: find all assignmentIds this user is linked to
-			const matchingEntries = await sequelize.models.assignment_role.findAll({
+			const matchingEntries = await sequelize.models.assignment_share.findAll({
 				attributes: ['assignmentId'],
 				where: {
 					deleted: { [Op.not]: true },
@@ -119,7 +119,7 @@ module.exports = (sequelize, DataTypes) => {
 			});
 			const assignedIds = [...new Set(matchingEntries.map(e => e.assignmentId))];
 
-			// Step 3: filter assignments by ownership or assignment_role membership
+			// Step 3: filter assignments by ownership or assignment_share membership
 			const filter = { [Op.or]: [{ userId }] };
 			if (assignedIds.length > 0) {
 				filter[Op.or].push({ id: { [Op.in]: assignedIds } });
@@ -127,10 +127,6 @@ module.exports = (sequelize, DataTypes) => {
 			return filter;
 		}
 		static associate(models) {
-			Assignment.hasMany(models["assignment_role"], {
-				foreignKey: "assignmentId",
-				as: "assignedEntries",
-			});
 
 			Assignment.belongsTo(models["configuration"], {
 				foreignKey: "validationConfigurationId",

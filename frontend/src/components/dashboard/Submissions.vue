@@ -15,7 +15,7 @@
         :key="`active-${assignment.id}`"
       >
         <Card
-          :title="assignment.title"
+          :title="assignment.name"
           collapsable
           collapsed
         >

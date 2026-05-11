@@ -2,28 +2,28 @@
 const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
-	class AssignmentRole extends MetaModel {
+	class AssignmentShare extends MetaModel {
 		static autoTable = true;
 
 		static associate(models) {
-			AssignmentRole.belongsTo(models["assignment"], {
+			AssignmentShare.belongsTo(models["assignment"], {
 				foreignKey: "assignmentId",
 				as: "assignment",
 			});
 
-			AssignmentRole.belongsTo(models["user_role"], {
+			AssignmentShare.belongsTo(models["user_role"], {
 				foreignKey: "roleId",
 				as: "role",
 			});
 
-			AssignmentRole.belongsTo(models["user"], {
+			AssignmentShare.belongsTo(models["user"], {
 				foreignKey: "userId",
 				as: "user",
 			});
 		}
 	}
 
-	AssignmentRole.init(
+	AssignmentShare.init(
 		{
 			assignmentId: DataTypes.INTEGER,
 			roleId: DataTypes.INTEGER,
@@ -34,17 +34,17 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		{
 			sequelize,
-			modelName: 'assignment_role',
-			tableName: 'assignment_role',
+			modelName: 'assignment_share',
+			tableName: 'assignment_share',
 			hooks: {
-				afterUpdate: async (assignmentRole, options) => {
-					if (assignmentRole.deleted && !assignmentRole._previousDataValues.deleted) {
-						await AssignmentRole.destroy({ where: { id: assignmentRole.id }, transaction: options.transaction });
+				afterUpdate: async (assignmentShare, options) => {
+					if (assignmentShare.deleted && !assignmentShare._previousDataValues.deleted) {
+						await AssignmentShare.destroy({ where: { id: assignmentShare.id }, transaction: options.transaction });
 					}
 				},
 			},
 		}
 	);
 
-	return AssignmentRole;
+	return AssignmentShare;
 };
