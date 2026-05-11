@@ -27,9 +27,9 @@ const getVersion = () => {
         }
     }
     try {
-        Hash = execSync('git rev-parse --short HEAD').toString().trim();
-        tag_latest = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-        return tag_latest + ": " + Hash;
+        const hash = execSync('git rev-parse --short HEAD').toString().trim();
+        const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+        return branch + ": " + hash;
     } catch (e) {
         console.error("Error retrieving version from git locally",e);
         // Fallback if no git is found
