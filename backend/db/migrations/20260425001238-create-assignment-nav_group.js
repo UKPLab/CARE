@@ -1,6 +1,6 @@
 'use strict';
 
-const NEW_GROUP = { name: 'Assignment', icon: 'list-check', order: 4 };
+const NEW_GROUP = { name: 'Assignment', icon: 'journal-check', order: 4 };
 
 // Groups that need to be shifted up to make room for the new Assignment group
 const SHIFTED_GROUPS = [
@@ -10,7 +10,7 @@ const SHIFTED_GROUPS = [
 
 const ELEMENT_TO_GROUP = {
   Assignments: { group: 'Assignment', order: 1, previousGroup: 'Default' },
-  Submissions: { group: 'Assignment', order: 2, previousGroup: 'Study' },
+  Submissions: { group: 'Assignment', order: 2, previousGroup: 'Study', icon: 'file-earmark-arrow-up', previousIcon: 'file-earmark-richtext' },
 };
 
 module.exports = {
@@ -45,9 +45,13 @@ module.exports = {
       );
 
       if (groupId) {
+        const updateFields = { groupId, order: config.order, updatedAt: now };
+        if (config.icon) {
+          updateFields.icon = config.icon;
+        }
         await queryInterface.bulkUpdate(
           'nav_element',
-          { groupId, order: config.order, updatedAt: now },
+          updateFields,
           { name: elementName }
         );
       }
@@ -65,9 +69,13 @@ module.exports = {
       );
 
       if (groupId) {
+        const revertFields = { groupId, updatedAt: now };
+        if (config.previousIcon) {
+          revertFields.icon = config.previousIcon;
+        }
         await queryInterface.bulkUpdate(
           'nav_element',
-          { groupId, updatedAt: now },
+          revertFields,
           { name: elementName }
         );
       }
