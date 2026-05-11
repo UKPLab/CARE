@@ -77,18 +77,62 @@ export default {
       traceColumns: [
         { name: "Action", key: "action", sortable: true },
         { name: "Direction", key: "directionLabel" },
+        { name: "Time", key: "timeDisplay", sortable: true },
+        { name: "Elapsed", key: "elapsedDisplay", sortable: true },
       ],
     };
   },
   computed: {
+    /**
+     * Look up the current recording row from the Vuex store so we can
+     * read its startTime. The row is kept reactively up to date by the
+     * `recording` table subscription on SocketProfiler.vue.
+     */
+    recording() {
+      if (!this.recordingId) return null;
+      const recordings = this.$store.getters["table/recording/getAll"] || [];
+      return recordings.find(r => r.id === this.recordingId) || null;
+    },
+    recordingStartMs() {
+      const rec = this.recording;
+      if (!rec || !rec.startTime) return null;
+      return new Date(rec.startTime).getTime();
+    },
     traceTable() {
+      const startMs = this.recordingStartMs;
       return this.allTraces.map(t => ({
         ...t,
         directionLabel: t.direction ? '→ backend' : '← frontend',
+        timeDisplay: this.formatAbsoluteTime(t.startTime),
+        elapsedDisplay: this.formatElapsed(t.startTime, startMs),
       }));
     },
   },
   methods: {
+    /**
+     * Format an absolute timestamp as HH:MM:SS in the user's local timezone.
+     */
+    formatAbsoluteTime(ts) {
+      if (!ts) return '-';
+      const d = new Date(ts);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    },
+    /**
+     * Format a trace's offset from the recording start as +HH:MM:SS.
+     * Returns '-' if either timestamp is missing.
+     */
+    formatElapsed(traceTs, startMs) {
+      if (!traceTs || startMs === null) return '-';
+      const ms = new Date(traceTs).getTime() - startMs;
+      if (ms < 0) return '+00:00:00';
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const pad = (n) => String(n).padStart(2, '0');
+      return `+${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    },
     open(recordingId, traces) {
       this.recordingId = recordingId;
       this.recordingName = "Recording " + new Date().toLocaleString();
@@ -128,42 +172,42 @@ export default {
       });
     },
     confirm() {
-    const tracesToDeleteCount = this.tracesToDelete.length;
-    let pendingOps = 1 + tracesToDeleteCount; // 1 for the rename, plus N trace deletions
-    let failed = false;
+      const tracesToDeleteCount = this.tracesToDelete.length;
+      let pendingOps = 1 + tracesToDeleteCount; // 1 for the rename, plus N trace deletions
+      let failed = false;
 
-    const onOpComplete = (res, opName) => {
+      const onOpComplete = (res, opName) => {
         pendingOps--;
         if (!res.success && !failed) {
-            failed = true;
-            this.eventBus.emit("toast", {
-                title: "Failed to save recording",
-                message: `${opName}: ${res.message}`,
-                variant: "danger",
-            });
+          failed = true;
+          this.eventBus.emit("toast", {
+            title: "Failed to save recording",
+            message: `${opName}: ${res.message}`,
+            variant: "danger",
+          });
         }
         if (pendingOps === 0 && !failed) {
-            this.$refs.modal.close();
-            this.eventBus.emit("toast", {
-                title: "Recording saved",
-                message: "Recording has been saved successfully",
-                variant: "success",
-            });
+          this.$refs.modal.close();
+          this.eventBus.emit("toast", {
+            title: "Recording saved",
+            message: "Recording has been saved successfully",
+            variant: "success",
+          });
         }
-    };
+      };
 
-    this.$socket.emit("appDataUpdate", {
+      this.$socket.emit("appDataUpdate", {
         table: "recording",
         data: { id: this.recordingId, name: this.recordingName }
-    }, (res) => onOpComplete(res, "rename"));
+      }, (res) => onOpComplete(res, "rename"));
 
-    this.tracesToDelete.forEach(t => {
+      this.tracesToDelete.forEach(t => {
         this.$socket.emit("appDataUpdate", {
-            table: "trace",
-            data: { id: t.id, deleted: true }
+          table: "trace",
+          data: { id: t.id, deleted: true }
         }, (res) => onOpComplete(res, `delete trace ${t.id}`));
-    });
-},
+      });
+    },
   },
 };
 </script>
