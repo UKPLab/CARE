@@ -18,6 +18,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'studyStepId',
                 as: 'studyStep',
             });
+
+            Annotation.belongsTo(models["user"], {
+                foreignKey: 'userId',
+                as: 'user',
+            });
         }
 
         /**
