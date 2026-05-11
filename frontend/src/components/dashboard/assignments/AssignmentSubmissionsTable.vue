@@ -58,7 +58,7 @@ export default {
       },
       columns: [
         { name: "ID", key: "id" },
-        { name: "Submission Name", key: "submissionName" },
+        { name: "Submission Name", key: "name" },
         { name: "Username", key: "userName" },
         { name: "Studies Using", key: "studyUsageCount" },
         { name: "Created At", key: "createdAt" },
@@ -114,9 +114,10 @@ export default {
             allowReUpload: (submission.userId === this.currentUserId || this.canReplaceDeleteSubmissions) && !isStudyLocked,
             isStudyLocked,
             studyUsageCount,
-            submissionName: submission.name || "-",
+            name: submission.name || "-",
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
+            description: submission.description || "",
             createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
           };
         });
@@ -303,12 +304,7 @@ export default {
         });
         return;
       }
-
-      this.$refs.uploadModal.open(assignmentId, {
-        submissionId: row.id,
-        userId: row.userId,
-        group: row.group === "-" ? null : row.group,
-      });
+      this.$refs.uploadModal.open(assignmentId, row);
     },
     deleteSubmission(row) {
       if (row.isStudyLocked) {

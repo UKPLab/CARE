@@ -9,10 +9,8 @@
       <h5 class="modal-title">Upload Submission</h5>
     </template>
 
-    <template
-      v-if="canUploadForOthers"
-      #step-1
-    >
+    <!-- Step 1: Assignment info + metadata (always shown) -->
+    <template #step-1>
       <div class="p-3 pb-0">
         <h6 class="mb-1">Assignment Description</h6>
         <p class="text-muted mb-3">
@@ -23,6 +21,13 @@
         v-model="submissionMeta"
         :fields="metadataFields"
       />
+    </template>
+
+    <!-- Step 2 (canUploadForOthers only, no preselected user): Select user -->
+    <template
+      v-if="canUploadForOthers && !userPreselected"
+      #step-2
+    >
       <BasicTable
         v-model="selectedUser"
         :columns="selectionTable"
@@ -32,10 +37,10 @@
       />
     </template>
 
-
+    <!-- File upload: step 3 for admins (no preselect), step 2 otherwise -->
     <template
-      v-if="canUploadForOthers"
-      #step-2
+      v-if="canUploadForOthers && !userPreselected"
+      #step-3
     >
       <BasicForm
         v-model="files"
@@ -44,25 +49,7 @@
     </template>
 
     <template
-      v-if="!canUploadForOthers"
-      #step-1
-    >
-      <div class="p-3">
-        <div class="mb-3">
-          <h6 class="mb-1">Assignment Description</h6>
-          <p class="text-muted mb-0">
-            {{ assignmentDescription }}
-          </p>
-        </div>
-      </div>
-      <BasicForm
-        v-model="submissionMeta"
-        :fields="metadataFields"
-      />
-    </template>
-
-    <template
-      v-if="!canUploadForOthers"
+      v-if="!canUploadForOthers || userPreselected"
       #step-2
     >
       <BasicForm
@@ -101,6 +88,7 @@ export default {
       files: null,
       assignmentId: null,
       replacementSubmissionId: null,
+      userPreselected: false,
       selectionTable: [
         { name: "ID", key: "id", sortable: true },
         { name: "extId", key: "extId", sortable: true },
@@ -148,8 +136,9 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
     },
     steps() {
-      if (this.canUploadForOthers) {
+      if (this.canUploadForOthers && !this.userPreselected) {
         return [
+          { title: "Assignment" },
           { title: "Select User" },
           { title: "Upload File" },
         ];
@@ -161,8 +150,9 @@ export default {
       ];
     },
     stepValid() {
-      if (this.canUploadForOthers) {
+      if (this.canUploadForOthers && !this.userPreselected) {
         return [
+          this.selectedValidatorId !== 0,
           this.selectedUser.length > 0,
           this.checkRequiredFiles(),
         ];
@@ -212,31 +202,39 @@ export default {
     },
   },
   methods: {
-    open(assignmentId = null, replacement = null) {
-      this.files = null;
-      this.selectedUser = [];
-      this.selectedValidatorData = null;
-      this.submissionMeta = {
-        name: replacement?.name || "",
-        description: replacement?.description || "",
-      };
-      this.assignmentId = assignmentId;
-      this.replacementSubmissionId = replacement?.submissionId ?? null;
+    open(assignmentId = null, submission = null) {
+      const isReplacement = submission !== null;
 
+      this.files = null;
+      this.selectedValidatorData = null;
+      this.assignmentId = assignmentId;
+      this.replacementSubmissionId = isReplacement ? submission.id : null;
+      this.submissionMeta = {
+        name: submission?.name,
+        description: submission?.description
+      };
+
+      console.log("submission", submission);
       // Preselect assignment validator, if available.
-      this.selectedValidatorId = 0;
       const assignment = assignmentId
         ? this.$store.getters["table/assignment/get"](assignmentId)
         : null;
-      const validationId = assignment?.validationConfigurationId || 0;
-      this.selectedValidatorId = validationId;
+      this.selectedValidatorId = assignment?.validationConfigurationId || 0;
 
-      if (!this.canUploadForOthers && this.currentUserId) {
+      if (this.canUploadForOthers && isReplacement) {
+        // Replacing an existing submission — user is already known, skip selection step.
+          const user = this.$store.getters["table/user/get"](submission.userId);
+        this.selectedUser = user;
+        this.userPreselected = true;
+      } else if (this.canUploadForOthers) {
+        // New upload by an admin — user must be selected in step 2.
+        this.selectedUser = [];
+        this.userPreselected = false;
+      } else {
+        // Regular user — always uploading for themselves.
         const currentUser = this.$store.getters["table/user/get"](this.currentUserId);
         this.selectedUser = currentUser ? [currentUser] : [{ id: this.currentUserId }];
-      } else if (this.canUploadForOthers && replacement?.userId) {
-        const selectedUser = this.$store.getters["table/user/get"](replacement.userId);
-        this.selectedUser = selectedUser ? [selectedUser] : [{ id: replacement.userId }];
+        this.userPreselected = false;
       }
 
       this.handleValidatorChangeById(this.selectedValidatorId);
