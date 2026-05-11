@@ -36,7 +36,7 @@
 
 <script>
 /**
- * StepOptions
+ * StepOptionsSubmissions
  *
  * Provides configuration options for the export process. Currently, it allows 
  * the user to toggle alias generation for student names and set a custom seed for it.
@@ -45,7 +45,7 @@
  */
 
 export default {
-  name: "StepOptions",
+  name: "StepOptionsSubmissions",
   props: {
     generateAliases: {
       type: Boolean,

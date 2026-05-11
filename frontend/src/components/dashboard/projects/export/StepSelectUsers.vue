@@ -1,17 +1,17 @@
 <template>
   <div>
-    <h6>Select Submissions to Download:</h6>
+    <h6>Select Users for the Data Export:</h6>
 
     <BasicTable
-      v-if="submissionTableData.length > 0"
-      v-model="selectedSubmissions" 
-      :columns="submissionTable.columns"
-      :data="submissionTableData"
-      :options="submissionTable.options"
+      v-if="userTableData.length > 0"
+      v-model="selectedUsers" 
+      :columns="userTable.columns"
+      :data="userTableData"
+      :options="userTable.options"
     />
 
     <div v-else class="alert alert-warning">
-      <span>No submissions found for this project.</span>
+      <span>No users with data found for this project.</span>
     </div>
 
   </div>
@@ -21,17 +21,17 @@
 import BasicTable from "@/basic/Table.vue";
 
 /**
- * StepSelectStudents
+ * StepSelectUsers
  *
  * This component renders an interactive data table allowing the user to select 
- * specific student submissions for download. It adjusts data visibility depending
+ * specific users for download. It adjusts data visibility depending
  * on the user's rights to see the full names or not.
  *
  * @author Mélissa Loew
  */
 
 export default {
-  name: "StepSelectStudents",
+  name: "StepSelectUsers",
   components: { BasicTable },
   props: {
     projectId: {
@@ -41,11 +41,15 @@ export default {
     modelValue: {
       type: Array,
       default: () => []
+    },
+    exportType: {
+      type: String,
+      default: 'documents'
     }
   },
   emits: ['update:modelValue'],
   computed: {
-    selectedSubmissions: {
+    selectedUsers: {
       get() {
         return this.modelValue;
       },
@@ -64,7 +68,7 @@ export default {
       return this.$store.getters["table/document/getAll"];
     },
     // the data that should be displayed in the table
-    submissionTableData() {
+    userTableData() {
       const currentUser = this.$store.getters["auth/getUser"];
       
       if (!this.documents || !this.users || !this.projectId) {
@@ -91,29 +95,42 @@ export default {
               userId: uid,
               userName: `${student.userName}`,
               studentName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
-              fileCount: 0,
+              count: 0,
+              countedSubmissions: new Set(),
               acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
               lastSubmissionDate: currentDocDate
             };
           }
-          submissionsByUser[uid].fileCount++;
+
+          if (this.exportType === 'submissions') {
+            // count unique submissions by submissionId
+            if (doc.submissionId && !submissionsByUser[uid].countedSubmissions?.has(doc.submissionId)) {
+              if (!submissionsByUser[uid].countedSubmissions) {
+                submissionsByUser[uid].countedSubmissions = new Set();
+              }
+              submissionsByUser[uid].countedSubmissions.add(doc.submissionId);
+              submissionsByUser[uid].count++;
+            }
+          } else {
+            submissionsByUser[uid].count++;
+          }
 
           if (currentDocDate > submissionsByUser[uid].lastSubmissionDate) {
             submissionsByUser[uid].lastSubmissionDate = currentDocDate;
           }
         }
       });
-      
+
       return Object.values(submissionsByUser).map(submission => ({
         ...submission,
         id: submission.userId,
         lastSubmissionDate: submission.lastSubmissionDate.toISOString().split('T')[0]
       }));
     },
-    submissionTable() {
+    userTable() {
       const cols = [
         { name: "Username", key: "userName", sortable: true },
-        { name: "Files", key: "fileCount", sortable: true },
+        { name: this.exportType === 'submissions' ? "Submissions" : "Documents", key: "count", sortable: true },
         { 
           name: "Accepted Data Sharing", 
           key: "acceptDataSharing", 

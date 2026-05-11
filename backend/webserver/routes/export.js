@@ -37,9 +37,10 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed } = req.body;
-        let { userIds = [] } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits } = req.body;
+        let { userIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
+        const shouldIncludeNonConsenting = String(includeNonConsentingEdits) === 'true';
 
         try {
             userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
@@ -47,6 +48,14 @@ module.exports = function (server) {
         } catch (e) {
             console.warn("Could not parse userIds:", userIds);
             userIds = [];
+        }
+
+        try {
+            documentTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes;
+            if (!Array.isArray(documentTypes)) documentTypes = [0, 1, 2, 4];
+        } catch (e) {
+            console.warn("Could not parse documentTypes:", documentTypes);
+            documentTypes = [0, 1, 2, 4];
         }
 
         try {
@@ -101,6 +110,9 @@ module.exports = function (server) {
                     await processDocumentBasedExport(
                         server,
                         projectId,
+                        userIds,
+                        documentTypes,
+                        shouldIncludeNonConsenting,
                         exportFolderName.split('.')[0],
                         archive
                     );
@@ -374,40 +386,36 @@ module.exports = function (server) {
      * @param {Object} archive - The archiver instance to append files to.
      * @returns {Promise<void>}
      */
-    async function processDocumentForExport(server, doc, docFolder, archive) {
-        // document_data for all types
+    async function processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, archive) {
+        // document_data for all types, at the doc level
         const documentData = await server.db.models.document_data.findAll({
             where: { documentId: doc.id, deleted: false },
             raw: true,
         });
-        archive.append(JSON.stringify(documentData, null, 2), { name: `${docFolder}/document_data.json` });
+        if (documentData.length > 0) {
+            archive.append(JSON.stringify(documentData, null, 2), { name: `${docFolder}/document_data.json` });
+        }
 
         switch (doc.type) {
             case 0: { // PDF
                 const [annotations, comments] = await Promise.all([
-                    server.db.models.annotation.findAll({
-                        where: { documentId: doc.id },
-                        raw: true,
-                    }),
-                    server.db.models.comment.findAll({
-                        where: { documentId: doc.id },
-                        raw: true,
-                    }),
+                    server.db.models.annotation.findAll({ where: { documentId: doc.id }, raw: true }),
+                    server.db.models.comment.findAll({ where: { documentId: doc.id }, raw: true }),
                 ]);
-
                 const commentVotes = await server.db.models.comment_vote.findAll({
                     where: { commentId: comments.map(c => c.id), deleted: false },
                     raw: true,
                 });
-
                 const commentsWithVotes = comments.map(c => ({
                     ...c,
                     votes: commentVotes.filter(v => v.commentId === c.id),
                 }));
-
-                archive.append(JSON.stringify(annotations, null, 2), { name: `${docFolder}/annotations.json` });
-                archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
-
+                if (annotations.length > 0) {
+                    archive.append(JSON.stringify(annotations, null, 2), { name: `${docFolder}/annotations.json` });
+                }
+                if (commentsWithVotes.length > 0) {
+                    archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
+                }
                 const pdfPath = path.join(storageDir, `${doc.hash}.pdf`);
                 if (fs.existsSync(pdfPath)) {
                     archive.file(pdfPath, { name: `${docFolder}/document.pdf` });
@@ -419,21 +427,66 @@ module.exports = function (server) {
 
             case 1: // HTML
             case 2: { // MODAL
-                const edits = await server.db.models.document_edit.findAll({
+                // fetch all edits for this document, ordered chronologically
+                let allEdits = await server.db.models.document_edit.findAll({
                     where: { documentId: doc.id, deleted: false },
                     order: [['createdAt', 'ASC']],
                     raw: true,
                 });
 
-                const delta = dbToDelta(edits);
+                // filter by consent unless the option is enabled
+                if (!includeNonConsentingEdits) {
+                    const editorUserIds = [...new Set(allEdits.map(e => e.userId).filter(Boolean))];
+                    const editorUsers = await server.db.models.user.findAll({
+                        where: { id: editorUserIds },
+                        attributes: ['id', 'acceptDataSharing'],
+                        raw: true,
+                    });
+                    const consentedUserIds = new Set(
+                        editorUsers.filter(u => u.acceptDataSharing).map(u => u.id)
+                    );
+                    allEdits = allEdits.filter(e => !e.userId || consentedUserIds.has(e.userId));
+                }
 
-                archive.append(deltaToText(delta),                    { name: `${docFolder}/text.txt` });
-                archive.append(deltaToHtml(delta),                    { name: `${docFolder}/html.html` });
-                archive.append(JSON.stringify(edits, null, 2),        { name: `${docFolder}/edits.json` });
+                // group edits by studySessionId (null = template)
+                const sessionGroups = new Map();
+                for (const edit of allEdits) {
+                    const key = edit.studySessionId ?? '__template__';
+                    if (!sessionGroups.has(key)) sessionGroups.set(key, []);
+                    sessionGroups.get(key).push(edit);
+                }
+
+                // fetch study sessions to resolve hashes
+                const sessionIds = [...sessionGroups.keys()].filter(k => k !== '__template__');
+                const sessions = sessionIds.length > 0
+                    ? await server.db.models.study_session.findAll({
+                        where: { id: sessionIds },
+                        attributes: ['id', 'hash'],
+                        raw: true,
+                    })
+                    : [];
+                const sessionHashMap = new Map(sessions.map(s => [s.id, s.hash]));
+
+                for (const [key, edits] of sessionGroups.entries()) {
+                    const isTemplate = key === '__template__';
+                    const delta = dbToDelta(edits);
+
+                    // skip empty content
+                    const text = deltaToText(delta);
+                    if (!text.trim()) continue;
+
+                    const subFolder = isTemplate
+                        ? `${docFolder}/template`
+                        : `${docFolder}/${sessionHashMap.get(key) ?? key}`;
+
+                    archive.append(text,                                  { name: `${subFolder}/text.txt` });
+                    archive.append(deltaToHtml(delta),                    { name: `${subFolder}/html.html` });
+                    archive.append(JSON.stringify(edits, null, 2),        { name: `${subFolder}/edits.json` });
+                }
                 break;
             }
 
-            case 4: { // ZIP
+            case 4: { // ZIP — unchanged
                 const zipPath = path.join(storageDir, `${doc.hash}.zip`);
                 if (fs.existsSync(zipPath)) {
                     archive.file(zipPath, { name: `${docFolder}/document.zip` });
@@ -456,52 +509,32 @@ module.exports = function (server) {
      * @param {number|string} projectId - The ID of the project to export.
      * @param {string} baseFolderName - The root folder name inside the ZIP archive.
      * @param {Object} archive - The archiver instance to append files to.
+     * @param {Array<number>} userIds - List of user IDs to filter documents by.
+     * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
      * @returns {Promise<void>}
      */
-    async function processDocumentBasedExport(server, projectId, baseFolderName, archive) {
-
-        // 1. Fetch all studies for this project
-        const studies = await server.db.models.study.findAll({
-            where: { projectId, deleted: false },
+    async function processDocumentBasedExport(server, projectId, userIds, documentTypes, includeNonConsentingEdits, baseFolderName, archive) {
+        const docs = await server.db.models.document.findAll({
+            where: { projectId, userId: userIds, deleted: false, parentDocumentId: null },
         });
-        if (studies.length === 0) {
-            console.warn(`[DocumentExport] No studies found for project ${projectId}`);
-            return;
-        }
-        const studyIds = studies.map(s => s.id);
 
-        // 2. Fetch all steps for those studies
-        const steps = await server.db.models.study_step.findAll({
-            where: { studyId: studyIds, deleted: false },
-        });
-        if (steps.length === 0) {
-            console.warn(`[DocumentExport] No steps found for project ${projectId}`);
-            return;
-        }
-
-        // 3. Collect unique document IDs
-        const uniqueDocIds = [...new Set(steps.map(s => s.documentId).filter(Boolean))];
-        if (uniqueDocIds.length === 0) {
+        if (docs.length === 0) {
             console.warn(`[DocumentExport] No documents found for project ${projectId}`);
             return;
         }
 
-        // 4. Export each document, filtering by owner's data sharing consent
-        for (const docId of uniqueDocIds) {
-            const doc = await server.db.models.document.findByPk(docId);
-            if (!doc) {
-                console.warn(`[DocumentExport] Document ${docId} not found, skipping.`);
-                continue;
-            }
+        const filteredDocs = docs.filter(doc =>
+            documentTypes.includes(doc.type) || documentTypes.includes(String(doc.type))
+        );
 
-            const owner = await server.db.models.user.findByPk(doc.userId);
-            if (!owner || !owner.acceptDataSharing) {
-                console.warn(`[DocumentExport] Skipping document ${doc.hash}: owner has not accepted data sharing.`);
-                continue;
-            }
+        if (filteredDocs.length === 0) {
+            console.warn(`[DocumentExport] No documents matching selected types found for project ${projectId}`);
+            return;
+        }
 
+        for (const doc of filteredDocs) {
             const docFolder = `${baseFolderName}/${doc.hash}`;
-            await processDocumentForExport(server, doc, docFolder, archive);
+            await processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, archive);
         }
     }
 };
