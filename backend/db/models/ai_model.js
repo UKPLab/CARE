@@ -34,17 +34,6 @@ module.exports = (sequelize, DataTypes) => {
                 throw new Error("Cannot enable this model while its credential is disabled");
             }
         }
-
-        static validateModelOwnership(aiModel, options = {}) {
-            const currentUserId = Number(options?.context?.currentUserId);
-            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
-                return;
-            }
-
-            if (Number(aiModel.userId) !== currentUserId) {
-                throw new Error("You can only update AI models that you own");
-            }
-        }
     }
 
     AiModel.init({
@@ -65,11 +54,9 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ai_model',
         hooks: {
             beforeCreate: async (aiModel, options) => {
-                AiModel.validateModelOwnership(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
             beforeUpdate: async (aiModel, options) => {
-                AiModel.validateModelOwnership(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
         },

@@ -6,13 +6,26 @@ module.exports = (sequelize, DataTypes) => {
         static autoTable = true;
 
         /**
-         * When a credential is soft-deleted, soft-delete dependent ai_model rows (and their shares).
-         * When a credential is disabled, disable dependent ai_model rows (non-deleted only).
+         * Soft-delete: recurse into models whose FK follows Sequelize's class convention
+         * (`AiCredential` → `aiCredentialId`) and expose `deleted`, then deeper dependents
+         * (e.g. `AiModel` → `aiModelId`).
+         * Disable credential: set `enabled: false` on non-deleted dependents that have `enabled`.
+         * Bulk updates skip instance hooks; append affected `autoTable` rows to `transaction.changes`.
          */
-        /**
-         * Bulk updates do not populate Sequelize instance hooks, so they are missing from
-         * `transaction.changes` and clients never receive `ai_modelRefresh`. Append instances here.
-         */
+        static #fkColumnReferencingParent(ParentModel) {
+            const n = ParentModel.name;
+            return n.charAt(0).toLowerCase() + n.slice(1) + "Id";
+        }
+
+        static #modelsDeclaringFkTo(ParentModel) {
+            const fk = AiCredential.#fkColumnReferencingParent(ParentModel);
+            return Object.values(sequelize.models).filter(
+                (m) =>
+                    m?.rawAttributes &&
+                    Object.prototype.hasOwnProperty.call(m.rawAttributes, fk),
+            );
+        }
+
         static #appendInstancesToTransactionChanges(transaction, instances) {
             if (!transaction || !instances?.length) {
                 return;
@@ -23,58 +36,84 @@ module.exports = (sequelize, DataTypes) => {
             }
         }
 
+        static async #cascadeSoftDeleteDependents(ParentModel, parentIds, transaction) {
+            if (!transaction || !parentIds?.length) {
+                return [];
+            }
+            const fk = AiCredential.#fkColumnReferencingParent(ParentModel);
+            const childModels = AiCredential.#modelsDeclaringFkTo(ParentModel).filter((m) =>
+                Object.prototype.hasOwnProperty.call(m.rawAttributes, "deleted"),
+            );
+
+            let collected = [];
+            for (const Child of childModels) {
+                const childPk = Child.primaryKeyAttribute || "id";
+                const rows = await Child.findAll({
+                    attributes: [childPk],
+                    where: {[fk]: parentIds, deleted: false},
+                    raw: true,
+                    transaction,
+                });
+                const childIds = rows
+                    .map((row) => row[childPk])
+                    .filter((mid) => Number.isInteger(mid) && mid > 0);
+                if (childIds.length === 0) {
+                    continue;
+                }
+
+                await Child.update(
+                    {deleted: true, deletedAt: new Date()},
+                    {where: {[fk]: parentIds, deleted: false}, transaction},
+                );
+
+                const instances = await Child.findAll({
+                    where: {[childPk]: childIds},
+                    transaction,
+                });
+                collected.push(...instances);
+
+                const nested = await AiCredential.#cascadeSoftDeleteDependents(Child, childIds, transaction);
+                collected.push(...nested);
+            }
+            return collected;
+        }
+
         static async #cascadeModelsAfterCredentialWrite(credentialId, data, transaction) {
             const id = Number(credentialId);
             if (!Number.isInteger(id) || id <= 0) {
                 return;
             }
-            const AiModel = sequelize.models.ai_model;
-            const AiModelShare = sequelize.models.ai_model_share;
-            if (!AiModel) {
-                return;
-            }
 
             if (data.deleted) {
-                const rows = await AiModel.findAll({
-                    attributes: ["id"],
-                    where: {aiCredentialId: id, deleted: false},
-                    raw: true,
-                    transaction,
-                });
-                const modelIds = rows.map((row) => row.id).filter((mid) => Number.isInteger(mid) && mid > 0);
-
-                await AiModel.update(
-                    {deleted: true, deletedAt: new Date()},
-                    {where: {aiCredentialId: id, deleted: false}, transaction},
-                );
-
-                if (modelIds.length > 0 && AiModelShare) {
-                    await AiModelShare.update(
-                        {deleted: true, deletedAt: new Date()},
-                        {where: {aiModelId: modelIds, deleted: false}, transaction},
-                    );
-                }
-
-                if (modelIds.length > 0) {
-                    const modelInstances = await AiModel.findAll({
-                        where: {id: modelIds},
-                        transaction,
-                    });
-                    AiCredential.#appendInstancesToTransactionChanges(transaction, modelInstances);
-                }
+                const instances = await AiCredential.#cascadeSoftDeleteDependents(AiCredential, [id], transaction);
+                const autoTableInstances = instances.filter((inst) => inst.constructor.autoTable);
+                AiCredential.#appendInstancesToTransactionChanges(transaction, autoTableInstances);
                 return;
             }
 
             if (Object.prototype.hasOwnProperty.call(data, "enabled") && data.enabled === false) {
-                await AiModel.update(
-                    {enabled: false},
-                    {where: {aiCredentialId: id, deleted: false}, transaction},
+                const fk = AiCredential.#fkColumnReferencingParent(AiCredential);
+                const childModels = AiCredential.#modelsDeclaringFkTo(AiCredential).filter(
+                    (m) =>
+                        Object.prototype.hasOwnProperty.call(m.rawAttributes, "enabled") &&
+                        Object.prototype.hasOwnProperty.call(m.rawAttributes, "deleted"),
                 );
-                const disabledModelInstances = await AiModel.findAll({
-                    where: {aiCredentialId: id, deleted: false},
+                let instances = [];
+                for (const Child of childModels) {
+                    await Child.update(
+                        {enabled: false},
+                        {where: {[fk]: id, deleted: false}, transaction},
+                    );
+                    const disabled = await Child.findAll({
+                        where: {[fk]: id, deleted: false},
+                        transaction,
+                    });
+                    instances.push(...disabled);
+                }
+                AiCredential.#appendInstancesToTransactionChanges(
                     transaction,
-                });
-                AiCredential.#appendInstancesToTransactionChanges(transaction, disabledModelInstances);
+                    instances.filter((inst) => inst.constructor.autoTable),
+                );
             }
         }
 
