@@ -135,15 +135,18 @@ recover_db:
 .PHONY: _export_document_files
 _export_document_files:
 	@set -e; \
-	HASHES=$$(docker exec $${CONTAINER} psql -qt -U postgres -d $${DB} \
-	    -c "SELECT hash FROM document WHERE deleted = false;"); \
-	for hash in $$HASHES; do \
-	    hash=$$(echo $$hash | tr -d ' '); \
+	TMPLIST=$$(mktemp); \
+	docker exec $${CONTAINER} psql -qt -U postgres -d $${DB} \
+	    -c "SELECT hash FROM document WHERE deleted = false;" | \
+	tr -d ' \r' | \
+	while IFS= read -r hash; do \
 	    [ -z "$$hash" ] && continue; \
 	    for f in files/$$hash.*; do \
-	        [ -f "$$f" ] && zip -qj "$${FILEZIP}" "$$f"; \
+	        [ -f "$$f" ] && echo "$$f"; \
 	    done; \
-	done; \
+	done > $$TMPLIST; \
+	[ -s "$$TMPLIST" ] && zip -qj "$${FILEZIP}" -@ < $$TMPLIST || true; \
+	rm -f $$TMPLIST; \
 	echo "Done: $${FILEZIP}"
 
 .PHONY: anonymize_dump
