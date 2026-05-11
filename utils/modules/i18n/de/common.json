@@ -123,5 +123,6 @@
         "fr": "Français"
     },
     "enabled": "Aktiviert",
-    "disabled": "Deaktiviert"
+    "disabled": "Deaktiviert",
+    "noDescription": "Keine Beschreibung"
 }

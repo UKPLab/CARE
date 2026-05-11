@@ -5,36 +5,36 @@
     name="ExportFormatModal"
   >
     <template #title>
-      Export Workflows
+      {{ $t("workflow.exportFormatModal.title") }}
     </template>
     <template #body>
       <div class="d-grid gap-2">
         <BasicButton
           class="btn btn-outline-primary"
-          title="JSON Format"
-          text="JSON Format"
+          :title="$t('workflow.exportFormatModal.json.title')"
+          :text="$t('workflow.exportFormatModal.json.title')"
           icon="filetype-json"
           @click="selectFormat('json')"
         >
-          JSON Format
-          <small class="d-block text-muted">Standard JSON format with proper formatting</small>
+          {{ $t("workflow.exportFormatModal.json.title") }}
+          <small class="d-block text-muted">{{ $t("workflow.exportFormatModal.json.description") }}</small>
         </BasicButton>
         <BasicButton
           class="btn btn-outline-primary"
-          title="YAML Format"
-          text="YAML Format"
+          :title="$t('workflow.exportFormatModal.yaml.title')"
+          :text="$t('workflow.exportFormatModal.yaml.title')"
           icon="filetype-yml"
           @click="selectFormat('yaml')"
         >
-          YAML Format  
-          <small class="d-block text-muted">Human-readable YAML format</small>
+          {{ $t("workflow.exportFormatModal.yaml.title") }}
+          <small class="d-block text-muted">{{ $t("workflow.exportFormatModal.yaml.description") }}</small>
         </BasicButton>
       </div>
     </template>
     <template #footer>
       <BasicButton
         class="btn btn-secondary"
-        title="Cancel"
+        :title="$t('common.cancel')"
         @click="close()"
       />
     </template>
@@ -110,8 +110,10 @@ export default {
         : `workflows_${Date.now()}`;
       downloadObjectsAs(workflowsWithSteps, filename, format);
       this.eventBus.emit("toast", {
-        title: "Export Successful",
-        message: `Workflow${this.workflowId ? '' : 's'} exported successfully in ${format.toUpperCase()} format`,
+        title: this.$t("workflow.exportFormatModal.success.title"),
+        message: this.workflowId
+          ? this.$t("workflow.exportFormatModal.success.single", { format: format.toUpperCase() })
+          : this.$t("workflow.exportFormatModal.success.multiple", { format: format.toUpperCase() }),
         variant: "success",
       });
     },

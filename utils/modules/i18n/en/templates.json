@@ -87,5 +87,72 @@
         "title": "Delete Template",
         "message": "Are you sure you want to delete \"{name}\"?"
     }
+  },
+  "publicTemplates": {
+    "title": "Public Templates",
+    "description": "Browse published templates from other users. Copy a template to add it to your own list.",
+    "alreadyCopied": "Already copied",
+    "viewContentReadOnly": "View content (read-only)",
+    "copyToMyTemplates": "Copy to my templates",
+    "success": {
+      "title": "Template copied",
+      "message": "Template copied to your list"
+    },
+    "errors": {
+      "copyFailed": "Copy failed"
+    }
+  },
+  "publishModal": {
+    "title": "Publish Template",
+    "success": {
+      "published": "Template successfully published!",
+      "visibility": "The template is now {visibility}.",
+      "title": "Template published"
+    },
+    "emailTemplateVisibilityInfo": "Email templates are only {visibility} after publishing.",
+    "confirmQuestion": "Do you really want to publish the template?",
+    "cannotBeUndone": "This can not be undone!",
+    "confirmPublish": "Yes, publish it!",
+    "visibility": {
+      "administrators": "visible to other administrators",
+      "allUsers": "visible to all users"
+    },
+    "errors": {
+      "notPublished": "Template not published"
+    }
+  },
+  "detachModal": {
+    "title": "Edit Copy",
+    "description": "Editing this template will detach it from the source. You will no longer receive updates from the original template. Continue?"
+  },
+  "modal": {
+    "title": "Template",
+    "errors": {
+      "typeRequired": {
+        "title": "Type required",
+        "message": "Please choose a template type"
+      },
+      "operationFailed": "Template operation failed"
+    },
+    "success": {
+      "updated": "Template updated",
+      "created": "Template created"
+    }
+  },
+  "updateModal": {
+    "title": "Source template has been updated",
+    "description": "Replace your copy with the latest content, or create a new copy and detach the current one.",
+    "makeNewCopyWarning": "Make new copy: your current copy will be detached and will no longer receive updates.",
+    "makeNewCopy": "Make new copy",
+    "success": {
+      "updatedTitle": "Template updated",
+      "updatedMessage": "Content has been updated from the source template",
+      "copiedTitle": "Template copied",
+      "copiedMessage": "A new copy has been created. Your previous copy has been detached."
+    },
+    "errors": {
+      "updateFailed": "Update failed",
+      "copyFailed": "Copy failed"
+    }
   }
 }

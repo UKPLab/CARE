@@ -87,5 +87,72 @@
         "title": "Vorlage löschen",
         "message": "Möchten Sie \"{name}\" wirklich löschen?"
     }
+  },
+  "publicTemplates": {
+    "title": "Öffentliche Vorlagen",
+    "description": "Durchsuchen Sie veröffentlichte Vorlagen anderer Benutzer. Kopieren Sie eine Vorlage, um sie Ihrer eigenen Liste hinzuzufügen.",
+    "alreadyCopied": "Bereits kopiert",
+    "viewContentReadOnly": "Inhalt anzeigen (schreibgeschützt)",
+    "copyToMyTemplates": "In meine Vorlagen kopieren",
+    "success": {
+      "title": "Vorlage kopiert",
+      "message": "Die Vorlage wurde in Ihre Liste kopiert"
+    },
+    "errors": {
+      "copyFailed": "Kopieren fehlgeschlagen"
+    }
+  },
+  "publishModal": {
+    "title": "Vorlage veröffentlichen",
+    "success": {
+      "published": "Vorlage erfolgreich veröffentlicht!",
+      "visibility": "Die Vorlage ist jetzt {visibility}.",
+      "title": "Vorlage veröffentlicht"
+    },
+    "emailTemplateVisibilityInfo": "E-Mail-Vorlagen sind nach der Veröffentlichung nur {visibility}.",
+    "confirmQuestion": "Möchten Sie die Vorlage wirklich veröffentlichen?",
+    "cannotBeUndone": "Dies kann nicht rückgängig gemacht werden!",
+    "confirmPublish": "Ja, veröffentlichen!",
+    "visibility": {
+      "administrators": "für andere Administratoren sichtbar",
+      "allUsers": "für alle Benutzer sichtbar"
+    },
+    "errors": {
+      "notPublished": "Vorlage nicht veröffentlicht"
+    }
+  },
+  "detachModal": {
+    "title": "Kopie bearbeiten",
+    "description": "Wenn Sie diese Vorlage bearbeiten, wird sie von der Quelle getrennt. Sie erhalten keine Updates mehr von der ursprünglichen Vorlage. Fortfahren?"
+  },
+  "modal": {
+    "title": "Vorlage",
+    "errors": {
+      "typeRequired": {
+        "title": "Typ erforderlich",
+        "message": "Bitte wählen Sie einen Vorlagentyp aus"
+      },
+      "operationFailed": "Vorlagenvorgang fehlgeschlagen"
+    },
+    "success": {
+      "updated": "Vorlage aktualisiert",
+      "created": "Vorlage erstellt"
+    }
+  },
+  "updateModal": {
+    "title": "Quellvorlage wurde aktualisiert",
+    "description": "Ersetzen Sie Ihre Kopie durch den neuesten Inhalt oder erstellen Sie eine neue Kopie und trennen Sie die aktuelle.",
+    "makeNewCopyWarning": "Neue Kopie erstellen: Ihre aktuelle Kopie wird getrennt und erhält keine Updates mehr.",
+    "makeNewCopy": "Neue Kopie erstellen",
+    "success": {
+      "updatedTitle": "Vorlage aktualisiert",
+      "updatedMessage": "Der Inhalt wurde aus der Quellvorlage aktualisiert",
+      "copiedTitle": "Vorlage kopiert",
+      "copiedMessage": "Eine neue Kopie wurde erstellt. Ihre vorherige Kopie wurde getrennt."
+    },
+    "errors": {
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "copyFailed": "Kopieren fehlgeschlagen"
+    }
   }
 }

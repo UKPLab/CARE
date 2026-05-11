@@ -8,14 +8,14 @@
     @hide="reset"
   >
     <template #title>
-      <h5 class="modal-title">Import Workflows</h5>
+      <h5 class="modal-title">{{ $t("workflow.importFormatModal.title") }}</h5>
     </template>
 
     <!-- Step 1: File picker -->
     <template #step-1>
       <div class="form-field d-flex flex-column">
         <label class="form-label w-100 text-start mb-2">
-          Select workflow file (JSON or YAML):
+          {{ $t("workflow.importFormatModal.selectWorkflowFile") }}
         </label>
 
         <div class="w-100">
@@ -29,7 +29,7 @@
         </div>
       </div>
       <div v-if="selectedFile" class="mt-2">
-        <small class="text-muted">Selected: {{ selectedFile.name }}</small>
+        <small class="text-muted">{{ $t("workflow.importFormatModal.selectedFile", { file: selectedFile.name }) }}</small>
       </div>
       <div v-if="parseError" class="mt-2 text-danger">
         <small>{{ parseError }}</small>
@@ -39,7 +39,8 @@
     <!-- Step 2: Workflow selection -->
     <template #step-2>
       <p class="text-muted mb-2">
-        Select which workflows to import from <strong>{{ selectedFile && selectedFile.name }}</strong>:
+        {{ $t("workflow.importFormatModal.selectWorkflowsPrefix") }}
+        <strong>{{ selectedFile && selectedFile.name }}</strong>:
       </p>
       <BasicTable
         v-model="selectedWorkflows"
@@ -52,10 +53,10 @@
 
     <!-- Step 3: Confirmation -->
     <template #step-3>
-      <p>Are you sure you want to import the following workflows?</p>
+      <p>{{ $t("workflow.importFormatModal.confirmQuestion") }}</p>
       <ul>
         <li v-for="wf in selectedWorkflows" :key="wf._idx">
-          <strong>{{ wf.name }}</strong> — {{ wf.stepCount }} step(s)
+          <strong>{{ wf.name }}</strong> — {{ $t("workflow.importFormatModal.stepCount", { count: wf.stepCount }) }}
         </li>
       </ul>
     </template>
@@ -66,6 +67,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import yaml from "js-yaml";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Import Format Modal Component
@@ -92,9 +94,9 @@ export default {
     },
     steps() {
       return [
-        { title: "File Selection" },
-        { title: "Workflow Selection" },
-        { title: "Confirmation" },
+        { title: this.$t("workflow.importFormatModal.steps.fileSelection") },
+        { title: this.$t("workflow.importFormatModal.steps.workflowSelection") },
+        { title: this.$t("workflow.importFormatModal.steps.confirmation") },
       ];
     },
     stepValid() {
@@ -111,16 +113,16 @@ export default {
         name: wf.name,
         stepCount: (wf.steps || []).length,
         hidden: {
-          text: wf.hideInFrontend ? "Yes" : "No",
+          text: wf.hideInFrontend ? this.$t("common.yes") : this.$t("common.no"),
           class: wf.hideInFrontend ? "bg-warning" : "bg-success",
         },
       }));
     },
     tableColumns() {
       return [
-        { name: "Name", key: "name", sortable: true },
-        { name: "Steps", key: "stepCount", sortable: true },
-        { name: "Hidden", key: "hidden", type: "badge" },
+        { name: this.$t("common.name"), key: "name", sortable: true },
+        { name: this.$t("workflow.importFormatModal.table.steps"), key: "stepCount", sortable: true },
+        { name: this.$t("workflow.importFormatModal.table.hidden"), key: "hidden", type: "badge" },
       ];
     },
     tableOptions() {
@@ -177,7 +179,7 @@ export default {
         this.selectedWorkflows = this.tableData.slice();
       } catch (error) {
         console.error("Error processing file:", error);
-        this.parseError = `Failed to parse file: ${error.message}`;
+        this.parseError = this.$t("workflow.importFormatModal.errors.parseFileFailed", { message: error.message });
         this.selectedFile = null;
         this.workflowData = null;
       }
@@ -186,7 +188,7 @@ export default {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.onerror = () => reject(new Error(this.$t("workflow.importFormatModal.errors.readFileFailed")));
         reader.readAsText(file);
       });
     },
@@ -220,8 +222,11 @@ export default {
           previousStepId = stepResult.data;
         } else {
           this.eventBus.emit("toast", {
-            title: "Import Error",
-            message: `Failed to import step "${step.name}": ${stepResult.error}`,
+            title: this.$t("workflow.importFormatModal.errors.importError"),
+            message: this.$t("workflow.importFormatModal.errors.importStepFailed", {
+              step: step.name,
+              message: resolveApiMessage(stepResult),
+            }),
             variant: "danger",
           });
         }
@@ -255,8 +260,11 @@ export default {
           await this.createWorkflowSteps(workflowResult.data, workflow.steps || []);
         } else {
           this.eventBus.emit("toast", {
-            title: "Import Error",
-            message: `Failed to import workflow "${workflow.name}": ${workflowResult.error}`,
+            title: this.$t("workflow.importFormatModal.errors.importError"),
+            message: this.$t("workflow.importFormatModal.errors.importWorkflowFailed", {
+              workflow: workflow.name,
+              message: resolveApiMessage(workflowResult),
+            }),
             variant: "danger",
           });
         }
@@ -264,8 +272,10 @@ export default {
 
       this.$refs.stepper.setWaiting(false);
       this.eventBus.emit("toast", {
-        title: "Import Successful",
-        message: `${toImport.length} workflow${toImport.length !== 1 ? "s" : ""} imported successfully!`,
+        title: this.$t("workflow.importFormatModal.success.title"),
+        message: toImport.length === 1
+          ? this.$t("workflow.importFormatModal.success.single", { count: toImport.length })
+          : this.$t("workflow.importFormatModal.success.multiple", { count: toImport.length }),
         variant: "success",
       });
       this.close();

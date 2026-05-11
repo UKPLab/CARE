@@ -13,5 +13,156 @@
     "annotator": "Annotator",
     "editor": "Editor",
     "modal": "Modal"
+  },
+  "dashboard": {
+    "title": "Workflows",
+    "addWorkflow": "Add Workflow",
+    "exportWorkflows": "Export Workflows",
+    "exportAll": "Export All",
+    "importWorkflows": "Import Workflows",
+    "types": {
+      "system": "System",
+      "user": "User"
+    },
+    "columns": {
+      "hidden": "Hidden"
+    },
+    "actions": {
+      "copyWorkflow": "Copy Workflow",
+      "editWorkflow": "Edit Workflow",
+      "renameWorkflow": "Rename Workflow",
+      "exportWorkflow": "Export Workflow",
+      "toggleHidden": "Toggle Hidden",
+      "deleteWorkflow": "Delete Workflow"
+    },
+    "visibility": {
+      "hidden": "hidden",
+      "visible": "visible"
+    },
+    "toasts": {
+      "workflowUpdated": {
+        "title": "Workflow Updated",
+        "message": "Workflow is now {state} in frontend"
+      },
+      "updateFailed": "Update Failed",
+      "workflowDeleted": {
+        "title": "Workflow Deleted",
+        "message": "Workflow has been deleted"
+      },
+      "deleteFailed": "Delete Failed"
+    },
+    "confirmDelete": {
+      "title": "Delete Workflow",
+      "message": "Are you sure you want to delete the workflow \"{name}\"?",
+      "warning": "This action cannot be undone."
+    }
+  },
+  "exportFormatModal": {
+    "title": "Export Workflows",
+    "json": {
+      "title": "JSON Format",
+      "description": "Standard JSON format with proper formatting"
+    },
+    "yaml": {
+      "title": "YAML Format",
+      "description": "Human-readable YAML format"
+    },
+    "success": {
+      "title": "Export Successful",
+      "single": "Workflow exported successfully in {format} format",
+      "multiple": "Workflows exported successfully in {format} format"
+    }
+  },
+  "importFormatModal": {
+    "title": "Import Workflows",
+    "selectWorkflowFile": "Select workflow file (JSON or YAML):",
+    "selectedFile": "Selected: {file}",
+    "selectWorkflowsPrefix": "Select which workflows to import from",
+    "confirmQuestion": "Are you sure you want to import the following workflows?",
+    "stepCount": "{count} step(s)",
+    "steps": {
+      "fileSelection": "File Selection",
+      "workflowSelection": "Workflow Selection",
+      "confirmation": "Confirmation"
+    },
+    "table": {
+      "steps": "Steps",
+      "hidden": "Hidden"
+    },
+    "errors": {
+      "parseFileFailed": "Failed to parse file: {message}",
+      "readFileFailed": "Failed to read file",
+      "importError": "Import Error",
+      "importStepFailed": "Failed to import step \"{step}\": {message}",
+      "importWorkflowFailed": "Failed to import workflow \"{workflow}\": {message}"
+    },
+    "success": {
+      "title": "Import Successful",
+      "single": "{count} workflow imported successfully!",
+      "multiple": "{count} workflows imported successfully!"
+    }
+  },
+  "createModal": {
+    "title": "Workflow",
+    "success": {
+      "linkCopied": {
+        "title": "Link copied",
+        "message": "Workflow link copied to clipboard!"
+      }
+    },
+    "errors": {
+      "linkNotCopied": {
+        "title": "Link not copied",
+        "message": "Could not copy workflow link to clipboard!"
+      }
+    }
+  },
+  "editModal": {
+    "title": "Edit Workflow: {name}",
+    "workflow": "Workflow",
+    "description": "Description",
+    "copiedStep": "Copied Step",
+    "copiedStepValue": "{name} ({type})",
+    "unnamedStep": "Unnamed step",
+    "loadingWorkflow": "Loading workflow...",
+    "loadingWorkflowGraph": "Loading workflow graph...",
+    "savingChanges": "Saving changes...",
+    "stepTypes": {
+      "annotater": "Annotater",
+      "editor": "Editor",
+      "modal": "Modal",
+      "annotaterStep": "Annotater Step",
+      "editorStep": "Editor Step",
+      "modalStep": "Modal Step"
+    },
+    "errors": {
+      "saveFailed": "Save Failed",
+      "saveStepFailed": "Failed to save step"
+    }
+  },
+  "renameModal": {
+    "title": "Rename Workflow",
+    "description": "This will rename the existing workflow.",
+    "currentWorkflow": "Current Workflow",
+    "renamingWorkflow": "Renaming workflow...",
+    "renameWorkflow": "Rename Workflow",
+    "form": {
+      "newWorkflowName": "New Workflow Name",
+      "enterNewWorkflowName": "Enter new workflow name"
+    },
+    "errors": {
+      "workflowNotFound": {
+        "title": "Error",
+        "message": "Workflow not found"
+      },
+      "creationFailed": "Creation Failed",
+      "hideOriginalFailed": "Hide Original Failed",
+      "renameFailed": "Rename Failed",
+      "renameFailedMessage": "Failed to rename workflow"
+    },
+    "success": {
+      "title": "Workflow Renamed",
+      "message": "Workflow \"{oldName}\" has been renamed to \"{newName}\""
+    }
   }
 }

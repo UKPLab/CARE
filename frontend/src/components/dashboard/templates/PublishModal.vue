@@ -1,7 +1,7 @@
 <template>
   <Modal ref="publishModal" name="templatePublish" :props="{templateId: id}">
     <template #title>
-      Publish Template
+      {{ $t("templates.publishModal.title") }}
     </template>
     <template #body>
       <div v-if="success">
@@ -9,16 +9,16 @@
           class="alert alert-success"
           role="alert"
         >
-          Template successfully published!<br>
-          The template is now {{ visibilityMessage }}.
+          {{ $t("templates.publishModal.success.published") }}<br>
+          {{ $t("templates.publishModal.success.visibility", { visibility: visibilityMessage }) }}
         </div>
       </div>
       <div v-else>
         <div v-if="isEmailTemplate" class="alert alert-info mb-3" role="alert">
-          Email templates are only {{ visibilityMessage }} after publishing.
+          {{ $t("templates.publishModal.emailTemplateVisibilityInfo", { visibility: visibilityMessage }) }}
         </div>
-        Do you really want to publish the template? <br>
-        <b>This can not be undone!</b>
+        {{ $t("templates.publishModal.confirmQuestion") }} <br>
+        <b>{{ $t("templates.publishModal.cannotBeUndone") }}</b>
       </div>
     </template>
 
@@ -29,7 +29,7 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          title="Close"
+          :title="$t('common.close')"
           @click="close"
         />
       </span>
@@ -39,12 +39,12 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          title="Abort"
+          :title="$t('common.abort')"
           @click="close"
         />
         <BasicButton
           class="btn btn-danger me-2"
-          title="Yes, publish it!"
+          :title="$t('templates.publishModal.confirmPublish')"
           @click="publish"
         />
       </span>
@@ -55,6 +55,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /* PublishModal.vue - modal for publishing a template
 
@@ -86,8 +87,8 @@ export default {
     },
     visibilityMessage() {
       return this.isEmailTemplate
-        ? "visible to other administrators"
-        : "visible to all users";
+        ? this.$t("templates.publishModal.visibility.administrators")
+        : this.$t("templates.publishModal.visibility.allUsers");
     },
   },
   methods: {
@@ -116,17 +117,17 @@ export default {
           if (!res.success) {
             this.$refs.publishModal.close();
             this.eventBus.emit("toast", {
-              title: "Template not published",
-              message: res.message,
+              title: this.$t("templates.publishModal.errors.notPublished"),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           } else {
             this.success = true;
             this.$refs.publishModal.waiting = false;
-            this.eventBus.emit('toast', {
-              title: "Template published",
-              message: `The template is now ${this.visibilityMessage}`,
-              variant: "success"
+            this.eventBus.emit("toast", {
+              title: this.$t("templates.publishModal.success.title"),
+              message: this.$t("templates.publishModal.success.visibility", { visibility: this.visibilityMessage }),
+              variant: "success",
             });
           }
         });

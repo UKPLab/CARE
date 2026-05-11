@@ -4,14 +4,14 @@
     name="template-update-modal"
   >
     <template #title>
-      <span>Source template has been updated</span>
+      <span>{{ $t("templates.updateModal.title") }}</span>
     </template>
     <template #body>
       <p class="mb-2">
-        Replace your copy with the latest content, or create a new copy and detach the current one.
+        {{ $t("templates.updateModal.description") }}
       </p>
       <p class="text-danger fw-bold mb-0">
-        Make new copy: your current copy will be detached and will no longer receive updates.
+        {{ $t("templates.updateModal.makeNewCopyWarning") }}
       </p>
     </template>
     <template #footer>
@@ -21,14 +21,14 @@
           class="btn btn-outline-primary"
           @click="onUpdate"
         >
-          Update
+          {{ $t("common.update") }}
         </button>
         <button
           type="button"
           class="btn btn-primary"
           @click="onMakeNewCopy"
         >
-          Make new copy
+          {{ $t("templates.updateModal.makeNewCopy") }}
         </button>
       </div>
     </template>
@@ -37,6 +37,7 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal shown when a template copy has an update available from its source.
@@ -62,14 +63,14 @@ export default {
       this.$socket.emit("templateUpdateFromSource", { templateId }, (result) => {
         if (result.success) {
           this.eventBus.emit("toast", {
-            title: "Template updated",
-            message: "Content has been updated from the source template",
+            title: this.$t("templates.updateModal.success.updatedTitle"),
+            message: this.$t("templates.updateModal.success.updatedMessage"),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Update failed",
-            message: result.message,
+            title: this.$t("templates.updateModal.errors.updateFailed"),
+            message: resolveApiMessage(result),
             variant: "danger",
           });
         }
@@ -90,14 +91,14 @@ export default {
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Template copied",
-              message: "A new copy has been created. Your previous copy has been detached.",
+              title: this.$t("templates.updateModal.success.copiedTitle"),
+              message: this.$t("templates.updateModal.success.copiedMessage"),
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Copy failed",
-              message: result.message,
+              title: this.$t("templates.updateModal.errors.copyFailed"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }

@@ -267,5 +267,18 @@
       "copiedMessage": "Studiensitzung erfolgreich für {count} Benutzer kopiert.",
       "copyFailed": "Kopieren fehlgeschlagen"
     }
+  },
+  "closeModal": {
+    "title": "Studie schließen",
+    "confirmPrefix": "Möchten Sie die Studie wirklich schließen",
+    "notifySessions": "E-Mail-Benachrichtigung an Teilnehmende mit offenen Sitzungen senden",
+    "closeStudy": "Studie schließen",
+    "success": {
+      "title": "Studie geschlossen",
+      "message": "Die Studie wurde geschlossen"
+    },
+    "errors": {
+      "title": "Schließen der Studie fehlgeschlagen"
+    }
   }
 }

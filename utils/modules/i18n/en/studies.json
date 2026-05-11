@@ -268,5 +268,18 @@
       "copiedMessage": "Successfully copied study session to {count} user(s).",
       "copyFailed": "Copy failed"
     }
+  },
+  "closeModal": {
+    "title": "Close Study",
+    "confirmPrefix": "Are you sure you want to close the study",
+    "notifySessions": "Send email notification to participants with open sessions",
+    "closeStudy": "Close study",
+    "success": {
+      "title": "Study closed",
+      "message": "The study has been closed"
+    },
+    "errors": {
+      "title": "Study closing failed"
+    }
   }
 }

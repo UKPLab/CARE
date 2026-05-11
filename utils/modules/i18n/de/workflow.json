@@ -13,5 +13,156 @@
     "annotator": "Annotator",
     "editor": "Editor",
     "modal": "Modal"
+  },
+  "dashboard": {
+    "title": "Workflows",
+    "addWorkflow": "Workflow hinzufügen",
+    "exportWorkflows": "Workflows exportieren",
+    "exportAll": "Alle exportieren",
+    "importWorkflows": "Workflows importieren",
+    "types": {
+      "system": "System",
+      "user": "Benutzer"
+    },
+    "columns": {
+      "hidden": "Ausgeblendet"
+    },
+    "actions": {
+      "copyWorkflow": "Workflow kopieren",
+      "editWorkflow": "Workflow bearbeiten",
+      "renameWorkflow": "Workflow umbenennen",
+      "exportWorkflow": "Workflow exportieren",
+      "toggleHidden": "Ausblendung umschalten",
+      "deleteWorkflow": "Workflow löschen"
+    },
+    "visibility": {
+      "hidden": "ausgeblendet",
+      "visible": "sichtbar"
+    },
+    "toasts": {
+      "workflowUpdated": {
+        "title": "Workflow aktualisiert",
+        "message": "Workflow ist jetzt im Frontend {state}"
+      },
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "workflowDeleted": {
+        "title": "Workflow gelöscht",
+        "message": "Workflow wurde gelöscht"
+      },
+      "deleteFailed": "Löschen fehlgeschlagen"
+    },
+    "confirmDelete": {
+      "title": "Workflow löschen",
+      "message": "Möchten Sie den Workflow \"{name}\" wirklich löschen?",
+      "warning": "Diese Aktion kann nicht rückgängig gemacht werden."
+    }
+  },
+  "exportFormatModal": {
+    "title": "Workflows exportieren",
+    "json": {
+      "title": "JSON-Format",
+      "description": "Standardmäßiges JSON-Format mit korrekter Formatierung"
+    },
+    "yaml": {
+      "title": "YAML-Format",
+      "description": "Menschenlesbares YAML-Format"
+    },
+    "success": {
+      "title": "Export erfolgreich",
+      "single": "Workflow erfolgreich im {format}-Format exportiert",
+      "multiple": "Workflows erfolgreich im {format}-Format exportiert"
+    }
+  },
+  "importFormatModal": {
+    "title": "Workflows importieren",
+    "selectWorkflowFile": "Workflow-Datei auswählen (JSON oder YAML):",
+    "selectedFile": "Ausgewählt: {file}",
+    "selectWorkflowsPrefix": "Wählen Sie aus, welche Workflows importiert werden sollen aus",
+    "confirmQuestion": "Möchten Sie die folgenden Workflows wirklich importieren?",
+    "stepCount": "{count} Schritt(e)",
+    "steps": {
+      "fileSelection": "Dateiauswahl",
+      "workflowSelection": "Workflow-Auswahl",
+      "confirmation": "Bestätigung"
+    },
+    "table": {
+      "steps": "Schritte",
+      "hidden": "Ausgeblendet"
+    },
+    "errors": {
+      "parseFileFailed": "Datei konnte nicht gelesen werden: {message}",
+      "readFileFailed": "Datei konnte nicht gelesen werden",
+      "importError": "Importfehler",
+      "importStepFailed": "Schritt \"{step}\" konnte nicht importiert werden: {message}",
+      "importWorkflowFailed": "Workflow \"{workflow}\" konnte nicht importiert werden: {message}"
+    },
+    "success": {
+      "title": "Import erfolgreich",
+      "single": "{count} Workflow erfolgreich importiert!",
+      "multiple": "{count} Workflows erfolgreich importiert!"
+    }
+  },
+  "createModal": {
+    "title": "Workflow",
+    "success": {
+      "linkCopied": {
+        "title": "Link kopiert",
+        "message": "Workflow-Link wurde in die Zwischenablage kopiert!"
+      }
+    },
+    "errors": {
+      "linkNotCopied": {
+        "title": "Link nicht kopiert",
+        "message": "Workflow-Link konnte nicht in die Zwischenablage kopiert werden!"
+      }
+    }
+  },
+  "editModal": {
+    "title": "Workflow bearbeiten: {name}",
+    "workflow": "Workflow",
+    "description": "Beschreibung",
+    "copiedStep": "Kopierter Schritt",
+    "copiedStepValue": "{name} ({type})",
+    "unnamedStep": "Unbenannter Schritt",
+    "loadingWorkflow": "Workflow wird geladen...",
+    "loadingWorkflowGraph": "Workflow-Graph wird geladen...",
+    "savingChanges": "Änderungen werden gespeichert...",
+    "stepTypes": {
+      "annotater": "Annotater",
+      "editor": "Editor",
+      "modal": "Modal",
+      "annotaterStep": "Annotater-Schritt",
+      "editorStep": "Editor-Schritt",
+      "modalStep": "Modal-Schritt"
+    },
+    "errors": {
+      "saveFailed": "Speichern fehlgeschlagen",
+      "saveStepFailed": "Schritt konnte nicht gespeichert werden"
+    }
+  },
+  "renameModal": {
+    "title": "Workflow umbenennen",
+    "description": "Dadurch wird der bestehende Workflow umbenannt.",
+    "currentWorkflow": "Aktueller Workflow",
+    "renamingWorkflow": "Workflow wird umbenannt...",
+    "renameWorkflow": "Workflow umbenennen",
+    "form": {
+      "newWorkflowName": "Neuer Workflow-Name",
+      "enterNewWorkflowName": "Neuen Workflow-Namen eingeben"
+    },
+    "errors": {
+      "workflowNotFound": {
+        "title": "Fehler",
+        "message": "Workflow nicht gefunden"
+      },
+      "creationFailed": "Erstellung fehlgeschlagen",
+      "hideOriginalFailed": "Ausblenden des Originals fehlgeschlagen",
+      "renameFailed": "Umbenennen fehlgeschlagen",
+      "renameFailedMessage": "Workflow konnte nicht umbenannt werden"
+    },
+    "success": {
+      "title": "Workflow umbenannt",
+      "message": "Workflow \"{oldName}\" wurde in \"{newName}\" umbenannt"
+    }
   }
 }

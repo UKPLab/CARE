@@ -2,7 +2,7 @@
     <BasicCoordinator
       ref="coordinator"
       table="template"
-      title="Template"
+      :title="$t('templates.modal.title')"
       :custom-submit="true"
       :fields-override="coordinatorFields"
       @submit="update"
@@ -11,7 +11,8 @@
   
   <script>
   import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
-  
+  import { resolveApiMessage } from "@/assets/utils";
+
   /**
    * Template Modal Component
    * 
@@ -23,9 +24,9 @@
    * @author Mohammad Elwan
    */
   const SUPPORTED_LANGUAGES = [
-    { name: "English", value: "en" },
-    { name: "Deutsch", value: "de" },
-    { name: "Français", value: "fr" },
+    { nameKey: "common.languages.en", value: "en" },
+    { nameKey: "common.languages.de", value: "de" },
+    { nameKey: "common.languages.fr", value: "fr" },
   ];
 
   export default {
@@ -63,13 +64,18 @@
           }
 
           if (f.key === "defaultLanguage") {
+            const translatedLanguages = SUPPORTED_LANGUAGES.map((opt) => ({
+              name: this.$t(opt.nameKey),
+              value: opt.value,
+            }));
+
             const langs = this.languagesWithContent || [];
             if (langs.length > 0) {
-              f.options = SUPPORTED_LANGUAGES.filter((opt) =>
+              f.options = translatedLanguages.filter((opt) =>
                 langs.includes(opt.value)
               );
             } else {
-              f.options = [...SUPPORTED_LANGUAGES];
+              f.options = translatedLanguages;
             }
           }
 
@@ -114,8 +120,8 @@
             payload.type === undefined)
         ) {
             this.eventBus.emit("toast", {
-            title: "Type required",
-            message: "Please choose a template type",
+              title: this.$t("templates.modal.errors.typeRequired.title"),
+              message: this.$t("templates.modal.errors.typeRequired.message"),
               variant: "danger",
             });
             this.$refs.coordinator.waiting = false;
@@ -148,7 +154,9 @@
         if (result.success) {
           this.$refs.coordinator.waiting = false;
           this.eventBus.emit("toast", {
-            title: isEdit ? "Template updated" : "Template created",
+            title: isEdit
+              ? this.$t("templates.modal.success.updated")
+              : this.$t("templates.modal.success.created"),
             message: "",
             variant: "success",
           });
@@ -160,8 +168,8 @@
         } else {
           this.$refs.coordinator.waiting = false;
           this.eventBus.emit("toast", {
-            title: "Template operation failed",
-            message: result.message,
+            title: this.$t("templates.modal.errors.operationFailed"),
+            message: resolveApiMessage(result),
             variant: "danger",
           });
         }

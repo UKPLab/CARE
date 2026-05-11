@@ -4,12 +4,12 @@
     name="study-close-modal"
   >
     <template #title>
-      <span>Close Study</span>
+      <span>{{ $t("studies.closeModal.title") }}</span>
     </template>
     <template #body>
       <div>
         <p>
-          Are you sure you want to close the study
+          {{ $t("studies.closeModal.confirmPrefix") }}
           <strong v-if="studyName">"{{ studyName }}"</strong>
           <span v-else>?</span>
         </p>
@@ -24,7 +24,7 @@
             class="form-check-label"
             for="notifySessionsCheckbox"
           >
-            Send email notification to participants with open sessions
+            {{ $t("studies.closeModal.notifySessions") }}
           </label>
         </div>
       </div>
@@ -37,14 +37,14 @@
           class="btn btn-secondary"
           @click="onCancel"
         >
-          Cancel
+          {{ $t("common.cancel") }}
         </button>
         <button
           type="button"
           class="btn btn-primary"
           @click="onConfirm"
         >
-          Close study
+          {{ $t("studies.closeModal.closeStudy") }}
         </button>
       </div>
     </template>
@@ -53,6 +53,7 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyCloseModal",
@@ -88,15 +89,15 @@ export default {
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Study closed",
-              message: "The study has been closed",
+              title: this.$t("studies.closeModal.success.title"),
+              message: this.$t("studies.closeModal.success.message"),
               variant: "success",
             });
             this.$refs.closeModal.close();
           } else {
             this.eventBus.emit("toast", {
-              title: "Study closing failed",
-              message: result.message,
+              title: this.$t("studies.closeModal.errors.title"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
