@@ -1,8 +1,8 @@
 "use strict";
 
 const {randomUUID} = require("crypto");
-const h = require("./helpers");
-const rt = require("./runtime");
+const helpers = require("./helpers");
+const runtime = require("./runtime");
 
 function parseNumericCost(value) {
     const numeric = Number(value);
@@ -10,7 +10,7 @@ function parseNumericCost(value) {
 }
 
 async function chatCompletion(service, client, data) {
-    const rpc = rt.getRPC(service.server);
+    const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         service.logger.error("LiteLLM RPC is not registered");
         throw new Error("LiteLLM service is not available");
@@ -21,7 +21,7 @@ async function chatCompletion(service, client, data) {
     }
 
     const requestStart = new Date();
-    const aiModelId = await rt.resolveAiModelId(service.server, client?.userId, data);
+    const aiModelId = await runtime.resolveAiModelId(service.server, client?.userId, data);
     const requestId = typeof data?.__requestId === "string" && data.__requestId.trim()
         ? data.__requestId.trim()
         : randomUUID();
@@ -32,32 +32,32 @@ async function chatCompletion(service, client, data) {
             ...(data || {}),
             __requestId: requestId,
         });
-    } catch (err) {
-        await rt.logAiCall(service, {
+    } catch (error) {
+        await runtime.logAiCall(service, {
             userId: client?.userId,
             aiModelId,
             requestId,
-            input: h.extractInputText(data?.messages),
+            input: helpers.extractInputText(data?.messages),
             status: "failed",
             requestStart,
         });
-        throw err;
+        throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
 
     const {choices = [], usage, model, id} = payload || {};
-    const finishReasons = choices.map((c) => c.finish_reason).filter(Boolean);
+    const finishReasons = choices.map((choice) => choice.finish_reason).filter(Boolean);
     service.logger.info(
         `chatCompletion: id=${id} model=${model} ` +
         `tokens=${usage ? usage.total_tokens : "N/A"} ` +
         `finish=${finishReasons.join(",") || "N/A"}`
     );
 
-    await rt.logAiCall(service, {
+    await runtime.logAiCall(service, {
         userId: client?.userId,
         aiModelId,
         requestId,
-        input: h.extractInputText(data?.messages),
+        input: helpers.extractInputText(data?.messages),
         output: JSON.stringify(choices),
         reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
@@ -72,7 +72,7 @@ async function chatCompletion(service, client, data) {
 }
 
 async function abortChatCompletion(service, data) {
-    const rpc = rt.getRPC(service.server);
+    const rpc = runtime.getRPC(service.server);
     if (!rpc || !(await rpc.isOnline())) {
         return {aborted: false, message: "LiteLLM service is not connected"};
     }
@@ -81,20 +81,20 @@ async function abortChatCompletion(service, data) {
 }
 
 async function getStatus(service) {
-    const rpc = rt.getRPC(service.server);
+    const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         return {online: false, error: "LiteLLM RPC not registered"};
     }
     try {
         return await rpc.getStatus();
-    } catch (err) {
-        service.logger.error("Failed to get LLM status: " + err.message);
-        return {online: false, error: err.message};
+    } catch (error) {
+        service.logger.error("Failed to get LLM status: " + error.message);
+        return {online: false, error: error.message};
     }
 }
 
 async function getValidModels(service, client, data) {
-    const rpc = rt.getRPC(service.server);
+    const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         throw new Error("LiteLLM service is not available");
     }
@@ -133,7 +133,7 @@ async function getValidModels(service, client, data) {
 }
 
 async function testModel(service, client, data) {
-    const rpc = rt.getRPC(service.server);
+    const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         throw new Error("LiteLLM service is not available");
     }
@@ -197,7 +197,7 @@ async function testModel(service, client, data) {
     }
 
     const requestStart = new Date();
-    const aiModelId = await rt.resolveAiModelId(service.server, client?.userId, {
+    const aiModelId = await runtime.resolveAiModelId(service.server, client?.userId, {
         aiModelId: data?.aiModelId,
         model,
     });
@@ -209,16 +209,16 @@ async function testModel(service, client, data) {
             ...params,
             __requestId: requestId,
         });
-    } catch (err) {
-        await rt.logAiCall(service, {
+    } catch (error) {
+        await runtime.logAiCall(service, {
             userId: client?.userId,
             aiModelId,
             requestId,
-            input: h.extractInputText(params.messages),
+            input: helpers.extractInputText(params.messages),
             status: "failed",
             requestStart,
         });
-        throw err;
+        throw error;
     }
     const payload = response?.data !== undefined ? response.data : response;
     const content = payload?.choices?.[0]?.message?.content;
@@ -231,7 +231,7 @@ async function testModel(service, client, data) {
         outputText = content
             .map((part) => {
                 if (typeof part === "string") return part;
-                if (part && typeof part === "object" && typeof part.text === "string") return part.text;
+                if (part && typeof part === "object" && typeof paruntime.text === "string") return paruntime.text;
                 return "";
             })
             .filter(Boolean)
@@ -240,11 +240,11 @@ async function testModel(service, client, data) {
         outputText = String(content);
     }
 
-    await rt.logAiCall(service, {
+    await runtime.logAiCall(service, {
         userId: client?.userId,
         aiModelId,
         requestId,
-        input: h.extractInputText(params.messages),
+        input: helpers.extractInputText(params.messages),
         output: outputText || null,
         reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
