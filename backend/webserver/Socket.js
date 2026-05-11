@@ -898,5 +898,52 @@ module.exports = class Socket {
         }
         ;
     }
+
+    /**
+     * Builds a snapshot of all active sessions.
+     * @param {string|null} excludeSocketId Exclude this socket (used on disconnect, before Server.js removes it)
+     * @returns {Promise<object>}
+     */
+    async buildStats(excludeSocketId = null) {
+        const activeSockets = Object.entries(this.server.availSockets)
+            .filter(([sid]) => sid !== excludeSocketId);
+
+        const sessionCountByUser = {};
+        for (const [, socketMap] of activeSockets) {
+            const uid = socketMap["UserSocket"]?.userId;
+            if (uid != null) sessionCountByUser[uid] = (sessionCountByUser[uid] || 0) + 1;
+        }
+
+        const sessions = (
+            await Promise.all(
+                activeSockets.map(async ([sid, socketMap]) => {
+                    const inst = socketMap["UserSocket"];
+                    if (!inst?.socket.connectedAt) return null;
+                    return {
+                        socketId: sid,
+                        userId: inst.userId,
+                        userName: await inst.resolveUserName(inst.userId),
+                        connectedAt: inst.socket.connectedAt,
+                        browser: inst.socket.browser,
+                    };
+                })
+            )
+        ).filter(Boolean);
+
+        const seen = new Set();
+        const connectedUsers = [];
+        for (const [, socketMap] of activeSockets) {
+            const inst = socketMap["UserSocket"];
+            if (!inst?.socket.connectedAt || seen.has(inst.userId)) continue;
+            seen.add(inst.userId);
+            connectedUsers.push({
+                userId: inst.userId,
+                userName: await inst.resolveUserName(inst.userId),
+                sessionCount: sessionCountByUser[inst.userId] || 0,
+            });
+        }
+
+        return { activeSessions: activeSockets.length, activeUsers: seen.size, connectedUsers, sessions };
+    }
 }
 ;

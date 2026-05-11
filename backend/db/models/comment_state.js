@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
     class CommentState extends MetaModel {
         static autoTable = true;
         static associate(models) {
+            CommentState.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
     }
 

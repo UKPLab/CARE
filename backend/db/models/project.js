@@ -41,7 +41,10 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            
+            Project.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
 
         
