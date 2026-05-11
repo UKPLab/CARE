@@ -2512,6 +2512,19 @@ Uses Type 6 templates configured in settings.</p>
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="n"><span class="pre">UserSocket</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket" title="Link to this definition"></a></dt>
 <dd><p>Handle user through websocket</p>
 <dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.broadcastStats">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">broadcastStats</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">excludeSocketId=&quot;null&quot;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.broadcastStats" title="Link to this definition"></a></dt>
+<dd><p>Broadcasts a fresh stats snapshot to all admins currently subscribed to the monitor room.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>excludeSocketId</strong> (<strong>string|null</strong>) – exclude this socket from the stats, because it reaches this function before the socket is removed</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="UserSocket.bulkCreateUsers">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">bulkCreateUsers</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">users</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roleMap</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.bulkCreateUsers" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>userBulkCreate</cite></p>
@@ -2671,6 +2684,52 @@ A user can only reset their own password unless they are an administrator.</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Promise.&lt;void&gt;</strong> – A promise that resolves (with no value) once the password has been successfully reset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.resolveUserName">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">resolveUserName</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">userId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.resolveUserName" title="Link to this definition"></a></dt>
+<dd><p>Resolves a display name from cache or DB.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>userId</strong> (<strong>number</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;string&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.subscribeToUserMonitor">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">subscribeToUserMonitor</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.subscribeToUserMonitor" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>userMonitorSubscribe</cite></p>
+<p>Admin subscribes to the monitor room and receives the current snapshot immediately.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The data object containing the user identifier.</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameters.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.unsubscribeFromUserMonitor">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">unsubscribeFromUserMonitor</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.unsubscribeFromUserMonitor" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>userMonitorUnsubscribe</cite></p>
+<p>Admin unsubscribes from the monitor room.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The data object containing the user identifier.</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameters.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
