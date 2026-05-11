@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anonymized Database Dump &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Data Transfer" href="data_transfer.html" />
+    <link rel="prev" title="Backend Development" href="backend.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Anonymized Database Dump</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline-steps">Pipeline steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading-the-dump">Loading the dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-is-kept">What is kept</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keeping-the-pipeline-up-to-date">Keeping the pipeline up to date</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Anonymized Database Dump</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/anonymize_dump.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="anonymized-database-dump">
+<h1>Anonymized Database Dump<a class="headerlink" href="#anonymized-database-dump" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">anonymize_dump</span></code> make target produces a sanitized copy of a CARE database dump that is safe to share with collaborators or to use in research publications. The original database is never modified.</p>
+<p>The dump contains all data belonging to users who gave consent (<code class="docutils literal notranslate"><span class="pre">acceptDataSharing</span> <span class="pre">=</span> <span class="pre">true</span></code>), with their personal information replaced by realistic pseudonyms. All data belonging to non-consenting users is removed. Auth secrets are wiped on every account so the dump cannot be used to log in.</p>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>anonymize_dump<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">CONTAINER</span><span class="o">=</span>&lt;container-name-or-id&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">DUMP</span><span class="o">=</span>&lt;filename-inside-db_dumps&gt;
+</pre></div>
+</div>
+<p>The output file is written to <code class="docutils literal notranslate"><span class="pre">db_dumps/anonymized_&lt;timestamp&gt;.sql</span></code>. The admin email is read from <code class="docutils literal notranslate"><span class="pre">ADMIN_EMAIL</span></code> in your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file. You will be prompted to enter a new admin password interactively during the process.</p>
+<p><strong>Optional parameters:</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">SEED=&lt;integer&gt;</span></code> — seed the Faker RNG so pseudonyms are reproducible across runs.</p>
+<p><code class="docutils literal notranslate"><span class="pre">NUM=&lt;integer&gt;</span></code> — after removing non-consenting users, randomly retain only <code class="docutils literal notranslate"><span class="pre">NUM</span></code> consenting users and remove the rest. Combine with <code class="docutils literal notranslate"><span class="pre">SEED</span></code> for a deterministic subset.</p>
+</section>
+<section id="pipeline-steps">
+<h2>Pipeline steps<a class="headerlink" href="#pipeline-steps" title="Link to this heading"></a></h2>
+<p>The target runs the following steps against a temporary sidecar database so the live <code class="docutils literal notranslate"><span class="pre">care</span></code> database is never touched.</p>
+<ol class="arabic simple">
+<li><p><strong>Create sidecar DB</strong> — a fresh database is created inside the container.</p></li>
+<li><p><strong>Restore dump</strong> — the source dump is piped into the sidecar database.</p></li>
+<li><p><strong>Migrate schema</strong> — any pending Sequelize migrations are applied.</p></li>
+<li><p><strong>Anonymize</strong> —</p>
+<ul class="simple">
+<li><p><em>Phase A</em> — hard-delete all rows belonging to non-consenting users across every affected table, then reassign ownership of shared resources (projects, studies, documents, …) to the admin account.</p></li>
+<li><p><em>Phase A.2</em> — safety net: any <code class="docutils literal notranslate"><span class="pre">userId</span></code> integer column not covered by a Sequelize association is cleaned up automatically and a warning is logged.</p></li>
+<li><p><em>Phase B</em> — replace PII on surviving users with Faker-generated values. Columns are read from <code class="docutils literal notranslate"><span class="pre">User.accessMap</span></code> so future PII additions are picked up automatically.</p></li>
+<li><p><em>Phase C</em> — set all auth-secret columns (<code class="docutils literal notranslate"><span class="pre">passwordHash</span></code>, <code class="docutils literal notranslate"><span class="pre">salt</span></code>, <code class="docutils literal notranslate"><span class="pre">resetToken</span></code>, …) to <code class="docutils literal notranslate"><span class="pre">'ANONYMIZED'</span></code> on every account.</p></li>
+</ul>
+</li>
+<li><p><strong>Reset admin password</strong> — the admin password is set interactively. The admin’s email and data are preserved throughout.</p></li>
+<li><p><strong>Export</strong> — <code class="docutils literal notranslate"><span class="pre">pg_dump</span></code> writes the sidecar database to <code class="docutils literal notranslate"><span class="pre">db_dumps/anonymized_&lt;timestamp&gt;.sql</span></code>. Then all document files referenced by surviving records are collected from the local <code class="docutils literal notranslate"><span class="pre">files/</span></code> directory and zipped into <code class="docutils literal notranslate"><span class="pre">db_dumps/anonymized_&lt;timestamp&gt;_files.zip</span></code>.</p></li>
+<li><p><strong>Drop sidecar DB</strong> — the temporary database is removed.</p></li>
+</ol>
+</section>
+<section id="loading-the-dump">
+<h2>Loading the dump<a class="headerlink" href="#loading-the-dump" title="Link to this heading"></a></h2>
+<p>The target produces two output files in <code class="docutils literal notranslate"><span class="pre">db_dumps/</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">anonymized_&lt;timestamp&gt;.sql</span></code> — the anonymized database dump.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">anonymized_&lt;timestamp&gt;_files.zip</span></code> — the document files referenced by surviving records.</p></li>
+</ul>
+<p>To load the dump into an existing CARE instance, place the SQL file in <code class="docutils literal notranslate"><span class="pre">db_dumps/</span></code> and use the standard recovery command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>recover_db<span class="w"> </span><span class="nv">CONTAINER</span><span class="o">=</span>&lt;container-name-or-id&gt;<span class="w"> </span><span class="nv">DUMP</span><span class="o">=</span>anonymized_&lt;timestamp&gt;.sql
+</pre></div>
+</div>
+<p>If you need to regenerate the files archive from an existing anonymized SQL dump without re-running the full pipeline, use:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>export_dump_files<span class="w"> </span><span class="nv">CONTAINER</span><span class="o">=</span>&lt;container-name-or-id&gt;<span class="w"> </span><span class="nv">DUMP</span><span class="o">=</span>anonymized_&lt;timestamp&gt;.sql
+</pre></div>
+</div>
+<p>Then extract the files archive into the <code class="docutils literal notranslate"><span class="pre">files/</span></code> directory of the target instance:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>unzip<span class="w"> </span>-o<span class="w"> </span>db_dumps/anonymized_&lt;timestamp&gt;_files.zip<span class="w"> </span>-d<span class="w"> </span>files/
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">recover_db</span></code> will override the current database state of the target container.</p>
+</div>
+</section>
+<section id="what-is-kept">
+<h2>What is kept<a class="headerlink" href="#what-is-kept" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">acceptDataSharing</span></code> and <code class="docutils literal notranslate"><span class="pre">acceptedAt</span></code> — preserved as proof of consent.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">userName</span></code> — replaced with a new randomly generated animal username.</p></li>
+<li><p>Study structure: workflows, steps, tag sets, templates, configurations.</p></li>
+<li><p>Consenting users’ annotations, comments, sessions, and assignments.</p></li>
+</ul>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Free-text fields (annotation text, comment text, document content) may still contain personally identifiable information typed in by participants. A manual review of free-text content is recommended before sharing the dump externally.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">--num</span></code> subset reduction picks users at random and does not guarantee that every retained user has a minimum number of annotations or sessions.</p>
+</section>
+<section id="keeping-the-pipeline-up-to-date">
+<h2>Keeping the pipeline up to date<a class="headerlink" href="#keeping-the-pipeline-up-to-date" title="Link to this heading"></a></h2>
+<p>The anonymize script uses Sequelize associations to locate every row belonging to a given user. When you add a migration that introduces a new table or column referencing <code class="docutils literal notranslate"><span class="pre">user</span></code>, the corresponding <code class="docutils literal notranslate"><span class="pre">static</span> <span class="pre">associate()</span></code> block must be added or updated so the pipeline can reach it.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="backend.html" class="btn btn-neutral float-left" title="Backend Development" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="data_transfer.html" class="btn btn-neutral float-right" title="Data Transfer" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
