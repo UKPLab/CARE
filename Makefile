@@ -128,8 +128,12 @@ backup_db:
 recover_db:
 	@echo "Recovering database from dump. WARNING: This will override your current DB state."
 	@echo "Recovering from $${DUMP}"
-	@echo "Recovering int container $${CONTAINER}"
-	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+	@echo "Recovering into container $${CONTAINER}"
+ifeq ($(OS),Windows_NT)
+	@cmd /c "type db_dumps\%DUMP% | docker exec -i %CONTAINER% psql -U postgres"
+else
+	@cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+endif
 
 # Internal target: zip document files from a live DB. Requires DB and FILEZIP to be set.
 .PHONY: _export_document_files
@@ -164,7 +168,7 @@ anonymize_dump: backend/node_modules/.uptodate
 	    awk '/^\\connect care$$/{p=1;next} p && /^\\restrict /{next} p && /^\\unrestrict /{next} p{print}' | \
 	    docker exec -i $${CONTAINER} psql -q -U postgres -d $$SIDECAR > /dev/null; \
 	echo "[2/5] Migrating schema..."; \
-	(cd backend && POSTGRES_CAREDB=$$SIDECAR npm run --silent db_migrate); \
+	(cd backend && POSTGRES_CAREDB=$$SIDECAR ADMIN_EMAIL="$(ADMIN_EMAIL)" ADMIN_PWD="$(ADMIN_PWD)" GUEST_EMAIL="$(GUEST_EMAIL)" GUEST_PWD="$(GUEST_PWD)" npm run --silent db_migrate); \
 	EXTRA=""; \
 	[ -n "$${SEED}" ] && EXTRA="$$EXTRA --seed $${SEED}"; \
 	[ -n "$${NUM}" ] && EXTRA="$$EXTRA --num $${NUM}"; \
@@ -173,7 +177,9 @@ anonymize_dump: backend/node_modules/.uptodate
 	echo "[4/5] Resetting admin password..."; \
 	(cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" POSTGRES_CAREDB=$$SIDECAR npm run --silent set-admin-password); \
 	echo "[5/6] Exporting anonymized dump..."; \
-	docker exec $${CONTAINER} pg_dump -U postgres $$SIDECAR > $$OUTFILE; \
+	docker exec $${CONTAINER} pg_dump -c -C -U postgres $$SIDECAR > $$OUTFILE; \
+	sed -i "s/$$SIDECAR/$(POSTGRES_CAREDB)/g" $$OUTFILE; \
+	sed -i '/^CREATE DATABASE/i DROP DATABASE IF EXISTS $(POSTGRES_CAREDB);' $$OUTFILE; \
 	echo "[6/6] Archiving relevant document files..."; \
 	$(MAKE) _export_document_files CONTAINER=$${CONTAINER} DB=$$SIDECAR FILEZIP=$$FILEZIP; \
 	docker exec $${CONTAINER} psql -q -U postgres -c "DROP DATABASE $$SIDECAR" > /dev/null; \
