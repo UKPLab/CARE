@@ -23,10 +23,6 @@
           <input id="shareByRoles" v-model="shareForm.mode" class="form-check-input" type="radio" value="roles" />
           <label class="form-check-label" for="shareByRoles">Roles</label>
         </div>
-        <div class="form-check form-check-inline">
-          <input id="shareByStudy" v-model="shareForm.mode" class="form-check-input" type="radio" value="study" />
-          <label class="form-check-label" for="shareByStudy">Study</label>
-        </div>
       </div>
       <div class="mb-3">
         <label class="form-label" for="shareExpiryDate">Expiry Date</label>
@@ -67,17 +63,6 @@
           @update:model-value="onSelectionRowsUpdate"
         />
       </div>
-      <div v-else @click="syncSelectionFromTable" @change="syncSelectionFromTable">
-        <BasicTable
-          ref="shareSelectionTable"
-          :model-value="selectedRowsForTable"
-          :columns="shareSelectionColumns"
-          :data="shareSelectionData"
-          :options="shareStudyTableOptions"
-          :max-table-height="360"
-          @update:model-value="onSelectionRowsUpdate"
-        />
-      </div>
     </template>
     <template #step-3>
       <div class="mb-3">
@@ -98,7 +83,7 @@
 
 <script>
 /**
- * Guided stepper configuring share audience (users vs roles vs study cohorts) and synchronized expiry UX.
+ * Guided stepper configuring share audience (users vs roles) and synchronized expiry UX.
  *
  * @author Akash Gundapuneni
  */
@@ -124,24 +109,14 @@ export default {
       shareTargets: {
         users: [],
         roles: [],
-        studies: [],
       },
       selectedUserIds: [],
       selectedRoleIds: [],
-      selectedStudyIds: [],
       shareSelectionTableOptions: {
         striped: true,
         hover: true,
         pagination: 10,
         selectableRows: true,
-        search: true,
-      },
-      shareStudyTableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-        selectableRows: true,
-        singleSelect: true,
         search: true,
       },
       shareReviewTableOptions: {
@@ -176,12 +151,6 @@ export default {
           { name: "Type", key: "type", sortable: true },
         ];
       }
-      if (this.shareForm.mode === "study") {
-        return [
-          { name: "Study", key: "label", sortable: true },
-          { name: "Type", key: "type", sortable: true },
-        ];
-      }
       return [
         { name: "Name", key: "label", sortable: true },
         { name: "Type", key: "type", sortable: true },
@@ -191,17 +160,11 @@ export default {
       if (this.shareForm.mode === "roles") {
         return this.shareTargets.roles.map((role) => ({ ...role, type: "Role" }));
       }
-      if (this.shareForm.mode === "study") {
-        return this.shareTargets.studies.map((study) => ({ ...study, type: "Study" }));
-      }
       return this.shareTargets.users.map((user) => ({ ...user, type: "User" }));
     },
     activeSelectionIds() {
       if (this.shareForm.mode === "roles") {
         return this.selectedRoleIds;
-      }
-      if (this.shareForm.mode === "study") {
-        return this.selectedStudyIds;
       }
       return this.selectedUserIds;
     },
@@ -220,7 +183,6 @@ export default {
     },
     shareAudienceLabel() {
       if (this.shareForm.mode === "roles") return "Roles";
-      if (this.shareForm.mode === "study") return "Study";
       return "Users";
     },
     minShareExpiryDate() {
@@ -258,8 +220,6 @@ export default {
       const nextIds = this.normalizeIdList((rows || []).map((row) => row.id));
       if (this.shareForm.mode === "roles") {
         this.selectedRoleIds = nextIds;
-      } else if (this.shareForm.mode === "study") {
-        this.selectedStudyIds = nextIds;
       } else {
         this.selectedUserIds = nextIds;
       }
@@ -300,7 +260,6 @@ export default {
       this.shareForm = this.getEmptyShareForm();
       this.selectedUserIds = [];
       this.selectedRoleIds = [];
-      this.selectedStudyIds = [];
       this.isLoadingShareData = true;
       this.$refs.shareStepper.open();
 
@@ -313,15 +272,13 @@ export default {
         this.shareTargets = {
           users: Array.isArray(targets?.users) ? targets.users : [],
           roles: Array.isArray(targets?.roles) ? targets.roles : [],
-          studies: Array.isArray(targets?.studies) ? targets.studies : [],
         };
         this.shareForm = {
-          mode: ["users", "roles", "study"].includes(shareConfig?.mode) ? shareConfig.mode : "users",
+          mode: ["users", "roles"].includes(shareConfig?.mode) ? shareConfig.mode : "users",
           expiryDate: shareConfig?.expiryDate ? this.toDateInputString(shareConfig.expiryDate) : "",
         };
         this.selectedUserIds = this.normalizeIdList(shareConfig?.userIds);
         this.selectedRoleIds = this.normalizeIdList(shareConfig?.roleIds);
-        this.selectedStudyIds = shareConfig?.studyId ? [Number(shareConfig.studyId)] : [];
       } catch (error) {
         this.toastError(error.message || "Failed to load share data");
       } finally {
@@ -343,14 +300,7 @@ export default {
         this.toastError("Please select an expiry date");
         return;
       }
-      if (this.shareForm.mode === "study") {
-        const studyId = this.selectedStudyIds[0];
-        if (!studyId) {
-          this.toastError("Please select a study");
-          return;
-        }
-        payload.studyId = studyId;
-      } else if (this.shareForm.mode === "roles") {
+      if (this.shareForm.mode === "roles") {
         const roleIds = [...this.selectedRoleIds];
         if (roleIds.length === 0) {
           this.toastError("Please select at least one role");

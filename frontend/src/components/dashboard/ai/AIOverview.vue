@@ -129,7 +129,6 @@ export default {
   },
   methods: {
     formatAccess(row) {
-      if (row.accessVia === "study") return row.viaLabel ? `study: ${row.viaLabel}` : "study";
       if (row.accessVia === "role") return row.viaLabel ? `role: ${row.viaLabel}` : "role";
       return "direct";
     },

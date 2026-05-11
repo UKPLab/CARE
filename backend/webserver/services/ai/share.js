@@ -10,6 +10,8 @@
 const {Op} = require("sequelize");
 const helpers = require("./helpers");
 
+const DEFAULT_SHARE_MODE = "users";
+
 /**
  * Validates that `ownerUserId` controls the undeleted AI model optionally inside a Sequelize transaction.
  *
@@ -61,16 +63,168 @@ async function loadAiModelRow(server, aiModelId) {
 }
 
 /**
+ * Returns the enabled target handler for a request mode, defaulting to direct users.
+ *
+ * @param {string} mode Incoming share mode.
+ * @returns {object}
+ */
+function getShareTarget(mode) {
+    return SHARE_TARGETS[mode] || SHARE_TARGETS[DEFAULT_SHARE_MODE];
+}
+
+/**
+ * Verifies that all selected ids exist on a soft-delete aware table.
+ *
+ * @param {import("sequelize").Model} model Sequelize model to query.
+ * @param {number[]} ids Requested primary keys.
+ * @param {string} errorMessage Error raised when any requested id is invalid.
+ * @param {import("sequelize").Transaction} transaction Optional transaction scope.
+ */
+async function assertActiveIds(model, ids, errorMessage, transaction) {
+    const rows = await model.findAll({
+        where: {id: ids, deleted: false},
+        attributes: ["id"],
+        raw: true,
+        transaction,
+    });
+    const activeIds = new Set(rows.map((row) => Number(row.id)));
+    if (ids.some((id) => !activeIds.has(id))) {
+        throw new Error(errorMessage);
+    }
+}
+
+/**
+ * Normalizes positive selected ids from a share payload key.
+ *
+ * @param {object} data RPC payload.
+ * @param {string} payloadKey Property containing selected ids.
+ * @returns {number[]}
+ */
+function selectedPayloadIds(data, payloadKey) {
+    return helpers.uniquePositiveInts(
+        Array.isArray(data?.[payloadKey]) ? data[payloadKey] : [],
+        (value) => Number(value),
+    );
+}
+
+/**
+ * Creates one `ai_model_share` row snapshot.
+ *
+ * @param {object} aiModel Target model.
+ * @param {number} userId Recipient user id.
+ * @param {Date} expiryDate Share expiry.
+ * @param {object} [extra] Additional grant metadata.
+ */
+function createShareRow(aiModel, userId, expiryDate, extra = {}) {
+    return {
+        aiModelId: aiModel.id,
+        userId,
+        roleId: null,
+        expiryDate,
+        deleted: false,
+        ...extra,
+    };
+}
+
+const SHARE_TARGETS = {
+    users: {
+        mode: "users",
+        payloadKey: "userIds",
+        responseKey: "users",
+        emptySelectionError: "Please select at least one user",
+        invalidSelectionError: "One or more selected users are invalid",
+        optionAttributes: ["id", "firstName", "lastName", "userName", "email"],
+        optionOrder: [["firstName", "ASC"], ["lastName", "ASC"], ["userName", "ASC"]],
+        getModel: (db) => db.user,
+        getOptionWhere: (_db, ownerUserId) => ({deleted: false, id: {[Op.ne]: ownerUserId}}),
+        mapOption: (user) => ({
+            id: user.id,
+            label: helpers.userDisplayLabel(user),
+        }),
+        getConfigIds: (shares) => helpers.uniquePositiveInts(shares.map((share) => share.userId)),
+        createRows: async ({service, ownerUserId, aiModel, expiryDate, data, transaction, target}) => {
+            const userIds = selectedPayloadIds(data, target.payloadKey)
+                .filter((userId) => userId !== ownerUserId);
+            if (userIds.length === 0) {
+                throw new Error(target.emptySelectionError);
+            }
+
+            await assertActiveIds(
+                target.getModel(service.server.db.models),
+                userIds,
+                target.invalidSelectionError,
+                transaction,
+            );
+
+            return userIds.map((userId) => createShareRow(aiModel, userId, expiryDate));
+        },
+    },
+    roles: {
+        mode: "roles",
+        payloadKey: "roleIds",
+        responseKey: "roles",
+        emptySelectionError: "Please select at least one role",
+        invalidSelectionError: "One or more selected roles are invalid",
+        emptyExpandedSelectionError: "No users found for selected role(s)",
+        optionAttributes: ["id", "name"],
+        optionOrder: [["name", "ASC"]],
+        getModel: (db) => db.user_role,
+        getOptionWhere: () => ({deleted: false}),
+        mapOption: (role) => ({
+            id: role.id,
+            label: role.name || `Role ${role.id}`,
+        }),
+        getConfigIds: (shares) => helpers.uniquePositiveInts(shares.map((share) => share.roleId)),
+        createRows: async ({service, ownerUserId, aiModel, expiryDate, data, transaction, target}) => {
+            const roleIds = selectedPayloadIds(data, target.payloadKey);
+            if (roleIds.length === 0) {
+                throw new Error(target.emptySelectionError);
+            }
+
+            await assertActiveIds(
+                target.getModel(service.server.db.models),
+                roleIds,
+                target.invalidSelectionError,
+                transaction,
+            );
+
+            const roleMatches = await service.server.db.models.user_role_matching.findAll({
+                where: {userRoleId: roleIds, deleted: false},
+                attributes: ["userId", "userRoleId"],
+                raw: true,
+                transaction,
+            });
+            const uniqueRoleUserPairs = new Set();
+            for (const roleMatch of roleMatches) {
+                const userId = Number(roleMatch.userId);
+                const roleId = Number(roleMatch.userRoleId);
+                if (!Number.isInteger(userId) || userId <= 0 || userId === ownerUserId) continue;
+                if (!Number.isInteger(roleId) || roleId <= 0) continue;
+                uniqueRoleUserPairs.add(`${userId}:${roleId}`);
+            }
+            if (uniqueRoleUserPairs.size === 0) {
+                throw new Error(target.emptyExpandedSelectionError);
+            }
+
+            return [...uniqueRoleUserPairs].map((pair) => {
+                const [userIdText, roleIdText] = pair.split(":");
+                return createShareRow(aiModel, Number(userIdText), expiryDate, {
+                    roleId: Number(roleIdText),
+                });
+            });
+        },
+    },
+};
+
+/**
  * Hydrates collaborator labels for persisted share snapshots using batched lookups.
  *
- * @param {{ db: Object }} server Accessor for `user`, `user_role`, and `study` models.
- * @param {{ userId?: number, roleId?: number, studyId?: number }[]} shares Rows selected from `ai_model_share`.
- * @param {number} ownerUserId Study lookups restricted to organizer-owned cohorts only.
+ * @param {{ db: Object }} server Accessor for `user` and `user_role` models.
+ * @param {{ userId?: number, roleId?: number }[]} shares Rows selected from `ai_model_share`.
  */
-async function loadShareEnrichmentMaps(server, shares, ownerUserId) {
+async function loadShareEnrichmentMaps(server, shares) {
     const userIds = helpers.uniquePositiveInts(shares.map((share) => share.userId));
     const roleIds = helpers.uniquePositiveInts(shares.map((share) => share.roleId));
-    const studyIds = helpers.uniquePositiveInts(shares.map((share) => share.studyId));
 
     const users = userIds.length === 0 ? [] : await server.db.models.user.findAll({
         where: {id: userIds, deleted: false},
@@ -86,22 +240,11 @@ async function loadShareEnrichmentMaps(server, shares, ownerUserId) {
     });
     const roleById = Object.fromEntries(roles.map((roleRow) => [Number(roleRow.id), roleRow]));
 
-    const studies = studyIds.length === 0 ? [] : await server.db.models.study.findAll({
-        where: {
-            id: studyIds,
-            userId: Number(ownerUserId),
-            deleted: false,
-        },
-        attributes: ["id", "name"],
-        raw: true,
-    });
-    const studyById = Object.fromEntries(studies.map((studyRow) => [Number(studyRow.id), studyRow]));
-
-    return {userById, roleById, studyById};
+    return {userById, roleById};
 }
 
 /**
- * Seeds stepper/select lists scoped to organizer-visible studies, users (excluding self), and global roles.
+ * Seeds stepper/select lists scoped to users (excluding self) and global roles.
  *
  * @param {{ server: Object }} service AIService registry.
  * @param {{ userId?: number }} client Authenticated owner context.
@@ -110,41 +253,17 @@ async function getModelShareOptions(service, client) {
     const ownerUserId = helpers.requireClientUserId(client);
     const db = service.server.db.models;
 
-    const [studies, users, roles] = await Promise.all([
-        db.study.findAll({
-            where: {userId: ownerUserId, deleted: false},
-            attributes: ["id", "name"],
-            order: [["name", "ASC"]],
+    const entries = await Promise.all(Object.values(SHARE_TARGETS).map(async (target) => {
+        const rows = await target.getModel(db).findAll({
+            where: target.getOptionWhere(db, ownerUserId),
+            attributes: target.optionAttributes,
+            order: target.optionOrder,
             raw: true,
-        }),
-        db.user.findAll({
-            where: {deleted: false, id: {[Op.ne]: ownerUserId}},
-            attributes: ["id", "firstName", "lastName", "userName", "email"],
-            order: [["firstName", "ASC"], ["lastName", "ASC"], ["userName", "ASC"]],
-            raw: true,
-        }),
-        db.user_role.findAll({
-            where: {deleted: false},
-            attributes: ["id", "name"],
-            order: [["name", "ASC"]],
-            raw: true,
-        }),
-    ]);
+        });
+        return [target.responseKey, rows.map(target.mapOption)];
+    }));
 
-    return {
-        users: users.map((user) => ({
-            id: user.id,
-            label: helpers.userDisplayLabel(user),
-        })),
-        studies: studies.map((study) => ({
-            id: study.id,
-            label: study.name || `Study ${study.id}`,
-        })),
-        roles: roles.map((role) => ({
-            id: role.id,
-            label: role.name || `Role ${role.id}`,
-        })),
-    };
+    return Object.fromEntries(entries);
 }
 
 /**
@@ -160,18 +279,23 @@ async function getModelShareConfig(service, client, data) {
 
     const shares = await service.server.db.models.ai_model_share.findAll({
         where: {aiModelId: aiModel.id, deleted: false},
-        attributes: ["id", "userId", "studyId", "roleId", "expiryDate"],
+        attributes: ["id", "userId", "roleId", "expiryDate"],
         raw: true,
     });
 
-    const {userIds, studyIds, roleIds, expiryDate} = helpers.shareAggregatesFromRows(shares);
+    const {expiryDate} = helpers.shareAggregatesFromRows(shares);
+    const configIdsByMode = Object.fromEntries(Object.values(SHARE_TARGETS).map((target) => [
+        target.mode,
+        target.getConfigIds(shares),
+    ]));
+    const activeTarget = Object.values(SHARE_TARGETS)
+        .find((target) => configIdsByMode[target.mode]?.length > 0) || SHARE_TARGETS[DEFAULT_SHARE_MODE];
 
     return {
-        userIds,
-        roleIds,
-        studyId: studyIds[0] || null,
+        userIds: configIdsByMode.users || [],
+        roleIds: configIdsByMode.roles || [],
         expiryDate,
-        mode: studyIds.length > 0 ? "study" : (roleIds.length > 0 ? "roles" : "users"),
+        mode: activeTarget.mode,
     };
 }
 
@@ -215,7 +339,7 @@ async function getModelOverview(service, client, data) {
             raw: true,
             order: [["expiryDate", "ASC"]],
         });
-        const maps = await loadShareEnrichmentMaps(service.server, shares, aiModel.userId);
+        const maps = await loadShareEnrichmentMaps(service.server, shares);
         shareRecipients = shares.map((share) => helpers.mapShareToRecipient(share, maps));
     }
 
@@ -227,22 +351,21 @@ async function getModelOverview(service, client, data) {
 }
 
 /**
- * Re-materializes delegated access rows atomically (`users`, `roles`, or expanded `study` participants).
+ * Re-materializes delegated access rows atomically (`users` or expanded `roles`).
  *
  * @param {{ server: Object }} service AIService.
  * @param {{ userId?: number }} client Organizer principal.
  * @param {{
- *   mode?: "users"|"roles"|"study",
+ *   mode?: "users"|"roles",
  *   aiModelId?: number,
  *   expiryDate?: string,
- *   studyId?: number,
  *   roleIds?: number[],
  *   userIds?: number[],
  * }} data Wizard payload reconstructed from dashboards.
  */
 async function shareModel(service, client, data) {
     const ownerUserId = helpers.requireClientUserId(client);
-    const mode = data?.mode === "study" ? "study" : (data?.mode === "roles" ? "roles" : "users");
+    const target = getShareTarget(data?.mode);
     const expiryDate = helpers.parseShareExpiryInput(data?.expiryDate);
     const transaction = await service.server.db.sequelize.transaction();
 
@@ -254,126 +377,15 @@ async function shareModel(service, client, data) {
             {where: {aiModelId: aiModel.id, deleted: false}, transaction},
         );
 
-        const rowsToCreate = [];
-
-        if (mode === "study") {
-            const studyId = Number(data?.studyId);
-            if (!Number.isInteger(studyId) || studyId <= 0) {
-                throw new Error("Please select a study");
-            }
-            const study = await service.server.db.models.study.findOne({
-                where: {id: studyId, userId: ownerUserId, deleted: false},
-                raw: true,
-                transaction,
-            });
-            if (!study) {
-                throw new Error("Selected study is invalid");
-            }
-
-            const sessions = await service.server.db.models.study_session.findAll({
-                where: {studyId, deleted: false},
-                attributes: ["userId"],
-                raw: true,
-                transaction,
-            });
-            const participantUserIds = [...new Set(
-                sessions
-                    .map((session) => Number(session.userId))
-                    .filter((userId) => Number.isInteger(userId) && userId > 0 && userId !== ownerUserId)
-            )];
-
-            if (participantUserIds.length === 0) {
-                throw new Error("Selected study has no participants to share with");
-            }
-
-            for (const userId of participantUserIds) {
-                rowsToCreate.push({
-                    aiModelId: aiModel.id,
-                    userId,
-                    studyId,
-                    roleId: null,
-                    expiryDate,
-                    deleted: false,
-                });
-            }
-        } else if (mode === "roles") {
-            const roleIds = helpers.uniquePositiveInts(Array.isArray(data?.roleIds) ? data.roleIds : []);
-            if (roleIds.length === 0) {
-                throw new Error("Please select at least one role");
-            }
-
-            const validRoles = await service.server.db.models.user_role.findAll({
-                where: {id: roleIds, deleted: false},
-                attributes: ["id"],
-                raw: true,
-                transaction,
-            });
-            const validRoleIds = new Set(validRoles.map((role) => Number(role.id)));
-            if (roleIds.some((roleId) => !validRoleIds.has(roleId))) {
-                throw new Error("One or more selected roles are invalid");
-            }
-
-            const roleMatches = await service.server.db.models.user_role_matching.findAll({
-                where: {userRoleId: roleIds, deleted: false},
-                attributes: ["userId", "userRoleId"],
-                raw: true,
-                transaction,
-            });
-            const uniqueRoleUserPairs = new Set();
-            for (const roleMatch of roleMatches) {
-                const userId = Number(roleMatch.userId);
-                const roleId = Number(roleMatch.userRoleId);
-                if (!Number.isInteger(userId) || userId <= 0 || userId === ownerUserId) continue;
-                if (!Number.isInteger(roleId) || roleId <= 0) continue;
-                uniqueRoleUserPairs.add(`${userId}:${roleId}`);
-            }
-            if (uniqueRoleUserPairs.size === 0) {
-                throw new Error("No users found for selected role(s)");
-            }
-
-            for (const pair of uniqueRoleUserPairs) {
-                const [userIdText, roleIdText] = pair.split(":");
-                rowsToCreate.push({
-                    aiModelId: aiModel.id,
-                    userId: Number(userIdText),
-                    studyId: null,
-                    roleId: Number(roleIdText),
-                    expiryDate,
-                    deleted: false,
-                });
-            }
-        } else {
-            const userIds = helpers.uniquePositiveInts(
-                Array.isArray(data?.userIds) ? data.userIds : [],
-                (value) => Number(value),
-            ).filter((uid) => uid !== ownerUserId);
-
-            if (userIds.length === 0) {
-                throw new Error("Please select at least one user");
-            }
-
-            const validUsers = await service.server.db.models.user.findAll({
-                where: {id: userIds, deleted: false},
-                attributes: ["id"],
-                raw: true,
-                transaction,
-            });
-            const validUserIds = new Set(validUsers.map((user) => Number(user.id)));
-            if (userIds.some((userId) => !validUserIds.has(userId))) {
-                throw new Error("One or more selected users are invalid");
-            }
-
-            for (const userId of userIds) {
-                rowsToCreate.push({
-                    aiModelId: aiModel.id,
-                    userId,
-                    studyId: null,
-                    roleId: null,
-                    expiryDate,
-                    deleted: false,
-                });
-            }
-        }
+        const rowsToCreate = await target.createRows({
+            service,
+            ownerUserId,
+            aiModel,
+            expiryDate,
+            data,
+            transaction,
+            target,
+        });
 
         if (rowsToCreate.length > 0) {
             await service.server.db.models.ai_model_share.bulkCreate(rowsToCreate, {transaction});

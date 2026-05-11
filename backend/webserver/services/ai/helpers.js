@@ -91,12 +91,11 @@ function uniquePositiveInts(values, pick = (x) => Number(x)) {
 /**
  * Summarizes `ai_model_share` rows into multi-select friendly identifiers for expiry editing.
  *
- * @param {{ userId?: number, studyId?: number, roleId?: number, expiryDate?: unknown }[]} shares Persisted shares.
- * @returns {{ userIds:number[], studyIds:number[], roleIds:number[], expiryDate:string|null }}
+ * @param {{ userId?: number, roleId?: number, expiryDate?: unknown }[]} shares Persisted shares.
+ * @returns {{ userIds:number[], roleIds:number[], expiryDate:string|null }}
  */
 function shareAggregatesFromRows(shares) {
     const userIds = uniquePositiveInts(shares.map((share) => share.userId));
-    const studyIds = uniquePositiveInts(shares.map((share) => share.studyId));
     const roleIds = uniquePositiveInts(shares.map((share) => share.roleId));
     const expiryCandidates = shares
         .map((share) => (share.expiryDate ? new Date(share.expiryDate) : null))
@@ -104,7 +103,7 @@ function shareAggregatesFromRows(shares) {
     const expiryDate = expiryCandidates.length > 0
         ? new Date(Math.max(...expiryCandidates.map((value) => value.getTime()))).toISOString()
         : null;
-    return {userIds, studyIds, roleIds, expiryDate};
+    return {userIds, roleIds, expiryDate};
 }
 
 /**
@@ -137,19 +136,15 @@ function parseShareExpiryInput(rawExpiryDate) {
 /**
  * Materializes richer labels for dashboards using pre-fetched dictionaries.
  *
- * @param {{ userId:number, studyId?:number|null, roleId?:number|null, expiryDate?:unknown }} share Row payload.
- * @param {{ userById: Record<number,Object>, roleById: Record<number,Object>, studyById: Record<number,Object> }} maps Hydrated lookups.
+ * @param {{ userId:number, roleId?:number|null, expiryDate?:unknown }} share Row payload.
+ * @param {{ userById: Record<number,Object>, roleById: Record<number,Object> }} maps Hydrated lookups.
  * @returns {{ recipientLabel:string|null, accessVia:string, viaLabel:string|null, expiryDate?: unknown }}
  */
 function mapShareToRecipient(share, maps) {
     const uid = Number(share.userId);
     let accessVia = "direct";
     let viaLabel = null;
-    if (share.studyId) {
-        accessVia = "study";
-        const studyId = Number(share.studyId);
-        viaLabel = maps.studyById[studyId]?.name || null;
-    } else if (share.roleId) {
+    if (share.roleId) {
         accessVia = "role";
         const roleId = Number(share.roleId);
         viaLabel = maps.roleById[roleId]?.name || null;
