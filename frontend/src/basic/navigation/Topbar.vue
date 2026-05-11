@@ -38,7 +38,7 @@
             class="nav-item me-3 d-flex align-items-center"
           >
             <span
-              class="recording-icon"
+              class="recording-icon d-flex align-items-center gap-2"
               :class="{ 'cursor-pointer': isAdmin }"
               :title="recordingTooltip"
               @click="onRecordingIconClick"
@@ -47,6 +47,7 @@
                 name="record-circle"
                 :size="18"
               />
+              <span v-if="recordingElapsed" class="recording-timer">{{ recordingElapsed }}</span>
             </span>
           </li>
           <li class="nav-item me-3">
@@ -170,6 +171,8 @@ export default {
   data() {
     return {
       showProjectDropdown: false,
+      now: Date.now(),
+      tickHandle: null,
     }
   },
   subscribeTable: [{
@@ -224,18 +227,38 @@ export default {
       // Non-admins see it only if their socket is in the participant list.
       return this.isAdmin || this.isParticipant;
     },
+    recordingElapsed() {
+      const rec = this.activeRecording;
+      if (!rec || !rec.startTime) return null;
+      const ms = this.now - new Date(rec.startTime).getTime();
+      if (ms < 0) return "00:00:00";
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    },
     recordingTooltip() {
       if (this.isAdmin) {
-        return "Recording in progress — return to Socket Profiler to stop";
+        return "Recording in progress — open Socket Profiler to stop";
       }
       return "You're being recorded for testing purposes";
     },
   },
   mounted() {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
-  },
+    // Tick once a second so the recording-elapsed display next to the
+    // recording icon stays current. Cheap because it just updates a number.
+    this.tickHandle = setInterval(() => {
+      this.now = Date.now();
+    }, 1000);
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
+    if (this.tickHandle) {
+      clearInterval(this.tickHandle);
+      this.tickHandle = null;
+    }
   },
   methods: {
     selectProject(projectId) {
@@ -265,9 +288,11 @@ export default {
       }
     },
     onRecordingIconClick() {
-      // Admins jump to the Socket Profiler dashboard to manage the recording.
-      // Non-admin participants: no action — they can't stop recordings.
-      
+      // Admins jump to the Socket Profiler dashboard. Non-admin participants
+      // can't go there (ifpage is admin-gated), so the click is a no-op for them.
+      if (this.isAdmin) {
+        this.$router.push('/dashboard/Socket_Profiler');
+      }
     },
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');
@@ -365,6 +390,12 @@ body.sidebar-exists #backButton {
   align-items: center;
   color: #dc3545;
   animation: recording-pulse 1.6s ease-in-out infinite;
+}
+
+.recording-timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .recording-icon.cursor-pointer {
