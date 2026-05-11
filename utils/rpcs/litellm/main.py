@@ -1,3 +1,10 @@
+"""LiteLLM Socket.IO RPC bridge used by CARE's Node `LiteLLMRPC` client.
+
+Exposes credential-scoped completions, deterministic router fallbacks, discovery helpers,
+cooperative cancellation, and structured logging payloads without embedding secrets statically.
+
+Author: Akash Gundapuneni
+"""
 import asyncio
 import logging
 import os
@@ -9,6 +16,8 @@ from litellm import Router
 
 
 def create_app():
+    """Build Socket.IO handlers plus WSGI app wrapper for LiteLLMRPC bridging."""
+
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('gunicorn.error')
     logger.setLevel(logging.INFO)

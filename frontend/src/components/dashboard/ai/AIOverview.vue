@@ -97,6 +97,12 @@
 </template>
 
 <script>
+/**
+ * Modal overview differentiating organizers vs delegated viewers pulling server-side ACL metadata only.
+ *
+ * @author Akash Gundapuneni
+ */
+
 import BasicModal from "@/basic/Modal.vue";
 
 export default {

@@ -62,6 +62,12 @@
 </template>
 
 <script>
+/**
+ * Coordinates credential and model dashboards, modals, sharing flows, and destructive confirmations.
+ *
+ * @author Akash Gundapuneni
+ */
+
 import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";

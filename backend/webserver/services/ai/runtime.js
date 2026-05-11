@@ -1,9 +1,28 @@
 "use strict";
 
+/**
+ * Lightweight glue reachable from AIService orchestration helpers for RPC retrieval and auditing.
+ *
+ * @module webserver/services/ai/runtime
+ * @author Akash Gundapuneni
+ */
+
+/**
+ * Resolves the registered LiteLLM RPC bridge on the webserver instance.
+ *
+ * @param {{ rpcs: Object }} server Bootstrapped CARE webserver.
+ * @returns {Object|null}
+ */
 function getRPC(server) {
     return server.rpcs.LiteLLMRPC || null;
 }
 
+/**
+ * Persists a single `ai_log` row swallowing serialization errors — chat flows must remain resilient.
+ *
+ * @param {{ logger: Object, server: Object }} service AIService (or compatible) shim.
+ * @param {Object} logData Sequelize-friendly column/value bag matching `ai_log` columns.
+ */
 async function logAiCall(service, logData) {
     try {
         await service.server.db.models.ai_log.add({
@@ -20,11 +39,19 @@ async function logAiCall(service, logData) {
             status: logData.status || null,
             requestStart: logData.requestStart || null,
         });
-    } catch (err) {
-        service.logger.warn("Failed to write ai_log entry: " + err.message);
+    } catch (error) {
+        service.logger.warn("Failed to write ai_log entry: " + error.message);
     }
 }
 
+/**
+ * Derives FK linkage via explicit ids or by reverse lookup on user-owned `model` strings.
+ *
+ * @param {{ db: Object }} server DB accessor housing Sequelize models registry.
+ * @param {number|undefined|null} userId Owner filter for heuristic resolution.
+ * @param {{ aiModelId?: number, model?: string }} data Chat payload remnants.
+ * @returns {Promise<number|null>} Matching `ai_model.id` else null.
+ */
 async function resolveAiModelId(server, userId, data = {}) {
     const explicitId = Number(data?.aiModelId);
     if (Number.isInteger(explicitId) && explicitId > 0) {

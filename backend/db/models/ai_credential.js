@@ -1,4 +1,11 @@
 'use strict';
+
+/**
+ * Sequelize model for per-user LLM provider credentials and orchestration state.
+ * Cascades soft-delete/disable to dependent models via discovered foreign keys.
+ *
+ * @author Akash Gundapuneni
+ */
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
@@ -117,6 +124,14 @@ module.exports = (sequelize, DataTypes) => {
             }
         }
 
+        /**
+         * Persists credential mutations then cascades dependent model enables/deletes atomically when needed.
+         *
+         * @param {number|string} id Primary key.
+         * @param {object} data Partial Sequelize payload (e.g. `deleted`, `enabled`).
+         * @param {{ transaction?: object }} [additionalOptions] Optional caller-provided Sequelize transaction hooks.
+         * @returns {Promise<*>}
+         */
         static async updateById(id, data, additionalOptions = {}) {
             const existingTx = additionalOptions.transaction;
 
@@ -136,9 +151,9 @@ module.exports = (sequelize, DataTypes) => {
                 const result = await run(transaction);
                 await transaction.commit();
                 return result;
-            } catch (err) {
+            } catch (error) {
                 await transaction.rollback();
-                throw err;
+                throw error;
             }
         }
     }

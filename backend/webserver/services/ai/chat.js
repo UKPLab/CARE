@@ -1,14 +1,37 @@
 "use strict";
 
+/**
+ * AIService helpers for forwarding chat and model-validation traffic to LiteLLM via RPC,
+ * enforcing credential ownership, and recording `ai_log` rows through `runtime`.
+ *
+ * @module webserver/services/ai/chat
+ * @author Akash Gundapuneni
+ */
+
 const {randomUUID} = require("crypto");
 const helpers = require("./helpers");
 const runtime = require("./runtime");
 
+/**
+ * Normalizes provider-reported monetary cost fields for persisted logging.
+ *
+ * @param {unknown} value Raw value from LiteLLM (or provider) payload.
+ * @returns {number|null} Parsed finite number, or null if missing or invalid.
+ */
 function parseNumericCost(value) {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : null;
 }
 
+/**
+ * Runs an OpenAI-style chat completion for the authenticated client, resolves `ai_model` linkage,
+ * persists success/failure to `ai_log`, and returns trimmed choice metadata.
+ *
+ * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
+ * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
+ * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
+ * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
+ */
 async function chatCompletion(service, client, data) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
@@ -71,6 +94,13 @@ async function chatCompletion(service, client, data) {
     return {choices};
 }
 
+/**
+ * Best-effort abort for an in-flight chat completion identified by provider request id.
+ *
+ * @param {{ server: Object }} service AIService with RPC registry access.
+ * @param {{ requestId?: string, reason?: string }} data Abort payload echoed to LiteLLM.
+ * @returns {Promise<{aborted: boolean, message?: string}>}
+ */
 async function abortChatCompletion(service, data) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc || !(await rpc.isOnline())) {
@@ -80,6 +110,12 @@ async function abortChatCompletion(service, data) {
     return rpc.abortChatCompletion(data && data.requestId, data && data.reason);
 }
 
+/**
+ * Introspects the LiteLLM bridge health for dashboard diagnostics.
+ *
+ * @param {{ server: Object, logger: Object }} service AIService.
+ * @returns {Promise<Object>} RPC `getStatus` payload or `{online:false, error}` envelope.
+ */
 async function getStatus(service) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
@@ -93,6 +129,14 @@ async function getStatus(service) {
     }
 }
 
+/**
+ * Lists remote models reachable with the caller-owned credential metadata.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId: number }} client Authenticated user.
+ * @param {{ credentialId: number }} data Target credential PK.
+ * @returns {Promise<Object>} Same shape returned by LiteLLMRPC `getValidModels`.
+ */
 async function getValidModels(service, client, data) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
@@ -132,6 +176,15 @@ async function getValidModels(service, client, data) {
     });
 }
 
+/**
+ * Sends a deterministic low-token completion ("ping") to validate wiring for a credential/model pair,
+ * merges optional structured `additionalParameters`, and logs parity with production chat completions.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId: number }} client Caller for ownership checks and logging attribution.
+ * @param {{ credentialId: number, model: string, aiModelId?: number, additionalParameters?: Object }} data
+ * @returns {Promise<{ok:true,outputText:string}>}
+ */
 async function testModel(service, client, data) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
@@ -231,7 +284,7 @@ async function testModel(service, client, data) {
         outputText = content
             .map((part) => {
                 if (typeof part === "string") return part;
-                if (part && typeof part === "object" && typeof paruntime.text === "string") return paruntime.text;
+                if (part && typeof part === "object" && typeof part.text === "string") return part.text;
                 return "";
             })
             .filter(Boolean)

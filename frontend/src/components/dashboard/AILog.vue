@@ -45,6 +45,12 @@
 </template>
 
 <script>
+/**
+ * Summarizes token/cost KPIs alongside sortable audit rows for persisted `ai_log` entries.
+ *
+ * @author Akash Gundapuneni
+ */
+
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 

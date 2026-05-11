@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * Delegated access grants for sharing an `ai_model` with peers via direct users, roles, or studies.
+ *
+ * @author Akash Gundapuneni
+ */
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {

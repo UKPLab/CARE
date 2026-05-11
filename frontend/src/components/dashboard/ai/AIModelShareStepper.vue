@@ -97,6 +97,12 @@
 </template>
 
 <script>
+/**
+ * Guided stepper configuring share audience (users vs roles vs study cohorts) and synchronized expiry UX.
+ *
+ * @author Akash Gundapuneni
+ */
+
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 

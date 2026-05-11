@@ -106,6 +106,12 @@
 </template>
 
 <script>
+/**
+ * Lightweight modal authoring experience for persisted `ai_credential` secrets and metadata fields.
+ *
+ * @author Akash Gundapuneni
+ */
+
 import BasicModal from "@/basic/Modal.vue";
 
 function getEmptyCredentialForm() {

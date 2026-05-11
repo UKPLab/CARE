@@ -1,5 +1,18 @@
 "use strict";
 
+/**
+ * Stateless helpers shared by AIService handlers (share UX, normalization, prompts).
+ *
+ * @module webserver/services/ai/helpers
+ * @author Akash Gundapuneni
+ */
+
+/**
+ * Validates the RPC client's numeric `userId` or throws — share flows require a hardened principal.
+ *
+ * @param {{ userId?: number }} client Incoming RPC invocation context.
+ * @returns {number} Positive finite user id suitable for Sequelize filters.
+ */
 function requireClientUserId(client) {
     const id = Number(client?.userId);
     if (!Number.isInteger(id) || id <= 0) {
@@ -8,6 +21,12 @@ function requireClientUserId(client) {
     return id;
 }
 
+/**
+ * Flattens OpenAI-compatible `messages` into a condensed multi-line auditing string while retaining role labels.
+ *
+ * @param {unknown} messages Serialized chat history from client/RPC payloads.
+ * @returns {string|null}
+ */
 function extractInputText(messages) {
     if (!Array.isArray(messages) || messages.length === 0) {
         return null;
@@ -46,20 +65,39 @@ function extractInputText(messages) {
     return text || null;
 }
 
+/**
+ * Stable display string for collaborator pickers sourced from Sequelize `user` snapshots.
+ *
+ * @param {{ firstName?: string, lastName?: string }|null|undefined} user ORM/raw row backing label fields.
+ * @returns {string|null}
+ */
 function userDisplayLabel(user) {
     if (!user) return null;
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
     return fullName || null;
 }
 
+/**
+ * Dedupes non-zero integer-ish ids after optional coercion.
+ *
+ * @param {Iterable<unknown>} values Source iterable.
+ * @param {(value: unknown) => number} [pick=(value)=>Number(value)] Mapper applied before filtration.
+ * @returns {number[]}
+ */
 function uniquePositiveInts(values, pick = (x) => Number(x)) {
     return [...new Set((values || []).map(pick).filter((n) => Number.isInteger(n) && n > 0))];
 }
 
+/**
+ * Summarizes `ai_model_share` rows into multi-select friendly identifiers for expiry editing.
+ *
+ * @param {{ userId?: number, studyId?: number, roleId?: number, expiryDate?: unknown }[]} shares Persisted shares.
+ * @returns {{ userIds:number[], studyIds:number[], roleIds:number[], expiryDate:string|null }}
+ */
 function shareAggregatesFromRows(shares) {
-    const userIds = uniquePositiveInts(shares.map((s) => s.userId));
-    const studyIds = uniquePositiveInts(shares.map((s) => s.studyId));
-    const roleIds = uniquePositiveInts(shares.map((s) => s.roleId));
+    const userIds = uniquePositiveInts(shares.map((share) => share.userId));
+    const studyIds = uniquePositiveInts(shares.map((share) => share.studyId));
+    const roleIds = uniquePositiveInts(shares.map((share) => share.roleId));
     const expiryCandidates = shares
         .map((share) => (share.expiryDate ? new Date(share.expiryDate) : null))
         .filter((value) => value && !Number.isNaN(value.getTime()));
@@ -69,6 +107,12 @@ function shareAggregatesFromRows(shares) {
     return {userIds, studyIds, roleIds, expiryDate};
 }
 
+/**
+ * Parses UX-provided expiry strings enforcing future dates compatible with Postgres `DATE` uploads.
+ *
+ * @param {unknown} rawExpiryDate Incoming date control payload.
+ * @returns {Date} Normalized expiry at local end-of-day for `YYYY-MM-DD` syntax.
+ */
 function parseShareExpiryInput(rawExpiryDate) {
     const raw = typeof rawExpiryDate === "string" ? rawExpiryDate.trim() : "";
     if (!raw) {
@@ -90,18 +134,25 @@ function parseShareExpiryInput(rawExpiryDate) {
     return expiryDate;
 }
 
+/**
+ * Materializes richer labels for dashboards using pre-fetched dictionaries.
+ *
+ * @param {{ userId:number, studyId?:number|null, roleId?:number|null, expiryDate?:unknown }} share Row payload.
+ * @param {{ userById: Record<number,Object>, roleById: Record<number,Object>, studyById: Record<number,Object> }} maps Hydrated lookups.
+ * @returns {{ recipientLabel:string|null, accessVia:string, viaLabel:string|null, expiryDate?: unknown }}
+ */
 function mapShareToRecipient(share, maps) {
     const uid = Number(share.userId);
     let accessVia = "direct";
     let viaLabel = null;
     if (share.studyId) {
         accessVia = "study";
-        const sid = Number(share.studyId);
-        viaLabel = maps.studyById[sid]?.name || null;
+        const studyId = Number(share.studyId);
+        viaLabel = maps.studyById[studyId]?.name || null;
     } else if (share.roleId) {
         accessVia = "role";
-        const rid = Number(share.roleId);
-        viaLabel = maps.roleById[rid]?.name || null;
+        const roleId = Number(share.roleId);
+        viaLabel = maps.roleById[roleId]?.name || null;
     }
     return {
         recipientLabel: userDisplayLabel(maps.userById[uid]),

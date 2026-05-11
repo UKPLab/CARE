@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * Append-only audit trail for AI chat/test invocations (tokens, cost, status).
+ *
+ * @author Akash Gundapuneni
+ */
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {

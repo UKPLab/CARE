@@ -1,4 +1,11 @@
 'use strict';
+
+/**
+ * User-owned logical model configuration referencing credential rows (`ai_credential`).
+ * Hooks ensure attached credentials remain valid for the same `userId`.
+ *
+ * @author Akash Gundapuneni
+ */
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
@@ -13,6 +20,12 @@ module.exports = (sequelize, DataTypes) => {
             },
         ];
 
+        /**
+         * Ensures linked credentials exist, belong to this model owner, and allow enablement semantics.
+         *
+         * @param {import('sequelize').Model} aiModel Mutated instance triggering the hook.
+         * @param {{ transaction?: import('sequelize').Transaction }} [options={}] Sequelize hook options bundle.
+         */
         static async validateCredentialOwnership(aiModel, options = {}) {
             if (!aiModel.aiCredentialId) {
                 return;

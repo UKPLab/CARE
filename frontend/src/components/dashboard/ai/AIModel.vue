@@ -156,6 +156,12 @@
 </template>
 
 <script>
+/**
+ * Captures selectable models, LiteLLM parameters, credential binding, plus provider discovery tooling.
+ *
+ * @author Akash Gundapuneni
+ */
+
 import BasicModal from "@/basic/Modal.vue";
 
 function getEmptyModelForm() {
