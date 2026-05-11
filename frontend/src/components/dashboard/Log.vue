@@ -6,8 +6,8 @@
         :columns="columns"
         :data="data"
         :options="options"
-        @pagination-update="paginationUpdate"
         :max-table-height="'65vh'"
+        @pagination-update="paginationUpdate"
       />
     </template>
   </Card>

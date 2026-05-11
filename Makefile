@@ -15,6 +15,7 @@ help:
 	@echo "make doc 							Build the documentation"
 	@echo "make dev-build       		  		Build the frontend (make dev-build-frontend) and run the backend in development mode"
 	@echo "make dev-backend      		 		Run backend in development mode"
+	@echo "make dev-backend-watch  			    Run backend in development mode with nodemon (auto-restart)"
 	@echo "make dev-frontend     		 		Run frontend in development mode"
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
 	@echo "make build-frontend                  Build frontend in production mode"
@@ -27,6 +28,8 @@ help:
 	@echo "make docker          				Start docker images"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
+	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
+	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
 	@echo "make clean             				Delete development files"
 	@echo "make lint             				Run linter (only frontend)"
 	@echo "make kill             				Kill all node instances (only unix)"
@@ -93,6 +96,10 @@ dev-build: backend/node_modules/.uptodate build-frontend
 dev-backend: backend/node_modules/.uptodate
 	cd backend && npm run start
 
+.PHONY: dev-backend-watch
+dev-backend-watch: backend/node_modules/.uptodate
+	cd backend && npm run start:watch
+
 .PHONY: dev-build-frontend
 dev-build-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-dev-build
@@ -126,8 +133,74 @@ backup_db:
 recover_db:
 	@echo "Recovering database from dump. WARNING: This will override your current DB state."
 	@echo "Recovering from $${DUMP}"
-	@echo "Recovering int container $${CONTAINER}"
-	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+	@echo "Recovering into container $${CONTAINER}"
+ifeq ($(OS),Windows_NT)
+	@cmd /c "type db_dumps\%DUMP% | docker exec -i %CONTAINER% psql -U postgres"
+else
+	@cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
+endif
+
+# Internal target: zip document files from a live DB. Requires DB and FILEZIP to be set.
+.PHONY: _export_document_files
+_export_document_files:
+	@set -e; \
+	TMPLIST=$$(mktemp); \
+	docker exec $${CONTAINER} psql -qt -U postgres -d $${DB} \
+	    -c "SELECT hash FROM document WHERE deleted = false;" | \
+	tr -d ' \r' | \
+	while IFS= read -r hash; do \
+	    [ -z "$$hash" ] && continue; \
+	    for f in files/$$hash.*; do \
+	        [ -f "$$f" ] && echo "$$f"; \
+	    done; \
+	done > $$TMPLIST; \
+	[ -s "$$TMPLIST" ] && zip -qj "$${FILEZIP}" -@ < $$TMPLIST || true; \
+	rm -f $$TMPLIST; \
+	echo "Done: $${FILEZIP}"
+
+.PHONY: anonymize_dump
+anonymize_dump: backend/node_modules/.uptodate
+	@echo "Creating anonymized dump from $${DUMP}"
+	@set -e; \
+	TS="$$(date +%d-%m-%Y_%H_%M_%S)"; \
+	SIDECAR="care_anon_$$(date +%s)"; \
+	OUTFILE="db_dumps/anonymized_$$TS.sql"; \
+	FILEZIP="db_dumps/anonymized_$${TS}_files.zip"; \
+	echo "Sidecar DB: $$SIDECAR"; \
+	docker exec $${CONTAINER} psql -q -U postgres -c "CREATE DATABASE $$SIDECAR" > /dev/null; \
+	echo "[1/5] Restoring dump into sidecar DB..."; \
+	tr -d '\r' < "db_dumps/$${DUMP}" | \
+	    awk '/^\\connect care$$/{p=1;next} p && /^\\restrict /{next} p && /^\\unrestrict /{next} p{print}' | \
+	    docker exec -i $${CONTAINER} psql -q -U postgres -d $$SIDECAR > /dev/null; \
+	echo "[2/5] Migrating schema..."; \
+	(cd backend && POSTGRES_CAREDB=$$SIDECAR ADMIN_EMAIL="$(ADMIN_EMAIL)" ADMIN_PWD="$(ADMIN_PWD)" GUEST_EMAIL="$(GUEST_EMAIL)" GUEST_PWD="$(GUEST_PWD)" npm run --silent db_migrate); \
+	EXTRA=""; \
+	[ -n "$${SEED}" ] && EXTRA="$$EXTRA --seed $${SEED}"; \
+	[ -n "$${NUM}" ] && EXTRA="$$EXTRA --num $${NUM}"; \
+	echo "[3/5] Anonymizing data..."; \
+	(cd backend && POSTGRES_CAREDB=$$SIDECAR npm run anonymize -- $$EXTRA); \
+	echo "[4/5] Resetting admin password..."; \
+	(cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" POSTGRES_CAREDB=$$SIDECAR npm run --silent set-admin-password); \
+	echo "[5/6] Exporting anonymized dump..."; \
+	docker exec $${CONTAINER} pg_dump -c -C -U postgres $$SIDECAR > $$OUTFILE; \
+	sed -i "s/$$SIDECAR/$(POSTGRES_CAREDB)/g" $$OUTFILE; \
+	sed -i '/^CREATE DATABASE/i DROP DATABASE IF EXISTS $(POSTGRES_CAREDB);' $$OUTFILE; \
+	echo "[6/6] Archiving relevant document files..."; \
+	$(MAKE) _export_document_files CONTAINER=$${CONTAINER} DB=$$SIDECAR FILEZIP=$$FILEZIP; \
+	docker exec $${CONTAINER} psql -q -U postgres -c "DROP DATABASE $$SIDECAR" > /dev/null; \
+	echo "Done: $$OUTFILE and $$FILEZIP"
+
+.PHONY: export_dump_files
+export_dump_files:
+	@set -e; \
+	SIDECAR="care_anon_files_$$(date +%s)"; \
+	FILEZIP="db_dumps/$$(basename $${DUMP} .sql)_files.zip"; \
+	docker exec $${CONTAINER} psql -q -U postgres -c "CREATE DATABASE $$SIDECAR" > /dev/null; \
+	tr -d '\r' < "db_dumps/$${DUMP}" | \
+	    awk '/^\\connect /{next} /^\\restrict /{next} /^\\unrestrict /{next} {print}' | \
+	    docker exec -i $${CONTAINER} psql -q -U postgres -d $$SIDECAR > /dev/null; \
+	$(MAKE) _export_document_files CONTAINER=$${CONTAINER} DB=$$SIDECAR FILEZIP=$$FILEZIP; \
+	docker exec $${CONTAINER} psql -q -U postgres -c "DROP DATABASE $$SIDECAR" > /dev/null
 
 .PHONY: admin-password
 admin-password: backend/node_modules/.uptodate
