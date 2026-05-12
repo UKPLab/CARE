@@ -35,11 +35,11 @@
             class="form-check py-1"
           >
             <input
-              class="form-check-input"
-              type="checkbox"
               :id="'exclude-' + event"
-              :value="event"
               v-model="excludeEvents"
+              :value="event"
+              type="checkbox"
+              class="form-check-input"
             />
             <label class="form-check-label" :for="'exclude-' + event">
               <code>{{ event }}</code>

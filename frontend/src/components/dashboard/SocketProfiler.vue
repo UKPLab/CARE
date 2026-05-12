@@ -26,8 +26,8 @@
           :data="recordings"
           :options="tableOptions"
           :buttons="tableButtons"
-          @action="action"
           :max-table-height="'65vh'"
+          @action="action"
       />
     </template>
   </Card>
