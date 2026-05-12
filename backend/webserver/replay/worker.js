@@ -91,10 +91,6 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
 
                 // Small delay to let any remaining Refresh events arrive
                 await new Promise(resolve => setTimeout(resolve, 50));
-                if (pendingDbChanges.length > 0) {
-                    console.log(`[replay] trace ${trace.action} caused ${pendingDbChanges.length} DB changes`);
-                }
-
                 const dbChanges = [...pendingDbChanges];
 
                 
