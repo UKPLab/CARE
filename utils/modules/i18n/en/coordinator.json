@@ -5,6 +5,8 @@
       "noFieldsDefined": "The table {table} has no defined fields!",
       "saveFailed": "Could not save",
       "incompleteConfig": "Incomplete Configuration",
-      "incompleteConfigDetail": "You have incomplete configuration at {steps}"
+      "incompleteConfigDetail": "You have incomplete configuration at {steps}",
+      "stepSingle": "step {n}",
+      "stepMultiple": "steps {list} and {last}"
     }
 }

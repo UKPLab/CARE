@@ -8,7 +8,9 @@
   >
     <template #title>
       <slot name="title">
-        {{ modalTitle }}
+        <span v-if="data.id">{{ $t('common.edit') }}</span>
+        <span v-else>{{ $t('common.new') }}</span>
+        {{ title }}
       </slot>
     </template>
     <template #body>
@@ -59,13 +61,8 @@
             class="btn btn-primary me-2"
             type="button"
             @click="submit"
-            >
-        <span v-if="data.id">
-            {{ textUpdate || $t('common.update') }}
-        </span>
-        <span v-else>
-            {{ textAdd || $t('common.add') }}
-        </span>
+          >
+            {{ data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add')) }}
           </button>
         </slot>
       </span>
@@ -104,27 +101,17 @@ export default {
       type: String,
       required: true,
     },
-    newTitleKey: {
-      type: String,
-      required: false,
-      default: null,
-    },
-    editTitleKey: {
-      type: String,
-      required: false,
-      default: null,
-    },
     textAdd: {
       type: String,
-      default: null, //was "Add"
+      default: "Add",
     },
     textUpdate: {
       type: String,
-      default: null, //was "Update"
+      default: "Update",
     },
     textCancel: {
       type: String,
-      default: null //was "Cancel"
+      default: "Cancel",
     },
     table: {
       type: String,
@@ -149,6 +136,16 @@ export default {
       required: false,
       default: false,
     },
+    fieldsOverride: {
+      type: Array,
+      required: false,
+      default: null,
+    },
+    noSuccessMessage: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["submit", "success"],
   data() {
@@ -160,20 +157,25 @@ export default {
     };
   },
   computed: {
-    modalTitle() {
-      const key = this.data.id ? this.editTitleKey : this.newTitleKey;
-      if (key) {
-        return this.$t(key);
-      }
-      return this.data.id ? `${this.$t('common.edit')} ${this.title}` : `${this.$t('common.new')} ${this.title}`;
-    },
     fields() {
-      return this.$store.getters["table/" + this.table + "/getFields"].map((f) => {
-        if (this.readOnlyFields.includes(f.key)) {
-          f.readOnly = true;
+      const baseFields =
+        this.fieldsOverride ||
+        this.$store.getters["table/" + this.table + "/getFields"] ||
+        [];
+
+      return baseFields.map((f) => {
+        const field = { ...f };
+        if (this.readOnlyFields.includes(field.key)) {
+          field.readOnly = true;
         }
-        return f;
+        return field;
       });
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    username() {
+      return this.$store.getters['auth/getUsername'];
     },
   },
   methods: {
@@ -182,12 +184,15 @@ export default {
      * @param id
      * @param defaultValues Override default values
      * @param copy If the entry should be copied
+     * @param dataOverrides Additional data to override after fetching
      */
-    open(id = 0, defaultValues = {}, copy = false) {
+    open(id = 0, defaultValues = {}, copy = false, dataOverrides = {}) {
       if (this.fields) {
         this.reset();
         this.overrideDefaultValues = defaultValues;
         this.data = this.getData(id, copy);
+        // Apply data overrides after fetching data
+        this.data = { ...this.data, ...dataOverrides };
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
@@ -209,10 +214,12 @@ export default {
       
       if (!isValidated) return;
       if (hasIncompleteConfig) {
-        const stepMessage = incompleteSteps.length === 1 
-          ? `step ${incompleteSteps[0]}`
-          : `steps ${incompleteSteps.slice(0, -1).join(", ")} and ${incompleteSteps[incompleteSteps.length - 1]}`;
-        
+        const stepMessage = incompleteSteps.length === 1
+          ? this.$t('coordinator.errors.stepSingle', { n: incompleteSteps[0] })
+          : this.$t('coordinator.errors.stepMultiple', {
+              list: incompleteSteps.slice(0, -1).join(", "),
+              last: incompleteSteps[incompleteSteps.length - 1]
+            });
         this.eventBus.emit("toast", {
           title: this.$t('coordinator.errors.incompleteConfig'),
           message: this.$t('coordinator.errors.incompleteConfigDetail', { steps: stepMessage }),
@@ -238,7 +245,7 @@ export default {
         (result) => {
           if (result.success) {
             this.showSuccess();
-            this.$emit("success", result.data);
+            this.$emit("success", result.data, data.id ? 'update' : 'create');
           } else {
             this.$refs.coordinatorModal.waiting = false;
             this.eventBus.emit("toast", {
@@ -252,8 +259,12 @@ export default {
       this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
-      this.success = true;
       this.$refs.coordinatorModal.waiting = false;
+      if (this.noSuccessMessage) {
+        this.$refs.coordinatorModal.close();
+      } else {
+        this.success = true;
+      }
     },
     reset() {
       this.$refs.coordinatorModal.waiting = false;
@@ -299,7 +310,11 @@ export default {
             .map((e) => {
               // Create a copy of the original entry
               const{id, ...copyData} = e;
-
+              copyData.userId = this.userId;
+              if (copyData.creator_name) {
+                copyData.creator_name = this.username;
+              };
+            
               // If this entry has a documentId, fetch the parent document ID
               if (e.documentId) {
                 const document = this.$store.getters["table/document/get"](e.documentId);

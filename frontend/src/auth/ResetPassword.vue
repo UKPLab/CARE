@@ -6,9 +6,8 @@
             class="text-center"
             style="margin-bottom: 20px"
         >
-          <IconAsset
+          <LogoSvg
               :height="200"
-              name="logo"
           />
         </div>
 
@@ -38,9 +37,9 @@
             <!-- Form - only show when token is validated and not successful yet -->
             <div v-if="!isSuccess && tokenValidated && !validatingToken">
               <BasicForm
+                ref="resetForm"
                 v-model="formData"
                 :fields="fields"
-                ref="resetForm"
               />
             </div>
 
@@ -54,8 +53,8 @@
               <BasicButton
                   v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
                   :class="isSuccess ? 'btn btn-success w-full max-w-xs' : 'btn btn-secondary w-full max-w-xs'"
-                  @click="toLogin"
                   :text="isSuccess ? $t('auth.returnToLogin') : $t('auth.backToLogin')"
+                  @click="toLogin"
               />
           </div>
         </div>
@@ -72,7 +71,7 @@
  *
  * @author: Karim Ouf
  */
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
@@ -81,7 +80,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthResetPassword",
-  components: {IconAsset, BasicForm, BasicButton},
+  components: {LogoSvg, BasicForm, BasicButton},
   data() {
     return {
       showError: false,
@@ -124,7 +123,11 @@ export default {
       return this.$route.query.token;
     },
     validPassword() {
-      return this.formData.newPassword && this.formData.newPassword.length >= 8;
+      const p = this.formData.newPassword || "";
+      return p.length >= 8
+        && !/^\s*$/.test(p)
+        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     validConfirmPassword() {
       return this.formData.newPassword === this.formData.confirmPassword;

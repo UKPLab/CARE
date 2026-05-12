@@ -1,11 +1,10 @@
 {
     "form": {
-       "placeholders": {
-            "documentBracket": "<Dokument>"
-        },
-        "collapsible": {
-          "advancedSettings": "Erweiterte Einstellungen"
-        }
+      "placeholders": {
+        "documentBracket": "<Dokument>",
+        "documentTemplateSuffix": "(Dokumentvorlage)"
+      },
+      "advancedSettings": "Erweiterte Einstellungen"
     },
     "configuration": {
       "title": "Konfiguration",

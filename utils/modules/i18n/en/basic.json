@@ -1,11 +1,10 @@
 {
     "form": {
-       "placeholders": {
-            "documentBracket": "<Document>"
+      "placeholders": {
+        "documentBracket": "<Document>",
+        "documentTemplateSuffix": "(document template)"
       },
-      "collapsible": {
-        "advancedSettings": "Advanced Settings"
-      }
+      "advancedSettings": "Advanced Settings"
     },
     "configuration": {
       "title": "Configuration",

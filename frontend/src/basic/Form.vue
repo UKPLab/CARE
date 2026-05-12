@@ -4,107 +4,43 @@
       v-if="currentData !== null"
       class="row g-3"
     >
+      <FormFields
+        ref="regularGrid"
+        :fields="regularFields"
+        :model-value="currentData"
+        @update:model-value="currentData = $event"
+        @update:config-status="handleConfigStatusChange"
+        @file-change="(file) => $emit('file-change', file)"
+      />
       <div
-        v-for="field in fields"
-        :key="field.key"
-        :class="'size' in field ? 'col-md-' + field.size : 'col-12'"
+        v-if="advancedFields.length > 0"
+        class="col-12"
       >
-        <FormSwitch
-          v-if="field.type === 'switch'"
-          :ref="'ref_' + field.key"
-          v-model="currentData[field.key]"
-          :options="field"
-        />
-        <span v-else>
-          <FormSlider
-            v-if="field.type === 'slider'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <DatetimePicker
-            v-else-if="field.type === 'datetime'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormSelect
-            v-else-if="field.type === 'select'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormCheckbox
-            v-else-if="field.type === 'checkbox'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormEditor
-            v-else-if="field.type === 'editor' || field.type === 'html'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormTextarea
-            v-else-if="field.type === 'textarea'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormTable
-            v-else-if="field.type === 'table'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormChoice
-            v-else-if="field.type === 'choice'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-            @update:config-status="handleConfigStatusChange"
-          />
-          <FormPassword
-            v-else-if="field.type === 'password'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-          <FormFile
-            v-else-if="field.type === 'file'"
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-            @file-change="(file) => $emit('file-change', file)"
-          />
-          <FormDefault
-            v-else
-            :ref="'ref_' + field.key"
-            v-model="currentData[field.key]"
-            :options="field"
-          />
-        </span>
+        <Collapsible
+          :title="$t('basic.form.advancedSettings')"
+          :collapsed="true"
+        >
+          <div class="row g-3">
+            <FormFields
+              ref="advancedGrid"
+              :fields="advancedFields"
+              :model-value="currentData"
+              @update:model-value="currentData = $event"
+              @update:config-status="handleConfigStatusChange"
+              @file-change="(file) => $emit('file-change', file)"
+            />
+          </div>
+        </Collapsible>
       </div>
     </div>
   </form>
 </template>
 
 <script>
-import DatetimePicker from "@/basic/form/DatetimePicker.vue";
-import FormSwitch from "@/basic/form/Switch.vue";
-import FormSlider from "@/basic/form/Slider.vue";
-import FormSelect from "@/basic/form/Select.vue";
-import FormCheckbox from "@/basic/form/Checkbox.vue";
-import FormDefault from "@/basic/form/Default.vue";
-import FormPassword from "@/basic/form/Password.vue";
-import FormTextarea from "@/basic/form/Textarea.vue";
-import FormEditor from "@/basic/form/Editor.vue";
-import FormTable from "@/basic/form/DataTable.vue";
-import FormChoice from "@/basic/form/Choice.vue";
 import deepEqual from "deep-equal";
 import {computed} from "vue";
-import FormFile from "@/basic/form/File.vue";
+import Collapsible from "@/basic/form/Collapsible.vue";
+import FormFields from "@/basic/form/FormFields.vue";
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -114,18 +50,8 @@ import FormFile from "@/basic/form/File.vue";
 export default {
   name: "BasicForm",
   components: {
-    FormFile,
-    DatetimePicker,
-    FormSwitch,
-    FormSlider,
-    FormSelect,
-    FormCheckbox,
-    FormDefault,
-    FormPassword,
-    FormTextarea,
-    FormEditor,
-    FormTable,
-    FormChoice
+    Collapsible,
+    FormFields,
   },
   provide() {
     return {
@@ -138,7 +64,7 @@ export default {
       required: true,
     },
     fields: {
-      type: Object,
+      type: Array,
       required: true,
     },
   },
@@ -156,6 +82,12 @@ export default {
         }
         return acc;
       }, {});
+    },
+    regularFields() {
+      return this.fields.filter(field => !field.advanced);
+    },
+    advancedFields() {
+      return this.fields.filter(field => field.advanced === true);
     },
   },
   watch: {
@@ -192,10 +124,12 @@ export default {
       return return_data;
     },
     validate() {
-      return Object.keys(this.$refs)
-        .filter((child) => typeof this.$refs[child][0].validate === "function")
-        .map((child) => this.$refs[child][0].validate())
-        .every(Boolean);
+      const regularOk = this.$refs.regularGrid
+        ? this.$refs.regularGrid.validate()
+        : true;
+      const advancedOk =
+        !this.$refs.advancedGrid || this.$refs.advancedGrid.validate();
+      return regularOk && advancedOk;
     },
     handleConfigStatusChange(status) {
       this.$emit("update:configStatus", status);

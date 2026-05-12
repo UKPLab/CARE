@@ -124,7 +124,7 @@ export default {
       });
 
       // set timer
-      this.timeout = setTimeout(x => {
+      this.timeout = setTimeout(_x => {
         if(this.downloaded.length < this.toDownload.length) {
           this.abortDownload();
         } else {

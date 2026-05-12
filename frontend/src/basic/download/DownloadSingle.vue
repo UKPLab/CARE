@@ -95,7 +95,7 @@ export default {
       this.$socket.emit(this.reqMsg, params);
 
       // set timer
-      this.timeout = setTimeout(x => {
+      this.timeout = setTimeout(_x => {
         if(this.result === null) {
           this.abortDownload();
         } else {

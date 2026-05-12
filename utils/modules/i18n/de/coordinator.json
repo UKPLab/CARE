@@ -5,6 +5,8 @@
     "noFieldsDefined": "Die Tabelle {table} hat keine definierten Felder!",
     "saveFailed": "Konnte nicht gespeichert werden",
     "incompleteConfig": "Unvollständige Konfiguration",
-    "incompleteConfigDetail": "Sie haben eine unvollständige Konfiguration bei {steps}"
+    "incompleteConfigDetail": "Sie haben eine unvollständige Konfiguration bei {steps}",
+    "stepSingle": "Schritt {n}",
+    "stepMultiple": "Schritte {list} und {last}"
   }
 }

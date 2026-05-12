@@ -8,7 +8,7 @@
         <span>{{ formatLocalizedTime(timeString) }}</span>
       </div>
       <div class="col-3">
-        <div class="badge bg-secondary" v-if="type">
+        <div v-if="type" class="badge bg-secondary">
           {{type}}
         </div>
       </div>

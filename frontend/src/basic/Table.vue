@@ -18,11 +18,13 @@
       aria-describedby="search-addon1"
     />
   </div>
-  <div 
+  <div
+    ref="tableWrapper"
     class="table-wrapper"
     :style="tableWrapperStyle"
   >
     <table
+      ref="tableElement"
       :class="tableClass"
       class="table"
     >
@@ -47,7 +49,8 @@
               'width' in c ? 'col-' + c.width : 'col-auto',
               getFixedColumnClass(c, index),
             ]"
-            :style="getFixedColumnStyle(c)"
+          
+            :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             {{ c.name }}
             <span
@@ -131,7 +134,14 @@
               </template>
             </span>
           </th>
-          <th v-if="hasButtons">{{ $t('common.manage') }}</th>
+          <th
+            v-if="hasManageButtons"
+            ref="manageHeader"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
+          >
+            {{ $t('common.manage') }}
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -154,7 +164,7 @@
         <tr
           v-for="r in tableData"
           v-else
-          :key="r"
+          :key="r.id"
           @click="selectRow(r)"
         >
           <td v-if="selectableRows">
@@ -182,7 +192,7 @@
               { pointer: selectableRows && !r.isDisabled },
               getFixedColumnClass(c, index),
             ]"
-            :style="getFixedColumnStyle(c)"
+            :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
               <TIcon
@@ -190,6 +200,7 @@
                 :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
                 :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
                 :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
+                :size="c.typeOptions?.size ?? 16"
               />
               <TBadge
                 v-else-if="c.type === 'badge'"
@@ -250,6 +261,8 @@
           </td>
           <td
             v-if="getFilteredButtons(r).length > 0"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
             @click.stop=""
           >
             <TButtonGroup
@@ -259,8 +272,22 @@
             />
           </td>
         </tr>
+        <tr v-if="isAllMode && allRenderLimit < total" ref="loadMoreSentinel">
+          <td 
+            :colspan="emptyColspan" 
+            style="height: 1px; 
+            padding: 0; 
+            border: 0;">
+          </td>
+        </tr>
       </tbody>
     </table>
+  </div>
+  <div
+    v-if="selectableRows && !(options && options.singleSelect)"
+    class="text-end text-muted small mb-2"
+  >
+    {{ $t('common.selectedCount', { selected: selectedCount, total: totalSelectableCount }) }}
   </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
@@ -270,6 +297,7 @@
     :items-per-page-list="itemsPerPageList"
     :pages="pages"
     :show-pages="paginationShowPages"
+    :total-items="total"
     @update-items-per-page="paginationItemsPerPageChange"
     @update-page="paginationPageChange"
   />
@@ -392,9 +420,15 @@ export default {
       paginationShowPages: 3,
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
-      hasButtons: false, // Use this flag to decide on the visibility of the column header
+      hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
+      manageColumnStyle: {},
       debouncedComputeFixedColumns: null,
+      hasHorizontalOverflow: false,
+      resizeObserver: null,
+      allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
+      allChunkSize: 50, // Append the next 50 items on scroll
+      allObserver: null,
     };
   },
   computed: {
@@ -438,11 +472,15 @@ export default {
       }
       return this.data.length;
     },
+    isAllMode() {
+      return this.itemsPerPage === 0;
+    },
     limit() {
       // if manually set, use that
       if (this.itemsPerPage !== null) {
         if (this.itemsPerPage === 0) {
-          return this.total;
+          // Prevent UI freeze when "All" is selected
+          return Math.min(this.total, this.allRenderLimit);
         }
         return this.itemsPerPage;
       }
@@ -458,6 +496,9 @@ export default {
       return this.total;
     },
     pages() {
+      if (this.isAllMode) {
+        return 1;
+      }
       if (this.serverSidePagination) {
         return Math.ceil(this.total / this.limit);
       }
@@ -481,8 +522,11 @@ export default {
       
       let data = this.getFilteredAndSortedData();
 
-      if (this.options && this.options.pagination) {
+      if (this.options && this.options.pagination && !this.isAllMode) {
         data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
+      } else if (this.isAllMode) {
+        // In "All" mode we render a growing prefix (0..limit)
+        data = data.slice(0, this.limit);
       }
       return data;
     },
@@ -491,19 +535,41 @@ export default {
         {},
         ...Object.entries(this.filter).map(([k, v]) => ({
           [k]: Object.entries(v)
-            .filter(([k, v]) => v)
-            .map(([k, v]) => k),
+            .filter(([_k, v]) => v)
+            .map(([k, _v]) => k),
         }))
       );
       return Object.assign(
         {},
         ...Object.entries(sequelizeFilter)
-          .filter(([k, v]) => v.length > 0)
+          .filter(([_k, v]) => v.length > 0)
           .map(([k, v]) => ({ [k]: v }))
       );
     },
     hasFixedColumns() {
       return this.columns.some((c) => ["left", "right"].includes(c.fixed));
+    },
+    hasRightFixedColumns() {
+      return this.columns.some((c) => c.fixed === "right");
+    },
+    // Determine if manage column should be sticky
+    shouldFixManageColumn() {
+      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+    },
+    // Cache the indices to avoid repeated searches
+    fixedColumnIndices() {
+      return {
+        lastLeft: this.columns.findLastIndex((col) => col.fixed === "left"),
+        firstRight: this.columns.findIndex((col) => col.fixed === "right"),
+      };
+    },
+    selectedCount() {
+      return this.currentData.length;
+    },
+    totalSelectableCount() {
+      if (!this.selectableRows) return 0;
+      const allFilteredData = this.getFilteredAndSortedData();
+      return allFilteredData.filter((r) => !r.isDisabled).length;
     },
   },
   watch: {
@@ -534,13 +600,23 @@ export default {
       },
       deep: true,
     },
-    hasFixedColumns(newVal) {
-      if (newVal) {
+    hasManageButtons(newVal) {
+      if(newVal) {
         this.setupFixedColumns();
-      } else {
+      } else if(!this.hasFixedColumns) {
         this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
       }
-    }
+    },
+    itemsPerPage(newVal) {
+      if (newVal === 0) {
+        this.currentPage = 1;
+        this.allRenderLimit = this.allChunkSize;
+        this.$nextTick(() => this.setupAllObserver());
+      } else {
+        this.cleanupAllObserver();
+      }
+    },
   },
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
@@ -564,11 +640,11 @@ export default {
           [c.key]:
             c.filter.type === "numeric"
               ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" } // initialize numeric filter
-              : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
+              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))), // initialize checkbox filter
         }))
     );
 
-    if (this.hasFixedColumns) {
+    if (this.hasFixedColumns || this.hasManageButtons) {
       this.setupFixedColumns();
     }
   },
@@ -579,80 +655,125 @@ export default {
   },
   beforeUnmount() {
     this.cleanupFixedColumns();
+    this.cleanupAllObserver();
   },
   methods: {
     formatLocalizedDateTime,
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();
-        window.addEventListener("resize", this.debouncedComputeFixedColumns);
+        // Use ResizeObserver for better performance if available
+        if (window.ResizeObserver && this.$refs.tableWrapper) {
+          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
+          this.resizeObserver.observe(this.$refs.tableWrapper);
+        } else {
+          // Fallback to window resize
+          window.addEventListener("resize", this.debouncedComputeFixedColumns);
+        }
       });
     },
     cleanupFixedColumns() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
       if (this.debouncedComputeFixedColumns) {
         window.removeEventListener("resize", this.debouncedComputeFixedColumns);
       }
     },
+    getManageColumnClass() {
+      if (!this.shouldFixManageColumn) return null;
+
+      return {
+        "table-fixed": true,
+        "table-fixed-right": true,
+        "table-fixed-shadow": !this.hasRightFixedColumns,
+      };
+    },
     getFixedColumnStyle(column) {
-      return column?.key ? this.fixedColumnStyles[column.key] : null;
+      if (!column?.key || !column?.fixed) return null;
+      return this.fixedColumnStyles[column.key] || null;
     },
     getFixedColumnClass(column, index) {
       if (!column?.fixed) return null;
 
-      const isLastLeft = column.fixed === "left" && this.getLastLeftIndex(index);
-      const isLastRight = column.fixed === "right" && this.getLastRightIndex(index);
+      const { lastLeft, firstRight } = this.fixedColumnIndices;
+      const isLastLeft = column.fixed === "left" && index === lastLeft;
+      const isFirstRight = column.fixed === "right" && index === firstRight;
 
       return {
         "table-fixed": true,
         "table-fixed-left": column.fixed === "left",
         "table-fixed-right": column.fixed === "right",
-        "table-fixed-shadow": isLastLeft || isLastRight,
+        "table-fixed-shadow": isLastLeft || isFirstRight,
       };
     },
-    getLastLeftIndex(currentIndex) {
-      const lastLeftIndex = this.columns.findLastIndex(col => col.fixed === "left");
-      return lastLeftIndex === currentIndex;
-    },
-    getLastRightIndex(currentIndex) {
-      const index = this.columns.findIndex(col => col.fixed === "right");
-      return currentIndex === index;
+    getManageColumnWidth() {
+      const ref = this.$refs.manageHeader;
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      return el?.offsetWidth || 100; // Default 100px 
     },
     computeFixedColumnStyles() {
-      if (!this.hasFixedColumns) {
+      // Check for horizontal overflow
+      const hasOverflow = this.detectHorizontalOverflow();
+      if (hasOverflow !== this.hasHorizontalOverflow) {
+        this.hasHorizontalOverflow = hasOverflow;
+      }
+
+      // Early return if no fixed columns needed
+      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
         this.fixedColumnStyles = {};
-        this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
         return;
       }
 
       const styles = {};
-      let leftOffset = 0;
+      const baseStyle = {
+        position: "sticky",
+        zIndex: 2,
+        background: "var(--bs-body-bg, #fff)",
+      };
 
+      // Compute left-fixed columns
+      let leftOffset = 0;
       this.columns.forEach((column) => {
         if (column.fixed === "left") {
-          const width = this.getColumnWidth(column);
           styles[column.key] = {
-            position: "sticky",
+            ...baseStyle,
             left: `${leftOffset}px`,
-            zIndex: 2,
-            background: "var(--bs-body-bg, #fff)",
           };
-          leftOffset += width;
+          leftOffset += this.getColumnWidth(column);
         }
       });
 
+      // Compute right-fixed columns
       let rightOffset = 0;
-      [...this.columns].reverse().forEach((column) => {
-        if (column.fixed === "right") {
-          const width = this.getColumnWidth(column);
+
+      // Reserve space for manage column if it should be fixed
+      if (this.shouldFixManageColumn) {
+        rightOffset = this.getManageColumnWidth();
+      }
+
+      // Process right-fixed columns from right to left
+      [...this.columns]
+        .reverse()
+        .filter((c) => c.fixed === "right")
+        .forEach((column) => {
           styles[column.key] = {
-            position: "sticky",
+            ...baseStyle,
             right: `${rightOffset}px`,
-            zIndex: 2,
-            background: "var(--bs-body-bg, #fff)",
           };
-          rightOffset += width;
-        }
-      });
+          rightOffset += this.getColumnWidth(column);
+        });
+
+      // Set manage column style
+      this.manageColumnStyle = this.shouldFixManageColumn
+        ? {
+            ...baseStyle,
+            right: "0px",
+            zIndex: 3, // Higher z-index for manage column
+          }
+        : null;
 
       this.fixedColumnStyles = styles;
     },
@@ -669,6 +790,14 @@ export default {
 
       // Default fallback
       return 150;
+    },
+    detectHorizontalOverflow() {
+      const wrapper = this.$refs.tableWrapper;
+      const table = this.$refs.tableElement;
+
+      if (!wrapper || !table) return false;
+
+      return table.scrollWidth > wrapper.clientWidth;
     },
     normalizeCssSize(value) {
       if (!value) return null;
@@ -700,7 +829,7 @@ export default {
       // Apply search filter
       if (this.search && this.search !== "") {
         data = data.filter((d) => {
-          for (const [key, value] of Object.entries(d)) {
+          for (const [_key, value] of Object.entries(d)) {
             if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
               return true;
             }
@@ -746,8 +875,8 @@ export default {
             } else {
               // only selected filter
               const filter = Object.entries(filterValue)
-                .filter(([k, v]) => v)
-                .map(([k, v]) => k);
+                .filter(([_k, v]) => v)
+                .map(([k, _v]) => k);
               if (filter.length > 0) {
                 const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
                 const hasMatch = dataValues.some((val) =>
@@ -885,17 +1014,32 @@ export default {
     getFilteredButtons(row) {
       const filteredButtons = this.buttons.filter((b) => {
         if (!b.filter || !b.filter.length) return true;
-        return b.filter.some((f) => {
-          if (f.type === "not") {
-            return row[f.key] !== f.value;
-          }
-          return row[f.key] === f.value;
-        });
+        
+        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
+        const filterMode = b.filterMode || "or";
+        
+        if (filterMode === "and") {
+          // AND logic: all filters must match
+          return b.filter.every((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        } else {
+          // OR logic (default): at least one filter must match
+          return b.filter.some((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        }
       });
 
       // Update this flag if there are any buttons
       if (filteredButtons.length > 0) {
-        this.hasButtons = true;
+        this.hasManageButtons = true;
       }
 
 
@@ -914,6 +1058,41 @@ export default {
       return {
         "--line-clamp": lines,
       };
+    },
+    setupAllObserver() {
+      this.cleanupAllObserver();
+
+      const wrapper = this.$refs.tableWrapper;
+      const sentinel = this.$refs.loadMoreSentinel;
+      if (!sentinel) return;
+
+      // If there is a scroll container (maxTableHeight), observe within it.
+      // Otherwise observe in the viewport.
+      const root = wrapper && this.maxTableHeight ? wrapper : null;
+
+      this.allObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry?.isIntersecting) return;
+
+          if (this.allRenderLimit < this.total) {
+            this.allRenderLimit = Math.min(this.total, this.allRenderLimit + this.allChunkSize);
+          }
+        },
+        { 
+          root, 
+          threshold: 0.1,
+        }
+      );
+
+      this.allObserver.observe(sentinel);
+    },
+
+    cleanupAllObserver() {
+      if (this.allObserver) {
+        this.allObserver.disconnect();
+        this.allObserver = null;
+      }
     },
   },
 };
@@ -972,5 +1151,30 @@ export default {
   text-overflow: ellipsis;
   white-space: normal;
   word-break: break-word;
+}
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed,
+.table-wrapper thead th.table-fixed-left,
+.table-wrapper thead th.table-fixed-right {
+  z-index: 6 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed-right {
+  z-index: 7 !important;
+}
+
+.table-wrapper tbody td.table-fixed,
+.table-wrapper tbody td.table-fixed-left,
+.table-wrapper tbody td.table-fixed-right {
+  z-index: 2 !important;
+  background: var(--bs-body-bg, #fff);
 }
 </style>

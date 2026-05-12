@@ -1,7 +1,7 @@
 <template>
   <blockquote
-      ref="top"
       v-show="content"
+      ref="top"
       class="blockquote fs-6 position-relative"
       @mouseover="showControls=true"
       @mouseleave="showControls=false"
@@ -11,12 +11,12 @@
         class="bg-light border-start"
         @dblclick="toEditMode(true)"
     >
-      <div class="button-group position-absolute top-0 end-0 opacity-50 pe-1" v-show="showControls">
+      <div v-show="showControls" class="button-group position-absolute top-0 end-0 opacity-50 pe-1">
         <button
-            class="btn"
-            @click="(e) => {e.stopPropagation(); copy()}"
-            :title="$t('common.copy')"
             v-show="!editMode"
+            class="btn"
+            :title="$t('common.copy')"
+            @click="(e) => {e.stopPropagation(); copy()}"
         >
           <LoadIcon
               class="me-1"
@@ -25,10 +25,10 @@
           />
         </button>
         <button
-            class="btn"
-            @click="(e) => {e.stopPropagation(); toEditMode(true)}"
-            :title="$t('common.edit')"
             v-show="!editMode && !readOnly"
+            class="btn"
+            :title="$t('common.edit')"
+            @click="(e) => {e.stopPropagation(); toEditMode(true)}"
         >
           <LoadIcon
               class="me-1"
@@ -37,10 +37,10 @@
           />
         </button>
         <button
-            class="btn"
-            @click="(e) => {e.stopPropagation(); toEditMode(false)}"
-            :title="$t('common.edit')"
             v-show="editMode && !readOnly"
+            class="btn"
+            :title="$t('common.edit')"
+            @click="(e) => {e.stopPropagation(); toEditMode(false)}"
         >
           <LoadIcon
               class="me-1"
@@ -51,11 +51,11 @@
       </div>
       <form v-if="editMode">
         <textarea
-            v-model="contentText"
-            :rows="contentText.split('\n').length"
-            class="code form-check-input w-100 h-100"
-            :title="$t('editor.editJson')"
-            type="text"
+          v-model="contentText"
+          :rows="contentText.split('\n').length"
+          class="code form-check-input w-100 h-100"
+          :title="$t('editor.editJson')"
+          type="text"
         ></textarea>
       </form>
     </div>
@@ -142,7 +142,7 @@ export default {
 
     try {
       window.removeEventListener("click", this.leaveEditModeListener);
-    } catch (e) {
+    } catch (_error) {
       // do nothing
     }
   },
@@ -157,7 +157,7 @@ export default {
       try {
         JSON.parse(this.contentText);
         return true;
-      } catch (e) {
+      } catch (_error) {
         return false;
       }
     },
@@ -202,7 +202,7 @@ export default {
             message: this.$t('editor.copyJsonSuccess.message'),
             variant: "success"
           });
-        } catch ($e) {
+        } catch (_error) {
           this.eventBus.emit('toast', {
             title: this.$t('errors.file.copyJsonError.title'),
             message: this.$t('errors.file.copyJsonError.notCopiedMsg'),
