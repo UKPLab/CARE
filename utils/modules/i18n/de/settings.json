@@ -15,5 +15,7 @@
     "settingsImported": "Einstellungen importiert.",
     "updatedSettings": "{count} vorhandene Einstellungen aktualisiert.",
     "unsavedChangesWarning": "Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich ohne Speichern verlassen?"
-  }
+  },
+  "rememberToSaveBefore": "Denken Sie daran, nach Änderungen auf",
+  "rememberToSaveAfter": "zu klicken."
 }
