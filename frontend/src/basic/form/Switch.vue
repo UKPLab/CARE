@@ -16,7 +16,7 @@
       class="form-label"
     >{{ $te(options.label) ? $t(options.label) : options.label }}</label>
     <FormHelp
-    :help="$te(options.help) ? $t(options.help) : options.help"
+      :help="$te(options.help) ? $t(options.help) : options.help"
     />
   </span>
 </template>

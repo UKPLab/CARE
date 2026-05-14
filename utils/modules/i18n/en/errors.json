@@ -86,7 +86,8 @@
             "passwordsDoNotMatch": "Passwords do not match.",
             "provideInstitutionalUsername": "Please enter your institutional username.",
             "provideInstitutionalPassword": "Please enter your institutional password.",
-            "passwordRequirements": "Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis."
+            "passwordRequirements": "Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis.",
+            "passwordInvalidChars": "Password cannot contain only spaces, control characters, or emojis. Use letters, numbers, and standard punctuation."
         },
         "documents": {
             "selectValidType": "Please select a valid document type.",

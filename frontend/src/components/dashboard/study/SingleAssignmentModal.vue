@@ -618,7 +618,7 @@ export default {
           .map((g) => ({key: g, name: g}));
 
       if (hasEmptyGroups) {
-        options.unshift({key: '', name: this.$t('nlp.inputFiles.noGroupId')});
+        options.unshift({key: '', name: this.$t('common.noGroupId')});
       }
 
       return options;

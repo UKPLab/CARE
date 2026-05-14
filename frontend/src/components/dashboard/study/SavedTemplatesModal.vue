@@ -164,7 +164,7 @@ export default {
         this.$t('dashboard.study.deleteTemplate'),
         this.$t('dashboard.study.deleteTemplatePrompt'),
         "",
-        function (val) {
+        (val) => {
           if (val) {
             this.$socket.emit("appDataUpdate", {
               table: "study",
@@ -188,6 +188,7 @@ export default {
               }
             });
           }
+          this.$nextTick(() => this.open());
         }
       );
     },

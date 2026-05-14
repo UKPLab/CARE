@@ -19,5 +19,7 @@
     "replies": "Antworten",
     "pdfPage": {
         "loadingPage": "Seite {pageNumber} wird geladen"
-    }
+    },
+    "readOnlyMode": "Schreibgeschützter Modus",
+    "annotationsViewOnly": "Annotationen können nur angezeigt werden"
 }

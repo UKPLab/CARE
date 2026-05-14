@@ -153,22 +153,22 @@
     </span>
     <div class="btn-group">
       <button
-        class="btn btn-light btn-sm"
         v-if="showExtenderButton"
+        class="btn btn-light btn-sm"
         @click="maxComments+=5"
       >
         {{ $t('common.showMore')}}
       </button>
       <button
-        class="btn btn-light btn-sm"
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
+        class="btn btn-light btn-sm"
         @click="maxComments=defaultNumComments"
       >
         {{ $t('common.showLess') }}
       </button>
       <button
-        class="btn btn-light btn-sm"
         v-if="maxComments > defaultNumComments"
+        class="btn btn-light btn-sm"
         @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
       >
         {{ $t('common.hideReplies') }}

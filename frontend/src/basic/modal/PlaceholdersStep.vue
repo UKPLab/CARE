@@ -178,7 +178,7 @@ export default {
   },
   watch: {
     modelValue: {
-      handler(newVal) {
+      handler(_newVal) {
         this.isUpdateMode = newVal && newVal.placeholders;
       },
       immediate: true,

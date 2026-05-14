@@ -99,7 +99,17 @@
             "accountSpecificHint": "Aliases are tied to your account and won't match other users' exports."
         },
         "exportSelectSubmissions": "Select Submissions to Download:",
-        "noSubmissionsFound": "No submissions found for this project."
+        "noSubmissionsFound": "No submissions found for this project.",
+        "exportModal": {
+            "steps": {
+                "selectStudent": "Select Student",
+                "options": "Options",
+                "confirmDownload": "Confirm Download",
+                "confirmation": "Confirmation"
+            },
+            "exportReviewers": "Export a list of all reviewers",
+            "exportSubmissions": "Export submissions"
+        }
     },
     "settings": {
         "selectSetting": "Select setting",
@@ -328,7 +338,8 @@
             "successMessage": "Successfully assigned {count} submission(s) to group {group}",
             "failureTitle": "Failed to assign group",
             "columns": {
-                "additionalSettings": "Additional Settings"
+                "additionalSettings": "Additional Settings",
+                "dataExisting": "Data Existing"
             },
             "filters": {
                 "noGroupId": "No GroupID"

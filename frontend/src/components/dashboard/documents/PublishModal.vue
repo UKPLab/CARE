@@ -30,8 +30,8 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          @click="close"
           :title="$t('common.close')"
+          @click="close"
         />
         <BasicButton
           class="btn btn-primary"
@@ -142,7 +142,7 @@ export default {
           message: this.$t('documents.messages.linkCopiedMessage'),
           variant: "success"
         });
-      } catch ($e) {
+      } catch (_error) {
         this.eventBus.emit('toast', {
           title: this.$t('errors.clipboard.linkNotCopied'),
           message: this.$t('errors.clipboard.copyFailed'),

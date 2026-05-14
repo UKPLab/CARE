@@ -1,6 +1,6 @@
 <template>
   <!-- Edits Section: Only visible when there are edits and no annotations -->
-  <div class="edits-section" v-if="showEdits">
+  <div v-if="showEdits" class="edits-section">
     <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
       <h4 class="group-header">{{ dateCategory }}</h4>
 
@@ -29,6 +29,20 @@
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
   <ul v-if="showAnnotations" id="anno-list" class="list-group">
+    <li v-if="componentReadOnly" class="readonly-notice">
+      <div class="card border-secondary mb-2">
+        <div class="card-body text-center py-2">
+          <LoadIcon
+            icon-name="lock-fill"
+            :size="20"
+            color="#6c757d"
+            class="mb-1"
+          />
+          <h6 class="card-title mb-0">{{ $t('annotator.readOnlyMode') }}</h6>
+          <p class="card-text text-muted small mb-0">{{ $t('annotator.annotationsViewOnly') }}</p>
+        </div>
+      </div>
+    </li>
     <li
       v-for="comment in documentComments"
       :id="'comment-' + comment.id"
@@ -46,7 +60,7 @@
       />
     </li>
 
-    <li v-if="!readOnly" id="addPageNote">
+    <li v-if="!componentReadOnly" id="addPageNote">
       <button
         class="btn btn-light"
         type="button"
@@ -69,14 +83,12 @@
       </button>
     </li>
   </ul>
-<ConfirmModal ref="leavePageConf"/>
 </template>
 
 <script>
 import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import {scrollElement} from "@/assets/anchoring/scroll";
+import LoadIcon from "@/basic/Icon.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 /** Sidebar component of the Annotator
@@ -88,7 +100,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {SideCard, AnnoCard, ConfirmModal},
+  components: {SideCard, AnnoCard, LoadIcon},
   inject: {
     documentId: {
       type: Number,
@@ -109,8 +121,18 @@ export default {
       required: false,
       default: false,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
     acceptStats: {
       default: () => false
+    },
+    showAllDocumentAnnotations: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   props: {
@@ -138,6 +160,12 @@ export default {
     };
   },
   computed: {
+    componentReadOnly() {
+      if(!this.readOnly) {
+        return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+      }
+      return this.readOnly;
+    },
     showEdits() {
       return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
     },
@@ -183,6 +211,11 @@ export default {
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
+            // When showAllDocumentAnnotations is true, show all comments for the document
+            if (this.showAllDocumentAnnotations && comment.studySessionId === null && comment.studyStepId === null) {
+              return true;
+            }
+            // Otherwise, only show comments for current session and step
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);
@@ -314,7 +347,6 @@ export default {
       }
     },
     async sidebarScrollTo(commentId) {
-      const scrollContainer = this.$refs.sidepane;
       this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
       //await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
@@ -341,21 +373,6 @@ export default {
         }
       });
     },
-    async leave() {
-      if (this.documentComments.filter(c => c.draft).length > 0) {
-        return new Promise((resolve) => {
-          this.$refs.leavePageConf.open(
-            this.$t('annotator.messages.unsavedAnnotations'),
-            this.$t('annotator.messages.unsavedAnnotationsWarning'),
-            null,
-            function (val) {
-              return resolve(val);
-            });
-        });
-      } else {
-        return true;
-      }
-    }
   }
 }
 </script>
@@ -384,6 +401,30 @@ export default {
   color: #575757;
 }
 
+.readonly-notice {
+  padding: 4px;
+  list-style: none;
+}
+
+.readonly-notice .card {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.readonly-notice .card-body {
+  padding: 8px 12px;
+}
+
+.readonly-notice .card-title {
+  color: #495057;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.readonly-notice .card-text {
+  font-size: 0.75rem;
+}
 
 .edits-section {
   padding: 10px;

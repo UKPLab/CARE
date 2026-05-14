@@ -124,5 +124,10 @@
     },
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",
-    "noDescription": "Keine Beschreibung"
+    "noDescription": "Keine Beschreibung",
+    "pagination": "Seitennummerierung",
+    "first": "Erste",
+    "last": "Letzte",
+    "paginationRange": "{start}-{end} von {total} werden angezeigt",
+    "noGroupId": "Keine GroupID"
 }

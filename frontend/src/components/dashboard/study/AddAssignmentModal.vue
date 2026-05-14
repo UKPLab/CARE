@@ -68,6 +68,7 @@ export default {
         scrollY: true,
         scrollX: true,
         search: true,
+        pagination: 10,
       },
     };
   },

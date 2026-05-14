@@ -112,10 +112,10 @@ export default {
         });
     },
     studiesFiltered() {
-      return this.studies.filter(s => !this.isStudyClosed(s));
+      return this.studies.filter(s => this.isStudyAvailable(s));
     },
     studiesClosed() {
-      return this.studies.filter(s => this.isStudyClosed(s));
+      return this.studies.filter(s => !this.isStudyAvailable(s));
     },
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
@@ -137,16 +137,20 @@ export default {
         this.$socket.emit("studySessionSubscribe", {studyId: studyId});
       }
     },
-    isStudyClosed(study) {
-      if (study) {
-        if (study.closed) {
-          return true;
-        }
-        if (!study.multipleSubmit && study.end && new Date(study.end) < Date.now()) {
-          return true;
+    isStudyAvailable(study) {
+      if (!study) {
+        return false;
+      }
+      if (study.closed !== null) {
+        return false;
+      }
+      if (!study.multipleSubmit && study.end) {
+        const endDate = new Date(study.end);
+        if (!isNaN(endDate.getTime()) && endDate < new Date()) {
+          return false;
         }
       }
-      return false;
+      return true;
     },
   }
 }

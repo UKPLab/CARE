@@ -133,7 +133,10 @@ export default {
     emailTemplates() {
       const allTemplates = this.$store.getters["table/template/getAll"]
         .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3 || t.type === 6));
+
+      // Show only the user's own templates (includes copies since copies have userId === currentUser)
       const visibleTemplates = allTemplates.filter(t => t.userId === this.user?.id);
+
       return visibleTemplates.map(t => ({
         id: t.id,
         name: t.name,
@@ -180,21 +183,23 @@ export default {
              (setting.type === "number" || setting.type === "integer");
     },
     getFilteredEmailTemplates(setting) {
+      // Determine template type based on setting key
       let requiredType = null;
       if (setting.key === "email.template.passwordReset" ||
           setting.key === "email.template.verification" ||
           setting.key === "email.template.registration" ||
           setting.key === "email.template.twoFactorOtp" ||
           setting.key === "email.template.passwordResetSuccess") {
-        requiredType = 1;
+        requiredType = 1; // Email - General
       } else if (setting.key === "email.template.sessionStart" ||
                  setting.key === "email.template.sessionFinish") {
-        requiredType = 2;
+        requiredType = 2; // Email - Study Session
       } else if (setting.key === "email.template.assignment") {
-        requiredType = 3;
+        requiredType = 3; // Email - Assignment
       } else if (setting.key === "email.template.studyClosed") {
-        requiredType = 6;
+        requiredType = 6; // Email - Study Close
       }
+      // Filter by type if determined
       return requiredType !== null
         ? this.emailTemplates.filter(t => t.type === requiredType)
         : this.emailTemplates;

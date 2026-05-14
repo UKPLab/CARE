@@ -156,7 +156,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     showInformationButton() {
-      return this.$store.getters["auth/checkRight"]("frontend.studies.admin");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.admin");
     },
     buttons() {
       const buttons = [
@@ -425,19 +425,19 @@ export default {
       return this.$store.getters['auth/isAdmin'];
     },
     canViewAllStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.studies.fullAccess");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.fullAccess");
     },
     canReadPrivateInformation() {
-      return this.$store.getters["auth/checkRight"]("frontend.studies.view.userPrivateInfo");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
     },
     canAddBulkAssignments() {
-      return this.$store.getters["auth/checkRight"]("frontend.studies.addBulkAssignments");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
     },
     canAddSingleAssignments() {
-      return this.$store.getters["auth/checkRight"]("frontend.studies.addSingleAssignments");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
     canCloseStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.studies.closeAllStudies");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeAllStudies");
     },
   },
   methods: {

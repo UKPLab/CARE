@@ -19,5 +19,7 @@
     "replies": "Replies",
     "pdfPage": {
         "loadingPage": "Loading Page {pageNumber}"
-    }
+    },
+    "readOnlyMode": "Read-Only Mode",
+    "annotationsViewOnly": "Annotations are view-only"
 }

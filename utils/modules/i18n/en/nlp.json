@@ -27,8 +27,7 @@
         "filesSelectedFor": "Files selected for {param}: {count} file(s)",
         "selectFilesFor": "Please select files for parameter: {param}",
         "documents": "Documents",
-        "submissions": "Submissions",
-        "noGroupId": "No GroupID"
+        "submissions": "Submissions"
     },
     "inputGroup": {
         "validationConfiguration": "Validation Configuration {id}"
@@ -40,7 +39,22 @@
         "inputMapping": "Input Mapping",
         "outputMapping": "Output Mapping",
         "saveInDocumentData": "Save in Document Data",
-        "insertIntoEditor": "Insert into Editor"
+        "insertIntoEditor": "Insert into Editor",
+        "sources": {
+            "documents": "<Documents>",
+            "submissions": "<Submissions>",
+            "submission": "<Submission>",
+            "configuration": "<Configuration> {name}",
+            "document": "<Document> {name}",
+            "documentFallback": "Document {id}",
+            "submissionWithName": "<Submission> {name}",
+            "annotatorAnnotations": "<Annotator> Annotations (Workflow Step {step})",
+            "annotatorComments": "<Annotator> Comments (Workflow Step {step})",
+            "editorFirstVersion": "<Editor> First Version (Workflow Step {step})",
+            "editorCurrentVersion": "<Editor> Current Version (Workflow Step {step})",
+            "assessmentResults": "<Assessment> Results (Workflow Step {step})",
+            "serviceOutput": "<Service {service}> {skill}_{output} (Workflow Step {step})"
+        }
     },
     "request": {
         "title": "NLP Service Request",

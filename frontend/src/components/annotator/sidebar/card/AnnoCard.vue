@@ -19,9 +19,9 @@
             @click.stop="handleCheckIconClick"
           >
             <LoadIcon
-              icon-name="check-square"
-              :size="16"
-              :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
+              :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
+              :size="18"
+              :style="{ cursor: 'pointer' }"
               class="check-icon"
             />
           </div>
@@ -48,7 +48,6 @@
         <div v-if="editingTag && annotationId" class="d-flex align-items-center">
           <select
             v-model="selectedTagId"
-            @change="saveTagChange"
             class="form-select form-select-md"
             :style="{
               display: 'inline-block',
@@ -57,6 +56,7 @@
               fontSize: 'small',
               fontStyle: 'italic'
             }"
+            @change="saveTagChange"
           >
             <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
               {{ tag.name }}
@@ -100,7 +100,7 @@
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="save-fill"
+                  icon="floppy-fill"
                   :title="$t('common.save')"
                   @click="save"
               />
@@ -541,8 +541,8 @@ export default {
           }
         });
       }
-      this.$refs.main_comment.save();
-      this.$refs.collab.removeCollab();
+      this.$refs.main_comment?.save();
+      this.$refs.collab?.removeCollab();
     },
     cancel() {
       if (this.annotationId) {
@@ -759,7 +759,7 @@ export default {
 }
 
 .check-icon:hover {
-  color: #28a745 !important;
+  color: #007bff !important;
 }
 
 .header-hoverable {

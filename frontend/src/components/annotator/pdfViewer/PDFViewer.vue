@@ -4,12 +4,13 @@
   </div>
   <div
     v-if="pdf"
-    id="pdfContainer"
+    :id="'pdfContainer-' + documentId"
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
     <!-- Toolbar -->
     <PDFToolbar
+      :id="'pdfToolbar-' + documentId"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
       :is-zooming="isZooming"
@@ -24,11 +25,11 @@
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
-      class="scrolling-page"
+      :class="'scrolling-page'"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readOnly"/>
+    <Adder v-if="!readOnly && !componentReadOnly"/>
   </div>
 </template>
 
@@ -74,6 +75,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
+    },
     readOnly: {
       type: Boolean,
       required: false,
@@ -86,6 +92,7 @@ export default {
   provide() {
     return {
       pdf: computed(() => this.pdf),
+      readOnly: computed(() => this.readOnly),
     }
   },
   emits: ['copy'],
@@ -114,6 +121,12 @@ export default {
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+    componentReadOnly() {
+      if(!this.readOnly) {
+        return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
+      }
+      return this.readOnly;
     },
   },
   watch: {
@@ -157,7 +170,7 @@ export default {
               this.pdf = new PDF();
               this.pdf.setPDF(pdf);
             })
-            .catch(response => {
+            .catch(_response => {
               this.eventBus.emit('toast', {
                 title: this.$t('errors.file.pdfLoadingError.title'),
                 message: this.$t('errors.file.pdfLoadingError.message'),
@@ -207,16 +220,19 @@ export default {
       }, 1000);
     },
     updateVisibility(page) {
+      let stateChanged = false;
       if (page.isVisible) {
         if (!this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.push(page.pageNumber);
+          stateChanged = true;
         }
       } else {
         if (this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
+          stateChanged = true;
         }
       }
-      if (this.acceptStats) {
+      if (stateChanged && this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfPageVisibilityChange",
           data: {

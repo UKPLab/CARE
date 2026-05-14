@@ -98,7 +98,17 @@
       "accountSpecificHint": "Aliase sind an Ihr Konto gebunden und stimmen nicht mit den Exporten anderer Benutzer überein."
     },
     "exportSelectSubmissions": "Einreichungen zum Herunterladen auswählen:",
-    "noSubmissionsFound": "Keine Einreichungen für dieses Projekt gefunden."
+    "noSubmissionsFound": "Keine Einreichungen für dieses Projekt gefunden.",
+    "exportModal": {
+      "steps": {
+        "selectStudent": "Student auswählen",
+        "options": "Optionen",
+        "confirmDownload": "Download bestätigen",
+        "confirmation": "Bestätigung"
+      },
+      "exportReviewers": "Liste aller Reviewer exportieren",
+      "exportSubmissions": "Submissions exportieren"
+    }
   },
   "settings": {
     "selectSetting": "Einstellung auswählen",
@@ -327,7 +337,8 @@
       "successMessage": "{count} Einreichung(en) erfolgreich der Gruppe {group} zugewiesen",
       "failureTitle": "Gruppe konnte nicht zugewiesen werden",
       "columns": {
-        "additionalSettings": "Zusätzliche Einstellungen"
+        "additionalSettings": "Zusätzliche Einstellungen",
+        "dataExisting": "Daten vorhanden"
       },
       "filters": {
         "noGroupId": "Keine GroupID"

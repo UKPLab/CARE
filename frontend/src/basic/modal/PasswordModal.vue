@@ -122,6 +122,7 @@ export default {
     resetForm() {
       this.$refs.form.modelValue.password = '';
       this.$refs.form.modelValue.confirmPassword = '';
+      this.$refs.form.modelValue.oldPassword = "";
       this.eventBus.emit("resetFormField");
     },
     validatePassword() {
@@ -130,6 +131,15 @@ export default {
         this.eventBus.emit("toast", {
           title: this.$t('errors.validation.validationError'),
           message: this.$t('errors.validation.auth.passwordsDoNotMatch'),
+          variant: "danger",
+        });
+        return false;
+      }
+      if (/^\s*$/.test(password) || /[\x00-\x1F\x7F]/.test(password) || [...password].some((c) =>
+        (c.codePointAt(0) || 0) > 0xFFFF)) {
+        this.eventBus.emit("toast", {
+          title: this.$t('errors.validation.validationError'),
+          message: this.$t('errors.validation.auth.passwordInvalidChars'),
           variant: "danger",
         });
         return false;

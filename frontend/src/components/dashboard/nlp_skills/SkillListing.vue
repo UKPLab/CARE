@@ -217,7 +217,7 @@ export default {
             message: this.$t("nlp.skillConfigCopied"),
             variant: "success"
           });
-        } catch ($e) {
+        } catch (_error) {
           this.eventBus.emit('toast', {
             title: this.$t("errors.clipboard.configNotCopied"),
             message: this.$t("errors.clipboard.skillConfigCopyFailed"),

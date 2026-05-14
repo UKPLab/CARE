@@ -136,7 +136,7 @@ export default {
           .filter(entry => entry.type === 0 && entry.hideInFrontend === false)
           .map(entry => ({
             value: `config_${entry.id}`,
-            name: `<Configuration> ${entry.name}`,
+            name: this.$t('nlp.inputMap.sources.configuration', { name: entry.name }),
             requiresTableSelection: false,
             configurationId: entry.id,
             table: "configuration",
@@ -184,64 +184,56 @@ export default {
     applySkillsDataSources() {
       const sources = [...this.configurationSources];
 
-      if (!this.tableBasedParameter) {
-        sources.unshift(
-            {
-              value: "document",
-              name: "<Documents>",
-              requiresTableSelection: true,
-              type: "document",
-              table: "document"
-            },
-            {
-              value: "submission",
-              name: "<Submissions>",
-              requiresTableSelection: true,
-              type: "submission",
-              table: "submission"
-            }
-        );
-      }
+      sources.unshift(
+          {
+            value: "document",
+            name: this.$t('nlp.inputMap.sources.documents'),
+            requiresTableSelection: true,
+            type: "document",
+            table: "document",
+          },
+          {
+            value: "submission",
+            name: this.$t('nlp.inputMap.sources.submissions'),
+            requiresTableSelection: true,
+            type: "submission",
+            table: "submission",
+          }
+      );
 
       return sources;
     },
     dataSourcesByInput() {
       const dict = {};
       this.skillInputs.forEach(input => {
-        const sources = [...this.configurationSources];
-
-        if (!this.tableBasedParameter || this.tableBasedParameter === input) {
-          sources.unshift(
-              {
-                value: "document",
-                name: "<Documents>",
-                requiresTableSelection: true,
-                table: "document",
-                type: "document"
-              },
-              {
-                value: "submission",
-                name: "<Submissions>",
-                requiresTableSelection: true,
-                table: "submission",
-                type: "submission"
-              }
-          );
-        }
+        const sources = [
+          {
+            value: "document",
+            name: this.$t('nlp.inputMap.sources.documents'),
+            requiresTableSelection: true,
+            table: "document",
+            type: "document",
+          },
+          {
+            value: "submission",
+            name: this.$t('nlp.inputMap.sources.submissions'),
+            requiresTableSelection: true,
+            table: "submission",
+            type: "submission",
+          },
+          ...this.configurationSources,
+        ];
 
         dict[input] = sources;
       });
       return dict;
     },
     availableDataSources() {
-      let sources = [];
       if (this.studyBased) {
-        sources = this.getSourcesUpToCurrentStep(this.workflowStepIndex);
-      } else {
-        sources = this.applySkillsDataSources;
+        return this.getSourcesUpToCurrentStep(this.workflowStepIndex);
       }
-
-      return sources;
+      // non-study-based: just use the skill-based sources
+      return this.applySkillsDataSources;
     },
     workflowStepIndex() {
       return this.orderedWorkflowSteps.findIndex(
@@ -327,22 +319,22 @@ export default {
     appendResolvedDocSources(sources, stepIndex) {
       if (!this.resolvedSourceDocument) return;
       const doc = this.resolvedSourceDocument;
-      const docName = doc && doc.name ? doc.name : `Document ${doc.id}`;
+      const docName = doc && doc.name ? doc.name : this.$t('nlp.inputMap.sources.documentFallback', { id: doc.id });
       sources.push(
           {
             value: `document_${doc.id}`,
             documentId: doc.id,
-            name: `<Document> ${docName}`,
+            name: this.$t('nlp.inputMap.sources.document', { name: docName }),
             type: "document",
             table: "document",
             stepIndex: stepIndex,
           });
       this.resolvedSubmissionDocs.forEach(d => {
-        const name = d && d.name ? d.name : `Document ${d.id}`;
+        const name = d && d.name ? d.name : this.$t('nlp.inputMap.sources.documentFallback', { id: d.id });
         sources.push(
             {
               value: `submission_${d.id}`,
-              name: `<Submission> ${name}`,
+              name: this.$t('nlp.inputMap.sources.submissionWithName', { name }),
               stepIndex: stepIndex,
               type: "submission",
               table: "submission"
@@ -362,18 +354,19 @@ export default {
 
       this.inputMappings = {
         ...this.inputMappings,
-        [input]: source
+        [input]: source,
       };
 
-      this.$emit('update:modelValue', {
+      this.$emit("update:modelValue", {
         ...this.inputMappings,
-        output: {...this.outputMappings}
+        output: {...this.outputMappings},
       });
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
       });
     },
+    
     updateOutputMapping(output, source) {
       this.isUpdatingFromWithin = true;
 
@@ -402,7 +395,7 @@ export default {
             if (this.isTemplateMode) {
               sources.push({
                 value: 'template_submission',
-                name: `<Submission>`,
+                name: this.$t('nlp.inputMap.sources.submission'),
                 type: 'submission',
                 table: 'submission',
                 stepIndex: stepIndex,
@@ -417,14 +410,14 @@ export default {
               sources.push(
                   {
                     value: "annotator_annotation_step" + stepIndex,
-                    name: `<Annotator> Annotations (Workflow Step ${stepIndex + 1})`,
+                    name: this.$t('nlp.inputMap.sources.annotatorAnnotations', { step: stepIndex + 1 }),
                     stepIndex: stepIndex,
                     key: 'annotations',
                     type: 'annotator',
                   },
                   {
                     value: "annotator_comments_step" + stepIndex,
-                    name: `<Annotator> Comments (Workflow Step ${stepIndex + 1})`,
+                    name: this.$t('nlp.inputMap.sources.annotatorComments', { step: stepIndex + 1 }),
                     stepIndex: stepIndex,
                     key: 'comments',
                     type: 'annotator',
@@ -439,14 +432,14 @@ export default {
               sources.push(
                   {
                     value: "editor_firstVersion_step" + stepIndex,
-                    name: `<Editor> First Version (Workflow Step ${stepIndex + 1})`,
+                    name: this.$t('nlp.inputMap.sources.editorFirstVersion', { step: stepIndex + 1 }),
                     stepIndex: stepIndex,
                     key: 'firstVersion',
                     type: 'editor',
                   },
                   {
                     value: "editor_currentVersion_step" + stepIndex,
-                    name: `<Editor> Current Version (Workflow Step ${stepIndex + 1})`,
+                    name: this.$t('nlp.inputMap.sources.editorCurrentVersion', { step: stepIndex + 1 }),
                     stepIndex: stepIndex,
                     key: 'currentVersion',
                     type: 'editor',
@@ -487,7 +480,7 @@ export default {
 
       sources.push({
         value: `assessment_step${currentWorkflowStepIndex}`,
-        name: `<Assessment> Results (Workflow Step ${currentWorkflowStepIndex + 1})`,
+        name: this.$t('nlp.inputMap.sources.assessmentResults', { step: currentWorkflowStepIndex + 1 }),
         type: 'assessment',
         configurationField: configField.key,
         stepIndex: currentWorkflowStepIndex,
@@ -522,7 +515,12 @@ export default {
           Object.keys(outputData).forEach((outputKey) => {
             sources.push({
               value: `service_${service.name}_${outputKey}_step${currentWorkflowStepIndex}`,
-              name: `<Service ${service.name}> ${skillName}_${outputKey} (Workflow Step ${currentWorkflowStepIndex + 1})`,
+              name: this.$t('nlp.inputMap.sources.serviceOutput', {
+                service: service.name,
+                skill: skillName,
+                output: outputKey,
+                step: currentWorkflowStepIndex + 1
+              }),
               type: 'service',
               serviceName: service.name,
               skillName,

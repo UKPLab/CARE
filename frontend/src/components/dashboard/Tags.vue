@@ -169,13 +169,12 @@ export default {
             title: this.$t('tags.selectAsDefault'),
             action: "defaultTagSet",
             selected: newD.id === this.selectedTagset,
-          };
-          const tags = this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id);
-          newD.tags = {
-            class: "bg-primary",
-            tooltip: tags.map(e => this.tTagName(e)).join('<br>'),
-            text: tags.length
-          };
+          },
+            newD.tags = {
+              class: "bg-primary",
+              tooltip: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).map(e => e.name).join('<br>'),
+              text: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).length
+            };
           return newD;
         }
       );
@@ -191,11 +190,6 @@ export default {
     },
   },
   methods: {
-    tTagName(e) {
-      const key = `tags.basicTags.${e.name.toLowerCase()}`;
-      const translated = this.$t(key);
-      return translated === key ? e.name : translated;
-    },
     action(data) {
       switch (data.action) {
         case "copyTagSet":

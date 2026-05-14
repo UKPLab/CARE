@@ -124,5 +124,10 @@
     },
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "noDescription": "No description"
+    "noDescription": "No description",
+    "pagination": "Pagination",
+    "first": "First",
+    "last": "Last",
+    "paginationRange": "Showing {start}-{end} of {total}",
+    "noGroupId": "No GroupID"
 }

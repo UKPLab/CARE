@@ -1,7 +1,7 @@
 <template>
   <Card :title="$t('users.title')">
     <template #headerElements>
-      <div class="d-flex flex-wrap gap-2">
+      <div class="btn-group gap-2">
         <BasicButton
             class="btn btn-secondary btn-sm"
             :title="$t('users.downloadUsers')"
@@ -13,36 +13,36 @@
             class="btn btn-secondary btn-sm"
             :title="$t('users.assignRoles')"
             :text="$t('users.assignRoles')"
-            icon="person-bounding-box"
-            @click="$refs.assignRolesModal.open()"
+            icon="shield-lock"
+            @click="openRightsManagementModal"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
             :title="$t('users.uploadPassword')"
             :text="$t('users.uploadPassword')"
             icon="key"
-            @click="$refs.uploadModal.open()"
+            @click="openUploadModal"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
             :title="$t('users.importCsv')"
             :text="$t('users.importCsv')"
             icon="filetype-csv"
-            @click="$refs.importModal.open('csv')"
+            @click="openImportModal('csv')"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
             :title="$t('users.importViaMoodle')"
             :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
-            @click="$refs.importModal.open('moodle')"
+            @click="openImportModal('moodle')"
         />
         <BasicButton
             class="btn btn-primary btn-sm"
             :title="$t('users.addUser')"
             :text="$t('users.addUser')"
             icon="person-plus"
-            @click="$refs.userAddModal.open()"
+            @click="openUserAddModal"
         />
       </div>
     </template>
@@ -58,25 +58,33 @@
     </template>
   </Card>
   <DetailsModal
+      v-if="modals.details"
       ref="detailsModal"
       @update-user="fetchUsers"
+      @hide="modals.details = false"
   />
-  <RightsModal ref="rightsModal" />
-  <AssignRolesModal
-    ref="assignRolesModal"
+  <RightsModal v-if="modals.rights" ref="rightsModal" @hide="modals.rights = false"/>
+  <RightsManagementModal
+    v-if="modals.rightsManagement"
+    ref="rightsManagementModal"
     @update-user="fetchUsers"
+    @hide="modals.rightsManagement = false"
   />
-  <PasswordModal ref="passwordModal" />
+  <PasswordModal v-if="modals.password" ref="passwordModal" @hide="modals.password = false"/>
   <ImportModal
+      v-if="modals.import"
       ref="importModal"
       @update-user="fetchUsers"
+      @hide="modals.import = false"
   />
-  <UploadModal ref="uploadModal"/>
+  <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
   <UserAddModal
+      v-if="modals.userAdd"
       ref="userAddModal"
       @update-user="fetchUsers"
+      @hide="modals.userAdd = false"
   />
-  <ConfirmModal ref="confirmModal"/>
+  <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
 </template>
 
 <script>
@@ -85,6 +93,7 @@ import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
+import RightsManagementModal from "./users/RightsManagementModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
@@ -95,7 +104,7 @@ import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/asset
 /**
  * Display user list by users' role
  *
- * @author: Linyin Huang
+ * @author: Linyin Huang, Karim Ouf, Dennis Zyska
  */
 export default {
   name: "DashboardUsers",
@@ -106,6 +115,7 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
+    RightsManagementModal,
     BasicButton,
     ImportModal,
     UploadModal,
@@ -121,6 +131,16 @@ export default {
   },
   data() {
     return {
+      modals: {
+        details: false,
+        rights: false,
+        rightsManagement: false,
+        password: false,
+        import: false,
+        upload: false,
+        userAdd: false,
+        confirm: false,
+      },
       options: {
         striped: true,
         hover: true,
@@ -246,6 +266,38 @@ export default {
     this.fetchUsers();
   },
   methods: {
+    openDetailsModal(userId) {
+      this.modals.details = true;
+      this.$nextTick(() => this.$refs.detailsModal?.open(userId));
+    },
+    openRightsModal(userId) {
+      this.modals.rights = true;
+      this.$nextTick(() => this.$refs.rightsModal?.open(userId));
+    },
+    openRightsManagementModal() {
+      this.modals.rightsManagement = true;
+      this.$nextTick(() => this.$refs.rightsManagementModal?.open());
+    },
+    openPasswordModal(userId) {
+      this.modals.password = true;
+      this.$nextTick(() => this.$refs.passwordModal?.open(userId));
+    },
+    openImportModal(type) {
+      this.modals.import = true;
+      this.$nextTick(() => this.$refs.importModal?.open(type));
+    },
+    openUploadModal() {
+      this.modals.upload = true;
+      this.$nextTick(() => this.$refs.uploadModal?.open());
+    },
+    openUserAddModal() {
+      this.modals.userAdd = true;
+      this.$nextTick(() => this.$refs.userAddModal?.open());
+    },
+    openConfirmModal(name, message, warning, cb) {
+      this.modals.confirm = true;
+      this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
+    },
     fetchUsers() {
       this.$socket.emit("userGetByRole", {role: this.role}, (response) => {
         if (!response.success) {
@@ -286,13 +338,13 @@ export default {
       }
     },
     openUserDetailsModal(user) {
-      this.$refs.detailsModal.open(user.id);
+      this.openDetailsModal(user.id);
     },
     openViewRightsModal(user) {
-      this.$refs.rightsModal.open(user.id);
+      this.openRightsModal(user.id);
     },
     openResetPasswordModal(user) {
-      this.$refs.passwordModal.open(user.id);
+      this.openPasswordModal(user.id);
     },
     deleteUser(user) {
       this.$refs.confirmModal.open(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {

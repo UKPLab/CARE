@@ -27,8 +27,7 @@
     "filesSelectedFor": "Für {param} ausgewählte Dateien: {count} Datei(en)",
     "selectFilesFor": "Bitte wählen Sie Dateien für den Parameter aus: {param}",
     "documents": "Dokumente",
-    "submissions": "Einreichungen",
-    "noGroupId": "Keine GroupID"
+    "submissions": "Einreichungen"
   },
   "inputGroup": {
     "validationConfiguration": "Validierungskonfiguration {id}"
@@ -40,7 +39,22 @@
     "inputMapping": "Input-Zuordnung",
     "outputMapping": "Output-Zuordnung",
     "saveInDocumentData": "In Dokumentdaten speichern",
-    "insertIntoEditor": "In den Editor einfügen"
+    "insertIntoEditor": "In den Editor einfügen",
+    "sources": {
+      "documents": "<Dokumente>",
+      "submissions": "<Einreichungen>",
+      "submission": "<Einreichung>",
+      "configuration": "<Konfiguration> {name}",
+      "document": "<Dokument> {name}",
+      "documentFallback": "Dokument {id}",
+      "submissionWithName": "<Einreichung> {name}",
+      "annotatorAnnotations": "<Annotator> Annotationen (Workflow-Schritt {step})",
+      "annotatorComments": "<Annotator> Kommentare (Workflow-Schritt {step})",
+      "editorFirstVersion": "<Editor> Erste Version (Workflow-Schritt {step})",
+      "editorCurrentVersion": "<Editor> Aktuelle Version (Workflow-Schritt {step})",
+      "assessmentResults": "<Bewertung> Ergebnisse (Workflow-Schritt {step})",
+      "serviceOutput": "<Dienst {service}> {skill}_{output} (Workflow-Schritt {step})"
+    }
   },
   "request": {
     "title": "NLP-Dienstanfrage",

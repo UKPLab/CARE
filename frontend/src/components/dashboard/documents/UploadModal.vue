@@ -27,10 +27,10 @@
           />
           <div v-if="isPdf" class="form-check mt-3">
             <input
-              class="form-check-input"
-              type="checkbox"
               id="importAnnotations"
               v-model="importAnnotations"
+              class="form-check-input"
+              type="checkbox"
             />
             <label class="form-check-label" for="importAnnotations">
               {{ $t('documents.importAnnotations') }}

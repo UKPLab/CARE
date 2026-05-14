@@ -121,7 +121,7 @@ export default {
       immediate: true,
     },
     baseFileSelections: {
-      handler(newVal) {
+      handler(_newVal) {
         this.$nextTick(() => {
           this.$emit('update:valid', this.isValid);
         });

@@ -4,8 +4,7 @@
       :steps="steps"
       :validation="stepValid"
       :submit-text="$t('common.download')"
-
-      xl
+      size = "xl"
       @submit="downloadData"
       @hide="hide">
     <template #title>
@@ -52,11 +51,7 @@
 
     <template #step-2>
 
-      <div v-if="wait">
-        <BasicLoading/>
-      </div>
-
-      <div v-else-if="dataSelection.exportType === 'reviewerList'">
+      <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>{{ $t('dashboard.projects.exportStudySessions') }}</p>
 
         <p>
@@ -123,16 +118,20 @@ import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
 import BasicLoading from "@/basic/Loading.vue";
+import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
+import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
+import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
+import getServerURL from "@/assets/serverUrl.js";
 
 
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Mélissa Loew
  */
 export default {
   name: "ExportProjectModal",
-  components: {BasicLoading, StepperModal, BasicForm},
+  components: { BasicLoading, StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -168,18 +167,40 @@ export default {
       },
       filter: [],
       wait: false,
-    }
+      // Data for Export Submissions
+      submissionSelection: [],
+      generateAliases:false,
+      fakerSeed: 846569412
+    };
   },
   computed: {
     stepValid() {
+      if (this.dataSelection.exportType === "submissions") {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
+          this.submissionSelection.length > 0, // must select at least one student
+          true,
+          true
+        ];
+      }
       return [
+        !!this.dataSelection.projectId && !!this.dataSelection.exportType,
         true
       ];
     },
     steps() {
+      if (this.dataSelection.exportType === 'submissions') {
+        return [
+          { title: this.$t('settings.title') },
+          { title: this.$t('dashboard.projects.exportModal.steps.selectStudent') },
+          { title: this.$t('dashboard.projects.exportModal.steps.options') },
+          { title: this.$t('dashboard.projects.exportModal.steps.confirmDownload') }
+        ];
+      }
+
       return [
         {title: this.$t('settings.title')},
-        {title: this.$t('common.confirmation')}
+        {title: this.$t('dashboard.projects.exportModal.steps.confirmation')}
       ];
     },
     dataSelectionFields() {
@@ -199,7 +220,8 @@ export default {
           label: this.$t('dashboard.projects.exportType'),
           type: "select",
           options: [
-            {name: this.$t('dashboard.projects.exportReviewers'), value: "reviewerList"},
+            {name: this.$t('dashboard.projects.exportModal.exportReviewers'), value: "reviewerList"},
+            {name: this.$t('dashboard.projects.exportModal.exportSubmissions'), value: "submissions"},
             {name: this.$t('common.all'), value: "all"},
           ],
           required: true,
@@ -269,6 +291,8 @@ export default {
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
         this.downloadReviewerList();
+      } else if (this.dataSelection.exportType === "submissions") {
+        this.downloadSubmissions();
       } else {
         this.downloadAllData();
       }
@@ -329,6 +353,24 @@ export default {
 
       return results;
     },
+    async downloadSubmissions() {
+      try {
+        // get the selected student's user ids
+        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        // call helper function to trigger the stream download
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'submissions',
+          userIds: selectedUserIds,
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null
+        });
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
     async downloadAllData() {
       this.wait = true;
 
@@ -351,7 +393,7 @@ export default {
       // keep the small delay to ensure all state is updated
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log("✅ Alle Requests abgeschlossen!");
+      console.log("Requests done!");
 
       let quill = new Quill(document.createElement('div'));
 
@@ -435,14 +477,29 @@ export default {
 
       this.wait = false;
       this.$refs.exportStepper.close();
+    },
+    triggerStreamDownload(payload) {
+      const serverUrl = getServerURL();
+    
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `${serverUrl}/export/stream`;
+      form.style.display = 'none';
+      for (const [key, value] of Object.entries(payload)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        
+        input.value = (typeof value === 'object' && value !== null) 
+          ? JSON.stringify(value) 
+          : value;
+          
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
     }
-    /*
-    openFilterModal(i) {
-      console.log(this.$refs);
-      console.log(i);
-      this.$refs['filter_' + i][0].open();
-    }
-    */
   }
 }
 </script>
