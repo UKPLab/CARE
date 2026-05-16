@@ -1,11 +1,27 @@
 <template>
+  <Teleport to="#topbarCenterPlaceholder">
+  <div
+    v-show="templateId && readOnlyOverwrite"
+    :title="$t('common.readOnly')"
+  >
+    <span :style="{ color: '#800000', fontWeight: 'bold' }">
+      {{ $t('common.readOnly') }}
+    </span>
+    <LoadIcon
+      :size="22"
+      :color="'#800000'"
+      icon-name="lock-fill"
+    />
+  </div>
+</Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
-        <Editor ref="editor" @update:data="$emit('update:data', $event)"/>
+        <Editor v-if="!templateId" ref="editor" @update:data="$emit('update:data', $event)"/>
+        <TemplateEditor v-else ref="templateEditor" @update:data="$emit('update:data', $event)"/>
       </div>
       <BasicSidebar
-          v-if="!sidebarDisabled && defaultActiveSidebar && studySessionId === null"
+          v-if="!sidebarDisabled"
           ref="sidebar"
           :is-shown="isShown"
           :buttons="sidebarButtons"
@@ -30,6 +46,13 @@
             </template>
           </SidebarTemplate>
         </template>
+        <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
+          <SidebarTemplate icon="gear-fill" title="Placeholders">
+            <template #content>
+              <TemplateConfigurator/>
+            </template>
+          </SidebarTemplate>
+        </template>
         <!-- Pass through all additional slots directly to BasicSidebar -->
         <template v-for="(slot, slotName) in $slots" :key="slotName" #[slotName]>
           <slot v-if="slotName !== 'default'" :name="slotName"/>
@@ -37,25 +60,6 @@
       </BasicSidebar>
     </div>
   </div>
-  <Teleport to="#topbarCenterPlaceholder">
-    <div
-        v-show="readOnlyOverwrite"
-        :title="$t('editor.readOnly')"
-    >
-      <span
-          :style="{ color: '#800000', fontWeight: 'bold' }"
-      >
-        Read-only
-      </span>
-      <LoadIcon
-          :size="22"
-          :color="'#800000'"
-          icon-name="lock-fill"
-      />
-    </div>
-
-  </Teleport>
-
 </template>
 
 
@@ -74,10 +78,13 @@ import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
+import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "EditorView",
+  subscribeTable: ["template"],
   components: {
     SidebarTemplate,
     SidebarConfigurator,
@@ -85,12 +92,15 @@ export default {
     LoadIcon,
     BasicSidebar,
     Editor,
+    TemplateEditor,
+    TemplateConfigurator,
   },
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
       readOnly: computed(() => this.readOnlyOverwrite),
+      templateId: computed(() => this.templateId),
     }
   },
   inject: {
@@ -98,6 +108,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null
     },
     studySessionId: {
       type: Number,
@@ -108,13 +123,23 @@ export default {
   props: {
     documentId: {
       type: Number,
-      required: true,
+      required: false,
+      default: 0,
+    },
+    templateId: {
+      type: Number,
+      required: false,
       default: 0,
     },
     sidebarDisabled: {
       type: Boolean,
       required: false,
       default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     studyStepId: {
       type: Number,
@@ -144,9 +169,18 @@ export default {
       if (this.document && this.document.type === 2) {
         return 'configurator';
       }
+      // Only show template configurator if template is loaded, not read-only, and has placeholders
+      // Document templates (types 4, 5) have no placeholders, so no sidebar needed
+      if (this.templateId && this.template && !this.readOnlyOverwrite && this.hasPlaceholders) {
+        return 'templateConfigurator';
+      }
       return null;
     },
     sidebarButtons() {
+      // Don't show download button for templates
+      if (this.templateId) {
+        return [];
+      }
       return [
         {
           id: 'download-html',
@@ -161,29 +195,68 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
+    template() {
+      if (this.templateId && this.templateId > 0) {
+        return this.$store.getters["table/template/get"](Number(this.templateId));
+      }
+      return null;
+    },
+    hasPlaceholders() {
+      // Only email templates (types 1, 2, 3, 6) have placeholders
+      // Document templates (types 4, 5) have no placeholders
+      if (!this.template) return false;
+      return [1, 2, 3, 6].includes(this.template.type);
+    },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
+      if (this.templateId) {
+        // If template is not loaded yet, default to read-only (safer)
+        if (!this.template) {
+          return true;
+        }
+        // Copies (sourceId set) are always read-only
+        if (this.template.sourceId) {
+          return true;
+        }
+        const currentUserId = this.$store.getters["auth/getUser"]?.id;
+        const isOwner = this.template.userId === currentUserId;
+        const isPublicFromOthers = this.template.public === true && !isOwner;
+        if (isPublicFromOthers) {
+          return true; 
+        }
+      }
       return this.readOnly;
     },
     showHistory() {
-      if (this.readOnly) {
+      if (this.readOnly || this.templateId) {
         return false;
       }
       const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
       return this.isAdmin || showHistoryForUser;
     },
     document() {
-      return this.$store.getters["table/document/get"](this.documentId);
+      if (this.documentId && this.documentId > 0) {
+        return this.$store.getters["table/document/get"](this.documentId);
+      }
+      return null;
     },
   },
   methods: {
     addText(text) {
-      this.$refs.editor.addText(text);
+      if (this.templateId) {
+        this.$refs.templateEditor?.addText(text);
+      } else {
+        this.$refs.editor?.addText(text);
+      }
     },
     isEditorEmpty() {
-      return this.$refs.editor.isEditorEmpty();
+      if (this.templateId) {
+        return this.$refs.templateEditor?.isEditorEmpty() || false;
+      } else {
+        return this.$refs.editor?.isEditorEmpty() || false;
+      }
     },
     handleSidebarChange(view) {
       // Update internal state to match sidebar selection
@@ -235,9 +308,6 @@ export default {
         );
       }
     },
-    leave() {
-      return this.$refs.editor.leave();
-    }
   },
 };
 </script>

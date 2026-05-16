@@ -100,7 +100,7 @@
               </li>
             </ul>
           </div>
-          <div class="link-container">
+          <div v-if="importResults?.errors?.length > 0" class="link-container">
             <BasicButton
               class="btn btn-outline-primary"
               :title="$t('dashboard.importModal.downloadErrorCSV')"
@@ -129,7 +129,7 @@ import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, BasicButton, BasicForm, ValidatorSelector, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}],
   data() {
     return {
       steps: [{title: this.$t('dashboard.importModal.stepMoodle')}, {title: this.$t('dashboard.importModal.stepPreview')}, {title: this.$t('dashboard.importModal.stepConfigure')}, {title: this.$t('dashboard.importModal.stepConfirm')}, {title: this.$t('dashboard.importModal.stepResult')}],
@@ -142,6 +142,8 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
+        pagination: 10,
+        search: true,
         selectableRows: true,
         groupBy: {
           key: "submissionId",
@@ -192,6 +194,10 @@ export default {
     stepValid() {
       return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, true];
     },
+    currentProject() {
+      console.log("current project id", this.$store.getters["settings/getValueAsInt"]("projects.default"));
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
       if (currentStep === 2) {
@@ -226,6 +232,7 @@ export default {
           submissionId: submission.submissionId,
           exists: submission.exists,
           userId: user?.id,
+          userExtId: user?.extId,
           firstName: user?.firstName,
           lastName: user?.lastName,
           fileCount: files.length,
@@ -251,13 +258,8 @@ export default {
     },
     downloadFileAsCSV() {
       const filename = `submissions_${Date.now()}`;
-      const users = this.importResults.errors.map((err) => ({
-        userId: err.userId,
-        firstName: err.firstName,
-        lastName: err.lastName,
-        message: resolveApiMessage(err),
-      }));
-      downloadObjectsAs(users, filename, "csv");
+      const {errors} = this.importResults;
+      downloadObjectsAs(errors, filename, "csv");
     },
     handleStepChange(step) {
       switch (step) {
@@ -292,7 +294,9 @@ export default {
         {
           submissions: this.selectedSubmissions.map((s) => ({
             submissionId: s.submissionId,
+            projectId: this.currentProject,
             userId: s.userId,
+            userExtId: s.userExtId,
             firstName: s.firstName,
             lastName: s.lastName,
             files: s.files,
@@ -306,9 +310,10 @@ export default {
           this.$refs.importStepper.stopProgress();
           if (res.success) {
             const { downloadedSubmissions = [], downloadedErrors = [] } = res["data"] || {};
-            this.importedSubmissions = downloadedSubmissions;
-            // Process import results for display
-            this.processImportResults({ downloadedSubmissions, downloadedErrors });
+            this.importResults = {
+              successCount: downloadedSubmissions.length,
+              errors: downloadedErrors,
+            };
           } else {
             this.eventBus.emit("toast", {
               title: this.$t('dashboard.importModal.failedImportSubmissions'),
@@ -318,19 +323,6 @@ export default {
           }
         }
       );
-    },
-    processImportResults({ downloadedSubmissions = [], downloadedErrors = [] } = {}) {
-      this.importResults = {
-        successCount: downloadedSubmissions.length,
-        errors: downloadedErrors.map((e) => ({
-          userId: e.userId,
-          firstName: e.firstName,
-          lastName: e.lastName,
-          key: e.key,
-          params: e.params,
-          message: e.message,
-        })),
-      };
     },
   },
 };

@@ -276,11 +276,12 @@ export default {
     },
     stepValid() {
       return [
-        true,
-        this.selectedDocuments.length > 0,
-        this.selectedSessions.length > 0,
-        true,
-        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""),
+        true, // Step 1: Mode Selection always true
+        this.selectedDocuments.length > 0, // Step 2: Documents/Submissions selected
+        this.selectedSessions.length > 0, // Step 3: Sessions selected
+        true, // Step 4: Confirmation always valid
+        // Only require Moodle options if moodle is selected
+        this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""), // Step 5: Publishing options
       ];
     },
     usersWithExtId() {
@@ -314,13 +315,16 @@ export default {
       if (!this.isSubmissionMode) {
         return this.documents
           .map((document) => {
+            // find all study steps that are associated with this document
             const studySteps = this.studySteps.filter((step) => step.documentId === document.id);
+            // get unique study ids from the study steps
             const studyIds = [...new Set(studySteps.map((step) => step.studyId))].filter((id) => this.studies.find((s) => s.id === id));
 
             if (studyIds.length === 0) {
               return null;
             }
 
+            // get sessions for each study
             const studySessionIds = this.studySessions.filter((session) => studyIds.includes(session.studyId)).map((session) => session.id);
             if (studySessionIds.length === 0) {
               return null;
@@ -346,10 +350,12 @@ export default {
           .filter((s) => s !== null);
       }
 
+      // submission mode: aggregate sessions across documents belonging to the submission
       return this.submissions
         .map((submission) => {
           const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submission.id);
 
+          // per document, collect closed studyIds
           const docSummaries = docs.map((doc) => {
             const steps = this.studySteps.filter((step) => step.documentId === doc.id);
             const closedStudyIds = [...new Set(steps.map((s) => s.studyId))].filter((id) => this.studies.find((st) => st.id === id));
@@ -398,12 +404,14 @@ export default {
           const study = this.studies.find((s) => s.id === session.studyId);
           const user = this.users.find((u) => u.id === session.userId);
 
+          // resolve document per session in submission mode
           let docRef = null;
           if (this.isSubmissionMode && d.documents) {
             const found = d.documents.find((doc) => doc.studyIds.includes(session.studyId)) || null;
             docRef = found
               ? {
                   ...found,
+                  // carry owner info from submission-level row
                   extId: d.extId,
                   firstName: d.firstName,
                   lastName: d.lastName,
@@ -433,6 +441,7 @@ export default {
     },
     formattedStudies() {
       if (this.isSubmissionMode) {
+        // group by actual document from sessions
         const docMap = {};
         this.selectedSessions.forEach((s) => {
           if (s.document && s.document.id) {
@@ -456,6 +465,7 @@ export default {
         });
     },
     formattedSessions() {
+      // group by userId
       return this.selectedSessions.reduce((acc, session) => {
         const key = session.userId;
         if (!acc[key]) {
@@ -525,6 +535,7 @@ export default {
     },
     open() {
       this.reset();
+      // set default publish method per mode
       this.publishMethod = "csv";
       this.$refs.reviewStepper.open();
     },

@@ -201,6 +201,8 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
+        search: true,
+        pagination: 10,
         selectableRows: true,
       },
       columns: [
@@ -324,17 +326,17 @@ export default {
       switch (step) {
         case 1:
           this.$refs.importStepper?.setWaiting(true);
-          this.handleStepZero();
+          this.prepareUserImport();
           break;
         case 2:
           this.$refs.importStepper?.setWaiting(false);
           break;
         case 3:
-          this.handleStepTwo();
+          this.executeUserImport();
           break;
       }
     },
-    handleStepZero() {
+    prepareUserImport() {
       if (this.importType === "moodle") {
         if (!this.$refs.moodleOptionsForm?.validate()) return;
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
@@ -354,7 +356,7 @@ export default {
         this.checkDuplicateUsers();
       }
     },
-    handleStepTwo() {
+    executeUserImport() {
       const userData = {
         users: this.selectedUsers,
         // Moodle's role names are subject to change
@@ -378,6 +380,7 @@ export default {
             updated: this.createdUsers.filter((u) => u.exists).length,
           };
           this.$emit("updateUser");
+          this.downloadFileAsCSV();
         } else {
           this.eventBus.emit("toast", {
             title: this.$t('errors.users.failedToBulkCreateUsers'),
@@ -399,7 +402,7 @@ export default {
       return new Promise((resolve, reject) => {
         Papa.parse(file, {
           header: true,
-          complete: (results) => {
+          complete: function (results) {
             const { data: rows, meta } = results;
             const { fields: fileHeaders } = meta;
             const requiredHeaders = ["extId", "firstName", "lastName", "email", "roles"];
@@ -450,7 +453,7 @@ export default {
               resolve(rows);
             }
           },
-          error: (error) => {
+          error: function (error) {
             reject([this.$t('errors.csv.parseError', { message: error.message })]);
           },
         });
