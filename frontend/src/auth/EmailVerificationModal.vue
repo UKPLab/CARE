@@ -116,7 +116,7 @@ export default {
           this.emailVerification.showError = true;
           this.emailVerification.errorMessage = resolveApiMessage(response.data, 'errors.auth.failedToSendVerificationEmail');
         }
-      } catch (error) {
+      } catch (_error) {
         this.emailVerification.showError = true;
         this.emailVerification.errorMessage = this.$t('errors.server.unexpectedError');
       } finally {
