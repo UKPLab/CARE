@@ -1,7 +1,15 @@
 <template>
+  <div>
   <Card :title="$t('users.title')">
     <template #headerElements>
-      <div class="btn-group gap-2">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <BasicButton
+            class="btn btn-secondary btn-sm"
+            :title="$t('users.liveSessions')"
+            :text="$t('users.liveSessions')"
+            icon="people-fill"
+            @click="openSessionDetailsModal()"
+        />
         <BasicButton
             class="btn btn-secondary btn-sm"
             :title="$t('users.downloadUsers')"
@@ -85,6 +93,14 @@
       @hide="modals.userAdd = false"
   />
   <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
+
+  <ActiveSessionsModal
+    v-if="modals.activeSessions"
+    ref="activeSessionsModal"
+    :stats="monitorStats"
+    @hide="modals.activeSessions = false"
+  />
+  </div>
 </template>
 
 <script>
@@ -100,6 +116,7 @@ import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
+import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
 
 /**
  * Display user list by users' role
@@ -121,6 +138,7 @@ export default {
     UploadModal,
     UserAddModal,
     ConfirmModal,
+    ActiveSessionsModal,
   },
   props: {
     admin: {
@@ -140,6 +158,7 @@ export default {
         upload: false,
         userAdd: false,
         confirm: false,
+        activeSessions: false,
       },
       options: {
         striped: true,
@@ -161,6 +180,22 @@ export default {
   computed: {
     columns() {
       return [
+        {
+          name: '',
+          key: 'activeIndicator',
+          filterKey: 'isActive',
+          type: 'icon',
+          sortable: true,
+          sortKey: 'isActive',
+          width: 1,
+          fixed: 'left',
+          style: { width: '1px', whiteSpace: 'nowrap', textAlign: 'center' },
+          typeOptions: { size: 6 },
+          filter: [
+            { key: 'true', name: this.$t('common.active') },
+            { key: 'false', name: this.$t('common.inactive') },
+          ],
+        },
         {name: this.$t('common.id'), key: "id", sortable: true, fixed: "left"},
         {name: this.$t('users.columns.firstName'), key: "firstName", fixed: "left"},
         {name: this.$t('users.columns.lastName'), key: "lastName"},
@@ -173,9 +208,20 @@ export default {
         {name: this.$t('users.columns.lastLogin'), key: "lastLoginAt", sortable: true},
       ];
     },
+    monitorStats() {
+      return this.$store.getters["admin/getMonitorStats"];
+    },
     users() {
+      const activeIds = new Set(this.monitorStats.connectedUsers.map(u => u.userId));
       return this.$store.getters["admin/getUsersByRole"].map((user) => {
-        return this.formatUserData(user);
+        const isActive = activeIds.has(user.id);
+        return {
+          ...this.formatUserData(user),
+          isActive,
+          activeIndicator: isActive
+            ? { icon: 'circle-fill', color: '#198754', title: 'Online' }
+            : { icon: 'circle', color: '#6c757d', title: 'Offline' },
+        };
       });
     },
     usersExport() {
@@ -246,6 +292,21 @@ export default {
           },
         },
         {
+          title: this.$t('users.viewSessions'),
+          action: "viewSessions",
+          stats: {
+            userId: "id",
+          },
+          icon: "display",
+          filter: [{ key: "isActive", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
           title: this.$t('users.deleteUser'),
           action: "deleteUser",
           stats: {
@@ -262,8 +323,15 @@ export default {
       ];
     },
   },
+  
   mounted() {
     this.fetchUsers();
+    this.$socket.emit("userMonitorSubscribe", {}, (response) => {
+        this.$store.commit("admin/SOCKET_monitorStatsUpdate", response);
+    });
+  },
+  beforeUnmount() {
+    this.$socket.emit("userMonitorUnsubscribe", {});
   },
   methods: {
     openDetailsModal(userId) {
@@ -332,6 +400,9 @@ export default {
         case "editReviews":
           this.openEditReviewsModal(data.params);
           break;
+        case "viewSessions":
+          this.openSessionDetailsModal(data.params);
+          break;
         case "deleteUser":
           this.deleteUser(data.params);
           break;
@@ -381,6 +452,11 @@ export default {
     downloadUsers() {
       const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_users';
       downloadObjectsAs(this.usersExport, filename, "csv");
+    },
+    openSessionDetailsModal(params = null) {
+      const userId = params ? params.id : null;
+      this.modals.activeSessions = true;
+      this.$nextTick(() => this.$refs.activeSessionsModal?.open(userId));
     },
   },
 };

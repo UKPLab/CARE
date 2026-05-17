@@ -310,6 +310,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "submissionId",
                 as: "submission",
             });
+
+            Document.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
     }
 
