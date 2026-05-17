@@ -14,7 +14,7 @@
         <div class="col" style="display: flex; align-items: center;">
           <div 
             v-if="!editedByMyself"
-            :title="collapsed ? 'Marked as checked - Click to uncheck' : 'Click to mark as checked'"
+            :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
             style="display: inline-flex; margin-right: 8px;"
             @click.stop="handleCheckIconClick"
           >

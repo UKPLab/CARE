@@ -5,10 +5,12 @@
     "serviceToContact": "the service to contact",
     "waitingForResponse": "Waiting for response",
     "payload": "Payload",
+    "placeholders": "Placeholders",
     "emptyMsgHistory": "No messages sent/received.",
     "messages": {
         "msgNotReceived": "Received no message from server within 5s."
     },
+    "readOnlyMode": "Read-Only Mode",
     "seePayload": "See Payload",
     "request": "Request",
     "copyJsonSuccess": {

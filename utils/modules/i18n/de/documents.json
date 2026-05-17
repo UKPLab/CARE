@@ -1,6 +1,7 @@
 {
   "title": "Dokumente",
   "document": "Dokument",
+  "preparingPdf": "PDF wird vorbereitet...",
   "documentDefaultName": "dokument",
   "addDocument": "Dokument hinzufügen",
   "uploadDocument": "Dokument hochladen",

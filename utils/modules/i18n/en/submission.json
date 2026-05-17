@@ -141,5 +141,8 @@
           "message": "Assessment data CSV successfully generated and exported"
         }
       }
+    },
+    "assign": {
+      "noAdditionalSettings": "No additional settings"
     }
   }

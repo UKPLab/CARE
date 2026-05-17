@@ -47,7 +47,7 @@
           </SidebarTemplate>
         </template>
         <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
-          <SidebarTemplate icon="gear-fill" title="Placeholders">
+          <SidebarTemplate icon="gear-fill" :title="$t('editor.placeholders')">
             <template #content>
               <TemplateConfigurator/>
             </template>

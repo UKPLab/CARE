@@ -18,7 +18,7 @@
           {{ $t('documents.downloadPdf.includeAnnotations') }}
         </label>
       </div>
-      <Loading :loading="isLoading" text="Preparing your PDF..." />
+      <Loading :loading="isLoading" :text="$t('documents.preparingPdf')" />
     </template>
     <template #footer>
       <span class="btn-group">

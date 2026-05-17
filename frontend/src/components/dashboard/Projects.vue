@@ -191,7 +191,7 @@ export default {
           };
           newD.select = {
             icon: (newD.id === this.projectId) ? "star-fill" : "star",
-            title: "Select project as default",
+            title: this.$t('dashboard.projects.selectAsDefault'),
             action: "select",
             selected: newD.id === this.projectId,
           };

@@ -5,12 +5,14 @@
     "serviceToContact": "der zu kontaktierende Dienst",
     "waitingForResponse": "Antwort wird erwartet",
     "payload": "Dateninhalt",
+    "placeholders": "Platzhalter",
     "emptyMsgHistory": "Keine Nachrichten gesendet/empfangen.",
     "messages": {
         "msgNotReceived": "Innerhalb von 5 Sekunden keine Nachricht vom Server empfangen."
     },
     "seePayload": "Dateninhalt ansehen",
     "request": "Anfrage",
+    "readOnlyMode": "Schreibgeschützter Modus",
     "copyJsonSuccess": {
         "title": "JSON kopiert",
         "message": "JSON in die Zwischenablage kopiert!"

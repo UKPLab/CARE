@@ -9,7 +9,7 @@
         <button
           id="backButton"
           class="btn"
-          title="Go back..."
+          :title="$t('navigation.topbar.goBack')"
           @click="toHome()"
         >
           <LoadIcon
@@ -48,10 +48,10 @@
             >
               <div
                 class="project-box"
-                :title="`Project: ${currentProjectName}`"
+                :title="$t('navigation.topbar.projectTitle', { name: currentProjectName })"
                 @click.stop="toggleProjectDropdown"
               >
-                <span class="project-text">Project: {{ currentProjectName }}</span>
+                <span class="project-text">{{ $t('navigation.topbar.projectTitle', { name: currentProjectName }) }}</span>
               </div>
               <div
                 v-if="showProjectDropdown"
@@ -91,14 +91,14 @@
                 class="dropdown-menu dropdown-menu-right"
               >
                 <a class="dropdown-item display-username">
-                  Signed in as {{ username }}
+                  {{ $t('navigation.topbar.signedInAs', { username }) }}
                 </a>
                 <a 
                   class="dropdown-item"
                   href="#"
                   @click="$refs.twoFactorSettingsModal.open()"
                 >
-                  Configure 2FA
+                  {{ $t('auth.twoFactor.configure') }}
                 </a>
                 <a 
                   v-if="consentEnabled"
@@ -106,20 +106,20 @@
                   href="#"
                   @click="$refs.consentModal.open()"
                 >
-                  Update consent
+                  {{ $t('auth.updateConsent') }}
                 </a>
                 <a 
                   class="dropdown-item"
                   href="#"
                   @click="$refs.passwordModal.open(userId)"
                 >
-                  Change password
+                  {{ $t('auth.changePassword') }}
                 </a>
                 <a
                   class="dropdown-item"
                   href="#"
                   @click="logout()"
-                >Logout</a>
+                >{{ $t('auth.logout') }}</a>
               </div>
             </div>
           </li>

@@ -12,5 +12,10 @@
         "moreActions": "More actions",
         "noContent": "No sidebar content selected.",
         "sidebarSection": "Sidebar section"
+    },
+    "topbar": {
+        "goBack": "Go back...",
+        "projectTitle": "Project: {name}",
+        "signedInAs": "Signed in as {username}"
     }
 }

@@ -19,7 +19,7 @@
             class="readonly-toolbar-bar"
           >
             <LoadIcon icon-name="lock-fill" :size="16" />
-            <span class="readonly-toolbar-text">Read-Only Mode</span>
+            <span class="readonly-toolbar-text">{{ $t('editor.readOnlyMode') }}</span>
           </div>
           <div
             :id="`editor-container-${studyStepId}`"

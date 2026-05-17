@@ -78,5 +78,34 @@
         "student": "Verfasst Inline-Kommentare",
         "guest": "Hat eingeschrankte Rechte bei der Nutzung der Plattform",
         "system": "Systembenutzer"
+  },
+  "liveSessions": "Live-Sitzungen",
+  "viewSessions": "Sitzungen anzeigen",
+  "activeSessions": {
+    "title": "Aktive Sitzungen",
+    "filteredUser": "Gefilterter Benutzer:",
+    "activeUsers": "{count} aktive Benutzer",
+    "socketId": "Socket-ID",
+    "userId": "Benutzer-ID",
+    "connectedAt": "Verbunden seit",
+    "browser": "Browser"
+  },
+  "rights": {
+    "assignRights": "Rechte zuweisen",
+    "managementTitle": "Rechteverwaltung",
+    "manageRightsFor": "Rechte verwalten für",
+    "role": "Rolle",
+    "selectRightsNote": "Wählen Sie die Rechte für diese Rolle aus. Hinweis: Alle Benutzer haben standardmäßig grundlegende <strong>\"user\"</strong>-Rechte.",
+    "selectRole": "Rolle auswählen",
+    "manageRights": "Rechte verwalten",
+    "rightName": "Rechtename",
+    "chooseRoleDescription": "Wählen Sie eine Rolle aus, die dem Benutzer zugewiesen werden soll.",
+    "updatedTitle": "Rollenrechte aktualisiert",
+    "updatedMessage": "Die Rollenrechte wurden erfolgreich aktualisiert",
+    "errors": {
+      "loadAvailableRightsFailed": "Verfügbare Rechte konnten nicht geladen werden",
+      "loadRoleRightsFailed": "Rollenrechte konnten nicht geladen werden",
+      "assignRoleRightsFailed": "Rollenrechte konnten nicht zugewiesen werden"
+    }
   }
 }

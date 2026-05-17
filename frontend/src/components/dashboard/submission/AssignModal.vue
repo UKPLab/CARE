@@ -176,7 +176,7 @@ export default {
           createdAt: formatLocalizedDate(s.createdAt),
           additionalSettings: s.additionalSettings
               ? {icon: "gear-fill", color: "blue", title: s.additionalSettings}
-              : {icon: "gear", color: "gray", title: "No additional settings"},
+              : {icon: "gear", color: "gray", title: this.$t('submission.assign.noAdditionalSettings')},
         };
       });
     },
@@ -185,7 +185,7 @@ export default {
         {name: this.$t('common.firstName'), key: "firstName", sortable: true},
         {name: this.$t('common.lastName'), key: "lastName", sortable: true},
         {name: this.$t('common.groupId'), key: "group", sortable: true, filter: this.groupFilterOptions},
-        {name: "Data Existing", key: "data_existing", sortable: true, filter: this.dataExistingFilterOptions},
+        {name: this.$t('common.dataExisting'), key: "data_existing", sortable: true, filter: this.dataExistingFilterOptions},
         {name: this.$t('common.createdAt'), key: "createdAt", sortable: true},
         {name: this.$t('dashboard.submission.assignGroup.columns.additionalSettings'), key: "additionalSettings", type: "icon", sortable: false},
       ];

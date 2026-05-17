@@ -129,5 +129,7 @@
     "first": "Erste",
     "last": "Letzte",
     "paginationRange": "{start}-{end} von {total} werden angezeigt",
-    "noGroupId": "Keine GroupID"
+    "noGroupId": "Keine GroupID",
+    "active": "Aktiv",
+    "inactive": "Inaktiv"
 }

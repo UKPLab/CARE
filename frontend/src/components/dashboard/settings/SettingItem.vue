@@ -47,7 +47,7 @@
                         ></textarea>
                         <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
                           <select v-model="setting.value" class="form-select">
-                            <option value="">None (use default email)</option>
+                            <option value="">{{ $t('settings.noneUseDefaultEmail') }}</option>
                             <option
                               v-for="template in getFilteredEmailTemplates(setting)"
                               :key="template.id"
@@ -62,7 +62,7 @@
                             :value="setting.value"
                             type="color"
                             class="form-control form-control-color"
-                            title="Pick a color"
+                            :title="$t('settings.pickColor')"
                             @input="updateColorValue(setting, $event.target.value)"
                           >
                           <input
@@ -84,7 +84,7 @@
                             :disabled="setting.value.toLowerCase() === getResetValue(setting).toLowerCase()"
                             @click="setting.value = getResetValue(setting)"
                           >
-                            Reset
+                            {{ $t('common.reset') }}
                           </button>
                         </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">

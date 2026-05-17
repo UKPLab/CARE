@@ -17,5 +17,7 @@
     "unsavedChangesWarning": "You have unsaved changes in your settings. Are you sure you want to leave without saving?"
   },
   "rememberToSaveBefore": "Remember to click",
-  "rememberToSaveAfter": "after making changes."
+  "rememberToSaveAfter": "after making changes.",
+  "noneUseDefaultEmail": "None (use default email)",
+  "pickColor": "Pick a color"
 }

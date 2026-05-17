@@ -3,7 +3,7 @@
     ref="importStepper"
     :steps="steps"
     :validation="stepValid"
-    submit-text="Close"
+    :submit-text="$t('common.close')"
     @submit="$refs.importStepper.close()"
     @step-change="handleStepChange"
   >

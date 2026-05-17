@@ -41,12 +41,21 @@
         "numberOfAssignments": "Number of Assignments",
         "roles": "Roles",
         "filterTable": "From which should be filtered?",
-
+        "selectAsDefault": "Select project as default",
         "createTooltip": "Create project",
         "assignButton": "Assign projects",
         "assignTooltip": "Assign projects",
         "coordinator": {
             "title": "Project"
+        },
+        "export": {
+            "confirmSelection": "Confirm Selection:",
+            "declinedSharingWarning": "You have selected one or more students who <strong>didn't accept data sharing</strong>.",
+            "aliasMappingWarning": "The downloaded ZIP archive will include a CSV file that maps the generated aliases back to the real student names.",
+            "reviewWarning": "We strongly recommend conducting a thorough review of this export before sharing it, to ensure no sensitive or unintended information is distributed.",
+            "summary": "Summary:",
+            "downloadSummary": "You are about to download submissions for <strong>{count}</strong> student(s).",
+            "fileCount": "{count} files"
         },
         "columns": {
             "name": "Project name",

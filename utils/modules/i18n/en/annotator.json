@@ -21,5 +21,9 @@
         "loadingPage": "Loading Page {pageNumber}"
     },
     "readOnlyMode": "Read-Only Mode",
-    "annotationsViewOnly": "Annotations are view-only"
+    "annotationsViewOnly": "Annotations are view-only",
+    "card": {
+        "markedCheckedClickToUncheck": "Marked as checked - Click to uncheck",
+        "clickToMarkChecked": "Click to mark as checked"
+    }
 }

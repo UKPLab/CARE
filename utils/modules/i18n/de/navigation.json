@@ -12,5 +12,10 @@
     "moreActions": "Weitere Aktionen",
     "noContent": "Kein Inhalt in der Seitenleiste ausgewählt.",
     "sidebarSection": "Seitenleistenbereich"
+  },
+  "topbar": {
+    "goBack": "Zurück...",
+    "projectTitle": "Projekt: {name}",
+    "signedInAs": "Angemeldet als {username}"
   }
 }

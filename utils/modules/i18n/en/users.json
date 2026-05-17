@@ -78,6 +78,35 @@
     "student": "Leaves inline commentary",
     "guest": "Has limited rights when using the platform",
     "system": "System user"
+  },
+  "liveSessions": "Live Sessions",
+  "viewSessions": "View Sessions",
+  "activeSessions": {
+      "title": "Active Sessions",
+      "filteredUser": "Filtered user:",
+      "activeUsers": "{count} active user(s)",
+      "socketId": "Socket ID",
+      "userId": "User ID",
+      "connectedAt": "Connected At",
+      "browser": "Browser"
+  },
+  "rights": {
+    "assignRights": "Assign Rights",
+    "managementTitle": "Rights Management",
+    "manageRightsFor": "Manage rights for",
+    "role": "role",
+    "selectRightsNote": "Select the rights for this role. Note: All users have basic <strong>\"user\"</strong> rights by default.",
+    "selectRole": "Select Role",
+    "manageRights": "Manage Rights",
+    "rightName": "Right Name",
+    "chooseRoleDescription": "Choose a role to assign to the user.",
+    "updatedTitle": "Role Rights Updated",
+    "updatedMessage": "Role rights have been successfully updated",
+    "errors": {
+      "loadAvailableRightsFailed": "Failed to load available rights",
+      "loadRoleRightsFailed": "Failed to load role rights",
+      "assignRoleRightsFailed": "Failed to assign role rights"
+    }
   }
 }
 

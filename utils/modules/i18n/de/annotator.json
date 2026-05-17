@@ -21,5 +21,9 @@
         "loadingPage": "Seite {pageNumber} wird geladen"
     },
     "readOnlyMode": "Schreibgeschützter Modus",
-    "annotationsViewOnly": "Annotationen können nur angezeigt werden"
+    "annotationsViewOnly": "Annotationen können nur angezeigt werden",
+    "card": {
+        "markedCheckedClickToUncheck": "Als geprüft markiert - Klicken zum Abwählen",
+        "clickToMarkChecked": "Klicken, um als geprüft zu markieren"
+    }
 }
