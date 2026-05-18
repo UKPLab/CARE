@@ -144,14 +144,14 @@ export default {
     getStatusBadge(status) {
       const statusText = (status || "unknown").toString();
       const normalized = statusText.toLowerCase();
+      if (normalized.includes("test")) {
+        return { text: statusText, class: "bg-info" };
+      }
       if (normalized.includes("success")) {
         return { text: statusText, class: "bg-success" };
       }
       if (normalized.includes("fail") || normalized.includes("error")) {
         return { text: statusText, class: "bg-danger" };
-      }
-      if (normalized.includes("test")) {
-        return { text: statusText, class: "bg-info" };
       }
       return { text: statusText, class: "bg-secondary" };
     },

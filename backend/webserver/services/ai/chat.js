@@ -30,9 +30,10 @@ function parseNumericCost(value) {
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
+ * @param {{ successStatus?: string, failedStatus?: string }} [logOptions] Optional log status overrides.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
-async function chatCompletion(service, client, data) {
+async function chatCompletion(service, client, data, logOptions = {}) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         service.logger.error("LiteLLM RPC is not registered");
@@ -48,11 +49,20 @@ async function chatCompletion(service, client, data) {
     const requestId = typeof data?.__requestId === "string" && data.__requestId.trim()
         ? data.__requestId.trim()
         : randomUUID();
+    const {
+        aiModelId: _aiModelId,
+        aiCredentialId: _aiCredentialId,
+        credentialId: _credentialId,
+        __requestId: _requestId,
+        ...completionParams
+    } = data || {};
+    const successStatus = logOptions.successStatus || "success";
+    const failedStatus = logOptions.failedStatus || "failed";
 
     let response;
     try {
         response = await rpc.chatCompletion({
-            ...(data || {}),
+            ...completionParams,
             __requestId: requestId,
         });
     } catch (error) {
@@ -61,7 +71,7 @@ async function chatCompletion(service, client, data) {
             aiModelId,
             requestId,
             input: helpers.extractInputText(data?.messages),
-            status: "failed",
+            status: failedStatus,
             requestStart,
         });
         throw error;
@@ -87,7 +97,7 @@ async function chatCompletion(service, client, data) {
         outputTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
         costs: parseNumericCost(payload?.response_cost),
-        status: "success",
+        status: successStatus,
         requestStart,
     });
 
@@ -186,14 +196,6 @@ async function getValidModels(service, client, data) {
  * @returns {Promise<{ok:true,outputText:string}>}
  */
 async function testModel(service, client, data) {
-    const rpc = runtime.getRPC(service.server);
-    if (!rpc) {
-        throw new Error("LiteLLM service is not available");
-    }
-    if (!(await rpc.isOnline())) {
-        throw new Error("LiteLLM service is not connected");
-    }
-
     const credentialId = Number(data?.credentialId);
     const model = typeof data?.model === "string" ? data.model.trim() : "";
     if (!Number.isInteger(credentialId) || credentialId <= 0) {
@@ -249,64 +251,17 @@ async function testModel(service, client, data) {
         );
     }
 
-    const requestStart = new Date();
-    const aiModelId = await runtime.resolveAiModelId(service.server, client?.userId, {
+    const result = await chatCompletion(service, client, {
+        ...params,
         aiModelId: data?.aiModelId,
-        model,
+        aiCredentialId: credentialId,
+    }, {
+        successStatus: "test_success",
+        failedStatus: "test_failed",
     });
 
-    let response;
-    const requestId = randomUUID();
-    try {
-        response = await rpc.chatCompletion({
-            ...params,
-            __requestId: requestId,
-        });
-    } catch (error) {
-        await runtime.logAiCall(service, {
-            userId: client?.userId,
-            aiModelId,
-            requestId,
-            input: helpers.extractInputText(params.messages),
-            status: "failed",
-            requestStart,
-        });
-        throw error;
-    }
-    const payload = response?.data !== undefined ? response.data : response;
-    const content = payload?.choices?.[0]?.message?.content;
-    const usage = payload?.usage || {};
-
-    let outputText = "";
-    if (typeof content === "string") {
-        outputText = content;
-    } else if (Array.isArray(content)) {
-        outputText = content
-            .map((part) => {
-                if (typeof part === "string") return part;
-                if (part && typeof part === "object" && typeof part.text === "string") return part.text;
-                return "";
-            })
-            .filter(Boolean)
-            .join("\n");
-    } else if (content !== undefined && content !== null) {
-        outputText = String(content);
-    }
-
-    await runtime.logAiCall(service, {
-        userId: client?.userId,
-        aiModelId,
-        requestId,
-        input: helpers.extractInputText(params.messages),
-        output: outputText || null,
-        reasoning: payload?.reasoning_content || null,
-        inputTokens: usage?.prompt_tokens ?? null,
-        outputTokens: usage?.completion_tokens ?? null,
-        totalTokens: usage?.total_tokens ?? null,
-        costs: parseNumericCost(payload?.response_cost),
-        status: "success",
-        requestStart,
-    });
+    const content = result.choices?.[0]?.message?.content;
+    const outputText = typeof content === "string" ? content : "";
 
     return {ok: true, outputText};
 }

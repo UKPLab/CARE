@@ -49,7 +49,7 @@ async function logAiCall(service, logData) {
  *
  * @param {{ db: Object }} server DB accessor housing Sequelize models registry.
  * @param {number|undefined|null} userId Owner filter for heuristic resolution.
- * @param {{ aiModelId?: number, model?: string }} data Chat payload remnants.
+ * @param {{ aiModelId?: number, aiCredentialId?: number, credentialId?: number, model?: string }} data Chat payload remnants.
  * @returns {Promise<number|null>} Matching `ai_model.id` else null.
  */
 async function resolveAiModelId(server, userId, data = {}) {
@@ -76,6 +76,10 @@ async function resolveAiModelId(server, userId, data = {}) {
         deleted: false,
         model: modelCandidates,
     };
+    const credentialId = Number(data?.aiCredentialId || data?.credentialId);
+    if (Number.isInteger(credentialId) && credentialId > 0) {
+        where.aiCredentialId = credentialId;
+    }
 
     const aiModel = await server.db.models.ai_model.findOne({
         where,
