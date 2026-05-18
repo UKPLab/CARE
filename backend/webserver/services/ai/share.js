@@ -399,9 +399,62 @@ async function shareModel(service, client, data) {
     }
 }
 
+/** Owner-id → label for AI model rows visible to `client` (`ai_model` autotable parity). */
+async function getAiModelOwnerSummaries(service, client) {
+    const viewerUserId = helpers.requireClientUserId(client);
+    const db = service.server.db.models;
+    let whereModel = {deleted: false};
+
+    if (!(await client.isAdmin())) {
+        const shareLinks = await db.ai_model_share.findAll({
+            where: {
+                userId: viewerUserId,
+                deleted: false,
+                expiryDate: {[Op.gt]: new Date()},
+            },
+            attributes: ["aiModelId"],
+            raw: true,
+        });
+        const sharedIds = [...new Set(shareLinks.map((link) => link.aiModelId))];
+        const orClauses = [{userId: viewerUserId}];
+        if (sharedIds.length) {
+            orClauses.push({id: {[Op.in]: sharedIds}});
+        }
+        whereModel = {[Op.and]: [whereModel, {[Op.or]: orClauses}]};
+    }
+
+    const visible = await db.ai_model.findAll({
+        where: whereModel,
+        attributes: ["userId"],
+        raw: true,
+    });
+    const ownerIds = [...new Set(visible.map((row) => row.userId))]
+        .map(Number)
+        .filter((uid) => uid > 0 && uid !== viewerUserId);
+
+    if (!ownerIds.length) {
+        return {};
+    }
+
+    const users = await db.user.findAll({
+        where: {id: ownerIds, deleted: false},
+        attributes: ["id", "firstName", "lastName", "userName"],
+        raw: true,
+    });
+
+    return users.reduce((acc, row) => {
+        const label = helpers.userDisplayLabel(row) || row.userName;
+        if (label) {
+            acc[String(row.id)] = label;
+        }
+        return acc;
+    }, {});
+}
+
 module.exports = {
     getModelShareOptions,
     getModelShareConfig,
     getModelOverview,
     shareModel,
+    getAiModelOwnerSummaries,
 };

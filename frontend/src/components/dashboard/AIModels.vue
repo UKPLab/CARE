@@ -92,6 +92,7 @@ export default {
   },
   data() {
     return {
+      ownerLabelsByUserId: {},
       tableOptions: {
         striped: true,
         hover: true,
@@ -111,6 +112,7 @@ export default {
         { name: "Provider", key: "provider", sortable: true },
         { name: "Model ID", key: "model", sortable: true },
         { name: "Credential", key: "credentialName", sortable: true },
+        { name: "Shared by", key: "sharedBy", sortable: true },
         { name: "Status", key: "status", type: "badge" },
         { name: "Created", key: "createdAt", type: "datetime", sortable: true },
       ],
@@ -125,6 +127,9 @@ export default {
     },
     models() {
       return this.$store.getters["table/ai_model/getAll"] || [];
+    },
+    aiModelRefreshCount() {
+      return this.$store.getters["table/ai_model/refreshCount"];
     },
     credentialRows() {
       return this.credentials.map((credential) => ({
@@ -144,16 +149,24 @@ export default {
         acc[credential.id] = credential;
         return acc;
       }, {});
+      const me = Number(this.currentUserId);
 
-      return this.models.map((model) => ({
-        ...model,
-        provider: credentialsById[model.aiCredentialId]?.provider || "",
-        credentialName: model.aiCredentialId ? (credentialsById[model.aiCredentialId]?.name || "Unknown") : "None",
-        status: {
-          text: model.enabled ? "Enabled" : "Disabled",
-          class: model.enabled ? "bg-success" : "bg-secondary",
-        },
-      }));
+      return this.models.map((model) => {
+        const ownerId = Number(model.userId);
+        const sharedBy =
+          ownerId === me ? "—" : (this.ownerLabelsByUserId[String(ownerId)] || "—");
+
+        return {
+          ...model,
+          provider: credentialsById[model.aiCredentialId]?.provider || "",
+          credentialName: model.aiCredentialId ? (credentialsById[model.aiCredentialId]?.name || "Unknown") : "None",
+          sharedBy,
+          status: {
+            text: model.enabled ? "Enabled" : "Disabled",
+            class: model.enabled ? "bg-success" : "bg-secondary",
+          },
+        };
+      });
     },
     credentialButtons() {
       return [
@@ -233,7 +246,26 @@ export default {
       ];
     },
   },
+  watch: {
+    aiModelRefreshCount: {
+      handler() {
+        this.loadAiModelOwnerSummaries();
+      },
+      immediate: true,
+    },
+  },
   methods: {
+    loadAiModelOwnerSummaries() {
+      this.$socket.emit(
+        "serviceCommand",
+        { service: "AIService", command: "getAiModelOwnerSummaries", data: {} },
+        (response) => {
+          if (response?.success) {
+            this.ownerLabelsByUserId = response.data || {};
+          }
+        },
+      );
+    },
     onCredentialAction(data) {
       switch (data.action) {
         case "editCredential":
