@@ -20,7 +20,7 @@ function registerLoginRoutes(server, helpers) {
         passport.authenticate('local-login', async (err, user, info) => {
             if (err) {
                 server.logger.error('Login failed: ' + err);
-                return res.status(500).json({ message: 'errors.auth.failedToLogin' });
+                return res.status(500).json({ message: 'auth.api.failedToLogin' });
             }
             if (!user) {
                 server.logger.info('User not found: ' + JSON.stringify(info));
@@ -30,7 +30,7 @@ function registerLoginRoutes(server, helpers) {
             const emailVerificationEnabled = String(await server.db.models['setting'].get('app.register.emailVerification')) === 'true';
             if (emailVerificationEnabled && !user.emailVerified) {
                 return res.status(401).json({
-                    message: 'errors.auth.emailNotVerified',
+                    message: 'auth.api.emailNotVerifiedBeforeLogin',
                     emailNotVerified: true,
                     email: user.email,
                 });
@@ -51,12 +51,12 @@ function registerLoginRoutes(server, helpers) {
         shared.setPostLoginRedirectPath(req, req.body?.redirectedFrom || req.query?.redirectedFrom);
 
         if (!(await shared.isLoginMethodEnabled('ldap'))) {
-            return res.status(403).json({ message: 'errors.auth.ldapLoginDisabled' });
+            return res.status(403).json({ message: 'auth.api.ldapLoginDisabled' });
         }
         if (!server.isAuthProviderReady('ldap')) {
             const status = server.getAuthProviderStatus('ldap');
             return res.status(503).json({
-                message: 'errors.auth.ldapLoginNotReady',
+                message: 'auth.api.ldapLoginNotReady',
                 reason: status.reason,
             });
         }
@@ -64,10 +64,10 @@ function registerLoginRoutes(server, helpers) {
         passport.authenticate('ldap-login', async (err, user, info) => {
             if (err) {
                 server.logger.error('LDAP login failed: ' + err);
-                return res.status(500).json({ message: 'errors.auth.failedToLogin' });
+                return res.status(500).json({ message: 'auth.api.failedToLogin' });
             }
             if (!user) {
-                return res.status(401).json(info || { message: 'errors.auth.ldapLoginFailed' });
+                return res.status(401).json(info || { message: 'auth.api.ldapLoginFailed' });
             }
 
             const handled = await twoFactor.startTwoFactorLogin(req, res, user.id, { mode: 'json', loginMethod: 'ldap' });
@@ -226,7 +226,7 @@ function registerLoginRoutes(server, helpers) {
             }
             req.session.destroy();
             res.clearCookie('connect.sid');
-            return res.status(200).json({ message: 'auth.messages.logoutSuccess' });
+            return res.status(200).json({ message: 'auth.api.sessionDestroyed' });
         });
     });
 
