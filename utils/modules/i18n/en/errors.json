@@ -68,6 +68,7 @@
         "fillAllFields": "Please fill in all fields correctly.",
         "ensurePasswordRequirements": "Please ensure passwords meet the requirements.",
         "validationError": "Validation Error",
+        "validationErrorWithMessage": "Validation error: {message}",
         "validationFailed": "Validation failed: {message}",
         "validationFailedGeneric": "Validation failed",
         "required": "This field is required",
@@ -75,11 +76,13 @@
         "tableNameRequired": "Table name is required",
         "fileDownloadFailed": "Failed to download file {fileName}: {message}",
         "schemaNotFound": "Validation schema not found: {configurationId}",
-        "additionalFilesNotAllowed": "Additional files are not allowed. Found: {files}",
+        "additionalFilesNotAllowed": "Additional files not allowed. Found: {files}",
         "requiredFileMissing": "Required file missing: {file}",
         "cannotOpenZip": "Cannot open ZIP file {fileName}: {message}",
         "requiredFileMissingInZip": "Required file missing in ZIP {zipFileName}: {file}",
         "tooManyMatchesInZip": "Too many matches for {file} in ZIP {zipFileName}: found {found}, max {max}",
+        "filesMustBeLocatedInZipRoot": "Files must be located either at the ZIP root or within a single top-level directory in {zipFileName}. Found file in a nested subdirectory: {entry}",
+        "disallowedFileFoundInZip": "Disallowed file found in ZIP {zipFileName}: {entry}. Allowed additional file types: {types}",
         "zipReadError": "Error reading ZIP file {fileName}: {message}",
         "invalidJson": "Invalid JSON: {error}",
         "auth": {
@@ -276,7 +279,10 @@
         "noPermissionGetRoleRights": "no permission to get role rights",
         "noPermissionGetAllRights": "no permission to get all rights",
         "noPermissionAssignRoleRights": "no permission to assign role rights",
-        "adminAccessRequired": "Admin access required"
+        "adminAccessRequired": "Admin access required",
+        "userWithMailNotFound": "User with mail {email} not found",
+        "duplicateEmail": "duplicate email",
+        "bulkCreateValidationFailed": "{message}"
     },
     "submission": {
         "notFound": "Submission with id {submissionId} not found",

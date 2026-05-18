@@ -62,9 +62,20 @@ class Validator {
 
             return validationResult;
         } catch (error) {
+            const message = error.key || error.message;
+            // Keep i18n keys as messages; wrapping them would turn the key into plain text.
+            if (message && /^errors\./.test(message)) {
+                return {
+                    success: false,
+                    message,
+                    params: error.params,
+                };
+            }
+
             return {
                 success: false,
-                message: `Validation error: ${error.message}`,
+                message: "errors.validation.validationErrorWithMessage",
+                params: {message: error.message},
             };
         }
     }
@@ -77,7 +88,9 @@ class Validator {
     async getValidationSchema(validationConfigurationId) {
         const configuration = await this.models["configuration"].getById(validationConfigurationId);
         if (!configuration) {
-            throw new Error(`Validation schema not found: ${validationConfigurationId}`);
+            const error = new Error("errors.validation.schemaNotFound");
+            error.params = {validationConfigurationId};
+            throw error;
         }
         const { content } = configuration;
         return content;
@@ -111,7 +124,8 @@ class Validator {
         if (!rules.additionalFilesAreAllowed && others.length > 0) {
             return {
                 success: false,
-                message: `Additional files not allowed. Found: ${others.map((f) => f.fileName).join(", ")}`,
+                message: "errors.validation.additionalFilesNotAllowed",
+                params: {files: others.map((f) => f.fileName).join(", ")},
             };
         }
 
@@ -141,7 +155,8 @@ class Validator {
         if (required && matchingFiles.length === 0) {
             return {
                 success: false,
-                message: `Required file missing: ${description || pattern}`,
+                message: "errors.validation.requiredFileMissing",
+                params: {file: description || pattern},
             };
         }
 
@@ -174,7 +189,8 @@ class Validator {
                 if (err) {
                     return resolve({
                         success: false,
-                        message: `Cannot open ZIP file ${zipFile.fileName}: ${err.message}`,
+                        message: "errors.validation.cannotOpenZip",
+                        params: {fileName: zipFile.fileName, message: err.message},
                     });
                 }
 
@@ -226,14 +242,21 @@ class Validator {
                         if (includeFile.required && matches.length === 0) {
                             return resolve({
                                 success: false,
-                                message: `Required file missing in ZIP ${zipFile.fileName}: ${includeFile.description || includeFile.pattern}`,
+                                message: "errors.validation.requiredFileMissingInZip",
+                                params: {zipFileName: zipFile.fileName, file: includeFile.description || includeFile.pattern},
                             });
                         }
 
                         if (includeFile.maxMatches && matches.length > includeFile.maxMatches) {
                             return resolve({
                                 success: false,
-                                message: `Too many matches for ${includeFile.description || includeFile.pattern} in ${zipFile.fileName}: found ${matches.length}, max ${includeFile.maxMatches}`,
+                                message: "errors.validation.tooManyMatchesInZip",
+                                params: {
+                                    file: includeFile.description || includeFile.pattern,
+                                    zipFileName: zipFile.fileName,
+                                    found: matches.length,
+                                    max: includeFile.maxMatches,
+                                },
                             });
                         }
 
@@ -249,7 +272,8 @@ class Validator {
                             if (pathParts.length > 1) {
                                 return resolve({
                                     success: false,
-                                    message: `Files must be located either at the ZIP root or within a single top-level directory in ${zipFile.fileName}. Found file in a nested subdirectory: ${entry}`,
+                                    message: "errors.validation.filesMustBeLocatedInZipRoot",
+                                    params: {zipFileName: zipFile.fileName, entry},
                                 });
                             }
 
@@ -258,9 +282,12 @@ class Validator {
                             if (!extension || !allowAdditionalFiles.includes(extension)) {
                                 return resolve({
                                     success: false,
-                                    message: `Disallowed file found in ZIP ${
-                                        zipFile.fileName
-                                    }: ${entry}. Allowed additional file types: ${allowAdditionalFiles.join(", ")}`,
+                                    message: "errors.validation.disallowedFileFoundInZip",
+                                    params: {
+                                        zipFileName: zipFile.fileName,
+                                        entry,
+                                        types: allowAdditionalFiles.join(", "),
+                                    },
                                 });
                             }
                         }
@@ -272,7 +299,8 @@ class Validator {
                 zipfile.on("error", (error) => {
                     resolve({
                         success: false,
-                        message: `Error reading ZIP file ${zipFile.fileName}: ${error.message}`,
+                        message: "errors.validation.zipReadError",
+                        params: {fileName: zipFile.fileName, message: error.message},
                     });
                 });
             });

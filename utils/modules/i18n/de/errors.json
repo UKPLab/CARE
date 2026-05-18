@@ -68,6 +68,7 @@
     "fillAllFields": "Bitte füllen Sie alle Felder korrekt aus.",
     "ensurePasswordRequirements": "Bitte stellen Sie sicher, dass die Passwörter den Anforderungen entsprechen.",
     "validationError": "Validierungsfehler",
+    "validationErrorWithMessage": "Validierungsfehler: {message}",
     "validationFailed": "Validierung fehlgeschlagen: {message}",
     "validationFailedGeneric": "Validierung fehlgeschlagen",
     "required": "Dieses Feld ist erforderlich",
@@ -80,6 +81,8 @@
     "cannotOpenZip": "ZIP-Datei {fileName} kann nicht geöffnet werden: {message}",
     "requiredFileMissingInZip": "Erforderliche Datei fehlt in ZIP {zipFileName}: {file}",
     "tooManyMatchesInZip": "Zu viele Treffer für {file} in ZIP {zipFileName}: gefunden {found}, maximal {max}",
+    "filesMustBeLocatedInZipRoot": "Dateien müssen entweder im ZIP-Stammverzeichnis oder in einem einzelnen obersten Verzeichnis in {zipFileName} liegen. Gefunden wurde eine Datei in einem verschachtelten Unterverzeichnis: {entry}",
+    "disallowedFileFoundInZip": "Nicht erlaubte Datei in ZIP {zipFileName} gefunden: {entry}. Erlaubte zusätzliche Dateitypen: {types}",
     "zipReadError": "Fehler beim Lesen der ZIP-Datei {fileName}: {message}",
     "invalidJson": "Ungültiges JSON: {error}",
     "auth": {
@@ -276,7 +279,10 @@
     "noPermissionGetRoleRights": "Keine Berechtigung, Rollenrechte abzurufen",
     "noPermissionGetAllRights": "Keine Berechtigung, alle Rechte abzurufen",
     "noPermissionAssignRoleRights": "Keine Berechtigung, Rollenrechte zuzuweisen",
-    "adminAccessRequired": "Administratorzugriff erforderlich"
+    "adminAccessRequired": "Administratorzugriff erforderlich",
+    "userWithMailNotFound": "Nutzer mit E-Mail {email} wurde nicht gefunden",
+    "duplicateEmail": "Doppelte E-Mail",
+    "bulkCreateValidationFailed": "{message}"
   },
   "submission": {
         "notFound": "Einreichung mit ID {submissionId} nicht gefunden",

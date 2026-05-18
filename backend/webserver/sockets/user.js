@@ -211,7 +211,9 @@ class UserSocket extends Socket {
                         });
                     } else {
                         errors.push({
-                            email: user.email, message: "User with mail " + user.email + " not found",
+                            email: user.email,
+                            message: "errors.users.userWithMailNotFound",
+                            params: {email: user.email},
                         });
                     }
                 }
@@ -227,16 +229,21 @@ class UserSocket extends Socket {
                 try {
                     if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "email") {
                         errors.push({
-                            extId: user.extId, message: "duplicate email",
+                            extId: user.extId,
+                            message: "errors.users.duplicateEmail",
                         });
                     } else {
                         errors.push({
-                            extId: user.extId, message: error.errors[0].message,
+                            extId: user.extId,
+                            message: "errors.users.bulkCreateValidationFailed",
+                            params: {message: error.errors[0].message},
                         });
                     }
                 } catch (e) {
                     errors.push({
-                        extId: user.extId, message: e.message,
+                        extId: user.extId,
+                        message: "errors.users.bulkCreateValidationFailed",
+                        params: {message: e.message},
                     });
                 }
                 this.logger.error("Failed to bulk create user: " + user.email);

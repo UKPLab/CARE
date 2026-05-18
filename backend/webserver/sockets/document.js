@@ -883,6 +883,9 @@ class DocumentSocket extends Socket {
                 const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId);
 
                 if (!validationResult.success) {
+                    if (validationResult.params) {
+                        throw new TranslatableError(null, validationResult.message, validationResult.params);
+                    }
                     throw new Error(validationResult.message || "errors.validation.validationFailedGeneric");
                 }
                 // 3. Get previous submission for the user and project to link the new submission (if exists)
@@ -969,6 +972,9 @@ class DocumentSocket extends Socket {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
 
             if (!result.success) {
+                if (result.params) {
+                    throw new TranslatableError(null, result.message, result.params);
+                }
                 throw new Error(result.message || "errors.validation.validationFailedGeneric");
             }
             const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
