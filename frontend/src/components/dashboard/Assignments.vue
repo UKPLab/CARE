@@ -82,8 +82,8 @@ export default {
         { name: "Assigned To", key: "assignedRoles" },
         { name: "Max Revisions", key: "maxRevisions" },
         {
-          name: "public",
-          key: "public",
+          name: "Disable",
+          key: "disable",
           type: "badge",
           typeOptions: {
             keyMapping: {
@@ -168,8 +168,8 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Toggle public",
-          action: "togglePublic",
+          title: "Toggle Disable",
+          action: "toggleDisable",
           stats: {
             assignmentId: "id",
           },
@@ -229,7 +229,7 @@ export default {
       }
 
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || Boolean(assignment.public) 
+        (assignment) => assignment.userId === this.userId || !assignment.disable
       ) || [];
     },
     assignmentTable() {
@@ -255,10 +255,10 @@ export default {
           submissionStatus: this.getSubmissionStatus(assignment),
           assignedRoles,
           maxRevisions: assignment.maxRevisions ?? 1,
-          public: Boolean(assignment.public),
+          disable: assignment.disable,
           start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
           end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
-          allowReUpload: Boolean(assignment.allowReUpload),
+          allowReUpload: assignment.allowReUpload,
         };
       });
     },
@@ -364,30 +364,30 @@ export default {
         }
       );
     },
-    togglePublic(params) {
+    toggleDisable(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
           title: "Access denied",
-          message: "You do not have permission to share this assignment.",
+          message: "You do not have permission to disable this assignment.",
           variant: "warning",
         });
         return;
       }
-      const newPublicState = !params.public;
+      const newDisableState = !params.disable;
       this.$socket.emit(
         "appDataUpdate",
         {
           table: "assignment",
           data: {
             id: params.id,
-            public: newPublicState,
+            disable: newDisableState,
           },
         },
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
               title: "Assignment updated",
-              message: `Assignment is now ${newPublicState ? "public" : "private"}.`,
+              message: `Assignment is now ${newDisableState ? "disabled" : "enabled"}.`,
               variant: "success",
             });
           } else {

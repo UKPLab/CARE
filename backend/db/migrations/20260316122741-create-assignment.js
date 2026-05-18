@@ -18,7 +18,7 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      public: {
+      disable: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,
