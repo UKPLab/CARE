@@ -110,8 +110,8 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: (submission.userId === this.currentUserId || this.canReplaceDeleteSubmissions) && !isStudyLocked,
-            allowReUpload: (submission.userId === this.currentUserId || this.canReplaceDeleteSubmissions) && !isStudyLocked,
+            canReplaceDelete: (submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked,
+            allowReUpload: (submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked,
             isStudyLocked,
             studyUsageCount,
             name: submission.name || "-",
@@ -151,7 +151,7 @@ export default {
           icon: "arrow-repeat",
           filter: [
             {
-              key: "allowReUpload",
+              key: "canReplaceDelete",
               value: true,
             },
           ],
