@@ -146,7 +146,7 @@
         :disabled="isTestingModel"
         @click="testModel"
       >
-        {{ isTestingModel ? "Testing..." : "Test Model" }}
+        {{ isTestingModel ? "Testing..." : "Send Test Prompt" }}
       </button>
       <button class="btn btn-primary" type="button" @click="saveModel">
         {{ modelForm.id ? "Update" : "Add" }}

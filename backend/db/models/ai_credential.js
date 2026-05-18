@@ -20,8 +20,9 @@ module.exports = (sequelize, DataTypes) => {
          * Bulk updates skip instance hooks; append affected `autoTable` rows to `transaction.changes`.
          */
         static #fkColumnReferencingParent(ParentModel) {
-            const n = ParentModel.name;
-            return n.charAt(0).toLowerCase() + n.slice(1) + "Id";
+            const n = ParentModel.options?.name?.singular || ParentModel.name;
+            const stem = n.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+            return stem + "Id";
         }
 
         static #modelsDeclaringFkTo(ParentModel) {
