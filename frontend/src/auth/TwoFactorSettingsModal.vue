@@ -558,7 +558,7 @@ export default {
           margin: 1,
         });
         this.totpQrCodeError = false;
-      } catch (error) {
+      } catch (_error) {
         this.totpQrCode = null;
         this.totpQrCodeError = true;
       }

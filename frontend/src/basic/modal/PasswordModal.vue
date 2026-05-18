@@ -132,7 +132,11 @@ export default {
         });
         return false;
       }
-      if (/^\s*$/.test(password) || /[\x00-\x1F\x7F]/.test(password) || [...password].some((c) => (c.codePointAt(0) || 0) > 0xFFFF)) {
+      const hasInvalidCharacter = [...password].some((c) => {
+        const codePoint = c.codePointAt(0) || 0;
+        return codePoint <= 31 || codePoint === 127 || codePoint > 0xFFFF;
+      });
+      if (/^\s*$/.test(password) || hasInvalidCharacter) {
         this.eventBus.emit("toast", {
           title: "Validation Error",
           message: "Password cannot contain only spaces, control characters, or emojis. Use letters, numbers, and standard punctuation.",

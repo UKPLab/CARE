@@ -75,7 +75,7 @@ import ImportFormatModal from "./workflows/ImportFormatModal.vue";
  * @author Karim Ouf
  */
 export default {
-  name: "Workflows",
+  name: "DashboardWorkflows",
   subscribeTable: ["workflow", "workflow_step"],
   components: {
     Card,

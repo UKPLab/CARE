@@ -329,7 +329,7 @@ export default {
         try {
           json = JSON.parse(text);
         } catch (e) {
-          throw new Error("Invalid JSON: " + e.message);
+          throw new Error("Invalid JSON: " + e.message, { cause: e });
         }
 
         if (typeof json !== "object" || json === null || Array.isArray(json)) {

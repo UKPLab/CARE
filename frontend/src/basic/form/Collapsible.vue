@@ -22,7 +22,7 @@ import LoadIcon from "@/basic/Icon.vue";
  *
  */
 export default {
-  name: "Collapsible",
+  name: "FormCollapsible",
   components: { LoadIcon },
   props: {
     title: {
