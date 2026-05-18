@@ -26,6 +26,7 @@
   </Card>
   <AssignmentModal ref="assignmentModal" />
   <AssignmentSubmissionsModal ref="assignmentSubmissionsModal" />
+  <ImportModal ref="importModal" />
   <ConfirmModal ref="deleteConf" />
 </template>
 
@@ -35,6 +36,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.vue";
 import AssignmentSubmissionsModal from "@/components/dashboard/assignments/AssignmentSubmissionsModal.vue";
+import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
@@ -46,6 +48,7 @@ export default {
     BasicButton,
     AssignmentModal,
     AssignmentSubmissionsModal,
+    ImportModal,
     ConfirmModal,
   },
   data() {
@@ -190,6 +193,22 @@ export default {
           },
         },
         {
+          icon: "box-arrow-in-down",
+          filter: [{ key: "canEditAssignment", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          title: "Import via Moodle",
+          action: "importMoodle",
+          stats: {
+            assignmentId: "id",
+          },
+        },
+        {
           icon: "x-circle",
           filter: [
             { key: "canCloseAssignment", value: true },
@@ -310,6 +329,9 @@ export default {
           break;
         case "inspectSubmissions":
           this.$refs.assignmentSubmissionsModal.open(data.params.id);
+          break;
+        case "importMoodle":
+          this.$refs.importModal.open(data.params.id);
           break;
         case "togglePublic":
           this.togglePublic(data.params);
