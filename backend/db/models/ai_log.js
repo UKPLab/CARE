@@ -1,9 +1,15 @@
 'use strict';
+
+/**
+ * Append-only audit trail for AI chat/test invocations (tokens, cost, status).
+ *
+ * @author Akash Gundapuneni
+ */
 const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
     class AiLog extends MetaModel {
-        static autoTable = false;
+        static autoTable = true;
     }
 
     AiLog.init({
@@ -18,8 +24,10 @@ module.exports = (sequelize, DataTypes) => {
         reasoning: DataTypes.TEXT,
         inputTokens: DataTypes.INTEGER,
         outputTokens: DataTypes.INTEGER,
-        reasoningTokens: DataTypes.INTEGER,
-        totalTokens: DataTypes.INTEGER,
+        totalTokens: {
+            type: DataTypes.INTEGER,
+            field: 'total_tokens',
+        },
         costs: DataTypes.FLOAT,
         status: DataTypes.STRING,
         requestStart: DataTypes.DATE,

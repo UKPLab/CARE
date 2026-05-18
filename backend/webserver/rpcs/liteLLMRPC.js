@@ -1,5 +1,4 @@
 const RPC = require("../RPC.js");
-const {randomUUID} = require("crypto");
 
 const ACK_TIMEOUT_BUFFER_MS = 5000;
 
@@ -36,10 +35,13 @@ module.exports = class LiteLLMRPC extends RPC {
      */
     async chatCompletion(data) {
         const {
-            __requestId: requestId = randomUUID(),
+            __requestId: requestId,
             __timeoutMs: requestedTimeoutMs,
             ...params
         } = data || {};
+        if (!requestId) {
+            throw new Error("Missing __requestId for chatCompletion");
+        }
         const timeoutOverride = Number(requestedTimeoutMs);
         const timeoutMs = Number.isFinite(timeoutOverride) && timeoutOverride > 0
             ? Math.min(timeoutOverride, this.timeout)
@@ -64,6 +66,25 @@ module.exports = class LiteLLMRPC extends RPC {
             throw new Error(response['message']);
         }
         return response;
+    }
+
+    /**
+     * Fetch models available for the supplied credential.
+     *
+     * @param {Object} data
+     * @param {string} [data.provider]
+     * @param {string} data.apiKey
+     * @param {string} [data.apiBaseUrl]
+     * @param {string} [data.apiVersion]
+     * @returns {Promise<Object>}
+     */
+    async getValidModels(data) {
+        const response = await this.emit("getValidModels", data || {}, this.timeout);
+        if (!response['success']) {
+            this.logger.error("getValidModels error: " + response['message']);
+            throw new Error(response['message']);
+        }
+        return response.data || {models: []};
     }
 
     /**

@@ -38,10 +38,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      provider: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
       description: {
         type: Sequelize.TEXT,
         allowNull: true,
