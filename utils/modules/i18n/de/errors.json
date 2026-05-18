@@ -19,6 +19,9 @@
     "failedToSendResetEmail": "Die E-Mail zum Zurücksetzen des Passworts konnte nicht gesendet werden.",
     "failedToSendVerificationEmail": "Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.",
     "failedToLogin": "Anmeldung fehlgeschlagen.",
+    "failedToEstablishLoginSession": "Anmeldesitzung konnte nicht erstellt werden.",
+    "authenticationRequired": "Authentifizierung erforderlich.",
+    "emailNotVerified": "Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.",
     "failedToCreateUser": "Benutzer konnte nicht erstellt werden.",
     "emailAlreadyTaken": "E-Mail-Adresse ist bereits vergeben.",
     "usernameTaken": "Benutzername ist bereits vergeben.",
@@ -36,6 +39,8 @@
     "samlLoginFailed": "SAML-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "loginFailed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "invalidInstitutionalCredentials": "Ungültige institutionelle Anmeldedaten. Bitte versuchen Sie es erneut.",
+    "ldapLoginDisabled": "LDAP-Anmeldung wurde vom Administrator deaktiviert.",
+    "ldapLoginNotReady": "LDAP-Anmeldung ist aktiviert, aber noch nicht vollständig konfiguriert. Bitte kontaktieren Sie einen Administrator.",
     "ldapLoginFailed": "LDAP-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
   },
   "permission": {

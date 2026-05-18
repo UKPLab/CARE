@@ -19,6 +19,9 @@
         "failedToSendResetEmail": "Failed to send password reset email.",
         "failedToSendVerificationEmail": "Failed to send verification email. Please try again later.",
         "failedToLogin": "Login failed.",
+        "failedToEstablishLoginSession": "Failed to establish login session.",
+        "authenticationRequired": "Authentication required.",
+        "emailNotVerified": "Please verify your email address before logging in.",
         "failedToCreateUser": "Failed to create user.",
         "emailAlreadyTaken": "Email is already in use.",
         "usernameTaken": "Username already taken.",
@@ -36,6 +39,8 @@
         "samlLoginFailed": "SAML login failed. Please try again.",
         "loginFailed": "Login failed. Please try again.",
         "invalidInstitutionalCredentials": "Invalid institutional credentials. Please try again.",
+        "ldapLoginDisabled": "LDAP login is disabled by the administrator.",
+        "ldapLoginNotReady": "LDAP login is enabled but not fully configured. Please contact an administrator.",
         "ldapLoginFailed": "LDAP login failed. Please try again."
     },
     "permission": {

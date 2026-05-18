@@ -18,26 +18,26 @@ function registerVerificationRoutes(server, helpers) {
         const { token } = req.query;
 
         if (String(await server.db.models['setting'].get('app.register.emailVerification')) !== 'true') {
-            return res.status(400).send({ message: 'Email verification is disabled.' });
+            return res.status(400).send({ message: 'errors.auth.emailVerificationDisabled' });
         }
         if (!token) {
-            return res.status(400).send({ message: 'Missing token.' });
+            return res.status(400).send({ message: 'errors.auth.tokenRequired' });
         }
 
         try {
             // Decode and validate token
             const decoded = decodeToken(token);
             if (!decoded.isValid) {
-                return res.status(400).send({ message: 'Invalid token format.' });
+                return res.status(400).send({ message: 'errors.auth.invalidResetToken' });
             }
             if (decoded.expired) {
-                return res.status(400).send({ message: 'Token has expired.' });
+                return res.status(400).send({ message: 'errors.auth.invalidOrExpiredToken' });
             }
 
             // Find user by verification token
             const user = await server.db.models['user'].findOne({ where: { emailVerificationToken: token } });
             if (!user) {
-                return res.status(400).send({ message: 'Invalid token.' });
+                return res.status(400).send({ message: 'errors.auth.invalidResetToken' });
             }
 
             // Mark email as verified and clear token
@@ -45,10 +45,10 @@ function registerVerificationRoutes(server, helpers) {
                 { emailVerified: true, emailVerificationToken: null },
                 { where: { id: user.id } }
             );
-            return res.status(200).send({ message: 'Email successfully verified. You can now log in.' });
+            return res.status(200).send({ message: 'auth.messages.emailVerifiedSuccess' });
         } catch (error) {
             server.logger.error('Failed to verify email:', error);
-            return res.status(500).send({ message: 'Internal server error' });
+            return res.status(500).send({ message: 'errors.server.unexpectedError' });
         }
     });
 
@@ -58,25 +58,25 @@ function registerVerificationRoutes(server, helpers) {
     server.app.post('/auth/resend-verification', async (req, res) => {
         const { email: userEmail } = req.body;
         if (!userEmail) {
-            return res.status(400).json({ message: 'Email address is required.' });
+            return res.status(400).json({ message: 'errors.validation.auth.provideEmail' });
         }
 
         try {
             // Check if email verification is enabled
             const emailVerificationEnabled = String(await server.db.models['setting'].get('app.register.emailVerification')) === 'true';
             if (!emailVerificationEnabled) {
-                return res.status(400).json({ message: 'Email verification is disabled.' });
+                return res.status(400).json({ message: 'errors.auth.emailVerificationDisabled' });
             }
 
             // Find user by email
             const user = await server.db.models['user'].findOne({ where: { email: userEmail } });
             if (!user) {
-                return res.status(400).json({ message: 'User with this email does not exist.' });
+                return res.status(400).json({ message: 'errors.auth.userNotFoundByEmail' });
             }
 
             // Check if already verified
             if (user.emailVerified) {
-                return res.status(400).json({ message: 'Email address is already verified.' });
+                return res.status(400).json({ message: 'errors.auth.emailAlreadyVerified' });
             }
 
             // Rate limiting: check if a verification email was sent recently
@@ -84,7 +84,8 @@ function registerVerificationRoutes(server, helpers) {
             const rateLimitCheck = email.checkEmailRateLimit(user, 'verification', rateLimitMinutes);
             if (!rateLimitCheck.allowed) {
                 return res.status(400).json({
-                    message: `Please wait ${rateLimitCheck.remainingTime} minute(s) before requesting another verification email.`,
+                    message: 'errors.auth.verificationRateLimited',
+                    params: { minutes: rateLimitCheck.remainingTime },
                 });
             }
 
@@ -120,10 +121,10 @@ function registerVerificationRoutes(server, helpers) {
                 { isHtml: emailContent.isHtml }
             );
 
-            return res.status(200).json({ message: 'Verification email has been sent.' });
+            return res.status(200).json({ message: 'auth.messages.verificationEmailSent' });
         } catch (error) {
             server.logger.error('Failed to resend verification email:', error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'errors.server.unexpectedError' });
         }
     });
 }

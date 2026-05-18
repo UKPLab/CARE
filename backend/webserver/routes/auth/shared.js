@@ -130,7 +130,7 @@ function createSharedHelpers(server) {
         req.logIn(user, async (err) => {
             if (err) {
                 server.logger.error(`[Auth] Passport login failed for user ${user.id}: ${err}`);
-                return res.status(500).json({ message: 'Failed to establish login session.' });
+                return res.status(500).json({ message: 'errors.auth.failedToEstablishLoginSession' });
             }
 
             // Pending 2FA state is only needed during login and should not survive a successful login.
@@ -176,7 +176,7 @@ function createSharedHelpers(server) {
         if (req.isAuthenticated()) {
             return next();
         }
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ message: 'errors.auth.authenticationRequired' });
     }
 
     return {
