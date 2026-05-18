@@ -5,6 +5,7 @@ const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/data.js");
 const {mergeInjects} = require("../../utils/data");
 const {generateError} = require("../../utils/generic.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 /**
  * Send data for building the frontend app
@@ -82,7 +83,7 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            throw new Error("You are not allowed to update the table " + data.table + " for another user!");
+            throw new TranslatableError("ACCESS_DENIED", "errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table});
         }
 
         // check data exists for required fields
@@ -93,9 +94,7 @@ class AppSocket extends Socket {
                     data.data[field.key] === null ||
                     data.data[field.key] === ""
                 ) {
-                    {
-                        throw new Error("Required field missing: " + field.key);
-                    }
+                    throw new TranslatableError("VALIDATION_ERROR", "errors.validation.requiredFieldMissing", {fieldKey: field.key});
                 }
             }
             // defaults
@@ -128,7 +127,7 @@ class AppSocket extends Socket {
         }
 
         if (!newEntry) {
-            throw new Error("Failed to update data");
+            throw generateError("UPDATE_FAILED", "errors.database.failedToUpdateData");
         }
 
         // check if table has a field with table options
@@ -308,7 +307,7 @@ class AppSocket extends Socket {
 
         if (!record) {
             // Record doesn't exist or was deleted
-            throw generateError("NOT_FOUND", "The requested resource does not exist or has been deleted.");
+            throw generateError("NOT_FOUND", "errors.common.resourceNotFound");
         }
 
         // Now check permissions by attempting to send via filtered sendTable
@@ -319,7 +318,7 @@ class AppSocket extends Socket {
 
         if (result.length === 0) {
             // Record exists but user doesn't have permission
-            throw generateError("ACCESS_DENIED", "You do not have rights to access this data.");
+            throw generateError("ACCESS_DENIED", "errors.common.accessDenied");
         }
     }
 
@@ -342,7 +341,7 @@ class AppSocket extends Socket {
      */
     async subscribeAppData(data, options) {
         if (!data.table) {
-            throw new Error("Table name is required");
+            throw generateError("VALIDATION_ERROR", "errors.validation.tableNameRequired");
         }
 
         // add subscription to the list

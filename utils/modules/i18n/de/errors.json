@@ -66,6 +66,7 @@
     "validationFailed": "Validierung fehlgeschlagen: {message}",
     "required": "Dieses Feld ist erforderlich",
     "requiredFieldMissing": "Erforderliches Feld fehlt: {fieldKey}",
+    "tableNameRequired": "Tabellenname ist erforderlich",
     "fileDownloadFailed": "Datei {fileName} konnte nicht heruntergeladen werden: {message}",
     "schemaNotFound": "Validierungsschema nicht gefunden: {configurationId}",
     "additionalFilesNotAllowed": "Zusätzliche Dateien sind nicht erlaubt. Gefunden: {files}",
@@ -292,5 +293,9 @@
     "unableToAssignEnoughDocuments": "Es konnten nicht genügend Dokumente für {reviewerName} in der Rolle {roleName} zugewiesen werden.",
     "couldNotAssignReviewers": "Nicht alle Reviewer konnten zugewiesen werden. Bitte versuchen Sie es erneut.",
     "invalidMode":"Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben."
+  },
+  "common": {
+    "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",
+    "accessDenied": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen."
   }
 }

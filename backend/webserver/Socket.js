@@ -100,6 +100,12 @@ module.exports = class Socket {
 
                 if (callback) {
                     const response = {success: false, message: err.message};
+                    if (err.key) {
+                        response.key = err.key;
+                    }
+                    if (err.params) {
+                        response.params = err.params;
+                    }
                     if (err.code) {
                         response.code = err.code;
                     }

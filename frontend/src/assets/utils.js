@@ -3,17 +3,41 @@ import Papa from "papaparse";
 import yaml from "js-yaml";
 import { i18n } from '../main.js';
 
+// Detects key-like messages such as "errors.server.notFound".
+// This prevents missing translation keys from being shown as raw text,
+// while still allowing legacy plain text backend messages to pass through.
+const looksLikeI18nKey = (str) =>
+    typeof str === 'string' &&
+    /^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)+$/.test(str);
+
 export function resolveApiMessage(response, fallbackKey = 'errors.server.unknownError') {
+    const fallbackMessage = i18n.global.t(fallbackKey);
+
     if (response && response.key) {
-        return i18n.global.t(response.key, response.params || {});
+        if (i18n.global.te(response.key)) {
+            return i18n.global.t(response.key, response.params || {});
+        }
+
+        console.warn('[i18n] Missing API key:', response.key, response);
+        return fallbackMessage;
     }
+
     if (response && response.message) {
         if (i18n.global.te(response.message)) {
-            return i18n.global.t(response.message);
+            return i18n.global.t(response.message, response.params || {});
         }
+
+        if (looksLikeI18nKey(response.message)) {
+            console.warn('[i18n] Missing message key:', response.message, response);
+            return fallbackMessage;
+        }
+
+        console.warn('[i18n] Legacy plain API message:', response.message, response);
         return response.message;
     }
-    return i18n.global.t(fallbackKey);
+
+    console.warn('[i18n] Empty API response message:', response);
+    return fallbackMessage;
 }
 
 function getCurrentLocale() {

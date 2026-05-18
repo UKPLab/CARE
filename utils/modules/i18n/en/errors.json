@@ -66,6 +66,7 @@
         "validationFailed": "Validation failed: {message}",
         "required": "This field is required",
         "requiredFieldMissing": "Required field missing: {fieldKey}",
+        "tableNameRequired": "Table name is required",
         "fileDownloadFailed": "Failed to download file {fileName}: {message}",
         "schemaNotFound": "Validation schema not found: {configurationId}",
         "additionalFilesNotAllowed": "Additional files are not allowed. Found: {files}",
@@ -292,5 +293,9 @@
         "unableToAssignEnoughDocuments": "Unable to assign enough documents for {reviewerName} in role {roleName}",
         "couldNotAssignReviewers": "Could not assign all reviewers. Please try again.",
         "invalidMode": "Invalid mode provided for assignment creation."
+    },
+    "common": {
+        "resourceNotFound": "The requested resource does not exist or has been deleted.",
+        "accessDenied": "You do not have rights to access this data."
     }
 }

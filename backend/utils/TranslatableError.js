@@ -8,15 +8,15 @@
  * 
  * @example
  * // Simple error with just a key
- * throw new TranslatableError('errors.auth.invalidCredentials');
+ * throw new TranslatableError('INVALID_CREDENTIALS', 'errors.auth.invalidCredentials');
  * 
  * @example
  * // Error with interpolation parameters
- * throw new TranslatableError('errors.nlp.timeout', { skill: 'summarization' });
+ * throw new TranslatableError('REQUEST_TIMEOUT', 'errors.nlp.timeout', { skill: 'summarization' });
  * 
  * @example
  * // Error with parameters for dynamic messages
- * throw new TranslatableError('errors.assignment.unableToAssignEnoughDocuments', {
+ * throw new TranslatableError('ASSIGNMENT_FAILED', 'errors.assignment.unableToAssignEnoughDocuments', {
  *   roleName: 'Reviewer',
  *   count: 5 
  * });
@@ -29,10 +29,11 @@ class TranslatableError extends Error {
     /**
      * Creates a new TranslatableError
      * 
+     * @param {string|null} code - Optional machine-readable error code
      * @param {string} key - The translation key (e.g., 'errors.auth.invalidCredentials')
-     * @param {Object} params - Optional parameters for interpolation
+     * @param {Object|null} params - Optional parameters for interpolation
      */
-    constructor(key, params = {}) {
+    constructor(code, key, params = null) {
         // Call parent constructor with the key as message
         // This ensures stack traces show the key
         super(key);
@@ -44,7 +45,12 @@ class TranslatableError extends Error {
         
         this.name = 'TranslatableError';
         this.key = key;
-        this.params = params;
+        if (params) {
+            this.params = params;
+        }
+        if (code) {
+            this.code = code;
+        }
         
         // Flag to identify translatable errors in catch blocks
         this.isTranslatable = true;
@@ -56,7 +62,7 @@ class TranslatableError extends Error {
      * @returns {string} - The translated error message in English
      */
     getLocalizedMessage() {
-        return i18n.t(this.key, this.params);
+        return i18n.t(this.key, this.params || {});
     }
     
     /**
@@ -66,10 +72,14 @@ class TranslatableError extends Error {
      * @returns {Object} - Object with key and params for frontend translation
      */
     toJSON() {
-        return {
-            key: this.key,
-            params: this.params
-        };
+        const result = {key: this.key};
+        if (this.params) {
+            result.params = this.params;
+        }
+        if (this.code) {
+            result.code = this.code;
+        }
+        return result;
     }
     
     /**
