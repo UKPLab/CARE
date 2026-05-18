@@ -367,6 +367,12 @@
   "database": {
     "failedToUpdateData": "Aktualisierung der Daten fehlgeschlagen"
   },
+  "backgroundTask": {
+    "noDocumentSocketForClient": "Kein DocumentSocket für den Client gefunden",
+    "invalidPreprocessRequest": "Ungültige Anfragedaten: skillName oder skillParameterMappings fehlen",
+    "noCompletedPreprocessing": "Abschluss kann nicht bestätigt werden: keine abgeschlossene Vorverarbeitung zum Bestätigen",
+    "confirmCompletionMissingAdminRights": "Abschluss kann nicht bestätigt werden: fehlende Administratorrechte"
+  },
   "assignment": {
     "unableToAssignEnoughDocuments": "Es konnten nicht genügend Dokumente für {reviewerName} in der Rolle {roleName} zugewiesen werden.",
     "noUsersFoundForRole": "Für die Rolle {roleName} wurden keine Benutzer gefunden. Bitte fügen Sie der Rolle Benutzer hinzu.",

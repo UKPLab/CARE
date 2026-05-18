@@ -367,6 +367,12 @@
     "database": {
         "failedToUpdateData": "Failed to update data"
     },
+    "backgroundTask": {
+        "noDocumentSocketForClient": "No DocumentSocket found for client",
+        "invalidPreprocessRequest": "Invalid request data: missing skillName or skillParameterMappings",
+        "noCompletedPreprocessing": "Cannot confirm completion: no completed preprocessing to confirm",
+        "confirmCompletionMissingAdminRights": "Cannot confirm completion: missing admin rights"
+    },
     "assignment": {
         "unableToAssignEnoughDocuments": "Unable to assign enough documents for {reviewerName} in role {roleName}",
         "noUsersFoundForRole": "No users found for role {roleName}. Please add users to the role.",
