@@ -230,7 +230,7 @@ export default {
           });
           this.eventBus.emit("toast", {
             title: this.$t('common.success'),
-            message: res.data,
+            message: resolveApiMessage({ message: res.data }, 'settings.messages.settingsSavedSuccessfully'),
             variant: "success",
           });
           this.setSettingsSnapshot();

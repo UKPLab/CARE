@@ -61,8 +61,12 @@
     },
     "configuration": {
         "idRequired": "Configuration ID is required.",
+        "idRequiredNoPeriod": "Configuration ID is required",
         "contentRequired": "Configuration content is required.",
-        "notFound": "Configuration not found."
+        "contentRequiredNoPeriod": "Configuration content is required",
+        "notFound": "Configuration not found.",
+        "accessDenied": "Access denied",
+        "createForOtherUsersDenied": "You do not have permission to create configurations for other users."
     },
     "validation": {
         "fillAllFields": "Please fill in all fields correctly.",
@@ -313,7 +317,8 @@
         "commentNotUpdated": "Comment not updated",
         "annotationUpdateFailed": "Annotation Update Failed",
         "annotationNotRetrieved": "Annotation not retrieved",
-        "commentsNotRetrieved": "Comments not retrieved"
+        "commentsNotRetrieved": "Comments not retrieved",
+        "commentsLoadFailedInternal": "Internal server error. Failed to load comments."
     },
     "nlp": {
         "timeout": "Timeout in request for skill {skill} - Request failed!",
@@ -325,7 +330,11 @@
     },
     "server": {
         "unexpectedError": "An unexpected error occurred. Please try again.",
-        "unknownError": "Unknown error"
+        "unknownError": "Unknown error",
+        "internalServerError": "Internal server error"
+    },
+    "statistics": {
+        "userRightsArgumentMismatch": "User rights and argument mismatch"
     },
     "page": {
         "notFoundTitle": "404 not found",

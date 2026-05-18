@@ -21,7 +21,7 @@ class SettingSocket extends Socket {
      */
     async sendSettings(data, options) {
          if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to access settings.");
+            throw new Error("errors.settings.noAccessPermission");
         }
 
         return await this.models["setting"].getAll(true);
@@ -39,7 +39,7 @@ class SettingSocket extends Socket {
    */
     async saveSettings(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to save settings.");
+            throw new Error("errors.settings.noSavePermission");
         }
 
         for (const setting of data) {
@@ -58,7 +58,7 @@ class SettingSocket extends Socket {
             this.emit("settingData", await this.models["setting"].getAll(true)); // Refresh settings on this socket
         });
 
-        return "Settings saved successfully.";
+        return "settings.messages.settingsSavedSuccessfully";
     }
 
     init() {

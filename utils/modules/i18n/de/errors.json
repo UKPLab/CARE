@@ -61,8 +61,12 @@
   },
   "configuration": {
     "idRequired": "Konfigurations-ID ist erforderlich.",
+    "idRequiredNoPeriod": "Konfigurations-ID ist erforderlich",
     "contentRequired": "Konfigurationsinhalt ist erforderlich.",
-    "notFound": "Konfiguration nicht gefunden."
+    "contentRequiredNoPeriod": "Konfigurationsinhalt ist erforderlich",
+    "notFound": "Konfiguration nicht gefunden.",
+    "accessDenied": "Zugriff verweigert",
+    "createForOtherUsersDenied": "Sie haben keine Berechtigung, Konfigurationen für andere Benutzer zu erstellen."
   },
   "validation": {
     "fillAllFields": "Bitte füllen Sie alle Felder korrekt aus.",
@@ -313,7 +317,8 @@
     "commentNotUpdated": "Kommentar nicht aktualisiert",
     "annotationUpdateFailed": "Aktualisierung der Annotation fehlgeschlagen",
     "annotationNotRetrieved": "Annotation nicht abgerufen",
-    "commentsNotRetrieved": "Kommentare nicht abgerufen"
+    "commentsNotRetrieved": "Kommentare nicht abgerufen",
+    "commentsLoadFailedInternal": "Interner Serverfehler. Kommentare konnten nicht geladen werden."
   },
   "nlp": {
     "timeout": "Zeitüberschreitung bei der Anfrage für Skill {skill} - Anfrage fehlgeschlagen!",
@@ -325,7 +330,11 @@
   },
   "server": {
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-    "unknownError": "Unbekannter Fehler"
+    "unknownError": "Unbekannter Fehler",
+    "internalServerError": "Interner Serverfehler"
+  },
+  "statistics": {
+    "userRightsArgumentMismatch": "Benutzerrechte und Argument stimmen nicht überein"
   },
   "page": {
     "notFoundTitle": "404 - Nicht gefunden",
