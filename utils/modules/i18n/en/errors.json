@@ -69,6 +69,7 @@
         "ensurePasswordRequirements": "Please ensure passwords meet the requirements.",
         "validationError": "Validation Error",
         "validationFailed": "Validation failed: {message}",
+        "validationFailedGeneric": "Validation failed",
         "required": "This field is required",
         "requiredFieldMissing": "Required field missing: {fieldKey}",
         "tableNameRequired": "Table name is required",
@@ -152,6 +153,21 @@
         "processingError": "Error processing document {documentId}: {message}",
         "fileNotFound": "File not found for document {documentId}: {filePath}",
         "readError": "Error reading document file {documentId}: {message}",
+        "doesNotExistOrDeleted": "The document does not exist or has been deleted.",
+        "noAccess": "You do not have access to this document.",
+        "fileMissingFromServer": "The document file {filename} is missing from the server.",
+        "noUploadAccess": "User does not have access to upload documents",
+        "updateNotAllowed": "You are not allowed to update this document",
+        "nonHtmlModalUnsupported": "Non-HTML/Modal documents are not supported for this operation",
+        "nonHtmlModalUnsupportedUppercase": "Non-HTML/MODAL documents are not supported for this operation",
+        "idRequired": "Document ID is required.",
+        "fileNotFoundByName": "File {fileName} not found",
+        "noReviewLinkUploadPermission": "You do not have permission to upload review links",
+        "annotationDeleteOriginalFailed": "Error deleting annotations: Couldn't delete original annotations",
+        "annotationDeleteFailed": "Error deleting annotations: {message}",
+        "textPositionExtractionFailed": "Error extracting text positions for text {text}: {message}",
+        "annotationAddFailed": "Error adding annotation: {message}",
+        "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.",
         "notEnoughDocumentsForRole": "Not enough documents to review for role {roleName}. Please add more documents.",
         "notEnoughDocumentsForReviewer": "Not enough documents to review for {reviewerName}. Please add more documents."
     },
@@ -253,7 +269,14 @@
         "userCreationFailed": "User Creation Failed",
         "userNotFound": "User not found",
         "failedToUpdateUser": "Failed to update user: User not found",
-        "noUserFoundForRole": "No users found for role {roleName}. Please add users to the role."
+        "noUserFoundForRole": "No users found for role {roleName}. Please add users to the role.",
+        "userRightsArgumentMismatch": "User rights and argument mismatch",
+        "noRightToLoadUsersByRole": "This user does not have the right to load users by their role.",
+        "incorrectPassword": "You entered an incorrect Password",
+        "noPermissionGetRoleRights": "no permission to get role rights",
+        "noPermissionGetAllRights": "no permission to get all rights",
+        "noPermissionAssignRoleRights": "no permission to assign role rights",
+        "adminAccessRequired": "Admin access required"
     },
     "submission": {
         "notFound": "Submission with id {submissionId} not found",
@@ -263,7 +286,10 @@
         "noActivePreprocessing": "Cannot cancel preprocessing: no active preprocessing",
         "invalidPreprocessRequest": "Invalid preprocessing request payload.",
         "noSkillParameterMappings": "No skill parameter mappings provided.",
-        "copyFailed": "Failed to copy submission {submissionId}. Error: {originalMessage}"
+        "copyFailed": "Failed to copy submission {submissionId}. Error: {originalMessage}",
+        "copyWithIdFailed": "Failed to copy submission with {submissionId}: {message}",
+        "updateNotAllowed": "You are not allowed to update this submission.",
+        "noGradeUploadPermission": "You do not have permission to upload grades"
     },
     "tags": {
         "tagSetDeleteFailed": "TagSet delete failed",

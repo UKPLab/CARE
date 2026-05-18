@@ -69,6 +69,7 @@
     "ensurePasswordRequirements": "Bitte stellen Sie sicher, dass die Passwörter den Anforderungen entsprechen.",
     "validationError": "Validierungsfehler",
     "validationFailed": "Validierung fehlgeschlagen: {message}",
+    "validationFailedGeneric": "Validierung fehlgeschlagen",
     "required": "Dieses Feld ist erforderlich",
     "requiredFieldMissing": "Erforderliches Feld fehlt: {fieldKey}",
     "tableNameRequired": "Tabellenname ist erforderlich",
@@ -152,6 +153,21 @@
     "processingError": "Fehler bei der Verarbeitung von Dokument {documentId}: {message}",
     "fileNotFound": "Datei für Dokument {documentId} nicht gefunden: {filePath}",
     "readError": "Fehler beim Lesen der Dokumentdatei {documentId}: {message}",
+    "doesNotExistOrDeleted": "Das Dokument existiert nicht oder wurde gelöscht.",
+    "noAccess": "Sie haben keinen Zugriff auf dieses Dokument.",
+    "fileMissingFromServer": "Die Dokumentdatei {filename} fehlt auf dem Server.",
+    "noUploadAccess": "Benutzer hat keinen Zugriff zum Hochladen von Dokumenten",
+    "updateNotAllowed": "Sie dürfen dieses Dokument nicht aktualisieren",
+    "nonHtmlModalUnsupported": "Nicht-HTML/Modal-Dokumente werden für diese Operation nicht unterstützt",
+    "nonHtmlModalUnsupportedUppercase": "Nicht-HTML/MODAL-Dokumente werden für diese Operation nicht unterstützt",
+    "idRequired": "Dokument-ID ist erforderlich.",
+    "fileNotFoundByName": "Datei {fileName} nicht gefunden",
+    "noReviewLinkUploadPermission": "Sie haben keine Berechtigung, Review-Links hochzuladen",
+    "annotationDeleteOriginalFailed": "Fehler beim Löschen von Annotationen: Ursprüngliche Annotationen konnten nicht gelöscht werden",
+    "annotationDeleteFailed": "Fehler beim Löschen von Annotationen: {message}",
+    "textPositionExtractionFailed": "Fehler beim Extrahieren von Textpositionen für Text {text}: {message}",
+    "annotationAddFailed": "Fehler beim Hinzufügen der Annotation: {message}",
+    "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen.",
     "notEnoughDocumentsForRole": "Nicht genügend Dokumente zur Überprüfung für die Rolle {roleName}. Bitte fügen Sie weitere Dokumente hinzu.",
     "notEnoughDocumentsForReviewer": "Nicht genügend Dokumente zur Überprüfung für {reviewerName}. Bitte fügen Sie weitere Dokumente hinzu."
   },
@@ -253,7 +269,14 @@
     "userCreationFailed": "Erstellung des Nutzers fehlgeschlagen",
     "userNotFound": "Nutzer wurde nicht gefunden",
     "failedToUpdateUser": "Fehler beim Aktualisieren des Nutzers: Nutzer wurde nicht gefunden",
-    "noUserFoundForRole": "Für die Rolle {roleName} wurden keine Benutzer gefunden. Bitte fügen Sie der Rolle Benutzer hinzu."
+    "noUserFoundForRole": "Für die Rolle {roleName} wurden keine Benutzer gefunden. Bitte fügen Sie der Rolle Benutzer hinzu.",
+    "userRightsArgumentMismatch": "Benutzerrechte und Argument stimmen nicht überein",
+    "noRightToLoadUsersByRole": "Dieser Benutzer hat nicht das Recht, Benutzer nach ihrer Rolle zu laden.",
+    "incorrectPassword": "Sie haben ein falsches Passwort eingegeben",
+    "noPermissionGetRoleRights": "Keine Berechtigung, Rollenrechte abzurufen",
+    "noPermissionGetAllRights": "Keine Berechtigung, alle Rechte abzurufen",
+    "noPermissionAssignRoleRights": "Keine Berechtigung, Rollenrechte zuzuweisen",
+    "adminAccessRequired": "Administratorzugriff erforderlich"
   },
   "submission": {
         "notFound": "Einreichung mit ID {submissionId} nicht gefunden",
@@ -263,7 +286,10 @@
         "noActivePreprocessing": "Vorverarbeitung kann nicht abgebrochen werden: keine aktive Vorverarbeitung",
         "invalidPreprocessRequest": "Ungültige Anfrage zur Vorverarbeitung.",
         "noSkillParameterMappings": "Keine Skill-Parameterzuordnungen angegeben.",
-        "copyFailed": "Die Einreichung {submissionId} konnte nicht kopiert werden. Fehler: {originalMessage}"
+        "copyFailed": "Die Einreichung {submissionId} konnte nicht kopiert werden. Fehler: {originalMessage}",
+        "copyWithIdFailed": "Einreichung mit {submissionId} konnte nicht kopiert werden: {message}",
+        "updateNotAllowed": "Sie dürfen diese Einreichung nicht aktualisieren.",
+        "noGradeUploadPermission": "Sie haben keine Berechtigung, Noten hochzuladen"
   },
   "tags": {
     "tagSetDeleteFailed": "Löschen des Tag-Sets fehlgeschlagen",

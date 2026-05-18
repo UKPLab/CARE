@@ -72,7 +72,7 @@ class UserSocket extends Socket {
      */
     async createUser(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("User rights and argument mismatch");
+            throw new Error("errors.users.userRightsArgumentMismatch");
         }
         const user = await this.models["user"].add(data, {transaction: options.transaction});
         // TODO: update frontend user data, don't overwrite it was is currently done (see also refreshState in store/utils.js)
@@ -92,7 +92,7 @@ class UserSocket extends Socket {
             if (!(await this.hasAccess(rightToFetch))) {
                 const msg = "This user does not have the right to load users by their role.";
                 this.logger.error(msg);
-                throw new Error(msg);
+                throw new Error("errors.users.noRightToLoadUsersByRole");
             }
             return role === "all" ? await this.models["user"].getAll() : await this.models["user"].getUsersByRole(role);
         } catch (error) {
@@ -270,7 +270,7 @@ class UserSocket extends Socket {
     async updateUserConsent(data, options) {
         const user = await this.models['user'].getById(this.userId);
         if (!user) {
-            throw new Error("Failed to update user: User not found");
+            throw new Error("errors.users.failedToUpdateUser");
         }
 
         return _.omit(await this.models["user"].updateById(user.id,
@@ -301,7 +301,7 @@ class UserSocket extends Socket {
         const {userId, password, oldPassword} = data;
         if (!this.isAdmin() || this.userId === userId) {
             if (userId !== this.userId) {
-                throw new Error("User rights and argument mismatch");
+                throw new Error("errors.users.userRightsArgumentMismatch");
             }
             const user = await this.models["user"].findOne({where:{
                 id: userId
@@ -309,7 +309,7 @@ class UserSocket extends Socket {
             const hashedOldPassword = await genPwdHash(oldPassword, user.salt);
             const iscorrectPassword = user.passwordHash === hashedOldPassword;
             if(!iscorrectPassword){
-                throw new Error("You entered an incorrect Password")
+                throw new Error("errors.users.incorrectPassword")
             }
         } 
         await this.models["user"].resetUserPwd(userId, password);
@@ -355,7 +355,7 @@ class UserSocket extends Socket {
 
     async getRoleRights(data, options) {
         if(!(await this.isAdmin())){
-            throw new Error("no permission to get role rights");
+            throw new Error("errors.users.noPermissionGetRoleRights");
         }
         const rights = await this.models["role_right_matching"].findAll({
                             where: {userRoleId: data.roleId, deleted: false},
@@ -366,7 +366,7 @@ class UserSocket extends Socket {
     }
     async getAllRights(data, options) {
         if(!(await this.isAdmin())){
-            throw new Error("no permission to get all rights");
+            throw new Error("errors.users.noPermissionGetAllRights");
         }
         const rights = await this.models["user_right"].findAll({
                             where: {deleted: false},
@@ -377,7 +377,7 @@ class UserSocket extends Socket {
     }
     async assignRoleRights(data, options) {
         if(!(await this.isAdmin())){
-            throw new Error("no permission to assign role rights");
+            throw new Error("errors.users.noPermissionAssignRoleRights");
         }
         const roleId = data.roleId;
         const newRights = data.newRights || []; // array of right names to add
@@ -433,7 +433,7 @@ class UserSocket extends Socket {
      * @param {Object} options Additional configuration parameters.
      */
     async subscribeToUserMonitor(data, options) {
-        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        if (!(await this.isAdmin())) throw new Error("errors.users.adminAccessRequired");
         this.socket.join(MONITOR_USERS_ROOM);
         return await this.buildStats();
     }
@@ -445,7 +445,7 @@ class UserSocket extends Socket {
      * @socketEvent userMonitorUnsubscribe
      */
     async unsubscribeFromUserMonitor(data, options) {
-        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        if (!(await this.isAdmin())) throw new Error("errors.users.adminAccessRequired");
         this.socket.leave(MONITOR_USERS_ROOM);
     }
 

@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 /**
  * Handle submissions through websocket
@@ -31,7 +32,7 @@ class SubmissionSocket extends Socket {
                     const copyResult = await this.models["submission"].copySubmission(submissionId, this.userId, {transaction});
                     copiedResults.push(copyResult);
                 } catch (error) {
-                    throw new Error(`Failed to copy submission with ${submissionId}: ${error.message}`);
+                    throw new TranslatableError(null, "errors.submission.copyWithIdFailed", {submissionId, message: error.message});
                 }
             }
             const copiedSubmissionIds = copiedResults.map(({copiedSubmission}) => copiedSubmission.id);
@@ -61,7 +62,7 @@ class SubmissionSocket extends Socket {
     async updateSubmission(data, options) {
         const submission = await this.models['submission'].getById(data['id']);
         if (!(await this.checkUserAccess(submission.userId))) {
-            throw new Error("You are not allowed to update this submission.");
+            throw new Error("errors.submission.updateNotAllowed");
         }
 
         const newSubmission = await this.models['submission'].updateById(submission.id, data);
@@ -82,7 +83,7 @@ class SubmissionSocket extends Socket {
      */
     async publishGrades(data) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to upload grades");
+            throw new Error("errors.submission.noGradeUploadPermission");
         }
         return await this.server.rpcs["MoodleRPC"].publishAssignmentGrade({
             options: data.options,
