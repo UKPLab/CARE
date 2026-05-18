@@ -343,8 +343,14 @@
   },
   "assignment": {
     "unableToAssignEnoughDocuments": "Es konnten nicht genügend Dokumente für {reviewerName} in der Rolle {roleName} zugewiesen werden.",
+    "noUsersFoundForRole": "Für die Rolle {roleName} wurden keine Benutzer gefunden. Bitte fügen Sie der Rolle Benutzer hinzu.",
+    "notEnoughDocumentsForRole": "Nicht genügend Dokumente zur Überprüfung für die Rolle {roleName}. Bitte fügen Sie weitere Dokumente hinzu.",
+    "notEnoughDocumentsForReviewer": "Nicht genügend Dokumente zur Überprüfung für {reviewerName}. Bitte fügen Sie weitere Dokumente hinzu.",
     "couldNotAssignReviewers": "Nicht alle Reviewer konnten zugewiesen werden. Bitte versuchen Sie es erneut.",
-    "invalidMode":"Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben."
+    "studySessionOwnerNotSelectedReviewer": "Der Besitzer der Studiensitzung (Benutzer-ID: {reviewerId}) ist nicht in der ausgewählten Reviewerliste. Bitte fügen Sie ihn zur Reviewerauswahl hinzu.",
+    "invalidMode":"Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben.",
+    "firstStepNotSubmission": "Der ausgewählte erste Schritt ist keiner Einreichung zugeordnet.",
+    "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden."
   },
   "common": {
     "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",

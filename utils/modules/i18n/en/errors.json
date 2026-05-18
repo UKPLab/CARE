@@ -343,8 +343,14 @@
     },
     "assignment": {
         "unableToAssignEnoughDocuments": "Unable to assign enough documents for {reviewerName} in role {roleName}",
+        "noUsersFoundForRole": "No users found for role {roleName}. Please add users to the role.",
+        "notEnoughDocumentsForRole": "Not enough documents to review for role {roleName}. Please add more documents.",
+        "notEnoughDocumentsForReviewer": "Not enough documents to review for {reviewerName}. Please add more documents.",
         "couldNotAssignReviewers": "Could not assign all reviewers. Please try again.",
-        "invalidMode": "Invalid mode provided for assignment creation."
+        "studySessionOwnerNotSelectedReviewer": "Study session owner (User ID: {reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.",
+        "invalidMode": "Invalid mode provided for assignment creation.",
+        "firstStepNotSubmission": "First step selected does not map to a submission.",
+        "latestSubmissionNotFound": "The latest version of the chosen submission could not be found."
     },
     "common": {
         "resourceNotFound": "The requested resource does not exist or has been deleted.",
