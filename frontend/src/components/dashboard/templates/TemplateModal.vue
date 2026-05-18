@@ -3,6 +3,8 @@
       ref="coordinator"
       table="template"
       :title="$t('templates.modal.title')"
+      :text-add="$t('common.add')"
+      :text-cancel="$t('common.cancel')"
       :custom-submit="true"
       :fields-override="coordinatorFields"
       @submit="update"

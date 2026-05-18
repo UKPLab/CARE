@@ -79,8 +79,8 @@ export default {
     columns() {
       return [
         { name: this.$t('dashboard.sessionOverview.columns.studyName'), key: "studyName", sortable: true },
-        { name: this.$t('users.firstName'), key: "firstName", sortable: true },
-        { name: this.$t('users.lastName'), key: "lastName", sortable: true },
+        { name: this.$t('common.firstName'), key: "firstName", sortable: true },
+        { name: this.$t('common.lastName'), key: "lastName", sortable: true },
         { name: this.$t('dashboard.sessionOverview.columns.maxStep'), key: "currentStep", sortable: true },
         { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
         { name: this.$t('common.updatedAt'), key: "updatedAt", sortable: true },

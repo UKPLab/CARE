@@ -170,7 +170,7 @@
                       v-model="formData['acceptStats']"
                       name="acceptStats"
                       type="checkbox"
-                  > > {{ $t('auth.acceptStats') }}
+                  > {{ $t('auth.acceptStats') }}
                 </label>
               </div>
             </div>

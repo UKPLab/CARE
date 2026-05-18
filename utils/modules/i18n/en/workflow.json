@@ -164,5 +164,19 @@
       "title": "Workflow Renamed",
       "message": "Workflow \"{oldName}\" has been renamed to \"{newName}\""
     }
+  },
+  "fields": {
+    "name": {
+      "label": "Name of the Workflow:",
+      "placeholder": "My workflow"
+    },
+    "description": {
+      "label": "Description of the Workflow:",
+      "placeholder": "Workflow description"
+    },
+    "hideInFrontend": {
+      "label": "Hide Workflow in Frontend:",
+      "help": "If enabled, this workflow will be hidden from users in the frontend."
+    }
   }
 }

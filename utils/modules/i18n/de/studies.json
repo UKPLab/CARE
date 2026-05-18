@@ -280,5 +280,68 @@
     "errors": {
       "title": "Schließen der Studie fehlgeschlagen"
     }
+  },
+  "fields": {
+    "name": {
+      "label": "Name der Studie:",
+      "placeholder": "Meine Benutzerstudie"
+    },
+    "workflowId": {
+      "label": "Workflow für die Studie auswählen:",
+      "help": "Wählen Sie eine Workflow-Vorlage für die Studienschritte aus."
+    },
+    "tagSetId": {
+      "label": "Tag-Set für die Studie:",
+      "help": "Wählen Sie ein Tag-Set für die Studie aus."
+    },
+    "stepDocuments": {
+      "label": "Dokumente Workflow-Schritten zuweisen:"
+    },
+    "description": {
+      "label": "Beschreibung der Studie:",
+      "help": "Dieser Text wird am Anfang der Benutzerstudie angezeigt!"
+    },
+    "enableEmailNotifications": {
+      "label": "E-Mail-Benachrichtigung beim Start/Ende einer Sitzung senden",
+      "help": "Wenn aktiviert, erhält der Studienbesitzer jedes Mal eine E-Mail, wenn ein Teilnehmer eine Sitzung startet oder beendet."
+    },
+    "timeLimit": {
+      "label": "Wie viel Zeit hat ein Teilnehmer für die Studie?",
+      "help": "0 = Zeitbegrenzung deaktivieren"
+    },
+    "limitSessions": {
+      "label": "Anzahl der Sitzungen für die Studie begrenzen:",
+      "help": "Legen Sie fest, wie oft Teilnehmer die Studie starten oder fortsetzen können. Jeder Versuch, die Studie abzuschließen, wird als Sitzung bezeichnet. 0 = unbegrenzte Anzahl an Sitzungen."
+    },
+    "limitSessionsPerUser": {
+      "label": "Anzahl der Sitzungen pro Benutzer für die Studie begrenzen:",
+      "help": "Legen Sie fest, wie oft jeder Teilnehmer die Studie starten oder fortsetzen kann. Jeder Versuch, die Studie abzuschließen, wird als Sitzung bezeichnet. 0 = unbegrenzte Anzahl an Sitzungen pro Benutzer."
+    },
+    "start": {
+      "label": "Studiensitzungen können nicht beginnen vor"
+    },
+    "end": {
+      "label": "Studiensitzungen können nicht beginnen nach:"
+    },
+    "collab": {
+      "label": "Soll die Studie kollaborativ sein?"
+    },
+    "anonymize": {
+      "label": "Sollen die Kommentare anonymisiert werden?"
+    },
+    "resumable": {
+      "label": "Soll die Studie fortsetzbar sein?"
+    },
+    "multipleSubmit": {
+      "label": "Mehrfache Abgaben erlauben?",
+      "help": "Geben Sie an, ob Teilnehmer ihre Studie mehrmals abgeben können."
+    }
+  },
+  "units": {
+    "minutes": "Min.",
+    "sessions": "Sitzung(en)"
+  },
+  "values": {
+    "unlimited": "unbegrenzt"
   }
 }

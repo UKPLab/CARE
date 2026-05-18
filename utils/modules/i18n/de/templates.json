@@ -154,5 +154,28 @@
       "updateFailed": "Aktualisierung fehlgeschlagen",
       "copyFailed": "Kopieren fehlgeschlagen"
     }
+  },
+  "fields": {
+    "name": {
+      "label": "Name"
+    },
+    "description": {
+      "label": "Beschreibung"
+    },
+    "type": {
+      "label": "Typ",
+      "options": {
+        "chooseType": "Typ auswählen",
+        "emailGeneral": "E-Mail - Allgemein",
+        "emailStudySession": "E-Mail - Studiensitzung",
+        "emailAssignment": "E-Mail - Aufgabe",
+        "emailStudyClose": "E-Mail - Studienabschluss",
+        "documentGeneral": "Dokument - Allgemein",
+        "documentStudy": "Dokument - Studie"
+      }
+    },
+    "defaultLanguage": {
+      "label": "Standardsprache"
+    }
   }
 }

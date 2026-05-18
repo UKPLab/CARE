@@ -19,7 +19,8 @@
         "acceptStats": "Statistiken akzeptiert",
         "acceptDataSharing": "Datenaustausch akzeptiert",
         "verified": "Verifiziert",
-        "lastLogin": "Letzte Anmeldung"
+        "lastLogin": "Letzte Anmeldung",
+        "roles": "Rollen"
     },
     "messages": {
         "deleteConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",

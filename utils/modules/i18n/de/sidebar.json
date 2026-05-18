@@ -35,6 +35,7 @@
         "configurations": "Konfigurationen",
         "templates": "Vorlagen",
         "workflows": "Workflows",
+        "session_overview": "Sitzungsübersicht",
         "groups": {
             "default": "Standard",
             "admin": "Administrator",

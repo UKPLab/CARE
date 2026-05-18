@@ -1,14 +1,30 @@
 <template>
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
     <template #element="{blur}">
-      <input
-        ref="fileUpload"
-        type="file"
-        :accept="options.accept"
-        :class="options.class"
-        :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
-        @change="handleFileChange"
-      />
+      <div class="input-group">
+        <input
+          ref="fileUpload"
+          type="file"
+          :accept="options.accept"
+          class="d-none"
+          :disabled="isDisabled"
+          @change="handleFileChange"
+          @blur="blur"
+        />
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          :disabled="isDisabled"
+          @click="$refs.fileUpload.click()"
+        >
+          {{ $t('common.browse') }}
+        </button>
+
+        <span class="form-control text-muted file-name">
+          {{ selectedFileName || $t('common.noFileSelected') }}
+        </span>
+      </div>
     </template>
   </FormElement>
 </template>
@@ -40,6 +56,14 @@ export default {
     return {
       currentData: null,
     }
+  },
+  computed: {
+    isDisabled() {
+      return this.options.readOnly !== undefined || this.options.disabled !== undefined;
+    },
+    selectedFileName() {
+      return this.currentData?.name || "";
+    },
   },
   watch: {
     currentData() {

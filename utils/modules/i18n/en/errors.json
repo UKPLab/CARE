@@ -3,6 +3,7 @@
         "invalidResetLink": "Invalid reset link. Please request a new password reset.",
         "invalidResetToken": "Invalid reset token. Please request a new password reset.",
         "invalidOrExpiredToken": "Invalid or expired reset token.",
+        "accessDeniedData": "You do not have rights to access this data.",
         "tokenRequired": "Token is required.",
         "tokenAndPasswordRequired": "Token and new password are required.",
         "failedToValidateToken": "Failed to validate reset token. Please try again.",

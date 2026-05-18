@@ -19,7 +19,8 @@
     "acceptStats": "Accept Stats",
     "acceptDataSharing": "Accept Data Sharing",
     "verified": "Verified",
-    "lastLogin": "Last Login"
+    "lastLogin": "Last Login",
+    "roles": "Roles"
   },
   "messages": {
     "deleteConfirm": "Are you sure you want to delete this user?",

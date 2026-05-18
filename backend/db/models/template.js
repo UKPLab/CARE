@@ -111,57 +111,57 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name",
+                label: "common.name", 
                 type: "text",
                 required: true,
             },
             {
                 key: "description",
-                label: "Description",
+                label: "common.description",
                 type: "textarea",
                 required: true
             },
             // Published field is excluded from form (handled via table action buttons only)
             {
                 key: "type",
-                label: "Type",
+                label: "common.type",
                 type: "select",
                 required: true,
                 options: [
                     {
-                        name: "Choose type", 
+                        name: "templates.fields.type.options.chooseType",
                         value: null, 
                         disabled: true
                     },
                     {
-                        name: "Email - General", 
+                        name: "templates.fields.type.options.emailGeneral",
                         value: 1
                     },
                     {
-                        name: "Email - Study Session", 
+                        name: "templates.fields.type.options.emailStudySession",
                         value: 2
                     },
                     {
-                        name: "Email - Assignment", 
+                        name: "templates.fields.type.options.emailAssignment",
                         value: 3
                     },
                     {
-                        name: "Email - Study Close", 
+                        name: "templates.fields.type.options.emailStudyClose",
                         value: 6
                     },
                     {
-                        name: "Document - General", 
+                        name: "templates.fields.type.options.documentGeneral", 
                         value: 4
                     },
                     {
-                        name: "Document - Study", 
+                        name: "templates.fields.type.options.documentStudy",
                         value: 5
                     }
                 ],
             },
             {
                 key: "defaultLanguage",
-                label: "Default language",
+                label: "templates.fields.defaultLanguage.label",
                 type: "select",
                 required: true,
                 options: [

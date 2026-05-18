@@ -16,6 +16,30 @@
     "lastChange": "Last Change",
     "user": "User"
   },
+  "fields": {
+    "name": {
+      "label": "Name of the Tagset:",
+      "placeholder": "My tagset"
+    },
+    "description": {
+      "label": "Description of the Tagset:",
+      "placeholder": "Tagset description"
+    },
+    "tags": {
+      "label": "Tags:"
+    },
+    "tag": {
+      "name": {
+        "placeholder": "Name of the Tag"
+      },
+      "color": {
+        "label": "Color"
+      },
+      "description": {
+        "placeholder": "Tag description"
+      }
+    }
+  },
   "messages": {
     "deleteTitle": "Delete Tagset",
     "deleteConfirm": "Do you really want to delete the Tagset?",

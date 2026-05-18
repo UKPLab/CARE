@@ -224,6 +224,7 @@
     "openSession": "Sitzung öffnen",
     "inspectSession": "Sitzung prüfen",
     "copySessionLink": "Sitzungslink kopieren",
+    "copySession": "Sitzung kopieren",
     "deleteSession": "Sitzung löschen",
     "notYet": "noch nicht",
     "deleteSessionNote": "Sie sind dabei, eine Sitzung zu löschen; wenn Sie die Sitzung nur beenden möchten, öffnen Sie bitte die Sitzung und brechen Sie das Löschen ab.",
@@ -475,22 +476,34 @@
         }
   },
   "documents": {
-        "fields": {
-            "selectDoc": "Dokument auswählen",
-            "newEmptyDoc": "Neues leeres Dokument"
-        }
+    "fields": {
+      "selectDoc": "Dokument auswählen",
+      "newEmptyDoc": "Neues leeres Dokument"
+    }
   },
   "assessment": {
-      "title": "Bewertung"
+    "title": "Bewertung"
   },
   "errors": {
-      "permission": {
-        "accessError": "Zugriffsfehler!"
-      },
-      "studies": {
-        "sessionNotFinished": "Studiensitzung nicht abgeschlossen",
-        "stepUpdateFailed": "Aktualisierung des Studienschritts fehlgeschlagen"
-      }
+    "permission": {
+      "accessError": "Zugriffsfehler!"
+    },
+    "studies": {
+      "sessionNotFinished": "Studiensitzung nicht abgeschlossen",
+      "stepUpdateFailed": "Aktualisierung des Studienschritts fehlgeschlagen"
+    }
+  },
+  "sessionOverview": {
+    "title": "Übersicht der Studiensitzungen",
+    "showOnlyOpenStudies": "Nur offene Studien anzeigen",
+    "filterWorkflowType": "Workflow-Typ filtern:",
+    "allWorkflows": "Alle Workflows",
+    "step": "Schritt {number}",
+    "columns": {
+      "studyName": "Studienname",
+      "maxStep": "Max. Schritt",
+      "numberOfSteps": "Anzahl der Schritte"
+    }
   }
 }
 

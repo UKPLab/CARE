@@ -75,7 +75,7 @@ export default {
       return [
         { name: this.$t('users.activeSessions.socketId'), key: "socketId" },
         { name: this.$t('users.activeSessions.userId'), key: "userId", sortable: true },
-        { name: this.$t('users.userName'), key: "userName", sortable: true },
+        { name: this.$t('common.userName'), key: "userName", sortable: true },
         { name: this.$t('users.activeSessions.connectedAt'), key: "connectedAt", sortable: true },
         { name: this.$t('users.activeSessions.browser'), key: "browser" },
       ];

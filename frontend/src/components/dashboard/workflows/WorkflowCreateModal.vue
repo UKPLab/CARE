@@ -3,6 +3,8 @@
     ref="coordinator"
     table="workflow"
     :title="$t('workflow.createModal.title')"
+    :text-add="$t('common.add')"
+    :text-cancel="$t('common.cancel')"
   />
 </template>
 

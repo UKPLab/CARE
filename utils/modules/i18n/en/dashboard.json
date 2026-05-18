@@ -223,6 +223,7 @@
         "studySessionsOf": "Study Sessions of",
         "openSession": "Open session",
         "inspectSession": "Inspect session",
+        "copySession": "Copy session",
         "copySessionLink": "Copy session link",
         "deleteSession": "Delete session",
         "notYet": "not yet",
@@ -490,6 +491,18 @@
         "studies": {
             "sessionNotFinished": "Study Session not finished",
             "stepUpdateFailed": "Study Step update failed"
+        }
+    },
+    "sessionOverview": {
+        "title": "Study Sessions Overview",
+        "showOnlyOpenStudies": "Show only open studies",
+        "filterWorkflowType": "Filter Workflow type:",
+        "allWorkflows": "All Workflows",
+        "step": "Step {number}",
+        "columns": {
+        "studyName": "Study Name",
+        "maxStep": "Max Step",
+        "numberOfSteps": "Number of Steps"
         }
     }
 }

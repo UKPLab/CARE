@@ -154,5 +154,28 @@
       "updateFailed": "Update failed",
       "copyFailed": "Copy failed"
     }
+  },
+  "fields": {
+    "name": {
+      "label": "Name"
+    },
+    "description": {
+      "label": "Description"
+    },
+    "type": {
+      "label": "Type",
+      "options": {
+        "chooseType": "Choose type",
+        "emailGeneral": "Email - General",
+        "emailStudySession": "Email - Study Session",
+        "emailAssignment": "Email - Assignment",
+        "emailStudyClose": "Email - Study Close",
+        "documentGeneral": "Document - General",
+        "documentStudy": "Document - Study"
+      }
+    },
+    "defaultLanguage": {
+      "label": "Default language"
+    }
   }
 }

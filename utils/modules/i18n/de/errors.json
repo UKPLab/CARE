@@ -8,6 +8,7 @@
     "failedToValidateToken": "Validierung des Reset-Tokens fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "failedToResetPassword": "Zurücksetzen des Passworts fehlgeschlagen. Bitte versuchen Sie es später erneut.",
     "passwordResetFailed": "Zurücksetzen des Passworts fehlgeschlagen",
+    "accessDeniedData": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen.",
     "passwordResetDisabled": "Das Zurücksetzen des Passworts ist deaktiviert.",
     "passwordResetRateLimited": "Bitte warten Sie {minutes} Minute(n), bevor Sie eine weitere E-Mail zum Zurücksetzen des Passworts anfordern.",
     "emailVerificationError": "Fehler bei der Bestätigung der E-Mail",

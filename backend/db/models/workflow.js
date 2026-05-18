@@ -14,26 +14,26 @@ module.exports = (sequelize, DataTypes) => {
     static fields = [
         {
             key: "name",
-            label: "Name of the Workflow:",
-            placeholder: "My workflow",
+            label: "workflow.fields.name.label",
+            placeholder: "workflow.fields.name.placeholder",
             type: "text",
             required: true,
             default: "",
         },
         {
             key: "description",
-            label: "Description of the Workflow:",
-            placeholder: "Workflow description",
+            label: "workflow.fields.name.label",
+            placeholder: "workflow.fields.name.placeholder",
             type: "text",
             required: true,
             default: "",
         },
         {
             key: "hideInFrontend",
-            label: "Hide Workflow in Frontend:",
+            label: "workflow.fields.hideInFrontend.label",
             type: "switch",
             default: false,
-            help: "If enabled, this workflow will be hidden from users in the frontend."
+            help: "workflow.fields.hideInFrontend.help"
         }
     ]
 

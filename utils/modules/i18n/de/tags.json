@@ -16,6 +16,30 @@
         "lastChange": "Letzte Änderung",
         "user": "Benutzer"
     },
+    "fields": {
+      "name": {
+        "label": "Name des Tagsets:",
+        "placeholder": "Mein Tagset"
+      },
+      "description": {
+        "label": "Beschreibung des Tagsets:",
+        "placeholder": "Tagset-Beschreibung"
+      },
+      "tags": {
+        "label": "Tags:"
+      },
+      "tag": {
+        "name": {
+          "placeholder": "Name des Tags"
+        },
+        "color": {
+          "label": "Farbe"
+        },
+        "description": {
+          "placeholder": "Tag-Beschreibung"
+        }
+      }
+    },
     "messages": {
         "deleteTitle": "Tag-Set löschen",
         "deleteConfirm": "Möchten Sie das Tag-Set wirklich löschen?",
