@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
     /**
@@ -187,13 +188,13 @@ module.exports = (sequelize, DataTypes) => {
 
             const source = await Template.findByPk(sourceTemplateId, { transaction });
             if (!source) {
-                throw new Error(`Template with id ${sourceTemplateId} not found`);
+                throw new TranslatableError(null, "errors.templates.withIdNotFound", {sourceTemplateId});
             }
             if (!source.public) {
-                throw new Error("Only public templates can be copied");
+                throw new Error("errors.templates.onlyPublicCanBeCopied");
             }
             if (source.userId === userId) {
-                throw new Error("Cannot copy your own template");
+                throw new Error("errors.templates.cannotCopyOwn");
             }
 
             // Prevent duplicate copy (unless overrides.force is true)
@@ -203,7 +204,7 @@ module.exports = (sequelize, DataTypes) => {
                     transaction,
                 });
                 if (existing) {
-                    throw new Error("You have already copied this template");
+                    throw new Error("errors.templates.alreadyCopied");
                 }
             }
 
@@ -331,12 +332,12 @@ module.exports = (sequelize, DataTypes) => {
 
             const copy = await Template.findByPk(copyId, { transaction });
             if (!copy || !copy.sourceId) {
-                throw new Error("Template is not a copy or does not exist");
+                throw new Error("errors.templates.notCopyOrDoesNotExist");
             }
 
             const source = await Template.findByPk(copy.sourceId, { transaction });
             if (!source || source.deleted) {
-                throw new Error("Source template is no longer available");
+                throw new Error("errors.templates.sourceNoLongerAvailable");
             }
 
             // 1. Get all source language content
@@ -417,10 +418,10 @@ module.exports = (sequelize, DataTypes) => {
         static async detach(copyId, options = {}) {
             const copy = await Template.findByPk(copyId, { transaction: options.transaction });
             if (!copy) {
-                throw new Error("Template not found");
+                throw new Error("errors.templates.notFound");
             }
             if (!copy.sourceId) {
-                throw new Error("Template is not a copy");
+                throw new Error("errors.templates.notACopy");
             }
             await copy.update({ sourceId: null }, { transaction: options.transaction });
             return await Template.findByPk(copyId, { transaction: options.transaction });
@@ -464,7 +465,7 @@ module.exports = (sequelize, DataTypes) => {
                         template.public === false
                     ) {
                         throw new Error(
-                            "Cannot make a template non-public once it has been made public"
+                            "errors.templates.cannotMakeNonPublic"
                         );
                     }
 
@@ -475,7 +476,7 @@ module.exports = (sequelize, DataTypes) => {
 
                     if (template.userId !== options.context.currentUserId) {
                         throw new Error(
-                            "You can only update templates that you own"
+                            "errors.templates.updateOwnOnly"
                         );
                     }
 
@@ -486,7 +487,7 @@ module.exports = (sequelize, DataTypes) => {
                         prevSourceId != null &&
                         nextSourceId != null
                     ) {
-                        throw new Error("Copied templates cannot be edited");
+                        throw new Error("errors.templates.copiedCannotBeEdited");
                     }
                 }
             }
