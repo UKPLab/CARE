@@ -1,7 +1,7 @@
 /**
  * Declare all necessary dependencies to work with the database models
  *
- * @author Nils Dycke, Dennis Zyska
+ * @author Nils Dycke, Dennis Zyska, Junaid Feroz
  */
 
 'use strict';
@@ -25,7 +25,7 @@ const config = {
       }
       const encryptionKey = process.env.DB_ENCRYPTION_KEY;
       if (!encryptionKey) {
-        return;
+        throw new Error('DB_ENCRYPTION_KEY must be set before establishing database connections');
       }
       const escapedKey = encryptionKey.replace(/'/g, "''");
       await connection.query(`SET app.encryption_key = '${escapedKey}'`);
