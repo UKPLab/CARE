@@ -19,6 +19,17 @@ const config = {
   ...loadedConfig,
   hooks: {
     ...(loadedConfig.hooks || {}), // Preserve existing hooks if we should ever add any in the config
+    afterConnect: async (connection) => {
+      if (loadedConfig.hooks && typeof loadedConfig.hooks.afterConnect === "function") {
+        await loadedConfig.hooks.afterConnect(connection);
+      }
+      const encryptionKey = process.env.DB_ENCRYPTION_KEY;
+      if (!encryptionKey) {
+        return;
+      }
+      const escapedKey = encryptionKey.replace(/'/g, "''");
+      await connection.query(`SET app.encryption_key = '${escapedKey}'`);
+    },
     afterInit: TimeoutTrackerPlugin,
   }
 };
