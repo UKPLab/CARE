@@ -178,7 +178,18 @@
         "studyNotStarted": "This study has not started yet",
         "sessionLimitExceeded": "Cannot create more than {limit} sessions for this study.",
         "sessionLimitPerUserExceeded": "Cannot create more than {limit} sessions for this user.",
-        "missingContextOrStepDocuments": "Missing context or step documents in options. Cancelling transaction.",
+        "missingContextOrStepDocuments": "Missing context or stepDocuments in options. Cancelling transaction.",
+        "noPermissionSaveAsTemplate": "No permission to save study as template",
+        "studyIdRequired": "studyId is required",
+        "studyAlreadyClosed": "Study is already closed",
+        "notAllowedToSeeStudy": "You are not allowed to see this study",
+        "errorTitle": "Error",
+        "studySession": {
+            "notFound": "Study session not found",
+            "idRequired": "studySessionId is required",
+            "alreadyFinished": "Study session has already been finished",
+            "cannotFinishClosedStudy": "Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed."
+        },
         "studyStep": {
             "notFound": "No first step found for this study",
             "referencedStepNotFound": "Referenced study step not found for workflow step {originalEntryId}",

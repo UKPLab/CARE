@@ -204,13 +204,13 @@ module.exports = (sequelize, DataTypes) => {
             const study = await sequelize.models.study.getById(studyId);
             if (study) {
                 if (study.closed) {
-                    throw new Error('This study is closed');
+                    throw new Error('errors.studies.studyClosed');
                 }
                 if (!study.multipleSubmit && study.end && new Date(study.end) < new Date()) {
-                    throw new Error('This study has ended');
+                    throw new Error('errors.studies.studyEnded');
                 }
             } else {
-                throw new Error('Study not found');
+                throw new Error('errors.studies.studyNotFound');
             }
         }
 
@@ -425,7 +425,7 @@ module.exports = (sequelize, DataTypes) => {
             afterCreate: async (study, options) => {
 
                 if (!options.context || !options.context.stepDocuments) {
-                    throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
+                    throw new Error("errors.studies.missingContextOrStepDocuments");
                 }
 
                 await Study.createStudySteps(study, options);

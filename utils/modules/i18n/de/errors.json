@@ -179,6 +179,17 @@
     "sessionLimitExceeded": "Es können nicht mehr als {limit} Sitzungen erstellt werden.",
     "sessionLimitPerUserExceeded": "Es können nicht mehr als {limit} Sitzungen für diesen Benutzer erstellt werden.",
     "missingContextOrStepDocuments": "Kontext oder Schrittdokumente in den Optionen fehlen. Transaktion wird abgebrochen.",
+    "noPermissionSaveAsTemplate": "Keine Berechtigung, die Studie als Vorlage zu speichern",
+    "studyIdRequired": "studyId ist erforderlich",
+    "studyAlreadyClosed": "Studie ist bereits geschlossen",
+    "notAllowedToSeeStudy": "Sie dürfen diese Studie nicht sehen",
+    "errorTitle": "Fehler",
+    "studySession": {
+      "notFound": "Studiensitzung nicht gefunden",
+      "idRequired": "studySessionId ist erforderlich",
+      "alreadyFinished": "Studiensitzung wurde bereits beendet",
+      "cannotFinishClosedStudy": "Sitzung kann nicht beendet werden: Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
+    },
     "studyStep": {
       "notFound": "Kein erster Schritt für diese Studie gefunden",
       "referencedStepNotFound": "Referenzierter Studienschritt für Workflow-Schritt {originalEntryId} nicht gefunden",

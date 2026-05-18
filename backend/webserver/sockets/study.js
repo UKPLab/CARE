@@ -67,7 +67,7 @@ class StudySocket extends Socket {
                     context: { stepDocuments: stepDocuments }
                 });
             } else {
-                throw new Error("No permission to save study as template");
+                throw new Error("errors.studies.noPermissionSaveAsTemplate");
             }
         }
     }
@@ -144,16 +144,16 @@ class StudySocket extends Socket {
      */
     async closeStudy(data, options) {
         if (!data.studyId) {
-            throw new Error("studyId is required");
+            throw new Error("errors.studies.studyIdRequired");
         }
 
         const study = await this.models["study"].getById(data.studyId, {transaction: options.transaction});
         if (!study) {
-            throw new Error("Study not found");
+            throw new Error("errors.studies.studyNotFound");
         }
 
         if (study.closed) {
-            throw new Error("Study is already closed");
+            throw new Error("errors.studies.studyAlreadyClosed");
         }
 
         const updatedStudy = await this.models["study"].updateById(
