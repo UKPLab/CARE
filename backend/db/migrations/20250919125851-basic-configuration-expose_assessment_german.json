@@ -1,25 +1,13 @@
 {
   "name": "Exposé assessment configuration (German)",
-  "description": "Exposé-Kriterien nach Rubriken inklusive Berechnung",
-  "version": "1.0.0",
   "type": "assessment",
   "rubrics": [
     {
-      "name": "Sprache/Qualität",
       "code": "language",
-      "description": "Bewertung der sprachlichen Qualität und strukturellen Kohärenz des Textes",
-      "calculation": "sum",
-      "maxPoints": 4,
-      "minPoints": 0,
+      "name": "Sprache/Qualität",
       "criteria": [
         {
           "name": "Sprachqualität",
-          "description": "Bewertung der sprachlichen Genauigkeit und Satzklarheit",
-          "minPoints": 0,
-          "maxPoints": 2,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -33,16 +21,16 @@
               "points": 2,
               "description": "Keine sprachlichen Fehler, klare und verständliche Sätze mit konsistenter Terminologie"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der sprachlichen Genauigkeit und Satzklarheit",
+          "expertLevel": 1
         },
         {
           "name": "Roter Faden",
-          "description": "Bewertung der strukturellen Kontinuität und Kohärenz des Textes",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -56,26 +44,26 @@
               "points": 2,
               "description": "Der Text hat eine durchgehende, gut nachvollziehbare Struktur; der rote Faden ist klar von Anfang bis Ende erkennbar"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der strukturellen Kontinuität und Kohärenz des Textes",
+          "expertLevel": 1
         }
-      ]
+      ],
+      "maxPoints": 4,
+      "minPoints": 0,
+      "calculation": "sum",
+      "description": "Bewertung der sprachlichen Qualität und strukturellen Kohärenz des Textes"
     },
     {
-      "name": "Metadaten",
       "code": "meta",
-      "maxPoints": 3,
-      "minPoints": 0,
-      "description": "Bewertung der Angemessenheit und Kreativität des Titels",
-      "calculation": "sum",
+      "name": "Metadaten",
       "criteria": [
         {
           "name": "Vorläufiger Titel",
-          "description": "Bewertung, wie gut der Titel das Thema trifft und repräsentiert",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -89,16 +77,16 @@
               "points": 2,
               "description": "Titel passt zum Thema; kreativer Titel, der neu formuliert wurde und/oder gut zur Story des Exposés passt"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung, wie gut der Titel das Thema trifft und repräsentiert",
+          "expertLevel": 1
         },
         {
           "name": "Metadaten vorhanden",
-          "description": "Bewertung der korrekten Angabe von Metainformationen",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 0,
-          "subjective": false,
-          "function": "check_latex_metadata",
           "scoring": [
             {
               "points": 0,
@@ -108,26 +96,26 @@
               "points": 1,
               "description": "Name, Datum und Matrikelnummer sind korrekt und aktualisiert"
             }
-          ]
+          ],
+          "function": "check_latex_metadata",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": false,
+          "description": "Bewertung der korrekten Angabe von Metainformationen",
+          "expertLevel": 0
         }
-      ]
+      ],
+      "maxPoints": 3,
+      "minPoints": 0,
+      "calculation": "sum",
+      "description": "Bewertung der Angemessenheit und Kreativität des Titels"
     },
     {
-      "name": "Form/Struktur",
       "code": "structure",
-      "calculation": "sum",
-      "maxPoints": 2,
-      "minPoints": 0,
-      "description": "Bewertung der Dokumentformatierung und strukturellen Anforderungen",
+      "name": "Form/Struktur",
       "criteria": [
         {
           "name": "Template genutzt",
-          "description": "Verwendung des LaTeX-Templates",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 0,
-          "subjective": false,
-          "function": "check_latex_template",
           "scoring": [
             {
               "points": 0,
@@ -137,16 +125,16 @@
               "points": 1,
               "description": "LaTeX-Template wurde genutzt"
             }
-          ]
+          ],
+          "function": "check_latex_template",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": false,
+          "description": "Verwendung des LaTeX-Templates",
+          "expertLevel": 0
         },
         {
           "name": "Seitenanzahl",
-          "description": "Seitenbegrenzung für fokussiertes Schreiben",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 0,
-          "subjective": false,
-          "function": "check_pdf_pages",
           "scoring": [
             {
               "points": 0,
@@ -156,26 +144,26 @@
               "points": 1,
               "description": "≤ drei Seiten (nur Motivation + Vorgehen)"
             }
-          ]
+          ],
+          "function": "check_pdf_pages",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": false,
+          "description": "Seitenbegrenzung für fokussiertes Schreiben",
+          "expertLevel": 0
         }
-      ]
+      ],
+      "maxPoints": 2,
+      "minPoints": 0,
+      "calculation": "sum",
+      "description": "Bewertung der Dokumentformatierung und strukturellen Anforderungen"
     },
     {
-      "name": "Motivation",
       "code": "motivation",
-      "description": "Bewertung von Problemidentifikation, Kontextdarstellung und Formulierung der Forschungsfrage",
-      "calculation": "sum",
-      "maxPoints": 9,
-      "minPoints": 0,
+      "name": "Motivation",
       "criteria": [
         {
           "name": "Hook vorhanden",
-          "description": "Bewertung der Existenz und Eignung eines einleitenden Aufhängers",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -185,16 +173,16 @@
               "points": 1,
               "description": "Hook vorhanden und passend zum Thema"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Existenz und Eignung eines einleitenden Aufhängers",
+          "expertLevel": 1
         },
         {
           "name": "Anker",
-          "description": "Bewertung der Detailtiefe und Verständlichkeit der Problemstellung",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -208,16 +196,16 @@
               "points": 2,
               "description": "Das Problem wird detailliert beschrieben; alle relevanten Aspekte werden dargestellt und verdeutlichen Umfang und mögliche Auswirkungen."
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Detailtiefe und Verständlichkeit der Problemstellung",
+          "expertLevel": 1
         },
         {
           "name": "Domäne",
-          "description": "Bewertung der Kontext- oder Domänenspezifikation des Problems",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -227,16 +215,16 @@
               "points": 1,
               "description": "Die Domäne bzw. der fachliche Kontext des Problems wird genannt; es ist klar, in welchem Umfeld das Problem existiert."
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Kontext- oder Domänenspezifikation des Problems",
+          "expertLevel": 1
         },
         {
           "name": "Relevanz des Problems",
-          "description": "Bewertung der Darstellung der Wichtigkeit und Auswirkungen des Problems",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -246,16 +234,16 @@
               "points": 1,
               "description": "Die Bedeutung des Problems wird klar dargestellt, inklusive möglicher Auswirkungen (z. B. für Personen, Organisationen oder Gesellschaft)."
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Darstellung der Wichtigkeit und Auswirkungen des Problems",
+          "expertLevel": 1
         },
         {
           "name": "Umgang mit dem Problem",
-          "description": "Bewertung aktueller Ansätze oder Kritikpunkte zum Problem",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -265,16 +253,16 @@
               "points": 1,
               "description": "Aktueller Umgang oder Kritik wird dargestellt"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung aktueller Ansätze oder Kritikpunkte zum Problem",
+          "expertLevel": 1
         },
         {
           "name": "Teaser (Forschungsfrage)",
-          "description": "Bewertung der Klarheit und Passung der Forschungsfrage zur Problemstellung",
-          "function": "auto_grading",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 2,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -288,16 +276,16 @@
               "points": 2,
               "description": "Die Forschungsfrage ist klar und präzise formuliert; sie vermittelt klar, was untersucht wird, und passt zur Problemstellung."
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Klarheit und Passung der Forschungsfrage zur Problemstellung",
+          "expertLevel": 2
         },
         {
           "name": "Begrenzung der Forschungsfrage",
-          "description": "Bewertung von Umfang und Realisierbarkeit der Forschungsfrage im BA-Kontext",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 2,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -307,26 +295,26 @@
               "points": 1,
               "description": "Die Forschungsfrage ist klar begrenzt und präzise definiert; sie ist realistisch im Rahmen einer Bachelorarbeit zu beantworten."
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung von Umfang und Realisierbarkeit der Forschungsfrage im BA-Kontext",
+          "expertLevel": 2
         }
-      ]
-    },
-    {
-      "name": "Vorgehen",
-      "code": "approach",
-      "maxPoints": 11,
+      ],
+      "maxPoints": 9,
       "minPoints": 0,
       "calculation": "sum",
-      "description": "Bewertung der Analyse des Forschungsstands und des theoretischen Rahmens",
+      "description": "Bewertung von Problemidentifikation, Kontextdarstellung und Formulierung der Forschungsfrage"
+    },
+    {
+      "code": "approach",
+      "name": "Vorgehen",
       "criteria": [
         {
           "name": "State of the Art",
-          "description": "Bewertung der Darstellung des Forschungsstands und korrekter Zitierung",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": false,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -336,16 +324,16 @@
               "points": 1,
               "description": "SOTA vorhanden und korrekt zitiert"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": false,
+          "description": "Bewertung der Darstellung des Forschungsstands und korrekter Zitierung",
+          "expertLevel": 1
         },
         {
           "name": "Relevanz des SOTA",
-          "description": "Bewertung, wie gut die Relevanz des Forschungsstands dargestellt wird",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -359,16 +347,16 @@
               "points": 2,
               "description": "Es wird klar dargestellt, warum der Forschungsstand relevant ist und wie er sich auf das Forschungsvorhaben bezieht."
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung, wie gut die Relevanz des Forschungsstands dargestellt wird",
+          "expertLevel": 1
         },
         {
           "name": "Schwachstellen des SOTA",
-          "description": "Bewertung der Identifikation und Erklärung der Schwächen des Forschungsstands",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
-          "function": "auto_grading",
           "scoring": [
             {
               "points": 0,
@@ -382,16 +370,16 @@
               "points": 2,
               "description": "Schwächen werden klar identifiziert und verständlich erklärt; es ist nachvollziehbar, welche Schwächen für die eigene Forschung relevant sind"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Identifikation und Erklärung der Schwächen des Forschungsstands",
+          "expertLevel": 1
         },
         {
           "name": "Abgrenzung vom SOTA",
-          "description": "Bewertung, wie gut das eigene Vorgehen vom Forschungsstand abgegrenzt wird",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -401,16 +389,16 @@
               "points": 1,
               "description": "Die eigene Leistung wird klar vom Forschungsstand abgegrenzt; der neue oder besondere Beitrag wird deutlich"
             }
-          ]
-        },
-        {
-          "name": "Kombination von SOTA",
-          "description": "Bewertung der sinnvollen Kombination und Zusammenführung bestehender Literatur",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 2,
           "subjective": true,
+          "description": "Bewertung, wie gut das eigene Vorgehen vom Forschungsstand abgegrenzt wird",
+          "expertLevel": 1
+        },
+        {
+          "name": "Kombination von SOTA",
           "scoring": [
             {
               "points": 0,
@@ -420,16 +408,16 @@
               "points": 1,
               "description": "Bestehendes Material wird klar und sinnvoll kombiniert; der Mehrwert der Kombination ist erkennbar"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der sinnvollen Kombination und Zusammenführung bestehender Literatur",
+          "expertLevel": 2
         },
         {
           "name": "Theoretischer Rahmen",
-          "description": "Bewertung der Struktur und Klarheit des theoretischen Rahmens",
-          "function": "auto_grading",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -443,16 +431,16 @@
               "points": 2,
               "description": "Der theoretische Rahmen ist klar und logisch strukturiert; die theoretischen Ansätze werden verständlich dargestellt"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Struktur und Klarheit des theoretischen Rahmens",
+          "expertLevel": 1
         },
         {
           "name": "Relevanz des theoretischen Rahmens",
-          "description": "Bewertung der Verbindung zwischen Theorie und Forschungsthema",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 2,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -462,16 +450,16 @@
               "points": 1,
               "description": "Der theoretische Rahmen zeigt klar die Verbindung zum Forschungsthema und unterstützt die Forschungsfrage"
             }
-          ]
-        },
-        {
-          "name": "Methodenverfügbarkeit",
-          "description": "Bewertung der Existenz einer geeigneten Methodik",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 1,
           "subjective": true,
+          "description": "Bewertung der Verbindung zwischen Theorie und Forschungsthema",
+          "expertLevel": 2
+        },
+        {
+          "name": "Methodenverfügbarkeit",
           "scoring": [
             {
               "points": 0,
@@ -481,26 +469,26 @@
               "points": 1,
               "description": "Methodik vorhanden und geeignet, die Forschungsfrage(n) zu beantworten"
             }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Methodik",
-      "code": "methodology",
-      "maxPoints": 5,
-      "minPoints": 0,
-      "calculation": "min",
-      "description": "Bewertung der Methodik",
-      "criteria": [
-        {
-          "name": "Vollständigkeit der Methodik",
-          "description": "Bewertung, ob die Methodik alle Forschungsfragen abdeckt",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": false,
+          "subjective": true,
+          "description": "Bewertung der Existenz einer geeigneten Methodik",
+          "expertLevel": 1
+        }
+      ],
+      "maxPoints": 11,
+      "minPoints": 0,
+      "calculation": "sum",
+      "description": "Bewertung der Analyse des Forschungsstands und des theoretischen Rahmens"
+    },
+    {
+      "code": "methodology",
+      "name": "Methodik",
+      "criteria": [
+        {
+          "name": "Vollständigkeit der Methodik",
           "scoring": [
             {
               "points": 0,
@@ -510,16 +498,16 @@
               "points": 1,
               "description": "Methodik vorhanden und deckt alle Forschungsfragen ab"
             }
-          ]
-        },
-        {
-          "name": "Relevanz der Methodik",
-          "description": "Bewertung der Relevanz und des Beitrags der Methodik zum Forschungsprojekt",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
+          "subjective": false,
+          "description": "Bewertung, ob die Methodik alle Forschungsfragen abdeckt",
+          "expertLevel": 1
+        },
+        {
+          "name": "Relevanz der Methodik",
           "scoring": [
             {
               "points": 0,
@@ -529,16 +517,16 @@
               "points": 1,
               "description": "Es wird klar gezeigt, wie die Methodik zum Projekt beiträgt und die Forschungsfragen unterstützt"
             }
-          ]
-        },
-        {
-          "name": "Zielgruppe der Methodik",
-          "description": "Bewertung der Spezifikation der Zielgruppe und ihrer Relevanz",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 1,
           "subjective": true,
+          "description": "Bewertung der Relevanz und des Beitrags der Methodik zum Forschungsprojekt",
+          "expertLevel": 1
+        },
+        {
+          "name": "Zielgruppe der Methodik",
           "scoring": [
             {
               "points": 0,
@@ -548,16 +536,16 @@
               "points": 1,
               "description": "Zielgruppe klar definiert und ihre Relevanz für die Methodik ist erkennbar"
             }
-          ]
-        },
-        {
-          "name": "Einbindung vorhandenen Materials",
-          "description": "Bewertung des angemessenen Bezugs auf vorhandenes Material",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 1,
           "subjective": true,
+          "description": "Bewertung der Spezifikation der Zielgruppe und ihrer Relevanz",
+          "expertLevel": 1
+        },
+        {
+          "name": "Einbindung vorhandenen Materials",
           "scoring": [
             {
               "points": 0,
@@ -567,16 +555,16 @@
               "points": 1,
               "description": "Vorhandenes Material wird angemessen und passend einbezogen"
             }
-          ]
-        },
-        {
-          "name": "Methodische Schwierigkeiten",
-          "description": "Bewertung der Identifikation möglicher Umsetzungsschwierigkeiten und entsprechender Lösungen",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 2,
           "subjective": true,
+          "description": "Bewertung des angemessenen Bezugs auf vorhandenes Material",
+          "expertLevel": 1
+        },
+        {
+          "name": "Methodische Schwierigkeiten",
           "scoring": [
             {
               "points": 0,
@@ -586,16 +574,16 @@
               "points": 1,
               "description": "Mögliche Schwierigkeiten werden klar beschrieben und es werden konkrete Lösungsansätze genannt"
             }
-          ]
-        },
-        {
-          "name": "Methodische Möglichkeiten/Einschränkungen",
-          "description": "Bewertung der Reflexion über Stärken und Schwächen der Methodik",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 2,
           "subjective": true,
+          "description": "Bewertung der Identifikation möglicher Umsetzungsschwierigkeiten und entsprechender Lösungen",
+          "expertLevel": 2
+        },
+        {
+          "name": "Methodische Möglichkeiten/Einschränkungen",
           "scoring": [
             {
               "points": 0,
@@ -605,16 +593,16 @@
               "points": 1,
               "description": "Möglichkeiten und Einschränkungen werden klar beschrieben; Reflexion ist nachvollziehbar"
             }
-          ]
-        },
-        {
-          "name": "Methodische Details",
-          "description": "Bewertung zusätzlicher Erklärungen und Details zur Umsetzung",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 2,
           "subjective": true,
+          "description": "Bewertung der Reflexion über Stärken und Schwächen der Methodik",
+          "expertLevel": 2
+        },
+        {
+          "name": "Methodische Details",
           "scoring": [
             {
               "points": 0,
@@ -624,26 +612,26 @@
               "points": 1,
               "description": "Methodik wird umfassend und präzise erklärt, inklusive Umsetzungsdetails"
             }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Zeitplan",
-      "code": "schedule",
-      "maxPoints": 5,
-      "minPoints": 0,
-      "calculation": "sum",
-      "description": "Bewertung der Struktur, Vollständigkeit und Realisierbarkeit des Projektzeitplans",
-      "criteria": [
-        {
-          "name": "Zeitplan vorhanden",
-          "description": "Bewertung der Existenz eines tabellarischen und chronologischen Zeitplans",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 0,
-          "subjective": false,
+          "subjective": true,
+          "description": "Bewertung zusätzlicher Erklärungen und Details zur Umsetzung",
+          "expertLevel": 2
+        }
+      ],
+      "maxPoints": 5,
+      "minPoints": 0,
+      "calculation": "min",
+      "description": "Bewertung der Methodik"
+    },
+    {
+      "code": "schedule",
+      "name": "Zeitplan",
+      "criteria": [
+        {
+          "name": "Zeitplan vorhanden",
           "scoring": [
             {
               "points": 0,
@@ -653,16 +641,16 @@
               "points": 1,
               "description": "Tabellarischer, chronologischer Zeitplan vorhanden"
             }
-          ]
-        },
-        {
-          "name": "Vollständigkeit des Zeitplans",
-          "description": "Bewertung der Abdeckung und sinnvollen Einteilung des Zeitplans",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 1,
           "subjective": false,
+          "description": "Bewertung der Existenz eines tabellarischen und chronologischen Zeitplans",
+          "expertLevel": 0
+        },
+        {
+          "name": "Vollständigkeit des Zeitplans",
           "scoring": [
             {
               "points": 0,
@@ -672,16 +660,16 @@
               "points": 1,
               "description": "Zeitplan deckt den gesamten Zeitraum ab und ist sinnvoll in Arbeitsschritte gegliedert"
             }
-          ]
-        },
-        {
-          "name": "Beschreibung der Zeitblöcke",
-          "description": "Bewertung der Detailliertheit der einzelnen Zeitblöcke",
+          ],
           "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
-          "expertLevel": 0,
           "subjective": false,
+          "description": "Bewertung der Abdeckung und sinnvollen Einteilung des Zeitplans",
+          "expertLevel": 1
+        },
+        {
+          "name": "Beschreibung der Zeitblöcke",
           "scoring": [
             {
               "points": 0,
@@ -691,16 +679,16 @@
               "points": 1,
               "description": "Einzelne Blöcke sind beschrieben (mehr als nur Überschriften)"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": false,
+          "description": "Bewertung der Detailliertheit der einzelnen Zeitblöcke",
+          "expertLevel": 0
         },
         {
           "name": "Realistische Relevanz des Zeitplans",
-          "description": "Bewertung der Realisierbarkeit und Passung zum BA-Kontext",
-          "function": "auto_grading",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -714,25 +702,26 @@
               "points": 2,
               "description": "Zeitplan ist klar strukturiert, realistisch und passend für den Umfang der Bachelorarbeit; alle wichtigen Schritte sind enthalten und sinnvoll eingeordnet"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Realisierbarkeit und Passung zum BA-Kontext",
+          "expertLevel": 1
         }
-      ]
+      ],
+      "maxPoints": 5,
+      "minPoints": 0,
+      "calculation": "sum",
+      "description": "Bewertung der Struktur, Vollständigkeit und Realisierbarkeit des Projektzeitplans"
     },
     {
-      "name": "Literaturverzeichnis",
       "code": "bibliography",
-      "maxPoints": 3,
-      "minPoints": 0,
-      "description": "Bewertung der Konsistenz des Literaturverzeichnisses und der Relevanz der Literatur",
+      "name": "Literaturverzeichnis",
       "criteria": [
         {
           "name": "Konsistenz der Literaturangaben",
-          "description": "Bewertung der Einheitlichkeit des Zitierstils und der Vollständigkeit bibliographischer Angaben",
-          "function": "auto_grading",
-          "maxPoints": 1,
-          "minPoints": 0,
-          "expertLevel": 0,
-          "subjective": false,
           "scoring": [
             {
               "points": 0,
@@ -742,16 +731,16 @@
               "points": 1,
               "description": "Literaturverzeichnis ist einheitlich (konsistenter Zitierstil) und enthält im Wesentlichen alle bibliographischen Angaben"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 1,
+          "minPoints": 0,
+          "subjective": false,
+          "description": "Bewertung der Einheitlichkeit des Zitierstils und der Vollständigkeit bibliographischer Angaben",
+          "expertLevel": 0
         },
         {
           "name": "Schlüsselliteratur",
-          "description": "Bewertung der Relevanz und Qualität der Literatur für das Forschungsthema",
-          "function": "auto_grading",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 2,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -765,26 +754,26 @@
               "points": 2,
               "description": "Literatur passt zum Thema und ist überwiegend hochrelevant"
             }
-          ]
+          ],
+          "function": "auto_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Bewertung der Relevanz und Qualität der Literatur für das Forschungsthema",
+          "expertLevel": 2
         }
-      ]
+      ],
+      "maxPoints": 3,
+      "minPoints": 0,
+      "description": "Bewertung der Konsistenz des Literaturverzeichnisses und der Relevanz der Literatur"
     },
     {
-      "name": "Zusatzpunkte",
       "code": "additional",
-      "maxPoints": 2,
-      "minPoints": -2,
-      "calculation": "sum",
-      "description": "Zusätzliche Punkte für sehr gute Arbeiten oder Abzüge bei groben Fehlern",
+      "name": "Zusatzpunkte",
+      "isBonus": true,
       "criteria": [
         {
           "name": "Zusätzliche Punkte",
-          "description": "Zusätzliche Punkte für besonders gute Leistungen, die nicht in anderen Kriterien erwähnt sind",
-          "function": "manual_grading",
-          "maxPoints": 2,
-          "minPoints": 0,
-          "expertLevel": 1,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -798,16 +787,16 @@
               "points": 2,
               "description": ""
             }
-          ]
+          ],
+          "function": "manual_grading",
+          "maxPoints": 2,
+          "minPoints": 0,
+          "subjective": true,
+          "description": "Zusätzliche Punkte für besonders gute Leistungen, die nicht in anderen Kriterien erwähnt sind",
+          "expertLevel": 1
         },
         {
           "name": "Negative Punkte",
-          "description": "Große Fehler in der Abgabe",
-          "function": "manual_grading",
-          "maxPoints": 0,
-          "minPoints": -2,
-          "expertLevel": 1,
-          "subjective": true,
           "scoring": [
             {
               "points": 0,
@@ -821,9 +810,21 @@
               "points": -2,
               "description": ""
             }
-          ]
+          ],
+          "function": "manual_grading",
+          "maxPoints": 0,
+          "minPoints": -2,
+          "subjective": true,
+          "description": "Große Fehler in der Abgabe",
+          "expertLevel": 1
         }
-      ]
+      ],
+      "maxPoints": 2,
+      "minPoints": -2,
+      "calculation": "sum",
+      "description": "Zusätzliche Punkte für sehr gute Arbeiten oder Abzüge bei groben Fehlern"
     }
-  ]
+  ],
+  "version": "1.0.0",
+  "description": "Exposé-Kriterien nach Rubriken inklusive Berechnung"
 }
