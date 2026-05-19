@@ -8,6 +8,7 @@
  */
 const Delta = require("quill-delta");
 const {deltaToPlainText} = require("editor-delta-conversion");
+const TranslatableError = require("./TranslatableError");
 
 /**
  * Extract plain text from Quill Delta operations
@@ -180,16 +181,16 @@ async function getTemplateContentForLanguage(templateId, language, models, optio
  */
 async function resolveTemplate(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("Template ID is required");
+        throw new Error("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("Models object is required");
+        throw new Error("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Template with ID ${templateId} not found`);
+        throw new TranslatableError(null, "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {
@@ -249,16 +250,16 @@ async function resolveTemplate(templateId, context, models, options = {}) {
  */
 async function resolveTemplateToDelta(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("Template ID is required");
+        throw new Error("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("Models object is required");
+        throw new Error("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Template with ID ${templateId} not found`);
+        throw new TranslatableError(null, "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {

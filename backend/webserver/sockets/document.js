@@ -245,6 +245,13 @@ class DocumentSocket extends Socket {
                             try {
                                 textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
+                                if (error.key) {
+                                    errors.push({
+                                        message: error.key,
+                                        params: error.params,
+                                    });
+                                    continue;
+                                }
                                 errors.push({
                                     message: "errors.documents.textPositionExtractionFailed",
                                     params: {text: extracted.text, message: error.message},

@@ -1,3 +1,5 @@
+const TranslatableError = require("./TranslatableError");
+
 /**
  * Get the start and end positions of exact text within whole text, along with prefix and suffix
  * @param {string} exactText - The text to find positions for
@@ -8,7 +10,7 @@
 function getTextPositions(exactText, wholeText) {
     const start = wholeText.indexOf(exactText);
     if (start === -1) {
-        throw new Error('Exact text not found in whole text');
+        throw new TranslatableError(null, "errors.documents.exactTextNotFound");
     }
 
     const end = start + exactText.length;

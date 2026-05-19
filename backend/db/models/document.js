@@ -3,6 +3,7 @@ const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const fs = require('fs')
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 
@@ -85,7 +86,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const originalDoc = await Document.findByPk(documentId, {transaction: options.transaction});
             if (!originalDoc) {
-                throw new Error(`Document with id ${documentId} not found`);
+                throw new TranslatableError(null, "errors.documents.withIdNotFound", {documentId});
             }
 
             // Create base document data
@@ -240,12 +241,15 @@ module.exports = (sequelize, DataTypes) => {
                 const doc = await Document.findByPk(documentId, {raw: true});
 
                 if (!doc) {
-                    throw new Error(`Document ${documentId} not found`);
+                    throw new TranslatableError(null, "errors.documents.byIdNotFound", {documentId});
                 }
 
                 return await Document.encodeDocumentFileToBase64(doc);
             } catch (err) {
-                throw new Error(`Error processing document ${documentId}: ${err.message}`)
+                if (err.key) {
+                    throw err;
+                }
+                throw new TranslatableError(null, "errors.documents.processingError", {documentId, message: err.message})
             }
         }
 
@@ -271,14 +275,14 @@ module.exports = (sequelize, DataTypes) => {
             try {
                 await fs.promises.access(docFilePath, fs.constants.F_OK);
             } catch {
-                throw new Error(`File not found for document ${doc.id}: ${docFilePath}`);
+                throw new TranslatableError(null, "errors.documents.fileNotFound", {documentId: doc.id, filePath: docFilePath});
             }
 
             try {
                 const fileBuffer = await fs.promises.readFile(docFilePath);
                 return fileBuffer.toString('base64');
             } catch (err) {
-                throw new Error(`Error reading document file ${doc.id}: ${err.message}`);
+                throw new TranslatableError(null, "errors.documents.readError", {documentId: doc.id, message: err.message});
             }
         }
 

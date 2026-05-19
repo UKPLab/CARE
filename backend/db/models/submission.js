@@ -3,6 +3,7 @@ const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 const fs = require("fs");
 const path = require("path");
+const TranslatableError = require("../../utils/TranslatableError");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -137,7 +138,7 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             if (!originalSubmission) {
-                throw new Error(`Submission with id ${originalSubmissionId} not found`);
+                throw new TranslatableError(null, "errors.submission.notFound", {submissionId: originalSubmissionId});
             }
 
             // Create the copied submission with parentSubmissionId and apply submission overrides
@@ -182,9 +183,10 @@ module.exports = (sequelize, DataTypes) => {
                     );
                     copiedDocuments.push(copiedDoc);
                 } catch (error) {
-                    throw new Error(
-                        `Failed to copy document with id ${originalDoc.id}: ${error.message}`
-                    );
+                    if (error.key) {
+                        throw error;
+                    }
+                    throw new TranslatableError(null, "errors.submission.documentCopyFailed", {documentId: originalDoc.id, message: error.message});
                 }
             }
 
@@ -227,7 +229,7 @@ module.exports = (sequelize, DataTypes) => {
             );
 
             if (Object.keys(submissionFiles).length === 0) {
-                throw new Error(`No valid files found for submission ${submissionId}`);
+                throw new TranslatableError(null, "errors.submission.noValidFiles", {submissionId});
             }
 
             return submissionFiles;

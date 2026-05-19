@@ -1,6 +1,7 @@
 const yauzl = require("yauzl");
 const path = require("path");
 const fs = require("fs");
+const TranslatableError = require("./TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../files`;
 
 /**
@@ -39,7 +40,7 @@ class Validator {
 
                 tempFiles.push(tempFile);
             } catch (error) {
-                throw new Error(`Failed to download file ${file.fileName}: ${error.message}`);
+                throw new TranslatableError(null, "errors.validation.fileDownloadFailed", {fileName: file.fileName, message: error.message});
             }
         }
 
