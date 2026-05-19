@@ -58,7 +58,7 @@
             <div class="d-flex justify-content-between align-items-start">
               <div>
                 <strong>{{ $t('nlp.preprocessing.processStepper.errors.errorLabel') }}</strong> 
-                {{ error.message }}
+                {{ resolveApiMessage(error) }}
               </div>
               <small class="text-muted ms-2">
                 {{ formatTimestamp(error.timestamp) }}
@@ -98,6 +98,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ApplySkillProcessStepper",
@@ -316,6 +317,7 @@ export default {
       const date = new Date(timestamp);
       return date.toLocaleTimeString();
     },
+    resolveApiMessage,
     startElapsedTimer() {
       if (this.elapsedTimer) return;
       this.now = Date.now();

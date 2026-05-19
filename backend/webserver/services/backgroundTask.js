@@ -517,7 +517,8 @@ module.exports = class BackgroundTaskService extends Service {
                 const currentRequest = currentRequestId ? this.backgroundTask.preprocess.requests[currentRequestId] : null;
                 
                 this.backgroundTask.preprocess.errors.push({
-                    message: data.error?.message || 'Unknown error',
+                    message: data.error?.key || data.error?.message || "errors.server.unknownError",
+                    params: data.error?.params,
                     requestId: currentRequestId,
                     submissionId: currentRequest?.submissionId,
                     documentId: currentRequest?.documentId,
