@@ -12,7 +12,6 @@ import AuthStore from './modules/auth.js';
 import AdminStore from './modules/admin.js';
 import SettingsStore from "./modules/settings.js";
 import ServiceStore from "./modules/service.js";
-
 export default createStore({
     modules: {
         auth: AuthStore,
