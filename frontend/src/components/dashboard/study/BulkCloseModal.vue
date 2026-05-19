@@ -12,6 +12,40 @@
         <p class="mb-3 bulk-close-intro">
           Filter and select open studies to close. Only studies in the current project are affected.
         </p>
+        <div
+          v-if="assignableRoles.length > 0"
+          class="bulk-close-role-filters"
+        >
+          <span class="bulk-close-role-filters-label">Filter by study owner roles:</span>
+          <div class="bulk-close-role-checkboxes">
+            <div
+              v-for="role in assignableRoles"
+              :key="role.id"
+              class="form-check form-check-inline"
+            >
+              <input
+                :id="`bulk-close-role-${role.id}`"
+                v-model="selectedRoleIds"
+                class="form-check-input"
+                type="checkbox"
+                :value="role.id"
+              >
+              <label
+                class="form-check-label"
+                :for="`bulk-close-role-${role.id}`"
+              >
+                {{ formatRoleLabel(role.name) }}
+              </label>
+            </div>
+          </div>
+          <p
+            v-if="selectedRoleIds.length > 0"
+            class="text-muted small mb-0 bulk-close-role-hint"
+          >
+            Showing studies whose owner has all selected roles ({{ selectedRoleIds.length }}
+            {{ selectedRoleIds.length === 1 ? "role" : "roles" }}).
+          </p>
+        </div>
         <div class="bulk-close-table-host">
           <BasicTable
             v-model="selectedStudies"
@@ -57,12 +91,12 @@ import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 
 /**
- * Modal for bulk closing studies (optional filters: workflow, study user)
+ * Modal for bulk closing studies (filters: owner roles, workflow, study user)
  * @author: Dennis Zyska
  */
 export default {
   name: "BulkCloseModal",
-  subscribeTable: ["user", "workflow"],
+  subscribeTable: ["user", "workflow", "user_role_matching"],
   components: {
     BasicModal,
     BasicButton,
@@ -71,6 +105,7 @@ export default {
   data() {
     return {
       selectedStudies: [],
+      selectedRoleIds: [],
       notifySessions: false,
       tableOptions: {
         striped: true,
@@ -97,8 +132,65 @@ export default {
             !study.closed
       );
     },
+    assignableRoles() {
+      const fromStore = this.$store.getters["admin/getSystemRoles"] || [];
+      const roles = fromStore.length > 0
+        ? fromStore
+        : (this.$store.getters["table/user_role/getAll"] || []);
+      return roles
+        .filter((role) => role && !role.deleted && role.name)
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    userRoleIdsByUserId() {
+      const map = new Map();
+      const matchings = this.$store.getters["table/user_role_matching/getAll"] || [];
+      for (const matching of matchings) {
+        if (matching.deleted) {
+          continue;
+        }
+        const userId = Number(matching.userId);
+        const roleId = Number(matching.userRoleId);
+        if (!Number.isFinite(userId) || !Number.isFinite(roleId)) {
+          continue;
+        }
+        if (!map.has(userId)) {
+          map.set(userId, new Set());
+        }
+        map.get(userId).add(roleId);
+      }
+      for (const user of this.$store.getters["table/user/getAll"] || []) {
+        if (!Array.isArray(user.roles) || user.roles.length === 0) {
+          continue;
+        }
+        const userId = Number(user.id);
+        if (!Number.isFinite(userId)) {
+          continue;
+        }
+        if (!map.has(userId)) {
+          map.set(userId, new Set());
+        }
+        for (const roleId of user.roles) {
+          const id = Number(roleId);
+          if (Number.isFinite(id)) {
+            map.get(userId).add(id);
+          }
+        }
+      }
+      return map;
+    },
+    roleFilteredStudies() {
+      if (this.selectedRoleIds.length === 0) {
+        return this.openStudiesInProject;
+      }
+      const requiredRoleIds = this.selectedRoleIds.map((id) => Number(id));
+      return this.openStudiesInProject.filter((study) => {
+        const ownerRoleIds = this.userRoleIdsByUserId.get(Number(study.userId)) || new Set();
+        return requiredRoleIds.every((roleId) => ownerRoleIds.has(roleId));
+      });
+    },
     workflowOptions() {
-      return [...new Set(this.openStudiesInProject.map(s => s.workflowId))]
+      return [...new Set(this.roleFilteredStudies.map(s => s.workflowId))]
         .filter(id => id != null)
         .map(id => {
           const wf = this.$store.getters["table/workflow/get"](id);
@@ -110,7 +202,7 @@ export default {
         .sort((a, b) => a.name.localeCompare(b.name));
     },
     studyUserOptions() {
-      return [...new Set(this.openStudiesInProject.map(s => s.userId))]
+      return [...new Set(this.roleFilteredStudies.map(s => s.userId))]
         .filter(id => id != null)
         .map(id => {
           const user = this.$store.getters["table/user/get"](id);
@@ -149,7 +241,7 @@ export default {
       ];
     },
     tableRows() {
-      return this.openStudiesInProject
+      return this.roleFilteredStudies
         .map((study) => {
           const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
           const user = this.$store.getters["table/user/get"](study.userId);
@@ -169,9 +261,21 @@ export default {
         .sort((a, b) => a.name.localeCompare(b.name));
     },
   },
+  watch: {
+    selectedRoleIds() {
+      this.selectedStudies = [];
+    },
+  },
   methods: {
+    formatRoleLabel(roleName) {
+      if (!roleName) {
+        return "";
+      }
+      return roleName.charAt(0).toUpperCase() + roleName.slice(1);
+    },
     open() {
       this.selectedStudies = [];
+      this.selectedRoleIds = [];
       this.notifySessions = false;
       this.$refs.bulkCloseModal.open();
     },
@@ -235,8 +339,29 @@ export default {
 }
 
 .bulk-close-intro,
-.bulk-close-notify {
+.bulk-close-notify,
+.bulk-close-role-filters {
   flex-shrink: 0;
+}
+
+.bulk-close-role-filters {
+  margin-bottom: 1rem;
+}
+
+.bulk-close-role-filters-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.bulk-close-role-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.bulk-close-role-hint {
+  margin-top: 0.5rem;
 }
 
 /* BasicTable fragment: only .table-wrapper scrolls; search, selection line, pagination stay visible */
