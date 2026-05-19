@@ -224,9 +224,10 @@ class DocumentSocket extends Socket {
 
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
-                errors.push(annotationRpcErr.key
-                    ? {message: annotationRpcErr.key, params: annotationRpcErr.params}
-                    : {message: "errors.documents.annotationDeleteFailed", params: {message: annotationRpcErr.message}});
+                this.logger.warn("Failed to delete annotations from PDF", annotationRpcErr);
+                errors.push(annotationRpcErr.key === "errors.documents.annotationDeleteOriginalFailed"
+                    ? {message: annotationRpcErr.key}
+                    : {message: "errors.documents.annotationDeleteFailedGeneric"});
                 fs.writeFileSync(target, data.file);
             }
 

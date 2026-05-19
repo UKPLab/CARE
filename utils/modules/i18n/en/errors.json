@@ -178,6 +178,7 @@
         "noReviewLinkUploadPermission": "You do not have permission to upload review links",
         "annotationDeleteOriginalFailed": "Error deleting annotations: Couldn't delete original annotations",
         "annotationDeleteFailed": "Error deleting annotations: {message}",
+        "annotationDeleteFailedGeneric": "Error deleting annotations.",
         "exactTextNotFound": "Exact text not found in whole text",
         "textPositionExtractionFailed": "Error extracting text positions for text {text}: {message}",
         "annotationAddFailed": "Error adding annotation: {message}",

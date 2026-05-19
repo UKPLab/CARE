@@ -178,6 +178,7 @@
     "noReviewLinkUploadPermission": "Sie haben keine Berechtigung, Review-Links hochzuladen",
     "annotationDeleteOriginalFailed": "Fehler beim Löschen von Annotationen: Ursprüngliche Annotationen konnten nicht gelöscht werden",
     "annotationDeleteFailed": "Fehler beim Löschen von Annotationen: {message}",
+    "annotationDeleteFailedGeneric": "Fehler beim Löschen von Annotationen.",
     "exactTextNotFound": "Exakter Text wurde im Gesamttext nicht gefunden",
     "textPositionExtractionFailed": "Fehler beim Extrahieren von Textpositionen für Text {text}: {message}",
     "annotationAddFailed": "Fehler beim Hinzufügen der Annotation: {message}",
