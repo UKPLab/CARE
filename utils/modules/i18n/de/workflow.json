@@ -177,6 +177,25 @@
     "hideInFrontend": {
       "label": "Workflow im Frontend ausblenden:",
       "help": "Wenn aktiviert, wird dieser Workflow für Benutzer im Frontend ausgeblendet."
+    },
+    "step": {
+      "name": {
+        "label": "Name des Workflow-Schritts:",
+        "placeholder": "Mein Workflow-Schritt"
+      },
+      "stepType": {
+        "label": "Schritttyp auswählen:",
+        "help": "Wählen Sie den Typ des Workflow-Schritts aus."
+      },
+      "allowBackward": {
+        "label": "Rückwärtsnavigation erlauben:",
+        "help": "Erlaubt Benutzern, zu diesem Schritt zurückzugehen."
+      },
+      "configuration": {
+        "label": "Konfiguration:",
+        "placeholder": "JSON-Konfiguration für diesen Schritt eingeben",
+        "help": "Zusätzliche Konfigurationseinstellungen für diesen Workflow-Schritt im JSON-Format."
+      }
     }
   }
 }

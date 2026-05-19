@@ -32,6 +32,19 @@
     "generalHtml": "General HTML Document",
     "studyModal": "Study Modal Document (only usable in studies)"
   },
+  "fields": {
+    "name": {
+      "label": "Name of the document:",
+      "placeholder": "My document"
+    },
+    "hash": {
+      "label": "Hash ID of the document"
+    },
+    "userId": {
+      "label": "User ID of the document"
+    },
+    "publicSwitch": "Is the document published?"
+  },
   "messages": {
     "deleteConfirm": "Are you sure you want to delete the document?",
     "deleteTitle": "Delete Document",

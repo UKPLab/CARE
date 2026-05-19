@@ -33,7 +33,7 @@
           :key="option.id"
           :value="option[options.options.value]"
         >
-          {{ option[options.options.name] }}
+          {{ translateMaybeKey(option[options.options.name]) }}
         </option>
       </select>
     </template>
@@ -215,6 +215,12 @@ export default {
     this.updateData();
   },
   methods: {
+    translateMaybeKey(value) {
+      if (typeof value !== "string") {
+        return value;
+      }
+      return this.$te(value) ? this.$t(value) : value;
+    },
     updateData() {
       // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
       if (this.modelValue === -1) {

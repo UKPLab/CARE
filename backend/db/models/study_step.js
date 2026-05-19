@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "documentId",
-                label: "Select Document",
+                label: "dashboard.documents.fields.selectDoc",
                 type: "select",
                 options: {
                     table: "document",
@@ -54,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
                     additionalOptions: [
                         {
                             type: sequelize.models.document.docTypes.DOC_TYPE_HTML,
-                            name: "New Empty Document",
+                            name: "dashboard.documents.fields.newEmptyDoc",
                             value: null
                         }
                     ]

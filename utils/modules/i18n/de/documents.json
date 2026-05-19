@@ -29,6 +29,19 @@
     "generalHtml": "Allgemeines HTML-Dokument",
     "studyModal": "Study-Modal-Dokument (nur in Studien verwendbar)"
   },
+  "fields": {
+    "name": {
+      "label": "Name des Dokuments:",
+      "placeholder": "Mein Dokument"
+    },
+    "hash": {
+      "label": "Hash-ID des Dokuments"
+    },
+    "userId": {
+      "label": "Benutzer-ID des Dokuments"
+    },
+    "publicSwitch": "Ist das Dokument veröffentlicht?"
+  },
   "messages": {
     "deleteConfirm": "Sind Sie sicher, dass Sie das Dokument löschen möchten?",
     "deleteTitle": "Dokument löschen",

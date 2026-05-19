@@ -7,7 +7,7 @@
         :required="options.required"
         :class="[options.class, { 'is-invalid': parseError }]"
         class="form-control font-monospace"
-        :placeholder="options.placeholder || '{}'"
+        :placeholder="translatedPlaceholder"
         :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
         :rows="options.rows || (options.large ? 20 : 5)"
         @blur="onBlur(blur)"
@@ -47,6 +47,15 @@ export default {
       jsonString: "",
       parseError: null,
     };
+  },
+  computed: {
+    translatedPlaceholder() {
+      const placeholder = this.options.placeholder || "{}";
+      if (typeof placeholder !== "string") {
+        return placeholder;
+      }
+      return this.$te(placeholder) ? this.$t(placeholder) : placeholder;
+    },
   },
   watch: {
     jsonString() {

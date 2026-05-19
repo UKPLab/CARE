@@ -15,6 +15,28 @@
         "assessment": "Assessment",
         "validation": "Validation"
       },
+      "fields": {
+        "name": {
+          "label": "Name",
+          "placeholder": "Configuration name"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Optional description"
+        },
+        "userId": {
+          "label": "User ID"
+        },
+        "hideInFrontend": {
+          "label": "Hide in Frontend"
+        },
+        "type": {
+          "label": "Type"
+        },
+        "content": {
+          "label": "Config (JSON)"
+        }
+      },
       "viewer": {
         "title": "Configuration: {name}"
       },

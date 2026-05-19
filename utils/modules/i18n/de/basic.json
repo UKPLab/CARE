@@ -15,6 +15,28 @@
         "assessment": "Bewertung",
         "validation": "Validierung"
       },
+      "fields": {
+        "name": {
+          "label": "Name",
+          "placeholder": "Konfigurationsname"
+        },
+        "description": {
+          "label": "Beschreibung",
+          "placeholder": "Optionale Beschreibung"
+        },
+        "userId": {
+          "label": "Benutzer-ID"
+        },
+        "hideInFrontend": {
+          "label": "Im Frontend ausblenden"
+        },
+        "type": {
+          "label": "Typ"
+        },
+        "content": {
+          "label": "Konfiguration (JSON)"
+        }
+      },
       "viewer": {
         "title": "Konfiguration: {name}"
       },

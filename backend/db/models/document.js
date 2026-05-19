@@ -24,15 +24,15 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name of the document:",
-                placeholder: "My document",
+                label: "documents.fields.name.label",
+                placeholder: "documents.fields.name.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "hash",
-                label: "Hash ID of the document",
+                label: "documents.fields.hash.label",
                 placeholder: "#",
                 type: "text",
                 required: false,
@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "userId",
-                label: "User ID of the document",
+                label: "documents.fields.userId.label",
                 placeholder: "#",
                 type: "text",
                 required: false,
@@ -48,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "public",
-                label: "Is the document published?",
+                label: "documents.fields.publicSwitch",
                 type: "switch",
                 required: false,
                 default: false
