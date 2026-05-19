@@ -4,6 +4,8 @@ const {inject} = require("../../utils/generic");
 const _ = require("lodash");
 const { genPwdHash, genSalt } = require("../../utils/auth.js");
 
+const MONITOR_USERS_ROOM = "room:monitor:users";
+
 /**
  * Handle user through websocket
  *
@@ -12,6 +14,21 @@ const { genPwdHash, genSalt } = require("../../utils/auth.js");
  * @class UserSocket
  */
 class UserSocket extends Socket {
+
+    /**
+     * Resolves a display name from cache or DB.
+     * @param {number} userId
+     * @returns {Promise<string>}
+     */
+    async resolveUserName(userId) {
+        if (userId in this.server.cache["userName"]) {
+            return this.server.cache["userName"][userId];
+        }
+        const userName = await this.models["user"].getUserName(userId);
+        this.server.cache["userName"][userId] = userName;
+        return userName;
+    }
+
     /**
      * Adds the username as creator_name of a database entry with column creator
      *
@@ -25,13 +42,7 @@ class UserSocket extends Socket {
      */
     async updateCreatorName(data, key = "userId", targetName = "creator_name") {
         return await inject(data, async (userId) => {
-            if (userId in this.server.cache["userName"]) {
-                return this.server.cache["userName"][userId];
-            } else {
-                const userName = await this.models["user"].getUserName(userId);
-                this.server.cache["userName"][userId] = userName;
-                return userName;
-            }
+            return await this.resolveUserName(userId);
         }, targetName, key);
     }
 
@@ -398,7 +409,51 @@ class UserSocket extends Socket {
     }
 
 
+    // Active-user monitoring 
+
+    
+
+    /**
+     * Broadcasts a fresh stats snapshot to all admins currently subscribed to the monitor room.
+     * @param {string|null} excludeSocketId exclude this socket from the stats, because it reaches this function before the socket is removed
+     */
+    async broadcastStats(excludeSocketId = null) {
+        try {
+            const stats = await this.buildStats(excludeSocketId);
+            this.io.to(MONITOR_USERS_ROOM).emit("monitorStatsUpdate", {success: true, data: stats});
+        } catch (error) {
+            this.logger.error("Error broadcasting monitor stats: " + error);
+        }
+    }
+
+    /**
+     * Admin subscribes to the monitor room and receives the current snapshot immediately.
+     * @socketEvent userMonitorSubscribe
+     * @param {Object} data The data object containing the user identifier.
+     * @param {Object} options Additional configuration parameters.
+     */
+    async subscribeToUserMonitor(data, options) {
+        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        this.socket.join(MONITOR_USERS_ROOM);
+        return await this.buildStats();
+    }
+
+    /**
+     * Admin unsubscribes from the monitor room.
+     * @param {Object} data The data object containing the user identifier.
+     * @param {Object} options Additional configuration parameters.
+     * @socketEvent userMonitorUnsubscribe
+     */
+    async unsubscribeFromUserMonitor(data, options) {
+        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        this.socket.leave(MONITOR_USERS_ROOM);
+    }
+
+
     init() {
+        
+        // broadcast user monitor stats on connection
+        this.broadcastStats();
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
         this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
@@ -413,6 +468,8 @@ class UserSocket extends Socket {
         this.createSocket("userGetRoleBasedRights", this.getRoleRights, {}, false);
         this.createSocket("userGetAllRights", this.getAllRights, {}, false);
         this.createSocket("userAssignRoleRights", this.assignRoleRights, {}, true);
+        this.createSocket("userMonitorSubscribe", this.subscribeToUserMonitor, {}, false);
+        this.createSocket("userMonitorUnsubscribe", this.unsubscribeFromUserMonitor, {}, false);
     }
 };
 
