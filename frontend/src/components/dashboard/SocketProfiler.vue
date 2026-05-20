@@ -18,6 +18,13 @@
             :disabled="!isRecording"
             @click="stopActiveRecording"
         />
+        <BasicButton
+            class="btn-outline-info btn-sm"
+            text="Import"
+            title="Import recording from JSON"
+            icon="upload"
+            @click="openImportModal"
+        />
       </div>
     </template>
     <template #body>
@@ -35,6 +42,7 @@
   <StartReplayModal ref="startReplayModal" @replay-start="onReplayStart" />
   <RecordingModal ref="recordingModal" />
   <ReplayResultsModal ref="replayResultsModal" />
+  <ImportRecordingModal ref="importRecordingModal" />
 </template>
 
 <script>
@@ -45,6 +53,8 @@ import RecordingModal from "./socketprofiler/RecordingModal.vue";
 import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
 import StartReplayModal from "./socketprofiler/StartReplayModal.vue";
 import ReplayResultsModal from "./socketprofiler/ReplayResultsModal.vue";
+import { downloadObjectsAs } from "@/assets/utils";
+import ImportRecordingModal from "./socketprofiler/ImportRecordingModal.vue";
 
 export default {
   name: "DashboardSocketProfiler",
@@ -61,6 +71,7 @@ export default {
     StartRecordingModal,
     StartReplayModal,
     ReplayResultsModal,
+    ImportRecordingModal,
   },
   data() {
     return {
@@ -92,6 +103,17 @@ export default {
           },
           title: "Replay recording",
           action: "replayRecording",
+        },
+        {
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-info": true,
+            },
+          },
+          title: "Export recording",
+          action: "exportRecording",
         },
         {
           icon: "pencil",
@@ -141,6 +163,9 @@ export default {
         case "replayRecording":
           this.openReplayModal(data.params);
           break;
+        case "exportRecording":
+          this.exportRecording(data.params);
+          break;
         case "editRecording":
           this.editRecording(data.params);
           break;
@@ -151,6 +176,9 @@ export default {
     },
     openStartModal() {
       this.$refs.startRecordingModal.open();
+    },
+    openImportModal() {
+      this.$refs.importRecordingModal.open();
     },
     stopActiveRecording() {
       const id = this.activeRecordingId;
@@ -169,6 +197,52 @@ export default {
             variant: "danger",
           });
         }
+      });
+    },
+    exportRecording(row) {
+      this.$socket.emit("recordingGetTraces", { id: row.id }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Export failed",
+            message: res.message,
+            variant: "danger",
+          });
+          return;
+        }
+
+        // Pull the full recording row from the store and strip DB-managed
+        // and environment-specific fields that shouldn't travel with an export.
+        const recordingRow = this.$store.getters["table/recording/getAll"]
+          .find(r => r.id === row.id);
+        if (!recordingRow) {
+          this.eventBus.emit("toast", {
+            title: "Export failed",
+            message: "Recording not found in store",
+            variant: "danger",
+          });
+          return;
+        }
+
+        const stripFields = ["id", "createdAt", "updatedAt", "deleted", "deletedAt", "creator_name"];
+        const strip = (obj) => Object.fromEntries(
+          Object.entries(obj).filter(([key]) => !stripFields.includes(key))
+        );
+
+        const traces = (res.data || []).map(strip);
+
+        const payload = {
+          schemaVersion: 1,
+          exportedAt: new Date().toISOString(),
+          recording: strip(recordingRow),
+          traces,
+        };
+
+        downloadObjectsAs(payload, `recording_${row.id}_${Date.now()}`, "json");
+        this.eventBus.emit("toast", {
+          title: "Export successful",
+          message: `Recording exported with ${traces.length} trace(s)`,
+          variant: "success",
+        });
       });
     },
     editRecording(row) {
