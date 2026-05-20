@@ -43,6 +43,24 @@
         </div>
       </div>
 
+      <div class="mb-3">
+        <label class="form-label fw-bold">Ack timeout (ms)</label>
+        <input
+          v-model.number="ackTimeout"
+          type="number"
+          min="100"
+          max="30000"
+          step="100"
+          class="form-control"
+        />
+        <div v-if="!isAckTimeoutValid" class="text-danger small mt-1">
+          Must be between 100 and 30000 ms.
+        </div>
+        <div v-else class="text-muted small mt-1">
+          How long the replay waits for the server to acknowledge each trace before counting it as failed.
+        </div>
+      </div>
+
       <div class="mb-3 form-check">
         <input
           id="continueOnFailure"
@@ -105,6 +123,7 @@ export default {
       timingMode: "fast",
       continueOnFailure: false,
       maxIterations: null,
+      ackTimeout: 2000,
       selectedRecordings: [],
       initialRecordingId: null,
       recordingTableOptions: {
@@ -146,8 +165,11 @@ export default {
     isMaxIterationsValid() {
       return Number.isInteger(this.maxIterations) && this.maxIterations >= 1;
     },
+    isAckTimeoutValid() {
+      return Number.isInteger(this.ackTimeout) && this.ackTimeout >= 100 && this.ackTimeout <= 30000;
+    },
     canStart() {
-      return this.selectedRecordings.length > 0 && this.isMaxIterationsValid;
+      return this.selectedRecordings.length > 0 && this.isMaxIterationsValid && this.isAckTimeoutValid;
     },
     /**
      * Pooled scaling math.
@@ -179,6 +201,7 @@ export default {
       this.timingMode = "fast";
       this.continueOnFailure = false;
       this.maxIterations = null;
+      this.ackTimeout = 2000;
       this.initialRecordingId = recordingId;
 
       // Pre-select the clicked recording. Wait for the table to render
@@ -200,6 +223,7 @@ export default {
         timingMode: this.timingMode,
         continueOnFailure: this.continueOnFailure,
         maxIterations: this.maxIterations,
+        ackTimeout: this.ackTimeout,
       });
       this.$refs.modal.close();
     },

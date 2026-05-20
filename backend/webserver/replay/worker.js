@@ -31,9 +31,10 @@ function emitWithTimeout(client, action, payload, timeoutMs) {
  * @param {Array<Object>} traces - Trace rows (direction: true only), sorted by startTime
  * @param {string} serverUrl - Target server URL
  * @param {string} timingMode - "realtime" to preserve original delays, "fast" to skip them
+ * @param {number} ackTimeout - Max wait time in ms for the server to ack each trace (default 2000)
  * @returns {Promise<Object>} Results with pass/fail counts, errors, latencies, and DB changes
  */
-async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
+async function replayUserTraces(server, user, traces, serverUrl, timingMode, ackTimeout = 2000) {
     const results = {
         userId: user.id,
         userName: user.userName,
@@ -86,7 +87,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode) {
 
             try {
                 const start = Date.now();
-                const ack = await emitWithTimeout(client, trace.action, trace.payload, 2000);
+                const ack = await emitWithTimeout(client, trace.action, trace.payload, ackTimeout);
                 const latency = Date.now() - start;
 
                 // Small delay to let any remaining Refresh events arrive

@@ -38,6 +38,7 @@ class ReplayerSocket extends Socket {
             timingMode = 'fast',
             continueOnFailure = false,
             maxIterations,
+            ackTimeout = 2000,
         } = data;
 
         if (!Array.isArray(recordingIds) || recordingIds.length === 0) {
@@ -57,7 +58,7 @@ class ReplayerSocket extends Socket {
         const serverUrl = `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
 
         const iterations = await this.runScalingTest(
-            pool, serverUrl, timingMode, continueOnFailure, maxIterations
+            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout
         );
 
         return iterations;
@@ -141,7 +142,7 @@ class ReplayerSocket extends Socket {
      * @param {number} maxIterations - Number of iterations to run
      * @returns {Promise<Array<Object>>} Iteration results
      */
-    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations) {
+    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout) {
         const allResults = [];
         const N = pool.sessions.length;
 
@@ -164,7 +165,7 @@ class ReplayerSocket extends Socket {
             const levelResults = await Promise.all(
                 activeSessions.map(session => {
                     const user = pool.userMap.get(session.userId);
-                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode)
+                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout)
                         .then(result => ({
                             ...result,
                             sessionKey: session.sessionKey,

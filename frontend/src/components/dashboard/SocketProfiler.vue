@@ -262,7 +262,7 @@ export default {
     openReplayModal(row) {
       this.$refs.startReplayModal.open(row.id);
     },
-    onReplayStart({ recordingIds, timingMode, continueOnFailure, maxIterations }) {
+    onReplayStart({ recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout }) {
       this.eventBus.emit("toast", {
         title: "Replay started",
         message: `Replaying ${recordingIds.length} recording(s)`,
@@ -273,6 +273,7 @@ export default {
         timingMode,
         continueOnFailure,
         maxIterations,
+        ackTimeout,
       }, (res) => {
         if (res.success) {
           this.$refs.replayResultsModal.open(res.data);
