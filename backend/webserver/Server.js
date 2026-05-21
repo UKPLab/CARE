@@ -489,10 +489,10 @@ module.exports = class Server {
      * @param port
      */
     start(port) {
-            this.logger.debug("Start Webserver...");
-            this.http = this.httpServer.listen(port, () => {
-                this.logger.info("Server started on port " + port);
-            });
+        this.logger.debug("Start Webserver...");
+        this.http = this.httpServer.listen(port, () => {
+            this.logger.info("Server started on port " + port);
+        });
         // Start DB stats scheduler
         try {
             statsScheduler.start(this.db.sequelize, this.logger);
@@ -520,8 +520,8 @@ module.exports = class Server {
         }
         if (this._statsScheduler) {
             this._statsScheduler.stop(this.logger);
-            }
         }
+    }
 
     /**
      * Flush statistics buffers for all connected sockets.
@@ -543,11 +543,11 @@ module.exports = class Server {
             this.logger.error("flushAllStats encountered an error: " + e);
         }
     }
-/**
- * Mark any recordings still in "recording" status as "interrupted".
- * These are recordings whose server died mid-capture the in-memory
- * activeRecordingId is gone but the DB row was never closed out.
- */
+    /**
+     * Mark any recordings still in "recording" status as "interrupted".
+     * These are recordings whose server died mid-capture — the in-memory
+     * activeRecordingId is gone but the DB row was never closed out.
+     */
     async recoverInterruptedRecordings() {
         try {
             const stale = await this.db.models["recording"].findAll({
@@ -569,6 +569,5 @@ module.exports = class Server {
             this.logger.error("Failed to recover interrupted recordings: " + e);
         }
     }
-        
 
 }
