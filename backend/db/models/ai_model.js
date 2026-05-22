@@ -57,6 +57,8 @@ module.exports = (sequelize, DataTypes) => {
         description: DataTypes.TEXT,
         additionalParameters: DataTypes.JSONB,
         enabled: DataTypes.BOOLEAN,
+        costLimit: DataTypes.FLOAT,
+        resetAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
