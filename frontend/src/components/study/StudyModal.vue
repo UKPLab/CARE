@@ -26,8 +26,8 @@
             :data="studySessions"
             :options="sessionTableOptions"
             :buttons="buttons"
-            @action="sessionAction"
             :max-table-height="'60vh'"
+            @action="sessionAction"
         />
       </span>
       <span v-else>
@@ -156,6 +156,9 @@ export default {
   name: "StudyModal",
   subscribeTable: ["study_session"],
   components: {Loader, BasicTable, Modal, Editor},
+  inject: {
+    acceptStats: {default: () => false},
+  },
   props: {
     studyId: {
       type: Number,
@@ -172,9 +175,6 @@ export default {
     }
   },
   emits: ["start", "finish"],
-  inject: {
-    acceptStats: {default: () => false},
-  },
   data() {
     return {
       hash: null,

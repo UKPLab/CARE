@@ -190,6 +190,8 @@ After that, the backend can be started with:
 
     make dev-backend
 
+To enable auto-restart of the backend when server files change, use ``make dev-backend-watch`` (runs ``nodemon``).
+
 To shorten things, both commands can also be executed with ``make dev-build`` at once.
 
 Deployment Build
@@ -231,6 +233,8 @@ More Commands
       - Run frontend (dev) and backend (dev) together. (Unix only)
     * - ``make dev-backend``
       - Run backend in development mode.
+    * - ``make dev-backend-watch``
+      - Run backend in development mode with nodemon (auto-restart on file changes).
     * - ``make dev-frontend``
       - Run frontend in development mode.
     * - ``make dev-build``

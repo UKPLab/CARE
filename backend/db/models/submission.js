@@ -33,6 +33,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "parentSubmissionId",
                 as: "parentSubmission",
             });
+
+            Submission.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
 
         /**

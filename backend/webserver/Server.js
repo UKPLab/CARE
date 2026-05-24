@@ -18,6 +18,7 @@ const RPC = require(path.resolve(__dirname,"./RPC.js"));
 const statsScheduler = require('../db/stats');
 const nodemailer = require('nodemailer');
 const { initializeAuth } = require("./auth");
+const { parseUserAgent } = require("../utils/generic");
 
 /**
  * Defines Express Webserver of Content Server
@@ -353,8 +354,10 @@ module.exports = class Server {
             }
         })
 
-        this.io.on("connection", (socket) => {
+        this.io.on("connection", async (socket) => {
             this.availSockets[socket.id] = {};
+            socket.connectedAt = socket.handshake?.time;
+            socket.browser = parseUserAgent(socket.handshake?.headers["user-agent"]);
             socket.openComponents = {
                 editor: []  // Array to track open documents
             };
@@ -366,11 +369,12 @@ module.exports = class Server {
             socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 
+          
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
                 this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
 
                 await this.availSockets[socket.id][socketName].init();
-            });
+            })
 
             socket.on("disconnect", async (reason) => {
                 try {
@@ -390,7 +394,14 @@ module.exports = class Server {
                         this.logger.warn("Failed to flush stats on disconnect: " + e);
                     }
 
-                    
+                    // Broadcast user monitor stats before cleanup, UserSocket is not available after the socket is disconnected
+                    try {
+                        const userSock = this.availSockets[socket.id]['UserSocket'];
+                        if (userSock) await userSock.broadcastStats(socket.id);
+                    } catch (e) {
+                        this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
+                    }
+
                     delete this.availSockets[socket.id];
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);
