@@ -4,12 +4,62 @@
     "invalidPlaceholdersMessage": "Die folgenden Platzhalter sind für {templateType}-Templates nicht gültig:",
     "invalidPlaceholdersIgnored": "Diese Platzhalter werden ignoriert, wenn das Template verwendet wird.",
     "failedToLoad": "Platzhalter konnten nicht geladen werden",
+    "labels": {
+      "emailGeneral": {
+        "username": "Benutzername des Empfängers",
+        "firstName": "Vorname des Empfängers",
+        "lastName": "Nachname des Empfängers",
+        "link": "Link",
+        "otp": "Einmalcode",
+        "tokenExpiry": "Token-Ablauf"
+      },
+      "emailStudySession": {
+        "username": "Benutzername des Empfängers",
+        "link": "Review-Link"
+      },
+      "emailAssignment": {
+        "username": "Benutzername des Empfängers",
+        "assignmentType": "Assignment-Typ",
+        "assignmentName": "Assignment-Name",
+        "link": "Assignment-Link"
+      },
+      "emailStudyClose": {
+        "username": "Benutzername des Empfängers",
+        "studyName": "Study-Name"
+      }
+    },
+    "descriptions": {
+      "emailGeneral": {
+        "username": "Benutzername des E-Mail-Empfängers.",
+        "firstName": "Vorname des E-Mail-Empfängers.",
+        "lastName": "Nachname des E-Mail-Empfängers.",
+        "link": "Aktionslink in der E-Mail (z. B. für Zurücksetzen oder Verifizierung).",
+        "otp": "Einmaliger Verifizierungscode für E-Mail-basierte Zwei-Faktor-Authentifizierung.",
+        "tokenExpiry": "Ablaufzeit in Stunden oder Minuten, abhängig vom E-Mail-Kontext."
+      },
+      "emailStudySession": {
+        "username": "Submission-Owner, der diese Session-E-Mail erhält.",
+        "link": "Link zum Öffnen des Reviews im Nur-Lesen-Modus."
+      },
+      "emailAssignment": {
+        "username": "Benutzername des zugewiesenen Reviewers.",
+        "assignmentType": "Gibt an, ob das Assignment document oder submission ist.",
+        "assignmentName": "Name des Assignments oder der Study.",
+        "link": "Link zum Starten der zugewiesenen Review-Session."
+      },
+      "emailStudyClose": {
+        "username": "Benutzername des Session-Owners mit offener Session beim Schließen der Study.",
+        "studyName": "Name der geschlossenen Study."
+      }
+    },
     "help": {
       "emailGeneral": {
         "username": "Der Benutzername der Person, die die E-Mail erhält. Bei Passwort-Zurücksetzung, Verifizierung oder Registrierung ist dies der Benutzer, um dessen Konto es in der E-Mail geht.",
         "firstName": "Der Vorname der Person, die die E-Mail erhält.",
         "lastName": "Der Nachname der Person, die die E-Mail erhält.",
-        "link": "Die URL, die in der E-Mail enthalten ist, z. B. für Passwort-Zurücksetzung, Verifizierung oder Registrierung."
+        "link": "Die URL, die in der E-Mail enthalten ist, z. B. für Passwort-Zurücksetzung, Verifizierung oder Registrierung.",
+        "otp": "Einmaliger Verifizierungscode für E-Mail-basierte Zwei-Faktor-Authentifizierung.",
+        "tokenExpiry": "Ablaufzeit in Stunden oder Minuten, abhängig vom E-Mail-Kontext."
       },
       "emailStudySession": {
         "username": "Die Person, die diese E-Mail erhält. Bei Benachrichtigungen zum Start und Abschluss einer Session ist dies immer der Owner der Submission.",

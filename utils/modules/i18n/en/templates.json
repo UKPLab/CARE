@@ -4,12 +4,62 @@
     "invalidPlaceholdersMessage": "The following placeholders are not valid for {templateType} templates:",
     "invalidPlaceholdersIgnored": "These placeholders will be ignored when the template is used.",
     "failedToLoad": "Failed to load placeholders",
+    "labels": {
+      "emailGeneral": {
+        "username": "Recipient username",
+        "firstName": "Recipient first name",
+        "lastName": "Recipient last name",
+        "link": "Link",
+        "otp": "One-time code",
+        "tokenExpiry": "Token expiry"
+      },
+      "emailStudySession": {
+        "username": "Recipient username",
+        "link": "Review link"
+      },
+      "emailAssignment": {
+        "username": "Recipient username",
+        "assignmentType": "Assignment type",
+        "assignmentName": "Assignment name",
+        "link": "Assignment link"
+      },
+      "emailStudyClose": {
+        "username": "Recipient username",
+        "studyName": "Study name"
+      }
+    },
+    "descriptions": {
+      "emailGeneral": {
+        "username": "Username of the email recipient.",
+        "firstName": "First name of the email recipient.",
+        "lastName": "Last name of the email recipient.",
+        "link": "Action link in the email (e.g. reset or verification URL).",
+        "otp": "One-time verification code for email-based two-factor authentication.",
+        "tokenExpiry": "Expiry time in hours or minutes, depending on the email context."
+      },
+      "emailStudySession": {
+        "username": "Submission owner receiving this session email.",
+        "link": "Link to open the review in read-only mode."
+      },
+      "emailAssignment": {
+        "username": "Username of the assigned reviewer.",
+        "assignmentType": "Whether the assignment is document or submission.",
+        "assignmentName": "Name of the assignment or study.",
+        "link": "Link to start the assigned review session."
+      },
+      "emailStudyClose": {
+        "username": "Username of the session owner with an open session at study close.",
+        "studyName": "Name of the study that was closed."
+      }
+    },
     "help": {
       "emailGeneral": {
         "username": "The username of the person receiving the email. For password reset, verification, or registration emails this is the user whose account the email is about.",
         "firstName": "The first name of the person receiving the email.",
         "lastName": "The last name of the person receiving the email.",
-        "link": "The URL included in the email (e.g. password reset, verification, or registration)."
+        "link": "The URL included in the email (e.g. password reset, verification, or registration).",
+        "otp": "One-time verification code for email-based two-factor authentication.",
+        "tokenExpiry": "Expiry time in hours or minutes, depending on the email context."
       },
       "emailStudySession": {
         "username": "The person receiving this email. For session start and session finish notifications this is always the submission owner.",

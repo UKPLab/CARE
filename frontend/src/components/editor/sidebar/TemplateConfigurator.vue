@@ -28,7 +28,7 @@
                   </div>
                   <div class="d-flex flex-column">
                     <div class="d-flex align-items-center">
-                      <h5 class="mb-0 me-1">{{ placeholder.label }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
+                      <h5 class="mb-0 me-1">{{ translateMaybeKey(placeholder.label) }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
                       <FormHelp
                         v-if="placeholder.description"
                         :help="getPlaceholderHelp(placeholder)"
@@ -38,7 +38,7 @@
                       v-if="placeholder.description"
                       class="mb-0 text-muted"
                     >
-                      {{ placeholder.description }}
+                      {{ translateMaybeKey(placeholder.description) }}
                     </p>
                   </div>
                 </div>
@@ -173,34 +173,23 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      translateMaybeKey(value) {
+        if (typeof value !== "string") {
+          return value;
+        }
+        return this.$te(value) ? this.$t(value) : value;
+      },
+      // Help text lives in templates.json; derive key from description key in DB (same slug + placeholderKey).
       getPlaceholderHelp(placeholder) {
-        const type = this.templateType;
-        const key = placeholder.id;
-
-        const longDescriptions = {
-          1: { // Email - General
-            username: this.$t("templates.placeholders.help.emailGeneral.username"),
-            firstName: this.$t("templates.placeholders.help.emailGeneral.firstName"),
-            lastName: this.$t("templates.placeholders.help.emailGeneral.lastName"),
-            link: this.$t("templates.placeholders.help.emailGeneral.link"),
-          },
-          2: { // Email - Study Session
-            username: this.$t("templates.placeholders.help.emailStudySession.username"),
-            link: this.$t("templates.placeholders.help.emailStudySession.link"),
-          },
-          3: { // Email - Assignment
-            username: this.$t("templates.placeholders.help.emailAssignment.username"),
-            assignmentType: this.$t("templates.placeholders.help.emailAssignment.assignmentType"),
-            assignmentName: this.$t("templates.placeholders.help.emailAssignment.assignmentName"),
-            link: this.$t("templates.placeholders.help.emailAssignment.link"),
-          },
-          6: { // Email - Study Close
-            username: this.$t("templates.placeholders.help.emailStudyClose.username"),
-            studyName: this.$t("templates.placeholders.help.emailStudyClose.studyName"),
-          },
-        };
-
-        return (longDescriptions[type] && longDescriptions[type][key]) || placeholder.description;
+        const descriptionKey = placeholder.description;
+        if (typeof descriptionKey !== "string") {
+          return descriptionKey;
+        }
+        const helpKey = descriptionKey.replace(".descriptions.", ".help.");
+        if (this.$te(helpKey)) {
+          return this.$t(helpKey);
+        }
+        return this.translateMaybeKey(descriptionKey);
       },
       initializePlaceholderCounts() {
         const counts = {};
