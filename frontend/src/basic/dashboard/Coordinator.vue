@@ -101,17 +101,18 @@ export default {
       type: String,
       required: true,
     },
+    // Empty defaults: footer uses `textX || $t(...)`; a literal default is always truthy and skips i18n.
     textAdd: {
       type: String,
-      default: "Add",
+      default: "",
     },
     textUpdate: {
       type: String,
-      default: "Update",
+      default: "",
     },
     textCancel: {
       type: String,
-      default: "Cancel",
+      default: "",
     },
     table: {
       type: String,

@@ -181,6 +181,10 @@ export default {
       return this.$store.getters["table/project/getAll"]
         .map((d) => {
           let newD = {...d};
+          if (newD.name === "Default Project") {
+            newD.name = this.$t("dashboard.projects.default.name");
+            newD.description = this.$t("dashboard.projects.default.description");
+          }
           newD.published = {
             text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
             class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
