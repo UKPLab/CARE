@@ -840,91 +840,117 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Build the canonical topic metadata payload stored in document_metadata.
+     * Build the canonical metadata payload stored in document_metadata.
      *
-     * @param {Object} topicAllocation
+     * @param {*} value
      * @param {Object} context
      * @returns {Object}
      */
-    buildTopicMetadataValue(topicAllocation, context = {}) {
-        const topic = topicAllocation.topic ?? null;
-        const extId = topicAllocation.extId ?? null;
+    buildImportedMetadataValue(value, context = {}) {
         return {
-            topic,
-            source: topicAllocation.source || "moodle.ratingallocate.report",
-            extId: extId != null ? Number(extId) : null,
-            assignmentId: context.assignmentId ?? null,
-            moodleAssignmentId: context.moodleAssignmentId ?? null,
-            courseId: context.courseId ?? null,
-            published: Boolean(topicAllocation.published),
+            value,
+            sourceField: context.sourceField ?? null,
+            sourceFile: context.sourceFile ?? null,
             importedAt: new Date().toISOString(),
-            raw: topicAllocation.raw || null,
         };
     }
 
     /**
-     * Normalize one topic allocation row into the backend canonical shape.
-     *
-     * @param {Object} allocation
-     * @returns {Object}
-     */
-    normalizeTopicAllocation(allocation = {}) {
-        const extId = allocation.extId ?? null;
-        const email = allocation.email ?? null;
-        const topic = allocation.topic ?? null;
-
-        return {
-            ...allocation,
-            extId: extId != null ? Number(extId) : null,
-            email: email ? String(email).trim() : null,
-            topic: topic ? String(topic).trim() : null,
-            source: allocation.source || "moodle.ratingallocate.report",
-        };
-    }
-
-    /**
-     * Persist topic metadata for all created documents of one imported submission.
+     * Persist mapped metadata for all documents of one matched submission row.
      *
      * @param {Object} data
      * @param {number[]} data.documentIds
      * @param {number} data.userId
-     * @param {Object} data.topicAllocation
-     * @param {number|null} data.assignmentId
-     * @param {Object} data.moodleOptions
+     * @param {Object} data.row
+     * @param {Object[]} data.mappings
+     * @param {string|null} data.fileName
      * @param {Object} options
-     * @returns {Promise<void>}
+     * @returns {Promise<number>}
      */
-    async attachTopicMetadataToDocuments(data, options = {}) {
-        const metadataValue = this.buildTopicMetadataValue(data.topicAllocation, {
-            assignmentId: data.assignmentId || null,
-            moodleAssignmentId: Number(data.moodleOptions?.assignmentID || 0) || null,
-            courseId: Number(data.moodleOptions?.courseID || 0) || null,
-        });
+    async attachMappedMetadataToDocuments(data, options = {}) {
+        let writes = 0;
 
         for (const documentId of data.documentIds) {
-            await this.models["document_metadata"].upsertByDocumentAndKey({
-                documentId,
-                userId: data.userId,
-                metaKey: "topic",
-                metaValue: metadataValue,
-            }, options);
+            for (const mapping of data.mappings) {
+                if (!Object.prototype.hasOwnProperty.call(data.row, mapping.sourceField)) {
+                    continue;
+                }
+
+                await this.models["document_metadata"].upsertByDocumentAndKey({
+                    documentId,
+                    userId: data.userId,
+                    metaKey: mapping.metaKey,
+                    metaValue: this.buildImportedMetadataValue(data.row[mapping.sourceField], {
+                        sourceField: mapping.sourceField,
+                        sourceFile: data.fileName || null,
+                    }),
+                }, options);
+                writes += 1;
+            }
         }
+
+        return writes;
     }
 
     /**
-     * Import topic allocations for existing submissions in one assignment.
+     * Normalize metadata mappings into a canonical backend shape.
      *
-     * Matching is assignment-scoped and resolves submission owners by Moodle
-     * extId first and then by email. Existing topic metadata for matched
-     * documents is overwritten.
+     * @param {Object[]} mappings
+     * @returns {Object[]}
+     */
+    normalizeMetadataMappings(mappings = []) {
+        return mappings
+            .map((mapping) => ({
+                sourceField: String(mapping?.sourceField || "").trim(),
+                metaKey: String(mapping?.metaKey || "").trim(),
+            }))
+            .filter((mapping) => mapping.sourceField && mapping.metaKey);
+    }
+
+    /**
+     * Resolve a metadata import row against assignment submissions.
+     *
+     * @param {*} rawValue
+     * @param {Map<number, Object>} submissionByExtId
+     * @param {Map<string, Object>} submissionByEmail
+     * @returns {Object|null}
+     */
+    resolveMetadataImportSubmission(rawValue, submissionByExtId, submissionByEmail) {
+        if (rawValue == null) {
+            return null;
+        }
+
+        const stringValue = String(rawValue).trim();
+        if (!stringValue) {
+            return null;
+        }
+
+        const numericValue = Number(stringValue);
+        if (!Number.isNaN(numericValue) && submissionByExtId.has(numericValue)) {
+            return submissionByExtId.get(numericValue);
+        }
+
+        const emailValue = stringValue.toLowerCase();
+        if (submissionByEmail.has(emailValue)) {
+            return submissionByEmail.get(emailValue);
+        }
+
+        return null;
+    }
+
+    /**
+     * Build a generic metadata import plan for one assignment target.
      *
      * @param {Object} data
-     * @param {number} data.assignmentId
-     * @param {Object[]} data.allocations
      * @param {Object} options
      * @returns {Promise<Object>}
      */
-    async buildTopicAllocationPlan(data, options = {}) {
+    async buildMetadataImportPlan(data, options = {}) {
+        const targetType = data.targetType || "assignment";
+        if (targetType !== "assignment") {
+            throw new Error(`Unsupported target type "${targetType}".`);
+        }
+
         const assignmentId = Number(data.assignmentId || 0);
         if (!assignmentId) {
             throw new Error("Assignment ID is required.");
@@ -935,9 +961,19 @@ class DocumentSocket extends Socket {
             throw new Error(`Assignment with id ${assignmentId} not found`);
         }
 
-        const allocations = Array.isArray(data.allocations) ? data.allocations : [];
-        if (allocations.length === 0) {
-            throw new Error("No topic allocations provided.");
+        const primaryKeyField = String(data.primaryKeyField || "").trim();
+        if (!primaryKeyField) {
+            throw new Error("Primary key field is required.");
+        }
+
+        const rows = Array.isArray(data.rows) ? data.rows.filter((row) => row && typeof row === "object") : [];
+        if (rows.length === 0) {
+            throw new Error("No metadata rows provided.");
+        }
+
+        const mappings = this.normalizeMetadataMappings(data.mappings);
+        if (mappings.length === 0) {
+            throw new Error("At least one metadata mapping is required.");
         }
 
         const submissions = await this.models["submission"].findAll({
@@ -951,7 +987,6 @@ class DocumentSocket extends Socket {
 
         const users = await this.models["user"].getAll({transaction: options.transaction});
         const usersById = new Map(users.map((user) => [Number(user.id), user]));
-
         const submissionByExtId = new Map();
         const submissionByEmail = new Map();
 
@@ -989,11 +1024,11 @@ class DocumentSocket extends Socket {
             return acc;
         }, new Map());
 
-        const existingTopicRows = documents.length > 0
+        const existingMetadataRows = documents.length > 0
             ? await this.models["document_metadata"].findAll({
                 where: {
                     documentId: documents.map((document) => document.id),
-                    metaKey: "topic",
+                    metaKey: mappings.map((mapping) => mapping.metaKey),
                     deleted: false,
                 },
                 raw: true,
@@ -1001,78 +1036,100 @@ class DocumentSocket extends Socket {
             })
             : [];
 
-        const topicDocumentIds = new Set(existingTopicRows.map((row) => Number(row.documentId)));
+        const existingByDocumentId = existingMetadataRows.reduce((acc, row) => {
+            const documentId = Number(row.documentId);
+            if (!acc.has(documentId)) {
+                acc.set(documentId, new Set());
+            }
+            acc.get(documentId).add(row.metaKey);
+            return acc;
+        }, new Map());
 
         const matched = [];
         const unmatched = [];
         const overwritten = [];
         const skipped = [];
 
-        for (const rawAllocation of allocations) {
-            const allocation = this.normalizeTopicAllocation(rawAllocation);
-            const extId = allocation.extId != null ? Number(allocation.extId) : null;
-            const email = allocation.email ? String(allocation.email).trim().toLowerCase() : "";
-            const submission = (
-                (extId != null && submissionByExtId.get(extId))
-                || (email && submissionByEmail.get(email))
-                || null
-            );
+        let documentCount = 0;
+        let metadataEntryCount = 0;
+        let overwrittenEntryCount = 0;
+
+        for (const row of rows) {
+            const primaryKeyValue = row[primaryKeyField];
+            const submission = this.resolveMetadataImportSubmission(primaryKeyValue, submissionByExtId, submissionByEmail);
 
             if (!submission) {
                 unmatched.push({
-                    extId: extId,
-                    email: allocation.email || null,
-                    topic: allocation.topic || null,
+                    primaryKeyValue: primaryKeyValue ?? null,
                     message: "No submission owner match found in this assignment.",
                 });
                 continue;
             }
 
             const submissionDocuments = documentsBySubmissionId.get(submission.id) || [];
-
             if (submissionDocuments.length === 0) {
                 skipped.push({
                     submissionId: submission.id,
                     userId: submission.userId,
-                    extId: extId,
-                    email: allocation.email || null,
-                    topic: allocation.topic || null,
+                    primaryKeyValue: primaryKeyValue ?? null,
                     message: "Submission has no documents.",
                 });
                 continue;
             }
 
-            const hasExistingTopic = submissionDocuments.some((document) => topicDocumentIds.has(Number(document.id)));
+            const overwrittenKeys = [];
+            let rowOverwrittenEntryCount = 0;
 
+            for (const document of submissionDocuments) {
+                const existingKeys = existingByDocumentId.get(Number(document.id)) || new Set();
+                for (const mapping of mappings) {
+                    if (existingKeys.has(mapping.metaKey)) {
+                        overwrittenKeys.push(mapping.metaKey);
+                        rowOverwrittenEntryCount += 1;
+                    }
+                }
+            }
+
+            const rowMetadataEntryCount = submissionDocuments.length * mappings.length;
             matched.push({
                 submissionId: submission.id,
                 userId: submission.userId,
-                extId: extId,
-                email: allocation.email || null,
-                topic: allocation.topic || null,
-                topicAllocation: allocation,
+                primaryKeyValue: primaryKeyValue ?? null,
+                row,
                 documentIds: submissionDocuments.map((document) => document.id),
                 documentCount: submissionDocuments.length,
+                metadataEntryCount: rowMetadataEntryCount,
+                overwrittenEntryCount: rowOverwrittenEntryCount,
             });
 
-            if (hasExistingTopic) {
+            if (rowOverwrittenEntryCount > 0) {
                 overwritten.push({
                     submissionId: submission.id,
                     userId: submission.userId,
-                    extId: extId,
-                    email: allocation.email || null,
-                    topic: allocation.topic || null,
-                    message: "Existing topic metadata overwritten.",
+                    primaryKeyValue: primaryKeyValue ?? null,
+                    overwrittenEntryCount: rowOverwrittenEntryCount,
+                    overwrittenMetaKeys: [...new Set(overwrittenKeys)],
+                    message: `${rowOverwrittenEntryCount} metadata entries will be overwritten.`,
                 });
             }
+
+            documentCount += submissionDocuments.length;
+            metadataEntryCount += rowMetadataEntryCount;
+            overwrittenEntryCount += rowOverwrittenEntryCount;
         }
 
         return {
+            targetType,
             assignmentId,
-            matchedCount: matched.length,
-            unmatchedCount: unmatched.length,
-            overwrittenCount: overwritten.length,
-            skippedCount: skipped.length,
+            assignmentName: assignment.name || null,
+            primaryKeyField,
+            mappings,
+            matchedRowCount: matched.length,
+            unmatchedRowCount: unmatched.length,
+            skippedRowCount: skipped.length,
+            documentCount,
+            metadataEntryCount,
+            overwrittenEntryCount,
             matched,
             unmatched,
             overwritten,
@@ -1081,48 +1138,54 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Preview topic allocation import without mutating documents.
+     * Preview metadata import without mutating documents.
      *
      * @param {Object} data
      * @param {Object} options
      * @returns {Promise<Object>}
      */
-    async previewTopicAllocation(data, options = {}) {
-        return await this.buildTopicAllocationPlan(data, options);
+    async previewMetadataImport(data, options = {}) {
+        return await this.buildMetadataImportPlan(data, options);
     }
 
     /**
-     * Import topic allocations for existing submissions in one assignment.
+     * Import metadata rows for existing submissions in one assignment.
      *
      * @param {Object} data
      * @param {Object} options
      * @returns {Promise<Object>}
      */
-    async uploadTopicAllocation(data, options = {}) {
-        const plan = await this.buildTopicAllocationPlan(data, options);
+    async importMetadata(data, options = {}) {
+        const plan = await this.buildMetadataImportPlan(data, options);
 
         for (const match of plan.matched) {
-            await this.attachTopicMetadataToDocuments({
+            await this.attachMappedMetadataToDocuments({
                 documentIds: match.documentIds,
                 userId: match.userId,
-                topicAllocation: match.topicAllocation,
-                assignmentId: plan.assignmentId,
-                moodleOptions: data.moodleOptions || {},
+                row: match.row,
+                mappings: plan.mappings,
+                fileName: data.fileName || null,
             }, options);
         }
 
         return {
-            matchedCount: plan.matchedCount,
-            unmatchedCount: plan.unmatchedCount,
-            overwrittenCount: plan.overwrittenCount,
-            skippedCount: plan.skippedCount,
+            targetType: plan.targetType,
+            assignmentId: plan.assignmentId,
+            assignmentName: plan.assignmentName,
+            primaryKeyField: plan.primaryKeyField,
+            mappings: plan.mappings,
+            matchedRowCount: plan.matchedRowCount,
+            unmatchedRowCount: plan.unmatchedRowCount,
+            skippedRowCount: plan.skippedRowCount,
+            documentCount: plan.documentCount,
+            metadataEntryCount: plan.metadataEntryCount,
+            overwrittenEntryCount: plan.overwrittenEntryCount,
             matched: plan.matched.map((entry) => ({
                 submissionId: entry.submissionId,
                 userId: entry.userId,
-                extId: entry.extId,
-                email: entry.email,
-                topic: entry.topic,
+                primaryKeyValue: entry.primaryKeyValue,
                 documentCount: entry.documentCount,
+                metadataEntryCount: entry.metadataEntryCount,
             })),
             unmatched: plan.unmatched,
             overwritten: plan.overwritten,
@@ -1241,15 +1304,16 @@ class DocumentSocket extends Socket {
                 const topicAllocation = submission.topicAllocation || null;
                 if (topicAllocation) {
                     try {
-                        await this.attachTopicMetadataToDocuments({
+                        const topicValue = topicAllocation.topicName ?? topicAllocation.topic ?? null;
+                        await this.attachMappedMetadataToDocuments({
                             documentIds,
                             userId: submission.userId,
-                            topicAllocation,
-                            assignmentId,
-                            moodleOptions: data.options,
+                            row: { topic: topicValue },
+                            mappings: [{ sourceField: "topic", metaKey: "topic" }],
+                            fileName: null,
                         }, {transaction});
                         topicStatus = "attached";
-                        topicMessage = `Attached topic "${topicAllocation.topicName}".`;
+                        topicMessage = `Attached topic "${topicValue}".`;
                     } catch (metadataError) {
                         topicStatus = "warning";
                         topicMessage = `Imported submission, but failed to attach topic metadata: ${metadataError.message}`;
@@ -1918,8 +1982,8 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("documentUploadSingleSubmission", this.uploadSingleSubmission, {}, true);
-        this.createSocket("documentPreviewTopicAllocation", this.previewTopicAllocation, {}, false);
-        this.createSocket("documentImportTopicAllocation", this.uploadTopicAllocation, {}, true);
+        this.createSocket("documentPreviewMetadataImport", this.previewMetadataImport, {}, false);
+        this.createSocket("documentImportMetadata", this.importMetadata, {}, true);
     }
 };
 
