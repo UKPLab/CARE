@@ -251,6 +251,7 @@
           case 4: return "Document - General";
           case 5: return "Document - Study";
           case 6: return "Email - Study Close";
+          case 7: return "Prompt";
           default: return "Choose Type"
         }
       },
@@ -318,12 +319,17 @@
         this.$refs.detachModal.open(template, (t) => {
           this.$socket.emit("templateDetach", { templateId: t.id }, (result) => {
             if (result.success) {
-              this.eventBus.emit("toast", {
-                title: "Template detached",
-                message: "You can now edit this template",
-                variant: "success",
+              this.$socket.emit("appData", {
+                table: "template",
+                filter: [{ key: "id", value: t.id }],
+              }, () => {
+                this.eventBus.emit("toast", {
+                  title: "Template detached",
+                  message: "You can now edit this template",
+                  variant: "success",
+                });
+                this.$router.push(`/template/${t.id}`);
               });
-              this.$router.push(`/template/${t.id}`);
             } else {
               this.eventBus.emit("toast", {
                 title: "Detach failed",
