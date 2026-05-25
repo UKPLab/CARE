@@ -20,22 +20,22 @@ module.exports = (sequelize, DataTypes) => {
                 default: "info",
                 options: [
                     {
-                        name: "info",
+                        name: "tags.tag.form.colorCode.options.info",
                         value: "info",
                         class: "border border-info"
                     },
                     {
-                        name: "warning",
+                        name: "tags.tag.form.colorCode.options.warning",
                         value: "warning",
                         class: "border border-warning"
                     },
                     {
-                        name: "success",
+                        name: "tags.tag.form.colorCode.options.success",
                         value: "success",
                         class: "border-2 border-success"
                     },
                     {
-                        name: "danger",
+                        name: "tags.tag.form.colorCode.options.danger",
                         value: "danger",
                         class: "border-2 border-danger"
                     },
