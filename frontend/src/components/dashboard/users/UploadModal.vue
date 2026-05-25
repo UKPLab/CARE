@@ -157,7 +157,7 @@ export default {
       return new Promise((resolve, reject) => {
         Papa.parse(file, {
           header: true,
-          complete: function (results) {
+          complete: (results) => {
             const {data: rows, meta} = results;
             const {fields: fileHeaders} = meta;
             const requiredHeaders = ["extId", "userName", "password"];
@@ -188,7 +188,7 @@ export default {
               resolve(rows);
             }
           },
-          error: function (error) {
+          error: (error) => {
             reject([this.$t('errors.csv.parseError', { message: error.message })]);
           },
         });

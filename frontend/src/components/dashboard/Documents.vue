@@ -370,7 +370,7 @@ export default {
           this.$t('documents.messages.deleteTitle'),
           this.$t('documents.messages.deleteConfirm'),
           warning,
-          function (val) {
+          (val) => {
             if (val) {
               this.$socket.emit("appDataUpdate", {
                 table: "document",

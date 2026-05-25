@@ -214,7 +214,7 @@ export default {
         this.$t('tags.messages.deleteTitle'),
         this.$t('tags.messages.deleteConfirm'),
         "",
-        function (val) {
+        (val) => {
           if (val) {
             this.$socket.emit("appDataUpdate", {
               table: "tag_set",
@@ -246,7 +246,7 @@ export default {
         this.$t('tags.messages.publishTitle'),
         this.$t('tags.messages.publishConfirm'),
         "",
-        function (val) {
+        (val) => {
           if (val) {
             this.$socket.emit("appDataUpdate", {
               table: "tag_set",

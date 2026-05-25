@@ -124,6 +124,8 @@
     },
     "enabled": "Enabled",
     "disabled": "Disabled",
+    "online": "Online",
+    "offline": "Offline",
     "noDescription": "No description",
     "pagination": "Pagination",
     "first": "First",

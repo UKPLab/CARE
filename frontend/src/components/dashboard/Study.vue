@@ -605,7 +605,7 @@ export default {
           this.$t('studies.messages.deleteTitle'),
           this.$t('studies.messages.deleteConfirm'),
           warning,
-          function (val) {
+          (val) => {
             if (val) {
               this.$socket.emit("appDataUpdate", {
                 table: "study",

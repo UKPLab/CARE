@@ -219,8 +219,8 @@ export default {
           ...this.formatUserData(user),
           isActive,
           activeIndicator: isActive
-            ? { icon: 'circle-fill', color: '#198754', title: this.$t('users.online') }
-            : { icon: 'circle', color: '#6c757d', title: this.$t('users.offline') },
+            ? { icon: 'circle-fill', color: '#198754', title: this.$t('common.online') }
+            : { icon: 'circle', color: '#6c757d', title: this.$t('common.offline') },
         };
       });
     },
