@@ -27,13 +27,13 @@
         <input
           class="form-check-input"
           type="checkbox"
-          id="includeNonConsenting"
-          v-model="includeNonConsentingEditsModel"
+          id="excludeNonConsenting"
+          v-model="excludeNonConsentingEditsModel"
         >
-        <label class="form-check-label" for="includeNonConsenting">
-          <strong>Include edits from non-consenting users</strong>
+        <label class="form-check-label" for="excludeNonConsenting">
+          <strong>Exclude edits from non-consenting users</strong>
           <small class="text-muted ms-2">
-            Enable this to include all edits regardless of consent.
+            Enable this to only include edits from users who have given consent.
           </small>
         </label>
       </div>
@@ -49,12 +49,12 @@ export default {
       type: Array,
       default: () => [0, 1, 2, 4]
     },
-    includeNonConsentingEdits: {
+    excludeNonConsentingEdits: {
       type: Boolean,
       default: false
     }
   },
-  emits: ['update:selectedTypes', 'update:includeNonConsentingEdits'],
+  emits: ['update:selectedTypes', 'update:excludeNonConsentingEdits'],
   data() {
     return {
       typeOptions: [
@@ -70,9 +70,9 @@ export default {
       get() { return this.selectedTypes; },
       set(value) { this.$emit('update:selectedTypes', value); }
     },
-    includeNonConsentingEditsModel: {
-      get() { return this.includeNonConsentingEdits; },
-      set(value) { this.$emit('update:includeNonConsentingEdits', value); }
+    excludeNonConsentingEditsModel: {
+      get() { return this.excludeNonConsentingEdits; },
+      set(value) { this.$emit('update:excludeNonConsentingEdits', value); }
     },
     hasEditorTypes() {
       return this.selectedTypes.some(t => t === 1 || t === 2);
@@ -80,7 +80,7 @@ export default {
   },
   watch: {
     hasEditorTypes(val) {
-      if (!val) this.$emit('update:includeNonConsentingEdits', false);
+      if (!val) this.$emit('update:excludeNonConsentingEdits', false);
     }
   }
 }

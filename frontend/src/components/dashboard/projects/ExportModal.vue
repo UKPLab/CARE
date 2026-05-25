@@ -99,7 +99,7 @@
       <div v-else-if="dataSelection.exportType === 'documents'">
         <StepOptionsDocuments
           v-model:selectedTypes="selectedDocumentTypes"
-          v-model:includeNonConsentingEdits="includeNonConsentingEdits"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
         />
         <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
       </div>
@@ -180,7 +180,7 @@ export default {
       generateAliases:false,
       fakerSeed: 846569412,
       selectedDocumentTypes: [0, 1, 2, 4],
-      includeNonConsentingEdits: false
+      excludeNonConsentingEdits: false
     };
   },
   computed: {
@@ -311,6 +311,12 @@ export default {
     },
     hide() {
       this.filter = [];
+      this.userSelection = [];
+      this.generateAliases = false;
+      this.fakerSeed = 846569412;
+      this.selectedDocumentTypes = [0, 1, 2, 4];
+      this.excludeNonConsentingEdits = false;
+      this.wait = false;
     },
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
@@ -407,7 +413,7 @@ export default {
           exportType: 'documents',
           userIds: selectedUserIds,
           documentTypes: this.selectedDocumentTypes,
-          includeNonConsentingEdits: this.includeNonConsentingEdits,
+          includeNonConsentingEdits: !this.excludeNonConsentingEdits,
         });
 
         this.$refs.exportStepper.close();

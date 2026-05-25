@@ -5,7 +5,7 @@ const { faker } = require('@faker-js/faker');
 const JSZip = require('jszip');
 const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
-const { dbToDelta } = require('editor-delta-conversion');
+const { dbToDelta, deltaToPlainText, deltaToHtml } = require('editor-delta-conversion');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
 module.exports = function (server) {
@@ -322,60 +322,6 @@ module.exports = function (server) {
     }
 
     /**
-     * Converts a Quill Delta object to plain text by concatenating all insert strings.
-     * @param {Object} delta - A Quill Delta object with an `ops` array.
-     * @returns {string} - The plain text content of the delta.
-     */
-    function deltaToText(delta) {
-        return delta.ops
-            .map(op => (typeof op.insert === 'string' ? op.insert : ''))
-            .join('');
-    }
-
-    /**
-     * Converts a Quill Delta object to an HTML string.
-     * Each newline in the delta marks the end of a paragraph and is flushed as a <p> tag.
-     * Supports bold, italic, underline, and link attributes.
-     * @param {Object} delta - A Quill Delta object with an `ops` array.
-     * @returns {string} - A full HTML document string.
-     */
-    function deltaToHtml(delta) {
-        let html = '';
-        let lineBuffer = [];
-
-        const flushLine = () => {
-            html += '<p>' + (lineBuffer.join('') || '<br>') + '</p>\n';
-            lineBuffer = [];
-        };
-
-        for (const op of delta.ops) {
-            if (typeof op.insert !== 'string') continue;
-
-            const lines = op.insert.split('\n');
-            lines.forEach((segment, i) => {
-                if (segment.length > 0) {
-                    let content = segment
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-
-                    if (op.attributes) {
-                        if (op.attributes.bold)      content = `<strong>${content}</strong>`;
-                        if (op.attributes.italic)    content = `<em>${content}</em>`;
-                        if (op.attributes.underline) content = `<u>${content}</u>`;
-                        if (op.attributes.link)      content = `<a href="${op.attributes.link}">${content}</a>`;
-                    }
-                    lineBuffer.push(content);
-                }
-                if (i < lines.length - 1) flushLine();
-            });
-        }
-        if (lineBuffer.length > 0) flushLine();
-
-        return `<!DOCTYPE html>\n<html>\n<body>\n${html}</body>\n</html>`;
-    }
-
-    /**
      * Exports a single document to the archive based on its type.
      * - Type 0 (PDF): exports annotations, comments (with votes), document_data, and the PDF file.
      * - Type 1 (HTML) / Type 2 (Modal): exports edits, plain text, HTML, and document_data.
@@ -387,7 +333,7 @@ module.exports = function (server) {
      * @returns {Promise<void>}
      */
     async function processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, archive) {
-        // document_data for all types, at the doc level
+        // document_data for all types, at the doc level.
         const documentData = await server.db.models.document_data.findAll({
             where: { documentId: doc.id, deleted: false },
             raw: true,
@@ -398,9 +344,18 @@ module.exports = function (server) {
 
         switch (doc.type) {
             case 0: { // PDF
+                // Annotations live on study-session copies (parentDocumentId = doc.id),
+                // not on the root document. Collect all copy IDs and query across them.
+                const copies = await server.db.models.document.findAll({
+                    where: { parentDocumentId: doc.id },
+                    attributes: ['id'],
+                    raw: true,
+                });
+                const allDocIds = [doc.id, ...copies.map(c => c.id)];
+
                 const [annotations, comments] = await Promise.all([
-                    server.db.models.annotation.findAll({ where: { documentId: doc.id }, raw: true }),
-                    server.db.models.comment.findAll({ where: { documentId: doc.id }, raw: true }),
+                    server.db.models.annotation.findAll({ where: { documentId: allDocIds }, raw: true }),
+                    server.db.models.comment.findAll({ where: { documentId: allDocIds }, raw: true }),
                 ]);
                 const commentVotes = await server.db.models.comment_vote.findAll({
                     where: { commentId: comments.map(c => c.id), deleted: false },
@@ -410,12 +365,16 @@ module.exports = function (server) {
                     ...c,
                     votes: commentVotes.filter(v => v.commentId === c.id),
                 }));
+
+                // All annotations and comments go into one file each.
+                // studySessionId is already a field on every row so the consumer can filter by session.
                 if (annotations.length > 0) {
                     archive.append(JSON.stringify(annotations, null, 2), { name: `${docFolder}/annotations.json` });
                 }
                 if (commentsWithVotes.length > 0) {
                     archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
                 }
+
                 const pdfPath = path.join(storageDir, `${doc.hash}.pdf`);
                 if (fs.existsSync(pdfPath)) {
                     archive.file(pdfPath, { name: `${docFolder}/document.pdf` });
@@ -472,7 +431,7 @@ module.exports = function (server) {
                     const delta = dbToDelta(edits);
 
                     // skip empty content
-                    const text = deltaToText(delta);
+                    const text = deltaToPlainText(delta);
                     if (!text.trim()) continue;
 
                     const subFolder = isTemplate

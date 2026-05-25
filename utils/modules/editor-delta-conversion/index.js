@@ -134,8 +134,58 @@ function deltaToPlainText(deltaOrOps) {
         .join("");
 }
 
+/**
+ * Converts a Quill Delta object to an HTML string.
+ * Each newline in the delta marks the end of a paragraph and is flushed as a <p> tag.
+ * Supports bold, italic, underline, and link attributes.
+ *
+ * @param {object|array} deltaOrOps - Quill Delta ({ ops: [...] }) or ops array
+ * @returns {string} A full HTML document string
+ */
+function deltaToHtml(deltaOrOps) {
+    if (!deltaOrOps) return "";
+    const ops = Array.isArray(deltaOrOps)
+        ? deltaOrOps
+        : (deltaOrOps.ops || []);
+
+    let html = '';
+    let lineBuffer = [];
+
+    const flushLine = () => {
+        html += '<p>' + (lineBuffer.join('') || '<br>') + '</p>\n';
+        lineBuffer = [];
+    };
+
+    for (const op of ops) {
+        if (typeof op.insert !== 'string') continue;
+
+        const lines = op.insert.split('\n');
+        lines.forEach((segment, i) => {
+            if (segment.length > 0) {
+                let content = segment
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                if (op.attributes) {
+                    if (op.attributes.bold)      content = `<strong>${content}</strong>`;
+                    if (op.attributes.italic)    content = `<em>${content}</em>`;
+                    if (op.attributes.underline) content = `<u>${content}</u>`;
+                    if (op.attributes.link)      content = `<a href="${op.attributes.link}">${content}</a>`;
+                }
+                lineBuffer.push(content);
+            }
+            if (i < lines.length - 1) flushLine();
+        });
+    }
+    if (lineBuffer.length > 0) flushLine();
+
+    return `<!DOCTYPE html>\n<html>\n<body>\n${html}</body>\n</html>`;
+}
+
 module.exports = {
     deltaToDb: deltaToDb,
     dbToDelta: dbToDelta,
     deltaToPlainText: deltaToPlainText,
+    deltaToHtml: deltaToHtml,
 }

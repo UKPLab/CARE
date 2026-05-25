@@ -58,7 +58,6 @@ export default {
       }
     },
     hasPrivateInfoRight() {
-      // to know if the user should be able to see the full names or not
       return this.$store.getters["auth/checkRight"]('frontend.dashboard.studies.view.userPrivateInfo');
     },
     users() {
@@ -67,64 +66,71 @@ export default {
     documents() {
       return this.$store.getters["table/document/getAll"];
     },
-    // the data that should be displayed in the table
     userTableData() {
       const currentUser = this.$store.getters["auth/getUser"];
-      
-      if (!this.documents || !this.users || !this.projectId) {
-        return [];
-      }
 
-      const projectDocs = this.documents.filter(doc => doc.projectId == this.projectId && doc.submissionId && !doc.parentSubmissionId);
+      if (!this.documents || !this.users || !this.projectId) return [];
+
       const submissionsByUser = {};
-      
-      projectDocs.forEach(doc => {
-        const uid = doc.userId;
-        if (!uid) return;
 
+      const getOrCreateRow = (uid) => {
+        if (submissionsByUser[uid]) return submissionsByUser[uid];
         let student = this.users.find(u => u.id === uid);
-        if (!student && currentUser && currentUser.id === uid) {
-          student = currentUser;
-        }
+        if (!student && currentUser && currentUser.id === uid) student = currentUser;
+        if (!student) return null;
+        submissionsByUser[uid] = {
+          userId: uid,
+          userName: `${student.userName}`,
+          studentName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
+          count: 0,
+          countedSubmissions: new Set(),
+          acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
+          lastSubmissionDate: null,
+        };
+        return submissionsByUser[uid];
+      };
 
-        if (student) {
-          const currentDocDate = new Date(doc.createdAt);
-
-          if (!submissionsByUser[uid]) {
-            submissionsByUser[uid] = {
-              userId: uid,
-              userName: `${student.userName}`,
-              studentName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
-              count: 0,
-              countedSubmissions: new Set(),
-              acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
-              lastSubmissionDate: currentDocDate
-            };
+      if (this.exportType === 'submissions') {
+        const submissionDocs = this.documents.filter(doc =>
+          doc.projectId == this.projectId &&
+          doc.submissionId &&
+          !doc.parentDocumentId &&
+          !doc.deleted
+        );
+        submissionDocs.forEach(doc => {
+          const row = getOrCreateRow(doc.userId);
+          if (!row) return;
+          if (!row.countedSubmissions.has(doc.submissionId)) {
+            row.countedSubmissions.add(doc.submissionId);
+            row.count++;
           }
-
-          if (this.exportType === 'submissions') {
-            // count unique submissions by submissionId
-            if (doc.submissionId && !submissionsByUser[uid].countedSubmissions?.has(doc.submissionId)) {
-              if (!submissionsByUser[uid].countedSubmissions) {
-                submissionsByUser[uid].countedSubmissions = new Set();
-              }
-              submissionsByUser[uid].countedSubmissions.add(doc.submissionId);
-              submissionsByUser[uid].count++;
-            }
-          } else {
-            submissionsByUser[uid].count++;
-          }
-
-          if (currentDocDate > submissionsByUser[uid].lastSubmissionDate) {
-            submissionsByUser[uid].lastSubmissionDate = currentDocDate;
-          }
-        }
-      });
+          const d = new Date(doc.createdAt);
+          if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
+        });
+      } else {
+        const exportableTypes = [0, 1, 2, 4];
+        const exportDocs = this.documents.filter(doc =>
+          doc.projectId == this.projectId &&
+          doc.submissionId &&
+          !doc.parentDocumentId &&
+          !doc.deleted &&
+          exportableTypes.includes(doc.type)
+        );
+        exportDocs.forEach(doc => {
+          const row = getOrCreateRow(doc.userId);
+          if (!row) return;
+          row.count++;
+          const d = new Date(doc.createdAt);
+          if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
+        });
+      }
 
       return Object.values(submissionsByUser).map(submission => ({
         ...submission,
         id: submission.userId,
-        lastSubmissionDate: submission.lastSubmissionDate.toISOString().split('T')[0]
+        lastSubmissionDate: submission.lastSubmissionDate
+          ? submission.lastSubmissionDate.toISOString().split('T')[0]
+          : '',
       }));
     },
     userTable() {
