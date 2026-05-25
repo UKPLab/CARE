@@ -68,7 +68,7 @@ module.exports = function (server) {
 
             const users = await server.db.models.user.findAll({ where: { id: userIds } });
 
-            if (userIds.length === 0 && exportType != 'documents') {
+            if (userIds.length === 0) {
                 console.warn(`Export aborted: No authorized users to export.`);
                 return res.status(400).send("No authorized users to export.");
             }
@@ -367,7 +367,6 @@ module.exports = function (server) {
                 }));
 
                 // All annotations and comments go into one file each.
-                // studySessionId is already a field on every row so the consumer can filter by session.
                 if (annotations.length > 0) {
                     archive.append(JSON.stringify(annotations, null, 2), { name: `${docFolder}/annotations.json` });
                 }
@@ -445,7 +444,7 @@ module.exports = function (server) {
                 break;
             }
 
-            case 4: { // ZIP — unchanged
+            case 4: { // ZIP
                 const zipPath = path.join(storageDir, `${doc.hash}.zip`);
                 if (fs.existsSync(zipPath)) {
                     archive.file(zipPath, { name: `${docFolder}/document.zip` });
