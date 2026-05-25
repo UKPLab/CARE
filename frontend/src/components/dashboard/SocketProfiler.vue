@@ -268,14 +268,10 @@ export default {
         message: `Replaying ${recordingIds.length} recording(s)`,
         variant: "info",
       });
-      this.$socket.emit("replayRun", {
-        recordingIds,
-        timingMode,
-        continueOnFailure,
-        maxIterations,
-        ackTimeout,
-      }, (res) => {
+      const runConfig = { recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout };
+      this.$socket.emit("replayRun", runConfig, (res) => {
         if (res.success) {
+          this.downloadReplayResults(res.data, runConfig);
           this.$refs.replayResultsModal.open(res.data);
         } else {
           this.eventBus.emit("toast", {
@@ -285,6 +281,40 @@ export default {
           });
         }
       });
+    },
+    /**
+     * Auto-download the replay run as a JSON file. The file captures both the
+     * full iteration results and the input configuration that produced them,
+     * so a saved run can be reviewed later without having to remember which
+     * settings were used.
+     */
+    downloadReplayResults(results, runConfig) {
+      const allRecordings = this.$store.getters["table/recording/getAll"] || [];
+      const recordingNames = runConfig.recordingIds.map((id) => {
+        const r = allRecordings.find((rec) => rec.id === id);
+        return r ? r.name : `recording_${id}`;
+      });
+
+      // Build a filesystem-safe slug from the recording names; if there's
+      // more than one recording, summarise as "N-recordings" so the filename
+      // doesn't balloon.
+      const slug = recordingNames.length === 1
+        ? recordingNames[0].replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 60)
+        : `${recordingNames.length}-recordings`;
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `replay_results_${timestamp}_${slug}`;
+
+      const payload = {
+        schemaVersion: 1,
+        completedAt: new Date().toISOString(),
+        runConfig: {
+          ...runConfig,
+          recordingNames,
+        },
+        results,
+      };
+      downloadObjectsAs(payload, filename, "json");
     },
     deleteRecording(row) {
       this.$socket.emit("appDataUpdate", {
