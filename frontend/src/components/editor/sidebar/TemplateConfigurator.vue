@@ -9,7 +9,7 @@
         These placeholders will be ignored when the template is used.
       </div>
   
-      <div class="card shadow mb-4 configurator">
+      <div class="card shadow mb-0 configurator">
         <div class="card-header bg-white">
           <h3 class="card-title fw-bold mb-0">Placeholders</h3>
         </div>
@@ -91,6 +91,7 @@
           4: { placeholders: [] }, // Document - General (no placeholders)
           5: { placeholders: [] }, // Document - Study (no placeholders)
           6: { placeholders: [] }, // Email - Study Close
+          7: { placeholders: [] }, // Prompt
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
@@ -105,7 +106,15 @@
       },
       templateTypeName() {
         if (!this.templateType) return "Unknown";
-        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close" };
+        const types = {
+          1: "Email - General",
+          2: "Email - Study Session",
+          3: "Email - Assignment",
+          4: "Document - General",
+          5: "Document - Study",
+          6: "Email - Study Close",
+          7: "Prompt",
+        };
         return types[this.templateType] || "Unknown";
       },
       availablePlaceholders() {
@@ -135,7 +144,6 @@
       if (this.templateId && this.templateId > 0) {
         this.$socket.emit("templatePlaceholderGetAll", { templateId: this.templateId }, (result) => {
           if (result.success){
-            // Always update placeholders from backend (even if empty array for document types)
             const fetchedPlaceholders = (result.data || []).map(ph => ({
               id: ph.placeholderKey,
               text: `~${ph.placeholderKey}~`,
@@ -188,6 +196,17 @@
           6: { // Email - Study Close
             username: "The username of the session owner who had an open session when the study was closed.",
             studyName: "The name of the study that was closed.",
+          },
+          7: { // Prompt
+            pdfText: "Text from the PDF in the current context.",
+            editorText: "Text from the current editor document in the current context.",
+            assessmentResult: "The saved rubric from the Assessment sidebar for this document and step.",
+            inlineComments: "Structured comments and annotations for this document and step.",
+            nlpAssessmentSuggestion: "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",
+            previousAssessmentResult: "The saved rubric from the previous step when carry-over is configured.",
+            assessmentConfiguration: "The assessment rubric configuration used in this step.",
+            submissionFiles: "Primary submission text plus metadata for additional submission files.",
+            studyContext: "Basic metadata from the current study, step, and document context.",
           },
         };
 
@@ -269,6 +288,10 @@
   
   .list-group-item {
     padding: 0.825rem;
+  }
+
+  .list-group-item:last-child {
+    padding-bottom: 1.5rem;
   }
   
   .icon-container {
