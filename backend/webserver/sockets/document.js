@@ -908,14 +908,28 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Normalize the primary key mapping into a canonical backend shape.
+     *
+     * @param {Object} primaryKeyMapping
+     * @returns {Object}
+     */
+    normalizePrimaryKeyMapping(primaryKeyMapping = {}) {
+        return {
+            sourceField: String(primaryKeyMapping?.sourceField || "").trim(),
+            targetField: String(primaryKeyMapping?.targetField || "").trim(),
+        };
+    }
+
+    /**
      * Resolve a metadata import row against assignment submissions.
      *
      * @param {*} rawValue
+     * @param {string} targetField
      * @param {Map<number, Object>} submissionByExtId
      * @param {Map<string, Object>} submissionByEmail
      * @returns {Object|null}
      */
-    resolveMetadataImportSubmission(rawValue, submissionByExtId, submissionByEmail) {
+    resolveMetadataImportSubmission(rawValue, targetField, submissionByExtId, submissionByEmail) {
         if (rawValue == null) {
             return null;
         }
@@ -925,14 +939,18 @@ class DocumentSocket extends Socket {
             return null;
         }
 
-        const numericValue = Number(stringValue);
-        if (!Number.isNaN(numericValue) && submissionByExtId.has(numericValue)) {
-            return submissionByExtId.get(numericValue);
+        if (targetField === "extId") {
+            const numericValue = Number(stringValue);
+            if (!Number.isNaN(numericValue) && submissionByExtId.has(numericValue)) {
+                return submissionByExtId.get(numericValue);
+            }
         }
 
-        const emailValue = stringValue.toLowerCase();
-        if (submissionByEmail.has(emailValue)) {
-            return submissionByEmail.get(emailValue);
+        if (targetField === "email") {
+            const emailValue = stringValue.toLowerCase();
+            if (submissionByEmail.has(emailValue)) {
+                return submissionByEmail.get(emailValue);
+            }
         }
 
         return null;
@@ -961,9 +979,12 @@ class DocumentSocket extends Socket {
             throw new Error(`Assignment with id ${assignmentId} not found`);
         }
 
-        const primaryKeyField = String(data.primaryKeyField || "").trim();
-        if (!primaryKeyField) {
-            throw new Error("Primary key field is required.");
+        const primaryKeyMapping = this.normalizePrimaryKeyMapping(data.primaryKeyMapping);
+        if (!primaryKeyMapping.sourceField) {
+            throw new Error("Primary key source field is required.");
+        }
+        if (!["extId", "email"].includes(primaryKeyMapping.targetField)) {
+            throw new Error("Primary key target field must be either \"extId\" or \"email\".");
         }
 
         const rows = Array.isArray(data.rows) ? data.rows.filter((row) => row && typeof row === "object") : [];
@@ -1055,8 +1076,13 @@ class DocumentSocket extends Socket {
         let overwrittenEntryCount = 0;
 
         for (const row of rows) {
-            const primaryKeyValue = row[primaryKeyField];
-            const submission = this.resolveMetadataImportSubmission(primaryKeyValue, submissionByExtId, submissionByEmail);
+            const primaryKeyValue = row[primaryKeyMapping.sourceField];
+            const submission = this.resolveMetadataImportSubmission(
+                primaryKeyValue,
+                primaryKeyMapping.targetField,
+                submissionByExtId,
+                submissionByEmail
+            );
 
             if (!submission) {
                 unmatched.push({
@@ -1122,7 +1148,7 @@ class DocumentSocket extends Socket {
             targetType,
             assignmentId,
             assignmentName: assignment.name || null,
-            primaryKeyField,
+            primaryKeyMapping,
             mappings,
             matchedRowCount: matched.length,
             unmatchedRowCount: unmatched.length,
@@ -1172,7 +1198,7 @@ class DocumentSocket extends Socket {
             targetType: plan.targetType,
             assignmentId: plan.assignmentId,
             assignmentName: plan.assignmentName,
-            primaryKeyField: plan.primaryKeyField,
+            primaryKeyMapping: plan.primaryKeyMapping,
             mappings: plan.mappings,
             matchedRowCount: plan.matchedRowCount,
             unmatchedRowCount: plan.unmatchedRowCount,
