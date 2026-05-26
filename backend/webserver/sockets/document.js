@@ -851,7 +851,6 @@ class DocumentSocket extends Socket {
             value,
             sourceField: context.sourceField ?? null,
             sourceFile: context.sourceFile ?? null,
-            importedAt: new Date().toISOString(),
         };
     }
 
