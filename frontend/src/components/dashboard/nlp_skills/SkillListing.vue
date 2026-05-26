@@ -38,12 +38,12 @@
       </button>
     </div>
     <h3>
-      {{ currentData.name }}
+      {{ localizedSkillName }}
     </h3>
     <div class="container py-1 px-0">
       <div class="row mb-3">
         <div class="col">
-          <span class="fs-6 fw-light">{{ currentData.description }}</span>
+          <span class="fs-6 fw-light">{{ localizedDescription }}</span>
         </div>
       </div>
       <div v-if="commandEditorActive" class="row p-2">
@@ -94,14 +94,14 @@
         style="max-height:30vh"
     >
       <div
-          v-for="[f, i] in [['input','box-arrow-in-right'], ['output', 'box-arrow-right']]"
-          :key="f"
+          v-for="entry in ioEntries"
+          :key="entry.key"
           class="py-1"
       >
         <SkillItem
-            v-model="currentData[f]"
-            :name="f"
-            :icon="i"
+            v-model="currentData[entry.key]"
+            :name="entry.label"
+            :icon="entry.icon"
         />
       </div>
       <div
@@ -169,6 +169,25 @@ export default {
     }
   },
   computed: {
+    ioEntries() {
+      return [
+        { key: "input", icon: "box-arrow-in-right", label: this.$t("common.input") },
+        { key: "output", icon: "box-arrow-right", label: this.$t("common.output") },
+      ];
+    },
+    localizedDescription() {
+      if (!this.currentData) return "";
+      const key = `nlp.skills.descriptions.${this.currentData.name}`;
+      if (this.$te(key)) {
+        return this.$t(key);
+      }
+      return this.currentData.description;
+    },
+    localizedSkillName() {
+      if (!this.currentData) return "";
+      const key = `nlp.skills.names.${this.currentData.name}`;
+      return this.$te(key) ? this.$t(key) : this.currentData.name;
+    },
     validConfig() {
       if (this.currentData) {
         return validateServiceConfig(this.currentData);

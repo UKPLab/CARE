@@ -131,6 +131,26 @@
     },
     "skills": {
         "title": "Skills",
+        "names": {
+            "f1000_classification": "F1000 Classification",
+            "generating_feedback_german": "Generating Feedback (German)",
+            "generating_feedback_english": "Generating Feedback (English)",
+            "grading_expose_german": "Grading Expose (German)",
+            "grading_expose_english": "Grading Expose (English)",
+            "skill_eic": "Skill EIC",
+            "summarization": "Summarization",
+            "sentiment_classification": "Sentiment Classification"
+        },
+        "descriptions": {
+            "f1000_classification": "This is a classification task",
+            "generating_feedback_german": "This skill is used to generate feedback for the exposé based on the grading result",
+            "generating_feedback_english": "This skill is used to generate feedback for the exposé based on the grading result",
+            "grading_expose_german": "This skill is used to grade the exposé of a student",
+            "grading_expose_english": "This skill is used to grade the exposé of a student",
+            "skill_eic": "This is a skill for edit intent classification with the fine-tuned Leo-LM 13b model",
+            "summarization": "Summarize a text",
+            "sentiment_classification": "This classifies a given paragraph according to its sentiment returning a polarity estimate."
+        },
         "status": {
             "online": "ONLINE",
             "offline": "OFFLINE",
