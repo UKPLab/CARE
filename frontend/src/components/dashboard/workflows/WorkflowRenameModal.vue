@@ -14,7 +14,7 @@
         </p>
         
         <div class="alert alert-info" role="alert">
-          <strong>{{ $t("workflow.renameModal.currentWorkflow") }}:</strong> {{ selectedWorkflow.name }}
+          <strong>{{ $t("workflow.renameModal.currentWorkflow") }}:</strong> {{ translateMaybeKey(selectedWorkflow.name) }}
         </div>
         
         <BasicForm
