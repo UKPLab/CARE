@@ -216,8 +216,17 @@
       },
       "forcedAssessment": {
         "label": "Erzwungene Bewertung",
-        "help": "Wenn aktiviert, müssen Reviewer für jedes Kriterium eine Punktzahl und Begründung speichern, bevor sie fortfahren können."
+        "help": "Wenn aktiviert, müssen Reviewer für jedes Kriterium eine Punktzahl und Begründung speichern, bevor sie fortfahren können.",
+        "helpUsers": "Wenn aktiviert, müssen Nutzer für jedes Kriterium eine Punktzahl und Begründung speichern, bevor sie fortfahren können."
+      },
+      "configurationIdSidebar": {
+        "help": "Wählen Sie die Konfigurationsdatei für die Bewertungs-Sidebar aus."
       }
+    },
+    "showAllDocumentAnnotations": {
+      "label": "Alle Dokument-Anmerkungen anzeigen",
+      "help": "Wenn aktiviert, werden dem Reviewer alle Dokument-Anmerkungen angezeigt.",
+      "helpDefault": "Wenn aktiviert, werden dem Reviewer die Standard-Anmerkungen angezeigt."
     },
     "assessmentWithAi": {
       "configurationId": {

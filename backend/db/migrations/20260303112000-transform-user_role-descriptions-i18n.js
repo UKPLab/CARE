@@ -1,5 +1,7 @@
 'use strict';
 
+const { resolveEnText } = require('../migration-i18n-utils');
+
 const DESCRIPTION_BY_ROLE = {
   admin: "users.roleDescriptions.admin",
   user: "users.roleDescriptions.user",
@@ -23,8 +25,19 @@ module.exports = {
     }
   },
 
-  async down(queryInterface, Sequelize) {
-    // No-op: reverse mapping intentionally omitted.
+  async down(queryInterface) {
+    for (const [name, descriptionKey] of Object.entries(DESCRIPTION_BY_ROLE)) {
+      const english = resolveEnText(descriptionKey);
+      if (!english) {
+        continue;
+      }
+      await queryInterface.bulkUpdate(
+        'user_role',
+        { description: english, updatedAt: new Date() },
+        { name },
+        {}
+      );
+    }
   },
 };
 

@@ -217,8 +217,17 @@
       },
       "forcedAssessment": {
         "label": "Forced Assessment",
-        "help": "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
+        "help": "If enabled, reviewers must save a score and justification for every criterion before they can proceed.",
+        "helpUsers": "If enabled, users must save a score and justification for every criterion before they can proceed."
+      },
+      "configurationIdSidebar": {
+        "help": "Select the configuration file for assessment sidebar."
       }
+    },
+    "showAllDocumentAnnotations": {
+      "label": "Show all document Annotations",
+      "help": "If enabled, all document annotations will be shown to the reviewer.",
+      "helpDefault": "If enabled, default annotations will be shown to the reviewer."
     },
     "assessmentWithAi": {
       "configurationId": {

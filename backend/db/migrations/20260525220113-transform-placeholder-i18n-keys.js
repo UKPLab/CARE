@@ -1,5 +1,7 @@
 "use strict";
 
+const { resolveEnText } = require("../migration-i18n-utils");
+
 /**
  * Replace English placeholderLabel / placeholderDescription with i18n keys.
  * Help tooltips stay in templates.json (frontend derives help key from description key).
@@ -59,7 +61,27 @@ module.exports = {
     }
   },
 
-  async down(queryInterface, Sequelize) {
-    // No-op: reverse mapping to English prose intentionally omitted.
+  async down(queryInterface) {
+    for (const row of PLACEHOLDER_ROWS) {
+      const keys = keysFor(row.type, row.placeholderKey);
+      const placeholderLabel = resolveEnText(keys.placeholderLabel);
+      const placeholderDescription = resolveEnText(keys.placeholderDescription);
+      if (!placeholderLabel || !placeholderDescription) {
+        continue;
+      }
+      await queryInterface.bulkUpdate(
+        "placeholder",
+        {
+          placeholderLabel,
+          placeholderDescription,
+          updatedAt: new Date(),
+        },
+        {
+          type: row.type,
+          placeholderKey: row.placeholderKey,
+        },
+        {}
+      );
+    }
   },
 };

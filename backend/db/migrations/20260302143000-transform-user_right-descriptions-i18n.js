@@ -1,5 +1,7 @@
 'use strict';
 
+const { resolveEnText } = require('../migration-i18n-utils');
+
 const DESCRIPTION_BY_NAME = {
   "backend.socket.user.getUsers.student": "users.rightDescriptions.backend_socket_user_getUsers_student",
   "backend.socket.user.getUsers.mentor": "users.rightDescriptions.backend_socket_user_getUsers_mentor",
@@ -32,8 +34,19 @@ module.exports = {
     }
   },
 
-  async down(queryInterface, Sequelize) {
-    // Intentionally left as no-op because original free-text values were not uniquely preserved.
+  async down(queryInterface) {
+    for (const [name, descriptionKey] of Object.entries(DESCRIPTION_BY_NAME)) {
+      const english = resolveEnText(descriptionKey);
+      if (!english) {
+        continue;
+      }
+      await queryInterface.bulkUpdate(
+        'user_right',
+        { description: english, updatedAt: new Date() },
+        { name },
+        {}
+      );
+    }
   },
 };
 

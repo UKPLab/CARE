@@ -20,7 +20,7 @@ export default {
   data() {
     return {
       projectId: 0,
-    }
+    };
   },
   methods: {
     open(projectId, defaultValues = {}) {
@@ -42,9 +42,9 @@ export default {
     },
     close() {
       this.$refs.coordinator.close();
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>

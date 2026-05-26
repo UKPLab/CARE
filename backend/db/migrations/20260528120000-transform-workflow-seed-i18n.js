@@ -1,5 +1,7 @@
 'use strict';
 
+const { resolveEnText } = require('../migration-i18n-utils');
+
 /** Seed workflows from basic/extend migrations — match by English name before update. */
 const I18N_BY_SEED_NAME = {
   "Peer Review Workflow": {
@@ -45,7 +47,18 @@ module.exports = {
     }
   },
 
-  async down(queryInterface, Sequelize) {
-    // No-op: original English strings not restored.
+  async down(queryInterface) {
+    for (const [seedName, i18n] of Object.entries(I18N_BY_SEED_NAME)) {
+      const description = resolveEnText(i18n.description);
+      if (!description) {
+        continue;
+      }
+      await queryInterface.bulkUpdate(
+        'workflow',
+        { name: seedName, description, updatedAt: new Date() },
+        { name: i18n.name },
+        {}
+      );
+    }
   },
 };

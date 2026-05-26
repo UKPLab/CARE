@@ -1,5 +1,7 @@
 'use strict';
 
+const { resolveEnText } = require('../migration-i18n-utils');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
@@ -22,7 +24,22 @@ module.exports = {
     }
   },
 
-  async down() {
-    // Intentionally left as no-op because original free-text values were not uniquely preserved.
+  async down(queryInterface) {
+    const [rows] = await queryInterface.sequelize.query(
+      `SELECT "key", "description" FROM "setting" WHERE "description" LIKE 'settings.descriptions.%'`
+    );
+
+    for (const row of rows) {
+      const english = resolveEnText(row.description);
+      if (!english) {
+        continue;
+      }
+      await queryInterface.bulkUpdate(
+        'setting',
+        { description: english, updatedAt: new Date() },
+        { key: row.key },
+        {}
+      );
+    }
   },
 };
