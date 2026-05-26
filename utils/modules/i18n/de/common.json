@@ -18,6 +18,7 @@
     "create": "Erstellen",
     "edit": "Bearbeiten",
     "editItem": "{item} bearbeiten",
+    "newItem": "{item} hinzufügen",
     "change": "Ändern",
     "update": "Aktualisieren",
     "delete": "Löschen",

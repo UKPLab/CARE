@@ -8,9 +8,8 @@
   >
     <template #title>
       <slot name="title">
-        <span v-if="data.id">{{ $t('common.edit') }}</span>
-        <span v-else>{{ $t('common.new') }}</span>
-        {{ title }}
+        <span v-if="data.id">{{ $t('common.editItem', { item: title }) }}</span>
+        <span v-else>{{ $t('common.newItem', { item: title }) }}</span>
       </slot>
     </template>
     <template #body>
