@@ -110,7 +110,7 @@ export default {
           required: true,
           options: this.availableRoles.filter(role => !role.deleted && role.name !== "admin").map(role => ({
             value: role.id,
-            name: role.name,
+            name: `users.roles.${role.name}`,
           })),
           description: this.$t('users.rights.chooseRoleDescription'),
         },
@@ -121,7 +121,11 @@ export default {
     },
     selectedRoleName() {
       const role = this.availableRoles.find(r => r.id === this.formData.roleId);
-      return role ? role.name : "";
+      if (!role) {
+        return "";
+      }
+      const key = `users.roles.${role.name}`;
+      return this.$te(key) ? this.$t(key) : role.name;
     },
   },
   watch: {
