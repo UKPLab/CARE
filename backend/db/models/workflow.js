@@ -22,8 +22,8 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             key: "description",
-            label: "workflow.fields.name.label",
-            placeholder: "workflow.fields.name.placeholder",
+            label: "workflow.fields.description.label",
+            placeholder: "workflow.fields.description.placeholder",
             type: "text",
             required: true,
             default: "",
