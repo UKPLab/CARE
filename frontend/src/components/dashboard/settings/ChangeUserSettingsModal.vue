@@ -129,7 +129,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "ChangeUserSettingsModal",
@@ -236,12 +236,7 @@ export default {
     },
   },
   methods: {
-    translateMaybeKey(value) {
-      if (!value || typeof value !== "string") {
-        return value;
-      }
-      return this.$te(value) ? this.$t(value) : value;
-    },
+    translateMaybeKey,
     toBoolean(value) {
       if (typeof value === "boolean") return value;
       if (typeof value === "string") return value.toLowerCase() === "true";

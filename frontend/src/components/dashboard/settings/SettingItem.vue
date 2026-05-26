@@ -106,6 +106,7 @@
 import LoadIcon from "@/basic/Icon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "SettingItem",
@@ -148,12 +149,7 @@ export default {
     toggleCollapse() {
       this.collapsed = !this.collapsed;
     },
-    translateMaybeKey(value) {
-      if (!value || typeof value !== "string") {
-        return value;
-      }
-      return this.$te(value) ? this.$t(value) : value;
-    },
+    translateMaybeKey,
     normalizeHexColor(value) {
       if (!value) return null;
       const normalized = value.startsWith("#") ? value : `#${value}`;
