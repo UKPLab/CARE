@@ -14,7 +14,7 @@
     <template #step-1>
       <div class="p-3">
         <p class="text-muted mb-3">
-          Upload a metadata file in `.json` or `.csv` format. CARE will extract the available fields so you can map them in the next steps.
+          Upload a metadata file in `.json` or `.csv` format. CARE will extract the available fields so you can define the target and mappings in the next steps.
         </p>
         <input
           ref="metadataFileInput"
@@ -63,22 +63,36 @@
 
     <template #step-3>
       <div class="p-3">
-        <div class="mb-3">
-          <label class="form-label">Primary key field</label>
-          <select v-model="primaryKeyField" class="form-select">
-            <option disabled value="">Select a field</option>
-            <option
-              v-for="field in sourceFields"
-              :key="`primary-${field}`"
-              :value="field"
-            >
-              {{ field }}
-            </option>
-          </select>
+        <div class="mb-4">
+          <h6>Primary Key Mapping</h6>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label">Source key</label>
+              <select v-model="primaryKeyMapping.sourceField" class="form-select">
+                <option disabled value="">Select a field</option>
+                <option
+                  v-for="field in sourceFields"
+                  :key="`primary-source-${field}`"
+                  :value="field"
+                >
+                  {{ field }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Match against</label>
+              <select v-model="primaryKeyMapping.targetField" class="form-select">
+                <option value="extId">extId</option>
+                <option value="email">email</option>
+              </select>
+            </div>
+          </div>
           <div class="form-text">
-            CARE will match this field against assignment submission owners by `extId` first and `email` second.
+            This mapping controls how CARE matches uploaded rows to submission owners in the selected assignment.
           </div>
         </div>
+
+        <h6 class="mb-3">Metadata Mappings</h6>
 
         <div v-if="mappingValidationMessages.length > 0" class="alert alert-warning">
           <div
@@ -89,51 +103,78 @@
           </div>
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead>
-              <tr>
-                <th>Source Field</th>
-                <th class="text-center">Import</th>
-                <th>Target metaKey</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="field in sourceFields"
-                :key="`field-${field}`"
+        <div class="mapping-panel">
+          <div class="mapping-panel-header">
+            <div class="mapping-panel-title-row">
+              <div class="mapping-col-source">Source key</div>
+              <div class="mapping-col-target">Target metaKey</div>
+              <div class="mapping-col-action">Action</div>
+            </div>
+            <button
+              class="btn btn-outline-primary btn-sm"
+              type="button"
+              @click="addMappingRow"
+            >
+              Add Mapping
+            </button>
+          </div>
+
+          <div
+            v-if="metadataMappings.length === 0"
+            class="text-muted small"
+          >
+            No metadata mappings configured yet.
+          </div>
+
+          <div
+            v-for="(mapping, index) in metadataMappings"
+            :key="mapping.id"
+            class="mapping-item"
+          >
+            <div class="mapping-col-source">
+              <select
+                v-model="mapping.sourceField"
+                class="form-select"
               >
-                <td>
-                  <strong>{{ field }}</strong>
-                  <div
-                    v-if="field === primaryKeyField"
-                    class="small text-muted"
-                  >
-                    Used for matching only
-                  </div>
-                </td>
-                <td class="text-center">
-                  <input
-                    v-model="fieldMappings[field].include"
-                    class="form-check-input"
-                    type="checkbox"
-                    :disabled="field === primaryKeyField"
-                    @change="handleMappingToggle(field)"
-                  >
-                </td>
-                <td>
-                  <input
-                    v-model="fieldMappings[field].metaKey"
-                    class="form-control"
-                    type="text"
-                    :disabled="!fieldMappings[field].include || field === primaryKeyField"
-                    placeholder="Enter metaKey"
-                  >
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                <option disabled value="">Select a field</option>
+                <option
+                  v-for="field in sourceFields"
+                  :key="`mapping-source-${mapping.id}-${field}`"
+                  :value="field"
+                >
+                  {{ field }}
+                </option>
+              </select>
+            </div>
+            <div class="mapping-arrow">→</div>
+            <div class="mapping-col-target">
+              <input
+                v-model="mapping.metaKey"
+                class="form-control"
+                list="metadata-key-presets"
+                placeholder="topic"
+                type="text"
+              >
+            </div>
+            <div class="mapping-col-action">
+              <button
+                class="btn btn-outline-danger btn-sm"
+                type="button"
+                :disabled="metadataMappings.length === 1"
+                @click="removeMappingRow(index)"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
         </div>
+
+        <!-- TODO: Metadata presets, not sure what options are common here, to be discussed -->
+        <datalist id="metadata-key-presets">
+          <option value="topic"></option>
+          <option value="category"></option>
+          <option value="tag"></option>
+        </datalist>
       </div>
     </template>
 
@@ -146,7 +187,10 @@
           <div class="card-body bg-light">
             <div><strong>Target type:</strong> {{ targetTypeLabel }}</div>
             <div><strong>Assignment:</strong> {{ selectedAssignment?.name || `Assignment #${selectedAssignmentId}` }}</div>
-            <div><strong>Primary key:</strong> {{ primaryKeyField || "-" }}</div>
+            <div>
+              <strong>Primary key mapping:</strong>
+              {{ primaryKeyMapping.sourceField || "-" }} -> {{ primaryKeyMapping.targetField || "-" }}
+            </div>
             <div><strong>Mapped metadata fields:</strong> {{ selectedMappings.length }}</div>
             <div><strong>Will match rows:</strong> {{ preview.matchedRowCount }}</div>
             <div><strong>Rows without submission match:</strong> {{ preview.unmatchedRowCount }}</div>
@@ -172,6 +216,12 @@
           </div>
           <div class="small mb-2">
             Matched rows: <strong>{{ result.matchedRowCount || 0 }}</strong>
+          </div>
+          <div class="small mb-2">
+            Primary key mapping:
+            <strong>{{ result.primaryKeyMapping?.sourceField || "-" }}</strong>
+            ->
+            <strong>{{ result.primaryKeyMapping?.targetField || "-" }}</strong>
           </div>
           <div v-if="(result.overwritten || []).length > 0" class="warning-container">
             Overwritten metadata:
@@ -236,8 +286,12 @@ export default {
       targetType: "assignment",
       rows: [],
       sourceFields: [],
-      fieldMappings: {},
-      primaryKeyField: "",
+      primaryKeyMapping: {
+        sourceField: "",
+        targetField: "extId",
+      },
+      metadataMappings: [],
+      nextMappingId: 1,
       fileName: "",
       parseError: "",
       preview: {
@@ -283,28 +337,32 @@ export default {
     targetTypeLabel() {
       return this.targetType === "assignment" ? "Assignment" : this.targetType;
     },
-    selectedMappings() {
-      return this.sourceFields
-        .filter((field) => field !== this.primaryKeyField && this.fieldMappings[field]?.include)
-        .map((field) => ({
-          sourceField: field,
-          metaKey: String(this.fieldMappings[field]?.metaKey || "").trim(),
-        }));
+    normalizedMetadataMappings() {
+      return this.metadataMappings.map((mapping) => ({
+        id: mapping.id,
+        sourceField: String(mapping.sourceField || "").trim(),
+        metaKey: String(mapping.metaKey || "").trim(),
+      }));
     },
-    selectedMetaKeys() {
-      return this.selectedMappings.map((mapping) => mapping.metaKey).filter(Boolean);
+    selectedMappings() {
+      return this.normalizedMetadataMappings
+        .filter((mapping) => mapping.sourceField && mapping.metaKey)
+        .map(({ sourceField, metaKey }) => ({ sourceField, metaKey }));
     },
     hasDuplicateMetaKeys() {
-      return new Set(this.selectedMetaKeys).size !== this.selectedMetaKeys.length;
+      const metaKeys = this.normalizedMetadataMappings
+        .map((mapping) => mapping.metaKey)
+        .filter(Boolean);
+      return new Set(metaKeys).size !== metaKeys.length;
     },
     hasDuplicatePrimaryKeyValues() {
-      if (!this.primaryKeyField) {
+      if (!this.primaryKeyMapping.sourceField) {
         return false;
       }
 
       const seen = new Set();
       for (const row of this.rows) {
-        const value = row?.[this.primaryKeyField];
+        const value = row?.[this.primaryKeyMapping.sourceField];
         const normalized = value == null ? "" : String(value).trim().toLowerCase();
         if (!normalized) {
           return true;
@@ -319,16 +377,24 @@ export default {
     mappingValidationMessages() {
       const messages = [];
 
-      if (!this.primaryKeyField) {
-        messages.push("Select a primary key field.");
+      if (!this.primaryKeyMapping.sourceField) {
+        messages.push("Select the uploaded source key used for matching.");
       }
 
-      if (this.selectedMappings.length === 0) {
-        messages.push("Select at least one source field to import as metadata.");
+      if (!this.primaryKeyMapping.targetField) {
+        messages.push("Select which CARE field the primary key should match against.");
       }
 
-      if (this.selectedMappings.some((mapping) => !mapping.metaKey)) {
-        messages.push("Every selected source field needs a target metaKey.");
+      if (this.metadataMappings.length === 0) {
+        messages.push("Add at least one metadata mapping.");
+      }
+
+      if (this.normalizedMetadataMappings.some((mapping) => !mapping.sourceField)) {
+        messages.push("Every metadata mapping needs a source key.");
+      }
+
+      if (this.normalizedMetadataMappings.some((mapping) => !mapping.metaKey)) {
+        messages.push("Every metadata mapping needs a target metaKey.");
       }
 
       if (this.hasDuplicateMetaKeys) {
@@ -345,7 +411,10 @@ export default {
       return {
         targetType: this.targetType,
         assignmentId: this.selectedAssignmentId,
-        primaryKeyField: this.primaryKeyField,
+        primaryKeyMapping: {
+          sourceField: this.primaryKeyMapping.sourceField,
+          targetField: this.primaryKeyMapping.targetField,
+        },
         mappings: this.selectedMappings,
         rows: this.rows,
         fileName: this.fileName || null,
@@ -374,11 +443,6 @@ export default {
       this.lastPreviewSignature = "";
       this.lastImportedSignature = "";
     },
-    primaryKeyField(newField) {
-      if (newField && this.fieldMappings[newField]) {
-        this.fieldMappings[newField].include = false;
-      }
-    },
   },
   methods: {
     open(assignmentId) {
@@ -392,8 +456,12 @@ export default {
       this.targetType = "assignment";
       this.rows = [];
       this.sourceFields = [];
-      this.fieldMappings = {};
-      this.primaryKeyField = "";
+      this.primaryKeyMapping = {
+        sourceField: "",
+        targetField: "extId",
+      };
+      this.metadataMappings = [];
+      this.nextMappingId = 1;
       this.fileName = "";
       this.parseError = "";
       this.result = {};
@@ -442,15 +510,32 @@ export default {
       // Return an empty array for primitive types or null/undefined to exclude them from the final result
       return [];
     },
+    createMappingRow(defaults = {}) {
+      return {
+        id: this.nextMappingId++,
+        sourceField: defaults.sourceField || "",
+        metaKey: defaults.metaKey || "",
+      };
+    },
     initializeMappings() {
-      this.fieldMappings = this.sourceFields.reduce((acc, field) => {
-        acc[field] = {
-          include: false,
-          metaKey: field,
-        };
-        return acc;
-      }, {});
-      this.primaryKeyField = "";
+      const preferredPrimaryField = this.sourceFields.includes("id") ? "id" : (this.sourceFields.includes("email") ? "email" : "");
+
+      this.primaryKeyMapping = {
+        sourceField: preferredPrimaryField,
+        targetField: preferredPrimaryField === "email" ? "email" : "extId",
+      };
+      this.metadataMappings = [
+        this.createMappingRow(),
+      ];
+    },
+    addMappingRow() {
+      this.metadataMappings.push(this.createMappingRow());
+    },
+    removeMappingRow(index) {
+      if (this.metadataMappings.length === 1) {
+        return;
+      }
+      this.metadataMappings.splice(index, 1);
     },
     async parseJson(file) {
       const text = await file.text();
@@ -476,11 +561,6 @@ export default {
           error: reject,
         });
       });
-    },
-    handleMappingToggle(field) {
-      if (!this.fieldMappings[field]?.include) {
-        this.fieldMappings[field].metaKey = field;
-      }
     },
     async handleFileChange(event) {
       const file = event.target.files?.[0];
@@ -515,8 +595,11 @@ export default {
       } catch (error) {
         this.rows = [];
         this.sourceFields = [];
-        this.fieldMappings = {};
-        this.primaryKeyField = "";
+        this.primaryKeyMapping = {
+          sourceField: "",
+          targetField: "extId",
+        };
+        this.metadataMappings = [];
         this.parseError = error.message || "Failed to parse metadata file.";
       }
     },
@@ -584,6 +667,83 @@ export default {
 </script>
 
 <style scoped>
+.mapping-panel {
+  border: 1px dashed #b9b9b9;
+  border-radius: 0.5rem;
+  padding: 0.9rem;
+  background: #fafafa;
+}
+
+.mapping-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.mapping-panel-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  padding: 0 0.125rem;
+}
+
+.mapping-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.mapping-item + .mapping-item {
+  margin-top: 0.75rem;
+}
+
+.mapping-col-source,
+.mapping-col-target {
+  min-width: 0;
+}
+
+.mapping-col-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mapping-arrow {
+  color: #6c757d;
+  font-size: 1rem;
+  line-height: 1;
+  padding-top: 0.1rem;
+}
+
+@media (max-width: 767.98px) {
+  .mapping-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mapping-panel-title-row {
+    display: none;
+  }
+
+  .mapping-item {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-col-action {
+    justify-content: flex-start;
+  }
+
+  .mapping-arrow {
+    display: none;
+  }
+}
+
 .warning-container {
   margin: 0.5rem auto;
   color: #8a6d3b;
