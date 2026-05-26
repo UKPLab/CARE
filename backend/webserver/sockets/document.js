@@ -921,15 +921,13 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Resolve a metadata import row against assignment submissions.
+     * Normalize one primary key value according to the selected target field.
      *
      * @param {*} rawValue
      * @param {string} targetField
-     * @param {Map<number, Object>} submissionByExtId
-     * @param {Map<string, Object>} submissionByEmail
-     * @returns {Object|null}
+     * @returns {number|string|null}
      */
-    resolveMetadataImportSubmission(rawValue, targetField, submissionByExtId, submissionByEmail) {
+    normalizePrimaryKeyValue(rawValue, targetField) {
         if (rawValue == null) {
             return null;
         }
@@ -941,19 +939,70 @@ class DocumentSocket extends Socket {
 
         if (targetField === "extId") {
             const numericValue = Number(stringValue);
-            if (!Number.isNaN(numericValue) && submissionByExtId.has(numericValue)) {
-                return submissionByExtId.get(numericValue);
-            }
+            return Number.isNaN(numericValue) ? null : numericValue;
         }
 
         if (targetField === "email") {
-            const emailValue = stringValue.toLowerCase();
-            if (submissionByEmail.has(emailValue)) {
-                return submissionByEmail.get(emailValue);
-            }
+            return stringValue.toLowerCase();
         }
 
         return null;
+    }
+
+    /**
+     * Validate primary key values for emptiness and duplicates.
+     *
+     * @param {Object[]} rows
+     * @param {Object} primaryKeyMapping
+     */
+    validatePrimaryKeyValues(rows, primaryKeyMapping) {
+        const seen = new Set();
+        const duplicates = new Set();
+
+        for (const row of rows) {
+            const normalized = this.normalizePrimaryKeyValue(row?.[primaryKeyMapping.sourceField], primaryKeyMapping.targetField);
+            if (normalized == null) {
+                throw new Error("Primary key values must be present and valid for every imported row.");
+            }
+
+            if (seen.has(normalized)) {
+                duplicates.add(normalized);
+            } else {
+                seen.add(normalized);
+            }
+        }
+
+        if (duplicates.size > 0) {
+            throw new Error(
+                `Duplicate primary key values found for ${primaryKeyMapping.targetField}: ${[...duplicates].join(", ")}`
+            );
+        }
+    }
+
+    /**
+     * Resolve a metadata import row against assignment submissions.
+     *
+     * @param {*} rawValue
+     * @param {string} targetField
+     * @param {Map<number, Object[]>} submissionByExtId
+     * @param {Map<string, Object[]>} submissionByEmail
+     * @returns {Object[]}
+     */
+    resolveMetadataImportSubmission(rawValue, targetField, submissionByExtId, submissionByEmail) {
+        const normalizedValue = this.normalizePrimaryKeyValue(rawValue, targetField);
+        if (normalizedValue == null) {
+            return [];
+        }
+
+        if (targetField === "extId" && submissionByExtId.has(normalizedValue)) {
+            return submissionByExtId.get(normalizedValue);
+        }
+
+        if (targetField === "email" && submissionByEmail.has(normalizedValue)) {
+            return submissionByEmail.get(normalizedValue);
+        }
+
+        return [];
     }
 
     /**
@@ -991,6 +1040,7 @@ class DocumentSocket extends Socket {
         if (rows.length === 0) {
             throw new Error("No metadata rows provided.");
         }
+        this.validatePrimaryKeyValues(rows, primaryKeyMapping);
 
         const mappings = this.normalizeMetadataMappings(data.mappings);
         if (mappings.length === 0) {
@@ -1018,11 +1068,19 @@ class DocumentSocket extends Socket {
             }
 
             if (owner.extId != null) {
-                submissionByExtId.set(Number(owner.extId), submission);
+                const extId = Number(owner.extId);
+                if (!submissionByExtId.has(extId)) {
+                    submissionByExtId.set(extId, []);
+                }
+                submissionByExtId.get(extId).push(submission);
             }
 
             if (owner.email) {
-                submissionByEmail.set(String(owner.email).trim().toLowerCase(), submission);
+                const email = String(owner.email).trim().toLowerCase();
+                if (!submissionByEmail.has(email)) {
+                    submissionByEmail.set(email, []);
+                }
+                submissionByEmail.get(email).push(submission);
             }
         }
 
@@ -1077,14 +1135,14 @@ class DocumentSocket extends Socket {
 
         for (const row of rows) {
             const primaryKeyValue = row[primaryKeyMapping.sourceField];
-            const submission = this.resolveMetadataImportSubmission(
+            const resolvedSubmissions = this.resolveMetadataImportSubmission(
                 primaryKeyValue,
                 primaryKeyMapping.targetField,
                 submissionByExtId,
                 submissionByEmail
             );
 
-            if (!submission) {
+            if (resolvedSubmissions.length === 0) {
                 unmatched.push({
                     primaryKeyValue: primaryKeyValue ?? null,
                     message: "No submission owner match found in this assignment.",
@@ -1092,14 +1150,37 @@ class DocumentSocket extends Socket {
                 continue;
             }
 
-            const submissionDocuments = documentsBySubmissionId.get(submission.id) || [];
-            if (submissionDocuments.length === 0) {
+            const effectiveMappings = mappings.filter((mapping) => Object.prototype.hasOwnProperty.call(row, mapping.sourceField));
+            if (effectiveMappings.length === 0) {
                 skipped.push({
-                    submissionId: submission.id,
-                    userId: submission.userId,
+                    submissionIds: resolvedSubmissions.map((submission) => submission.id),
+                    submissionId: resolvedSubmissions[0]?.id || null,
+                    userId: resolvedSubmissions[0]?.userId || null,
                     primaryKeyValue: primaryKeyValue ?? null,
-                    message: "Submission has no documents.",
+                    message: "Row does not contain any mapped source fields.",
                 });
+                continue;
+            }
+
+            const submissionDocuments = [];
+            const submissionsWithoutDocuments = [];
+            for (const submission of resolvedSubmissions) {
+                const documentsForSubmission = documentsBySubmissionId.get(submission.id) || [];
+                if (documentsForSubmission.length === 0) {
+                    submissionsWithoutDocuments.push(submission);
+                    skipped.push({
+                        submissionIds: [submission.id],
+                        submissionId: submission.id,
+                        userId: submission.userId,
+                        primaryKeyValue: primaryKeyValue ?? null,
+                        message: "Submission has no documents.",
+                    });
+                    continue;
+                }
+                submissionDocuments.push(...documentsForSubmission);
+            }
+
+            if (submissionDocuments.length === 0) {
                 continue;
             }
 
@@ -1108,7 +1189,7 @@ class DocumentSocket extends Socket {
 
             for (const document of submissionDocuments) {
                 const existingKeys = existingByDocumentId.get(Number(document.id)) || new Set();
-                for (const mapping of mappings) {
+                for (const mapping of effectiveMappings) {
                     if (existingKeys.has(mapping.metaKey)) {
                         overwrittenKeys.push(mapping.metaKey);
                         rowOverwrittenEntryCount += 1;
@@ -1116,22 +1197,26 @@ class DocumentSocket extends Socket {
                 }
             }
 
-            const rowMetadataEntryCount = submissionDocuments.length * mappings.length;
+            const rowMetadataEntryCount = submissionDocuments.length * effectiveMappings.length;
             matched.push({
-                submissionId: submission.id,
-                userId: submission.userId,
+                submissionId: resolvedSubmissions[0].id,
+                submissionIds: resolvedSubmissions.map((submission) => submission.id),
+                userId: resolvedSubmissions[0].userId,
                 primaryKeyValue: primaryKeyValue ?? null,
                 row,
                 documentIds: submissionDocuments.map((document) => document.id),
                 documentCount: submissionDocuments.length,
                 metadataEntryCount: rowMetadataEntryCount,
                 overwrittenEntryCount: rowOverwrittenEntryCount,
+                mappings: effectiveMappings,
+                skippedSubmissionIds: submissionsWithoutDocuments.map((submission) => submission.id),
             });
 
             if (rowOverwrittenEntryCount > 0) {
                 overwritten.push({
-                    submissionId: submission.id,
-                    userId: submission.userId,
+                    submissionId: resolvedSubmissions[0].id,
+                    submissionIds: resolvedSubmissions.map((submission) => submission.id),
+                    userId: resolvedSubmissions[0].userId,
                     primaryKeyValue: primaryKeyValue ?? null,
                     overwrittenEntryCount: rowOverwrittenEntryCount,
                     overwrittenMetaKeys: [...new Set(overwrittenKeys)],
@@ -1189,7 +1274,7 @@ class DocumentSocket extends Socket {
                 documentIds: match.documentIds,
                 userId: match.userId,
                 row: match.row,
-                mappings: plan.mappings,
+                mappings: match.mappings,
                 fileName: data.fileName || null,
             }, options);
         }
@@ -1208,6 +1293,7 @@ class DocumentSocket extends Socket {
             overwrittenEntryCount: plan.overwrittenEntryCount,
             matched: plan.matched.map((entry) => ({
                 submissionId: entry.submissionId,
+                submissionIds: entry.submissionIds,
                 userId: entry.userId,
                 primaryKeyValue: entry.primaryKeyValue,
                 documentCount: entry.documentCount,
