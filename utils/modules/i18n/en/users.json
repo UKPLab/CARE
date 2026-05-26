@@ -69,6 +69,8 @@
     "frontend_dashboard_projects_view": "Access to view projects in the dashboard",
     "frontend_dashboard_studies_view": "Access to view studies in the dashboard",
     "frontend_dashboard_study_sessions_view": "Access to view study sessions in the dashboard",
+    "frontend_dashboard_templates_view": "Access to view templates in the dashboard",
+    "frontend_dashboard_workflows_view": "Access to view workflows in the dashboard",
     "study_template_delete": "Access to delete templates"
   },
   "roleDescriptions": {

@@ -29,7 +29,7 @@
         <BasicTable
             v-model="roleRights"
             :columns="rightsColumns"
-            :data="allRights"
+            :data="rightsForTable"
             :options="rightsTableOptions"
             :max-table-height="'60vh'"
         />
@@ -127,6 +127,12 @@ export default {
       const key = `users.roles.${role.name}`;
       return this.$te(key) ? this.$t(key) : role.name;
     },
+    rightsForTable() {
+      return this.allRights.map((right) => ({
+        ...right,
+        description: this.translateMaybeKey(right.description),
+      }));
+    },
   },
   watch: {
     formData: {
@@ -142,6 +148,12 @@ export default {
     this.loadAllRights();
   },
   methods: {
+    translateMaybeKey(value) {
+      if (typeof value !== "string") {
+        return value;
+      }
+      return this.$te(value) ? this.$t(value) : value;
+    },
     open() {
       this.formData.roleId = null;
       this.$refs.stepperModal.open();
@@ -166,8 +178,8 @@ export default {
           // Get the selected right names from the role_right_matching response
           const selectedRightNames = response.data.map(item => item.userRightName);
 
-          // Filter allRights to only include the ones that are selected for this role
-          this.roleRights = this.allRights.filter(right =>
+          // Filter rightsForTable so v-model rows match :data (translated descriptions)
+          this.roleRights = this.rightsForTable.filter((right) =>
               selectedRightNames.includes(right.name)
           );
 

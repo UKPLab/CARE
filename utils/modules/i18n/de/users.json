@@ -69,6 +69,8 @@
         "frontend_dashboard_projects_view": "Zugriff auf Projekte im Dashboard",
         "frontend_dashboard_studies_view": "Zugriff auf Studien im Dashboard",
         "frontend_dashboard_study_sessions_view": "Zugriff auf Studiensitzungen im Dashboard",
+        "frontend_dashboard_templates_view": "Zugriff auf Vorlagen im Dashboard",
+        "frontend_dashboard_workflows_view": "Zugriff auf Workflows im Dashboard",
         "study_template_delete": "Zugriff auf das Loschen von Vorlagen"
   },
     "roleDescriptions": {
