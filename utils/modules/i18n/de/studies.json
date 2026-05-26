@@ -239,14 +239,6 @@
       }
     }
   },
-  "workflow": {
-    "peer_review_workflow": "Peer-Review-Workflow",
-    "peer_review_workflow_(assessment)": "Peer-Review-Workflow (Bewertung)",
-    "peer_review_workflow_(assessment_with_ai)": "Peer-Review-Workflow (Bewertung mit KI)",
-    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Projekt",
-    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Projekt (Kontrolle)",
-    "annotation_workflow": "Anmerkungs-Workflow"
-  },
   "assignUserSession": {
     "title": "Benutzer zur Studiensitzung zuweisen",
     "noSessionSelected": "Keine Studiensitzung ausgewählt!",

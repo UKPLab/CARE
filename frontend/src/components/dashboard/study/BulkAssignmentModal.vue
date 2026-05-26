@@ -442,7 +442,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
+import {downloadObjectsAs, resolveApiMessage, translateMaybeKey} from "@/assets/utils";
 
 /**
  * Modal for bulk creating assignments
@@ -561,7 +561,15 @@ export default {
       return this.$store.getters["table/study/get"](this.templateSelection.template);
     },
     workflow() {
-      return this.$store.getters["table/workflow/get"](this.template.workflowId);
+      const workflow = this.$store.getters["table/workflow/get"](this.template.workflowId);
+      if (!workflow) {
+        return null;
+      }
+      return {
+        ...workflow,
+        name: translateMaybeKey(workflow.name),
+        description: translateMaybeKey(workflow.description),
+      };
     },
     workflowSteps() {
       if (!this.template) return [];
@@ -1019,7 +1027,7 @@ export default {
     },
     getWorkflowType(workflowId) {
       const workflow = this.$store.getters["table/workflow/get"](workflowId);
-      return workflow ? workflow.name : this.$t('common.unknown');
+      return workflow ? translateMaybeKey(workflow.name) : this.$t('common.unknown');
     },
     getStepTypeName(stepType) {
       switch (stepType) {

@@ -246,7 +246,7 @@ import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "@/assets/assessmentScore.js";
-import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 
 /**
  * Modal for publishing assessment data with CSV export
@@ -471,9 +471,10 @@ export default {
           result.push({
             id: result.length + 1,
             workflowId: workflow.id,
-            workflowName: workflow.name || this.$t("submission.publishAssessment.workflowFallback", { id: workflow.id }),
+            workflowName: translateMaybeKey(workflow.name)
+              || this.$t("submission.publishAssessment.workflowFallback", { id: workflow.id }),
             stepNumber: parseInt(stepNum),
-            description: workflow.description || "-",
+            description: translateMaybeKey(workflow.description) || "-",
             openSessions: openSessions,
             closedSessions: closedSessions,
             totalSessions: openSessions + closedSessions,

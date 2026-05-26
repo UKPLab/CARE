@@ -47,6 +47,7 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Dashboard page showing an overview of all study sessions
@@ -158,7 +159,7 @@ export default {
   methods: {
     getWorkflowType(workflowId) {
       const workflow = this.$store.getters["table/workflow/get"](workflowId);
-      return workflow ? workflow.name : this.$t('common.unknown');
+      return workflow ? translateMaybeKey(workflow.name) : this.$t('common.unknown');
     },
     getUserName(userId) {
       const user = this.$store.getters["table/user/get"](userId);

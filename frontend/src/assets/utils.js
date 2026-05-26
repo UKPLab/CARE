@@ -10,6 +10,16 @@ const looksLikeI18nKey = (str) =>
     typeof str === 'string' &&
     /^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)+$/.test(str);
 
+export function translateMaybeKey(value) {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    if (i18n.global.te(value)) {
+        return i18n.global.t(value);
+    }
+    return value;
+}
+
 export function resolveApiMessage(response, fallbackKey = 'errors.server.unknownError') {
     const fallbackMessage = i18n.global.t(fallbackKey);
 

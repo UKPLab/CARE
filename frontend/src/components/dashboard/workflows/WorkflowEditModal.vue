@@ -1,13 +1,13 @@
 <template>
   <BasicModal ref="modal" name="workflowEditModal" size="xl">
     <template #title>
-      {{ $t("workflow.editModal.title", { name: selectedWorkflow?.name }) }}
+      {{ $t("workflow.editModal.title", { name: displayWorkflowName }) }}
     </template>
     <template #body>
       <div v-if="selectedWorkflow" class="workflow-editor">
         <div class="alert alert-info mb-3" role="alert">
-          <strong>{{ $t("workflow.editModal.workflow") }}:</strong> {{ selectedWorkflow.name }}<br>
-          <strong>{{ $t("workflow.editModal.description") }}:</strong> {{ selectedWorkflow.description || $t("common.noDescription") }}<br>
+          <strong>{{ $t("workflow.editModal.workflow") }}:</strong> {{ displayWorkflowName }}<br>
+          <strong>{{ $t("workflow.editModal.description") }}:</strong> {{ displayWorkflowDescription }}<br>
           <strong>{{ $t("workflow.editModal.copiedStep") }}:</strong> {{ copiedWorkflowStepData ? $t("workflow.editModal.copiedStepValue", { name: copiedWorkflowStepData.name || $t("workflow.editModal.unnamedStep"), type: getStepTypeString(copiedWorkflowStepData.stepType) }) : $t("common.none") }}
         </div>
 
@@ -62,6 +62,7 @@ import BasicButton from "@/basic/Button.vue";
 import Graph from "@/basic/graph/Graph.vue";
 import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
 import WorkflowStepInspectModal from "@/basic/graph/WorkflowStepInspectModal.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 function getColorForStepType(stepType) {
   switch (stepType) {
@@ -130,7 +131,14 @@ export default {
       const isAdmin = this.$store.getters['auth/isAdmin'];
       const userId = this.$store.getters['auth/getUserId'];
       return isAdmin || this.selectedWorkflow.userId === userId;
-    }
+    },
+    displayWorkflowName() {
+      return translateMaybeKey(this.selectedWorkflow?.name) || "";
+    },
+    displayWorkflowDescription() {
+      const description = translateMaybeKey(this.selectedWorkflow?.description);
+      return description || this.$t("common.noDescription");
+    },
   },
   methods: {
     open(workflowId) {

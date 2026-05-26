@@ -59,7 +59,7 @@ import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
 
 // Modal components
 import WorkflowCreateModal from "./workflows/WorkflowCreateModal.vue";
@@ -133,6 +133,8 @@ export default {
           (workflow) => workflow.userId === null || workflow.userId === this.userId
         ).map(workflow => ({
           ...workflow,
+          name: translateMaybeKey(workflow.name),
+          description: translateMaybeKey(workflow.description),
           workflowType: workflow.userId === null ? "system" : "user",
           isEditable: this.isAdmin || workflow.userId === this.userId,
           hidden: {

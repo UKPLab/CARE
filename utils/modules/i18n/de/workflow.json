@@ -165,6 +165,24 @@
       "message": "Workflow \"{oldName}\" wurde in \"{newName}\" umbenannt"
     }
   },
+  "names": {
+    "peer_review_workflow": "Peer-Review-Workflow",
+    "peer_review_workflow_(assessment)": "Peer-Review-Workflow (Bewertung)",
+    "peer_review_workflow_(assessment_with_ai)": "Peer-Review-Workflow (Bewertung mit KI)",
+    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Projekt",
+    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Projekt (Kontrolle)",
+    "annotation_workflow": "Anmerkungs-Workflow",
+    "review_assessment_workflow": "Bewertungs-Review-Workflow"
+  },
+  "descriptions": {
+    "peer_review_workflow": "EiWA-Projekt: PDF-Dokument prüfen und Freitext verfassen.",
+    "peer_review_workflow_(assessment)": "Peer-Review-Workflow mit Bewertung: PDF prüfen, Freitext verfassen und Konfiguration auswählen.",
+    "peer_review_workflow_(assessment_with_ai)": "Peer-Review-Workflow mit Bewertung und KI: PDF prüfen, Freitext, Konfiguration und KI-Bewertung.",
+    "ruhr-uni_bochum_project": "Ruhr-Uni-Bochum-Projekt: Dokument über zwei Revisionen mit Änderungsübersicht korrigieren.",
+    "ruhr-uni_bochum_project_control": "Ruhr-Uni-Bochum-Projekt: Dokument über zwei Revisionen mit Änderungsübersicht korrigieren.",
+    "annotation_workflow": "Workflow mit einem einzelnen Anmerkungsschritt.",
+    "review_assessment_workflow": "Bewertungs-Workflow: Eingereichte Studiensitzung prüfen"
+  },
   "fields": {
     "name": {
       "label": "Name des Workflows:",

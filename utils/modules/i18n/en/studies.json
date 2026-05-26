@@ -240,14 +240,6 @@
       }
     }
   },
-  "workflow": {
-    "peer_review_workflow": "Peer Review Workflow",
-    "peer_review_workflow_(assessment)": "Peer Review Workflow (Assessment)",
-    "peer_review_workflow_(assessment_with_ai)": "Peer Review Workflow (Assessment with AI)",
-    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Project",
-    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Project (Control)",
-    "annotation_workflow": "Annotation Workflow"
-  },
   "assignUserSession": {
     "title": "Assign Users to Study Session",
     "noSessionSelected": "No study session selected!",
