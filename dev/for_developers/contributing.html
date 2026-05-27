@@ -1,0 +1,504 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open-Source Contributor Guide &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Before You Start" href="before_you_start.html" />
+    <link rel="prev" title="Installation" href="../getting_started/installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Open-Source Contributor Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-understand-the-product-first">Step 1: Understand the Product First</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-what-to-work-on">Step 2: What to Work on</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#issues">Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#issue-templates">Issue Templates</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-fork-and-clone-the-repository">Step 3: Fork and Clone the Repository</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fork">Fork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clone-your-fork">Clone your fork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#add-the-upstream-remote">Add the upstream remote</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-run-care-locally">Step 4: Run CARE Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-5-git-workflow-for-external-contributors">Step 5: Git Workflow for External Contributors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#branch-structure">Branch structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-work-on-a-new-contribution">Starting work on a new contribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#branch-naming-conventions">Branch naming conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#commit-message-format">Commit message format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pushing-to-your-fork">Pushing to your fork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keeping-your-branch-up-to-date">Keeping your branch up to date</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-6-opening-a-pull-request">Step 6: Opening a Pull Request</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#before-opening">Before opening</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pr-title-format">PR title format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pr-description-template">PR description template</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-7-navigating-code-review">Step 7: Navigating Code Review</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-respond">How to respond</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-8-staying-in-sync">Step 8: Staying in Sync</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/workflow_management.html">Workflow Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Open-Source Contributor Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_developers/contributing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="open-source-contributor-guide">
+<h1>Open-Source Contributor Guide<a class="headerlink" href="#open-source-contributor-guide" title="Link to this heading"></a></h1>
+<p><strong>Who this is for:</strong> External developers who want to contribute to CARE, whether you found a bug,
+want to improve the docs, propose a feature, or simply want to work on a meaningful research platform.</p>
+<section id="step-1-understand-the-product-first">
+<h2>Step 1: Understand the Product First<a class="headerlink" href="#step-1-understand-the-product-first" title="Link to this heading"></a></h2>
+<p>Before touching any code, use the product. Visit the
+<a class="reference external" href="https://demo.care.ukp.informatik.tu-darmstadt.de">live demo</a> or
+<a class="reference internal" href="before_you_start.html"><span class="doc">run it locally</span></a>. Try both sides:</p>
+<ul class="simple">
+<li><p><strong>Researcher side</strong> — log in and explore the dashboard. A good starting path is:</p>
+<ol class="arabic simple">
+<li><p><strong>Upload a document</strong> (Dashboard → <em>Documents</em> → add a new document).</p></li>
+<li><p><strong>Create a study</strong> on top of that document (Dashboard → <em>Studies</em> → add a new study, use the <strong>Peer Review</strong> workflow).</p></li>
+</ol>
+</li>
+<li><p><strong>Participant side</strong> :</p>
+<ol class="arabic simple">
+<li><p>Start the study as a participant.</p></li>
+<li><p>Go through the <strong>annotator</strong> step.</p></li>
+<li><p>Then continue with the <strong>editor</strong> step.</p></li>
+</ol>
+</li>
+</ul>
+<p>For more detail, see <a class="reference internal" href="../for_researchers/basics.html"><span class="doc">Basics</span></a>.</p>
+</section>
+<section id="step-2-what-to-work-on">
+<h2>Step 2: What to Work on<a class="headerlink" href="#step-2-what-to-work-on" title="Link to this heading"></a></h2>
+<section id="issues">
+<h3>Issues<a class="headerlink" href="#issues" title="Link to this heading"></a></h3>
+<p>You can create an issue when:</p>
+<ul class="simple">
+<li><p>You found a concrete bug you can describe clearly</p></li>
+<li><p>You have a specific, well-defined feature request</p></li>
+<li><p>You want to propose a documentation improvement with defined scope</p></li>
+</ul>
+<p>Do not open vague issues. If you do not have a specific well-defined issue in mind, browse open issues
+available for newcomers under the <code class="docutils literal notranslate"><span class="pre">good</span> <span class="pre">first</span> <span class="pre">issue</span></code> label. Moreover, before
+starting work on an issue, comment on it to signal your intent.</p>
+</section>
+<section id="issue-templates">
+<h3>Issue Templates<a class="headerlink" href="#issue-templates" title="Link to this heading"></a></h3>
+<p>There are different types of issues you would like to create. Each has a specific template that you
+need to follow and are pre-defined once you create a new issue. You can read examples of similar
+issues in the <a class="reference external" href="https://github.com/UKPLab/CARE/issues">CARE issue tracker</a>, filtered by the
+available <em>types</em>.</p>
+<p>Once you decide what issue you are going to work on, follow the steps below.</p>
+</section>
+</section>
+<section id="step-3-fork-and-clone-the-repository">
+<h2>Step 3: Fork and Clone the Repository<a class="headerlink" href="#step-3-fork-and-clone-the-repository" title="Link to this heading"></a></h2>
+<p>As an external contributor you cannot push directly to the CARE repository.</p>
+<section id="fork">
+<h3>Fork<a class="headerlink" href="#fork" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Go to the <a class="reference external" href="https://github.com/UKPLab/CARE">repository</a></p></li>
+<li><p>Click the <strong>Fork</strong> button</p></li>
+<li><p>Choose your GitHub account</p></li>
+</ul>
+<p>You now have a copy at <code class="docutils literal notranslate"><span class="pre">https://github.com/YOUR_USERNAME/CARE</span></code>.</p>
+</section>
+<section id="clone-your-fork">
+<h3>Clone your fork<a class="headerlink" href="#clone-your-fork" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/YOUR_USERNAME/CARE.git
+<span class="nb">cd</span><span class="w"> </span>CARE
+</pre></div>
+</div>
+</section>
+<section id="add-the-upstream-remote">
+<h3>Add the upstream remote<a class="headerlink" href="#add-the-upstream-remote" title="Link to this heading"></a></h3>
+<p>This links your local repository to the official CARE repository so you can pull future updates:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>upstream<span class="w"> </span>https://github.com/UKPLab/CARE.git
+</pre></div>
+</div>
+<p>Verify your remotes:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>remote<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>You should see:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>origin    https://github.com/YOUR_USERNAME/CARE.git (fetch)
+origin    https://github.com/YOUR_USERNAME/CARE.git (push)
+upstream  https://github.com/UKPLab/CARE.git (fetch)
+upstream  https://github.com/UKPLab/CARE.git (push)
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">origin</span></code> is your fork, you push here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">upstream</span></code> is the official repo, you pull from here.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A detailed guidance is available on official guideline
+<a class="reference external" href="https://docs.github.com/en/get-started/quickstart/contributing-to-projects">forking guide</a>
+for more on contributing through forks.</p>
+</div>
+</section>
+</section>
+<section id="step-4-run-care-locally">
+<h2>Step 4: Run CARE Locally<a class="headerlink" href="#step-4-run-care-locally" title="Link to this heading"></a></h2>
+<p>Follow the official guide: <a class="reference internal" href="before_you_start.html"><span class="doc">Before You Start</span></a>.</p>
+</section>
+<section id="step-5-git-workflow-for-external-contributors">
+<h2>Step 5: Git Workflow for External Contributors<a class="headerlink" href="#step-5-git-workflow-for-external-contributors" title="Link to this heading"></a></h2>
+<section id="branch-structure">
+<h3>Branch structure<a class="headerlink" href="#branch-structure" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Branch</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">main</span></code></p></td>
+<td><p>Stable, production-ready. Protected. Maintainers only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dev</span></code></p></td>
+<td><p>Active development. Protected. All contributions target here.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">feat-*</span></code></p></td>
+<td><p>Your feature branches, created from <code class="docutils literal notranslate"><span class="pre">dev</span></code>, merged back to <code class="docutils literal notranslate"><span class="pre">dev</span></code> via PR.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hotfix-*</span></code></p></td>
+<td><p>Urgent bug fixes, created from <code class="docutils literal notranslate"><span class="pre">main</span></code>, merged back to <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<p>You always work on a branch, never directly on <code class="docutils literal notranslate"><span class="pre">dev</span></code>.</p>
+</section>
+<section id="starting-work-on-a-new-contribution">
+<h3>Starting work on a new contribution<a class="headerlink" href="#starting-work-on-a-new-contribution" title="Link to this heading"></a></h3>
+<p>First, make sure your local <code class="docutils literal notranslate"><span class="pre">dev</span></code> is up to date with upstream:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>fetch<span class="w"> </span>upstream
+git<span class="w"> </span>checkout<span class="w"> </span>dev
+git<span class="w"> </span>merge<span class="w"> </span>upstream/dev
+</pre></div>
+</div>
+<p>Then create your branch:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feat-ISSUENUMBER-short-description<span class="w"> </span>dev
+</pre></div>
+</div>
+</section>
+<section id="branch-naming-conventions">
+<h3>Branch naming conventions<a class="headerlink" href="#branch-naming-conventions" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Pattern</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Feature</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">feat-ISSUENUMBER-shortname</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">feat-42-add-csv-export</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Bug fix</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fix-ISSUENUMBER-shortname</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fix-87-login-redirect</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Documentation</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docs-ISSUENUMBER-shortname</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docs-12-update-setup-guide</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Hotfix</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hotfix-ISSUENUMBER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hotfix-99-session-crash</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Use dashes to separate parts. Keep names short and descriptive. Always include the issue number.</p>
+</section>
+<section id="commit-message-format">
+<h3>Commit message format<a class="headerlink" href="#commit-message-format" title="Link to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&lt;type&gt;: &lt;short description in present tense&gt;
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Use for</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">feat</span></code></p></td>
+<td><p>New feature</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fix</span></code></p></td>
+<td><p>Bug fix</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">refactor</span></code></p></td>
+<td><p>Code restructuring with no behavior change</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">docs</span></code></p></td>
+<td><p>Documentation only</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">test</span></code></p></td>
+<td><p>Tests only</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">style</span></code></p></td>
+<td><p>Formatting, whitespace</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ci</span></code></p></td>
+<td><p>CI configuration</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">chore</span></code></p></td>
+<td><p>Build scripts, dependencies, maintenance</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rules:</strong></p>
+<ul class="simple">
+<li><p>Present tense: “add” not “added”</p></li>
+<li><p>Lowercase</p></li>
+<li><p>No period at the end</p></li>
+<li><p>One logical change per commit</p></li>
+<li><p>A commit should represent at most one day of work</p></li>
+</ul>
+<p><strong>Good:</strong> <code class="docutils literal notranslate"><span class="pre">fix:</span> <span class="pre">resolve</span> <span class="pre">null</span> <span class="pre">check</span> <span class="pre">in</span> <span class="pre">document</span> <span class="pre">save</span> <span class="pre">handler</span></code></p>
+<p><strong>Bad:</strong> <code class="docutils literal notranslate"><span class="pre">fixed</span> <span class="pre">stuff</span></code> / <code class="docutils literal notranslate"><span class="pre">WIP</span></code> / <code class="docutils literal notranslate"><span class="pre">changes</span></code> / <code class="docutils literal notranslate"><span class="pre">update</span></code></p>
+</section>
+<section id="pushing-to-your-fork">
+<h3>Pushing to your fork<a class="headerlink" href="#pushing-to-your-fork" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>push
+<span class="c1"># First push: git push --set-upstream origin feat-ISSUENUMBER-short-description</span>
+</pre></div>
+</div>
+<p>Push to <code class="docutils literal notranslate"><span class="pre">origin</span></code> (your fork), never to <code class="docutils literal notranslate"><span class="pre">upstream</span></code>.</p>
+</section>
+<section id="keeping-your-branch-up-to-date">
+<h3>Keeping your branch up to date<a class="headerlink" href="#keeping-your-branch-up-to-date" title="Link to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">dev</span></code> has moved forward since you started your branch, sync before opening a PR:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>fetch<span class="w"> </span>upstream
+git<span class="w"> </span>checkout<span class="w"> </span>dev
+git<span class="w"> </span>merge<span class="w"> </span>upstream/dev
+git<span class="w"> </span>checkout<span class="w"> </span>feat-ISSUENUMBER-short-description
+git<span class="w"> </span>merge<span class="w"> </span>dev
+git<span class="w"> </span>push
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not squash commits — the team has found that squashed commits cause merge conflicts in
+downstream branches. Keep individual commits intact.</p>
+</div>
+</section>
+</section>
+<section id="step-6-opening-a-pull-request">
+<h2>Step 6: Opening a Pull Request<a class="headerlink" href="#step-6-opening-a-pull-request" title="Link to this heading"></a></h2>
+<section id="before-opening">
+<h3>Before opening<a class="headerlink" href="#before-opening" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>fetch<span class="w"> </span>upstream
+git<span class="w"> </span>checkout<span class="w"> </span>dev
+git<span class="w"> </span>merge<span class="w"> </span>upstream/dev
+git<span class="w"> </span>checkout<span class="w"> </span>your-branch
+git<span class="w"> </span>merge<span class="w"> </span>dev
+git<span class="w"> </span>push
+</pre></div>
+</div>
+</section>
+<section id="pr-title-format">
+<h3>PR title format<a class="headerlink" href="#pr-title-format" title="Link to this heading"></a></h3>
+<p>PR title should include the type, followed by the issue number, and then a short description of the issue.</p>
+<p><strong>Format:</strong> <code class="docutils literal notranslate"><span class="pre">&lt;Type&gt;</span> <span class="pre">&lt;ISSUE_NUMBER&gt;</span> <span class="pre">&lt;short</span> <span class="pre">description&gt;</span></code></p>
+<p><strong>Example:</strong> <code class="docutils literal notranslate"><span class="pre">Feat</span> <span class="pre">54</span> <span class="pre">add</span> <span class="pre">active</span> <span class="pre">users</span> <span class="pre">monitoring</span></code></p>
+</section>
+<section id="pr-description-template">
+<h3>PR description template<a class="headerlink" href="#pr-description-template" title="Link to this heading"></a></h3>
+<p>For the body, follow this template:</p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gu">## Summary</span>
+Short summary describing what this PR does
+
+<span class="gu">## New User Features</span>
+<span class="k">-</span><span class="w"> </span>List user-facing features introduced in this PR.
+
+<span class="gu">## New Dev Features</span>
+<span class="k">-</span><span class="w"> </span>List developer-facing changes (tooling, configs, architecture)
+
+<span class="gu">## Improvements</span>
+<span class="k">-</span><span class="w"> </span>List non-breaking improvements (refactors, consistency fixes, optimizations)
+
+<span class="gu">## Bug Fixes</span>
+<span class="k">-</span><span class="w"> </span>List bugs fixed, include rule names / modules if relevant
+
+<span class="gu">## Known Limitations</span>
+<span class="k">-</span><span class="w"> </span>List any known issues, incomplete work, or trade-offs, if any.
+
+<span class="gu">## Future Steps</span>
+<span class="k">-</span><span class="w"> </span>List follow-up work, additional PRs, or planned improvements
+</pre></div>
+</div>
+</section>
+</section>
+<section id="step-7-navigating-code-review">
+<h2>Step 7: Navigating Code Review<a class="headerlink" href="#step-7-navigating-code-review" title="Link to this heading"></a></h2>
+<section id="how-to-respond">
+<h3>How to respond<a class="headerlink" href="#how-to-respond" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>.
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix: address review comments&quot;</span>
+git<span class="w"> </span>push
+</pre></div>
+</div>
+<p>Reply to each thread with:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Resolved in commit &lt;hash&gt;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="step-8-staying-in-sync">
+<h2>Step 8: Staying in Sync<a class="headerlink" href="#step-8-staying-in-sync" title="Link to this heading"></a></h2>
+<p>As CARE continues to develop, your fork will fall behind upstream. Sync regularly, especially
+before starting new work:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>fetch<span class="w"> </span>upstream
+git<span class="w"> </span>checkout<span class="w"> </span>dev
+git<span class="w"> </span>merge<span class="w"> </span>upstream/dev
+git<span class="w"> </span>checkout<span class="w"> </span>feat-branch
+git<span class="w"> </span>merge<span class="w"> </span>dev
+git<span class="w"> </span>push
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../getting_started/installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="before_you_start.html" class="btn btn-neutral float-right" title="Before You Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
