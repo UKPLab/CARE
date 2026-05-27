@@ -80,7 +80,6 @@ import { getSupportedImportFormats } from "@/assets/utils";
 export default {
   name: "ImportFormatModal",
   components: { StepperModal, BasicTable },
-  emits: ["itemsSelected"],
   props: {
     title: {
       type: String,
@@ -91,6 +90,7 @@ export default {
       default: null,
     },
   },
+  emits: ["itemsSelected"],
   data() {
     return {
       table: null,

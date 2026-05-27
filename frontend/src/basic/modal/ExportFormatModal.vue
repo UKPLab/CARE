@@ -55,11 +55,6 @@ export default {
       default: "Export",
     },
   },
-  computed: {
-    supportedFormats() {
-      return getSupportedExportFormats();
-    },
-  },
   data() {
     return {
       filterId: null,
@@ -68,6 +63,11 @@ export default {
       childTableOptions: null,
       tableOptions: null,
     };
+  },
+  computed: {
+    supportedFormats() {
+      return getSupportedExportFormats();
+    },
   },
   methods: {
     /**
