@@ -29,6 +29,8 @@ module.exports = class AIService extends Service {
                 "shareModel",
                 "getModelOverview",
                 "getAiModelOwnerSummaries",
+                "resetShareBudget",
+                "resetModelBudget",
             ],
             resTypes: [],
         });
@@ -54,6 +56,8 @@ module.exports = class AIService extends Service {
             shareModel: () => share.shareModel(this, client, data),
             getModelOverview: () => share.getModelOverview(this, client, data),
             getAiModelOwnerSummaries: () => share.getAiModelOwnerSummaries(this, client),
+            resetShareBudget: () => share.resetShareBudget(this, client, data),
+            resetModelBudget: () => share.resetModelBudget(this, client, data),
         };
         if (handlers[command]) {
             return handlers[command]();

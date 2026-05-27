@@ -9,6 +9,7 @@
 
 const {Op} = require("sequelize");
 const helpers = require("./helpers");
+const budget = require("./budget");
 
 const DEFAULT_SHARE_MODE = "users";
 
@@ -126,6 +127,25 @@ function createShareRow(aiModel, userId, expiryDate, extra = {}) {
     };
 }
 
+/**
+ * Extracts optional budget fields from a share payload and normalizes them to
+ * numeric values or null. Reused by both users-mode and roles-mode createRows.
+ *
+ * @param {object} data RPC payload.
+ * @returns {{costLimit: (number|null), notifyThreshold: (number|null)}}
+ */
+function extractBudgetFields(data) {
+    const toNumberOrNull = (value) => {
+        if (value === undefined || value === null || value === "") return null;
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : null;
+    };
+    return {
+        costLimit: toNumberOrNull(data?.costLimit),
+        notifyThreshold: toNumberOrNull(data?.notifyThreshold),
+    };
+}
+
 const SHARE_TARGETS = {
     users: {
         mode: "users",
@@ -156,7 +176,8 @@ const SHARE_TARGETS = {
                 transaction,
             );
 
-            return userIds.map((userId) => createShareRow(aiModel, userId, expiryDate));
+            const budgetFields = extractBudgetFields(data);
+            return userIds.map((userId) => createShareRow(aiModel, userId, expiryDate, budgetFields));
         },
     },
     roles: {
@@ -206,10 +227,12 @@ const SHARE_TARGETS = {
                 throw new Error(target.emptyExpandedSelectionError);
             }
 
+            const budgetFields = extractBudgetFields(data);
             return [...uniqueRoleUserPairs].map((pair) => {
                 const [userIdText, roleIdText] = pair.split(":");
                 return createShareRow(aiModel, Number(userIdText), expiryDate, {
                     roleId: Number(roleIdText),
+                    ...budgetFields,
                 });
             });
         },
@@ -372,9 +395,13 @@ async function shareModel(service, client, data) {
     try {
         const aiModel = await assertModelOwnership(service.server, ownerUserId, data?.aiModelId, transaction);
 
+        // Scope the wipe to global shares only — study-scoped rows belong to a
+        // different lifecycle (study creation/deletion) and must not be touched
+        // when the model owner re-shares globally. 
+        // TODO: make sure with Akash
         await service.server.db.models.ai_model_share.update(
             {deleted: true, deletedAt: new Date()},
-            {where: {aiModelId: aiModel.id, deleted: false}, transaction},
+            {where: {aiModelId: aiModel.id, studyId: null, deleted: false}, transaction},
         );
 
         const rowsToCreate = await target.createRows({
@@ -451,10 +478,43 @@ async function getAiModelOwnerSummaries(service, client) {
     }, {});
 }
 
+/**
+ * Reset the per-user cost cap window on one share row.
+ * Verifies the caller owns the underlying model before delegating to the budget module.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Authenticated caller.
+ * @param {{ shareId?: number, aiModelId?: number }} data RPC payload with the target share + model FK.
+ * @returns {Promise<{ok: true}>}
+ */
+async function resetShareBudget(service, client, data) {
+    const ownerUserId = helpers.requireClientUserId(client);
+    await assertModelOwnership(service.server, ownerUserId, data?.aiModelId);
+    await budget.resetShareBudget(service, data);
+    return {ok: true};
+}
+
+/**
+ * Reset the model-wide global cap window. Verifies caller owns the model.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Authenticated caller.
+ * @param {{ modelId?: number }} data RPC payload with the target model PK.
+ * @returns {Promise<{ok: true}>}
+ */
+async function resetModelBudget(service, client, data) {
+    const ownerUserId = helpers.requireClientUserId(client);
+    await assertModelOwnership(service.server, ownerUserId, data?.modelId);
+    await budget.resetModelBudget(service, data);
+    return {ok: true};
+}
+
 module.exports = {
     getModelShareOptions,
     getModelShareConfig,
     getModelOverview,
     shareModel,
     getAiModelOwnerSummaries,
+    resetShareBudget,
+    resetModelBudget,
 };
