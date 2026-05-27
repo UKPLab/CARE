@@ -67,7 +67,7 @@ export default {
   },
   computed: {
     hasAdminRights() {
-      return this.$store.getters["auth/isAdmin"] || this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.view");
+      return this.$store.getters["auth/isAdmin"] || this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.viewAll");
     },
     canReplaceDeleteSubmissions() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.replaceDeleteSubmissions");
@@ -110,8 +110,7 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: (submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked,
-            allowReUpload: (submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked,
+            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null,
             isStudyLocked,
             studyUsageCount,
             name: submission.name || "-",

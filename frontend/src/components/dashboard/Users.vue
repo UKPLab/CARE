@@ -14,7 +14,7 @@
             title="Rights Management"
             text="Rights Management"
             icon="shield-lock"
-            @click="$refs.rightsManagementModal.open()"
+            @click="openRightsManagementModal"
         />
         <BasicButton
           class="btn btn-secondary btn-sm"
