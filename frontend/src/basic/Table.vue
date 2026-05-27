@@ -17,7 +17,7 @@
       aria-label="table-search"
       aria-describedby="search-addon1"
     />
-    <slot name="search-actions"/>
+    <slot name="additional-buttons"/>
   </div>
   <div
     ref="tableWrapper"

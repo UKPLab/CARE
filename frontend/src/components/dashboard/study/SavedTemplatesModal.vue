@@ -17,34 +17,38 @@
         :buttons="tableButtons"
         :max-table-height="'60vh'"
         @action="handleAction"
-      />
+      >
+        <template #additional-buttons>
+          <BasicButton
+            class="btn btn-outline-secondary btn-sm"
+            icon="upload"
+            text=""
+            title="Import Template"
+            @click="openImport"
+          />
+          <BasicButton
+            class="btn btn-outline-secondary btn-sm"
+            icon="download"
+            text=""
+            title="Export All Templates"
+            @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
+          />
+        </template>
+      </BasicTable>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-primary"
-        title="Create Template"
-        name="Create Template"
-        @click="createTemplate"
-      />
-      <BasicButton
-        class="btn btn-secondary"
-        title="Import Template"
-        text="Import"
-        icon="upload"
-        @click="openImport"
-      />
-      <BasicButton
-        class="btn btn-secondary"
-        title="Export All Templates"
-        text="Export All"
-        icon="download"
-        @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
-      />
-      <BasicButton
-        class="btn btn-secondary"
-        title="Close"
-        @click="close"
-      />      
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          title="Close"
+          @click="close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          title="Create Template"
+          @click="createTemplate"
+        />
+      </span>
     </template>
   </BasicModal>
   <ConfirmModal ref="deleteConf"/>
