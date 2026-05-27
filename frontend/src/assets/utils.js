@@ -99,10 +99,40 @@ export function objectsToTXT(objs) {
  * This is the single source of truth for downloadObjectsAs and getSupportedExportFormats.
  */
 const EXPORT_FORMATS = {
-    csv:  { serialize: objectsToCSV,  mimeType: "text/csv",            label: "CSV Format",  icon: "filetype-csv",  description: "Comma-separated values, compatible with spreadsheets", extensions: [".csv"] },
-    json: { serialize: objectsToJSON, mimeType: "application/json",    label: "JSON Format", icon: "filetype-json", description: "Standard JSON format with proper formatting",          extensions: [".json"],         parse: (content) => JSON.parse(content) },
-    txt:  { serialize: objectsToTXT,  mimeType: "text/plain",          label: "TXT Format",  icon: "filetype-txt",  description: "Plain text with indented nested objects",             extensions: [".txt"] },
-    yaml: { serialize: objectsToYAML, mimeType: "application/x-yaml", label: "YAML Format", icon: "filetype-yml",  description: "Human-readable YAML format",                          extensions: [".yaml", ".yml"], parse: (content) => yaml.load(content) },
+    csv: {
+        serialize:   objectsToCSV,
+        mimeType:    "text/csv",
+        label:       "CSV Format",
+        icon:        "filetype-csv",
+        description: "Comma-separated values, compatible with spreadsheets",
+        extensions:  [".csv"],
+    },
+    json: {
+        serialize:   objectsToJSON,
+        mimeType:    "application/json",
+        label:       "JSON Format",
+        icon:        "filetype-json",
+        description: "Standard JSON format with proper formatting",
+        extensions:  [".json"],
+        parse:       (content) => JSON.parse(content),
+    },
+    txt: {
+        serialize:   objectsToTXT,
+        mimeType:    "text/plain",
+        label:       "TXT Format",
+        icon:        "filetype-txt",
+        description: "Plain text with indented nested objects",
+        extensions:  [".txt"],
+    },
+    yaml: {
+        serialize:   objectsToYAML,
+        mimeType:    "application/x-yaml",
+        label:       "YAML Format",
+        icon:        "filetype-yml",
+        description: "Human-readable YAML format",
+        extensions:  [".yaml", ".yml"],
+        parse:       (content) => yaml.load(content),
+    },
 };
 
 /**

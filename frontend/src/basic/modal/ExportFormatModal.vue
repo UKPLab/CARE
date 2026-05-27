@@ -72,28 +72,13 @@ export default {
   methods: {
     /**
      * Opens the export modal.
-     * @param {number|null} id - ID of a single record to export. If null, all records in the table are exported.
-     * @param {string|null} table - Table name to export from (e.g. "tag_set", "workflow").
-     * @param {string|null} childTable - Optional child table to nest under each parent record (e.g. "tag", "workflow_step").
-     * @param {object|null} tableOptions - Options for the parent table export (currently unused, reserved for future use).
-     * @param {object|null} childTableOptions - Options for child table export.
-     * @param {string} [childTableOptions.key] - Key name to nest children under in the exported object. Defaults to the childTable name.
      *
-     * @example
-     * Export a single record with no children
-     * this.$refs.exportFormatModal.open(template.id, "template");
-     *
-     * @example
-     * Export all records in a table
-     * this.$refs.exportFormatModal.open(null, "workflow");
-     *
-     * @example
-     * Export a single record with nested children (steps)
-     * this.$refs.exportFormatModal.open(workflow.id, "workflow", "workflow_step");
-     *
-     * @example
-     * Export with a custom key for nested children
-     * this.$refs.exportFormatModal.open(tagSet.id, "tag_set", "tag", null, { key: "tags" });
+     * @param {number|null} id                          - ID of a single record to export. If null, all records in the table are exported.
+     * @param {string|null} table                       - Table name to export from (e.g. "tag_set", "workflow").
+     * @param {string|null} childTable                  - Optional child table to nest under each parent record (e.g. "tag", "workflow_step").
+     * @param {object|null} tableOptions                - Options for the parent table export (currently unused, reserved for future use).
+     * @param {object|null} childTableOptions           - Options for child table export.
+     * @param {string}      [childTableOptions.key]     - Key name to nest children under in the exported object. Defaults to the childTable name.
      */
     open(id = null, table = null, childTable = null, tableOptions = null, childTableOptions = null) {
       this.filterId = id;
