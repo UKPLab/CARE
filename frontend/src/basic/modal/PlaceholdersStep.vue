@@ -3,6 +3,7 @@
     <!-- Short Preview -->
     <div v-if="shortPreview" class="short-preview mb-4">
       <h6 class="section-title">Document Preview</h6>
+      <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="preview-content" v-html="shortPreview"></div>
     </div>
 
