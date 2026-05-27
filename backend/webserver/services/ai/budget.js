@@ -9,9 +9,12 @@
  *              session row (studySessionId set)
  *            → study row   (studyId set, studySessionId null)
  *            → user row    (studyId/sessionId null, userId matches) shared budget
- *       3. Parent share cap — only when inside a study and the study owner has
- *          a user-scoped share on this model. Sums the study owner's
- *          attributable usage (their direct chats + spend in studies they own).
+ *       3. Parent share cap — only when inside a study and the study creator is
+ *          NOT the model owner. The study creator must have an active
+ *          user-scoped share on this model:
+ *            - no active share → request denied (revoked access)
+ *            - active share with costLimit → enforce the creator's attributable
+ *              usage (their direct chats + spend in studies they own)
  *   - Each cap has its own resetAt.
  *   - One in-flight request per (userId, studySessionId). Second is rejected.
  *   - Usage is computed from ai_log on demand.
@@ -225,9 +228,13 @@ async function _findBlockingShareCap(service, scope) {
 }
 
 /**
- * Returns a reason if the study owner's user-scoped share cap is exhausted.
- * Runs only when the request is inside a study and the study owner has a
- * user-scoped share on this model (i.e. the owner is not the model owner).
+ * Strict access + budget gate for the study creator on the request's model.
+ * Runs only when the request is inside a study and the study creator is not
+ * the model owner. Two failure modes:
+ *   - the study creator has no active user-scoped share on this model (when deleted)
+ *     (access revoked or never granted) → request denied
+ *   - the share exists with a costLimit, and the creator's attributable usage
+ *     has reached it → request denied
  *
  * @param {Object} service - AIService instance.
  * @param {Object} scope - Minimal lookup keys.
@@ -244,6 +251,17 @@ async function _findBlockingParentShareCap(service, { aiModelId, studyId }) {
     });
     if (!study) return null;
 
+    // we need the check if the share is deleted(below), but the model owner 
+    // doesn't necessarily have a share row, so we need to ensure he is not the model owner before checking share
+    const model = await service.server.db.models["ai_model"].findByPk(aiModelId, {
+        attributes: ["id", "userId"],
+        raw: true,
+    });
+    if (!model) return null;
+
+    // Study creator owns the model → no share required, skip the gate.
+    if (model.userId === study.userId) return null;
+
     const share = await service.server.db.models["ai_model_share"].findOne({
         where: {
             aiModelId,
@@ -254,11 +272,15 @@ async function _findBlockingParentShareCap(service, { aiModelId, studyId }) {
             deleted: false,
         },
     });
-    if (!share || share.costLimit === null) return null;
+
+    if (!share) {
+        return "Study creator no longer has access to this AI model. Please contact your study administrator.";
+    }
+    if (share.costLimit === null) return null;
 
     const used = await _sumAttributableToOwner(service, share, study.userId);
     if (used >= share.costLimit) {
-        return `AI model owner budget exhausted: $${used.toFixed(2)} / $${share.costLimit.toFixed(2)}`;
+        return `Study creator's AI budget exhausted: $${used.toFixed(2)} / $${share.costLimit.toFixed(2)}. Please contact your study administrator.`;
     }
     return null;
 }
