@@ -156,7 +156,7 @@ export default {
     config: {
       type: Object,
       required: false,
-      default: {}
+      default: () => ({})
     },
     service: {
       type: String,

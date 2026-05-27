@@ -28,8 +28,8 @@
           :data="configurationsTable"
           :options="options"
           :buttons="buttons"
-          @action="action"
           :max-table-height="'65vh'"
+          @action="action"
       />
     </template>
   </Card>

@@ -1,12 +1,14 @@
 Welcome to CARE!
 ================================
 
-Welcome to the CARE project -- contribute towards AI-assisted collaborative reading.
+Welcome to the CARE project -- a Collaborative AI-Assisted Research Environment for reading, annotating, writing, and assessment workflows.
 
 This documentation covers many examples to get you started really quick -- both as a
 developer contributing to the extension of CARE or as a researcher using it for your research.
 
-The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp>`_ at the `TU Darmstadt <https://www.tu-darmstadt.de/index.en.jsp>`_ as part of the `Intertext Initiative <https://intertext.ukp-lab.de/>`_.
+The project originated from the `Intertext Initiative <https://intertext.ukp-lab.de/>`_ at the `UKP Lab <https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp>`_, `TU Darmstadt <https://www.tu-darmstadt.de/index.en.jsp>`_, and is supported by the ATHENE Center, DFG, and the European Union.
+
+For a live demo, visit https://demo.care.ukp.informatik.tu-darmstadt.de. Join our `Discord <https://discord.gg/4uX9aCZ6G7>`_ to reach the team directly or discuss the project with the community.
 
 .. toctree::
    :maxdepth: 1
@@ -19,6 +21,7 @@ The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de
    :maxdepth: 2
    :caption: For Developers
 
+   for_developers/contributing
    for_developers/before_you_start
    for_developers/basics/basics
 

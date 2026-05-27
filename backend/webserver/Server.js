@@ -17,7 +17,9 @@ const Service = require(path.resolve(__dirname, "./Service.js"));
 const RPC = require(path.resolve(__dirname,"./RPC.js"));
 const statsScheduler = require('../db/stats');
 const nodemailer = require('nodemailer');
+const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
+const { parseUserAgent } = require("../utils/generic");
 
 /**
  * Defines Express Webserver of Content Server
@@ -92,6 +94,7 @@ module.exports = class Server {
         require('./routes/export')(this);
         require("./routes/config")(this);
         require('./routes/auth')(this);
+        require("./routes/setup")(this);
 
         this.app.use((req, res, next) => {
             if (req.method !== "GET") {
@@ -104,13 +107,16 @@ module.exports = class Server {
         });
 
         this.httpServer = http.createServer(this.app);
-        Promise.resolve(this.#initMailServer()).then(() => {
+        Promise.resolve(this.initMailServer()).then(() => {
             if (this.mailer) {
                 this.logger.info("Mail server initialized");
             } else {
                 this.logger.warn("Mail server not available!");
             }
+        }).catch((err) => {
+            this.logger.error("initMailServer failed: " + err);
         });
+        Promise.resolve(setupDevAdmin(this)); // When DEV_SKIP_WIZARD=true only: creates first admin from env and marks wizard complete.
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
@@ -137,10 +143,12 @@ module.exports = class Server {
     }
 
     /**
-     * Initialize the mail server
+     * Initialize the mail server from current DB settings.
+     * Clears any previous transport first so disabled mail or changed mode is reflected.
      * @returns {Promise<void>}
      */
-    async #initMailServer() {
+    async initMailServer() {
+        this.mailer = null;
 
         if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
             if (await this.db.models['setting'].get("system.mailService.sendMail.enabled") === "true") {
@@ -353,8 +361,10 @@ module.exports = class Server {
             }
         })
 
-        this.io.on("connection", (socket) => {
+        this.io.on("connection", async (socket) => {
             this.availSockets[socket.id] = {};
+            socket.connectedAt = socket.handshake?.time;
+            socket.browser = parseUserAgent(socket.handshake?.headers["user-agent"]);
             socket.openComponents = {
                 editor: []  // Array to track open documents
             };
@@ -366,11 +376,12 @@ module.exports = class Server {
             socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 
+          
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
                 this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
 
                 await this.availSockets[socket.id][socketName].init();
-            });
+            })
 
             socket.on("disconnect", async (reason) => {
                 try {
@@ -390,7 +401,14 @@ module.exports = class Server {
                         this.logger.warn("Failed to flush stats on disconnect: " + e);
                     }
 
-                    
+                    // Broadcast user monitor stats before cleanup, UserSocket is not available after the socket is disconnected
+                    try {
+                        const userSock = this.availSockets[socket.id]['UserSocket'];
+                        if (userSock) await userSock.broadcastStats(socket.id);
+                    } catch (e) {
+                        this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
+                    }
+
                     delete this.availSockets[socket.id];
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);

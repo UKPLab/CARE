@@ -64,7 +64,7 @@ export default {
     },
     referenceElement: {
       type: [Object, String],
-      required: true,
+      required: false,
       default: null
     },
     isPinned: {
@@ -98,7 +98,10 @@ export default {
     'pin-changed',
     'mouse-enter',
     'mouse-leave',
-    'close-requested'
+    'close-requested',
+    'update:selectedItem',
+    'update:referenceElement',
+    'update:show'
   ],
   
   data() {

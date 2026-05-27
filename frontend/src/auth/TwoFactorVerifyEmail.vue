@@ -294,7 +294,7 @@ export default {
           this.errorMessage =
             response.data.message || "Failed to resend code. Please try again.";
         }
-      } catch (error) {
+      } catch (_error) {
         this.showError = true;
         this.errorMessage = "Failed to resend code. Please try again.";
       } finally {

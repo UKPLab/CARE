@@ -28,7 +28,7 @@
         >
           <template #content>
             <GeneralSettingStep  
-              :modelValue="stepConfig"
+              :model-value="stepConfig"
               @validation-change="handleGeneralValidationChange"
               @update:form-data="handleGeneralFormDataUpdate"
             />
@@ -40,8 +40,8 @@
         >
           <template #content>
             <ServicesStep
-              :modelValue="stepConfig"
-              :currentStepperStep="currentStepperStep"
+              :model-value="stepConfig"
+              :current-stepper-step="currentStepperStep"
               @validation-change="handleServicesValidationChange"
               @update:form-data="handleServicesFormDataUpdate"
             />
@@ -53,7 +53,7 @@
         >
           <template #content>
             <PlaceholdersStep
-              :modelValue="stepConfig"
+              :model-value="stepConfig"
               @update:form-data="handlePlaceholdersFormDataUpdate"
               @validation-change="handlePlaceholdersValidationChange"
             />
@@ -86,32 +86,6 @@ export default {
   name: "ConfigurationModal",
   components: { StepperModal, StepTemplate, GeneralSettingStep, ServicesStep, PlaceholdersStep },
   subscribeTable: ["document", "submission", "configuration", "GeneralSettingStep"],
-  props: {
-    modelValue: {
-      type: Object,
-      default: () => ({}),
-    },
-    documentId: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    studyStepId: {
-      type: Number,
-      required: true,
-      default: null,
-    },
-    stepNumber: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    workflowSteps: {
-      type: Array,
-      required: true,
-      default: () => [],
-    },
-  },
   inject: {
     formData: {
       default: () => null,
@@ -125,6 +99,32 @@ export default {
       studySessionId: computed(() => this.studySessionId),
       isTemplateMode: computed(() => this.formData?.isTemplateMode || false),
     };
+  },
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => ({}),
+    },
+    documentId: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    stepNumber: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    workflowSteps: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
   },  
   emits: ["update:modelValue"],
   data() {

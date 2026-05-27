@@ -62,8 +62,8 @@
       <div v-else-if="dataSelection.exportType === 'submissions'">
         <StepSelectStudents 
           v-if="dataSelection.projectId"
-          :project-id="dataSelection.projectId" 
           v-model="submissionSelection" 
+          :project-id="dataSelection.projectId" 
         />
         <!-- We send the project ID and get the selected students back -->
       </div>
@@ -87,15 +87,15 @@
     </template>
 
     
-    <template #step-3 v-if="dataSelection.exportType === 'submissions'">
+    <template v-if="dataSelection.exportType === 'submissions'" #step-3>
       <StepOptions 
-        v-model:generateAliases="generateAliases"
-        v-model:fakerSeed="fakerSeed"
+        v-model:generate-aliases="generateAliases"
+        v-model:faker-seed="fakerSeed"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
     </template>
 
-    <template #step-4 v-if="dataSelection.exportType === 'submissions'">
+    <template v-if="dataSelection.exportType === 'submissions'" #step-4>
       <StepConfirmDownload 
         v-if="dataSelection.exportType === 'submissions'"
         :wait="wait"
@@ -117,7 +117,6 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import BasicLoading from "@/basic/Loading.vue";
 import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
@@ -131,7 +130,7 @@ import getServerURL from "@/assets/serverUrl.js";
  */
 export default {
   name: "ExportProjectModal",
-  components: { BasicLoading, StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
+  components: { StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -449,7 +448,7 @@ export default {
               );
               break;
 
-            case 2: // Editor
+            case 2: { // Editor
               // download edits + html
               const edits = this.edits.filter(edit => (
                   edit.documentId === step.documentId && edit.studyStepId === null && edit.studySessionId === null
@@ -465,6 +464,7 @@ export default {
               step_folder.file('text.txt', quill.getText());
               step_folder.file('document.delta', JSON.stringify(deltas, null, 2));
               break;
+            }
           }
         });
       });

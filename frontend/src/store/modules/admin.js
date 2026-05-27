@@ -15,6 +15,12 @@ const getDefaultState = () => {
     // userRecords contains a list of more detailed user data than the users array right above.
     userRecords: [],
     userStats: {},
+    monitorStats: {
+      activeSessions: 0,
+      activeUsers: 0,
+      connectedUsers: [],
+      sessions: [],
+    },
     userRight: {},
     systemRoles: [],
     assignmentUserInfos: [],
@@ -36,7 +42,15 @@ export default {
     getUsers: (state) => {
       return state["users"];
     },
-
+    /**
+     * Returns the monitor stats, if loaded from the server. Otherwise, null.
+     *
+     * @param state
+     * @returns {Object|null}
+     */
+    getMonitorStats: (state) => {
+      return state["monitorStats"];
+    },
     /**
      * Returns the stats for a given user (by id), if loaded from the server. Otherwise, null.
      *
@@ -96,7 +110,17 @@ export default {
         state.users = message.users;
       }
     },
-
+    /**
+     * On "monitorStatsUpdate", update the monitor stats
+     *
+     * @param state
+     * @param message
+     */
+    SOCKET_monitorStatsUpdate: (state, message) => {
+      if (message.success) {
+        state.monitorStats = message.data;
+      }
+    },
     /**
      * On "statsDataByUser", updates the user stats associated with a given user ID.
      *

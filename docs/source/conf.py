@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import date
 
 sys.path.insert(0, os.path.abspath('../..'))
 
@@ -12,8 +13,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'CARE'
-copyright = '2022-2025 Team CARE (Technical University Darmstadt)'
-author = 'Team CARE (Technical University Darmstadt)'
+copyright = f'2022-{date.today().year} Team CARE'
+author = 'Team CARE'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

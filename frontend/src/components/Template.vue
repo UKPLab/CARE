@@ -26,6 +26,27 @@
     name: "TemplateRoute",
     subscribeTable: ["template"],
     components: {Loader, Editor},
+    beforeRouteLeave(to, from, next) {
+      const templateEditor = this.$refs.editor?.$refs?.templateEditor;
+      if (!templateEditor || typeof templateEditor.requestClose !== "function") {
+        next();
+        return;
+      }
+      templateEditor.requestClose().then((res) => {
+        if (res && res.success) {
+          next();
+        } else {
+          if (res && !res.success) {
+            this.eventBus.emit("toast", {
+              title: "Template save failed",
+              message: res.message || "",
+              variant: "danger",
+            });
+          }
+          next(false);
+        }
+      }).catch(() => next(false));
+    },
     props: {
       'templateId': {
         type: [String, Number],
@@ -63,27 +84,6 @@
     },
     mounted() {
       this.templateIdNum = Number(this.templateId);
-    },
-    beforeRouteLeave(to, from, next) {
-      const templateEditor = this.$refs.editor?.$refs?.templateEditor;
-      if (!templateEditor || typeof templateEditor.requestClose !== "function") {
-        next();
-        return;
-      }
-      templateEditor.requestClose().then((res) => {
-        if (res && res.success) {
-          next();
-        } else {
-          if (res && !res.success) {
-            this.eventBus.emit("toast", {
-              title: "Template save failed",
-              message: res.message || "",
-              variant: "danger",
-            });
-          }
-          next(false);
-        }
-      }).catch(() => next(false));
     },
     sockets: {
       templateError: function (data) {

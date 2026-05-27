@@ -7,13 +7,16 @@
       <Editor ref="editor" v-model="currentData"></Editor>
     </template>
     <template #footer>
-      <button class="btn btn-secondary" data-bs-dismiss="modal" type="button"
+      <button class="btn btn-secondary" type="button"
               @click="$refs.editorModal.close()">Close
       </button>
     </template>
   </Modal>
-  <LoadIcon class="mx-2" icon-name="border-style"
-            @click="open()"></LoadIcon>
+  <LoadIcon
+    class="mx-2"
+    icon-name="border-style"
+    @click="open()"
+  ></LoadIcon>
 </template>
 
 <script>
@@ -42,15 +45,15 @@ export default {
     }
   },
   watch: {
+    modelValue: {
+      immediate: true,
+      handler() {
+        this.currentData = this.modelValue ?? "";
+      },
+    },
     currentData() {
       this.$emit("update:modelValue", this.currentData);
     },
-    modelValue() {
-      this.currentData = this.modelValue;
-    },
-  },
-  mounted() {
-    this.currentData = this.modelValue;
   },
   methods: {
     open() {
