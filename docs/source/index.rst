@@ -21,6 +21,7 @@ For a live demo, visit https://demo.care.ukp.informatik.tu-darmstadt.de. Join ou
    :maxdepth: 2
    :caption: For Developers
 
+   for_developers/contributing
    for_developers/before_you_start
    for_developers/basics/basics
 

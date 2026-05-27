@@ -1,5 +1,7 @@
 # Frontend
 
+> Want to contribute? See the [Open-Source Contributor Guide](../docs/source/for_developers/contributing.rst).
+
 ## Overview
 The frontend is realized entirely in Vue.js. Each component has a well-defined
 functionality and responsibility and the app is structured into these 
