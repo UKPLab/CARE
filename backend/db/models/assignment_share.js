@@ -4,6 +4,12 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
 	class AssignmentShare extends MetaModel {
 		static autoTable = true;
+		static accessMap = [
+			{
+				right: "frontend.dashboard.assignments.viewAll",
+				columns: this.getAttributes(),
+			},
+		];
 
 		static associate(models) {
 			AssignmentShare.belongsTo(models["assignment"], {

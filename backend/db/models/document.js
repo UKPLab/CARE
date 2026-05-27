@@ -20,6 +20,13 @@ module.exports = (sequelize, DataTypes) => {
 
         static autoTable = true;
 
+        static accessMap = [
+			{
+				right: "frontend.dashboard.assignments.viewAll",
+				columns: this.getAttributes(),
+			},
+		];
+
         static fields = [
             {
                 key: "name",
