@@ -60,6 +60,8 @@
 <li class="toctree-l4"><a class="reference internal" href="#add-a-migration">1. Add a migration</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#supported-setting-types">Supported Setting Types</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#use-your-settings-in-the-frontend">2. Use your Settings in the Frontend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wizard-and-settings-ui-metadata">Wizard and Settings UI Metadata</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mail-settings-runtime-behavior">Mail Settings Runtime Behavior</a></li>
 </ul>
 </li>
 </ul>
@@ -253,6 +255,29 @@ You must manually parse them as needed based on the setting’s <code class="doc
 After modifying any setting through the UI, you <strong>must</strong> click the <code class="docutils literal notranslate"><span class="pre">Save</span> <span class="pre">Settings</span></code> button.
 Otherwise, your changes will be lost and not persisted.</p>
 </div>
+</section>
+<section id="wizard-and-settings-ui-metadata">
+<h3>Wizard and Settings UI Metadata<a class="headerlink" href="#wizard-and-settings-ui-metadata" title="Link to this heading"></a></h3>
+<p>Settings can expose additional metadata so they render with user-friendly labels and
+grouping in both setup and dashboard settings views.</p>
+<p>Relevant fields on <code class="docutils literal notranslate"><span class="pre">setting</span></code> rows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">displayName</span></code>: human-readable field label</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">displayGroup</span></code>: top-level settings group</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">displaySubsection</span></code>: subsection title inside the group</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">showInWizard</span></code>: include in setup wizard</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wizardStep</span></code>: wizard step assignment (e.g. <code class="docutils literal notranslate"><span class="pre">general</span></code>, <code class="docutils literal notranslate"><span class="pre">mail</span></code>, <code class="docutils literal notranslate"><span class="pre">registration</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wizardOrder</span></code>: field order within the step</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">requiredInWizard</span></code>: required flag for setup validation</p></li>
+</ul>
+<p>When adding new settings, populate these fields during migration so the setup wizard
+and the dashboard settings page stay aligned.</p>
+</section>
+<section id="mail-settings-runtime-behavior">
+<h3>Mail Settings Runtime Behavior<a class="headerlink" href="#mail-settings-runtime-behavior" title="Link to this heading"></a></h3>
+<p>Mail configuration changes made from the dashboard settings page are applied on
+<code class="docutils literal notranslate"><span class="pre">Save</span> <span class="pre">Settings</span></code> and do not require a backend restart.</p>
+<p>This includes toggles and provider-specific values under <code class="docutils literal notranslate"><span class="pre">system.mailService.*</span></code>.</p>
 </section>
 </section>
 </section>

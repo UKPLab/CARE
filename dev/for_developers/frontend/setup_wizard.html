@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup Wizard &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Plugins" href="plugins.html" />
+    <link rel="prev" title="Apply Skill Modal : Preprocessing" href="components/apply_skill_preprocessing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="frontend.html">Frontend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="basic/basic.html">Basic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components/components.html">Components</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Setup Wizard</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#when-it-is-used">When it is used</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wizard-steps">Wizard Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#frontend-components">Frontend components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-settings-are-rendered">How Settings Are Rendered</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#import-and-export">Import and Export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mail-test-during-setup">Mail Test During Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extending-the-wizard">Extending the Wizard</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vuex_store.html">Vuex Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stats.html">User Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="frontend.html">Frontend Development</a></li>
+      <li class="breadcrumb-item active">Setup Wizard</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/frontend/setup_wizard.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="setup-wizard">
+<h1>Setup Wizard<a class="headerlink" href="#setup-wizard" title="Link to this heading"></a></h1>
+<p>The setup wizard provides the first-time configuration flow in CARE and is implemented in
+<code class="docutils literal notranslate"><span class="pre">frontend/src/auth/SetupWizard.vue</span></code>.</p>
+<section id="when-it-is-used">
+<h2>When it is used<a class="headerlink" href="#when-it-is-used" title="Link to this heading"></a></h2>
+<p>The wizard is shown for fresh instances where no admin account exists.
+Instead of going directly to login, the user is guided through setup and then redirected
+to the regular application flow.</p>
+<p>Backend endpoints used by this flow:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/setup/config</span></code>: fetch steps (<code class="docutils literal notranslate"><span class="pre">key</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">description</span></code>, <code class="docutils literal notranslate"><span class="pre">order</span></code>, <code class="docutils literal notranslate"><span class="pre">typeId</span></code>), <code class="docutils literal notranslate"><span class="pre">wizardStepTypes</span></code> (<code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">key</span></code>), wizard settings, and full settings snapshot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/auth/setup-admin</span></code>: create the initial admin account.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/setup/test-mail</span></code>: send a test mail during setup.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/setup/complete</span></code>: persist setup settings and mark setup as completed.</p></li>
+</ul>
+</section>
+<section id="wizard-steps">
+<h2>Wizard Steps<a class="headerlink" href="#wizard-steps" title="Link to this heading"></a></h2>
+<p>The current step sequence is:</p>
+<ol class="arabic simple">
+<li><p><strong>Admin</strong> (create first admin account)</p></li>
+<li><p><strong>General</strong> (base app behavior)</p></li>
+<li><p><strong>Mail</strong> (mail service and provider fields)</p></li>
+<li><p><strong>Registration</strong> (registration and consent-related settings)</p></li>
+<li><p><strong>Summary</strong> (final review and save)</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Moodle-related wizard settings are currently grouped under <strong>General</strong> via subsection metadata.</p>
+</div>
+</section>
+<section id="frontend-components">
+<h2>Frontend components<a class="headerlink" href="#frontend-components" title="Link to this heading"></a></h2>
+<p>Step components live under <code class="docutils literal notranslate"><span class="pre">frontend/src/components/wizard/</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SetupWizardAdminStep.vue</span></code>: create the first admin account</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SetupWizardGeneralStep.vue</span></code>: general settings and Moodle block</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SetupWizardMailStep.vue</span></code>: mail service, provider fields and send test email</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SetupWizardRegistrationStep.vue</span></code>: registration and consent fields</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SetupWizardSummaryStep.vue</span></code>: review and finish</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">SetupWizard.vue</span></code> keeps <code class="docutils literal notranslate"><span class="pre">formData</span></code> for the admin account fields and <code class="docutils literal notranslate"><span class="pre">formSettings</span></code> for all other setting values edited in the wizard.
+<code class="docutils literal notranslate"><span class="pre">wizardSettings</span></code> supplies display names and subsection grouping for the settings and summary steps.
+Credential changes use <code class="docutils literal notranslate"><span class="pre">update-admin-field</span></code>; setting field changes run through <code class="docutils literal notranslate"><span class="pre">setWizardSettingValue</span></code>. Navigation, JSON import, and test mail use additional events on the parent.</p>
+</section>
+<section id="how-settings-are-rendered">
+<h2>How Settings Are Rendered<a class="headerlink" href="#how-settings-are-rendered" title="Link to this heading"></a></h2>
+<p>Wizard fields come from setting metadata in the database. For the setup flow and the
+dashboard settings rework to stay aligned, settings should define:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">displayName</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">displayGroup</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">displaySubsection</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">showInWizard</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wizardStep</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wizardOrder</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">requiredInWizard</span></code></p></li>
+</ul>
+<p>For details and migration examples, see <a class="reference internal" href="../examples/settings.html"><span class="doc">Settings</span></a>.</p>
+</section>
+<section id="import-and-export">
+<h2>Import and Export<a class="headerlink" href="#import-and-export" title="Link to this heading"></a></h2>
+<p>The wizard supports JSON import/export to simplify migration from an existing CARE instance.</p>
+<ul class="simple">
+<li><p><strong>Download</strong> exports a JSON snapshot based on loaded settings plus current wizard form values.</p></li>
+<li><p><strong>Import</strong> accepts key/value JSON and normalizes values to strings for settings persistence.</p></li>
+<li><p>Imported keys are validated against known setting keys from <code class="docutils literal notranslate"><span class="pre">/setup/config</span></code>.</p></li>
+<li><p>Unknown keys are ignored and reported in toast feedback.</p></li>
+<li><p>After successful import, the wizard moves to <strong>Summary</strong> for review before finishing.</p></li>
+</ul>
+</section>
+<section id="mail-test-during-setup">
+<h2>Mail Test During Setup<a class="headerlink" href="#mail-test-during-setup" title="Link to this heading"></a></h2>
+<p>The mail step includes a test action that calls <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/setup/test-mail</span></code> with the current
+mail configuration and recipient address.</p>
+<p>This allows validating SMTP/sendmail setup before finishing setup.</p>
+</section>
+<section id="extending-the-wizard">
+<h2>Extending the Wizard<a class="headerlink" href="#extending-the-wizard" title="Link to this heading"></a></h2>
+<p>To add or change setup fields:</p>
+<ol class="arabic simple">
+<li><p>Add/update setting rows via migration (including wizard and display metadata).</p></li>
+<li><p>Ensure the new keys are returned by <code class="docutils literal notranslate"><span class="pre">/setup/config</span></code>.</p></li>
+<li><p>If needed, update step-specific rendering in <code class="docutils literal notranslate"><span class="pre">frontend/src/components/wizard/</span></code> and orchestration logic in <code class="docutils literal notranslate"><span class="pre">frontend/src/auth/SetupWizard.vue</span></code>.</p></li>
+<li><p>Verify import/export behavior for the new keys.</p></li>
+</ol>
+<p>To change the setup order or visible steps:</p>
+<ul class="simple">
+<li><p>Update wizard step definitions returned by <code class="docutils literal notranslate"><span class="pre">/setup/config</span></code>.</p></li>
+<li><p>Keep frontend step filtering consistent with dependency rules.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="components/apply_skill_preprocessing.html" class="btn btn-neutral float-left" title="Apply Skill Modal : Preprocessing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plugins.html" class="btn btn-neutral float-right" title="Plugins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

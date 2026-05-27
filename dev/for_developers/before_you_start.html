@@ -240,11 +240,16 @@ The source code is located in the <code class="docutils literal notranslate"><sp
 the backend, just run the basic build using the following commands in different consoles and the given order:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>docker<span class="w"> </span><span class="c1"># starts the docker containers needed for development</span>
 make<span class="w"> </span>init<span class="w">   </span><span class="c1"># initializes the database</span>
-make<span class="w"> </span>dev<span class="w">    </span><span class="c1"># starts the development server (backend &amp; frontend) - only linux!</span>
+make<span class="w"> </span>dev<span class="w">    </span><span class="c1"># starts the development server (backend &amp; frontend, wizard skipped) - only Linux!</span>
 </pre></div>
 </div>
 <p>This will start the development server for the backend as well as the frontend. This also starts up
 a database in a docker container and populates it with the necessary schemas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code> runs with <code class="docutils literal notranslate"><span class="pre">DEV_SKIP_WIZARD=true</span></code> for faster iterative development.
+If you need to test the first-time setup flow, use <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-wizard</span></code>.</p>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>When starting the application for the first time, you need to initialize the database!
@@ -337,69 +342,72 @@ backend.</p>
 <td><p>Clean the Sphinx documentation.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code></p></td>
-<td><p>Run frontend (dev) and backend (dev) together. (Unix only)</p></td>
+<td><p>Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix only)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-wizard</span></code></p></td>
+<td><p>Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend</span></code></p></td>
 <td><p>Run backend in development mode.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend-watch</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend-watch</span></code></p></td>
 <td><p>Run backend in development mode with nodemon (auto-restart on file changes).</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-frontend</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-frontend</span></code></p></td>
 <td><p>Run frontend in development mode.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-build</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-build</span></code></p></td>
 <td><p>Build frontend in dev mode and run backend in dev mode.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-build-frontend</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-build-frontend</span></code></p></td>
 <td><p>Build frontend in development mode only.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build</span></code></p></td>
 <td><p>Create a dockerized production build (frontend, backend, nlp, services).</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build-frontend</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build-frontend</span></code></p></td>
 <td><p>Build frontend in production mode.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build-clean</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build-clean</span></code></p></td>
 <td><p>Clean production build (containers, networks, volumes).</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker</span></code></p></td>
 <td><p>Start development docker containers (postgres, rpc services).</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">rpc_moodle_build</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">rpc_moodle_build</span></code></p></td>
 <td><p>Build and start the Moodle RPC container (dev setup).</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">db</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">db</span></code></p></td>
 <td><p>Initialize (migrate) the database.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">init</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">init</span></code></p></td>
 <td><p>Initialize the database and install npm packages in all utils/modules subdirectories.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">backup_db</span> <span class="pre">CONTAINER=&lt;name&gt;</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">backup_db</span> <span class="pre">CONTAINER=&lt;name&gt;</span></code></p></td>
 <td><p>Create a database dump from the given Postgres container into <code class="docutils literal notranslate"><span class="pre">db_dumps/</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">recover_db</span> <span class="pre">CONTAINER=&lt;name&gt;</span> <span class="pre">DUMP=&lt;file&gt;</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">recover_db</span> <span class="pre">CONTAINER=&lt;name&gt;</span> <span class="pre">DUMP=&lt;file&gt;</span></code></p></td>
 <td><p>Load a given database dump into the specified Postgres container.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code></p></td>
 <td><p>Run backend unit tests.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test-rpc</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test-rpc</span></code></p></td>
 <td><p>Run backend RPC tests.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test-modules</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test-modules</span></code></p></td>
 <td><p>Run unit tests for the <code class="docutils literal notranslate"><span class="pre">editor-delta-conversion</span></code> module.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">lint</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">lint</span></code></p></td>
 <td><p>Run frontend linter.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">modules</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">modules</span></code></p></td>
 <td><p>Install npm packages in all <code class="docutils literal notranslate"><span class="pre">utils/modules</span></code> subdirectories.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code></p></td>
 <td><p>Remove <code class="docutils literal notranslate"><span class="pre">node_modules</span></code>, <code class="docutils literal notranslate"><span class="pre">dist</span></code>, docker containers/networks, and reset the DB state.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">kill</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">kill</span></code></p></td>
 <td><p>Kill all Node.js processes (Unix only).</p></td>
 </tr>
 </tbody>

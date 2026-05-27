@@ -2122,6 +2122,40 @@ Unified check for: 1) database record exists  2) user has access  3) file exists
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="n"><span class="pre">SettingSocket</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SettingSocket" title="Link to this definition"></a></dt>
 <dd><p>Handle settings through websocket</p>
 <dl class="js function">
+<dt class="sig sig-object js" id="SettingSocket.getDashboardSettingsPayload">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">SettingSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getDashboardSettingsPayload</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SettingSocket.getDashboardSettingsPayload" title="Link to this definition"></a></dt>
+<dd><p>Build dashboard settings payload and enrich wizard settings with wizardStep key
+(string), so frontend grouping can use the same shape as setup wizard config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Array.&lt;object&gt;&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="SettingSocket.mailSendTest">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">SettingSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">mailSendTest</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SettingSocket.mailSendTest" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>mailSendTest</cite></p>
+<p>Sends a fixed test email using current mail settings from the database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>) – The input data from the frontend</p></li>
+<li><p><strong>data.to</strong> (<strong>string</strong>) – Recipient email address</p></li>
+<li><p><strong>options</strong> (<strong>object</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – If the user is not an admin or mail fails</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;string&gt;</strong> – A promise that resolves with a success message once the test email is sent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="SettingSocket.saveSettings">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">SettingSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">saveSettings</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SettingSocket.saveSettings" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>settingSave</cite></p>

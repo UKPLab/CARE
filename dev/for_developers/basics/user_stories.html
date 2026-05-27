@@ -56,6 +56,10 @@
 <li class="toctree-l2"><a class="reference internal" href="frameworks.html">Frameworks</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">User Stories</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#first-time-setup-wizard">First-Time Setup Wizard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-setup-settings-from-json">Import Setup Settings from JSON</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#export-setup-settings-to-json">Export Setup Settings to JSON</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test-mail-during-setup">Test Mail During Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#landing-page">Landing Page</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#user-login">User Login</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#logout">Logout</a></li>
@@ -150,8 +154,13 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#admin-features">Admin Features</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#customise-the-platform-logo">Customise the Platform Logo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#admin-settings">Admin Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wizard-style-settings-configuration">Wizard-Style Settings Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#admin-logs">Admin Logs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-statistics">User Statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#submissions-import-via-moodle">Submissions Import via Moodle</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#manage-workflows">Manage Workflows</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#first-time-setup-wizard">First-Time Setup Wizard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1">First-Time Setup Wizard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#manage-users">Manage Users</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#manage-role-rights">Manage Role Rights</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#manage-user-settings">Manage User Settings</a></li>
@@ -246,6 +255,62 @@ or permission requirements). Negative cases are always included.</p></li>
 </ul>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="first-time-setup-wizard">
+<h3>First-Time Setup Wizard<a class="headerlink" href="#first-time-setup-wizard" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an administrator, am guided through an initial setup wizard on a fresh CARE instance instead of being dropped into fragmented configuration screens.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>When no admin account exists, opening CARE leads to a setup wizard with steps for admin account creation, general settings, mail settings, registration settings, and a summary. I can move through the steps, review values on summary, and finish setup. After completion, the instance is marked as configured and normal login/dashboard access is used.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="import-setup-settings-from-json">
+<h3>Import Setup Settings from JSON<a class="headerlink" href="#import-setup-settings-from-json" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an administrator, can import setup values from a JSON file exported from another CARE instance to avoid re-entering settings manually.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In setup wizard steps after admin creation, I can open the import modal and select a JSON file with setting key/value pairs. Valid keys are loaded into the wizard state and reflected on the summary page. Unknown keys are ignored and this is shown in feedback. If the file is invalid JSON, I receive an error message and no values are imported.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="export-setup-settings-to-json">
+<h3>Export Setup Settings to JSON<a class="headerlink" href="#export-setup-settings-to-json" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an administrator, can export the current setup configuration as a JSON snapshot to reuse it in another CARE instance.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In setup wizard steps after admin creation, I can use the download action to export a JSON file containing the current setup values. The exported file can be used as input for the setup import flow on another instance.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="test-mail-during-setup">
+<h3>Test Mail During Setup<a class="headerlink" href="#test-mail-during-setup" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an administrator, can test mail delivery during setup before finishing the wizard.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the mail step, I can enter a recipient address and trigger a test email. I receive clear success or error feedback based on the response of the test mail endpoint and can continue editing mail settings before finishing setup.</p>
+</dd>
+</dl>
+</div>
+</section>
 <hr class="docutils" />
 <section id="landing-page">
 <h3>Landing Page<a class="headerlink" href="#landing-page" title="Link to this heading"></a></h3>
@@ -1830,6 +1895,75 @@ background.</p></li>
 </div>
 </section>
 <hr class="docutils" />
+<section id="admin-settings">
+<h3>Admin Settings<a class="headerlink" href="#admin-settings" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin user want to access and modify the settings of the system in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can see the Settings component in the navigation sidebar. When I access this, I can see the list of settings, reload them from the server backend, make changes and save these on the server. The changes have immediate effect on the behavior of the application.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="wizard-style-settings-configuration">
+<h3>Wizard-Style Settings Configuration<a class="headerlink" href="#wizard-style-settings-configuration" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can edit system settings in a structured, step-based layout consistent with first-time setup, including mail and registration dependencies.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>In the Settings area, I see grouped, user-facing labels and subsections aligned with the setup flow. Mail-dependent options are shown consistently with the mail service state. A test mail action is available to validate mail configuration. When I change mail settings and click “Save Settings”, the new values are applied immediately without requiring a backend restart.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="admin-logs">
+<h3>Admin Logs<a class="headerlink" href="#admin-logs" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As an admin user, I can see the server logs in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can see the Logs component in the navigation sidebar. When I access this, I can see the list of logs with meta information including timestamps.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="user-statistics">
+<h3>User Statistics<a class="headerlink" href="#user-statistics" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin user can view the users and user behavior statistics in the frontend.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin user, I can see the User Statistics component in the navigation sidebar. When accessing the component I can see a list of all registered users. For each user, I can view the last login time. When selecting a user another panel shows me the list of behavior logs. I can export all behavior logs of all users via a button click. All user behavior statistics can be downloaded as CSV or JSON.</p>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="submissions-import-via-moodle">
+<h3>Submissions Import via Moodle<a class="headerlink" href="#submissions-import-via-moodle" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>I as an admin can import assignment submissions via the Moodle API into CARE and assign a group id to the submissions when importing.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><p>As an admin, I can access the Submissions Import component in the frontend. There I can test the Moodle API credentials and fetch assignment submissions from a selected Moodle assignment. During import, I can provide a group id that gets assigned to all imported submissions.</p>
+</dd>
+</dl>
+</div>
+</section>
 <section id="manage-workflows">
 <h3>Manage Workflows<a class="headerlink" href="#manage-workflows" title="Link to this heading"></a></h3>
 <div class="user-story docutils container">
@@ -1854,8 +1988,8 @@ instances.</p></li>
 </div>
 </section>
 <hr class="docutils" />
-<section id="first-time-setup-wizard">
-<h3>First-Time Setup Wizard<a class="headerlink" href="#first-time-setup-wizard" title="Link to this heading"></a></h3>
+<section id="id1">
+<h3>First-Time Setup Wizard<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <div class="user-story docutils container">
 <dl class="field-list simple">
 <dt class="field-odd">Story<span class="colon">:</span></dt>
