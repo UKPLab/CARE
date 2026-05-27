@@ -162,12 +162,12 @@ export default {
           },
         },
         {
-          icon: "cloud-arrow-up",
+          icon: "x-octagon",
           filter: [{ key: "canEditAssignment", value: true }],
           options: {
             iconOnly: true,
             specifiers: {
-              "btn-outline-primary": true,
+              "btn-outline-danger": true,
               "btn-sm": true,
             },
           },
@@ -333,8 +333,8 @@ export default {
         case "importMoodle":
           this.$refs.importModal.open(data.params.id);
           break;
-        case "togglePublic":
-          this.togglePublic(data.params);
+        case "toggleDisable":
+          this.toggleDisable(data.params);
           break;
         case "closeAssignment":
           this.closeAssignment(data.params);
