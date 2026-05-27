@@ -12,7 +12,7 @@
  * @author: Manu Sundar Raj Nandyal
  */
 export default {
-  name: "Text",
+  name: "TextPlaceholder",
   inject: {
     studyData: {
       type: Array,

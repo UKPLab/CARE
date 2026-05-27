@@ -107,22 +107,22 @@ export default {
     },
     documentId: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
     },
     studyStepId: {
       type: Number,
-      required: true,
+      required: false,
       default: null,
     },
     stepNumber: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
     },
     workflowSteps: {
       type: Array,
-      required: true,
+      required: false,
       default: () => [],
     },
   },  

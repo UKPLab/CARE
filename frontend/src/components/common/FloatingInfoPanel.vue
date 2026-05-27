@@ -64,7 +64,7 @@ export default {
     },
     referenceElement: {
       type: [Object, String],
-      required: true,
+      required: false,
       default: null
     },
     isPinned: {

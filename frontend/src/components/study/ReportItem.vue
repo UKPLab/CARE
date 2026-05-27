@@ -68,6 +68,7 @@ export default {
       if (this.annotation) {
         return this.annotation.selectors.target[0].selector[1].exact;
       }
+      return null;
     }
   },
   methods: {

@@ -25,7 +25,7 @@ import LoadIcon from "@/basic/Icon.vue";
  * @param {boolean} [collapsed] - Initial collapsed state (default: true)
  */
 export default {
-  name: "Collapsible",
+  name: "FormCollapsible",
   components: { LoadIcon },
   props: {
     title: {

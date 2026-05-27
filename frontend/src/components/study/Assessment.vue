@@ -123,7 +123,7 @@ export default {
   props: {
     config: {
       type: Object,
-      required: true,
+      required: false,
       default: () => ({}),
     },
     studyStepId: {
@@ -229,6 +229,7 @@ export default {
         const previousStep = this.orderedStudySteps[this.currentStudyStep.configuration.previousAssessmentData - 1];
         return this.studyData[previousStep?.id]?.data
       }
+      return null;
     },
     assessmentDataKey() {
       return "assessment_result";

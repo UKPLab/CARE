@@ -27,6 +27,7 @@
           <div v-else>
               <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
                 <template v-if="segment.type === 'plainText'">
+                  <!-- eslint-disable-next-line vue/no-v-html -->
                   <span v-html="segment.value"></span>
                 </template>                    <template v-else-if="segment.type === 'text'">
                   <TextPlaceholder :config="segment.config" />
