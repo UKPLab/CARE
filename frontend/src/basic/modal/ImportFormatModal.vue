@@ -118,7 +118,7 @@ export default {
     },
     steps() {
       const itemLabel = this.table
-        ? this.table.replace(/_/g, " ")
+        ? this.table.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
         : "Item";
       return [
         { title: "File Selection" },
@@ -183,39 +183,14 @@ export default {
   methods: {
     /**
      * Opens the import modal.
-     * @param {string|null} table - Table to import into. If null, emits @itemsSelected instead of writing to socket.
-     * @param {string|null} childTable - Optional child table for nested records (e.g. "workflow_step").
-     * @param {object} [options={}] - Optional configuration.
-     * @param {object} [options.overrides={}] - Fields merged into each imported item, overriding values from the file.
-     * @param {object} [options.socket={}] - Custom socket options (defaults to appDataUpdate with standard payload).
-     * @param {string}      [options.socket.name] - Custom socket event name instead of "appDataUpdate".
-     * @param {string} [options.socket.dataKey] - Key under which item data is nested in the payload. If omitted, item data is spread directly into the top-level payload.
-     * @param {object} [options.socket.extra={}] - Extra top-level fields merged into the socket payload.
-     *
-     * @example
-     * Default table mode — imports workflows with nested steps via appDataUpdate
-     * this.$refs.importFormatModal.open("workflow", "workflow_step");
-     *
-     * @example
-     * Emit mode — no table, parent handles the imported items via @itemsSelected
-     * this.$refs.importFormatModal.open();
-     *
-     * @example
-     * Override mode — force template: true on every imported record
-     * this.$refs.importFormatModal.open("study", "study_step", {
-     *   overrides: { template: true },
-     * });
-     *
-     * @example
-     * Custom socket with dataKey — send data to a specific socket event
-     * this.$refs.importFormatModal.open("study", "study_step", {
-     *   socket: {
-     *     name: "studySaveAsTemplate",
-     *     dataKey: "templateData",
-     *     extra: { onlyTemplate: true },
-     *   },
-     * });
-     *
+     * @param {string|null} table                       - Table to import into. If null, emits @itemsSelected instead of writing to socket.
+     * @param {string|null} childTable                  - Optional child table for nested records (e.g. "workflow_step").
+     * @param {object}      [options={}]                - Optional configuration.
+     * @param {object}      [options.overrides={}]      - Fields merged into each imported item, overriding values from the file.
+     * @param {object}      [options.socket={}]         - Custom socket options (defaults to appDataUpdate with standard payload).
+     * @param {string}      [options.socket.name]       - Custom socket event name instead of "appDataUpdate".
+     * @param {string}      [options.socket.dataKey]    - Key under which item data is nested in the payload. If omitted, item data is spread directly into the top-level payload.
+     * @param {object}      [options.socket.extra={}]   - Extra top-level fields merged into the socket payload.
      */
     open(table = null, childTable = null, { overrides = {}, socket = {} } = {}) {
       this.table = table;

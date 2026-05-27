@@ -122,7 +122,7 @@ export default {
           const children = this.$store.getters[`table/${childTableName}/getFiltered`](
             (child) => child[fkField] === item.id && !child.deleted
           ).map(child => Object.fromEntries(Object.entries(child).filter(([key]) => !attributesToDelete.includes(key) && key !== 'id')));
-          return { ...item, [this.childTableOptions.key || this.childTable]: children };
+          return { ...item, [this.childTableOptions?.key || this.childTable]: children };
         });
       }
       result = result.map(item => Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'id')));
