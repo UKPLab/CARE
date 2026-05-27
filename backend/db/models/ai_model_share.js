@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
         studyId: DataTypes.INTEGER,
+        studySessionId: DataTypes.INTEGER,
         costLimit: DataTypes.FLOAT,
         resetAt: DataTypes.DATE,
         notifyThreshold: DataTypes.FLOAT,
