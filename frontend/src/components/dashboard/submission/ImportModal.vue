@@ -92,7 +92,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, BasicButton, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}, "assignment_share", "user_role_matching"],
   data() {
     return {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
@@ -148,8 +148,30 @@ export default {
     message() {
       return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
     },
+    assignedUserIds() {
+      if (!this.assignmentId) return null;
+      const shares = this.$store.getters["table/assignment_share/getFiltered"](
+        (s) => s.assignmentId === this.assignmentId
+      ) || [];
+
+      const userIds = new Set(shares.filter(s => s.userId != null).map(s => s.userId));
+
+      const assignedRoleIds = new Set(shares.filter(s => s.roleId != null).map(s => s.roleId));
+      if (assignedRoleIds.size > 0) {
+        const matchings = this.$store.getters["table/user_role_matching/getFiltered"](
+          (m) => assignedRoleIds.has(m.userRoleId)
+        ) || [];
+        matchings.forEach(m => userIds.add(m.userId));
+      }
+
+      return userIds;
+    },
     users() {
-      return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+      return this.$store.getters["table/user/getFiltered"]((u) => {
+        if (u.extId === null) return false;
+        if (this.assignedUserIds === null) return true;
+        return this.assignedUserIds.has(u.id);
+      });
     },
     usersExtIds() {
       return this.users.map((u) => u.extId);
