@@ -2,14 +2,20 @@
 
 /**
  * AI budget enforcement, ai log status management, and concurrency for chat requests.
- *   - Two caps are checked per request, both must pass:
+ *   - Caps checked per request (all must pass):
  *       1. Model global cap   (ai_model.costLimit) — sum across all users
- *       2. Per-user share cap (ai_model_share.costLimit) — this user's spend
+ *       2. Per-user share cap (ai_model_share.costLimit) — most specific row
+ *          for the requesting user. Precedence:
+ *              session row (studySessionId set)
+ *            → study row   (studyId set, studySessionId null)
+ *            → user row    (studyId/sessionId null, userId matches) shared budget
+ *       3. Parent share cap — only when inside a study and the study owner has
+ *          a user-scoped share on this model. Sums the study owner's
+ *          attributable usage (their direct chats + spend in studies they own).
  *   - Each cap has its own resetAt.
  *   - One in-flight request per (userId, studySessionId). Second is rejected.
  *   - Usage is computed from ai_log on demand.
  *   - In-flight ai_log rows have NULL cost and contribute $0 to sums.
- *   - 
  *
  * @module webserver/services/ai/budget
  * @author Mohammed Rawhani
@@ -43,8 +49,11 @@ async function beginRequest(service, request) {
     const modelBlocker = await _findBlockingModelCap(service, aiModelId);
     if (modelBlocker) return { allowed: false, reason: modelBlocker };
 
-    const shareBlocker = await _findBlockingShareCap(service, { userId, aiModelId, studyId });
+    const shareBlocker = await _findBlockingShareCap(service, { userId, aiModelId, studyId, studySessionId });
     if (shareBlocker) return { allowed: false, reason: shareBlocker };
+
+    const parentBlocker = await _findBlockingParentShareCap(service, { aiModelId, studyId });
+    if (parentBlocker) return { allowed: false, reason: parentBlocker };
 
     const log = await service.server.db.models["ai_log"].create({
         userId,
@@ -201,6 +210,7 @@ async function _findBlockingModelCap(service, aiModelId) {
  * @param {number} scope.userId - Authenticated user triggering the request.
  * @param {number} scope.aiModelId - Model the request targets.
  * @param {number} [scope.studyId] - Study scope when inside a study.
+ * @param {number} [scope.studySessionId] - Session scope when inside a session.
  * @returns {Promise<string|null>}
  */
 async function _findBlockingShareCap(service, scope) {
@@ -215,30 +225,135 @@ async function _findBlockingShareCap(service, scope) {
 }
 
 /**
- * Find the share row governing this request (study-scoped if in a study).
+ * Returns a reason if the study owner's user-scoped share cap is exhausted.
+ * Runs only when the request is inside a study and the study owner has a
+ * user-scoped share on this model (i.e. the owner is not the model owner).
+ *
+ * @param {Object} service - AIService instance.
+ * @param {Object} scope - Minimal lookup keys.
+ * @param {number} scope.aiModelId - Model the request targets.
+ * @param {number} [scope.studyId] - Study scope (skip the check if absent).
+ * @returns {Promise<string|null>}
+ */
+async function _findBlockingParentShareCap(service, { aiModelId, studyId }) {
+    if (!studyId) return null;
+
+    const study = await service.server.db.models["study"].findByPk(studyId, {
+        attributes: ["id", "userId"],
+        raw: true,
+    });
+    if (!study) return null;
+
+    const share = await service.server.db.models["ai_model_share"].findOne({
+        where: {
+            aiModelId,
+            userId: study.userId,
+            studyId: null,
+            studySessionId: null,
+            enabled: true,
+            deleted: false,
+        },
+    });
+    if (!share || share.costLimit === null) return null;
+
+    const used = await _sumAttributableToOwner(service, share, study.userId);
+    if (used >= share.costLimit) {
+        return `AI model owner budget exhausted: $${used.toFixed(2)} / $${share.costLimit.toFixed(2)}`;
+    }
+    return null;
+}
+
+/**
+ * Sum ai_log.costs attributable to the share owner: their own direct usage on
+ * the model, plus usage inside studies they own (by other users). Respects
+ * share.resetAt. 
+ *
+ * @param {Object} service - AIService instance.
+ * @param {Object} share - ai_model_share row owned by `ownerId`.
+ * @param {number} share.aiModelId - Model this share governs.
+ * @param {Date} [share.resetAt] - Timestamp; only logs at or after this count.
+ * @param {number} ownerId - The share owner whose attributable spend we sum.
+ * @returns {Promise<number>}
+ */
+async function _sumAttributableToOwner(service, share, ownerId) {
+    const Sequelize = service.server.db.Sequelize;
+    const models = service.server.db.models;
+    const baseWhere = {
+        aiModelId: share.aiModelId,
+        deleted: false,
+        status: { [Op.in]: ["completed", "in_progress"] },
+    };
+    if (share.resetAt) baseWhere.createdAt = { [Op.gte]: share.resetAt };
+
+    // Direct usage by the share owner, in any context.
+    const directResult = await models["ai_log"].findOne({
+        where: { ...baseWhere, userId: ownerId },
+        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
+        raw: true,
+    });
+
+    // Usage by other users inside studies owned by `ownerId`.
+    // Exclude ownerId's own logs to avoid double counting with the direct sum.
+    const studyOwnedResult = await models["ai_log"].findOne({
+        where: { ...baseWhere, userId: { [Op.ne]: ownerId } },
+        include: [{
+            model: models["study_session"],
+            required: true,
+            attributes: [],
+            include: [{
+                model: models["study"],
+                as: "study",
+                required: true,
+                where: { userId: ownerId },
+                attributes: [],
+            }],
+        }],
+        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
+        raw: true,
+    });
+
+    const direct = parseFloat(directResult?.total || 0);
+    const studyOwned = parseFloat(studyOwnedResult?.total || 0);
+    return direct + studyOwned;
+}
+
+/**
+ * Find the share row governing this request, by precedence:
+ *   1. Session-scoped row (studySessionId match)
+ *   2. Study-scoped row   (studyId match, studySessionId null)
+ *   3. User-scoped global (studyId/studySessionId null, userId match)
+ *
+ * Returns the first match. Missing scopes are skipped silently.
  *
  * @param {Object} service - AIService instance.
  * @param {Object} scope - Subset of the request envelope used for share lookup.
  * @param {number} scope.userId - Authenticated user triggering the request.
  * @param {number} scope.aiModelId - Model the request targets.
  * @param {number} [scope.studyId] - Study scope when inside a study workflow.
+ * @param {number} [scope.studySessionId] - Session scope when inside a session.
  * @returns {Promise<Object|null>}
  */
-async function _getApplicableShare(service, { userId, aiModelId, studyId }) {
-    const where = {
-        aiModelId,
-        enabled: true,
-        deleted: false,
-    };
+async function _getApplicableShare(service, { userId, aiModelId, studyId, studySessionId }) {
+    const Shares = service.server.db.models["ai_model_share"];
+    const baseWhere = { aiModelId, enabled: true, deleted: false };
 
-    if (studyId) {
-        where.studyId = studyId;
-    } else {
-        where.studyId = null;
-        where.userId = userId;
+    if (studySessionId) {
+        const sessionShare = await Shares.findOne({
+            where: { ...baseWhere, studySessionId },
+        });
+        if (sessionShare) return sessionShare;
     }
 
-    return service.server.db.models["ai_model_share"].findOne({ where });
+    if (studyId) {
+        const studyShare = await Shares.findOne({
+            where: { ...baseWhere, studyId, studySessionId: null },
+        });
+        if (studyShare) return studyShare;
+    }
+
+    return Shares.findOne({
+        where: { ...baseWhere, studyId: null, studySessionId: null, userId },
+    });
 }
 
 /**
@@ -288,12 +403,19 @@ async function _sumCostForShare(service, share, requestUserId) {
     };
     if (share.resetAt) where.createdAt = { [Op.gte]: share.resetAt };
 
-    const include = share.studyId ? [{
-        model: service.server.db.models["study_session"],
-        where: { studyId: share.studyId },
-        required: true,
-        attributes: [],
-    }] : [];
+    let include = [];
+    if (share.studySessionId) {
+        // Session-scoped: ai_log.studySessionId is the direct match.
+        where.studySessionId = share.studySessionId;
+    } else if (share.studyId) {
+        // Study-scoped: join study_session to filter on studyId.
+        include = [{
+            model: service.server.db.models["study_session"],
+            where: { studyId: share.studyId },
+            required: true,
+            attributes: [],
+        }];
+    }
 
     const result = await service.server.db.models["ai_log"].findOne({
         where,
