@@ -45,7 +45,7 @@ import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
 
 /**
  * Project list component
@@ -181,9 +181,10 @@ export default {
       return this.$store.getters["table/project/getAll"]
         .map((d) => {
           let newD = {...d};
-          if (newD.name === "Default Project") {
-            newD.name = this.$t("dashboard.projects.default.name");
-            newD.description = this.$t("dashboard.projects.default.description");
+          if (newD.userId === null) {
+            // Translate only system seed projects (e.g. the default project).
+            newD.name = translateMaybeKey(newD.name);
+            newD.description = translateMaybeKey(newD.description);
           }
           newD.published = {
             text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
