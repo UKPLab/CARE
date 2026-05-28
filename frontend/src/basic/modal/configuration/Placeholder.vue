@@ -85,7 +85,12 @@ export default {
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
     skillMap() {
-      return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
+      return {
+        options: this.nlpSkills.map((skill) => ({
+          value: skill.name,
+          name: this.getSkillDisplayName(skill.name),
+        })),
+      };
     },
     filteredFields() {
       return this.fields.filter(field => !(this.hasSkillName && (field.name === 'dataSource' || field.name === 'output')));
@@ -95,6 +100,10 @@ export default {
     }
   },
   methods: {
+    getSkillDisplayName(skillName) {
+      const key = `nlp.skills.names.${skillName}`;
+      return this.$te(key) ? this.$t(key) : skillName;
+    },
     translateMaybeKey(value) {
       if (!value || typeof value !== "string") {
         return value;

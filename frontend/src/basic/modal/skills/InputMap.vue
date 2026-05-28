@@ -42,6 +42,7 @@
  */
 import FormSelect from "@/basic/form/Select.vue";
 import deepEqual from "deep-equal";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "InputMap",
@@ -136,7 +137,9 @@ export default {
           .filter(entry => entry.type === 0 && entry.hideInFrontend === false)
           .map(entry => ({
             value: `config_${entry.id}`,
-            name: this.$t('nlp.inputMap.sources.configuration', { name: entry.name }),
+            name: this.$t('nlp.inputMap.sources.configuration', {
+              name: translateMaybeKey(entry.name),
+            }),
             requiresTableSelection: false,
             configurationId: entry.id,
             table: "configuration",

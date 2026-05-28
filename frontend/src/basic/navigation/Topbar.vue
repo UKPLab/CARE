@@ -151,6 +151,7 @@ import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import LanguageSwitcher from "@/basic/LanguageSwitcher.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "TopBar",
@@ -165,7 +166,10 @@ export default {
   }],
   computed: {
     allProjects() {
-    return this.$store.getters["table/project/getAll"] || [];
+      return (this.$store.getters["table/project/getAll"] || []).map((project) => ({
+        ...project,
+        name: project?.userId === null ? translateMaybeKey(project.name) : project.name,
+      }));
     },
     isProjectButtonHidden() {
       return this.$store.getters["settings/getValue"]("topBar.projects.hideProjectButton") === "true"
@@ -177,7 +181,11 @@ export default {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     currentProjectName() {
-      return this.$store.getters["table/project/get"](this.currentProject)?.name;
+      const project = this.$store.getters["table/project/get"](this.currentProject);
+      if (!project) {
+        return "";
+      }
+      return project.userId === null ? translateMaybeKey(project.name) : project.name;
     },
     username() {
       return this.$store.getters['auth/getUsername'];

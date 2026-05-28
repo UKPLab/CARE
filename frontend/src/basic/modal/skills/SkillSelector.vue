@@ -39,9 +39,15 @@ export default {
       return {
         options: this.nlpSkills.map((skill) => ({
           value: skill.name,
-          name: skill.name,
+          name: this.getSkillDisplayName(skill.name),
         })),
       };
+    },
+  },
+  methods: {
+    getSkillDisplayName(skillName) {
+      const key = `nlp.skills.names.${skillName}`;
+      return this.$te(key) ? this.$t(key) : skillName;
     },
   },
 };
