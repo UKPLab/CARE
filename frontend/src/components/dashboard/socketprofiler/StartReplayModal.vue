@@ -8,73 +8,18 @@
       Start Replay
     </template>
     <template #body>
-      <div class="mb-3">
-        <label class="form-label fw-bold">Mode</label>
-        <select v-model="mode" class="form-select">
-          <option value="scaling">Scaling — pool sessions, add one full pool per iteration</option>
-          <option value="load" disabled>Load mode (coming soon)</option>
-        </select>
-      </div>
+      <BasicForm
+        v-model="config"
+        :fields="configFields"
+      />
 
-      <div class="mb-3">
-        <label class="form-label fw-bold">Speed</label>
-        <select v-model="timingMode" class="form-select">
-          <option value="fast">Fast — no delays between traces</option>
-          <option value="realtime">Realtime — preserve original timing within each session</option>
-        </select>
+      <div v-if="loadEstimate" class="text-muted small mt-1 mb-3">
+        Pool size: <span class="fw-bold">{{ loadEstimate.poolSize }}</span> session(s).
+        Peak: <span class="fw-bold">{{ loadEstimate.peak }}</span> parallel socket(s) at iteration {{ config.maxIterations }}.
+        Cumulative: <span class="fw-bold">{{ loadEstimate.cumulative }}</span> total socket-runs across the whole replay.
       </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-bold">Max iterations</label>
-        <input
-          v-model.number="maxIterations"
-          type="number"
-          min="1"
-          class="form-control"
-          placeholder="Enter a positive integer (required)"
-        />
-        <div v-if="loadEstimate" class="text-muted small mt-1">
-          Pool size: <span class="fw-bold">{{ loadEstimate.poolSize }}</span> session(s).
-          Peak: <span class="fw-bold">{{ loadEstimate.peak }}</span> parallel socket(s) at iteration {{ maxIterations }}.
-          Cumulative: <span class="fw-bold">{{ loadEstimate.cumulative }}</span> total socket-runs across the whole replay.
-        </div>
-        <div v-else-if="maxIterations !== null && maxIterations !== ''" class="text-danger small mt-1">
-          Enter a positive integer.
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-bold">Ack timeout (ms)</label>
-        <input
-          v-model.number="ackTimeout"
-          type="number"
-          min="100"
-          max="30000"
-          step="100"
-          class="form-control"
-        />
-        <div v-if="!isAckTimeoutValid" class="text-danger small mt-1">
-          Must be between 100 and 30000 ms.
-        </div>
-        <div v-else class="text-muted small mt-1">
-          How long the replay waits for the server to acknowledge each trace before counting it as failed.
-        </div>
-      </div>
-
-      <div class="mb-3 form-check">
-        <input
-          id="continueOnFailure"
-          v-model="continueOnFailure"
-          type="checkbox"
-          class="form-check-input"
-        />
-        <label class="form-check-label" for="continueOnFailure">
-          <span class="fw-bold">Continue past failures</span>
-          <span class="text-muted small d-block">
-            Run all scaling iterations even if some fail. Useful for seeing whether
-            problems compound at higher concurrency.
-          </span>
-        </label>
+      <div v-else-if="config.maxIterations !== null && config.maxIterations !== ''" class="text-danger small mt-1 mb-3">
+        Enter a positive integer for max iterations.
       </div>
 
       <div class="mb-3">
@@ -112,18 +57,21 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicForm from "@/basic/Form.vue";
 
 export default {
   name: "StartReplayModal",
-  components: { BasicModal, BasicButton, BasicTable },
+  components: { BasicModal, BasicButton, BasicTable, BasicForm },
   emits: ["replay-start"],
   data() {
     return {
-      mode: "scaling",
-      timingMode: "fast",
-      continueOnFailure: false,
-      maxIterations: null,
-      ackTimeout: 2000,
+      config: {
+        mode: "scaling",
+        timingMode: "fast",
+        maxIterations: null,
+        ackTimeout: 2000,
+        continueOnFailure: false,
+      },
       selectedRecordings: [],
       initialRecordingId: null,
       recordingTableOptions: {
@@ -139,6 +87,51 @@ export default {
     };
   },
   computed: {
+    configFields() {
+      return [
+        {
+          key: "mode",
+          label: "Mode",
+          type: "select",
+          default: "scaling",
+          options: [
+            { value: "scaling", name: "Scaling — pool sessions, add one full pool per iteration" },
+            { value: "load", name: "Load mode (coming soon)", disabled: true },
+          ],
+        },
+        {
+          key: "timingMode",
+          label: "Speed",
+          type: "select",
+          default: "fast",
+          options: [
+            { value: "fast", name: "Fast — no delays between traces" },
+            { value: "realtime", name: "Realtime — preserve original timing within each session" },
+          ],
+        },
+        {
+          key: "maxIterations",
+          label: "Max iterations",
+          type: "number",
+          min: 1,
+          required: true,
+          placeholder: "Enter a positive integer (required)",
+        },
+        {
+          key: "ackTimeout",
+          label: "Ack timeout (ms)",
+          type: "number",
+          min: 100,
+          default: 2000,
+        },
+        {
+          key: "continueOnFailure",
+          label: "Continue past failures",
+          type: "switch",
+          default: false,
+        },
+      ];
+    },
     allRecordings() {
       return this.$store.getters["table/recording/getAll"] || [];
     },
@@ -163,25 +156,29 @@ export default {
       ];
     },
     isMaxIterationsValid() {
-      return Number.isInteger(this.maxIterations) && this.maxIterations >= 1;
+      return Number.isInteger(this.config.maxIterations) && this.config.maxIterations >= 1;
     },
     isAckTimeoutValid() {
-      return Number.isInteger(this.ackTimeout) && this.ackTimeout >= 100 && this.ackTimeout <= 30000;
+      return Number.isInteger(this.config.ackTimeout)
+        && this.config.ackTimeout >= 100
+        && this.config.ackTimeout <= 30000;
     },
     canStart() {
-      return this.selectedRecordings.length > 0 && this.isMaxIterationsValid && this.isAckTimeoutValid;
+      return this.selectedRecordings.length > 0
+        && this.isMaxIterationsValid
+        && this.isAckTimeoutValid;
     },
     /**
      * Pooled scaling math.
      * N = total session count across all selected recordings.
      * Iteration K runs K * N parallel sockets.
-     * Peak = M * N (final iteration). Cumulative = sum over K of K*N = N * M(M+1)/2.
+     * Peak = M * N (final iteration). Cumulative = N * M(M+1)/2.
      * Returns null if input isn't valid yet.
      */
     loadEstimate() {
       if (!this.isMaxIterationsValid) return null;
       if (this.selectedRecordings.length === 0) return null;
-      const M = this.maxIterations;
+      const M = this.config.maxIterations;
       const N = this.selectedRecordings.reduce((acc, r) => acc + (r.sessionCount || 0), 0);
       if (N === 0) return null;
       return {
@@ -197,15 +194,17 @@ export default {
   },
   methods: {
     open(recordingId) {
-      this.mode = "scaling";
-      this.timingMode = "fast";
-      this.continueOnFailure = false;
-      this.maxIterations = null;
-      this.ackTimeout = 2000;
+      this.config = {
+        mode: "scaling",
+        timingMode: "fast",
+        maxIterations: null,
+        ackTimeout: 2000,
+        continueOnFailure: false,
+      };
       this.initialRecordingId = recordingId;
 
-      // Pre-select the clicked recording. Wait for the table to render
-      // so the row reference matches what BasicTable holds.
+      // Pre-select the clicked recording once the table has rendered so the
+      // row reference matches what BasicTable holds.
       this.$nextTick(() => {
         const initial = this.recordingTable.find(r => r.id === recordingId);
         this.selectedRecordings = initial ? [initial] : [];
@@ -220,10 +219,10 @@ export default {
       const recordingIds = this.selectedRecordings.map(r => r.id);
       this.$emit("replay-start", {
         recordingIds,
-        timingMode: this.timingMode,
-        continueOnFailure: this.continueOnFailure,
-        maxIterations: this.maxIterations,
-        ackTimeout: this.ackTimeout,
+        timingMode: this.config.timingMode,
+        continueOnFailure: this.config.continueOnFailure,
+        maxIterations: this.config.maxIterations,
+        ackTimeout: this.config.ackTimeout,
       });
       this.$refs.modal.close();
     },
