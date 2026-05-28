@@ -9,7 +9,7 @@
     </template>
     <template #body>
       <div class="information-container p-3">
-        <dl v-for="(value, key) in this.data" :key="key" class="row align-items-center">
+        <dl v-for="(value, key) in data" :key="key" class="row align-items-center">
           <dt class="col-sm-4 fw-bold text-secondary">{{ formatKey(key) }}</dt>
           <dd class="col-sm-8">
             <template v-if="isObject(value)">

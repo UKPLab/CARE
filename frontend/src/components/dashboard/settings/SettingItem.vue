@@ -1,206 +1,179 @@
 <template>
-  <div>
-    <div class="card my-3">
-      <div>
-        <div class="card-header" style="cursor: pointer" @click="toggleCollapse">
-          <LoadIcon :icon-name="collapsed ? 'arrow-right-short' : 'arrow-down-short'" class="me-1"></LoadIcon>
-          {{ title }}
-          <br>
-          <span v-if="title === 'app'" class="text-secondary">
-            <small>Main settings of the application <br>Note: Make sure that no sensitive data are present!</small>
-          </span>
-          <span v-if="title === 'editor'" class="text-secondary">
-            <small>Note: When the toolbar is disabled, all the tools will be hidden!</small>
-          </span>
-        </div>
-        <div v-if="!collapsed" class="card-body">
-          <template v-for="(value, key) in group">
-            <div v-if="Array.isArray(value)" :key="`array-${key}`" class="mb-3">
-              
-              <div v-for="setting in value" :key="setting.key" class="row">
-                <div class="col-12">
-                  <div class="card mt-3">
-                    <div class="card-body">
-                      <h5 class="card-title">{{ setting.key }}</h5>
-                      <h6 class="card-subtitle mb-2 text-muted">{{ setting.description }}</h6>
-                      <div class="card-text">
-                        <div v-if="setting.type === 'edits'">
-                          <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
-                        </div>
-                        <div v-else-if="setting.type === 'boolean' || setting.type === 'bool'" class="form-check form-switch">
-                          <input 
-                            v-model="setting.value" 
-                            :checked="setting.value"
-                            class="form-check-input" 
-                            role="switch" 
-                            title="Activate/Deactivate NLP support"
-                            type="checkbox"
-                          >
-                        </div>
-                        <textarea
-                            v-else-if="setting.type === 'text'"
-                            v-model="setting.value"
-                            class="w-100 form-control"
-                            rows="6"
-                        ></textarea>
-                        <div v-else-if="isEmailTemplateSetting(setting)" class="w-50">
-                          <select v-model="setting.value" class="form-select">
-                            <option value="">None (use default email)</option>
-                            <option 
-                              v-for="template in getFilteredEmailTemplates(setting)" 
-                              :key="template.id" 
-                              :value="String(template.id)"
-                            >
-                              {{ template.name }} (ID: {{ template.id }})
-                            </option>
-                          </select>
-                        </div>
-                        <div v-else-if="setting.type === 'color'" class="d-flex align-items-center gap-3 mt-2 flex-wrap">
-                          <input
-                            :value="setting.value"
-                            type="color"
-                            class="form-control form-control-color"
-                            title="Pick a color"
-                            @input="updateColorValue(setting, $event.target.value)"
-                          >
-                          <input
-                            :value="setting.value"
-                            type="text"
-                            class="form-control"
-                            style="max-width: 110px; font-family: monospace;"
-                            maxlength="7"
-                            @input="updateColorValue(setting, $event.target.value)"
-                          >
-                          <LogoSvg
-                            v-if="showsLogoPreview(setting)"
-                            :height="40"
-                            :re-bg-color="setting.value"
-                          />
-                          <button
-                            v-if="hasResetValue(setting)"
-                            class="btn btn-outline-secondary btn-sm"
-                            :disabled="setting.value.toLowerCase() === getResetValue(setting).toLowerCase()"
-                            @click="setting.value = getResetValue(setting)"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input v-else v-model="setting.value" class="w-50" type="text">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <SettingItem v-else :key="`object-${key}`" :group="value" :title="key" />
-          </template>
-        </div>
+  <template v-if="setting">
+    <label
+      class="col-md-4 col-form-label text-md-right"
+      :for="'set-' + setting.key"
+      @click="(setting.type === 'boolean' || setting.type === 'bool') && $event.preventDefault()"
+    >
+      <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-md-end">
+        <span>{{ setting.displayName || setting.key }}</span>
+        <FormHelp
+          v-if="setting.description"
+          :help="setting.description"
+          icon-name="info-circle"
+          button-class="text-muted flex-shrink-0"
+        />
       </div>
+    </label>
+    <div class="col-md-6 d-flex align-items-start">
+      <template v-if="setting.type === 'edits'">
+        <EditorModal
+          :model-value="setting.value"
+          :title="'Edit ' + setting.key"
+          @update:model-value="$emit('update:value', $event)"
+        />
+      </template>
+      <template v-else-if="setting.type === 'boolean' || setting.type === 'bool'">
+        <div class="form-check form-switch">
+          <input
+            :id="'set-' + setting.key"
+            :checked="setting.value === 'true'"
+            class="form-check-input"
+            type="checkbox"
+            @change="$emit('update:value', $event.target.checked ? 'true' : 'false')"
+          />
+        </div>
+      </template>
+      <template v-else-if="setting.type === 'text'">
+        <textarea
+          :id="'set-' + setting.key"
+          :value="setting.value"
+          class="form-control w-100"
+          rows="6"
+          @input="$emit('update:value', $event.target.value)"
+        ></textarea>
+      </template>
+      <template v-else-if="setting.type === 'color'">
+        <div class="d-flex align-items-center gap-3 flex-wrap w-100">
+          <input
+            :id="'set-' + setting.key"
+            :value="setting.value"
+            type="color"
+            class="form-control form-control-color"
+            title="Pick a color"
+            @input="updateColorValue($event.target.value)"
+          />
+          <input
+            :value="setting.value"
+            type="text"
+            class="form-control"
+            style="max-width: 110px; font-family: monospace;"
+            maxlength="7"
+            @input="updateColorValue($event.target.value)"
+          />
+          <LogoSvg
+            v-if="showsLogoPreview"
+            :height="40"
+            :re-bg-color="setting.value"
+          />
+          <button
+            v-if="hasResetValue"
+            class="btn btn-outline-secondary btn-sm"
+            type="button"
+            :disabled="(setting.value || '').toLowerCase() === resetValue.toLowerCase()"
+            @click="$emit('update:value', resetValue)"
+          >
+            Reset
+          </button>
+        </div>
+      </template>
+      <template v-else-if="isEmailTemplateSetting">
+        <select
+          :id="'set-' + setting.key"
+          :value="setting.value"
+          class="form-select"
+          @change="$emit('update:value', $event.target.value)"
+        >
+          <option value="">None (use default email)</option>
+          <option
+            v-for="template in filteredEmailTemplates"
+            :key="template.id"
+            :value="String(template.id)"
+          >
+            {{ template.name }} (ID: {{ template.id }})
+          </option>
+        </select>
+      </template>
+      <input
+        v-else
+        :id="'set-' + setting.key"
+        :value="setting.value"
+        class="form-control"
+        type="text"
+        @input="$emit('update:value', $event.target.value)"
+      />
     </div>
-  </div>
+  </template>
 </template>
 
 <script>
-import LoadIcon from "@/basic/Icon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
+import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 
+/**
+ * Renders one setting row: label (displayName, optional description tooltip) and input for setting.type.
+ */
 export default {
   name: "SettingItem",
-  components: { LoadIcon, EditorModal, LogoSvg },
+  components: { EditorModal, FormHelp, LogoSvg },
   subscribeTable: ["template"],
   props: {
-    group: {
+    setting: {
       type: Object,
-      default: () => ({})
+      default: null,
     },
-    title: {
-      type: String,
-      default: ''
-    }
   },
-  data() {
-    return {
-      collapsed: true
-    };
-  },
+  emits: ["update:value"],
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
     },
     emailTemplates() {
-      const allTemplates = this.$store.getters["table/template/getAll"]
-        .filter(t => !t.deleted && (t.type === 1 || t.type === 2 || t.type === 3 || t.type === 6));
-      
-      // Show only the user's own templates (includes copies since copies have userId === currentUser)
-      const visibleTemplates = allTemplates.filter(t => t.userId === this.user?.id);
-      
-      return visibleTemplates.map(t => ({
-        id: t.id,
-        name: t.name,
-        type: t.type
-      }));
-    }
-  },
-  methods: {
-    toggleCollapse() {
-      this.collapsed = !this.collapsed;
+      // Show only the user's own templates (copies count, since copies have userId === currentUser).
+      return this.$store.getters["table/template/getAll"]
+        .filter(t => !t.deleted && [1, 2, 3, 6].includes(t.type) && t.userId === this.user?.id)
+        .map(t => ({ id: t.id, name: t.name, type: t.type }));
     },
-    normalizeHexColor(value) {
-      if (!value) return null;
-      const normalized = value.startsWith("#") ? value : `#${value}`;
-      return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : null;
+    isEmailTemplateSetting() {
+      const s = this.setting;
+      return !!(s && s.key && s.key.startsWith("email.template.")
+        && (s.type === "number" || s.type === "integer"));
     },
-    updateColorValue(setting, value) {
-      const normalized = this.normalizeHexColor(value);
-      if (normalized) {
-        setting.value = normalized;
-      }
-    },
-    showsLogoPreview(setting) {
-      return setting.key === "logo.reBgColor";
-    },
-    hasResetValue(setting) {
-      return this.getResetValue(setting) !== null;
-    },
-    getResetValue(setting) {
-      if (setting.key === "logo.reBgColor") {
-        return DEFAULT_RE_BG;
-      }
+    requiredEmailTemplateType() {
+      const key = this.setting?.key;
+      if (!key) return null;
+      if (["email.template.passwordReset", "email.template.verification",
+           "email.template.registration", "email.template.twoFactorOtp",
+           "email.template.passwordResetSuccess"].includes(key)) return 1;
+      if (["email.template.sessionStart", "email.template.sessionFinish"].includes(key)) return 2;
+      if (key === "email.template.assignment") return 3;
+      if (key === "email.template.studyClosed") return 6;
       return null;
     },
-    isEmailTemplateSetting(setting) {
-      return setting.key && 
-             setting.key.startsWith("email.template.") && 
-             (setting.type === "number" || setting.type === "integer");
-    },
-    getFilteredEmailTemplates(setting) {
-      // Determine template type based on setting key
-      let requiredType = null;
-      if (setting.key === "email.template.passwordReset" || 
-          setting.key === "email.template.verification" || 
-          setting.key === "email.template.registration" ||
-          setting.key === "email.template.twoFactorOtp" ||
-          setting.key === "email.template.passwordResetSuccess") {
-        requiredType = 1; // Email - General
-      } else if (setting.key === "email.template.sessionStart" || 
-                 setting.key === "email.template.sessionFinish") {
-        requiredType = 2; // Email - Study Session
-      } else if (setting.key === "email.template.assignment") {
-        requiredType = 3; // Email - Assignment
-      } else if (setting.key === "email.template.studyClosed") {
-        requiredType = 6; // Email - Study Close
-      }
-      
-      // Filter by type if determined
-      return requiredType !== null 
-        ? this.emailTemplates.filter(t => t.type === requiredType)
+    filteredEmailTemplates() {
+      return this.requiredEmailTemplateType !== null
+        ? this.emailTemplates.filter(t => t.type === this.requiredEmailTemplateType)
         : this.emailTemplates;
-    }
-  }
+    },
+    showsLogoPreview() {
+      return this.setting?.key === "logo.reBgColor";
+    },
+    resetValue() {
+      if (this.setting?.key === "logo.reBgColor") return DEFAULT_RE_BG;
+      return null;
+    },
+    hasResetValue() {
+      return this.resetValue !== null;
+    },
+  },
+  methods: {
+    updateColorValue(value) {
+      const normalized = value && value.startsWith("#") ? value : `#${value || ""}`;
+      if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+        this.$emit("update:value", normalized);
+      }
+    },
+  },
 };
 </script>
-
-<style scoped>
-/* Add your styles here if needed */
-</style>

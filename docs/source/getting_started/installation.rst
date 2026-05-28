@@ -112,6 +112,7 @@ The email can be sent again when trying to login without being verified. The Del
 
     If you want to change the settings (e.g., using an external SMTP server or disable it), you can change the settings in the frontend dashboard under "Settings".
     If you disable the mail server, make sure you also disable email notifications/verification.
+    Changes to ``system.mailService.*`` are applied when you click ``Save Settings`` and do not require a backend restart.
 
 
 

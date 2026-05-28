@@ -5,6 +5,7 @@ const { registerVerificationRoutes } = require('./verification');
 const { registerLoginRoutes } = require('./login');
 const { registerPasswordRoutes } = require('./password');
 const { registerRegistrationRoutes } = require('./registration');
+const { registerSetupRoutes } = require('./setup');
 const { createSharedHelpers } = require('./shared');
 const { registerTwoFactorLoginFlowRoutes } = require('./twoFactor/loginFlow');
 const { createTwoFactorHelpers } = require('./twoFactor/shared');
@@ -23,6 +24,7 @@ module.exports = function registerAuthRoutes(server) {
 
     registerLoginRoutes(server, helpers);
     registerRegistrationRoutes(server, helpers);
+    registerSetupRoutes(server);
     registerPasswordRoutes(server, helpers);
     registerVerificationRoutes(server, helpers);
     registerTwoFactorLoginFlowRoutes(server, helpers);

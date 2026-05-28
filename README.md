@@ -25,6 +25,10 @@ You can find the documentation on GitHub Pages:
 
 The documentation can also be built locally by running `make doc` and is then available under `docs/build/html/index.html`.
 
+## Contributing
+
+We welcome contributions from the community. If you'd like to report a bug, propose a feature, or submit a pull request, please read our [Open-Source Contributor Guide](https://ukplab.github.io/CARE/dev/for_developers/contributing.html) (source: [docs/source/for_developers/contributing.rst](docs/source/for_developers/contributing.rst)).
+
 ## Contact 
 
 Don't hesitate to report an issue on GitHub or reach us directly via [Discord](https://discord.gg/4uX9aCZ6G7) if something is broken or if you have further questions.

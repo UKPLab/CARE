@@ -425,7 +425,6 @@ export default {
       const bottom = pdfToolbarRect.bottom;
       // calculate position of adder
       // slight offset from event positions up and to the right 
-      x = x;
       y = y - height;
 
 
@@ -488,7 +487,7 @@ export default {
       try {
         range = TextRange.fromRange(range).toRange();
       } catch (_error) {
-        throw new Error('Selection does not contain text');
+        throw new Error('Selection does not contain text', { cause: _error });
       }
 
       const startTextLayer = this.getNodeTextLayer(range.startContainer);

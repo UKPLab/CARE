@@ -31,6 +31,7 @@
           New language
         </template>
         <template #body>
+          <!-- eslint-disable-next-line vue/no-v-html -->
           <div v-html="newLanguageModalMessage" />
         </template>
         <template #footer>
@@ -67,7 +68,7 @@
   import Quill from "quill";
   import "quill/dist/quill.snow.css";
   import debounce from "lodash.debounce";
-  import {dbToDelta, deltaToDb} from "editor-delta-conversion";
+  import {deltaToDb} from "editor-delta-conversion";
   import {Editor} from "@/components/editor/editorStore.js";
   import Loader from "@/basic/Loading.vue";
   import BasicModal from "@/basic/Modal.vue";
