@@ -11,6 +11,60 @@ const {getEmailContent} = require("../../utils/emailHelper");
  * @class StudySocket
  */
 class StudySocket extends Socket {
+    /**
+     * Resolve studies for bulk study actions.
+     * Supports either explicit id list (studyIds/studyIdsJson) or all studies in a project.
+     * Excludes deleted/template studies.
+     * @param {object} data
+     * @returns {Promise<object[]>}
+     */
+    async getBulkActionStudies(data) {
+        const projectId = Number(data.projectId);
+        if (!Number.isFinite(projectId)) {
+            throw new Error("projectId is required");
+        }
+        let studies;
+
+        if (data.bulkCloseUseIdList) {
+            let idList = Array.isArray(data.studyIds) ? data.studyIds : [];
+            if (idList.length === 0 && typeof data.studyIdsJson === "string") {
+                try {
+                    const parsed = JSON.parse(data.studyIdsJson);
+                    if (Array.isArray(parsed)) {
+                        idList = parsed;
+                    }
+                } catch (e) {
+                    this.logger.error("bulk study action: invalid studyIdsJson", e);
+                }
+            }
+            const ids = [...new Set(idList.map((id) => Number(id)).filter((n) => Number.isFinite(n)))];
+            if (ids.length === 0) {
+                return [];
+            }
+            const fetched = await this.models["study"].getAllByKeyValues("id", ids);
+            const byId = new Map(fetched.map((s) => [s.id, s]));
+            studies = ids
+                .map((id) => byId.get(id))
+                .filter(
+                    (s) =>
+                        s &&
+                        Number(s.projectId) === projectId &&
+                        !s.deleted &&
+                        !s.template,
+                );
+        } else {
+            studies = await this.models["study"].getAllByKey("projectId", projectId);
+            studies = studies.filter((study) => !study.deleted && !study.template);
+        }
+        return studies;
+    }
+
+    async assertBulkManagePermission() {
+        const hasPermission = await this.hasAccess("frontend.dashboard.studies.closeAllStudies");
+        if (!hasPermission) {
+            throw new Error("No permission to manage studies");
+        }
+    }
 
     /**
      * Creates a new study template based on an existing study or directly from data.
@@ -151,6 +205,9 @@ class StudySocket extends Socket {
         if (!study) {
             throw new Error("Study not found");
         }
+        if (!(await this.checkUserAccess(study.userId))) {
+            throw new Error("No permission to close this study");
+        }
 
         if (study.closed) {
             throw new Error("Study is already closed");
@@ -195,41 +252,11 @@ class StudySocket extends Socket {
      * @returns {Promise<{ closedCount: number }>} Number of studies successfully closed in this run.
      */
     async closeBulk(data, options) {
-        const projectId = Number(data.projectId);
+        await this.assertBulkManagePermission();
+
         const ignoreClosedState = data.ignoreClosedState === true;
         const progressId = data.progressId;
-        let studies;
-
-        if (data.bulkCloseUseIdList) {
-            let idList = Array.isArray(data.studyIds) ? data.studyIds : [];
-            if (idList.length === 0 && typeof data.studyIdsJson === "string") {
-                try {
-                    const parsed = JSON.parse(data.studyIdsJson);
-                    if (Array.isArray(parsed)) {
-                        idList = parsed;
-                    }
-                } catch (e) {
-                    this.logger.error("studyCloseBulk: invalid studyIdsJson", e);
-                }
-            }
-            const ids = [...new Set(idList.map((id) => Number(id)).filter((n) => Number.isFinite(n)))];
-            if (ids.length === 0) {
-                return { closedCount: 0 };
-            }
-            const fetched = await this.models["study"].getAllByKeyValues("id", ids);
-            const byId = new Map(fetched.map((s) => [s.id, s]));
-            studies = ids
-                .map((id) => byId.get(id))
-                .filter(
-                    (s) =>
-                        s &&
-                        Number(s.projectId) === projectId &&
-                        !s.deleted &&
-                        !s.template,
-                );
-        } else {
-            studies = await this.models["study"].getAllByKey("projectId", data.projectId);
-        }
+        const studies = await this.getBulkActionStudies(data);
 
         let closedCount = 0;
         const total = studies.length;
@@ -278,9 +305,101 @@ class StudySocket extends Socket {
         return { closedCount };
     }
 
+    /**
+     * Reopens studies for a project in a loop (entire project or an explicit id list from the client).
+     * @socketEvent studyReopenBulk
+     * @param data
+     * @returns {Promise<{ reopenedCount: number }>}
+     */
+    async reopenBulk(data, options) {
+        await this.assertBulkManagePermission();
+
+        const progressId = data.progressId;
+        const studies = await this.getBulkActionStudies(data);
+        let reopenedCount = 0;
+        const total = studies.length;
+
+        for (let i = 0; i < total; i++) {
+            const study = studies[i];
+            if (study.closed) {
+                const transaction = await this.server.db.sequelize.transaction();
+                try {
+                    await this.models["study"].updateById(
+                        study.id,
+                        { closed: null, userIdClosed: null },
+                        { transaction },
+                    );
+                    transaction.afterCommit(async () => {
+                        this.broadcastTransactionChanges(transaction);
+                    });
+                    await transaction.commit();
+                    reopenedCount++;
+                } catch (e) {
+                    this.logger.error(e);
+                    await transaction.rollback();
+                }
+            }
+
+            if (progressId) {
+                this.socket.emit("progressUpdate", {
+                    id: progressId,
+                    current: i + 1,
+                    total,
+                });
+            }
+        }
+        return { reopenedCount };
+    }
+
+    /**
+     * Soft-deletes studies for a project in a loop (entire project or an explicit id list from the client).
+     * @socketEvent studyDeleteBulk
+     * @param data
+     * @returns {Promise<{ deletedCount: number }>}
+     */
+    async deleteBulk(data, options) {
+        await this.assertBulkManagePermission();
+
+        const progressId = data.progressId;
+        const studies = await this.getBulkActionStudies(data);
+        let deletedCount = 0;
+        const total = studies.length;
+
+        for (let i = 0; i < total; i++) {
+            const study = studies[i];
+            const transaction = await this.server.db.sequelize.transaction();
+            try {
+                await this.models["study"].updateById(
+                    study.id,
+                    { deleted: true },
+                    { transaction },
+                );
+                transaction.afterCommit(async () => {
+                    this.broadcastTransactionChanges(transaction);
+                });
+                await transaction.commit();
+                deletedCount++;
+            } catch (e) {
+                this.logger.error(e);
+                await transaction.rollback();
+            }
+
+            if (progressId) {
+                this.socket.emit("progressUpdate", {
+                    id: progressId,
+                    current: i + 1,
+                    total,
+                });
+            }
+        }
+        return { deletedCount };
+    }
+
     async init() {
         this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
         this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
+        this.createSocket("studyReopenBulk", this.reopenBulk, {}, false);
+        this.createSocket("studyDeleteBulk", this.deleteBulk, {}, false);
         this.createSocket("studyClose", this.closeStudy, {}, true);
     }
 }

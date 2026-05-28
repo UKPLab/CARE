@@ -13,10 +13,10 @@
           <BasicButton
               v-if="canCloseStudies"
               class="btn-secondary btn-sm"
-              title="Close All Studies"
-              text="Close All Studies"
+              title="Manage Studies"
+              text="Manage Studies"
               icon="x-octagon"
-              @click="closeStudies"
+              @click="manageStudies"
           />
           <BasicButton
               v-if="canAddBulkAssignments"
@@ -58,7 +58,7 @@
     <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
     <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
-    <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
+    <ManageStudiesModal v-if="modals.manageStudies" ref="manageStudiesModal" @hide="modals.manageStudies = false"/>
     <StudyCloseModal ref="studyCloseModal" />
     <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
     <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
@@ -77,9 +77,9 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
-import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
+import ManageStudiesModal from "@/components/dashboard/study/ManageStudiesModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -89,8 +89,8 @@ import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 export default {
   name: "DashboardStudy",
   components: {
-    BulkCloseModal,
     StudyCloseModal,
+    ManageStudiesModal,
     Card,
     BasicTable,
     StudyModal,
@@ -125,7 +125,7 @@ export default {
         studySession: false,
         deleteConf: false,
         confirm: false,
-        bulkConfirm: false,
+        manageStudies: false,
         bulkAssignments: false,
         singleAssignment: false,
         information: false,
@@ -457,9 +457,9 @@ export default {
       this.modals.confirm = true;
       this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
     },
-    openBulkConfirmModal() {
-      this.modals.bulkConfirm = true;
-      this.$nextTick(() => this.$refs.bulkConfirmModal?.open());
+    openManageStudiesModal() {
+      this.modals.manageStudies = true;
+      this.$nextTick(() => this.$refs.manageStudiesModal?.open());
     },
     openBulkAssignmentsModal() {
       this.modals.bulkAssignments = true;
@@ -561,8 +561,8 @@ export default {
     studyCoordinator(row, linkOnly = false) {
       this.openStudyCoordinator(row.id, linkOnly);
     },
-    closeStudies() {
-      this.openBulkConfirmModal();
+    manageStudies() {
+      this.openManageStudiesModal();
     },
     saveAsTemplate(study) {
       this.openConfirmModal(
