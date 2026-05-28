@@ -59,7 +59,7 @@
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="dataSelection.exportType === 'submissions' || dataSelection.exportType === 'documents'">
+      <div v-else-if="dataSelection.exportType === 'submissions' || dataSelection.exportType === 'documents' || dataSelection.exportType === 'studies'">
         <StepSelectUsers
           v-if="dataSelection.projectId"
           :project-id="dataSelection.projectId"
@@ -103,9 +103,15 @@
         />
         <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
       </div>
+      <div v-else-if="dataSelection.exportType === 'studies'">
+        <StepOptionsStudies
+          :project-id="dataSelection.projectId"
+          v-model:selectedWorkflowIds="selectedWorkflowIds"
+        />
+      </div>
     </template>
 
-    <template #step-4 v-if="dataSelection.exportType === 'submissions' || dataSelection.exportType === 'documents'">
+    <template #step-4 v-if="dataSelection.exportType === 'submissions' || dataSelection.exportType === 'documents' || dataSelection.exportType === 'studies'">
       <StepConfirmDownload
         :wait="wait"
         :generate-aliases="generateAliases"
@@ -130,6 +136,7 @@ import BasicLoading from "@/basic/Loading.vue";
 import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
 import StepOptionsSubmissions from "@/components/dashboard/projects/export/StepOptionsSubmissions.vue";
 import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
+import StepOptionsStudies from "@/components/dashboard/projects/export/StepOptionsStudies.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
 
@@ -141,7 +148,7 @@ import getServerURL from "@/assets/serverUrl.js";
  */
 export default {
   name: "ExportProjectModal",
-  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptionsSubmissions, StepOptionsDocuments, StepConfirmDownload },
+  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptionsSubmissions, StepOptionsDocuments, StepOptionsStudies, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -159,7 +166,9 @@ export default {
   }, {
     table: "tag_set",
   }, {
-    table: "tag"
+    table: "tag",
+  }, {
+    table: "workflow",
   }
   ],
   provide() {
@@ -180,7 +189,8 @@ export default {
       generateAliases:false,
       fakerSeed: 846569412,
       selectedDocumentTypes: [0, 1, 2, 4],
-      excludeNonConsentingEdits: false
+      excludeNonConsentingEdits: false,
+      selectedWorkflowIds: []
     };
   },
   computed: {
@@ -199,6 +209,13 @@ export default {
           this.selectedDocumentTypes.length > 0,
           true,
         ];
+      } else if (this.dataSelection.exportType === 'studies') {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          true,
+          true,
+        ];
       }
       return [
         !!this.dataSelection.projectId && !!this.dataSelection.exportType,
@@ -206,14 +223,7 @@ export default {
       ];
     },
     steps() {
-      if (this.dataSelection.exportType === 'submissions') {
-        return [
-          { title: "Settings" },
-          { title: "Select Users" },
-          { title: "Options" },
-          { title: "Confirm Download" }
-        ];
-      } else if (this.dataSelection.exportType === 'documents') {
+      if (['submissions', 'documents', 'studies'].includes(this.dataSelection.exportType)) {
         return [
           { title: "Settings" },
           { title: "Select Users" },
@@ -246,6 +256,7 @@ export default {
             {name: "Export a list of all reviewers", value: "reviewerList"},
             {name: "Export submissions", value: "submissions"},
             {name: "Export documents", value:"documents"},
+            {name: "Export studies", value: "studies"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -316,6 +327,7 @@ export default {
       this.fakerSeed = 846569412;
       this.selectedDocumentTypes = [0, 1, 2, 4];
       this.excludeNonConsentingEdits = false;
+      this.selectedWorkflowIds = [];
       this.wait = false;
     },
     downloadData() {
@@ -325,6 +337,8 @@ export default {
         this.downloadSubmissions();
       } else if (this.dataSelection.exportType === "documents") {
         this.downloadDocuments();
+      } else if (this.dataSelection.exportType === 'studies') {
+        this.downloadStudies();
       } else {
         this.downloadAllData();
       }
@@ -420,6 +434,21 @@ export default {
       } catch (error) {
           console.error("Streaming error:", error);
           this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadStudies() {
+      try {
+        const selectedUserIds = this.userSelection.map(row => row.userId);
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'studies',
+          userIds: selectedUserIds,
+          workflowIds: this.selectedWorkflowIds,
+        });
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
       }
     },
     async downloadAllData() {

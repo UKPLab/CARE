@@ -111,7 +111,6 @@ export default {
         const exportableTypes = [0, 1, 2, 4];
         const exportDocs = this.documents.filter(doc =>
           doc.projectId == this.projectId &&
-          doc.submissionId &&
           !doc.parentDocumentId &&
           !doc.deleted &&
           exportableTypes.includes(doc.type)

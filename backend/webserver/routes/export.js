@@ -38,7 +38,7 @@ module.exports = function (server) {
 
         // Input parsing
         const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits } = req.body;
-        let { userIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
+        let { userIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldIncludeNonConsenting = String(includeNonConsentingEdits) === 'true';
 
@@ -56,6 +56,14 @@ module.exports = function (server) {
         } catch (e) {
             console.warn("Could not parse documentTypes:", documentTypes);
             documentTypes = [0, 1, 2, 4];
+        }
+
+        try {
+            workflowIds = typeof workflowIds === 'string' ? JSON.parse(workflowIds) : workflowIds;
+            if (!Array.isArray(workflowIds)) workflowIds = [];
+        } catch (e) {
+            console.warn("Could not parse workflowIds:", workflowIds);
+            workflowIds = [];
         }
 
         try {
@@ -114,6 +122,16 @@ module.exports = function (server) {
                         documentTypes,
                         shouldIncludeNonConsenting,
                         exportFolderName.split('.')[0],
+                        archive
+                    );
+                    break;
+                case 'studies':
+                    await processStudyBasedExport(
+                        server,
+                        projectId,
+                        userIds,
+                        workflowIds,
+                        baseFolderName,
                         archive
                     );
                     break;
@@ -493,6 +511,120 @@ module.exports = function (server) {
         for (const doc of filteredDocs) {
             const docFolder = `${baseFolderName}/${doc.hash}`;
             await processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, archive);
+        }
+    }
+
+    function sortSteps(items, prevKey) {
+        const sorted = [];
+        let current = items.find(item => item[prevKey] === null);
+        while (current) {
+            sorted.push(current);
+            current = items.find(item => item[prevKey] === current.id);
+        }
+        return sorted;
+    }
+
+    async function processStudyBasedExport(server, projectId, userIds, workflowIds, baseFolderName, archive) {
+        const studyWhere = { projectId, deleted: false };
+        if (workflowIds.length > 0) studyWhere.workflowId = workflowIds;
+
+        const studies = await server.db.models.study.findAll({ where: studyWhere });
+
+        if (studies.length === 0) {
+            console.warn(`[StudyExport] No studies found for project ${projectId}`);
+            return;
+        }
+
+        for (const study of studies) {
+            const sessions = await server.db.models.study_session.findAll({
+                where: { studyId: study.id, userId: userIds, deleted: false }
+            });
+            if (sessions.length === 0) continue;
+
+            const studyFolder = `${baseFolderName}/${study.hash}`;
+            archive.append(JSON.stringify(study.toJSON(), null, 2), { name: `${studyFolder}/study.json` });
+
+            const allSteps = await server.db.models.study_step.findAll({
+                where: { studyId: study.id, deleted: false }
+            });
+            const sortedSteps = sortSteps(allSteps, 'studyStepPrevious');
+
+            for (const session of sessions) {
+                const sessionFolder = `${studyFolder}/${session.hash}`;
+                archive.append(JSON.stringify(session.toJSON(), null, 2), { name: `${sessionFolder}/session.json` });
+
+                for (let i = 0; i < sortedSteps.length; i++) {
+                    const step = sortedSteps[i];
+                    const stepFolder = `${sessionFolder}/step_${i + 1}`;
+
+                    archive.append(JSON.stringify(step.toJSON(), null, 2), { name: `${stepFolder}/step.json` });
+
+                    switch (step.stepType) {
+                        case 1: { // Annotator
+                            const annotations = await server.db.models.annotation.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+                            if (annotations.length > 0) {
+                                archive.append(JSON.stringify(annotations, null, 2), { name: `${stepFolder}/annotations.json` });
+                            }
+
+                            const comments = await server.db.models.comment.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+                            if (comments.length > 0) {
+                                const commentVotes = await server.db.models.comment_vote.findAll({
+                                    where: { commentId: comments.map(c => c.id), deleted: false },
+                                    raw: true,
+                                });
+                                archive.append(JSON.stringify(
+                                    comments.map(c => ({ ...c, votes: commentVotes.filter(v => v.commentId === c.id) })),
+                                    null, 2
+                                ), { name: `${stepFolder}/comments.json` });
+                            }
+                            break;
+                        }
+
+                        case 2: // Editor
+                        case 3: { // Modal
+                            const [templateEdits, sessionEdits] = await Promise.all([
+                                server.db.models.document_edit.findAll({
+                                    where: { documentId: step.documentId, studySessionId: null, studyStepId: null, deleted: false },
+                                    order: [['createdAt', 'ASC']],
+                                    raw: true,
+                                }),
+                                server.db.models.document_edit.findAll({
+                                    where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                    order: [['createdAt', 'ASC']],
+                                    raw: true,
+                                }),
+                            ]);
+                            const edits = [...templateEdits, ...sessionEdits]
+                                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                            if (edits.length > 0) {
+                                const delta = dbToDelta(edits);
+                                const text = deltaToPlainText(delta);
+                                if (text.trim()) {
+                                    archive.append(JSON.stringify(edits, null, 2), { name: `${stepFolder}/edits.json` });
+                                    archive.append(text,                           { name: `${stepFolder}/text.txt` });
+                                    archive.append(deltaToHtml(delta),            { name: `${stepFolder}/html.html` });
+                                }
+                            }
+
+                            const documentData = await server.db.models.document_data.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+                            if (documentData.length > 0) {
+                                archive.append(JSON.stringify(documentData, null, 2), { name: `${stepFolder}/document_data.json` });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 };
