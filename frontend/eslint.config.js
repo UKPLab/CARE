@@ -18,6 +18,11 @@ export default [
     ...pluginVue.configs['flat/recommended'],
     eslintConfigPrettier,
     {
+        languageOptions: {
+            globals: {
+                APP_VERSION: 'readonly',
+            },
+        },
         rules: {
             'no-unused-vars': [
                 'error',

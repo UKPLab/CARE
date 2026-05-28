@@ -153,9 +153,9 @@ export default {
       progress: false,
       progressData: null,
       progressId: null,
-      _suspendedByChild: false,
-      _closeRequestHandled: false,
-      _hideWaiting: false,
+      suspendedByChild: false,
+      closeRequestHandled: false,
+      hideWaiting: false,
       isShown: false,
     };
   },
@@ -238,8 +238,8 @@ export default {
           data: {name: this.name, props: this.props}
         });
       }
-      if (this._hideWaiting) {
-        this._hideWaiting = false;
+      if (this.hideWaiting) {
+        this.hideWaiting = false;
         this.hide();
       }
     },
@@ -256,16 +256,16 @@ export default {
       this.modal.show();
     },
     handleCloseClick() {
-      this._closeRequestHandled = false;
+      this.closeRequestHandled = false;
       this.$emit('close-requested');
       this.$nextTick(() => {
-        if (!this._closeRequestHandled) {
+        if (!this.closeRequestHandled) {
           this.close();
         }
       });
     },
     markCloseRequestHandled() {
-      this._closeRequestHandled = true;
+      this.closeRequestHandled = true;
     },
     close() {
       this.hide();
@@ -274,7 +274,7 @@ export default {
       if (this.isShown) {
         this.modal.hide();
       } else {
-        this._hideWaiting = true;
+        this.hideWaiting = true;
       }
       this.resumeParentModal();
     },
@@ -289,20 +289,20 @@ export default {
       }
     },
     suspendParentModal() {
-      if (!this.parentModal || this.parentModal._suspendedByChild) return;
+      if (!this.parentModal || this.parentModal.suspendedByChild) return;
       const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
       if (el) {
         el.classList.add('nested-suspended');
       }
-      this.parentModal._suspendedByChild = true;
+      this.parentModal.suspendedByChild = true;
     },
     resumeParentModal() {
-      if (!this.parentModal || !this.parentModal._suspendedByChild) return;
+      if (!this.parentModal || !this.parentModal.suspendedByChild) return;
       const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
       if (el) {
         el.classList.remove('nested-suspended');
       }
-      this.parentModal._suspendedByChild = false;
+      this.parentModal.suspendedByChild = false;
     }
   }
 };

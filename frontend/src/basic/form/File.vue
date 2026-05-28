@@ -1,6 +1,6 @@
 <template>
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
-    <template #element="{blur}">
+    <template #element>
       <input
         ref="fileUpload"
         type="file"
