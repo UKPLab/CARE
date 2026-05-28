@@ -305,6 +305,18 @@ export default {
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `replay_results_${timestamp}_${slug}`;
 
+      // Strip per-trace dbChanges from the exported file they bloat the JSON
+      // and aren't needed for offline review. The in-app results modal keeps
+      // them for live inspection.
+      const stripDbChanges = (results || []).map((iteration) => ({
+        ...iteration,
+        results: (iteration.results || []).map((session) => ({
+          ...session,
+          latencies: (session.latencies || []).map(({ dbChanges, ...rest }) => rest),
+          errors: (session.errors || []).map(({ dbChanges, ...rest }) => rest),
+        })),
+      }));
+
       const payload = {
         schemaVersion: 1,
         completedAt: new Date().toISOString(),
@@ -312,7 +324,7 @@ export default {
           ...runConfig,
           recordingNames,
         },
-        results,
+        results: stripDbChanges,
       };
       downloadObjectsAs(payload, filename, "json");
     },
