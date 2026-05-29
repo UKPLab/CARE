@@ -21,6 +21,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * JSON Textarea form component
@@ -50,11 +51,7 @@ export default {
   },
   computed: {
     translatedPlaceholder() {
-      const placeholder = this.options.placeholder || "{}";
-      if (typeof placeholder !== "string") {
-        return placeholder;
-      }
-      return this.$te(placeholder) ? this.$t(placeholder) : placeholder;
+      return translateMaybeKey(this.options.placeholder || "{}");
     },
   },
   watch: {

@@ -61,7 +61,7 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
-  import { resolveApiMessage } from "@/assets/utils";
+  import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
   /**
    * Template Configurator sidebar component
    *
@@ -173,12 +173,7 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
-      translateMaybeKey(value) {
-        if (typeof value !== "string") {
-          return value;
-        }
-        return this.$te(value) ? this.$t(value) : value;
-      },
+      translateMaybeKey,
       // Help text lives in templates.json; derive key from description key in DB (same slug + placeholderKey).
       getPlaceholderHelp(placeholder) {
         const descriptionKey = placeholder.description;
@@ -189,7 +184,7 @@
         if (this.$te(helpKey)) {
           return this.$t(helpKey);
         }
-        return this.translateMaybeKey(descriptionKey);
+        return translateMaybeKey(descriptionKey);
       },
       initializePlaceholderCounts() {
         const counts = {};

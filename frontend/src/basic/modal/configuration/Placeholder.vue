@@ -42,6 +42,7 @@
 
 <script>
 import FormSelect from "@/basic/form/Select.vue"; // Import FormSelect
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Placeholder Component for configuration modal
@@ -104,12 +105,7 @@ export default {
       const key = `nlp.skills.names.${skillName}`;
       return this.$te(key) ? this.$t(key) : skillName;
     },
-    translateMaybeKey(value) {
-      if (!value || typeof value !== "string") {
-        return value;
-      }
-      return this.$te(value) ? this.$t(value) : value;
-    },
+    translateMaybeKey,
     onFieldUpdate(key, value) {
       this.$emit('update:formData', { ...this.formData, [key]: value });
     }

@@ -138,7 +138,5 @@
     "selectedCount": "{selected} of {total} selected",
     "description": "Description",
     "running": "Running",
-    "finished": "Finished",
-    "browse": "Browse...",
-    "noFileSelected": "No file selected."
+    "finished": "Finished"
 }

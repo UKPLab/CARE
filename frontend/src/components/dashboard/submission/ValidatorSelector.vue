@@ -81,6 +81,8 @@
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
+
 /**
  * This component enables users to select a validation schema and allows for UI customization.
  * @author: Linyin Huang
@@ -178,12 +180,7 @@ export default {
     },
   },
   methods: {
-    translateMaybeKey(value) {
-      if (!value || typeof value !== "string") {
-        return value;
-      }
-      return this.$te(value) ? this.$t(value) : value;
-    },
+    translateMaybeKey,
     handleValidatorChange(event) {
       const validatorId = Number(event.target.value);
       if (validatorId === this.modelValue) return;

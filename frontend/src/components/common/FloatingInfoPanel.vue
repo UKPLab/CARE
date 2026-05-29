@@ -42,6 +42,8 @@
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
+
 /**
  * FloatingInfoPanel Component
  * 
@@ -160,12 +162,7 @@ export default {
   },
   
   methods: {
-    translateMaybeKey(value) {
-      if (!value || typeof value !== "string") {
-        return value;
-      }
-      return this.$te(value) ? this.$t(value) : value;
-    },
+    translateMaybeKey,
     calculatePosition() {
       if (!this.referenceElement) return;
       

@@ -19,7 +19,7 @@
           :value="valueAsObject ? option : option.value"
           :disabled="option.disabled"
         >
-          {{ $te(option.name) ? $t(option.name) : option.name }}
+          {{ translateMaybeKey(option.name) }}
         </option>
       </select>
       <select
@@ -42,6 +42,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "FormSelect",
@@ -215,12 +216,7 @@ export default {
     this.updateData();
   },
   methods: {
-    translateMaybeKey(value) {
-      if (typeof value !== "string") {
-        return value;
-      }
-      return this.$te(value) ? this.$t(value) : value;
-    },
+    translateMaybeKey,
     updateData() {
       // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
       if (this.modelValue === -1) {
