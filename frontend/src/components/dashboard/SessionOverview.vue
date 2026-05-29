@@ -105,7 +105,10 @@ export default {
       ];
     },
     workflowTypes() {
-      return this.$store.getters["table/workflow/getAll"] || [];
+      return (this.$store.getters["table/workflow/getAll"] || []).map((workflow) => ({
+        ...workflow,
+        name: translateMaybeKey(workflow.name),
+      }));
     },
     studySessions() {
       const sessions = this.$store.getters["table/study_session/getAll"] || [];
