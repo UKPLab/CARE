@@ -107,6 +107,7 @@
         <StepOptionsStudies
           :project-id="dataSelection.projectId"
           v-model:selectedWorkflowIds="selectedWorkflowIds"
+          v-model:includeEmptyStudies="includeEmptyStudies"
         />
       </div>
     </template>
@@ -190,7 +191,8 @@ export default {
       fakerSeed: 846569412,
       selectedDocumentTypes: [0, 1, 2, 4],
       excludeNonConsentingEdits: false,
-      selectedWorkflowIds: []
+      selectedWorkflowIds: [],
+      includeEmptyStudies: false
     };
   },
   computed: {
@@ -328,6 +330,7 @@ export default {
       this.selectedDocumentTypes = [0, 1, 2, 4];
       this.excludeNonConsentingEdits = false;
       this.selectedWorkflowIds = [];
+      this.includeEmptyStudies = false;
       this.wait = false;
     },
     downloadData() {
@@ -444,6 +447,7 @@ export default {
           exportType: 'studies',
           userIds: selectedUserIds,
           workflowIds: this.selectedWorkflowIds,
+          includeEmptyStudies: this.includeEmptyStudies,
         });
         this.$refs.exportStepper.close();
       } catch (error) {

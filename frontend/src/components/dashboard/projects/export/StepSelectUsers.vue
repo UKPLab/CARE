@@ -66,6 +66,9 @@ export default {
     documents() {
       return this.$store.getters["table/document/getAll"];
     },
+    studies() {
+      return this.$store.getters["table/study/getAll"];
+    },
     userTableData() {
       const currentUser = this.$store.getters["auth/getUser"];
 
@@ -107,7 +110,7 @@ export default {
           const d = new Date(doc.createdAt);
           if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
         });
-      } else {
+      } else if (this.exportType === 'documents') {
         const exportableTypes = [0, 1, 2, 4];
         const exportDocs = this.documents.filter(doc =>
           doc.projectId == this.projectId &&
@@ -120,6 +123,17 @@ export default {
           if (!row) return;
           row.count++;
           const d = new Date(doc.createdAt);
+          if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
+        });
+      } else if (this.exportType === 'studies') {
+        const projectStudies = (this.studies || []).filter(s =>
+          s.projectId == this.projectId && !s.deleted
+        );
+        projectStudies.forEach(study => {
+          const row = getOrCreateRow(study.userId);
+          if (!row) return;
+          row.count++;
+          const d = new Date(study.createdAt);
           if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
         });
       }
@@ -135,7 +149,7 @@ export default {
     userTable() {
       const cols = [
         { name: "Username", key: "userName", sortable: true },
-        { name: this.exportType === 'submissions' ? "Submissions" : "Documents", key: "count", sortable: true },
+        { name: this.exportType === 'submissions' ? "Submissions" : this.exportType === 'documents' ? "Documents" : "Studies", key: "count", sortable: true },
         { 
           name: "Accepted Data Sharing", 
           key: "acceptDataSharing", 

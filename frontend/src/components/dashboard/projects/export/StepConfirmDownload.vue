@@ -23,6 +23,7 @@
         <strong>Summary:</strong><br />
         You are about to download 
         <span v-if="exportType === 'submissions'">submissions</span>
+        <span v-else-if="exportType === 'studies'">studies</span>
         <span v-else>documents</span>
         for <strong>{{ userSelection.length }}</strong> users(s).
       </div>
@@ -30,7 +31,7 @@
       <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
         <ul class="mb-0 pl-3">
           <li v-for="row in userSelection" :key="row.userId">
-            {{ row.studentName || row.userName }} ({{ row.count }} {{ exportType === 'submissions' ? 'submission(s)' : 'document(s)' }})
+            {{ row.studentName || row.userName }} ({{ row.count }} {{ exportType === 'submissions' ? 'submission(s)' : exportType === 'studies' ? 'studies' : 'document(s)' }})
           </li>
         </ul>
       </div>

@@ -37,10 +37,11 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits, includeEmptyStudies } = req.body;
         let { userIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldIncludeNonConsenting = String(includeNonConsentingEdits) === 'true';
+        const shouldIncludeEmptyStudies = String(includeEmptyStudies) === 'true';
 
         try {
             userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
@@ -99,6 +100,8 @@ module.exports = function (server) {
                 archive.append(mappingCsv, { name: 'aliases_mapping.csv' });
             }
 
+            const baseFolderName = exportFolderName.split('.')[0];
+
             // process based on type
             switch (exportType) {
                 case 'submissions': 
@@ -110,7 +113,7 @@ module.exports = function (server) {
                         shouldGenerateAliases,
                         hasPrivateInfoRight,
                         userMapping,
-                        exportFolderName.split('.')[0],
+                        baseFolderName,
                         archive
                     );
                     break;
@@ -121,7 +124,7 @@ module.exports = function (server) {
                         userIds,
                         documentTypes,
                         shouldIncludeNonConsenting,
-                        exportFolderName.split('.')[0],
+                        baseFolderName,
                         archive
                     );
                     break;
@@ -131,6 +134,7 @@ module.exports = function (server) {
                         projectId,
                         userIds,
                         workflowIds,
+                        shouldIncludeEmptyStudies,
                         baseFolderName,
                         archive
                     );
@@ -524,40 +528,59 @@ module.exports = function (server) {
         return sorted;
     }
 
-    async function processStudyBasedExport(server, projectId, userIds, workflowIds, baseFolderName, archive) {
-        const studyWhere = { projectId, deleted: false };
+    async function processStudyBasedExport(server, projectId, userIds, workflowIds, shouldIncludeEmptyStudies, baseFolderName, archive) {
+        const studyWhere = { userId: userIds, projectId, deleted: false };
         if (workflowIds.length > 0) studyWhere.workflowId = workflowIds;
 
         const studies = await server.db.models.study.findAll({ where: studyWhere });
 
         if (studies.length === 0) {
-            console.warn(`[StudyExport] No studies found for project ${projectId}`);
+            console.warn(`[StudyExport] No studies found for selected users in project ${projectId}`);
             return;
         }
 
-        for (const study of studies) {
-            const sessions = await server.db.models.study_session.findAll({
-                where: { studyId: study.id, userId: userIds, deleted: false }
-            });
-            if (sessions.length === 0) continue;
+        const meta = {};
 
+        for (const study of studies) {
             const studyFolder = `${baseFolderName}/${study.hash}`;
-            archive.append(JSON.stringify(study.toJSON(), null, 2), { name: `${studyFolder}/study.json` });
 
             const allSteps = await server.db.models.study_step.findAll({
                 where: { studyId: study.id, deleted: false }
             });
             const sortedSteps = sortSteps(allSteps, 'studyStepPrevious');
 
+            const sessions = await server.db.models.study_session.findAll({
+                where: { studyId: study.id, deleted: false },
+                raw: true,
+            });
+
+            if (!includeEmptyStudies && sessions.length === 0) continue;
+
+            meta[study.hash] = {
+                id: study.id,
+                name: study.name,
+                userId: study.userId,
+                workflowId: study.workflowId,
+                sessions: sessions.map(session => ({
+                    hash: session.hash,
+                    id: session.id,
+                    userId: session.userId,
+                    numberSteps: session.numberSteps,
+                    steps: sortedSteps.map((step, i) => ({
+                        id: step.id,
+                        stepNumber: i + 1,
+                        stepType: step.stepType,
+                        configuration: step.configuration,
+                    }))
+                }))
+            };
+
             for (const session of sessions) {
                 const sessionFolder = `${studyFolder}/${session.hash}`;
-                archive.append(JSON.stringify(session.toJSON(), null, 2), { name: `${sessionFolder}/session.json` });
 
                 for (let i = 0; i < sortedSteps.length; i++) {
                     const step = sortedSteps[i];
                     const stepFolder = `${sessionFolder}/step_${i + 1}`;
-
-                    archive.append(JSON.stringify(step.toJSON(), null, 2), { name: `${stepFolder}/step.json` });
 
                     switch (step.stepType) {
                         case 1: { // Annotator
@@ -609,7 +632,7 @@ module.exports = function (server) {
                                 if (text.trim()) {
                                     archive.append(JSON.stringify(edits, null, 2), { name: `${stepFolder}/edits.json` });
                                     archive.append(text,                           { name: `${stepFolder}/text.txt` });
-                                    archive.append(deltaToHtml(delta),            { name: `${stepFolder}/html.html` });
+                                    archive.append(deltaToHtml(delta),             { name: `${stepFolder}/html.html` });
                                 }
                             }
 
@@ -626,5 +649,8 @@ module.exports = function (server) {
                 }
             }
         }
+
+        // single meta.json at the root of the export
+        archive.append(JSON.stringify(meta, null, 2), { name: `${baseFolderName}/meta.json` });
     }
 };
