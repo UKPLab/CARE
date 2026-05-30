@@ -23,35 +23,25 @@
       />
     </template>
 
-    <!-- Step 2 (canUploadForOthers only, no preselected user): Select user -->
-    <template
-      v-if="canUploadForOthers && !userPreselected"
-      #step-2
-    >
+    <!-- Step 2: Select user (admins without preselected user) or file upload (everyone else) -->
+    <template #step-2>
       <BasicTable
+        v-if="canUploadForOthers && !userPreselected"
         v-model="selectedUser"
         :columns="selectionTable"
         :options="selectionTableOptions"
         :data="users"
         :max-table-height="400"
       />
-    </template>
-
-    <!-- File upload: step 3 for admins (no preselect), step 2 otherwise -->
-    <template
-      v-if="canUploadForOthers && !userPreselected"
-      #step-3
-    >
       <BasicForm
+        v-else
         v-model="files"
         :fields="fileFields"
       />
     </template>
 
-    <template
-      v-if="!canUploadForOthers || userPreselected"
-      #step-2
-    >
+    <!-- Step 3 (admins without preselected user only): file upload -->
+    <template #step-3>
       <BasicForm
         v-model="files"
         :fields="fileFields"
@@ -64,7 +54,6 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
-import ValidatorSelector from "@/components/dashboard/submission/ValidatorSelector.vue";
 
 /**
  * Assignment-specific submission upload modal.
@@ -74,7 +63,7 @@ import ValidatorSelector from "@/components/dashboard/submission/ValidatorSelect
  */
 export default {
   name: "AssignmentUploadModal",
-  components: { BasicForm, BasicTable, StepperModal, ValidatorSelector },
+  components: { BasicForm, BasicTable, StepperModal },
   subscribeTable: ["user", "assignment", "configuration"],
   data() {
     return {
@@ -209,6 +198,7 @@ export default {
       this.selectedValidatorData = null;
       this.assignmentId = assignmentId;
       this.replacementSubmissionId = isReplacement ? submission.id : null;
+      this.userPreselected = false;
       this.submissionMeta = {
         name: submission?.name,
         description: submission?.description
@@ -223,8 +213,8 @@ export default {
 
       if (this.canUploadForOthers && isReplacement) {
         // Replacing an existing submission — user is already known, skip selection step.
-          const user = this.$store.getters["table/user/get"](submission.userId);
-        this.selectedUser = user;
+        const user = this.$store.getters["table/user/get"](submission.userId);
+        this.selectedUser = user ? [user] : [{ id: submission.userId }];
         this.userPreselected = true;
       } else if (this.canUploadForOthers) {
         // New upload by an admin — user must be selected in step 2.

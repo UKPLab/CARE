@@ -211,6 +211,28 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Delete the physical file associated with a document from disk.
+         * @param {Object} document - The document record (must have hash and type).
+         * @returns {Promise<void>}
+         */
+        static async deleteDocumentFile(document) {
+            const extensions = {
+                [Document.docTypes.DOC_TYPE_PDF]:   '.pdf',
+                [Document.docTypes.DOC_TYPE_HTML]:  '.delta',
+                [Document.docTypes.DOC_TYPE_MODAL]: '.delta',
+                [Document.docTypes.DOC_TYPE_ZIP]:   '.zip',
+            };
+            const ext = extensions[document.type];
+            if (!ext) return;
+            const filePath = path.join(UPLOAD_PATH, `${document.hash}${ext}`);
+            try {
+                await fs.promises.unlink(filePath);
+            } catch (err) {
+                if (err.code !== 'ENOENT') throw err;
+            }
+        }
+
+        /**
          * Cascade delete study steps and sessions for a document.
          * Deletes all study steps with the given documentId and related study sessions.
          * @param {number} documentId
@@ -348,6 +370,9 @@ module.exports = (sequelize, DataTypes) => {
             modelName: 'document',
             tableName: 'document',
             hooks: {
+                afterDestroy: async (document, options) => {
+                    await Document.deleteDocumentFile(document);
+                },
                 afterUpdate: async (document, options) => {
                     // If the document is deleted, we should also delete the associated db columns
                     if (document.deleted && !document._previousDataValues.deleted) {

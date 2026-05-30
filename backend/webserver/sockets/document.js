@@ -895,6 +895,11 @@ class DocumentSocket extends Socket {
                         transaction,
                     });
 
+                    // Check revision limit (0 = unlimited)
+                    if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
+                        throw new Error(`Revision limit reached: user ${submission.userId} already has ${assignmentSubmissions.length} submission(s) for this assignment (max: ${assignment.maxRevisions}).`);
+                    }
+
                     const childByParentId = new Map();
                     for (const s of assignmentSubmissions) {
                         if (s.previousSubmissionId) {
@@ -1238,6 +1243,10 @@ class DocumentSocket extends Socket {
             throw new Error(`Assignment with id ${assignmentId} not found`);
         }
 
+        if (assignment.closed) {
+            throw new Error("Cannot replace submission because the assignment is closed.");
+        }
+
         const oldSubmission = await this.models["submission"].findOne({
             where: {
                 id: submissionId,
@@ -1305,7 +1314,7 @@ class DocumentSocket extends Socket {
             );
         }
 
-        await this.models["submission"].updateById(oldSubmission.id, {deleted: true}, {transaction});
+        await this.models["submission"].deleteById(oldSubmission.id, { force: true, transaction, individualHooks: true });
 
         for (const file of files) {
             await this.addDocument(

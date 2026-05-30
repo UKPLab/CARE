@@ -281,6 +281,12 @@ module.exports = (sequelize, DataTypes) => {
                             await sequelize.models["document"].deleteById(document.id);
                         }
                     }
+                },
+                beforeDestroy: async (submission, options) => {
+                    const documents = await sequelize.models.document.getAllByKey("submissionId", submission.id);
+                    for (const document of documents) {
+                        await sequelize.models.document.deleteById(document.id, { force: true, transaction: options.transaction });
+                    }
                 }
             },
         }

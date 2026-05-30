@@ -149,7 +149,7 @@ router.beforeEach(async (to, from, next) => {
             if (d.needsSetup === true) return next();
             if (d.user && d.wizardCompleted === false) return next();
             return next({ path: "/" });
-        } catch (_) {
+        } catch (_error) {
             return next();
         }
     }
@@ -164,7 +164,9 @@ router.beforeEach(async (to, from, next) => {
             if (d.user && d.wizardCompleted === false) {
                 return next({ path: "/wizard" });
             }
-        } catch (_) {}
+        } catch (_error) {
+            // auth check failed, proceed to next handler
+        }
     }
 
     next();

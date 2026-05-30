@@ -86,6 +86,7 @@ export default {
 	data() {
 		return {
 			assignmentId: 0,
+			isCopy: false,
 			formData: {},
 			selectedRoles: [],
 			selectedUsers: [],
@@ -153,6 +154,7 @@ export default {
 				});
 		},
 		modalTitle() {
+			if (this.isCopy) return "Copy Assignment";
 			return this.assignmentId !== 0 ? "Edit Assignment" : "New Assignment";
 		},
 	},
@@ -172,6 +174,7 @@ export default {
 		},
 		open(assignmentId = 0, copy = false) {
 			this.assignmentId = assignmentId;
+			this.isCopy = copy;
 			this.assignByUser = false;
 			this.formData = this.getDefaultFormData();
 			this.selectedRoles = [];
