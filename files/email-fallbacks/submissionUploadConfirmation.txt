@@ -1,8 +1,8 @@
-CARE - Submission {{eventLabel}}
+CARE - Submission {{eventLabel}} confirmation
 
 Hello,
 
-An assignment submission has been {{eventLabelLower}}.
+Your assignment submission has been {{eventLabelLower}} successfully.
 
 Assignment: {{assignmentName}}
 Assignment ID: {{assignmentId}}

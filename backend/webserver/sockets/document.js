@@ -976,17 +976,18 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Send submission upload/reupload notification email to assignment owner.
+     * Send submission upload/reupload notification emails to assignment owner and submitter.
      *
      * @author Mohammad Elwan
      * @param {Object} data - The input data for sending the notification
      * @param {number} data.assignmentId - Assignment ID linked to the submission
      * @param {number} data.submissionId - Submission ID that was created/replaced
+     * @param {number} data.submitterUserId - User ID of the person who uploaded
      * @param {string} data.eventType - Upload event type ('first_upload' or 'reupload')
      * @returns {Promise<void>}
      */
     async sendSubmissionUploadEmail(data) {
-        const {assignmentId, submissionId, eventType} = data;
+        const {assignmentId, submissionId, submitterUserId, eventType} = data;
         const assignment = await this.models["assignment"].getById(assignmentId);
         if (!assignment) {
             this.server.logger.warn(`Cannot send submission upload email: assignment ${assignmentId} not found`);
@@ -997,32 +998,67 @@ class DocumentSocket extends Socket {
             return;
         }
 
-        const user = await this.models["user"].getById(assignment.userId);
-        if (!user || !user.email) {
+        const submission = await this.models["submission"].getById(submissionId);
+        const eventLabel = eventType === "reupload" ? "Reuploaded" : "Uploaded";
+        const eventLabelLower = eventType === "reupload" ? "reuploaded" : "uploaded";
+        const emailContext = {
+            assignmentName: assignment.name,
+            assignmentId: assignment.id,
+            submissionId: submission?.id ?? submissionId,
+            eventType: eventLabelLower,
+            eventLabel,
+            eventLabelLower,
+            timestamp: submission?.createdAt
+                ? new Date(submission.createdAt).toLocaleString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })
+                : "",
+        };
+
+        const owner = await this.models["user"].getById(assignment.userId);
+        if (!owner || !owner.email) {
             this.server.logger.warn(`Cannot send submission upload email: assignment owner ${assignment.userId} has no email`);
+        } else {
+            const ownerEmailContent = await getEmailContent(
+                "email.template.submissionUpload",
+                "submissionUpload",
+                {
+                    userId: assignment.userId,
+                    ...emailContext,
+                },
+                this.models,
+                this.logger
+            );
+
+            await this.server.sendMail(owner.email, ownerEmailContent.subject, ownerEmailContent.body, {isHtml: ownerEmailContent.isHtml});
+        }
+
+        if (!submitterUserId || submitterUserId === assignment.userId) {
             return;
         }
 
-        const eventLabel = eventType === "reupload" ? "Reuploaded" : "Uploaded";
-        const eventLabelLower = eventType === "reupload" ? "reuploaded" : "uploaded";
+        const submitter = await this.models["user"].getById(submitterUserId);
+        if (!submitter || !submitter.email) {
+            this.server.logger.warn(`Cannot send submission upload confirmation email: submitter ${submitterUserId} has no email`);
+            return;
+        }
 
-        const emailContent = await getEmailContent(
-            "email.template.submissionUpload",
-            "submissionUpload",
+        const submitterEmailContent = await getEmailContent(
+            "email.template.submissionUploadConfirmation",
+            "submissionUploadConfirmation",
             {
-                userId: assignment.userId,
-                assignmentName: assignment.title,
-                assignmentId,
-                submissionId,
-                eventType: eventLabelLower,
-                eventLabel,
-                eventLabelLower,
+                userId: submitterUserId,
+                ...emailContext,
             },
             this.models,
             this.logger
         );
 
-        await this.server.sendMail(user.email, emailContent.subject, emailContent.body, {isHtml: emailContent.isHtml});
+        await this.server.sendMail(submitter.email, submitterEmailContent.subject, submitterEmailContent.body, {isHtml: submitterEmailContent.isHtml});
     }
 
     /**
@@ -1161,6 +1197,7 @@ class DocumentSocket extends Socket {
                         await this.sendSubmissionUploadEmail({
                             assignmentId,
                             submissionId: submission.id,
+                            submitterUserId: userId,
                             eventType: "first_upload",
                         });
                     } catch (emailError) {
@@ -1288,6 +1325,7 @@ class DocumentSocket extends Socket {
                 await this.sendSubmissionUploadEmail({
                     assignmentId: assignment.id,
                     submissionId: newSubmission.id,
+                    submitterUserId: userId,
                     eventType: "reupload",
                 });
             } catch (emailError) {
