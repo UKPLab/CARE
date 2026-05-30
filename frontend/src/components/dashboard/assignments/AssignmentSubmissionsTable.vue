@@ -323,10 +323,10 @@ export default {
           if (!confirmed) return;
 
           this.$socket.emit(
-            "submissionUpdate",
+            "submissionDelete",
             {
               id: row.id,
-              deleted: true,
+              force: true,
             },
             (res) => {
               if (res.success) {

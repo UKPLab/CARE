@@ -209,6 +209,7 @@ export default {
       this.selectedValidatorData = null;
       this.assignmentId = assignmentId;
       this.replacementSubmissionId = isReplacement ? submission.id : null;
+      this.userPreselected = false;
       this.submissionMeta = {
         name: submission?.name,
         description: submission?.description
@@ -223,8 +224,8 @@ export default {
 
       if (this.canUploadForOthers && isReplacement) {
         // Replacing an existing submission — user is already known, skip selection step.
-          const user = this.$store.getters["table/user/get"](submission.userId);
-        this.selectedUser = user;
+        const user = this.$store.getters["table/user/get"](submission.userId);
+        this.selectedUser = user ? [user] : [{ id: submission.userId }];
         this.userPreselected = true;
       } else if (this.canUploadForOthers) {
         // New upload by an admin — user must be selected in step 2.
