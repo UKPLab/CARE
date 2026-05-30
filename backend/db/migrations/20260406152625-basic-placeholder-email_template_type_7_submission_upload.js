@@ -8,7 +8,7 @@ const placeholders = [
     placeholderKey: 'username',
     placeholderLabel: 'Recipient username',
     placeholderType: 'text',
-    placeholderDescription: 'Assignment owner receiving this notification.',
+    placeholderDescription: 'Recipient username (assignment owner or submitter).',
   },
   {
     type: 7,
@@ -38,6 +38,13 @@ const placeholders = [
     placeholderLabel: 'Submission ID',
     placeholderType: 'text',
     placeholderDescription: 'Internal submission identifier.',
+  },
+  {
+    type: 7,
+    placeholderKey: 'timestamp',
+    placeholderLabel: 'Upload timestamp',
+    placeholderType: 'text',
+    placeholderDescription: 'When the submission was uploaded.',
   },
 ];
 

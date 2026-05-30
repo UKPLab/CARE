@@ -10,6 +10,13 @@ const settings = [
     description:
       'Template type for assignment submission upload/reupload emails to the assignment owner (Email - Submission upload). Leave empty to use default email.',
   },
+  {
+    key: 'email.template.submissionUploadConfirmation',
+    value: '',
+    type: 'number',
+    description:
+      'Template for submission upload confirmation to the submitter (Email - Submission upload). Leave empty to use default email.',
+  },
 ];
 
 module.exports = {
