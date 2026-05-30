@@ -88,8 +88,6 @@ import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
-import OverViewModal from "./study/OverViewModal.vue";
-import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 
 /**
  * Dashboard component for handling studies
