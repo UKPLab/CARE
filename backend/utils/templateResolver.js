@@ -100,7 +100,7 @@ async function buildReplacementMap(context, models, options = {}) {
     if (allow("assignmentType") && context.assignmentType) {
         replacements["~assignmentType~"] = context.assignmentType;
     }
-    if (allow("assignmentName") && context.assignmentName) {
+    if (allow("assignmentName") && context.assignmentName != null) {
         replacements["~assignmentName~"] = context.assignmentName;
     }
 
@@ -126,6 +126,9 @@ async function buildReplacementMap(context, models, options = {}) {
     }
     if (allow("submissionId") && context.submissionId != null) {
         replacements["~submissionId~"] = String(context.submissionId);
+    }
+    if (allow("timestamp") && context.timestamp) {
+        replacements["~timestamp~"] = context.timestamp;
     }
 
     return replacements;
