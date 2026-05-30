@@ -251,7 +251,7 @@ export default {
       return typeof p === "string"
         && p.length >= 8
         && !/^\s*$/.test(p)
-        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) < 32 || (c.codePointAt(0) || 0) === 127)
         && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     adminFormValid() {
