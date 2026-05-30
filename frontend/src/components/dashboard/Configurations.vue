@@ -117,13 +117,19 @@ export default {
         pagination: 10,
         search: true,
       },
-      columns: [
+    };
+  },
+  computed: {
+    columns() {
+      return [
         {name: this.$t('common.name'), key: "name", sortable: true},
         {name: this.$t('common.created'), key: "createdAt", sortable: true, type: "datetime"},
         {name: this.$t('common.updated'), key: "updatedAt", sortable: true, type: "datetime"},
         {name: this.$t('common.type'), key: "typeName", sortable: true},
-      ],
-      buttons: [
+      ];
+    },
+    buttons() {
+      return [
         {
           icon: "eye",
           options: {
@@ -151,10 +157,8 @@ export default {
           title: this.$t('basic.configuration.tooltips.delete'),
           action: "delete",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     configurationsTable() {
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};

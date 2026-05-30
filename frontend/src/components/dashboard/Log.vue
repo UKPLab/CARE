@@ -44,7 +44,12 @@ export default {
           showPages: 3,
         },
       },
-      columns: [
+      data: [],
+    }
+  },
+  computed: {
+    columns() {
+      return [
         {name: "", key: "icon", type: "icon", width: "auto"},
         {
           name: this.$t('components.logs.columns.level'),
@@ -61,9 +66,8 @@ export default {
         {name: this.$t('common.user'), key: "creator_name", sortable: true, sortKey: "userId", width: 1},
         {name: this.$t('components.logs.columns.service'), key: "service", width: 1},
         {name: this.$t('components.logs.columns.message'), key: "message", width: 8},
-      ],
-      data: [],
-    }
+      ];
+    },
   },
   sockets: {
     logAll: function (data) {

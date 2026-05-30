@@ -76,16 +76,18 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
+    };
+  },
+  computed: {
+    columns() {
+      return [
         {name: "", key: "select", type: "icon-selector"},
         {name: this.$t('dashboard.projects.columns.name'), key: "name"},
         {name: this.$t('common.createdAt'), key: "createdAt"},
         {name: this.$t('dashboard.projects.columns.public'), key: "published", type: "badge"},
         {name: this.$t('dashboard.projects.columns.closed'), key: "closed", type: "badge"},
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },

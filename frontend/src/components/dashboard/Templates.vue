@@ -78,17 +78,19 @@
           small: false,
           pagination: 10,
         },
-        columns: [
+      };
+    },
+    computed: {
+      columns() {
+        return [
           { name: this.$t("common.id"), key: "id" },
           { name: this.$t("common.name"), key: "name", sortable: true },
           { name: this.$t("common.createdAt"), key: "createdAt", sortable: true, type: "datetime" },
           { name: this.$t("common.updatedAt"), key: "updatedAt", sortable: true, type: "datetime" },
           { name: this.$t("common.type"), key: "typeName", sortable: true },
           { name: this.$t("common.status"), key: "statusBadge", type: "badge" },
-        ],
-      };
-    },
-    computed: {
+        ];
+      },
       templates() {
         return this.$store.getters["table/template/getAll"]
           .filter(t => t.userId === this.userId)

@@ -20,7 +20,7 @@
       <BasicTable
           ref="user_table"
           v-model="selectedUsers"
-          :columns="user_table.columns"
+          :columns="userTableColumns"
           :data="users"
           :options="user_table.options"
           :max-table-height="'25vh'"
@@ -33,7 +33,7 @@
     <template #body>
       <BasicTable
           ref="stats_table"
-          :columns="stats_table.columns"
+          :columns="statsTableColumns"
           :data="stats"
           :options="stats_table.options"
           :max-table-height="'25vh'"
@@ -83,11 +83,6 @@ export default {
           pagination: 10,
           selectableRows: true,
         },
-        columns: [
-          {name: this.$t('users.stats.columns.user'), key: "userName", sortable: true},
-          {name: this.$t('users.stats.columns.id'), key: "id", sortable: true},
-          {name: this.$t('users.stats.columns.lastLogin'), key: "lastLoginAt", sortable: true},
-        ],
       },
       stats_table: {
         options: {
@@ -98,17 +93,26 @@ export default {
           small: false,
           pagination: 20
         },
-        columns: [
-          {name: this.$t('users.stats.columns.time'), key: "timestamp", sortable: true},
-          {name: this.$t('users.stats.columns.user'), key: "userId", sortable: true},
-          {name: this.$t('users.stats.columns.action'), key: "action", sortable: true},
-          {name: this.$t('users.stats.columns.data'), key: "data", sortable: true},
-        ],
       },
       selectedUsers: []
     }
   },
   computed: {
+    userTableColumns() {
+      return [
+        {name: this.$t('users.stats.columns.user'), key: "userName", sortable: true},
+        {name: this.$t('users.stats.columns.id'), key: "id", sortable: true},
+        {name: this.$t('users.stats.columns.lastLogin'), key: "lastLoginAt", sortable: true},
+      ];
+    },
+    statsTableColumns() {
+      return [
+        {name: this.$t('users.stats.columns.time'), key: "timestamp", sortable: true},
+        {name: this.$t('users.stats.columns.user'), key: "userId", sortable: true},
+        {name: this.$t('users.stats.columns.action'), key: "action", sortable: true},
+        {name: this.$t('users.stats.columns.data'), key: "data", sortable: true},
+      ];
+    },
     users() {
       return this.$store.getters["table/user/getAll"].map(u => {
         let uNew = {...u};

@@ -142,7 +142,11 @@ export default {
         pagination: 10,
         search: true,
       },
-      tableColumns: [
+    };
+  },
+  computed: {
+    tableColumns() {
+      return [
         {name: this.$t('submission.dashboard.columns.id'), key: "id"},
         {name: this.$t('submission.dashboard.columns.firstName'), key: "firstName"},
         {name: this.$t('submission.dashboard.columns.lastName'), key: "lastName"},
@@ -150,8 +154,10 @@ export default {
         {name: this.$t('submission.dashboard.columns.group'), key: "group", sortable: true},
         {name: this.$t('submission.dashboard.columns.validationId'), key: "validationConfigurationId", sortable: true},
         {name: this.$t('submission.dashboard.columns.createdAt'), key: "createdAt"},
-      ],
-      tableButtons: [
+      ];
+    },
+    tableButtons() {
+      return [
         {
           icon: "download",
           options: {
@@ -195,10 +201,8 @@ export default {
             submissionId: "id",
           },
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     submissions() {
       return this.$store.getters["table/submission/getAll"].filter((s) => s.parentSubmissionId === null);
     },

@@ -106,7 +106,11 @@ export default {
           order: "ASC",
         },
       },
-      columns: [
+    };
+  },
+  computed: {
+    columns() {
+      return [
         { name: this.$t("common.id"), key: "id", sortable: true },
         { name: this.$t("common.name"), key: "name", sortable: true },
         {
@@ -124,10 +128,8 @@ export default {
         { name: this.$t("workflow.dashboard.columns.hidden"), key: "hidden", type: "badge" },
         { name: this.$t("common.createdAt"), key: "createdAt", sortable: true },
         { name: this.$t("common.updatedAt"), key: "updatedAt", sortable: true},
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
           (workflow) => workflow.userId === null || workflow.userId === this.userId

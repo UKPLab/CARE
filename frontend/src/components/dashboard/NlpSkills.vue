@@ -67,7 +67,13 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
+      waitForStatus: true,
+      onlineStatus: false
+    }
+  },
+  computed: {
+    columns() {
+      return [
         {name: this.$t('common.name'), key: "displayName"},
         {name: this.$t('nlp.skills.columns.nodes'), key: "nodes"},
         {
@@ -85,12 +91,8 @@ export default {
           },
         },
         {name: this.$t('common.actions'), key: "actions", type: "button-group"},
-      ],
-      waitForStatus: true,
-      onlineStatus: false
-    }
-  },
-  computed: {
+      ];
+    },
     buttons() {
       return [
         {
