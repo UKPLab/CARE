@@ -10,6 +10,7 @@
 
 <script>
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * WorkflowCreateModal - modal component for adding and editing workflows
@@ -29,9 +30,14 @@ export default {
       this.$refs.coordinator.open(workflowId, defaultValues);
     },
     copy(workflowId, defaultValues = {}) {
-      this.$refs.coordinator.open(workflowId, defaultValues, true, {
-        parentWorkflowId: workflowId,
-      });
+      const overrides = { parentWorkflowId: workflowId };
+      const workflow = this.$store.getters["table/workflow/get"](workflowId);
+      if (workflow?.userId === null) {
+        // Seed workflows store i18n keys — prefill copy form with localized plain text.
+        overrides.name = translateMaybeKey(workflow.name);
+        overrides.description = translateMaybeKey(workflow.description);
+      }
+      this.$refs.coordinator.open(workflowId, defaultValues, true, overrides);
     },
     close() {
       this.$refs.coordinator.close();

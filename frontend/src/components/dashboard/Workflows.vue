@@ -133,17 +133,22 @@ export default {
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
           (workflow) => workflow.userId === null || workflow.userId === this.userId
-        ).map(workflow => ({
-          ...workflow,
-          name: translateMaybeKey(workflow.name),
-          description: translateMaybeKey(workflow.description),
-          workflowType: workflow.userId === null ? "system" : "user",
-          isEditable: this.isAdmin || workflow.userId === this.userId,
-          hidden: {
-            text: workflow.hideInFrontend ? this.$t("common.yes") : this.$t("common.no"),
-            class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
+        ).map(workflow => {
+          const translated = { ...workflow };
+          if (workflow.userId === null) {
+            translated.name = translateMaybeKey(workflow.name);
+            translated.description = translateMaybeKey(workflow.description);
           }
-        }));
+          return {
+            ...translated,
+            workflowType: workflow.userId === null ? "system" : "user",
+            isEditable: this.isAdmin || workflow.userId === this.userId,
+            hidden: {
+              text: workflow.hideInFrontend ? this.$t("common.yes") : this.$t("common.no"),
+              class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
+            }
+          };
+        });
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
