@@ -70,6 +70,8 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         studySessionId: data?.studySessionId,
         studyStepId: data?.studyStepId,
         documentId: data?.documentId,
+    }, {
+        bypassChecks: !!logOptions.bypassChecks,
     });
     if (!guard.allowed) {
         throw new Error(guard.reason);
@@ -261,6 +263,7 @@ async function testModel(service, client, data) {
     }, {
         successStatus: "test_success",
         failedStatus: "test_failed",
+        bypassChecks: true,
     });
 
     const content = result.choices?.[0]?.message?.content;
