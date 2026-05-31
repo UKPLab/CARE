@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         costLimit: DataTypes.FLOAT,
         resetAt: DataTypes.DATE,
         notifyThreshold: DataTypes.FLOAT,
+        applyPerSession: DataTypes.BOOLEAN,
         expiryDate: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
