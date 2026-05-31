@@ -42,22 +42,36 @@ const { Op } = require("sequelize");
  * @param {number} [request.documentId] - Document id.
  * @returns {Promise<{ allowed: boolean, logId?: number, reason?: string }>}
  */
-async function beginRequest(service, request) {
+async function beginRequest(service, request, opts={}) {
     const { userId, aiModelId, requestId, input, studyId, studySessionId, studyStepId, documentId } = request || {};
 
     if (await _hasInflight(service, userId, studySessionId)) {
         return { allowed: false, reason: "You already have a pending AI request in this session" };
     }
 
-    const modelBlocker = await _findBlockingModelCap(service, aiModelId);
+    if (!opts.bypassChecks) {
+    // Load model + applicable share once; downstream checks reuse these.
+    const model = await service.server.db.models["ai_model"].findByPk(aiModelId, { raw: true });
+    if (!model || model.deleted || !model.enabled) {
+        return { allowed: false, reason: "AI model is not available" };
+    }
+    const share = await _getApplicableShare(service, { userId, aiModelId, studyId, studySessionId });
+    const isOwner = model.userId === userId;
+    if (!isOwner && !share) {
+        return { allowed: false, reason: "You do not have access to this AI model" };
+    }
+
+    const modelBlocker = await _findBlockingModelCap(service, model);
     if (modelBlocker) return { allowed: false, reason: modelBlocker };
 
-    const shareBlocker = await _findBlockingShareCap(service, { userId, aiModelId, studyId, studySessionId });
-    if (shareBlocker) return { allowed: false, reason: shareBlocker };
+    if (share) {
+        const shareBlocker = await _findBlockingShareCap(service, share, userId);
+        if (shareBlocker) return { allowed: false, reason: shareBlocker };
+    }
 
     const parentBlocker = await _findBlockingParentShareCap(service, { aiModelId, studyId });
     if (parentBlocker) return { allowed: false, reason: parentBlocker };
-
+  }
     const log = await service.server.db.models["ai_log"].create({
         userId,
         aiModelId,
@@ -68,6 +82,7 @@ async function beginRequest(service, request) {
         input,
         status: "in_progress",
         requestStart: new Date(),
+        description: opts.bypassChecks ? "Test request" : null,
     });
     return { allowed: true, logId: log.id };
 }
@@ -188,14 +203,15 @@ async function _hasInflight(service, userId, studySessionId) {
 }
 
 /**
- * Returns a reason if the model's global cap is exhausted, else null.
+ * Returns a reason if the model's global cap is exhausted, else null. Receives
+ * the pre-loaded ai_model row (loaded once in beginRequest) to avoid a second
+ * DB roundtrip.
  *
  * @param {Object} service - AIService instance.
- * @param {number} aiModelId - Model to evaluate.
+ * @param {Object} model - Pre-loaded ai_model row.
  * @returns {Promise<string|null>}
  */
-async function _findBlockingModelCap(service, aiModelId) {
-    const model = await service.server.db.models["ai_model"].findByPk(aiModelId);
+async function _findBlockingModelCap(service, model) {
     if (!model || model.costLimit === null) return null;
 
     const used = await _sumCostForModel(service, model);
@@ -206,21 +222,19 @@ async function _findBlockingModelCap(service, aiModelId) {
 }
 
 /**
- * Returns a reason if the per-user share cap is exhausted, else null.
+ * Returns a reason if the per-user share cap is exhausted, else null. Receives
+ * the pre-loaded share row (looked up once in beginRequest) so this helper is
+ * pure cap arithmetic.
  *
  * @param {Object} service - AIService instance.
- * @param {Object} scope - Subset of the request envelope used for share lookup.
- * @param {number} scope.userId - Authenticated user triggering the request.
- * @param {number} scope.aiModelId - Model the request targets.
- * @param {number} [scope.studyId] - Study scope when inside a study.
- * @param {number} [scope.studySessionId] - Session scope when inside a session.
+ * @param {Object} share - Pre-loaded ai_model_share row applicable to the request.
+ * @param {number} requestUserId - User whose spend we are summing.
  * @returns {Promise<string|null>}
  */
-async function _findBlockingShareCap(service, scope) {
-    const share = await _getApplicableShare(service, scope);
+async function _findBlockingShareCap(service, share, requestUserId) {
     if (!share || share.costLimit === null) return null;
 
-    const used = await _sumCostForShare(service, share, scope.userId);
+    const used = await _sumCostForShare(service, share, requestUserId);
     if (used >= share.costLimit) {
         return `Budget exceeded: $${used.toFixed(2)} / $${share.costLimit.toFixed(2)}`;
     }
