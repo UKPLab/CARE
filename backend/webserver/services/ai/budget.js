@@ -282,7 +282,6 @@ async function _findBlockingParentShareCap(service, { aiModelId, studyId }) {
             userId: study.userId,
             studyId: null,
             studySessionId: null,
-            enabled: true,
             deleted: false,
         },
     });
@@ -371,7 +370,7 @@ async function _sumAttributableToOwner(service, share, ownerId) {
  */
 async function _getApplicableShare(service, { userId, aiModelId, studyId, studySessionId }) {
     const Shares = service.server.db.models["ai_model_share"];
-    const baseWhere = { aiModelId, enabled: true, deleted: false };
+    const baseWhere = { aiModelId, deleted: false };
 
     if (studySessionId) {
         const sessionShare = await Shares.findOne({

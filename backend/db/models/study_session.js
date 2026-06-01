@@ -132,7 +132,6 @@ module.exports = (sequelize, DataTypes) => {
                     studySessionId: null,
                     applyPerSession: true,
                     deleted: false,
-                    enabled: true,
                 },
                 transaction: options.transaction,
                 raw: true,
