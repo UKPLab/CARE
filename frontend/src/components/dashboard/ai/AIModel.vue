@@ -107,6 +107,25 @@
 
         <div class="col-md-12">
           <label class="form-label">
+            Global Cost Limit ($, optional)
+            <i
+              class="bi bi-info-circle text-muted ms-1"
+              title="Total spend ceiling across all users on this model. Leave empty for no cap."
+            />
+          </label>
+          <input
+            v-model.number="modelForm.costLimit"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+            placeholder="No limit"
+          />
+          <small class="text-muted">Sums spend across every user on this model. Hard ceiling.</small>
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label">
             Additional Parameters (JSON, optional)
             <i
               class="bi bi-info-circle text-muted ms-1"
@@ -173,6 +192,7 @@ function getEmptyModelForm() {
     description: "",
     enabled: true,
     additionalParameters: "{}",
+    costLimit: null,
   };
 }
 
@@ -235,6 +255,7 @@ export default {
           description: row.description || "",
           enabled: !!row.enabled,
           additionalParameters: JSON.stringify(row.additionalParameters || {}, null, 2),
+          costLimit: row.costLimit ?? null,
         };
       }
       this.$refs.modelModal.open();
@@ -306,6 +327,7 @@ export default {
         }
       }
 
+      const costLimitValue = Number(this.modelForm.costLimit);
       const payload = {
         id: this.modelForm.id || 0,
         name: this.modelForm.name.trim(),
@@ -314,6 +336,7 @@ export default {
         description: this.modelForm.description?.trim() || null,
         additionalParameters,
         enabled: !!this.modelForm.enabled,
+        costLimit: Number.isFinite(costLimitValue) && costLimitValue > 0 ? costLimitValue : null,
       };
 
       this.$socket.emit("appDataUpdate", {

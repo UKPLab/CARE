@@ -35,6 +35,19 @@
         />
         <small class="text-muted">Required. Access expires on this date.</small>
       </div>
+      <div class="mb-3">
+        <label class="form-label" for="shareCostLimit">Per-user cost limit ($)</label>
+        <input
+          id="shareCostLimit"
+          v-model.number="shareForm.costLimit"
+          class="form-control"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="No limit"
+        />
+        <small class="text-muted">Optional. Each shared user can spend up to this amount on the model. Leave empty for unlimited.</small>
+      </div>
       <small class="text-muted">Next step: select {{ shareAudienceLabel.toLowerCase() }}.</small>
     </template>
     <template #step-2>
@@ -70,6 +83,7 @@
         <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
         <div><strong>Selected:</strong> {{ activeSelectionIds.length }}</div>
         <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
+        <div><strong>Per-user cost limit:</strong> {{ shareCostLimitLabel }}</div>
       </div>
       <BasicTable
         :columns="shareSelectionColumns"
@@ -194,12 +208,18 @@ export default {
       if (Number.isNaN(date.getTime())) return this.shareForm.expiryDate;
       return date.toLocaleDateString();
     },
+    shareCostLimitLabel() {
+      const value = Number(this.shareForm.costLimit);
+      if (!Number.isFinite(value) || value <= 0) return "No limit";
+      return `$${value.toFixed(2)}`;
+    },
   },
   methods: {
     getEmptyShareForm() {
       return {
         mode: "users",
         expiryDate: "",
+        costLimit: null,
       };
     },
     toDateInputString(value) {
@@ -276,6 +296,7 @@ export default {
         this.shareForm = {
           mode: ["users", "roles"].includes(shareConfig?.mode) ? shareConfig.mode : "users",
           expiryDate: shareConfig?.expiryDate ? this.toDateInputString(shareConfig.expiryDate) : "",
+          costLimit: shareConfig?.costLimit ?? null,
         };
         this.selectedUserIds = this.normalizeIdList(shareConfig?.userIds);
         this.selectedRoleIds = this.normalizeIdList(shareConfig?.roleIds);
@@ -291,10 +312,12 @@ export default {
         return;
       }
 
+      const costLimitValue = Number(this.shareForm.costLimit);
       const payload = {
         aiModelId: this.selectedShareModel.id,
         mode: this.shareForm.mode,
         expiryDate: this.shareForm.expiryDate,
+        costLimit: Number.isFinite(costLimitValue) && costLimitValue > 0 ? costLimitValue : null,
       };
       if (!this.shareForm.expiryDate) {
         this.toastError("Please select an expiry date");

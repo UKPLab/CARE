@@ -47,7 +47,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
  */
 export default {
   name: "CoordinatorStudy",
-  subscribeTable: ['document', 'tag_set'],
+  subscribeTable: ['document', 'tag_set', 'ai_model'],
   components: {BasicCoordinator},
   data() {
     return {
@@ -75,7 +75,7 @@ export default {
     },
   },
   methods: {
-    open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
+    async open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
       if (documentId !== null) {
         this.documentId = documentId;
       }
@@ -88,7 +88,39 @@ export default {
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
-      this.$refs.coordinator.open(studyId, {documentId: this.documentId, isTemplateMode: templateMode}, copy);
+
+      // The ai_model_share row is not synced to the store, so fetch this
+      // study's AI budget on open and inject it into the form fields.
+      let aiOverrides = {};
+      if (studyId !== 0) {
+        try {
+          aiOverrides = await this.fetchAiBudget(studyId);
+        } catch (_error) {
+          // Leave AI fields at their defaults if the lookup fails.
+        }
+      }
+
+      this.$refs.coordinator.open(
+          studyId,
+          {documentId: this.documentId, isTemplateMode: templateMode},
+          copy,
+          aiOverrides
+      );
+    },
+    fetchAiBudget(studyId) {
+      return new Promise((resolve, reject) => {
+        this.$socket.emit("serviceCommand", {
+          service: "AIService",
+          command: "getStudyAiBudget",
+          data: {studyId},
+        }, (result) => {
+          if (result?.success) {
+            resolve(result.data);
+          } else {
+            reject(new Error(result?.message || "Failed to load AI budget"));
+          }
+        });
+      });
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
