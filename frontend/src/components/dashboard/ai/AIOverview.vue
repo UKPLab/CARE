@@ -80,9 +80,26 @@
           <p v-if="!meta.shareRecipients.length" class="text-muted small mb-0">
             No active shares.
           </p>
-          <ul v-else class="small mb-0 ps-3">
-            <li v-for="(row, index) in meta.shareRecipients" :key="index">
-              {{ row.recipientLabel }} — {{ formatAccess(row) }} — {{ formatDateTime(row.expiryDate) }}
+          <ul v-else class="small mb-0 list-unstyled">
+            <li
+              v-for="row in meta.shareRecipients"
+              :key="row.id"
+              class="d-flex align-items-center justify-content-between border-bottom py-1"
+            >
+              <span>
+                <span class="badge me-2" :class="scopeBadgeClass(row.scopeKind)">{{ row.scope }}</span>
+                {{ row.recipientLabel || "—" }} — {{ formatAccess(row) }} — {{ formatDateTime(row.expiryDate) }}
+                <span v-if="row.costLimit != null" class="text-muted ms-2">(cap ${{ Number(row.costLimit).toFixed(2) }})</span>
+              </span>
+              <button
+                class="btn btn-sm btn-outline-warning"
+                type="button"
+                title="Reset budget window for this share"
+                :disabled="resettingId === row.id"
+                @click="onResetShare(row)"
+              >
+                <i class="bi bi-arrow-counterclockwise" />
+              </button>
             </li>
           </ul>
         </template>
@@ -94,6 +111,7 @@
       </button>
     </template>
   </BasicModal>
+  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
@@ -104,16 +122,18 @@
  */
 
 import BasicModal from "@/basic/Modal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
   name: "AIOverview",
-  components: { BasicModal },
+  components: { BasicModal, ConfirmModal },
   data() {
     return {
       isLoading: false,
       modelRow: null,
       meta: null,
       loadError: null,
+      resettingId: null,
     };
   },
   computed: {
@@ -131,6 +151,13 @@ export default {
     formatAccess(row) {
       if (row.accessVia === "role") return row.viaLabel ? `role: ${row.viaLabel}` : "role";
       return "direct";
+    },
+    scopeBadgeClass(kind) {
+      switch (kind) {
+        case "session": return "bg-info";
+        case "study":   return "bg-primary";
+        default:        return "bg-secondary";
+      }
     },
     formatDateTime(value) {
       if (!value) return "—";
@@ -163,6 +190,28 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+    onResetShare(row) {
+      this.$refs.confirmModal.open(
+        "Reset Share Budget",
+        `Reset the budget window for ${row.recipientLabel || "this recipient"}?`,
+        "",
+        async (confirmed) => {
+          if (!confirmed) return;
+          this.resettingId = row.id;
+          try {
+            await this.emitAi("resetShareBudget", { shareId: row.id });
+            this.eventBus.emit("toast", { title: "Success", message: "Share budget reset", variant: "success" });
+            if (this.modelRow?.id) {
+              this.meta = await this.emitAi("getModelOverview", { aiModelId: this.modelRow.id });
+            }
+          } catch (error) {
+            this.eventBus.emit("toast", { title: "Error", message: error.message || "Reset failed", variant: "danger" });
+          } finally {
+            this.resettingId = null;
+          }
+        }
+      );
     },
   },
 };

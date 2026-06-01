@@ -149,11 +149,34 @@ function mapShareToRecipient(share, maps) {
         const roleId = Number(share.roleId);
         viaLabel = maps.roleById[roleId]?.name || null;
     }
+
+    // Compute a human-readable scope label so the overview can disambiguate
+    // global / study / session shares without leaking raw ids.
+    let scope = "Global";
+    let scopeKind = "global";
+    if (share.studySessionId) {
+        const studyName = maps.studyById?.[Number(share.studyId)]?.name;
+        scope = studyName
+            ? `Session #${share.studySessionId} (${studyName})`
+            : `Session #${share.studySessionId}`;
+        scopeKind = "session";
+    } else if (share.studyId) {
+        const studyName = maps.studyById?.[Number(share.studyId)]?.name || `#${share.studyId}`;
+        scope = share.applyPerSession
+            ? `Study: ${studyName} (per session)`
+            : `Study: ${studyName}`;
+        scopeKind = "study";
+    }
+
     return {
+        id: share.id,
         recipientLabel: userDisplayLabel(maps.userById[uid]),
         accessVia,
         viaLabel,
         expiryDate: share.expiryDate,
+        costLimit: share.costLimit ?? null,
+        scope,
+        scopeKind,
     };
 }
 

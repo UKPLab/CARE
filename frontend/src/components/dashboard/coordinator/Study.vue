@@ -25,19 +25,30 @@
         >{{ link }}</a>
       </div>
     </template>
-    <template v-if="isSuccess" #buttons>
+    <template #buttons>
       <button
-          v-if="!isTemplateMode"
+          v-if="isSuccess && !isTemplateMode"
           class="btn btn-primary"
           @click="copyURL"
       >Copy Link
       </button>
+      <button
+          v-if="!isSuccess && currentAiShareId"
+          class="btn btn-warning"
+          type="button"
+          title="Reset the usage counter for this study's AI budget"
+          @click="onResetAiBudget"
+      >
+        <i class="bi bi-arrow-counterclockwise me-1" />Reset AI Budget
+      </button>
     </template>
   </BasicCoordinator>
+  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * StudyCoordinator - coordinator to add or edit studies
@@ -48,7 +59,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 export default {
   name: "CoordinatorStudy",
   subscribeTable: ['document', 'tag_set', 'ai_model'],
-  components: {BasicCoordinator},
+  components: {BasicCoordinator, ConfirmModal},
   data() {
     return {
       studyId: 0,
@@ -56,6 +67,7 @@ export default {
       isSuccess: false,
       isTemplateMode: false,
       isUsingTemplate: false,
+      currentAiShareId: null,
     }
   },
   computed: {
@@ -84,6 +96,7 @@ export default {
       this.isTemplateMode = templateMode;
       this.isUsingTemplate = copy && studyId !== 0;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
+      this.currentAiShareId = null;
 
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
@@ -95,6 +108,7 @@ export default {
       if (studyId !== 0) {
         try {
           aiOverrides = await this.fetchAiBudget(studyId);
+          this.currentAiShareId = aiOverrides?.aiShareId || null;
         } catch (_error) {
           // Leave AI fields at their defaults if the lookup fails.
         }
@@ -175,6 +189,29 @@ export default {
           variant: "danger"
         });
       }
+    },
+    onResetAiBudget() {
+      const shareId = this.currentAiShareId;
+      if (!shareId) return;
+      this.$refs.confirmModal.open(
+        "Reset AI Budget",
+        "Reset the AI budget window for this study? Usage counters are cleared; the configured limit is kept.",
+        "",
+        (confirmed) => {
+          if (!confirmed) return;
+          this.$socket.emit(
+            "serviceCommand",
+            {service: "AIService", command: "resetShareBudget", data: {shareId}},
+            (result) => {
+              if (result?.success) {
+                this.eventBus.emit('toast', {title: "Success", message: "AI budget reset", variant: "success"});
+              } else {
+                this.eventBus.emit('toast', {title: "Error", message: result?.message || "Reset failed", variant: "danger"});
+              }
+            }
+          );
+        }
+      );
     }
   }
 }

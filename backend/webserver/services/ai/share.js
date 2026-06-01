@@ -248,6 +248,7 @@ const SHARE_TARGETS = {
 async function loadShareEnrichmentMaps(server, shares) {
     const userIds = helpers.uniquePositiveInts(shares.map((share) => share.userId));
     const roleIds = helpers.uniquePositiveInts(shares.map((share) => share.roleId));
+    const studyIds = helpers.uniquePositiveInts(shares.map((share) => share.studyId));
 
     const users = userIds.length === 0 ? [] : await server.db.models.user.findAll({
         where: {id: userIds, deleted: false},
@@ -263,7 +264,14 @@ async function loadShareEnrichmentMaps(server, shares) {
     });
     const roleById = Object.fromEntries(roles.map((roleRow) => [Number(roleRow.id), roleRow]));
 
-    return {userById, roleById};
+    const studies = studyIds.length === 0 ? [] : await server.db.models.study.findAll({
+        where: {id: studyIds, deleted: false},
+        attributes: ["id", "name"],
+        raw: true,
+    });
+    const studyById = Object.fromEntries(studies.map((studyRow) => [Number(studyRow.id), studyRow]));
+
+    return {userById, roleById, studyById};
 }
 
 /**
@@ -486,7 +494,7 @@ async function getAiModelOwnerSummaries(service, client) {
 
 /**
  * Reset the per-user cost cap window on one share row.
- * Verifies the caller owns the underlying model before delegating to the budget module.
+ * Verifies the caller owns the underlying model (or owns the study) before delegating to the budget module.
  *
  * @param {{ server: Object }} service AIService.
  * @param {{ userId?: number }} client Authenticated caller.
@@ -494,8 +502,28 @@ async function getAiModelOwnerSummaries(service, client) {
  * @returns {Promise<{ok: true}>}
  */
 async function resetShareBudget(service, client, data) {
-    const ownerUserId = helpers.requireClientUserId(client);
-    await assertModelOwnership(service.server, ownerUserId, data?.aiModelId);
+    const userId = helpers.requireClientUserId(client);
+    const shareId = Number(data?.shareId);
+
+    const share = await service.server.db.models.ai_model_share.findByPk(shareId, {raw: true});
+    if (!share || share.deleted) {
+        throw new Error("Share not found");
+    }
+
+    // Allowed if the caller owns the model OR (for study-scoped rows) owns the study.
+    const model = await service.server.db.models.ai_model.findByPk(share.aiModelId, {raw: true});
+    const isModelOwner = model && Number(model.userId) === Number(userId);
+
+    let isStudyOwner = false;
+    if (!isModelOwner && share.studyId) {
+        const study = await service.server.db.models.study.findByPk(share.studyId, {raw: true});
+        isStudyOwner = study && Number(study.userId) === Number(userId);
+    }
+
+    if (!isModelOwner && !isStudyOwner) {
+        throw new Error("You do not have permission to reset this share's budget");
+    }
+
     await budget.resetShareBudget(service, data);
     return {ok: true};
 }
@@ -515,24 +543,26 @@ async function resetModelBudget(service, client, data) {
     return {ok: true};
 }
 
+
 /**
  * Read the study-level AI budget so the study form can prefill its AI fields
+ * and surface the share row id (used by the coordinator's reset button).
  *
  * @param {{ server: Object }} service AIService.
  * @param {{ userId?: number }} client Authenticated caller.
  * @param {{ studyId?: number }} data RPC payload with the target study PK.
- * @returns {Promise<{aiModelId: ?number, aiCostLimitPerUser: ?number, aiApplyPerSession: boolean}>}
+ * @returns {Promise<{aiModelId: ?number, aiCostLimitPerUser: ?number, aiApplyPerSession: boolean, aiShareId: ?number}>}
  */
 async function getStudyAiBudget(service, client, data) {
     helpers.requireClientUserId(client);
-    const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false};
+    const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false, aiShareId: null};
 
     const studyId = Number(data?.studyId);
     if (!Number.isInteger(studyId) || studyId <= 0) return empty;
 
     const share = await service.server.db.models.ai_model_share.findOne({
         where: {studyId, studySessionId: null, deleted: false},
-        attributes: ["aiModelId", "costLimit", "applyPerSession"],
+        attributes: ["id", "aiModelId", "costLimit", "applyPerSession"],
         raw: true,
     });
     if (!share) return empty;
@@ -541,6 +571,7 @@ async function getStudyAiBudget(service, client, data) {
         aiModelId: share.aiModelId,
         aiCostLimitPerUser: share.costLimit,
         aiApplyPerSession: !!share.applyPerSession,
+        aiShareId: share.id,
     };
 }
 

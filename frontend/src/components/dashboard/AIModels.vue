@@ -237,6 +237,13 @@ export default {
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
         {
+          icon: "arrow-counterclockwise",
+          title: "Reset model budget window",
+          action: "resetModelBudget",
+          filter: [{ key: "userId", value: this.currentUserId }],
+          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
+        },
+        {
           icon: "trash",
           title: "Delete model",
           action: "deleteModel",
@@ -295,6 +302,9 @@ export default {
           break;
         case "shareModel":
           this.$refs.shareModelStepper.open(data.params);
+          break;
+        case "resetModelBudget":
+          this.resetModelBudget(data.params);
           break;
       }
     },
@@ -356,6 +366,31 @@ export default {
           this.toastError(result.message || "Failed to update model");
         }
       });
+    },
+    resetModelBudget(row) {
+      if (Number(row.userId) !== Number(this.currentUserId)) {
+        this.toastError("Only model owners can reset this budget");
+        return;
+      }
+      this.$refs.confirmModal.open(
+        "Reset Model Budget",
+        `Reset the model-wide usage counter for "${row.name}"? The configured cost limit is kept. Share-level windows are not affected, reset those from the model overview.`,
+        "",
+        (confirmed) => {
+          if (!confirmed) return;
+          this.$socket.emit(
+            "serviceCommand",
+            { service: "AIService", command: "resetModelBudget", data: { modelId: row.id } },
+            (result) => {
+              if (result?.success) {
+                this.toastSuccess("Model budget reset");
+              } else {
+                this.toastError(result?.message || "Failed to reset budget");
+              }
+            },
+          );
+        }
+      );
     },
     deleteModel(row) {
       if (Number(row.userId) !== Number(this.currentUserId)) {

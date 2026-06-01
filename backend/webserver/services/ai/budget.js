@@ -148,7 +148,9 @@ async function cancelRequest(service, logId) {
 
 
 /**
- * Reset a share's per-user cap window (sets resetAt = NOW on the share row).
+ * Reset a share's cap window. For a per-session template (studyId set,
+ * applyPerSession=true) the cascade also resets every materialized session
+ * row cloned from that template. Other shapes get a single-row reset.
  *
  * @param {Object} service - AIService instance.
  * @param {Object} request - Reset target.
@@ -157,8 +159,37 @@ async function cancelRequest(service, logId) {
  */
 async function resetShareBudget(service, request) {
     const shareId = Number(request?.shareId);
-    await service.server.db.models["ai_model_share"].update(
-        { resetAt: new Date() },
+    const Shares = service.server.db.models["ai_model_share"];
+
+    const share = await Shares.findByPk(shareId, { raw: true });
+    if (!share || share.deleted) return;
+
+    const now = new Date();
+
+    // Per-session template → reset template + every materialized session row.
+    if (share.studyId && share.applyPerSession) {
+        await Shares.update(
+            { resetAt: now },
+            {
+                where: {
+                    deleted: false,
+                    [Op.or]: [
+                        { id: shareId },
+                        {
+                            aiModelId: share.aiModelId,
+                            studyId: share.studyId,
+                            studySessionId: { [Op.ne]: null },
+                        },
+                    ],
+                },
+            }
+        );
+        return;
+    }
+
+    // Everything else (user, study non-template, materialized session): single-row reset.
+    await Shares.update(
+        { resetAt: now },
         { where: { id: shareId } }
     );
 }
