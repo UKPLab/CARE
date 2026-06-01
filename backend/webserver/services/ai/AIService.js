@@ -31,6 +31,7 @@ module.exports = class AIService extends Service {
                 "getAiModelOwnerSummaries",
                 "resetShareBudget",
                 "resetModelBudget",
+                "getStudyAiBudget",
             ],
             resTypes: [],
         });
