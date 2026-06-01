@@ -10,7 +10,10 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            // define association here
+            Setting.belongsTo(models["wizard_step"], {
+                foreignKey: "wizardStepId",
+                as: "wizardStep",
+            });
         }
 
         /**
@@ -49,19 +52,98 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Set setting value by key
-         * @param {string} key setting key
-         * @param {string} value setting value
-         * @returns {Promise<object|null>} setting object
+         * Get settings that are shown in the setup wizard, ordered by wizardOrder.
+         * @returns {Promise<object[]>}
          */
-        static async set(key, value) {
+        static async getWizardSettings() {
             try {
-                const [instance, created] =
+                return await Setting.findAll({
+                    where: { showInWizard: true, deleted: false },
+                    order: [['wizardOrder', 'ASC']],
+                    attributes: [
+                        'key',
+                        'value',
+                        'type',
+                        'description',
+                        'displayName',
+                        'displaySubsection',
+                        'requiredInWizard',
+                        [sequelize.col('wizardStep.key'), 'wizardStep'],
+                    ],
+                    include: [{
+                        model: sequelize.models["wizard_step"],
+                        as: "wizardStep",
+                        attributes: [],
+                        required: false,
+                    }],
+                    raw: true,
+                });
+            } catch (e) {
+                console.log(e);
+                return [];
+            }
+        }
+
+        /**
+         * Get wizard settings grouped by wizardStep for frontend consumption.
+         * Settings without wizardStep are placed in 'general'.
+         * @returns {Promise<object>}
+         */
+        static async getWizardSettingsByStep() {
+            try {
+                const settings = await Setting.getWizardSettings();
+                const byStep = { general: [], mail: [], registration: [], moodle: [] };
+                for (const s of settings) {
+                    const step = (s.wizardStep && Object.prototype.hasOwnProperty.call(byStep, s.wizardStep))
+                        ? s.wizardStep
+                        : 'general';
+                    byStep[step].push(s);
+                }
+                return byStep;
+            } catch (e) {
+                console.log(e);
+                return { general: [], mail: [], registration: [], moodle: [] };
+            }
+        }
+
+        /**
+         * Mail service settings only (keys under system.mailService.*).
+         * Used for test mail and mail transport helpers without loading all settings.
+         * @returns {Promise<object[]>}
+         */
+        static async getMailServiceSettings() {
+            try {
+                return await Setting.findAll({
+                    where: {
+                        deleted: false,
+                        key: {[Op.like]: 'system.mailService.%'},
+                    },
+                    attributes: ['key', 'value'],
+                    raw: true,
+                });
+            } catch (e) {
+                console.log(e);
+                return [];
+            }
+        }
+
+        /**
+         * Set setting value by key
+         * @param {string} key                   setting key
+         * @param {string} value                 setting value
+         * @param {Object} [options]             additional sequelize options
+         * @param {Object} [options.transaction] sequelize transaction
+         * @returns {Promise<object>}            
+         */
+        static async set(key, value, options = {}) {
+            try {
+                const [instance] =
                     await Setting.upsert({
                         key: key,
                         value: value,
                     }, {
-                        conflictFields: ['key']
+                        conflictFields: ['key'],
+                        transaction: options.transaction,
                     });
                 return instance['dataValues'];
             } catch (e) {
@@ -77,7 +159,14 @@ module.exports = (sequelize, DataTypes) => {
         value: DataTypes.TEXT,
         type: DataTypes.STRING,
         description: DataTypes.STRING,
+        displayName: DataTypes.STRING,
+        displayGroup: DataTypes.STRING,
+        displaySubsection: DataTypes.STRING,
         onlyAdmin: DataTypes.BOOLEAN,
+        showInWizard: DataTypes.BOOLEAN,
+        wizardOrder: DataTypes.INTEGER,
+        requiredInWizard: DataTypes.BOOLEAN,
+        wizardStepId: DataTypes.INTEGER,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE
 

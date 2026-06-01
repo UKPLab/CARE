@@ -41,7 +41,7 @@ export default {
   props: {
     modelValue: {
       type: Object,
-      required: true,
+      required: false,
       default: () => ({})
     }
   },

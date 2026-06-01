@@ -22,8 +22,8 @@
           :copied-node-data="copiedWorkflowStepData"
           @update:node="updateWorkflowStep" 
           @delete:node="deleteWorkflowStep"
-          @add:nodeAfter="addWorkflowStepAfter"
-          @add:nodePrevious="addWorkflowStepPrevious"
+          @add:node-after="addWorkflowStepAfter"
+          @add:node-previous="addWorkflowStepPrevious"
           @copy:node="copyWorkflowStep"
           @inspect:node="inspectWorkflowStep">
           <template #nodeEditor>

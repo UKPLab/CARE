@@ -390,21 +390,20 @@ export default {
           const user = this.users.find((u) => u.id === session.userId);
 
           // resolve document per session in submission mode
-          let docRef = null;
-          if (this.isSubmissionMode && d.documents) {
-            const found = d.documents.find((doc) => doc.studyIds.includes(session.studyId)) || null;
-            docRef = found
-              ? {
-                  ...found,
-                  // carry owner info from submission-level row
-                  extId: d.extId,
-                  firstName: d.firstName,
-                  lastName: d.lastName,
-                }
-              : null;
-          } else {
-            docRef = d;
-          }
+          const foundDoc = this.isSubmissionMode && d.documents
+            ? d.documents.find((doc) => doc.studyIds.includes(session.studyId)) || null
+            : null;
+          const docRef = this.isSubmissionMode && d.documents
+            ? (foundDoc
+                ? {
+                    ...foundDoc,
+                    // carry owner info from submission-level row
+                    extId: d.extId,
+                    firstName: d.firstName,
+                    lastName: d.lastName,
+                  }
+                : null)
+            : d;
 
           return {
             studyName: study.name,
