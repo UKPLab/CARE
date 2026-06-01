@@ -27,6 +27,7 @@ help:
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
+	@echo "make docker-recompose 				Rebuild and start the dev Docker stack (postgres, rpc_*)"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
@@ -71,6 +72,10 @@ lint: frontend/node_modules/.uptodate
 .PHONY: docker
 docker:
 	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test rpc_moodle rpc_pdf rpc_litellm
+
+.PHONY: docker-recompose
+docker-recompose:
+	@docker compose -f docker-compose.yml -f docker-dev.yml up --build postgres rpc_test rpc_moodle rpc_pdf rpc_litellm
 
 .PHONY: db
 db: backend/node_modules/.uptodate
