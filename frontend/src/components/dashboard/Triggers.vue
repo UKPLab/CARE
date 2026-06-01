@@ -15,7 +15,7 @@
         v-else
         :columns="columns"
         :data="triggers"
-        :options="options"
+        :options="dashboardConfig.tableOptions"
         :buttons="buttons"
         :max-table-height="'65vh'"
         @action="onAction"
@@ -27,8 +27,8 @@
     v-if="dashboardConfig"
     ref="triggerStepper"
     size="lg"
-    :steps="steps"
-    :submit-text="stepperSubmitText"
+    :steps="dashboardConfig.stepper.steps"
+    :submit-text="dashboardConfig.stepper.submitText"
     @submit="save"
   >
     <template #title>
@@ -54,7 +54,7 @@
   <ConfirmModal ref="deleteModal" />
 
   <BasicModal
-    v-if="viewModalConfig"
+    v-if="dashboardConfig && viewFormData"
     ref="viewModal"
     name="trigger-view"
     size="lg"
@@ -63,11 +63,7 @@
       {{ viewModalTitle }}
     </template>
     <template #body>
-      <BasicForm
-        v-if="viewFormData"
-        :model-value="viewFormData"
-        :fields="viewFormFields"
-      />
+      <BasicForm :model-value="viewFormData" :fields="dashboardConfig.modals.view.formSchema" />
     </template>
   </BasicModal>
 </template>
@@ -81,14 +77,6 @@ import BasicForm from "@/basic/Form.vue";
 import BasicModal from "@/basic/Modal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Loading from "@/basic/Loading.vue";
-import {
-  buildColumns,
-  buildManageButtons,
-  enrichRow,
-  resolveFormFieldOptions,
-  resolveFormSchema,
-  rowToViewForm,
-} from "@/utils/triggerDashboard.js";
 
 export default {
   name: "DashboardTriggers",
@@ -113,16 +101,13 @@ export default {
     };
   },
   computed: {
-    options() {
-      return (this.dashboardConfig && this.dashboardConfig.tableOptions) || {};
-    },
     columns() {
-      if (!this.dashboardConfig) return [];
-      return buildColumns(this.dashboardConfig.columns, { keyMapping: {}, classMapping: {} });
+      return this.dashboardConfig.columns;
     },
     buttons() {
-      if (!this.dashboardConfig) return [];
-      return buildManageButtons(this.dashboardConfig.manageActions);
+      return this.dashboardConfig.manageActions.map(
+        ({ handler, socketEvent, successToast, errorToast, modal, confirm, filter, ...btn }) => btn
+      );
     },
     manageActionsByAction() {
       if (!this.dashboardConfig) return {};
@@ -130,126 +115,160 @@ export default {
         this.dashboardConfig.manageActions.map((a) => [a.action, a])
       );
     },
-    stepper() {
-      return (this.dashboardConfig && this.dashboardConfig.stepper) || {};
-    },
-    steps() {
-      return this.stepper.steps || [];
-    },
-    stepperSubmitText() {
-      return this.stepper.submitText || "Save";
-    },
-    events() {
-      return (this.$store.getters["table/trigger_event/getAll"] || [])
-        .filter((e) => e.enabled && !e.deleted);
-    },
     selectedEvent() {
-      return this.events.find((e) => e.id === this.triggerForm.triggerEventId);
+      return this.$store.getters["table/trigger_event/getAll"].find(
+        (e) => e.id === this.triggerForm.triggerEventId && e.enabled && !e.deleted
+      );
     },
     selectedAction() {
-      const actions = this.$store.getters["table/trigger_action/getAll"] || [];
-      return actions.find((a) => a.id === this.triggerForm.triggerActionId);
+      return this.$store.getters["table/trigger_action/getAll"].find(
+        (a) => a.id === this.triggerForm.triggerActionId && a.enabled && !a.deleted
+      );
     },
     settingsFields() {
-      if (!this.stepper.settingsFormSchema) return [];
-      return resolveFormSchema(this.stepper.settingsFormSchema, this.$store);
+      if (!this.dashboardConfig) return [];
+      return this.resolveFormSchema(this.dashboardConfig.stepper.settingsFormSchema);
     },
     eventFields() {
-      if (!this.stepper.eventField) return [];
-      return [resolveFormFieldOptions(this.stepper.eventField, this.$store, {
-        event: this.selectedEvent,
-      })];
+      if (!this.dashboardConfig) return [];
+      return [this.resolveField(this.dashboardConfig.stepper.eventField)];
     },
     actionSelectFields() {
-      if (!this.stepper.actionField) return [];
-      return [resolveFormFieldOptions(this.stepper.actionField, this.$store, {
-        event: this.selectedEvent,
-      })];
+      if (!this.dashboardConfig) return [];
+      return [this.resolveField(this.dashboardConfig.stepper.actionField, { event: this.selectedEvent })];
     },
     actionConfigFields() {
-      const schema = (this.selectedAction && this.selectedAction.configuration
-        && this.selectedAction.configuration.formSchema) || [];
-      return schema.map((field) => resolveFormFieldOptions(field, this.$store));
+      const schema = this.selectedAction?.configuration?.formSchema || [];
+      return schema.map((field) => this.resolveField(field));
     },
     triggers() {
       if (!this.dashboardConfig) return [];
-      const emptyStatus = { keyMapping: {}, classMapping: {}, flagByValue: {} };
+      const eventsById = Object.fromEntries(
+        this.$store.getters["table/trigger_event/getAll"]
+          .filter((e) => e.enabled && !e.deleted)
+          .map((e) => [e.id, e])
+      );
+      const actionsById = Object.fromEntries(
+        this.$store.getters["table/trigger_action/getAll"]
+          .filter((a) => a.enabled && !a.deleted)
+          .map((a) => [a.id, a])
+      );
+      const toggle = this.dashboardConfig.rowResolvers.enabled;
       return this.$store.getters["table/trigger/getAll"]
         .filter((t) => !t.deleted)
-        .map((t) => enrichRow(t, this.dashboardConfig, this.$store, emptyStatus));
-    },
-    viewModalConfig() {
-      return this.dashboardConfig && this.dashboardConfig.modals
-        ? this.dashboardConfig.modals.view
-        : null;
+        .map((t) => {
+          const event = eventsById[t.triggerEventId];
+          const action = actionsById[t.triggerActionId];
+          return {
+            ...t,
+            eventLabel: event?.configuration?.label || event?.name || "-",
+            actionLabel: action?.configuration?.label || action?.name || "-",
+            enabled: {
+              title: toggle.title,
+              value: t.enabled,
+              action: toggle.action,
+            },
+          };
+        });
     },
     viewModalTitle() {
-      if (!this.viewModalConfig || !this.viewFormData) return "Trigger";
-      return (this.viewModalConfig.title || "Trigger").replace("{name}", this.viewFormData.name);
-    },
-    viewFormFields() {
-      if (!this.viewModalConfig) return [];
-      return resolveFormSchema(this.viewModalConfig.formSchema || [], this.$store);
-    },
-    sockets() {
-      return (this.dashboardConfig && this.dashboardConfig.sockets) || {};
+      if (!this.viewFormData) return "Trigger";
+      return this.dashboardConfig.modals.view.title.replace("{name}", this.viewFormData.name);
     },
   },
   mounted() {
     this.$socket.emit("triggerRulesGetDashboardConfig", {}, (res) => {
-      if (res && res.success) {
+      if (res.success) {
         this.dashboardConfig = res.data;
         this.triggerForm = { ...res.data.defaultForm };
       }
     });
   },
   methods: {
+    resolveField(field, context = {}) {
+      if (field.options) return field;
+      const src = field.optionsSource;
+      if (!src) return field;
+
+      let rows = this.$store.getters[`table/${src.table}/getAll`].filter((r) => !r.deleted);
+
+      if (src.filter) {
+        rows = rows.filter((r) =>
+          Object.entries(src.filter).every(([k, v]) =>
+            Array.isArray(v) ? v.includes(r[k]) : r[k] === v
+          )
+        );
+      }
+
+      if (src.compatibleWithEvent && context.event) {
+        const provided = new Set(context.event.configuration?.provides || []);
+        rows = rows.filter((a) =>
+          (a.configuration?.requires || []).every((key) => provided.has(key))
+        );
+      }
+
+      const options = rows.map((r) => ({
+        name: src.labelKey === "configuration.label"
+          ? (r.configuration?.label || r.name)
+          : r[src.labelKey] || r[src.nameKey] || r.name,
+        value: r[src.valueKey],
+      }));
+
+      return {
+        ...field,
+        options: src.emptyOption ? [src.emptyOption, ...options] : options,
+      };
+    },
+    resolveFormSchema(schema) {
+      return schema.map((field) => this.resolveField(field));
+    },
     onAction(data) {
       const row = data.params;
-      const toggleResolver = this.dashboardConfig && this.dashboardConfig.rowResolvers
-        ? this.dashboardConfig.rowResolvers.enabled
-        : null;
-      if (toggleResolver && data.action === toggleResolver.action) {
-        this.$socket.emit(toggleResolver.socketEvent, { id: row.id, enabled: data.value });
+      const toggle = this.dashboardConfig.rowResolvers.enabled;
+
+      if (data.action === toggle.action) {
+        this.$socket.emit(toggle.socketEvent, { id: row.id, enabled: data.value });
         return;
       }
 
       const actionDef = this.manageActionsByAction[data.action];
-      if (!actionDef) return;
 
-      switch (actionDef.handler) {
-        case "viewModal":
-          this.viewFormData = rowToViewForm(row);
-          this.$refs.viewModal.open();
-          break;
-        case "editStepper":
-          this.openEdit(row);
-          break;
-        case "confirmDelete":
-          this.confirmDelete(row, actionDef);
-          break;
-        default:
-          break;
+      if (actionDef.handler === "viewModal") {
+        this.viewFormData = {
+          name: row.name,
+          eventLabel: row.eventLabel,
+          actionLabel: row.actionLabel,
+          maxRetries: String(row.maxRetries),
+          parallelLimit: String(row.parallelLimit),
+          timeout: String(row.timeout),
+          configurationJson: JSON.stringify(row.configuration || {}, null, 2),
+        };
+        this.$refs.viewModal.open();
+        return;
       }
-    },
-    confirmDelete(row, actionDef) {
-      const msg = (actionDef.confirm && actionDef.confirm.message)
-        ? actionDef.confirm.message.replace("{name}", row.name)
-        : `Delete "${row.name}"?`;
-      this.$refs.deleteModal.open(
-        (actionDef.confirm && actionDef.confirm.title) || "Delete",
-        msg,
-        null,
-        (confirmed) => {
-          if (confirmed && actionDef.socketEvent) {
-            this.$socket.emit(actionDef.socketEvent, { id: row.id });
+
+      if (actionDef.handler === "editStepper") {
+        this.openEdit(row);
+        return;
+      }
+
+      if (actionDef.handler === "confirmDelete") {
+        const { confirm } = actionDef;
+        this.$refs.deleteModal.open(
+          confirm.title,
+          confirm.message.replace("{name}", row.name),
+          null,
+          (ok) => {
+            if (ok) {
+              this.$socket.emit(actionDef.socketEvent, { id: row.id });
+            }
           }
-        }
-      );
+        );
+      }
     },
     openCreate() {
       this.editingId = null;
-      this.triggerForm = { ...(this.dashboardConfig && this.dashboardConfig.defaultForm) };
+      this.triggerForm = { ...this.dashboardConfig.defaultForm };
       this.actionData = {};
       this.$refs.triggerStepper.open();
     },
@@ -284,12 +303,14 @@ export default {
         },
       };
       const editing = this.editingId !== null;
-      const event = editing ? this.sockets.update : this.sockets.create;
+      const socketEvent = editing
+        ? this.dashboardConfig.sockets.update
+        : this.dashboardConfig.sockets.create;
       if (editing) {
         payload.id = this.editingId;
       }
-      this.$socket.emit(event, payload, (res) => {
-        if (res && res.success) {
+      this.$socket.emit(socketEvent, payload, (res) => {
+        if (res.success) {
           this.$refs.triggerStepper.close();
           this.editingId = null;
           this.eventBus.emit("toast", {
@@ -300,7 +321,7 @@ export default {
         } else {
           this.eventBus.emit("toast", {
             title: editing ? "Failed to update trigger" : "Failed to create trigger",
-            message: (res && res.message) || "Unknown error",
+            message: res.message || "Unknown error",
             variant: "danger",
           });
         }

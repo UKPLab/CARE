@@ -6,7 +6,7 @@
         v-else
         :columns="columns"
         :data="logs"
-        :options="options"
+        :options="dashboardConfig.tableOptions"
         :buttons="buttons"
         :max-table-height="'65vh'"
         @action="onAction"
@@ -21,7 +21,7 @@
     size="lg"
   >
     <template #title>
-      {{ (errorModalConfig && errorModalConfig.title) || "Error message" }}
+      {{ dashboardConfig.modals.error.title }}
     </template>
     <template #body>
       <BasicForm
@@ -43,14 +43,6 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Loading from "@/basic/Loading.vue";
-import {
-  buildColumns,
-  buildManageButtons,
-  buildStatusTypeOptions,
-  enrichRow,
-  detailsToErrorForm,
-  resolveFormSchema,
-} from "@/utils/triggerDashboard.js";
 
 export default {
   name: "DashboardTriggerLogs",
@@ -66,21 +58,42 @@ export default {
   data() {
     return {
       dashboardConfig: null,
-      statusTypeOptions: null,
       errorFormData: null,
     };
   },
   computed: {
-    options() {
-      return (this.dashboardConfig && this.dashboardConfig.tableOptions) || {};
+    statusMaps() {
+      if (!this.dashboardConfig) return null;
+      const keyMapping = {};
+      const classMapping = { default: "bg-secondary" };
+      const flagByValue = {};
+      for (const s of this.dashboardConfig.statuses) {
+        keyMapping[s.value] = s.label;
+        classMapping[s.value] = s.badgeClass;
+        flagByValue[s.value] = s.flags || [];
+      }
+      return { keyMapping, classMapping, flagByValue };
     },
     columns() {
-      if (!this.dashboardConfig || !this.statusTypeOptions) return [];
-      return buildColumns(this.dashboardConfig.columns, this.statusTypeOptions);
+      if (!this.dashboardConfig) return [];
+      return this.dashboardConfig.columns.map((col) => {
+        if (col.type === "badge" && col.badgeFrom === "statuses") {
+          return {
+            ...col,
+            typeOptions: {
+              keyMapping: this.statusMaps.keyMapping,
+              classMapping: this.statusMaps.classMapping,
+            },
+          };
+        }
+        return { ...col };
+      });
     },
     buttons() {
       if (!this.dashboardConfig) return [];
-      return buildManageButtons(this.dashboardConfig.manageActions);
+      return this.dashboardConfig.manageActions.map(
+        ({ handler, socketEvent, successToast, errorToast, modal, confirm, filter, ...btn }) => btn
+      );
     },
     manageActionsByAction() {
       if (!this.dashboardConfig) return {};
@@ -88,96 +101,93 @@ export default {
         this.dashboardConfig.manageActions.map((a) => [a.action, a])
       );
     },
-    errorModalConfig() {
-      return this.dashboardConfig && this.dashboardConfig.modals
-        ? { ...this.dashboardConfig.modals.error, name: "trigger-queue-error" }
-        : null;
-    },
     errorFormFields() {
-      if (!this.errorModalConfig) return [];
-      return resolveFormSchema(this.errorModalConfig.formSchema || [], this.$store);
+      return this.dashboardConfig.modals.error.formSchema;
     },
     logs() {
-      if (!this.dashboardConfig || !this.statusTypeOptions) return [];
-      return (this.$store.getters["table/trigger_queue/getAll"] || []).map((item) =>
-        enrichRow(item, this.dashboardConfig, this.$store, this.statusTypeOptions)
+      const triggersById = Object.fromEntries(
+        this.$store.getters["table/trigger/getAll"]
+          .filter((t) => !t.deleted)
+          .map((t) => [t.id, t])
+      );
+      return this.$store.getters["table/trigger_queue/getAll"].map((item) =>
+        this.enrichLogRow(item, triggersById)
       );
     },
   },
   mounted() {
     this.$socket.emit("triggerQueueGetDashboardConfig", {}, (res) => {
-      if (res && res.success) {
+      if (res.success) {
         this.dashboardConfig = res.data;
-        this.statusTypeOptions = buildStatusTypeOptions(res.data.statuses);
       }
     });
   },
   methods: {
+    enrichLogRow(item, triggersById) {
+      const { flagByValue } = this.statusMaps;
+      const row = { ...item };
+      const trigger = triggersById[item.triggerId];
+      row.triggerName = trigger ? trigger.name : `#${item.triggerId}`;
+
+      const statusFlags = flagByValue[item.status] || [];
+      row.canRetry = statusFlags.includes("canRetry");
+      row.hasError = statusFlags.includes("hasError") || !!item.errorMessage;
+      row.canCancel = statusFlags.includes("canCancel");
+
+      return row;
+    },
     onAction(data) {
       const row = data.params;
       const actionDef = this.manageActionsByAction[data.action];
-      if (!actionDef) return;
 
       if (actionDef.handler === "errorModal") {
-        this.openErrorModal(row.id, actionDef);
+        this.errorFormData = null;
+        this.$refs.errorModal.open();
+        this.$socket.emit(actionDef.socketEvent, { id: row.id }, (res) => {
+          if (res.success) {
+            const d = res.data;
+            this.errorFormData = {
+              summary: `${d.trigger.name} — ${d.statusLabel}`,
+              errorMessage: d.item.errorMessage || "No error message recorded.",
+            };
+          } else {
+            this.$refs.errorModal.close();
+            this.toast(actionDef.errorToast.title, res.message, "danger");
+          }
+        });
         return;
       }
+
       if (actionDef.handler === "confirmCancel") {
-        this.confirmCancel(row, actionDef);
+        const { confirm } = actionDef;
+        this.$refs.confirmModal.open(
+          confirm.title,
+          confirm.message.replace("{triggerName}", row.triggerName),
+          null,
+          (ok) => {
+            if (ok) {
+              this.emitSocket(actionDef.socketEvent, { id: row.id }, actionDef);
+            }
+          }
+        );
         return;
       }
-      if (actionDef.handler === "socketCallback" && actionDef.socketEvent) {
+
+      if (actionDef.handler === "socketCallback") {
         this.emitSocket(actionDef.socketEvent, { id: row.id }, actionDef);
       }
     },
-    confirmCancel(row, actionDef) {
-      const msg = (actionDef.confirm && actionDef.confirm.message)
-        ? actionDef.confirm.message.replace("{triggerName}", row.triggerName || "")
-        : "Cancel this trigger run?";
-      this.$refs.confirmModal.open(
-        (actionDef.confirm && actionDef.confirm.title) || "Cancel execution",
-        msg,
-        null,
-        (confirmed) => {
-          if (confirmed && actionDef.socketEvent) {
-            this.emitSocket(actionDef.socketEvent, { id: row.id }, actionDef);
-          }
-        }
-      );
-    },
-    openErrorModal(id, actionDef) {
-      this.errorFormData = null;
-      this.$refs.errorModal.open();
-      this.$socket.emit(actionDef.socketEvent, { id }, (res) => {
-        if (res && res.success) {
-          this.errorFormData = detailsToErrorForm(res.data);
-        } else {
-          this.$refs.errorModal.close();
-          this.showToast(actionDef.errorToast?.title || "Failed to load error", res?.message, "danger");
-        }
-      });
-    },
     emitSocket(event, payload, actionDef) {
       this.$socket.emit(event, payload, (res) => {
-        if (res && res.success) {
-          if (actionDef.successToast) {
-            this.showToast(actionDef.successToast.title, actionDef.successToast.message, "success");
-          }
-        } else {
-          this.showToast(
-            actionDef.errorToast?.title || "Action failed",
-            res?.message,
-            "danger"
-          );
+        if (res.success && actionDef.successToast) {
+          this.toast(actionDef.successToast.title, actionDef.successToast.message, "success");
+        } else if (!res.success) {
+          this.toast(actionDef.errorToast.title, res.message, "danger");
         }
       });
     },
-    showToast(title, message, variant) {
-      this.eventBus.emit("toast", {
-        title,
-        message: message || "Unknown error",
-        variant,
-      });
+    toast(title, message, variant) {
+      this.eventBus.emit("toast", { title, message: message || "Unknown error", variant });
     },
   },
 };
