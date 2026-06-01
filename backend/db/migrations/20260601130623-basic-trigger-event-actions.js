@@ -8,20 +8,18 @@ const triggerEvents = [
       label: 'When an assignment is submitted',
       description: 'Fires when a student uploads a submission.',
       provides: ['userId', 'submissionId', 'projectId'],
-      tags: ['submission', 'assignment'],
     },
   },
 ];
 
 const triggerActions = [
   {
-    name: 'send_email',
+    name: 'Email notification',
     enabled: true,
     configuration: {
       label: 'Send an email',
       description: 'Sends an email to a recipient derived from the event context.',
       requires: ['userId'],
-      tags: ['notification'],
       handler: 'send_email',
       formSchema: [
         {
@@ -47,23 +45,58 @@ const triggerActions = [
             emptyOption: { name: 'No template (use subject/message below)', value: null },
           },
         },
-        // { key: 'subject', label: 'Subject (used if no template)', type: 'text', required: false },
-        // { key: 'message', label: 'Message (used if no template)', type: 'textarea', required: false },
       ],
     },
   },
   {
-    name: 'nlp.preprocess',
+    name: 'AI Preprocessing (English)',
     enabled: true,
     configuration: {
-      label: 'Run preprocessing skill',
-      description: 'Runs an NLP preprocessing skill; results are stored in document_data.',
+      label: 'AI Preprocessing (English)',
+      description:
+        'Runs grading_expose_english on the uploaded submission (same skill/mapping as Dashboard → Submissions → Apply Skills). Results are stored in document_data.',
       requires: ['submissionId'],
-      tags: ['ai', 'preprocessing'],
       handler: 'nlp_preprocess',
-      skillName: null,
-      inputs: {
-        document: { type: 'submission', from: '{{context.submissionId}}' },
+      preprocessing: {
+        skillName: 'grading_expose_english',
+        baseFileParameter: 'submission',
+        defaultBaseFileType: 'pdf',
+        skillParameterMappings: {
+          submission: {
+            table: 'submission',
+            fromContext: 'submissionId',
+          },
+          assessment_config: {
+            table: 'configuration',
+            configurationName: 'Exposé assessment configuration',
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'AI Preprocessing (German)',
+    enabled: true,
+    configuration: {
+      label: 'AI Preprocessing (German)',
+      description:
+        'Runs grading_expose_german on the uploaded submission (same skill/mapping as Dashboard → Submissions → Apply Skills). Results are stored in document_data.',
+      requires: ['submissionId'],
+      handler: 'nlp_preprocess',
+      preprocessing: {
+        skillName: 'grading_expose_german',
+        baseFileParameter: 'submission',
+        defaultBaseFileType: 'pdf',
+        skillParameterMappings: {
+          submission: {
+            table: 'submission',
+            fromContext: 'submissionId',
+          },
+          assessment_config: {
+            table: 'configuration',
+            configurationName: 'Exposé assessment configuration (German)',
+          },
+        },
       },
     },
   },
