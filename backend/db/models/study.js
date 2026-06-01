@@ -399,7 +399,6 @@ module.exports = (sequelize, DataTypes) => {
                         userId: study.userId,
                         studyId: null,
                         studySessionId: null,
-                        enabled: true,
                         deleted: false,
                     },
                     transaction: options.transaction,
@@ -422,55 +421,8 @@ module.exports = (sequelize, DataTypes) => {
                 costLimit,
                 applyPerSession,
                 expiryDate: study.end || fallbackExpiry,
-                enabled: true,
                 deleted: false,
             }, {transaction: options.transaction});
-        }
-
-        /**
-         * Enrich loaded study instances with the AI virtual fields read from
-         * the matching ai_model_share row, so the frontend form pre-fills the
-         *
-         * @param {Object|Object[]} studyOrStudies - Sequelize instance(s) from afterFind.
-         * @param {Object} options - Sequelize hook options bundle.
-         */
-        static async hydrateAiBudgetFields(studyOrStudies, options) {
-            const studies = Array.isArray(studyOrStudies)
-                ? studyOrStudies.filter(Boolean)
-                : (studyOrStudies ? [studyOrStudies] : []);
-            if (studies.length === 0) return;
-
-            const studyIds = studies.map((s) => s.id).filter((id) => id != null);
-            if (studyIds.length === 0) return;
-
-            const shares = await sequelize.models.ai_model_share.findAll({
-                where: {
-                    studyId: studyIds,
-                    studySessionId: null,
-                    deleted: false,
-                },
-                raw: true,
-                transaction: options && options.transaction,
-            });
-            const shareByStudyId = new Map(shares.map((s) => [s.studyId, s]));
-
-            for (const study of studies) {
-                const share = shareByStudyId.get(study.id);
-                const values = {
-                    aiModelId: share ? share.aiModelId : null,
-                    aiCostLimitPerUser: share ? share.costLimit : null,
-                    aiApplyPerSession: share ? !!share.applyPerSession : false,
-                };
-                // where `study` is a plain object without setDataValue. Assign
-                // directly 
-                if (typeof study.setDataValue === "function") {
-                    for (const [key, value] of Object.entries(values)) {
-                        study.setDataValue(key, value);
-                    }
-                } else {
-                    Object.assign(study, values);
-                }
-            }
         }
 
         /**
@@ -608,14 +560,6 @@ module.exports = (sequelize, DataTypes) => {
                 //     await Study.deleteStudySteps(study, options);
                 //     await Study.createStudySteps(study, options);
                 // }
-            },
-            afterFind: async (studyOrStudies, options) => {
-                // Never let AI-field hydration break study loading/sync.
-                try {
-                    await Study.hydrateAiBudgetFields(studyOrStudies, options);
-                } catch (err) {
-                    console.error("hydrateAiBudgetFields failed:", err);
-                }
             }
         },
         indexes: [

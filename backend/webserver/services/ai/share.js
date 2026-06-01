@@ -301,8 +301,8 @@ async function getModelShareConfig(service, client, data) {
     const aiModel = await assertModelOwnership(service.server, ownerUserId, data?.aiModelId);
 
     const shares = await service.server.db.models.ai_model_share.findAll({
-        where: {aiModelId: aiModel.id, deleted: false},
-        attributes: ["id", "userId", "roleId", "expiryDate"],
+        where: {aiModelId: aiModel.id, studyId: null, studySessionId: null, deleted: false},
+        attributes: ["id", "userId", "roleId", "expiryDate", "costLimit"],
         raw: true,
     });
 
@@ -314,11 +314,17 @@ async function getModelShareConfig(service, client, data) {
     const activeTarget = Object.values(SHARE_TARGETS)
         .find((target) => configIdsByMode[target.mode]?.length > 0) || SHARE_TARGETS[DEFAULT_SHARE_MODE];
 
+    // shareModel writes the same costLimit to every row in a batch, so the
+    // first row's value represents the current setting for the form.
+    const firstWithCostLimit = shares.find((row) => row.costLimit !== null && row.costLimit !== undefined);
+    const costLimit = firstWithCostLimit ? firstWithCostLimit.costLimit : null;
+
     return {
         userIds: configIdsByMode.users || [],
         roleIds: configIdsByMode.roles || [],
         expiryDate,
         mode: activeTarget.mode,
+        costLimit,
     };
 }
 
@@ -401,7 +407,7 @@ async function shareModel(service, client, data) {
         // TODO: make sure with Akash
         await service.server.db.models.ai_model_share.update(
             {deleted: true, deletedAt: new Date()},
-            {where: {aiModelId: aiModel.id, studyId: null, deleted: false}, transaction},
+            {where: {aiModelId: aiModel.id, studyId: null, studySessionId: null,  deleted: false}, transaction},
         );
 
         const rowsToCreate = await target.createRows({
@@ -509,6 +515,35 @@ async function resetModelBudget(service, client, data) {
     return {ok: true};
 }
 
+/**
+ * Read the study-level AI budget so the study form can prefill its AI fields
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Authenticated caller.
+ * @param {{ studyId?: number }} data RPC payload with the target study PK.
+ * @returns {Promise<{aiModelId: ?number, aiCostLimitPerUser: ?number, aiApplyPerSession: boolean}>}
+ */
+async function getStudyAiBudget(service, client, data) {
+    helpers.requireClientUserId(client);
+    const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false};
+
+    const studyId = Number(data?.studyId);
+    if (!Number.isInteger(studyId) || studyId <= 0) return empty;
+
+    const share = await service.server.db.models.ai_model_share.findOne({
+        where: {studyId, studySessionId: null, deleted: false},
+        attributes: ["aiModelId", "costLimit", "applyPerSession"],
+        raw: true,
+    });
+    if (!share) return empty;
+
+    return {
+        aiModelId: share.aiModelId,
+        aiCostLimitPerUser: share.costLimit,
+        aiApplyPerSession: !!share.applyPerSession,
+    };
+}
+
 module.exports = {
     getModelShareOptions,
     getModelShareConfig,
@@ -517,4 +552,5 @@ module.exports = {
     getAiModelOwnerSummaries,
     resetShareBudget,
     resetModelBudget,
+    getStudyAiBudget,
 };
