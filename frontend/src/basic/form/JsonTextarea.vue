@@ -37,6 +37,7 @@ export default {
       required: true,
     },
     modelValue: {
+      type: [Object, Array, String, Number, Boolean],
       required: false,
       default: null,
     },

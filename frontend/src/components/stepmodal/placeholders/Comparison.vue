@@ -15,7 +15,7 @@
 import Chart from "./Chart.vue";
 
 export default {
-  name: "Comparison",
+  name: "ComparisonPlaceholder",
   components: { Chart },
   inject: {
     studyData: {

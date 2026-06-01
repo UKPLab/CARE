@@ -11,7 +11,7 @@
         <FormSelect
             v-model="baseFileSelections[group.validationConfigurationId]"
             :options="group.fileTypeOptions"
-            @update:modelValue="updateBaseFileSelection(group.validationConfigurationId, $event)"
+            @update:model-value="updateBaseFileSelection(group.validationConfigurationId, $event)"
         />
       </div>
     </div>

@@ -37,16 +37,17 @@
           </span>
         </h2>
         <ul>
-          <li
-            v-for="r in annotations.filter(a => a.tagId === s.id)"
-            v-if="annotations.filter(a => a.tagId === s.id).length > 0"
-            :key="r.id"
-          >
-            <ReportItem
-              :annotation-id="r.id"
-              @show-report-annotation="showAnnotation"
-            />
-          </li>
+          <template v-if="annotations.filter(a => a.tagId === s.id).length > 0">
+            <li
+              v-for="r in annotations.filter(a => a.tagId === s.id)"
+              :key="r.id"
+            >
+              <ReportItem
+                :annotation-id="r.id"
+                @show-report-annotation="showAnnotation"
+              />
+            </li>
+          </template>
           <li v-else>
             No comments.
           </li>
