@@ -32,15 +32,20 @@
           @click="copyURL"
       >Copy Link
       </button>
-      <button
+      <span
           v-if="!isSuccess && currentAiShareId"
-          class="btn btn-warning"
-          type="button"
-          title="Reset the usage counter for this study's AI budget"
-          @click="onResetAiBudget"
+          class="d-inline-flex align-items-center gap-2"
       >
-        <i class="bi bi-arrow-counterclockwise me-1" />Reset AI Budget
-      </button>
+        <small class="text-muted"> {{ currentAiResetLabel ? `last reset: ${currentAiResetLabel}` : '' }}</small>
+        <button
+            class="btn btn-warning"
+            type="button"
+            title="Reset the usage counter for this study's AI budget"
+            @click="onResetAiBudget"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1" />Reset AI Budget
+        </button>
+      </span>
     </template>
   </BasicCoordinator>
   <ConfirmModal ref="confirmModal" />
@@ -68,6 +73,7 @@ export default {
       isTemplateMode: false,
       isUsingTemplate: false,
       currentAiShareId: null,
+      currentAiResetAt: null,
     }
   },
   computed: {
@@ -85,6 +91,11 @@ export default {
       const suffix = this.isTemplateMode ? 'Template' : 'Study';
       return `${prefix} ${suffix}`;
     },
+    currentAiResetLabel() {
+      if (!this.currentAiResetAt) return null;
+      const date = new Date(this.currentAiResetAt);
+      return Number.isNaN(date.getTime()) ? null : date.toLocaleString();
+    },
   },
   methods: {
     async open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
@@ -97,6 +108,7 @@ export default {
       this.isUsingTemplate = copy && studyId !== 0;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
       this.currentAiShareId = null;
+      this.currentAiResetAt = null;
 
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
@@ -109,6 +121,7 @@ export default {
         try {
           aiOverrides = await this.fetchAiBudget(studyId);
           this.currentAiShareId = aiOverrides?.aiShareId || null;
+          this.currentAiResetAt = aiOverrides?.aiResetAt || null;
         } catch (_error) {
           // Leave AI fields at their defaults if the lookup fails.
         }
@@ -204,6 +217,7 @@ export default {
             {service: "AIService", command: "resetShareBudget", data: {shareId}},
             (result) => {
               if (result?.success) {
+                this.currentAiResetAt = new Date().toISOString();
                 this.eventBus.emit('toast', {title: "Success", message: "AI budget reset", variant: "success"});
               } else {
                 this.eventBus.emit('toast', {title: "Error", message: result?.message || "Reset failed", variant: "danger"});

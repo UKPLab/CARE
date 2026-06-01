@@ -555,14 +555,14 @@ async function resetModelBudget(service, client, data) {
  */
 async function getStudyAiBudget(service, client, data) {
     helpers.requireClientUserId(client);
-    const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false, aiShareId: null};
+    const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false, aiShareId: null, aiResetAt: null};
 
     const studyId = Number(data?.studyId);
     if (!Number.isInteger(studyId) || studyId <= 0) return empty;
 
     const share = await service.server.db.models.ai_model_share.findOne({
         where: {studyId, studySessionId: null, deleted: false},
-        attributes: ["id", "aiModelId", "costLimit", "applyPerSession"],
+        attributes: ["id", "aiModelId", "costLimit", "applyPerSession", "resetAt"],
         raw: true,
     });
     if (!share) return empty;
@@ -572,6 +572,7 @@ async function getStudyAiBudget(service, client, data) {
         aiCostLimitPerUser: share.costLimit,
         aiApplyPerSession: !!share.applyPerSession,
         aiShareId: share.id,
+        aiResetAt: share.resetAt ?? null,
     };
 }
 

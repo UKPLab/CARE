@@ -90,6 +90,7 @@
                 <span class="badge me-2" :class="scopeBadgeClass(row.scopeKind)">{{ row.scope }}</span>
                 {{ row.recipientLabel || "—" }} — {{ formatAccess(row) }} — {{ formatDateTime(row.expiryDate) }}
                 <span v-if="row.costLimit != null" class="text-muted ms-2">(cap ${{ Number(row.costLimit).toFixed(2) }})</span>
+                <span class="text-muted ms-2">· reset {{ row.resetAt ? formatDateTime(row.resetAt) : "never" }}</span>
               </span>
               <button
                 class="btn btn-sm btn-outline-warning"

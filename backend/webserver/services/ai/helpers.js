@@ -175,6 +175,7 @@ function mapShareToRecipient(share, maps) {
         viaLabel,
         expiryDate: share.expiryDate,
         costLimit: share.costLimit ?? null,
+        resetAt: share.resetAt ?? null,
         scope,
         scopeKind,
     };
