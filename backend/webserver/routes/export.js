@@ -37,10 +37,11 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits, includeEmptyStudies } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies } = req.body;
         let { userIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
-        const shouldIncludeNonConsenting = String(includeNonConsentingEdits) === 'true';
+        const shouldExcludeNonConsentingEdits = String(excludeNonConsentingEdits) === 'true';
+        const shouldExcludeNonConsentingAnnotations = String(excludeNonConsentingAnnotations) === 'true';
         const shouldIncludeEmptyStudies = String(includeEmptyStudies) === 'true';
 
         try {
@@ -123,7 +124,7 @@ module.exports = function (server) {
                         projectId,
                         userIds,
                         documentTypes,
-                        shouldIncludeNonConsenting,
+                        shouldExcludeNonConsentingEdits,
                         baseFolderName,
                         archive
                     );
@@ -135,6 +136,8 @@ module.exports = function (server) {
                         userIds,
                         workflowIds,
                         shouldIncludeEmptyStudies,
+                        shouldExcludeNonConsentingEdits,
+                        shouldExcludeNonConsentingAnnotations,
                         baseFolderName,
                         archive
                     );
@@ -354,7 +357,7 @@ module.exports = function (server) {
      * @param {Object} archive - The archiver instance to append files to.
      * @returns {Promise<void>}
      */
-    async function processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, archive) {
+    async function processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, archive) {
         // document_data for all types, at the doc level.
         const documentData = await server.db.models.document_data.findAll({
             where: { documentId: doc.id, deleted: false },
@@ -415,7 +418,7 @@ module.exports = function (server) {
                 });
 
                 // filter by consent unless the option is enabled
-                if (!includeNonConsentingEdits) {
+                if (shouldExcludeNonConsentingEdits) {
                     const editorUserIds = [...new Set(allEdits.map(e => e.userId).filter(Boolean))];
                     const editorUsers = await server.db.models.user.findAll({
                         where: { id: editorUserIds },
@@ -493,7 +496,7 @@ module.exports = function (server) {
      * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
      * @returns {Promise<void>}
      */
-    async function processDocumentBasedExport(server, projectId, userIds, documentTypes, includeNonConsentingEdits, baseFolderName, archive) {
+    async function processDocumentBasedExport(server, projectId, userIds, documentTypes, shouldExcludeNonConsentingEdits, baseFolderName, archive) {
         const docs = await server.db.models.document.findAll({
             where: { projectId, userId: userIds, deleted: false, parentDocumentId: null },
         });
@@ -514,7 +517,7 @@ module.exports = function (server) {
 
         for (const doc of filteredDocs) {
             const docFolder = `${baseFolderName}/${doc.hash}`;
-            await processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, archive);
+            await processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, archive);
         }
     }
 
@@ -528,7 +531,7 @@ module.exports = function (server) {
         return sorted;
     }
 
-    async function processStudyBasedExport(server, projectId, userIds, workflowIds, shouldIncludeEmptyStudies, baseFolderName, archive) {
+    async function processStudyBasedExport(server, projectId, userIds, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, baseFolderName, archive) {
         const studyWhere = { userId: userIds, projectId, deleted: false };
         if (workflowIds.length > 0) studyWhere.workflowId = workflowIds;
 
@@ -554,7 +557,7 @@ module.exports = function (server) {
                 raw: true,
             });
 
-            if (!includeEmptyStudies && sessions.length === 0) continue;
+            if (!shouldIncludeEmptyStudies && sessions.length === 0) continue;
 
             meta[study.hash] = {
                 id: study.id,
@@ -584,18 +587,35 @@ module.exports = function (server) {
 
                     switch (step.stepType) {
                         case 1: { // Annotator
-                            const annotations = await server.db.models.annotation.findAll({
+                            let annotations = await server.db.models.annotation.findAll({
                                 where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
                                 raw: true,
                             });
+
+                            let comments = await server.db.models.comment.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+
+                            if (shouldExcludeNonConsentingAnnotations) {
+                                const allUserIds = [...new Set([
+                                    ...annotations.map(a => a.userId),
+                                    ...comments.map(c => c.userId)
+                                ].filter(Boolean))];
+                                const consentedUsers = await server.db.models.user.findAll({
+                                    where: { id: allUserIds },
+                                    attributes: ['id', 'acceptDataSharing'],
+                                    raw: true,
+                                });
+                                const consentedIds = new Set(consentedUsers.filter(u => u.acceptDataSharing).map(u => u.id));
+                                annotations = annotations.filter(a => !a.userId || consentedIds.has(a.userId));
+                                comments = comments.filter(c => !c.userId || consentedIds.has(c.userId));
+                            }
+
                             if (annotations.length > 0) {
                                 archive.append(JSON.stringify(annotations, null, 2), { name: `${stepFolder}/annotations.json` });
                             }
 
-                            const comments = await server.db.models.comment.findAll({
-                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
-                                raw: true,
-                            });
                             if (comments.length > 0) {
                                 const commentVotes = await server.db.models.comment_vote.findAll({
                                     where: { commentId: comments.map(c => c.id), deleted: false },
@@ -623,8 +643,19 @@ module.exports = function (server) {
                                     raw: true,
                                 }),
                             ]);
-                            const edits = [...templateEdits, ...sessionEdits]
-                                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                            let edits = [...templateEdits, ...sessionEdits].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                            if (shouldExcludeNonConsentingEdits) {
+                                const editorUserIds = [...new Set(edits.map(e => e.userId).filter(Boolean))];
+                                const editorUsers = await server.db.models.user.findAll({
+                                    where: { id: editorUserIds },
+                                    attributes: ['id', 'acceptDataSharing'],
+                                    raw: true,
+                                });
+                                const consentedIds = new Set(editorUsers.filter(u => u.acceptDataSharing).map(u => u.id));
+                                edits = edits.filter(e => !e.userId || consentedIds.has(e.userId));
+                            }
 
                             if (edits.length > 0) {
                                 const delta = dbToDelta(edits);

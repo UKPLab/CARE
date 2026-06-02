@@ -108,6 +108,8 @@
           :project-id="dataSelection.projectId"
           v-model:selectedWorkflowIds="selectedWorkflowIds"
           v-model:includeEmptyStudies="includeEmptyStudies"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
+          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
         />
       </div>
     </template>
@@ -191,6 +193,7 @@ export default {
       fakerSeed: 846569412,
       selectedDocumentTypes: [0, 1, 2, 4],
       excludeNonConsentingEdits: false,
+      excludeNonConsentingAnnotations: false,
       selectedWorkflowIds: [],
       includeEmptyStudies: false
     };
@@ -329,6 +332,7 @@ export default {
       this.fakerSeed = 846569412;
       this.selectedDocumentTypes = [0, 1, 2, 4];
       this.excludeNonConsentingEdits = false;
+      this.excludeNonConsentingAnnotations = false;
       this.selectedWorkflowIds = [];
       this.includeEmptyStudies = false;
       this.wait = false;
@@ -430,7 +434,7 @@ export default {
           exportType: 'documents',
           userIds: selectedUserIds,
           documentTypes: this.selectedDocumentTypes,
-          includeNonConsentingEdits: !this.excludeNonConsentingEdits,
+          excludeNonConsentingEdits: this.excludeNonConsentingEdits
         });
 
         this.$refs.exportStepper.close();
@@ -448,6 +452,8 @@ export default {
           userIds: selectedUserIds,
           workflowIds: this.selectedWorkflowIds,
           includeEmptyStudies: this.includeEmptyStudies,
+          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
         });
         this.$refs.exportStepper.close();
       } catch (error) {
