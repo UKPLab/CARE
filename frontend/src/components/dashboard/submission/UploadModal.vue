@@ -8,17 +8,21 @@
     <template #title>
       <h5 class="modal-title">Upload Submission</h5>
     </template>
-    <template #step-1>
+    <template #step="{ index }">
+      <!-- Admin flow: step 0 = select user, step 1 = config, step 2 = upload -->
+      <!-- User flow:  step 0 = config,       step 1 = upload                  -->
       <BasicTable
+        v-if="canUploadForOthers && index === 0"
         v-model="selectedUser"
         :columns="selectionTable"
         :options="selectionTableOptions"
         :data="users"
         :max-table-height="400"
       />
-    </template>
-    <template #step-2>
-      <div class="p-3">
+      <div
+        v-else-if="(canUploadForOthers && index === 1) || (!canUploadForOthers && index === 0)"
+        class="p-3"
+      >
         <div class="mb-3">
           <h4 class="mb-3">Assign Group</h4>
           <BasicForm
@@ -32,9 +36,8 @@
           @selection-changed="handleValidatorChange"
         />
       </div>
-    </template>
-    <template #step-3>
       <BasicForm
+        v-else-if="(canUploadForOthers && index === 2) || (!canUploadForOthers && index === 1)"
         v-model="files"
         :fields="fileFields"
       />
@@ -66,7 +69,9 @@ export default {
       selectedValidatorId: 0,
       selectedValidatorData: null,
       files: null,
-      steps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
+      assignmentId: null,
+      allSteps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
+      reducedSteps: [{ title: "Select Config" }, { title: "Upload File" }],
       selectionTable: [
         { name: "ID", key: "id", sortable: true },
         { name: "extId", key: "extId", sortable: true },
@@ -105,6 +110,15 @@ export default {
     };
   },
   computed: {
+    canUploadForOthers() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
+    },
+    steps() {
+      return this.canUploadForOthers ? this.allSteps : this.reducedSteps;
+    },
+    currentUserId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     users() {
       return this.$store.getters["table/user/getAll"];
     },
@@ -112,7 +126,10 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
     },
     stepValid() {
-      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
+      if (this.canUploadForOthers) {
+        return [this.selectedUser.length > 0, this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
+      }
+      return [this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
     },
     fileFields() {
       if (!this.selectedValidatorData?.files || !Array.isArray(this.selectedValidatorData.files)) {
@@ -133,11 +150,13 @@ export default {
     },
   },
   methods: {
-    open() {
+    open(assignmentId = null) {
       this.files = null;
-      this.selectedUser = [];
       this.selectedValidatorId = 0;
       this.formData = {};
+      this.assignmentId = assignmentId;
+      // Admin picks a user in step 1; normal users always upload for themselves
+      this.selectedUser = this.canUploadForOthers ? [] : [{ id: this.currentUserId }];
       this.$refs.uploadStepper.open();
     },
     handleValidatorChange(validatorData) {
@@ -168,7 +187,8 @@ export default {
         userId: this.selectedUser[0].id,
         group: this.formData.group,
         validationConfigurationId: this.selectedValidatorId,
-        projectId: this.projectId, 
+        projectId: this.projectId,
+        assignmentId: this.assignmentId,
         files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
       };
       this.$refs.uploadStepper.setWaiting(true);
