@@ -13,7 +13,7 @@
       <BasicTable
         :columns="columns"
         :data="triggers"
-        :options="dashboardConfig.tableOptions"
+        :options="tableOptions"
         :buttons="buttons"
         :max-table-height="'65vh'"
         @action="onAction"
@@ -24,8 +24,8 @@
   <StepperModal
     ref="triggerStepper"
     size="lg"
-    :steps="dashboardConfig.stepper.steps"
-    :submit-text="dashboardConfig.stepper.submitText"
+    :steps="stepperSteps"
+    :submit-text="stepperSubmitText"
     @submit="save"
   >
     <template #title>
@@ -66,7 +66,7 @@
       {{ viewModalTitle }}
     </template>
     <template #body>
-      <BasicForm :model-value="viewFormData" :fields="dashboardConfig.modals.view.formSchema" />
+      <BasicForm :model-value="viewFormData" :fields="viewFormSchema" />
     </template>
   </BasicModal>
 </template>
@@ -79,7 +79,6 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicModal from "@/basic/Modal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import rulesDashboard from "@/config/triggerRulesDashboard.js";
 
 export default {
   name: "DashboardTriggers",
@@ -95,7 +94,161 @@ export default {
   },
   data() {
     return {
-      dashboardConfig: rulesDashboard,
+      tableOptions: {
+        striped: true,
+        hover: true,
+        pagination: 10,
+      },
+      columns: [
+        { name: "Name", key: "name" },
+        { name: "Event", key: "eventLabel" },
+        { name: "Action", key: "actionLabel" },
+        { name: "Enabled", key: "enabled", type: "toggle" },
+      ],
+      manageActions: [
+        {
+          icon: "eye",
+          title: "View trigger",
+          action: "view",
+          handler: "viewModal",
+          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
+          modal: "view",
+        },
+        {
+          icon: "pencil-square",
+          title: "Edit trigger",
+          action: "edit",
+          handler: "editStepper",
+          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
+        },
+        {
+          icon: "trash",
+          title: "Delete trigger",
+          action: "delete",
+          handler: "confirmDelete",
+          socketEvent: "triggerDelete",
+          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
+          confirm: {
+            title: "Delete Trigger",
+            message: 'Are you sure you want to delete "{name}"?',
+          },
+        },
+      ],
+      enabledToggle: {
+        title: "Enable / disable trigger",
+        action: "toggleEnabled",
+        socketEvent: "triggerUpdate",
+      },
+      stepperSteps: [
+        { title: "Trigger info" },
+        { title: "Event" },
+        { title: "Action" },
+      ],
+      stepperSubmitText: "Save",
+      settingsFormSchema: [
+        {
+          key: "name",
+          label: "Name",
+          type: "text",
+          required: true,
+          help: "Display name for this trigger rule in the Triggers dashboard.",
+        },
+        {
+          key: "description",
+          label: "Description",
+          type: "textarea",
+          required: true,
+          help: "Short note for admins describing when and why this trigger runs.",
+        },
+        {
+          key: "projectId",
+          label: "Scope to project",
+          type: "select",
+          required: true,
+          help: "Limits this trigger to the selected project. Event filters and assignment options use this project.",
+          optionsSource: {
+            table: "project",
+            labelKey: "name",
+            valueKey: "id",
+          },
+        },
+        {
+          key: "maxRetries",
+          label: "Max retries",
+          type: "number",
+          min: 0,
+          required: true,
+          help: "How many times a failed run may be retried from the trigger logs before it stays failed.",
+        },
+        {
+          key: "parallelLimit",
+          label: "Parallel limit",
+          type: "number",
+          min: 1,
+          required: true,
+          help: "Maximum number of executions of this trigger that may run at the same time.",
+        },
+        {
+          key: "timeout",
+          label: "Timeout (seconds)",
+          type: "number",
+          min: 1,
+          required: true,
+          help: "Maximum seconds a single execution may run before it is treated as timed out.",
+        },
+      ],
+      eventField: {
+        key: "triggerEventId",
+        label: "When (event)",
+        type: "select",
+        required: true,
+        optionsSource: {
+          table: "trigger_event",
+          labelKey: "configuration.label",
+          nameKey: "name",
+          valueKey: "id",
+          filter: { enabled: true },
+        },
+      },
+      actionField: {
+        key: "triggerActionId",
+        label: "Then (action)",
+        type: "select",
+        required: true,
+        optionsSource: {
+          table: "trigger_action",
+          labelKey: "configuration.label",
+          nameKey: "name",
+          valueKey: "id",
+          filter: { enabled: true },
+          compatibleWithEvent: true,
+        },
+      },
+      viewModalTitleTemplate: "Trigger: {name}",
+      viewFormSchema: [
+        { key: "name", label: "Name", type: "text", readOnly: true },
+        { key: "eventLabel", label: "Event", type: "text", readOnly: true },
+        { key: "actionLabel", label: "Action", type: "text", readOnly: true },
+        { key: "maxRetries", label: "Max retries", type: "text", readOnly: true },
+        { key: "parallelLimit", label: "Parallel limit", type: "text", readOnly: true },
+        { key: "timeout", label: "Timeout (seconds)", type: "text", readOnly: true },
+        { key: "configurationJson", label: "Action configuration", type: "textarea", readOnly: true },
+      ],
+      socketEvents: {
+        create: "triggerCreate",
+        update: "triggerUpdate",
+        delete: "triggerDelete",
+      },
+      defaultForm: {
+        name: "",
+        description: "",
+        projectId: null,
+        maxRetries: 3,
+        parallelLimit: 1,
+        timeout: 300,
+        triggerEventId: null,
+        triggerActionId: null,
+      },
       triggerForm: {},
       eventData: {},
       actionData: {},
@@ -107,19 +260,13 @@ export default {
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
-    columns() {
-      return this.dashboardConfig.columns;
-    },
     buttons() {
-      return this.dashboardConfig.manageActions.map(
+      return this.manageActions.map(
         ({ handler, socketEvent, successToast, errorToast, modal, confirm, filter, ...btn }) => btn
       );
     },
     manageActionsByAction() {
-      if (!this.dashboardConfig) return {};
-      return Object.fromEntries(
-        this.dashboardConfig.manageActions.map((a) => [a.action, a])
-      );
+      return Object.fromEntries(this.manageActions.map((a) => [a.action, a]));
     },
     selectedEvent() {
       return this.$store.getters["table/trigger_event/getAll"].find(
@@ -132,17 +279,17 @@ export default {
       );
     },
     settingsFields() {
-      return this.resolveFormSchema(this.dashboardConfig.stepper.settingsFormSchema);
+      return this.resolveFormSchema(this.settingsFormSchema);
     },
     eventFields() {
-      return [this.resolveField(this.dashboardConfig.stepper.eventField)];
+      return [this.resolveField(this.eventField)];
     },
     eventConfigFields() {
       const schema = this.selectedEvent?.configuration?.formSchema || [];
       return schema.map((field) => this.resolveField(field));
     },
     actionSelectFields() {
-      return [this.resolveField(this.dashboardConfig.stepper.actionField, { event: this.selectedEvent })];
+      return [this.resolveField(this.actionField, { event: this.selectedEvent })];
     },
     actionConfigFields() {
       const schema = this.selectedAction?.configuration?.formSchema || [];
@@ -159,7 +306,6 @@ export default {
           .filter((a) => a.enabled && !a.deleted)
           .map((a) => [a.id, a])
       );
-      const toggle = this.dashboardConfig.rowResolvers.enabled;
       return this.$store.getters["table/trigger/getAll"]
         .filter((t) => !t.deleted)
         .map((t) => {
@@ -170,16 +316,16 @@ export default {
             eventLabel: event?.configuration?.label || event?.name || "-",
             actionLabel: action?.configuration?.label || action?.name || "-",
             enabled: {
-              title: toggle.title,
+              title: this.enabledToggle.title,
               value: t.enabled,
-              action: toggle.action,
+              action: this.enabledToggle.action,
             },
           };
         });
     },
     viewModalTitle() {
       if (!this.viewFormData) return "Trigger";
-      return this.dashboardConfig.modals.view.title.replace("{name}", this.viewFormData.name);
+      return this.viewModalTitleTemplate.replace("{name}", this.viewFormData.name);
     },
   },
   mounted() {
@@ -188,7 +334,7 @@ export default {
   methods: {
     defaultTriggerForm() {
       return {
-        ...this.dashboardConfig.defaultForm,
+        ...this.defaultForm,
         projectId: this.projectId,
       };
     },
@@ -250,10 +396,9 @@ export default {
     },
     onAction(data) {
       const row = data.params;
-      const toggle = this.dashboardConfig.rowResolvers.enabled;
 
-      if (data.action === toggle.action) {
-        this.$socket.emit(toggle.socketEvent, { id: row.id, enabled: data.value });
+      if (data.action === this.enabledToggle.action) {
+        this.$socket.emit(this.enabledToggle.socketEvent, { id: row.id, enabled: data.value });
         return;
       }
 
@@ -332,9 +477,7 @@ export default {
         },
       };
       const editing = this.editingId !== null;
-      const socketEvent = editing
-        ? this.dashboardConfig.sockets.update
-        : this.dashboardConfig.sockets.create;
+      const socketEvent = editing ? this.socketEvents.update : this.socketEvents.create;
       if (editing) {
         payload.id = this.editingId;
       }

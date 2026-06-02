@@ -4,7 +4,7 @@
       <BasicTable
         :columns="columns"
         :data="logs"
-        :options="dashboardConfig.tableOptions"
+        :options="tableOptions"
         :buttons="buttons"
         :max-table-height="'65vh'"
         @action="onAction"
@@ -18,13 +18,13 @@
     size="lg"
   >
     <template #title>
-      {{ dashboardConfig.modals.error.title }}
+      {{ errorModalTitle }}
     </template>
     <template #body>
       <BasicForm
         v-if="errorFormData"
         :model-value="errorFormData"
-        :fields="errorFormFields"
+        :fields="errorFormSchema"
       />
       <Loading v-else />
     </template>
@@ -39,7 +39,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import queueDashboard from "@/config/triggerQueueDashboard.js";
+import Loading from "@/basic/Loading.vue";
 
 export default {
   name: "DashboardTriggerLogs",
@@ -50,10 +50,71 @@ export default {
     BasicModal,
     BasicForm,
     ConfirmModal,
+    Loading,
   },
   data() {
     return {
-      dashboardConfig: queueDashboard,
+      tableOptions: {
+        striped: true,
+        hover: true,
+        pagination: 10,
+      },
+      queueStatuses: [
+        { name: "PENDING", value: 0, label: "Pending", badgeClass: "bg-secondary", flags: ["canCancel"] },
+        { name: "RUNNING", value: 1, label: "Running", badgeClass: "bg-primary", flags: ["canCancel"] },
+        { name: "COMPLETED", value: 2, label: "Completed", badgeClass: "bg-success", flags: [] },
+        { name: "CANCELLED", value: 3, label: "Cancelled", badgeClass: "bg-warning text-dark", flags: [] },
+        { name: "FAILED", value: 4, label: "Failed", badgeClass: "bg-danger", flags: ["canRetry", "hasError"] },
+      ],
+      columnDefs: [
+        { name: "Trigger", key: "triggerName" },
+        { name: "Status", key: "status", type: "badge", badgeFrom: "statuses" },
+        { name: "Attempts", key: "attemptCount" },
+        { name: "Started", key: "startedAt", type: "datetime" },
+      ],
+      manageActions: [
+        {
+          icon: "x-circle",
+          title: "Cancel",
+          action: "cancel",
+          handler: "confirmCancel",
+          socketEvent: "triggerQueueCancel",
+          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
+          filter: [{ key: "canCancel", value: true }],
+          confirm: {
+            title: "Cancel execution",
+            message: 'Cancel this trigger run for "{triggerName}"?',
+          },
+          successToast: { title: "Cancelled", message: "The trigger execution has been cancelled." },
+          errorToast: { title: "Cancel failed" },
+        },
+        {
+          icon: "arrow-repeat",
+          title: "Retry",
+          action: "retry",
+          handler: "socketCallback",
+          socketEvent: "triggerQueueRetry",
+          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
+          filter: [{ key: "canRetry", value: true }],
+          successToast: { title: "Retry queued", message: "The failed execution has been set back to pending." },
+          errorToast: { title: "Retry failed" },
+        },
+        {
+          icon: "exclamation-triangle",
+          title: "View error message",
+          action: "viewError",
+          handler: "errorModal",
+          socketEvent: "triggerQueueGetDetails",
+          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
+          filter: [{ key: "hasError", value: true }],
+          modal: "error",
+        },
+      ],
+      errorModalTitle: "Error message",
+      errorFormSchema: [
+        { key: "summary", label: "Trigger", type: "text", readOnly: true },
+        { key: "errorMessage", label: "Error", type: "textarea", readOnly: true },
+      ],
       errorFormData: null,
     };
   },
@@ -62,7 +123,7 @@ export default {
       const keyMapping = {};
       const classMapping = { default: "bg-secondary" };
       const flagByValue = {};
-      for (const s of this.dashboardConfig.statuses) {
+      for (const s of this.queueStatuses) {
         keyMapping[s.value] = s.label;
         classMapping[s.value] = s.badgeClass;
         flagByValue[s.value] = s.flags || [];
@@ -70,7 +131,7 @@ export default {
       return { keyMapping, classMapping, flagByValue };
     },
     columns() {
-      return this.dashboardConfig.columns.map((col) => {
+      return this.columnDefs.map((col) => {
         if (col.type === "badge" && col.badgeFrom === "statuses") {
           return {
             ...col,
@@ -84,17 +145,12 @@ export default {
       });
     },
     buttons() {
-      return this.dashboardConfig.manageActions.map(
+      return this.manageActions.map(
         ({ handler, socketEvent, successToast, errorToast, modal, confirm, filter, ...btn }) => btn
       );
     },
     manageActionsByAction() {
-      return Object.fromEntries(
-        this.dashboardConfig.manageActions.map((a) => [a.action, a])
-      );
-    },
-    errorFormFields() {
-      return this.dashboardConfig.modals.error.formSchema;
+      return Object.fromEntries(this.manageActions.map((a) => [a.action, a]));
     },
     logs() {
       const triggersById = Object.fromEntries(
