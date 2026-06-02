@@ -91,6 +91,7 @@
           4: { placeholders: [] }, // Document - General (no placeholders)
           5: { placeholders: [] }, // Document - Study (no placeholders)
           6: { placeholders: [] }, // Email - Study Close
+          7: { placeholders: [] }, // Email - Submission upload
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
@@ -105,7 +106,7 @@
       },
       templateTypeName() {
         if (!this.templateType) return "Unknown";
-        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close" };
+        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close", 7: "Email - Submission upload" };
         return types[this.templateType] || "Unknown";
       },
       availablePlaceholders() {
@@ -188,6 +189,14 @@
           6: { // Email - Study Close
             username: "The username of the session owner who had an open session when the study was closed.",
             studyName: "The name of the study that was closed.",
+          },
+          7: { // Email - Submission upload
+            username: "The person receiving this email (assignment owner or submitter).",
+            assignmentName: "The title of the assignment.",
+            eventType: "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
+            assignmentId: "Internal assignment ID.",
+            submissionId: "Internal submission ID.",
+            timestamp: "When the submission was uploaded.",
           },
         };
 
