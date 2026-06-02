@@ -134,16 +134,17 @@ export default {
         id: s.socketId,
         socketIdShort: s.socketId ? s.socketId.substring(0, 8) + "…" : "",
         connectedAtDisplay: s.connectedAt ? new Date(s.connectedAt).toLocaleTimeString() : "—",
-        isCurrent: s.socketId === this.currentSocketId ? "(this tab)" : "",
+        userNameDisplay: s.socketId === this.currentSocketId
+          ? `${s.userName} (this tab)`
+          : s.userName,
       }));
     },
     sessionTableColumns() {
       return [
         { name: "User ID", key: "userId", sortable: true },
-        { name: "Username", key: "userName", sortable: true },
+        { name: "Username", key: "userNameDisplay", sortable: true },
         { name: "Session", key: "socketIdShort" },
         { name: "Connected", key: "connectedAtDisplay" },
-        { name: "", key: "isCurrent" },
       ];
     },
     startButtonText() {

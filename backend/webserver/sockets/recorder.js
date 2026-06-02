@@ -202,10 +202,11 @@ class RecorderSocket extends Socket {
             const userSocket = bucket["UserSocket"];
             if (userSocket && userSocket.userId) {
                 userIds.add(userSocket.userId);
+                const rawSocket = this.server.io.sockets.sockets.get(socketId);
                 sessions.push({
                     socketId,
                     userId: userSocket.userId,
-                    connectedAt: userSocket.connectedAt || null,
+                    connectedAt: rawSocket?.connectedAt || null,
                 });
             }
         }
