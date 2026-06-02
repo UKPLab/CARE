@@ -27,12 +27,24 @@ export default {
   ],
   components: { BasicButton, RecordingModal },
   computed: {
+    /**
+     * The active recording, but only if THIS tab's socket is one of its
+     * recorded participants. A recording captures specific sockets, so the
+     * recording bar should only appear in the tabs actually being recorded —
+     * not in every tab of every connected user.
+     */
+    activeRecordingForThisTab() {
+      const active = this.$store.getters["table/recording/getAll"]
+        .find(r => r.status === "recording");
+      if (!active) return null;
+      const participants = active.participantSocketIds || [];
+      return participants.includes(this.$socket.id) ? active : null;
+    },
     isRecording() {
-      return this.$store.getters["table/recording/getAll"].some(r => r.status === "recording");
+      return this.activeRecordingForThisTab !== null;
     },
     activeRecordingId() {
-      const active = this.$store.getters["table/recording/getAll"].find(r => r.status === "recording");
-      return active ? active.id : null;
+      return this.activeRecordingForThisTab ? this.activeRecordingForThisTab.id : null;
     },
   },
   mounted() {

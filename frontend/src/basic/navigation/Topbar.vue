@@ -222,10 +222,10 @@ export default {
       return sockets.includes(this.$socket.id);
     },
     showRecordingIcon() {
-      if (!this.activeRecording) return false;
-      // Admins always see the icon during a recording.
-      // Non-admins see it only if their socket is in the participant list.
-      return this.isAdmin || this.isParticipant;
+      // Session-based: only the sessions actually being recorded show the
+      // icon, regardless of role. A tab that isn't a participant — even an
+      // admin's — is not being captured, so it shouldn't display the icon.
+      return this.isParticipant;
     },
     recordingElapsed() {
       const rec = this.activeRecording;
