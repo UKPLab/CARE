@@ -36,6 +36,12 @@
     </template>
     <template #step-2>
       <BasicForm v-model="triggerForm" :fields="eventFields" />
+      <hr v-if="eventConfigFields.length" />
+      <BasicForm
+        v-if="eventConfigFields.length"
+        v-model="eventData"
+        :fields="eventConfigFields"
+      />
     </template>
     <template #step-3>
       <BasicForm v-model="triggerForm" :fields="actionSelectFields" />
@@ -77,7 +83,7 @@ import rulesDashboard from "@/config/triggerRulesDashboard.js";
 
 export default {
   name: "DashboardTriggers",
-  subscribeTable: ["trigger", "trigger_event", "trigger_action", "project", "template"],
+  subscribeTable: ["trigger", "trigger_event", "trigger_action", "project", "template", "submission"],
   components: {
     Card,
     BasicTable,
@@ -91,6 +97,7 @@ export default {
     return {
       dashboardConfig: rulesDashboard,
       triggerForm: {},
+      eventData: {},
       actionData: {},
       editingId: null,
       viewFormData: null,
@@ -129,6 +136,10 @@ export default {
     },
     eventFields() {
       return [this.resolveField(this.dashboardConfig.stepper.eventField)];
+    },
+    eventConfigFields() {
+      const schema = this.selectedEvent?.configuration?.formSchema || [];
+      return schema.map((field) => this.resolveField(field));
     },
     actionSelectFields() {
       return [this.resolveField(this.dashboardConfig.stepper.actionField, { event: this.selectedEvent })];
@@ -194,6 +205,25 @@ export default {
             Array.isArray(v) ? v.includes(r[k]) : r[k] === v
           )
         );
+      }
+
+      if (src.filterFromForm) {
+        rows = rows.filter((r) =>
+          Object.entries(src.filterFromForm).every(([k, formKey]) => {
+            const val = this.triggerForm[formKey];
+            return val == null || r[k] === val;
+          })
+        );
+      }
+
+      if (src.distinct) {
+        const seen = new Set();
+        rows = rows.filter((r) => {
+          const v = r[src.valueKey];
+          if (v == null || seen.has(v)) return false;
+          seen.add(v);
+          return true;
+        });
       }
 
       if (src.compatibleWithEvent && context.event) {
@@ -265,6 +295,7 @@ export default {
     openCreate() {
       this.editingId = null;
       this.triggerForm = this.defaultTriggerForm();
+      this.eventData = {};
       this.actionData = {};
       this.$refs.triggerStepper.open();
     },
@@ -281,6 +312,7 @@ export default {
         triggerEventId: row.triggerEventId,
         triggerActionId: row.triggerActionId,
       };
+      this.eventData = config.event || {};
       this.actionData = config.action || {};
       this.$refs.triggerStepper.open();
     },
@@ -295,6 +327,7 @@ export default {
         timeout: Number(this.triggerForm.timeout),
         configuration: {
           description: this.triggerForm.description,
+          event: this.eventData,
           action: this.actionData,
         },
       };
