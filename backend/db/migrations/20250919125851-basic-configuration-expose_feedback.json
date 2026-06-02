@@ -346,7 +346,7 @@
       "description": "Assessment of content accuracy and usefulness",
       "calculation": "sum",
       "minPoints": 0,
-      "maxPoints": 6,
+      "maxPoints": 5,
       "criteria": [
         {
           "name": "Correctness",

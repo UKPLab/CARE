@@ -265,7 +265,7 @@
       "description": "Korrektheit, Umsetzbarkeit und Argumentation",
       "calculation": "sum",
       "minPoints": 0,
-      "maxPoints": 6,
+      "maxPoints": 5,
       "criteria": [
         {
           "name": "Korrektheit",
@@ -392,6 +392,7 @@
       "maxPoints": 1,
       "minPoints": -1,
       "calculation": "sum",
+      "isBonus": true,
       "description": "Für besonders gute Bewertungen können zusätzliche Punkte vergeben werden, für gravierende Fehler hingegen werden Punkte abgezogen.",
       "criteria": [
         {
