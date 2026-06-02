@@ -6,21 +6,20 @@ const triggerEvents = [
     enabled: true,
     configuration: {
       label: 'Assignment',
-      description: 'Fires when a student uploads a submission for a selected assignment (group).',
-      provides: ['userId', 'submissionId', 'projectId', 'group'],
+      description: 'Fires when a student uploads a submission for a selected assignment.',
+      provides: ['userId', 'submissionId', 'projectId', 'assignmentId'],
       formSchema: [
         {
-          key: 'group',
+          key: 'assignmentId',
           label: 'Assignment',
           type: 'select',
           required: true,
           optionsSource: {
-            table: 'submission',
-            labelKey: 'group',
-            valueKey: 'group',
-            filter: { parentSubmissionId: null },
+            table: 'assignment',
+            labelKey: 'name',
+            valueKey: 'id',
+            filter: { disable: false, parentAssignmentId: null },
             filterFromForm: { projectId: 'projectId' },
-            distinct: true,
           },
         },
       ],

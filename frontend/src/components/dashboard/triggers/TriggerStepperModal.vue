@@ -55,7 +55,7 @@ import BasicForm from "@/basic/Form.vue";
 
 export default {
   name: "TriggerStepperModal",
-  subscribeTable: ["trigger_event", "trigger_action", "project", "template", "submission"],
+  subscribeTable: ["trigger_event", "trigger_action", "project", "template", "assignment"],
   components: { StepperModal, BasicModal, BasicForm },
   emits: ["saved"],
   data() {
