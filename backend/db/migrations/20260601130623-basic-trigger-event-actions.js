@@ -58,7 +58,7 @@ const triggerActions = [
             labelKey: 'name',
             valueKey: 'id',
             filter: { type: 3 },
-            emptyOption: { name: 'No template (use subject/message below)', value: null },
+            emptyOption: { name: 'No template Available', value: null },
           },
         },
       ],

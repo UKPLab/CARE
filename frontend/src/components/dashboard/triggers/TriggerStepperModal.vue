@@ -4,6 +4,7 @@
     size="lg"
     :steps="stepperSteps"
     :submit-text="stepperSubmitText"
+    :validation="stepValid"
     @submit="save"
   >
     <template #title>
@@ -207,8 +208,54 @@ export default {
       const schema = this.selectedAction?.configuration?.formSchema || [];
       return schema.map((field) => this.resolveField(field));
     },
+    stepValid() {
+      return [
+        this.isStepSettingsValid(),
+        this.isStepEventValid(),
+        this.isStepActionValid(),
+      ];
+    },
   },
   methods: {
+    isFilled(value) {
+      if (value == null || value === "") return false;
+      if (typeof value === "string") return value.trim() !== "";
+      if (typeof value === "number") return !Number.isNaN(value);
+      return true;
+    },
+    isConfigValid(data, fields) {
+      return fields.every(
+        (field) => !field.required || this.isFilled(data[field.key])
+      );
+    },
+    isStepSettingsValid() {
+      const f = this.triggerForm;
+      const maxRetries = Number(f.maxRetries);
+      const parallelLimit = Number(f.parallelLimit);
+      const timeout = Number(f.timeout);
+      return (
+        this.isFilled(f.name) &&
+        this.isFilled(f.description) &&
+        f.projectId != null &&
+        this.isFilled(f.maxRetries) &&
+        !Number.isNaN(maxRetries) &&
+        maxRetries >= 0 &&
+        this.isFilled(f.parallelLimit) &&
+        !Number.isNaN(parallelLimit) &&
+        parallelLimit >= 1 &&
+        this.isFilled(f.timeout) &&
+        !Number.isNaN(timeout) &&
+        timeout >= 1
+      );
+    },
+    isStepEventValid() {
+      if (!this.triggerForm.triggerEventId) return false;
+      return this.isConfigValid(this.eventData, this.eventConfigFields);
+    },
+    isStepActionValid() {
+      if (!this.triggerForm.triggerActionId) return false;
+      return this.isConfigValid(this.actionData, this.actionConfigFields);
+    },
     resolveField(field, context = {}) {
       if (field.options) return field;
       const src = field.optionsSource;
