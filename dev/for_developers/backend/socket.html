@@ -1780,6 +1780,36 @@ The scope of the documents sent depends on the user’s administrative rights an
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.replaceAssignmentSubmission">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">replaceAssignmentSubmission</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.replaceAssignmentSubmission" title="Link to this definition"></a></dt>
+<dd><p>Replace an existing assignment submission by creating a new one,
+deleting the old one, and reconnecting submission chain pointers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The input data for the replacement</p></li>
+<li><p><strong>data.files</strong> (<strong>Array.&lt;Object&gt;</strong>) – The new submission files to upload</p></li>
+<li><p><strong>data.userId</strong> (<strong>number</strong>) – The ID of the user who owns the submission</p></li>
+<li><p><strong>data.group</strong> (<strong>number</strong>) – The group number to be assigned to the submission</p></li>
+<li><p><strong>data.validationConfigurationId</strong> (<strong>number</strong>) – Configuration ID referring to the validation schema</p></li>
+<li><p><strong>data.assignmentId</strong> (<strong>number</strong>) – The ID of the assignment the submission belongs to</p></li>
+<li><p><strong>data.submissionId</strong> (<strong>number</strong>) – The ID of the existing submission to replace</p></li>
+<li><p><strong>data.name</strong> (<strong>string|null</strong>) – Optional submission name; falls back to the old submission’s name</p></li>
+<li><p><strong>data.description</strong> (<strong>string|null</strong>) – Optional submission description; falls back to the old submission’s description</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameters</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – Sequelize DB transaction options</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – If the assignment or submission is not found, the user lacks permission, or a linked document is used in a study</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – An object containing replacedSubmissionId and newSubmissionId</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.saveData">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">saveData</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.saveData" title="Link to this definition"></a></dt>
 <dd><p>Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.</p>
@@ -1865,6 +1895,26 @@ or a “toast” error message to the client.</p>
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.sendSubmissionUploadEmail">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendSubmissionUploadEmail</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.sendSubmissionUploadEmail" title="Link to this definition"></a></dt>
+<dd><p>Send submission upload/reupload notification emails to assignment owner and submitter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The input data for sending the notification</p></li>
+<li><p><strong>data.assignmentId</strong> (<strong>number</strong>) – Assignment ID linked to the submission</p></li>
+<li><p><strong>data.submissionId</strong> (<strong>number</strong>) – Submission ID that was created/replaced</p></li>
+<li><p><strong>data.submitterUserId</strong> (<strong>number</strong>) – User ID of the person who uploaded</p></li>
+<li><p><strong>data.eventType</strong> (<strong>string</strong>) – Upload event type (‘first_upload’ or ‘reupload’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.subscribeDocument">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">subscribeDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.subscribeDocument" title="Link to this definition"></a></dt>
 <dd><p>Subscribe the client’s socket to a document-specific communication channel.</p>
@@ -1930,6 +1980,8 @@ or a “toast” error message to the client.</p>
 <li><p><strong>data.files</strong> (<strong>Array.&lt;Object&gt;</strong>) – The submissions files</p></li>
 <li><p><strong>data.group</strong> (<strong>number</strong>) – The group number to be assigned to the submissions</p></li>
 <li><p><strong>data.validationConfigurationId</strong> (<strong>number</strong>) – Configuration ID referring to the validation schema</p></li>
+<li><p><strong>data.name</strong> (<strong>string|null</strong>) – Optional submission name.</p></li>
+<li><p><strong>data.description</strong> (<strong>string|null</strong>) – Optional submission description.</p></li>
 <li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameters</p></li>
 <li><p><strong>options.transaction</strong> (<strong>Object</strong>) – Sequelize DB transaction options</p></li>
 </ul>
