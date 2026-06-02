@@ -99,11 +99,11 @@ dev-build: backend/node_modules/.uptodate build-frontend
 
 .PHONY: dev-backend
 dev-backend: backend/node_modules/.uptodate
-	cd backend && npm run start
+	cd backend && DEV_SKIP_WIZARD=true npm run start
 
 .PHONY: dev-backend-watch
 dev-backend-watch: backend/node_modules/.uptodate
-	cd backend && npm run start:watch
+	cd backend && DEV_SKIP_WIZARD=true npm run start:watch
 
 .PHONY: dev-build-frontend
 dev-build-frontend: frontend/node_modules/.uptodate
