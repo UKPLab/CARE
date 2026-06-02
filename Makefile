@@ -104,16 +104,18 @@ dev-build: backend/node_modules/.uptodate build-frontend
 	cd backend && npm run start
 
 .PHONY: dev-backend
+dev-backend: DEV_SKIP_WIZARD=true
 dev-backend: backend/node_modules/.uptodate
-	cd backend && DEV_SKIP_WIZARD=true npm run start
+	cd backend && npm run start 
 
 .PHONY: dev-backend-wizard
 dev-backend-wizard: backend/node_modules/.uptodate
 	cd backend && npm run start
 
 .PHONY: dev-backend-watch
+dev-backend-watch: DEV_SKIP_WIZARD=true
 dev-backend-watch: backend/node_modules/.uptodate
-	cd backend && DEV_SKIP_WIZARD=true npm run start:watch
+	cd backend && npm run start:watch
 
 .PHONY: dev-build-frontend
 dev-build-frontend: frontend/node_modules/.uptodate
