@@ -31,6 +31,28 @@
         :fields="actionConfigFields"
       />
     </template>
+    <template #step-4>
+      <div class="summary-container">
+        <div
+          v-for="section in reviewSummarySections"
+          :key="section.title"
+          class="mb-4"
+        >
+          <h6>{{ section.title }}</h6>
+          <div
+            v-for="item in section.items"
+            :key="item.label"
+            class="summary-item"
+          >
+            <strong>{{ item.label }}:</strong> {{ item.value }}
+          </div>
+        </div>
+        <div class="alert alert-info mt-3">
+          <i class="bi bi-info-circle"></i>
+          Please review the information above before submitting.
+        </div>
+      </div>
+    </template>
   </StepperModal>
 
   <BasicModal
@@ -64,6 +86,7 @@ export default {
         { title: "Trigger info" },
         { title: "Event" },
         { title: "Action" },
+        { title: "Review & Confirm" },
       ],
       stepperSubmitText: "Save",
       settingsFormSchema: [
@@ -208,11 +231,34 @@ export default {
       const schema = this.selectedAction?.configuration?.formSchema || [];
       return schema.map((field) => this.resolveField(field));
     },
+    reviewSummarySections() {
+      return [
+        {
+          title: "Trigger info",
+          items: this.reviewItemsForFields(this.settingsFields, this.triggerForm),
+        },
+        {
+          title: "Event",
+          items: this.reviewItemsForFields(
+            [...this.eventFields, ...this.eventConfigFields],
+            { ...this.triggerForm, ...this.eventData }
+          ),
+        },
+        {
+          title: "Action",
+          items: this.reviewItemsForFields(
+            [...this.actionSelectFields, ...this.actionConfigFields],
+            { ...this.triggerForm, ...this.actionData }
+          ),
+        },
+      ];
+    },
     stepValid() {
       return [
         this.isStepSettingsValid(),
         this.isStepEventValid(),
         this.isStepActionValid(),
+        true,
       ];
     },
   },
@@ -229,6 +275,24 @@ export default {
       if (oldVal != null && newVal !== oldVal) {
         this[dataKey] = {};
       }
+    },
+    reviewItemsForFields(fields, data) {
+      return fields.map((field) => ({
+        label: field.label,
+        value: this.formatReviewValue(field, data) || "N/A",
+      }));
+    },
+    formatReviewValue(field, data) {
+      const val = data[field.key];
+      if (field.type === "select" && field.options?.length) {
+        const opt = field.options.find((o) => o.value === val);
+        return opt?.name ?? (val == null ? "" : String(val));
+      }
+      if (field.type === "boolean" || field.type === "bool") {
+        return val ? "Yes" : "No";
+      }
+      if (val == null) return "";
+      return String(val);
     },
     isFilled(value) {
       if (value == null || value === "") return false;
@@ -424,3 +488,24 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.summary-container {
+  padding: 1rem;
+}
+
+.summary-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-of-type {
+  border-bottom: none;
+}
+
+.summary-item strong {
+  display: inline-block;
+  min-width: 180px;
+  color: #495057;
+}
+</style>
