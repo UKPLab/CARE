@@ -63,55 +63,14 @@ const triggerActions = [
     },
   },
   {
-    name: 'AI Preprocessing (English)',
+    name: 'AI Preprocessing',
     enabled: true,
     configuration: {
-      label: 'AI Preprocessing (English)',
+      label: 'AI Preprocessing',
       description:
-        'Runs grading_expose_english on the uploaded submission (same skill/mapping as Dashboard → Submissions → Apply Skills). Results are stored in document_data.',
+        'Runs an NLP skill on the uploaded submission with the same skill, input mapping, and base file options as Dashboard → Submissions → Apply Skills. Results are stored in document_data.',
       requires: ['submissionId'],
       handler: 'nlp_preprocess',
-      preprocessing: {
-        skillName: 'grading_expose_english',
-        baseFileParameter: 'submission',
-        defaultBaseFileType: 'pdf',
-        skillParameterMappings: {
-          submission: {
-            table: 'submission',
-            fromContext: 'submissionId',
-          },
-          assessment_config: {
-            table: 'configuration',
-            configurationName: 'Exposé assessment configuration',
-          },
-        },
-      },
-    },
-  },
-  {
-    name: 'AI Preprocessing (German)',
-    enabled: true,
-    configuration: {
-      label: 'AI Preprocessing (German)',
-      description:
-        'Runs grading_expose_german on the uploaded submission (same skill/mapping as Dashboard → Submissions → Apply Skills). Results are stored in document_data.',
-      requires: ['submissionId'],
-      handler: 'nlp_preprocess',
-      preprocessing: {
-        skillName: 'grading_expose_german',
-        baseFileParameter: 'submission',
-        defaultBaseFileType: 'pdf',
-        skillParameterMappings: {
-          submission: {
-            table: 'submission',
-            fromContext: 'submissionId',
-          },
-          assessment_config: {
-            table: 'configuration',
-            configurationName: 'Exposé assessment configuration (German)',
-          },
-        },
-      },
     },
   },
 ];

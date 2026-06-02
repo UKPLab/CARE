@@ -24,9 +24,15 @@
     </template>
     <template #step-3>
       <BasicForm v-model="triggerForm" :fields="actionSelectFields" />
-      <hr v-if="actionConfigFields.length" />
+      <hr v-if="isPreprocessingAction || actionConfigFields.length" />
+      <TriggerPreprocessingConfig
+        v-if="isPreprocessingAction"
+        v-model="actionData"
+        :assignment-id="eventData.assignmentId"
+        @update:valid="preprocessingConfigValid = $event"
+      />
       <BasicForm
-        v-if="actionConfigFields.length"
+        v-else-if="actionConfigFields.length"
         v-model="actionData"
         :fields="actionConfigFields"
       />
@@ -74,11 +80,12 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import TriggerPreprocessingConfig from "@/components/dashboard/triggers/TriggerPreprocessingConfig.vue";
 
 export default {
   name: "TriggerStepperModal",
-  subscribeTable: ["trigger_event", "trigger_action", "project", "template", "assignment"],
-  components: { StepperModal, BasicModal, BasicForm },
+  subscribeTable: ["trigger_event", "trigger_action", "project", "template", "assignment", "configuration"],
+  components: { StepperModal, BasicModal, BasicForm, TriggerPreprocessingConfig },
   emits: ["saved"],
   data() {
     return {
@@ -185,6 +192,7 @@ export default {
       triggerForm: {},
       eventData: {},
       actionData: {},
+      preprocessingConfigValid: false,
       editingId: null,
       viewModalTitleTemplate: "Trigger: {name}",
       viewFormSchema: [
@@ -213,6 +221,9 @@ export default {
       return this.$store.getters["table/trigger_action/getAll"].find(
         (a) => a.id === this.triggerForm.triggerActionId && a.enabled && !a.deleted
       );
+    },
+    isPreprocessingAction() {
+      return this.selectedAction?.configuration?.handler === "nlp_preprocess";
     },
     settingsFields() {
       return this.resolveFormSchema(this.settingsFormSchema);
@@ -246,10 +257,12 @@ export default {
         },
         {
           title: "Action",
-          items: this.reviewItemsForFields(
-            [...this.actionSelectFields, ...this.actionConfigFields],
-            { ...this.triggerForm, ...this.actionData }
-          ),
+          items: this.isPreprocessingAction
+            ? this.reviewItemsForPreprocessingAction()
+            : this.reviewItemsForFields(
+                [...this.actionSelectFields, ...this.actionConfigFields],
+                { ...this.triggerForm, ...this.actionData }
+              ),
         },
       ];
     },
@@ -268,6 +281,7 @@ export default {
     },
     "triggerForm.triggerActionId"(newVal, oldVal) {
       this.resetStepConfig(oldVal, newVal, "actionData");
+      this.preprocessingConfigValid = false;
     },
   },
   methods: {
@@ -281,6 +295,41 @@ export default {
         label: field.label,
         value: this.formatReviewValue(field, data) || "N/A",
       }));
+    },
+    reviewItemsForPreprocessingAction() {
+      const actionLabel = this.actionSelectFields[0]?.options?.find(
+        (o) => o.value === this.triggerForm.triggerActionId
+      )?.name;
+      const items = [
+        {
+          label: this.actionSelectFields[0]?.label || "Then (action)",
+          value: actionLabel || "N/A",
+        },
+        {
+          label: "NLP skill",
+          value: this.actionData.skillName || "N/A",
+        },
+      ];
+
+      const inputMappings = this.actionData.inputMappings || {};
+      Object.entries(inputMappings).forEach(([param, mapping]) => {
+        if (param === "output" || !mapping) return;
+        items.push({
+          label: `Input: ${param}`,
+          value: mapping.name || mapping.table || "N/A",
+        });
+      });
+
+      const baseFiles = this.actionData.baseFiles || {};
+      const names = this.actionData.validationConfigurationNames || {};
+      Object.entries(baseFiles).forEach(([configId, selection]) => {
+        items.push({
+          label: `Base file (${names[configId] || configId})`,
+          value: selection,
+        });
+      });
+
+      return items;
     },
     formatReviewValue(field, data) {
       const val = data[field.key];
@@ -343,6 +392,9 @@ export default {
       );
     },
     isStepActionValid() {
+      if (this.isPreprocessingAction) {
+        return !!this.selectedAction && this.preprocessingConfigValid;
+      }
       return this.isStepConfigValid(
         this.selectedAction,
         this.triggerForm,
@@ -415,6 +467,7 @@ export default {
       this.triggerForm = this.defaultTriggerForm(projectId);
       this.eventData = {};
       this.actionData = {};
+      this.preprocessingConfigValid = false;
       this.$refs.stepper.open();
     },
     openView(row) {
