@@ -6,7 +6,7 @@
   "rubrics": [
     {
       "name": "Language/Quality",
-      "code": "language",
+      "code": "LA",
       "description": "Assessment of language quality and structural coherence of the text",
       "calculation": "sum",
       "maxPoints": 4,
@@ -14,6 +14,7 @@
       "criteria": [
         {
           "name": "Language quality",
+          "code": "LA1",
           "description": "Evaluation of linguistic accuracy and sentence clarity",
           "minPoints": 0,
           "maxPoints": 2,
@@ -37,6 +38,7 @@
         },
         {
           "name": "Common Thread",
+          "code": "LA2",
           "description": "Assessment of structural continuity and coherence throughout the text",
           "maxPoints": 2,
           "minPoints": 0,
@@ -62,7 +64,7 @@
     },
     {
       "name": "Metadata",
-      "code": "meta",
+      "code": "ME",
       "maxPoints": 3,
       "minPoints": 0,
       "description": "Evaluation of title appropriateness and creativity",
@@ -70,6 +72,7 @@
       "criteria": [
         {
           "name": "Preliminary title",
+          "code": "ME1",
           "description": "Assessment of how well the title matches and represents the topic",
           "maxPoints": 2,
           "minPoints": 0,
@@ -87,12 +90,13 @@
             },
             {
               "points": 2,
-              "description": "Title fits the topic; creative title changed in a novel way and/or fits into the story of the synopsis"
+              "description": "Title fits the topic; creative title changed in a novel way and/or fits into the story of the exposé"
             }
           ]
         },
         {
           "name": "Metadata available",
+          "code": "ME2",
           "description": "Assessment of proper meta information",
           "maxPoints": 1,
           "minPoints": 0,
@@ -114,7 +118,7 @@
     },
     {
       "name": "Form/Structure",
-      "code": "structure",
+      "code": "ST",
       "calculation": "sum",
       "maxPoints": 2,
       "minPoints": 0,
@@ -122,6 +126,7 @@
       "criteria": [
         {
           "name": "Template used",
+          "code": "ST1",
           "description": "LaTeX template used",
           "maxPoints": 1,
           "minPoints": 0,
@@ -141,6 +146,7 @@
         },
         {
           "name": "Number of pages",
+          "code": "ST2",
           "description": "Page limitation for more focused writing",
           "maxPoints": 1,
           "minPoints": 0,
@@ -162,7 +168,7 @@
     },
     {
       "name": "Motivation",
-      "code": "motivation",
+      "code": "MO",
       "description": "Assessment of problem identification, context establishment, and research question formulation",
       "calculation": "sum",
       "maxPoints": 9,
@@ -170,6 +176,7 @@
       "criteria": [
         {
           "name": "Hook existing",
+          "code": "MO1",
           "description": "Evaluation of the presence and suitability of an engaging opening",
           "maxPoints": 1,
           "minPoints": 0,
@@ -189,6 +196,7 @@
         },
         {
           "name": "Anker",
+          "code": "MO2",
           "description": "Assessment of problem statement detail and comprehensiveness",
           "maxPoints": 2,
           "minPoints": 0,
@@ -212,6 +220,7 @@
         },
         {
           "name": "Domain",
+          "code": "MO3",
           "description": "Evaluation of context and domain specification for the problem",
           "maxPoints": 1,
           "minPoints": 0,
@@ -231,6 +240,7 @@
         },
         {
           "name": "Problem relevance",
+          "code": "MO4",
           "description": "Assessment of how well the importance and impact of the problem is communicated",
           "maxPoints": 1,
           "minPoints": 0,
@@ -250,6 +260,7 @@
         },
         {
           "name": "Problem handling",
+          "code": "MO5",
           "description": "Evaluation of current approaches or criticisms regarding the problem",
           "maxPoints": 1,
           "minPoints": 0,
@@ -269,6 +280,7 @@
         },
         {
           "name": "Teaser (RQ)",
+          "code": "MO6",
           "description": "Assessment of research question clarity and alignment with problem description",
           "function": "auto_grading",
           "maxPoints": 2,
@@ -292,6 +304,7 @@
         },
         {
           "name": "RQ Limitation",
+          "code": "MO7",
           "description": "Evaluation of research question scope and feasibility for Bachelor's thesis context",
           "maxPoints": 1,
           "minPoints": 0,
@@ -313,7 +326,7 @@
     },
     {
       "name": "Approach",
-      "code": "approach",
+      "code": "AP",
       "maxPoints": 11,
       "minPoints": 0,
       "calculation": "sum",
@@ -321,6 +334,7 @@
       "criteria": [
         {
           "name": "SOTA",
+          "code": "AP1",
           "description": "Evaluation of state of the art presence and proper citation",
           "maxPoints": 1,
           "minPoints": 0,
@@ -340,6 +354,7 @@
         },
         {
           "name": "SOTA Relevance",
+          "code": "AP2",
           "description": "Assessment of how well the relevance of state of the art is demonstrated",
           "maxPoints": 2,
           "minPoints": 0,
@@ -363,6 +378,7 @@
         },
         {
           "name": "SOTA Weaknesses",
+          "code": "AP3",
           "description": "Evaluation of identification and explanation of state of the art limitations",
           "maxPoints": 2,
           "minPoints": 0,
@@ -386,6 +402,7 @@
         },
         {
           "name": "SOTA Delimitation",
+          "code": "AP4",
           "description": "Assessment of differentiation between own work and existing research",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -405,6 +422,7 @@
         },
         {
           "name": "SOTA Combination",
+          "code": "AP5",
           "description": "Evaluation of meaningful combination and consolidation of existing material",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -424,6 +442,7 @@
         },
         {
           "name": "Theoretical Framework",
+          "code": "AP6",
           "description": "Assessment of theoretical framework structure and clarity",
           "function": "auto_grading",
           "maxPoints": 2,
@@ -447,6 +466,7 @@
         },
         {
           "name": "Relevance of theoretical framework",
+          "code": "AP7",
           "description": "Evaluation of theoretical framework connection to research topic",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -466,6 +486,7 @@
         },
         {
           "name": "Methodology Availability",
+          "code": "AP8",
           "description": "Assessment of methodology presence and suitability for research questions",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -487,7 +508,7 @@
     },
     {
       "name": "Methodology",
-      "code": "methodology",
+      "code": "MD",
       "maxPoints": 5,
       "minPoints": 0,
       "calculation": "min",
@@ -495,6 +516,7 @@
       "criteria": [
         {
           "name": "Methodology Completeness",
+          "code": "MD1",
           "description": "Evaluation of methodology coverage of all research questions",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -514,6 +536,7 @@
         },
         {
           "name": "Methodology Relevance",
+          "code": "MD2",
           "description": "Assessment of methodology relevance and contribution to research project",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -533,6 +556,7 @@
         },
         {
           "name": "Methodology Target group",
+          "code": "MD3",
           "description": "Evaluation of target group specification and relevance",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -552,6 +576,7 @@
         },
         {
           "name": "Methodology Existing Material",
+          "code": "MD4",
           "description": "Assessment of appropriate reference to existing material in methodology",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -571,6 +596,7 @@
         },
         {
           "name": "Methodology Difficulties",
+          "code": "MD5",
           "description": "Evaluation of identification and solutions for potential implementation challenges",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -590,6 +616,7 @@
         },
         {
           "name": "Methodology Possibilities/restrictions",
+          "code": "MD6",
           "description": "Assessment of methodology strengths, limitations, and critical reflection",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -609,6 +636,7 @@
         },
         {
           "name": "Methodology Details",
+          "code": "MD7",
           "description": "Evaluation of comprehensive methodology explanation and implementation details",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -630,7 +658,7 @@
     },
     {
       "name": "Schedule",
-      "code": "schedule",
+      "code": "SC",
       "maxPoints": 5,
       "minPoints": 0,
       "calculation": "sum",
@@ -638,6 +666,7 @@
       "criteria": [
         {
           "name": "Schedule Availability",
+          "code": "SC1",
           "description": "Evaluation of tabular schedule presence and chronological organization",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -657,6 +686,7 @@
         },
         {
           "name": "Schedule Completeness",
+          "code": "SC2",
           "description": "Assessment of schedule coverage and logical division into work blocks",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -676,6 +706,7 @@
         },
         {
           "name": "Schedule Block Description",
+          "code": "SC3",
           "description": "Evaluation of detailed descriptions for individual schedule blocks",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -695,6 +726,7 @@
         },
         {
           "name": "Schedule Realistic Relevance",
+          "code": "SC4",
           "description": "Assessment of timeline realism and alignment with Bachelor's thesis scope",
           "function": "auto_grading",
           "maxPoints": 2,
@@ -720,13 +752,14 @@
     },
     {
       "name": "Bibliography",
-      "code": "bibliography",
+      "code": "BI",
       "maxPoints": 3,
       "minPoints": 0,
       "description": "Assessment of bibliography consistency and literature relevance",
       "criteria": [
         {
           "name": "Bibliography Consistency",
+          "code": "BI1",
           "description": "Evaluation of citation style consistency and completeness of bibliographic information",
           "function": "auto_grading",
           "maxPoints": 1,
@@ -746,6 +779,7 @@
         },
         {
           "name": "Key literature",
+          "code": "BI2",
           "description": "Assessment of literature relevance and quality for the research topic",
           "function": "auto_grading",
           "maxPoints": 2,
@@ -771,7 +805,7 @@
     },
     {
       "name": "Additional points",
-      "code": "additional",
+      "code": "AD",
       "maxPoints": 2,
       "minPoints": -2,
       "calculation": "sum",
@@ -780,6 +814,7 @@
       "criteria": [
         {
           "name": "Additional points",
+          "code": "AD1",
           "description": "Additional points for very good submissions not mentioned in other criteria",
           "function": "manual_grading",
           "maxPoints": 2,
@@ -789,20 +824,21 @@
           "scoring": [
             {
               "points": 0,
-              "description": ""
+              "description": "No additional strengths beyond existing criteria."
             },
             {
               "points": 1,
-              "description": ""
+              "description": "Some additional strengths beyond existing criteria."
             },
             {
               "points": 2,
-              "description": ""
+              "description": "Clear exceptional strengths beyond existing criteria."
             }
           ]
         },
         {
           "name": "Negative points",
+          "code": "AD2",
           "description": "Major mistakes in the submissions",
           "function": "manual_grading",
           "maxPoints": 0,
@@ -812,15 +848,15 @@
           "scoring": [
             {
               "points": 0,
-              "description": ""
+              "description": "No major issues beyond existing criteria."
             },
             {
               "points": -1,
-              "description": ""
+              "description": "Notable issues beyond existing criteria."
             },
             {
               "points": -2,
-              "description": ""
+              "description": "Serious issues that strongly reduce overall quality."
             }
           ]
         }
