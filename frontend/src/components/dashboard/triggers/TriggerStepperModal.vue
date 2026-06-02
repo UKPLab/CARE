@@ -216,7 +216,20 @@ export default {
       ];
     },
   },
+  watch: {
+    "triggerForm.triggerEventId"(newVal, oldVal) {
+      this.resetStepConfig(oldVal, newVal, "eventData");
+    },
+    "triggerForm.triggerActionId"(newVal, oldVal) {
+      this.resetStepConfig(oldVal, newVal, "actionData");
+    },
+  },
   methods: {
+    resetStepConfig(oldVal, newVal, dataKey) {
+      if (oldVal != null && newVal !== oldVal) {
+        this[dataKey] = {};
+      }
+    },
     isFilled(value) {
       if (value == null || value === "") return false;
       if (typeof value === "string") return value.trim() !== "";
@@ -224,8 +237,16 @@ export default {
       return true;
     },
     isConfigValid(data, fields) {
-      return fields.every(
-        (field) => !field.required || this.isFilled(data[field.key])
+      return fields.every((field) => {
+        if (field.optionsSource && !field.options?.length) return false;
+        return !field.required || this.isFilled(data[field.key]);
+      });
+    },
+    isStepConfigValid(selection, formData, configData, selectFields, configFields) {
+      if (!selection) return false;
+      return this.isConfigValid(
+        { ...formData, ...configData },
+        [...selectFields, ...configFields]
       );
     },
     isStepSettingsValid() {
@@ -249,12 +270,22 @@ export default {
       );
     },
     isStepEventValid() {
-      if (!this.triggerForm.triggerEventId) return false;
-      return this.isConfigValid(this.eventData, this.eventConfigFields);
+      return this.isStepConfigValid(
+        this.selectedEvent,
+        this.triggerForm,
+        this.eventData,
+        this.eventFields,
+        this.eventConfigFields
+      );
     },
     isStepActionValid() {
-      if (!this.triggerForm.triggerActionId) return false;
-      return this.isConfigValid(this.actionData, this.actionConfigFields);
+      return this.isStepConfigValid(
+        this.selectedAction,
+        this.triggerForm,
+        this.actionData,
+        this.actionSelectFields,
+        this.actionConfigFields
+      );
     },
     resolveField(field, context = {}) {
       if (field.options) return field;
@@ -304,10 +335,7 @@ export default {
         value: r[src.valueKey],
       }));
 
-      return {
-        ...field,
-        options: src.emptyOption ? [src.emptyOption, ...options] : options,
-      };
+      return { ...field, options };
     },
     resolveFormSchema(schema) {
       return schema.map((field) => this.resolveField(field));
