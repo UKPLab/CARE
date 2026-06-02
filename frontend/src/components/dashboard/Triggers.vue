@@ -10,9 +10,7 @@
       />
     </template>
     <template #body>
-      <Loading v-if="!dashboardConfig" />
       <BasicTable
-        v-else
         :columns="columns"
         :data="triggers"
         :options="dashboardConfig.tableOptions"
@@ -24,7 +22,6 @@
   </Card>
 
   <StepperModal
-    v-if="dashboardConfig"
     ref="triggerStepper"
     size="lg"
     :steps="dashboardConfig.stepper.steps"
@@ -54,7 +51,7 @@
   <ConfirmModal ref="deleteModal" />
 
   <BasicModal
-    v-if="dashboardConfig && viewFormData"
+    v-if="viewFormData"
     ref="viewModal"
     name="trigger-view"
     size="lg"
@@ -76,7 +73,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicModal from "@/basic/Modal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import Loading from "@/basic/Loading.vue";
+import rulesDashboard from "@/config/triggerRulesDashboard.js";
 
 export default {
   name: "DashboardTriggers",
@@ -89,11 +86,10 @@ export default {
     BasicForm,
     BasicModal,
     ConfirmModal,
-    Loading,
   },
   data() {
     return {
-      dashboardConfig: null,
+      dashboardConfig: rulesDashboard,
       triggerForm: {},
       actionData: {},
       editingId: null,
@@ -101,6 +97,9 @@ export default {
     };
   },
   computed: {
+    projectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
     columns() {
       return this.dashboardConfig.columns;
     },
@@ -126,15 +125,12 @@ export default {
       );
     },
     settingsFields() {
-      if (!this.dashboardConfig) return [];
       return this.resolveFormSchema(this.dashboardConfig.stepper.settingsFormSchema);
     },
     eventFields() {
-      if (!this.dashboardConfig) return [];
       return [this.resolveField(this.dashboardConfig.stepper.eventField)];
     },
     actionSelectFields() {
-      if (!this.dashboardConfig) return [];
       return [this.resolveField(this.dashboardConfig.stepper.actionField, { event: this.selectedEvent })];
     },
     actionConfigFields() {
@@ -142,7 +138,6 @@ export default {
       return schema.map((field) => this.resolveField(field));
     },
     triggers() {
-      if (!this.dashboardConfig) return [];
       const eventsById = Object.fromEntries(
         this.$store.getters["table/trigger_event/getAll"]
           .filter((e) => e.enabled && !e.deleted)
@@ -177,14 +172,15 @@ export default {
     },
   },
   mounted() {
-    this.$socket.emit("triggerRulesGetDashboardConfig", {}, (res) => {
-      if (res.success) {
-        this.dashboardConfig = res.data;
-        this.triggerForm = { ...res.data.defaultForm };
-      }
-    });
+    this.triggerForm = this.defaultTriggerForm();
   },
   methods: {
+    defaultTriggerForm() {
+      return {
+        ...this.dashboardConfig.defaultForm,
+        projectId: this.projectId,
+      };
+    },
     resolveField(field, context = {}) {
       if (field.options) return field;
       const src = field.optionsSource;
@@ -268,7 +264,7 @@ export default {
     },
     openCreate() {
       this.editingId = null;
-      this.triggerForm = { ...this.dashboardConfig.defaultForm };
+      this.triggerForm = this.defaultTriggerForm();
       this.actionData = {};
       this.$refs.triggerStepper.open();
     },

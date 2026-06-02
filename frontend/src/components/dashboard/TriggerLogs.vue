@@ -1,9 +1,7 @@
 <template>
   <Card title="Trigger logs">
     <template #body>
-      <Loading v-if="!dashboardConfig" />
       <BasicTable
-        v-else
         :columns="columns"
         :data="logs"
         :options="dashboardConfig.tableOptions"
@@ -15,7 +13,6 @@
   </Card>
 
   <BasicModal
-    v-if="dashboardConfig"
     ref="errorModal"
     name="trigger-queue-error"
     size="lg"
@@ -42,7 +39,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import Loading from "@/basic/Loading.vue";
+import queueDashboard from "@/config/triggerQueueDashboard.js";
 
 export default {
   name: "DashboardTriggerLogs",
@@ -53,17 +50,15 @@ export default {
     BasicModal,
     BasicForm,
     ConfirmModal,
-    Loading,
   },
   data() {
     return {
-      dashboardConfig: null,
+      dashboardConfig: queueDashboard,
       errorFormData: null,
     };
   },
   computed: {
     statusMaps() {
-      if (!this.dashboardConfig) return null;
       const keyMapping = {};
       const classMapping = { default: "bg-secondary" };
       const flagByValue = {};
@@ -75,7 +70,6 @@ export default {
       return { keyMapping, classMapping, flagByValue };
     },
     columns() {
-      if (!this.dashboardConfig) return [];
       return this.dashboardConfig.columns.map((col) => {
         if (col.type === "badge" && col.badgeFrom === "statuses") {
           return {
@@ -90,13 +84,11 @@ export default {
       });
     },
     buttons() {
-      if (!this.dashboardConfig) return [];
       return this.dashboardConfig.manageActions.map(
         ({ handler, socketEvent, successToast, errorToast, modal, confirm, filter, ...btn }) => btn
       );
     },
     manageActionsByAction() {
-      if (!this.dashboardConfig) return {};
       return Object.fromEntries(
         this.dashboardConfig.manageActions.map((a) => [a.action, a])
       );
@@ -114,13 +106,6 @@ export default {
         this.enrichLogRow(item, triggersById)
       );
     },
-  },
-  mounted() {
-    this.$socket.emit("triggerQueueGetDashboardConfig", {}, (res) => {
-      if (res.success) {
-        this.dashboardConfig = res.data;
-      }
-    });
   },
   methods: {
     enrichLogRow(item, triggersById) {

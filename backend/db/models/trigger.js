@@ -1,7 +1,5 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
-const rulesDashboard = require("../config/triggerRulesDashboard.js");
-
 module.exports = (sequelize, DataTypes) => {
     /**
      * Trigger rule model.
@@ -11,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     class Trigger extends MetaModel {
         static autoTable = true;
-        static dashboardConfiguration = rulesDashboard;
 
         static associate(models) {
             Trigger.belongsTo(models["user"], { foreignKey: "userId", as: "user" });

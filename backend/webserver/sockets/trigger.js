@@ -1,9 +1,22 @@
 "use strict";
 const Socket = require("../Socket.js");
-const queueDashboard = require("../../db/config/triggerQueueDashboard.js");
-const rulesDashboard = require("../../db/config/triggerRulesDashboard.js");
 
-const { STATUS: QUEUE_STATUS, statusByValue: QUEUE_STATUS_BY_VALUE } = queueDashboard;
+const QUEUE_STATUSES = [
+    { name: "PENDING", value: 0, label: "Pending" },
+    { name: "RUNNING", value: 1, label: "Running" },
+    { name: "COMPLETED", value: 2, label: "Completed" },
+    { name: "CANCELLED", value: 3, label: "Cancelled" },
+    { name: "FAILED", value: 4, label: "Failed" },
+];
+const QUEUE_STATUS_BY_NAME = Object.fromEntries(QUEUE_STATUSES.map((s) => [s.name, s]));
+const QUEUE_STATUS_BY_VALUE = Object.fromEntries(QUEUE_STATUSES.map((s) => [s.value, s]));
+const QUEUE_STATUS = {
+    PENDING: QUEUE_STATUS_BY_NAME.PENDING.value,
+    RUNNING: QUEUE_STATUS_BY_NAME.RUNNING.value,
+    COMPLETED: QUEUE_STATUS_BY_NAME.COMPLETED.value,
+    CANCELLED: QUEUE_STATUS_BY_NAME.CANCELLED.value,
+    FAILED: QUEUE_STATUS_BY_NAME.FAILED.value,
+};
 
 /**
  * Handle trigger rules through websocket.
@@ -29,13 +42,19 @@ class TriggerSocket extends Socket {
         if (!data.triggerActionId) {
             throw new Error("An action is required.");
         }
+        if (!data.name?.trim()) {
+            throw new Error("A name is required.");
+        }
+        if (!data.projectId) {
+            throw new Error("A project is required.");
+        }
 
         const payload = {
             name: data.name,
             userId: this.userId,
             triggerEventId: data.triggerEventId,
             triggerActionId: data.triggerActionId,
-            projectId: data.projectId || null,
+            projectId: data.projectId,
             parallelLimit: data.parallelLimit ?? 1,
             maxRetries: data.maxRetries ?? 3,
             timeout: data.timeout ?? 300,
@@ -217,32 +236,10 @@ class TriggerSocket extends Socket {
         return QUEUE_STATUS_BY_VALUE[status]?.label ?? String(status);
     }
 
-    /**
-     * @socketEvent triggerRulesGetDashboardConfig
-     */
-    async getRulesDashboardConfig() {
-        if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to view triggers.");
-        }
-        return rulesDashboard;
-    }
-
-    /**
-     * @socketEvent triggerQueueGetDashboardConfig
-     */
-    async getQueueDashboardConfig() {
-        if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to view trigger logs.");
-        }
-        return queueDashboard;
-    }
-
     init() {
         this.createSocket("triggerCreate", this.createTrigger, {}, true);
         this.createSocket("triggerUpdate", this.updateTrigger, {}, true);
         this.createSocket("triggerDelete", this.deleteTrigger, {}, true);
-        this.createSocket("triggerRulesGetDashboardConfig", this.getRulesDashboardConfig, {}, false);
-        this.createSocket("triggerQueueGetDashboardConfig", this.getQueueDashboardConfig, {}, false);
         this.createSocket("triggerQueueGetDetails", this.getQueueDetails, {}, false);
         this.createSocket("triggerQueueRetry", this.retryQueueItem, {}, true);
         this.createSocket("triggerQueueCancel", this.cancelQueueItem, {}, true);
