@@ -123,12 +123,14 @@ export default {
           type: "number",
           min: 100,
           default: 2000,
+          help: "How long the replay waits for the server to acknowledge each trace before counting it as failed (100–30000 ms).",
         },
         {
           key: "continueOnFailure",
           label: "Continue past failures",
           type: "switch",
           default: false,
+          help: "Run all scaling iterations even if some fail, instead of stopping at the first failed iteration.",
         },
       ];
     },
