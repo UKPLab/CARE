@@ -5,7 +5,7 @@ const triggerEvents = [
     name: 'submission.uploaded',
     enabled: true,
     configuration: {
-      label: 'When an assignment is submitted',
+      label: 'Assignment',
       description: 'Fires when a student uploads a submission.',
       provides: ['userId', 'submissionId', 'projectId'],
     },
