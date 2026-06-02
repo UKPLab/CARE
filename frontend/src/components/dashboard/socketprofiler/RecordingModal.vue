@@ -75,6 +75,7 @@ export default {
         pagination: 20,
       },
       traceColumns: [
+        { name: "#", key: "sequence", sortable: true },
         { name: "Action", key: "action", sortable: true },
         { name: "Direction", key: "directionLabel" },
         { name: "Time", key: "timeDisplay", sortable: true },
@@ -100,8 +101,17 @@ export default {
     },
     traceTable() {
       const startMs = this.recordingStartMs;
-      return this.allTraces.map(t => ({
+      // Assign a stable chronological sequence number based on startTime,
+      // so "#" reflects the true recording order regardless of how the user
+      // later sorts or filters the table.
+      const ordered = [...this.allTraces].sort((a, b) => {
+        const aMs = a.startTime ? new Date(a.startTime).getTime() : 0;
+        const bMs = b.startTime ? new Date(b.startTime).getTime() : 0;
+        return aMs - bMs;
+      });
+      return ordered.map((t, index) => ({
         ...t,
+        sequence: index + 1,
         directionLabel: t.direction ? '→ backend' : '← frontend',
         timeDisplay: this.formatAbsoluteTime(t.startTime),
         elapsedDisplay: this.formatElapsed(t.startTime, startMs),
