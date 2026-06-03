@@ -64,7 +64,7 @@
             return;
           }
           next();
-        } catch {
+        } catch (_error) {
           next(false);
         }
       });
