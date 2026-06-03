@@ -27,25 +27,47 @@
     subscribeTable: ["template"],
     components: {Loader, Editor},
     beforeRouteLeave(to, from, next) {
-      const templateEditor = this.$refs.editor?.$refs?.templateEditor;
-      if (!templateEditor || typeof templateEditor.requestClose !== "function") {
-        next();
-        return;
-      }
-      templateEditor.requestClose().then((res) => {
-        if (res && res.success) {
-          next();
-        } else {
-          if (res && !res.success) {
+      this.$nextTick(async () => {
+        const templateEditor = this.$refs.editor?.$refs?.templateEditor;
+        if (
+          !templateEditor
+          || typeof templateEditor.flushPendingEdits !== "function"
+          || typeof templateEditor.requestClose !== "function"
+          || typeof templateEditor.requestDiscard !== "function"
+        ) {
+          next(false);
+          return;
+        }
+        try {
+          await templateEditor.flushPendingEdits();
+          const res = await templateEditor.requestClose();
+          if (res && res.success) {
+            next();
+            return;
+          }
+          const confirmMessage = [
+            "This template is missing required placeholders, so your changes will not be saved.",
+            res?.message || "",
+          ].filter(Boolean).join("\n\n");
+          if (!window.confirm(confirmMessage)) {
+            next(false);
+            return;
+          }
+          const discardRes = await templateEditor.requestDiscard();
+          if (!discardRes || !discardRes.success) {
             this.eventBus.emit("toast", {
-              title: "Template save failed",
-              message: res.message || "",
+              title: "Could not discard template changes",
+              message: discardRes?.message || "",
               variant: "danger",
             });
+            next(false);
+            return;
           }
+          next();
+        } catch {
           next(false);
         }
-      }).catch(() => next(false));
+      });
     },
     props: {
       'templateId': {
