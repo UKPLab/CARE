@@ -17,12 +17,13 @@ const app = Vue.createApp({
 
 import { createI18n } from 'vue-i18n'
 import messages from '@i18n/messages.js'
+import { DEFAULT_LOCALE, getInitialLocale } from '@/assets/locale.js'
 
 export const i18n = createI18n({
   legacy: true,
   globalInjection: true,
-  locale: localStorage.getItem('locale') || 'en',
-  fallbackLocale: 'en',
+  locale: getInitialLocale(),
+  fallbackLocale: DEFAULT_LOCALE,
   messages
 });
 

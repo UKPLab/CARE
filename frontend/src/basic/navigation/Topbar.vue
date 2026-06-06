@@ -27,8 +27,6 @@
           />
         </a>
 
-        <LanguageSwitcher />
-        
         <div id="topbarCustomPlaceholder"/>   
         <div id="topbarCenterPlaceholder"/> 
         <ul
@@ -93,20 +91,19 @@
                 <a class="dropdown-item display-username">
                   {{ $t('navigation.topbar.signedInAs', { username }) }}
                 </a>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click="$refs.preferencesModal.open()"
+                >
+                  {{ $t('auth.preferences.title') }}
+                </a>
                 <a 
                   class="dropdown-item"
                   href="#"
                   @click="$refs.twoFactorSettingsModal.open()"
                 >
                   {{ $t('auth.twoFactor.configure') }}
-                </a>
-                <a 
-                  v-if="consentEnabled"
-                  class="dropdown-item"
-                  href="#"
-                  @click="$refs.consentModal.open()"
-                >
-                  {{ $t('auth.updateConsent') }}
                 </a>
                 <a 
                   class="dropdown-item"
@@ -128,7 +125,7 @@
     </nav>
   </div>
   <PasswordModal ref="passwordModal" />
-  <ConsentUpdateModal ref="consentModal" />
+  <PreferencesModal ref="preferencesModal" />
   <TwoFactorSettingsModal ref="twoFactorSettingsModal" />
 </template>
 
@@ -148,14 +145,13 @@ import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
+import PreferencesModal from "@/basic/modal/PreferencesModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
-import LanguageSwitcher from "@/basic/LanguageSwitcher.vue";
 import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, ConsentUpdateModal, TwoFactorSettingsModal, LanguageSwitcher,},
+  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal},
   data() {
     return {
       showProjectDropdown: false,
@@ -195,9 +191,6 @@ export default {
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
-    consentEnabled() {
-      return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
   },
   mounted() {

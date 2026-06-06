@@ -36,7 +36,6 @@
     <router-view/>
   </div>
   <Toast/>
-  <LanguageSwitcher v-if="showStandaloneLanguageSwitcher" :standalone="true"/>
 </template>
 
 <script>
@@ -50,7 +49,13 @@ import ConsentModal from "@/auth/ConsentModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
-import LanguageSwitcher from "@/basic/LanguageSwitcher.vue";
+import { i18n } from "@/main.js";
+import {
+  applyLocale,
+  getGuestLocale,
+  getStoredLocale,
+  isGuestAuthRoute,
+} from "@/assets/locale.js";
 
 /**
  * Main App Component
@@ -191,18 +196,19 @@ export default {
           this.$route.meta.requireAuth
       );
     },
-    showStandaloneLanguageSwitcher() {
-      return this.hideTopbar;
-    },
     mouseDebounceTime() {
       return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);
     }
   },
   watch: {
-    $route(to, from) {
-      if (to.fullPath !== from.fullPath && this.behaviorLogger) {
-        this.behaviorLogger.reportRouteChange(from, to);
-      }
+    $route: {
+      handler(to, from) {
+        this.syncLocaleForRoute(to);
+        if (to.fullPath !== from?.fullPath && this.behaviorLogger) {
+          this.behaviorLogger.reportRouteChange(from, to);
+        }
+      },
+      immediate: true,
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
       if (newValue === oldValue) return;
@@ -277,6 +283,18 @@ export default {
       if (this.acceptStats && !this.behaviorLogger) {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
         this.behaviorLogger.init();
+      }
+    },
+    syncLocaleForRoute(route) {
+      if (route.meta.requireAuth) {
+        const stored = getStoredLocale();
+        if (stored) {
+          applyLocale(i18n, stored);
+        }
+        return;
+      }
+      if (isGuestAuthRoute(route)) {
+        applyLocale(i18n, getGuestLocale());
       }
     },
     syncPostLoginModalFlow() {

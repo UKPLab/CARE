@@ -30,6 +30,7 @@
 </template>
 
 <script>
+import { normalizeLocale, setStoredLocale, SUPPORTED_LOCALES } from "@/assets/locale.js";
 
 export default {
     name: "LanguageSwitcher",
@@ -39,24 +40,15 @@ export default {
             required: false,
             default: false,
         },
+        /** When false, only updates $i18n (preview); parent persists to localStorage on confirm. */
+        persist: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
-            languages: [
-                {
-                    code: 'de',
-                    name: 'Deutsch',
-                    flag: '🇩🇪',
-                    // flagImage: require('@/assets/flags/de.svg'), // Optional image
-                },
-                {
-                    code: 'en',
-                    name: 'English',
-                    flag: '🇬🇧',
-                    // flagImage: require('@/assets/flags/en.svg'), // Optional image
-                },
-                // Add more languages as needed
-            ],
+            languages: SUPPORTED_LOCALES,
         };
     },
     computed: {
@@ -78,9 +70,13 @@ export default {
     },
     methods: {
         setLanguage(locale) {
-            if (this.languages.some((lang) => lang.code === locale)) {
-                this.$i18n.locale = locale;
-                localStorage.setItem('locale', locale);
+            const normalized = normalizeLocale(locale);
+            if (!normalized) {
+                return;
+            }
+            this.$i18n.locale = normalized;
+            if (this.persist) {
+                setStoredLocale(normalized);
             }
         },
     },
