@@ -240,7 +240,7 @@ class TemplateSocket extends Socket {
    *
    * @socketEvent templatePlaceholderAdd
    * @param {Object} data                   The data object
-   * @param {number} data.templateType      Template type (required, 1-7)
+   * @param {number} data.templateType      Template type (required, 1-6 or 8)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
    * @param {string} data.placeholderLabel  Placeholder label (required, e.g., "Username")
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
@@ -251,8 +251,8 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7].includes(data.templateType)) {
-      throw new Error("Template type is required and must be 1-7");
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 8].includes(data.templateType)) {
+      throw new Error("Template type is required and must be 1-6 or 8");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
       throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");
@@ -442,7 +442,7 @@ class TemplateSocket extends Socket {
    * @param {number} [data.context.documentId]      Document ID (prompt placeholders)
    * @param {string} [data.context.pdfText]         Extracted text for the current PDF (`~pdfText~`; caller-supplied)
    * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for each submission PDF (`~submissionFiles~`)
-   * @param {string} [data.context.editorText]     Optional editor plain-text override (`~editorText~`)
+   * @param {string} [data.context.editorText]      Optional editor plain-text override (`~editorText~`)
    * @param {string} [data.context.studySessionHash] Study session hash (for link)
    * @param {string} [data.context.baseUrl]          Base URL for generating links
    * @param {string} [data.context.assignmentType]   Assignment type

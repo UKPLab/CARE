@@ -223,10 +223,10 @@ export default {
       return null;
     },
     hasPlaceholders() {
-      // Email templates (types 1, 2, 3, 6) and prompt templates (type 7) have placeholders
+      // Email templates (types 1, 2, 3, 6) and prompt templates (type 8) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6, 7].includes(this.template.type);
+      return [1, 2, 3, 6, 8].includes(this.template.type);
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {

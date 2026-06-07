@@ -181,7 +181,7 @@
         if (!t || t.type == null) {
           return false;
         }
-        return [1, 2, 3, 6, 7].includes(t.type);
+        return [1, 2, 3, 6, 8].includes(t.type);
       },
       previewDisplayHtml() {
         if (!this.previewMode || !this.templateSupportsPlaceholderPreview) {

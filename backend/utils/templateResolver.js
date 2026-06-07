@@ -96,9 +96,7 @@ function loadDocumentBaseDelta(document) {
 }
 
 /**
- * Resolve whole editor text for a document context (base .delta + draft document_edit rows).
- * Outside a study only null/null edits load; in a study, edits match the session or null session.
- * studyStepId is not filtered, so edits from other steps in the same session may be included.
+ * Plain text for ~editorText~ (uses context.editorText when set, else document delta + draft edits).
  *
  * @param {Object} models - DB models
  * @param {Object} context - Resolver context
@@ -203,7 +201,7 @@ async function getMergedDocumentData(models, context, options = {}) {
 }
 
 /**
- * Resolve prompt-specific placeholders (type 7) from context and database.
+ * Resolve prompt-specific placeholders (type 8) from context and database.
  *
  * @param {Object} context - Resolver context
  * @param {Object} models - DB models
@@ -750,4 +748,5 @@ module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
     getMissingRequiredPlaceholders,
+    resolveEditorText,
 };

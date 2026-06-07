@@ -44,7 +44,7 @@
       /**
        * Fields configuration for the coordinator, derived from the store
        * but filtered locally for:
-       * - type: non-admins can only create document/prompt templates (4, 5, 7)
+       * - type: non-admins can only create document/prompt templates (4, 5, 8)
        * - defaultLanguage: limited to languages that have content when editing
        */
       coordinatorFields() {
@@ -57,7 +57,7 @@
           if (f.key === "type" && !this.isAdmin) {
             if (Array.isArray(f.options)) {
               f.options = f.options.filter(
-                (opt) => opt.value === null || [4, 5, 7].includes(opt.value)
+                (opt) => opt.value === null || [4, 5, 8].includes(opt.value)
               );
             }
           }

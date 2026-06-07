@@ -91,7 +91,7 @@
           4: { placeholders: [] }, // Document - General (no placeholders)
           5: { placeholders: [] }, // Document - Study (no placeholders)
           6: { placeholders: [] }, // Email - Study Close
-          7: { placeholders: [] }, // Prompt
+          8: { placeholders: [] }, // Prompt
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
@@ -113,7 +113,7 @@
           4: "Document - General",
           5: "Document - Study",
           6: "Email - Study Close",
-          7: "Prompt",
+          8: "Prompt",
         };
         return types[this.templateType] || "Unknown";
       },
@@ -197,9 +197,9 @@
             username: "The username of the session owner who had an open session when the study was closed.",
             studyName: "The name of the study that was closed.",
           },
-          7: { // Prompt
+          8: { // Prompt
             pdfText: "Text from the PDF in the current context.",
-            editorText: "Text from the current editor document in the current context.",
+            editorText: "Latest plain text from the study HTML/modal document. During step loading, callers should pass context.editorText explicitly if resolving in the same pass as NLP insertIntoEditor.",
             assessmentResult: "The saved rubric from the Assessment sidebar for this document and step.",
             inlineComments: "Structured comments and annotations for this document and step.",
             nlpAssessmentSuggestion: "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",

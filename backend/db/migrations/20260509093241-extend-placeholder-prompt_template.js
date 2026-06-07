@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 const promptPlaceholders = [
   {
-    type: 7,
+    type: 8,
     placeholderKey: "pdfText",
     placeholderLabel: "PDF text",
     placeholderType: "text",
@@ -11,7 +11,7 @@ const promptPlaceholders = [
     placeholderExample: "Document text content from the current PDF context. ... [truncated at 15000 chars if needed]",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "editorText",
     placeholderLabel: "Editor text",
     placeholderType: "text",
@@ -19,7 +19,7 @@ const promptPlaceholders = [
     placeholderExample: "Document text content from the current editor context. ... [truncated at 15000 chars if needed]",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "assessmentResult",
     placeholderLabel: "Assessment result",
     placeholderType: "text",
@@ -27,7 +27,7 @@ const promptPlaceholders = [
     placeholderExample: "{\"Clarity\":{\"currentScore\":3,\"assessment\":\"Good structure but weak conclusion\"},\"Sources\":{\"currentScore\":2,\"assessment\":\"Missing one reference\"}}",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "inlineComments",
     placeholderLabel: "Inline comments",
     placeholderType: "text",
@@ -35,7 +35,7 @@ const promptPlaceholders = [
     placeholderExample: "[{\"page\":2,\"quote\":\"Baseline is unclear\",\"comment\":\"Please define baseline.\",\"tag\":\"MajorIssue\"},{\"page\":4,\"quote\":\"Table 2\",\"comment\":\"Nice comparison.\",\"tag\":\"Strength\"}]",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "nlpAssessmentSuggestion",
     placeholderLabel: "NLP assessment suggestion",
     placeholderType: "text",
@@ -43,7 +43,7 @@ const promptPlaceholders = [
     placeholderExample: "[{\"name\":\"Clarity\",\"score\":3,\"justification\":\"Clear flow with minor issues\"},{\"name\":\"Sources\",\"score\":2,\"justification\":\"Some claims lack citations\"}]",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "previousAssessmentResult",
     placeholderLabel: "Previous assessment result",
     placeholderType: "text",
@@ -51,7 +51,7 @@ const promptPlaceholders = [
     placeholderExample: "{\"Clarity\":{\"currentScore\":2,\"assessment\":\"Argumentation was fragmented\"},\"Sources\":{\"currentScore\":2,\"assessment\":\"References were incomplete\"}}",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "assessmentConfiguration",
     placeholderLabel: "Assessment configuration",
     placeholderType: "text",
@@ -59,7 +59,7 @@ const promptPlaceholders = [
     placeholderExample: "{\"type\":\"assessment\",\"rubrics\":[{\"name\":\"Overall\",\"criteria\":[{\"name\":\"Clarity\",\"maxPoints\":5},{\"name\":\"Sources\",\"maxPoints\":5}]}]}",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "submissionFiles",
     placeholderLabel: "Submission files",
     placeholderType: "text",
@@ -67,7 +67,7 @@ const promptPlaceholders = [
     placeholderExample: "{\"pdfFiles\":[{\"documentId\":101,\"filename\":\"main.pdf\",\"text\":\"Extracted or caller-supplied text...\"},{\"documentId\":104,\"filename\":\"extra.pdf\",\"text\":\"\"}],\"otherFiles\":[{\"role\":\"attachment\",\"documentId\":102,\"filename\":\"spreadsheet.xlsx\",\"type\":\"other\"},{\"role\":\"attachment\",\"documentId\":103,\"filename\":\"sources.zip\",\"type\":\"zip\"}]}",
   },
   {
-    type: 7,
+    type: 8,
     placeholderKey: "studyContext",
     placeholderLabel: "Study context",
     placeholderType: "text",
@@ -101,7 +101,7 @@ module.exports = {
     await queryInterface.bulkDelete(
       "placeholder",
       {
-        type: 7,
+        type: 8,
         placeholderKey: promptPlaceholders.map((placeholder) => placeholder.placeholderKey),
       },
       {}
