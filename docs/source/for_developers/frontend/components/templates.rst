@@ -18,7 +18,7 @@ Templates are listed and created from **Dashboard → Templates**. See the :doc:
 
 Location: ``frontend/src/components/dashboard/Templates.vue``
 
-When you open a template for editing, the Editor loads with ``templateId`` provided; it renders the :doc:`editor` (TemplateEditor) for the main content and, for email types (1, 2, 3, 6) and prompt templates (type 7), a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts) into the text.
+When you open a template for editing, the Editor loads with ``templateId`` provided; it renders the :doc:`editor` (TemplateEditor) for the main content and, for email types (1, 2, 3, 6) and prompt templates (type 8), a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts) into the text.
 
 Location: ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
 
@@ -85,7 +85,7 @@ At resolution time, only the placeholder keys listed in the following table are 
 |                          |        |                                      | ``email.template.studyClosed`` (``sendStudyClosedEmails``) |
 |                          |        |                                      | in ``study.js``.                                           |
 +--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Prompt                   | 7      | ``pdfText``, ``editorText``,         | Study/NLP prompt templates: ``templateResolve`` in         |
+| Prompt                   | 8      | ``pdfText``, ``editorText``,         | Study/NLP prompt templates: ``templateResolve`` in         |
 |                          |        | ``assessmentResult``,                | ``backend/webserver/sockets/template.js`` (see below)      |
 |                          |        | ``inlineComments``,                  |                                                            |
 |                          |        | ``nlpAssessmentSuggestion``,       |                                                            |
@@ -95,7 +95,7 @@ At resolution time, only the placeholder keys listed in the following table are 
 |                          |        | ``studyContext``                     |                                                            |
 +--------------------------+--------+--------------------------------------+------------------------------------------------------------+
 
-Prompt templates (type 7)
+Prompt templates (type 8)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _prompt-templates-ref:
@@ -104,7 +104,7 @@ Prompt templates use the same Placeholders sidebar and ``placeholder`` table as 
 
 Location: ``backend/webserver/sockets/template.js`` (``templateResolve``)
 
-At edit time, TemplateEditor preview (types 1, 2, 3, 6, and 7) substitutes ``placeholderExample`` from the
+At edit time, TemplateEditor preview (types 1, 2, 3, 6, and 8) substitutes ``placeholderExample`` from the
 ``placeholder`` row when set (sample text only; rows may be empty until examples are added).
 At runtime, ``buildPromptPlaceholderValues`` in ``backend/utils/templateResolver.js`` loads real values from
 ``context`` and the database. Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
@@ -113,6 +113,12 @@ if they are missing, those tokens resolve to an empty string.
 ``~nlpAssessmentSuggestion~`` is the NLP draft assessment for the current step (same ``document_data`` as the
 Assessment sidebar pre-fill), not the saved rubric in ``assessment_result`` (use ``~assessmentResult~`` for that).
 Resolution is implemented in ``backend/utils/studyNlpDocumentData.js``.
+
+``~editorText~`` is plain text from the HTML or modal document (``resolveEditorText`` in
+``backend/utils/templateResolver.js``): base ``.delta`` plus session draft edits, including earlier steps in the same
+session. Pass ``context.editorText`` on ``templateResolve`` to override (capped at 15k characters). Call
+``templateResolve`` after step loading (``loadingReady``) or on user action—not in the same pass as NLP
+``insertIntoEditor`` unless ``context.editorText`` is set explicitly.
 
 Adding a New Template Type or Placeholder
 -----------------------------------------
@@ -126,8 +132,8 @@ Adding a New Template Type or Placeholder
    enforced via ``getMissingRequiredPlaceholders`` in ``backend/utils/templateResolver.js``.
 
 Email placeholders (types 1, 2, 3, 6) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
-Prompt placeholders (type 7) are resolved in ``buildPromptPlaceholderValues`` (often from ``document_data`` or
-``study_step``). For type 7, new keys must also be listed in the ``promptKeys`` array in ``buildReplacementMap`` so
+Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` (often from ``document_data`` or
+``study_step``). For type 8, new keys must also be listed in the ``promptKeys`` array in ``buildReplacementMap`` so
 that function is invoked.
 
 Here is a concrete example for adding a new placeholder:
@@ -143,7 +149,7 @@ Here is a concrete example for adding a new placeholder:
 
      Ensure the call site (e.g. ``sendStudyClosedEmails`` in ``study.js``) passes ``studyEndDate`` on ``context``.
 
-   - **Prompt (e.g. ``myNewField`` for type 7):** add ``"myNewField"`` to ``promptKeys`` in ``buildReplacementMap``,
+   - **Prompt (e.g. ``myNewField`` for type 8):** add ``"myNewField"`` to ``promptKeys`` in ``buildReplacementMap``,
      then in ``buildPromptPlaceholderValues``, when ``allow("myNewField")``::
 
          promptValues["~myNewField~"] = context.myNewField || "";
@@ -159,7 +165,7 @@ Here is a concrete example for adding a new placeholder:
 
    - Optionally extend ``longDescriptions`` in
      ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue`` for richer tooltip help (types 1, 2, 3, 6,
-     and 7 already define entries; otherwise the sidebar uses ``placeholderDescription`` from the database).
+     and 8 already define entries; otherwise the sidebar uses ``placeholderDescription`` from the database).
 
 3. **Access / type visibility:**
 
