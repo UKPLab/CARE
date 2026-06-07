@@ -1,0 +1,36 @@
+{
+  "fields": {
+    "name": {
+      "label": "Assignment Name:",
+      "placeholder": "Assignment 1"
+    },
+    "description": {
+      "label": "Description:",
+      "help": "Optional description shown for this assignment."
+    },
+    "maxRevisions": {
+      "label": "Maximum Revisions:",
+      "help": "Maximum number of allowed revision copies for this assignment. Move to the end for unlimited.",
+      "unit": "revision(s)",
+      "unlimitedLabel": "unlimited"
+    },
+    "start": {
+      "label": "Start Time:"
+    },
+    "end": {
+      "label": "End Time:"
+    },
+    "validationConfigurationId": {
+      "label": "Validation Configuration:",
+      "help": "Validation is applied before submission upload."
+    },
+    "allowReUpload": {
+      "label": "Allow Re-Upload:",
+      "help": "If enabled, users can replace or delete uploaded submissions."
+    },
+    "notifyOnSubmissionUpload": {
+      "label": "Notify on Submission Upload:",
+      "help": "If enabled, sends an email when a student uploads or re-uploads a submission."
+    }
+  }
+}

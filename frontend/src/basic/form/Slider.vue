@@ -62,7 +62,8 @@ export default {
     },
     displayValue() {
       if (this.isAtUnlimitedPosition) {
-        return this.options.unlimitedLabel || "unlimited";
+        const label = this.options.unlimitedLabel || "unlimited";
+        return this.$te(label) ? this.$t(label) : label;
       }
       return Number(this.currentData);
     },

@@ -1270,7 +1270,7 @@ class DocumentSocket extends Socket {
         }
 
         if (assignment.closed) {
-            throw new Error("Cannot replace submission because the assignment is closed.");
+            throw new Error("errors.documents.replaceAssignmentClosed");
         }
 
         const oldSubmission = await this.models["submission"].findOne({
@@ -1291,7 +1291,7 @@ class DocumentSocket extends Socket {
         const isOwner = this.userId === oldSubmission.userId;
         const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
         if (!isOwner && !hasRight) {
-            throw new Error("You are not allowed to replace this submission.");
+            throw new Error("errors.documents.replaceNotAllowed");
         }
 
         const oldSubmissionDocuments = await this.models["document"].findAll({
@@ -1306,7 +1306,7 @@ class DocumentSocket extends Socket {
             (document) => Number(document.studyUsageCount || 0) > 0
         );
         if (hasStudyLinkedDocument) {
-            throw new Error("Cannot replace submission because one or more linked documents are used in studies.");
+            throw new Error("errors.documents.replaceDocumentsUsedInStudies");
         }
 
         const newSubmission = await this.models["submission"].add({

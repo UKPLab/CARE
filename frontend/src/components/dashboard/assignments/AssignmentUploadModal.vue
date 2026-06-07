@@ -54,6 +54,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Assignment-specific submission upload modal.
@@ -307,7 +308,7 @@ export default {
           this.files = null;
           this.eventBus.emit("toast", {
             title: "Failed to upload the file",
-            message: res.message,
+            message: resolveApiMessage(res),
             variant: "danger",
           });
           this.$refs.uploadStepper.setWaiting(false);

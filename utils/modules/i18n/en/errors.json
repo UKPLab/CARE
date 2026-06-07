@@ -176,6 +176,9 @@
         "idRequired": "Document ID is required.",
         "fileNotFoundByName": "File {fileName} not found",
         "noReviewLinkUploadPermission": "You do not have permission to upload review links",
+        "replaceAssignmentClosed": "Cannot replace submission because the assignment is closed.",
+        "replaceNotAllowed": "You are not allowed to replace this submission.",
+        "replaceDocumentsUsedInStudies": "Cannot replace submission because one or more linked documents are used in studies.",
         "annotationDeleteOriginalFailed": "Error deleting annotations: Couldn't delete original annotations",
         "annotationDeleteFailed": "Error deleting annotations: {message}",
         "annotationDeleteFailedGeneric": "Error deleting annotations.",
@@ -310,7 +313,10 @@
         "copyFailed": "Failed to copy submission {submissionId}. Error: {originalMessage}",
         "copyWithIdFailed": "Failed to copy submission with {submissionId}: {message}",
         "updateNotAllowed": "You are not allowed to update this submission.",
-        "noGradeUploadPermission": "You do not have permission to upload grades"
+        "noGradeUploadPermission": "You do not have permission to upload grades",
+        "notFoundGeneric": "Submission not found.",
+        "deleteAssignmentClosed": "Cannot delete submission because the assignment is closed.",
+        "deleteDocumentsUsedInStudies": "Cannot delete submission because one or more linked documents are used in studies."
     },
     "tags": {
         "tagSetDeleteFailed": "TagSet delete failed",

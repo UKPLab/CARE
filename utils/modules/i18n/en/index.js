@@ -25,6 +25,7 @@ import sidebar from './sidebar.json'
 import components from './components.json'
 import workflow from "./workflow.json";
 import templates from './templates.json'
+import assignments from './assignments.json'
 
 export default {
   common,
@@ -53,5 +54,6 @@ export default {
   sidebar,
   components,
   workflow,
-  templates
+  templates,
+  assignments
 }

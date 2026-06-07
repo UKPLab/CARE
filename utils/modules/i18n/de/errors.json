@@ -176,6 +176,9 @@
     "idRequired": "Dokument-ID ist erforderlich.",
     "fileNotFoundByName": "Datei {fileName} nicht gefunden",
     "noReviewLinkUploadPermission": "Sie haben keine Berechtigung, Review-Links hochzuladen",
+    "replaceAssignmentClosed": "Einreichung kann nicht ersetzt werden, da das Assignment geschlossen ist.",
+    "replaceNotAllowed": "Sie dürfen diese Einreichung nicht ersetzen.",
+    "replaceDocumentsUsedInStudies": "Einreichung kann nicht ersetzt werden, da mindestens ein verknüpftes Dokument in Studien verwendet wird.",
     "annotationDeleteOriginalFailed": "Fehler beim Löschen von Annotationen: Ursprüngliche Annotationen konnten nicht gelöscht werden",
     "annotationDeleteFailed": "Fehler beim Löschen von Annotationen: {message}",
     "annotationDeleteFailedGeneric": "Fehler beim Löschen von Annotationen.",
@@ -310,7 +313,10 @@
         "copyFailed": "Die Einreichung {submissionId} konnte nicht kopiert werden. Fehler: {originalMessage}",
         "copyWithIdFailed": "Einreichung mit {submissionId} konnte nicht kopiert werden: {message}",
         "updateNotAllowed": "Sie dürfen diese Einreichung nicht aktualisieren.",
-        "noGradeUploadPermission": "Sie haben keine Berechtigung, Noten hochzuladen"
+        "noGradeUploadPermission": "Sie haben keine Berechtigung, Noten hochzuladen",
+        "notFoundGeneric": "Einreichung nicht gefunden.",
+        "deleteAssignmentClosed": "Einreichung kann nicht gelöscht werden, da das Assignment geschlossen ist.",
+        "deleteDocumentsUsedInStudies": "Einreichung kann nicht gelöscht werden, da mindestens ein verknüpftes Dokument in Studien verwendet wird."
   },
   "tags": {
     "tagSetDeleteFailed": "Löschen des Tag-Sets fehlgeschlagen",

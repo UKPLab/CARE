@@ -1,0 +1,36 @@
+{
+  "fields": {
+    "name": {
+      "label": "Assignment-Name:",
+      "placeholder": "Assignment 1"
+    },
+    "description": {
+      "label": "Beschreibung:",
+      "help": "Optionale Beschreibung für dieses Assignment."
+    },
+    "maxRevisions": {
+      "label": "Maximale Revisionen:",
+      "help": "Maximale Anzahl erlaubter Revisionskopien für dieses Assignment. Ganz nach rechts für unbegrenzt.",
+      "unit": "Revision(en)",
+      "unlimitedLabel": "unbegrenzt"
+    },
+    "start": {
+      "label": "Startzeit:"
+    },
+    "end": {
+      "label": "Endzeit:"
+    },
+    "validationConfigurationId": {
+      "label": "Validierungskonfiguration:",
+      "help": "Validierung wird vor dem Submission-Upload angewendet."
+    },
+    "allowReUpload": {
+      "label": "Erneutes Hochladen erlauben:",
+      "help": "Wenn aktiviert, können Nutzer hochgeladene Submissions ersetzen oder löschen."
+    },
+    "notifyOnSubmissionUpload": {
+      "label": "Bei Submission-Upload benachrichtigen:",
+      "help": "Wenn aktiviert, wird eine E-Mail gesendet, wenn ein Studierender eine Submission hochlädt oder erneut hochlädt."
+    }
+  }
+}

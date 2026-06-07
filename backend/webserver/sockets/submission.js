@@ -68,7 +68,7 @@ class SubmissionSocket extends Socket {
 
         const submission = await this.models['submission'].getById(id, { transaction });
         if (!submission) {
-            throw new Error("Submission not found.");
+            throw new Error("errors.submission.notFoundGeneric");
         }
         if (!(await this.checkUserAccess(submission.userId))) {
             throw new Error("errors.submission.updateNotAllowed");
@@ -76,7 +76,7 @@ class SubmissionSocket extends Socket {
 
         const assignment = await this.models['assignment'].getById(submission.assignmentId, { transaction });
         if (assignment && assignment.closed) {
-            throw new Error("Cannot delete submission because the assignment is closed.");
+            throw new Error("errors.submission.deleteAssignmentClosed");
         }
 
         const documents = await this.models['document'].findAll({
@@ -86,7 +86,7 @@ class SubmissionSocket extends Socket {
         });
         const isStudyLocked = documents.some(doc => Number(doc.studyUsageCount || 0) > 0);
         if (isStudyLocked) {
-            throw new Error("Cannot delete submission because one or more linked documents are used in studies.");
+            throw new Error("errors.submission.deleteDocumentsUsedInStudies");
         }
 
         return await this.models['submission'].deleteById(id, { force, transaction });

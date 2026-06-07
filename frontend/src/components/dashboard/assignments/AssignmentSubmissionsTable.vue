@@ -16,6 +16,7 @@
 import BasicTable from "@/basic/Table.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 
@@ -338,7 +339,7 @@ export default {
               } else {
                 this.eventBus.emit("toast", {
                   title: "Failed to delete submission",
-                  message: res.message,
+                  message: resolveApiMessage(res),
                   variant: "danger",
                 });
               }
