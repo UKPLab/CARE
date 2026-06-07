@@ -26,6 +26,14 @@
       "emailStudyClose": {
         "username": "Benutzername des Empfängers",
         "studyName": "Study-Name"
+      },
+      "emailSubmissionUpload": {
+        "username": "Benutzername des Empfängers",
+        "assignmentName": "Assignment-Name",
+        "eventType": "Upload-Ereignis",
+        "assignmentId": "Assignment-ID",
+        "submissionId": "Submission-ID",
+        "timestamp": "Upload-Zeitstempel"
       }
     },
     "descriptions": {
@@ -50,6 +58,14 @@
       "emailStudyClose": {
         "username": "Benutzername des Session-Owners mit offener Session beim Schließen der Study.",
         "studyName": "Name der geschlossenen Study."
+      },
+      "emailSubmissionUpload": {
+        "username": "Benutzername des Empfängers (Assignment-Owner oder Submitter).",
+        "assignmentName": "Name des Assignments.",
+        "eventType": "Kleinbuchstaben: \"uploaded\" oder \"reuploaded\".",
+        "assignmentId": "Interne Assignment-Kennung.",
+        "submissionId": "Interne Submission-Kennung.",
+        "timestamp": "Zeitpunkt des Submission-Uploads."
       }
     },
     "help": {
@@ -74,6 +90,14 @@
       "emailStudyClose": {
         "username": "Der Benutzername des Session-Owners, der eine offene Session hatte, als die Study geschlossen wurde.",
         "studyName": "Der Name der Study, die geschlossen wurde."
+      },
+      "emailSubmissionUpload": {
+        "username": "Die Person, die diese E-Mail erhält (Assignment-Owner oder Submitter).",
+        "assignmentName": "Der Titel des Assignments.",
+        "eventType": "Satztext in Kleinbuchstaben: \"uploaded\" oder \"reuploaded\".",
+        "assignmentId": "Interne Assignment-ID.",
+        "submissionId": "Interne Submission-ID.",
+        "timestamp": "Zeitpunkt, zu dem die Submission hochgeladen wurde."
       }
     }
   },

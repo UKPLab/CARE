@@ -26,6 +26,14 @@
       "emailStudyClose": {
         "username": "Recipient username",
         "studyName": "Study name"
+      },
+      "emailSubmissionUpload": {
+        "username": "Recipient username",
+        "assignmentName": "Assignment name",
+        "eventType": "Upload event",
+        "assignmentId": "Assignment ID",
+        "submissionId": "Submission ID",
+        "timestamp": "Upload timestamp"
       }
     },
     "descriptions": {
@@ -74,6 +82,14 @@
       "emailStudyClose": {
         "username": "The username of the session owner who had an open session when the study was closed.",
         "studyName": "The name of the study that was closed."
+      },
+      "emailSubmissionUpload": {
+        "username": "The person receiving this email (assignment owner or submitter).",
+        "assignmentName": "The title of the assignment.",
+        "eventType": "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
+        "assignmentId": "Internal assignment ID.",
+        "submissionId": "Internal submission ID.",
+        "timestamp": "When the submission was uploaded."
       }
     }
   },

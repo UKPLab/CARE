@@ -64,7 +64,7 @@ import {
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal, LanguageSwitcher},
+  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),

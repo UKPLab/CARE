@@ -147,7 +147,7 @@
           />
           <BasicButton
               class="btn btn-primary"
-              :title="$t('common.import')"
+              :title="uploading ? $t('common.importing') : $t('common.import')"
               :disabled="!uploadFile || uploading"
               @click="importSettings"
           />

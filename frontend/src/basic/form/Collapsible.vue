@@ -2,7 +2,7 @@
   <div class="card my-3">
     <div class="card-header collapsible-header" style="cursor: pointer" @click="toggleCollapse">
       <LoadIcon :icon-name="isCollapsed ? 'arrow-right-short' : 'arrow-down-short'" class="me-1"></LoadIcon>
-      {{ title || $t("basic.form.advancedSettings") }}
+      <span class="collapsible-title">{{ title || $t("basic.form.advancedSettings") }}</span>
       <span v-if="description" class="text-secondary ms-2 collapsible-description">
         <small>{{ description }}</small>
       </span>
