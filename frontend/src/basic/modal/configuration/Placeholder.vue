@@ -55,27 +55,27 @@ export default {
   props: {
     placeholder: {
       type: Object,
-      required: true,
+      required: false,
       default: () => ({})
     },
     fields: {
       type: Array,
-      required: true,
+      required: false,
       default: () => []
     },
     index: {
       type: Number,
-      required: true,
+      required: false,
       default: 0
     },
     formData: {
       type: Object,
-      required: true,
+      required: false,
       default: () => ({})
     },
     placeholderColor: { 
       type: String,
-      required: true,
+      required: false,
       default: "#000"
     }
   },

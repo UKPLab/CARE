@@ -97,7 +97,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
     },
     selectOptions() {
-      let baseOptions = [];
+      let baseOptions;
 
       if (Array.isArray(this.options.options)) {
         baseOptions = this.options.options;

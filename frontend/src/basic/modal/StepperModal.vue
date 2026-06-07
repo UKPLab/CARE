@@ -122,7 +122,7 @@ export default {
   data() {
     return {
       currentStep: 0,
-      _closeRequestHandled: false,
+      closeRequestHandled: false,
     }
   },
   watch: {
@@ -140,16 +140,16 @@ export default {
     },
     handleCloseRequest() {
       this.$refs.stepperModal.markCloseRequestHandled();
-      this._closeRequestHandled = false;
+      this.closeRequestHandled = false;
       this.$emit('close-requested');
       this.$nextTick(() => {
-        if (!this._closeRequestHandled) {
+        if (!this.closeRequestHandled) {
           this.close();
         }
       });
     },
     markCloseRequestHandled() {
-      this._closeRequestHandled = true;
+      this.closeRequestHandled = true;
     },
     close() {
       this.$refs.stepperModal.hide();

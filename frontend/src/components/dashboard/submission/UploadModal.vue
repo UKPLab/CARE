@@ -6,21 +6,25 @@
     @submit="uploadSubmission"
   >
     <template #title>
-      <h5 class="modal-title">{{ $t("dashboard.uploadModal.title") }}</h5>
+      <h5 class="modal-title">Upload Submission</h5>
     </template>
-    <template #step-1>
+    <template #step="{ index }">
+      <!-- Admin flow: step 0 = select user, step 1 = config, step 2 = upload -->
+      <!-- User flow:  step 0 = config,       step 1 = upload                  -->
       <BasicTable
+        v-if="canUploadForOthers && index === 0"
         v-model="selectedUser"
         :columns="selectionTable"
         :options="selectionTableOptions"
         :data="users"
         :max-table-height="400"
       />
-    </template>
-    <template #step-2>
-      <div class="p-3">
+      <div
+        v-else-if="(canUploadForOthers && index === 1) || (!canUploadForOthers && index === 0)"
+        class="p-3"
+      >
         <div class="mb-3">
-          <h4 class="mb-3">{{ $t("dashboard.uploadModal.assignGroup") }}</h4>
+          <h4 class="mb-3">Assign Group</h4>
           <BasicForm
             v-model="formData"
             :fields="formFields"
@@ -32,9 +36,8 @@
           @selection-changed="handleValidatorChange"
         />
       </div>
-    </template>
-    <template #step-3>
       <BasicForm
+        v-else-if="(canUploadForOthers && index === 2) || (!canUploadForOthers && index === 1)"
         v-model="files"
         :fields="fileFields"
       />
@@ -47,7 +50,6 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import ValidatorSelector from "./ValidatorSelector.vue";
-import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Moodle assignment upload component
@@ -67,17 +69,15 @@ export default {
       selectedValidatorId: 0,
       selectedValidatorData: null,
       files: null,
-      steps: [
-        { title: this.$t("dashboard.uploadModal.stepSelectUser") },
-        { title: this.$t("dashboard.uploadModal.stepSelectConfig") },
-        { title: this.$t("dashboard.uploadModal.stepUploadFile") },
-      ],
+      assignmentId: null,
+      allSteps: [{ title: "Select User" }, { title: "Select Config" }, { title: "Upload File" }],
+      reducedSteps: [{ title: "Select Config" }, { title: "Upload File" }],
       selectionTable: [
-        { name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
-        { name: this.$t("dashboard.uploadModal.columns.extId"), key: "extId", sortable: true },
-        { name: this.$t("common.firstName"), key: "firstName", sortable: true },
-        { name: this.$t("common.lastName"), key: "lastName", sortable: true },
-        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName", sortable: true },
+        { name: "ID", key: "id", sortable: true },
+        { name: "extId", key: "extId", sortable: true },
+        { name: "First Name", key: "firstName", sortable: true },
+        { name: "Last Name", key: "lastName", sortable: true },
+        { name: "Username", key: "userName", sortable: true },
       ],
       selectionTableOptions: {
         striped: true,
@@ -98,9 +98,9 @@ export default {
       formFields: [
         {
           key: "group",
-          label: this.$t("dashboard.uploadModal.groupNumber"),
+          label: "Group Number",
           type: "number",
-          placeholder: this.$t("dashboard.uploadModal.groupNumberPlaceholder"),
+          placeholder: "Enter group number",
           min: 0,
           class: "form-control",
           required: true,
@@ -110,6 +110,15 @@ export default {
     };
   },
   computed: {
+    canUploadForOthers() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
+    },
+    steps() {
+      return this.canUploadForOthers ? this.allSteps : this.reducedSteps;
+    },
+    currentUserId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     users() {
       return this.$store.getters["table/user/getAll"];
     },
@@ -117,7 +126,10 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
     },
     stepValid() {
-      return [this.selectedUser.length > 0, this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
+      if (this.canUploadForOthers) {
+        return [this.selectedUser.length > 0, this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
+      }
+      return [this.selectedValidatorId !== 0 && this.formData.group, this.checkRequiredFiles()];
     },
     fileFields() {
       if (!this.selectedValidatorData?.files || !Array.isArray(this.selectedValidatorData.files)) {
@@ -128,7 +140,7 @@ export default {
         const format = fileFormat.toLowerCase();
         return {
           key: format,
-          label: this.$t("dashboard.uploadModal.fileLabel", { format: format.toUpperCase() }),
+          label: `${format.toUpperCase()} File:`,
           type: "file",
           accept: `.${format}`,
           class: "form-control",
@@ -138,11 +150,13 @@ export default {
     },
   },
   methods: {
-    open() {
+    open(assignmentId = null) {
       this.files = null;
-      this.selectedUser = [];
       this.selectedValidatorId = 0;
       this.formData = {};
+      this.assignmentId = assignmentId;
+      // Admin picks a user in step 1; normal users always upload for themselves
+      this.selectedUser = this.canUploadForOthers ? [] : [{ id: this.currentUserId }];
       this.$refs.uploadStepper.open();
     },
     handleValidatorChange(validatorData) {
@@ -163,8 +177,8 @@ export default {
     uploadSubmission() {
       if (!this.files) {
         this.eventBus.emit("toast", {
-          title: this.$t("dashboard.uploadModal.invalidFiles"),
-          message: this.$t("dashboard.uploadModal.pleaseUploadFiles"),
+          title: "Invalid file(s)",
+          message: "Please upload all required files.",
           variant: "danger",
         });
         return;
@@ -173,15 +187,16 @@ export default {
         userId: this.selectedUser[0].id,
         group: this.formData.group,
         validationConfigurationId: this.selectedValidatorId,
-        projectId: this.projectId, 
+        projectId: this.projectId,
+        assignmentId: this.assignmentId,
         files: Object.keys(this.files).map((k) => ({ content: this.files[k], fileName: this.files[k].name })),
       };
       this.$refs.uploadStepper.setWaiting(true);
       this.$socket.emit("documentUploadSingleSubmission", singleSubmission, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: this.$t("dashboard.uploadModal.uploadedFile"),
-            message: this.$t("dashboard.uploadModal.fileSuccessfullyUploaded"),
+            title: "Uploaded file",
+            message: "File successfully uploaded!",
             variant: "success",
           });
           this.$refs.uploadStepper.close();
@@ -189,8 +204,8 @@ export default {
           // Reset the files variable as the user will reupload the files without closing the modal, which leads to wrong files.
           this.files = null;
           this.eventBus.emit("toast", {
-            title: this.$t("dashboard.uploadModal.failedUploadFile"),
-            message: resolveApiMessage(res),
+            title: "Failed to upload the file",
+            message: res.message,
             variant: "danger",
           });
           this.$refs.uploadStepper.setWaiting(false);

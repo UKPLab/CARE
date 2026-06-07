@@ -261,7 +261,10 @@ export default {
       const p = this.formData.password || "";
       return p.length >= 8
         && !/^\s*$/.test(p)
-        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => {
+          const codePoint = c.codePointAt(0) || 0;
+          return codePoint <= 31 || codePoint === 127;
+        })
         && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     validTerms() {

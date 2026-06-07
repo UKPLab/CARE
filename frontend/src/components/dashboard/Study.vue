@@ -18,6 +18,13 @@
               icon="x-octagon"
               @click="closeStudies"
           />
+           <BasicButton
+            class="btn-secondary btn-sm"
+            text="Publish Assessment"
+            title="Publish Assessment"
+            icon="clipboard-data"
+            @click="$refs.publishAssessmentModal.open()"
+          />
           <BasicButton
               v-if="canAddBulkAssignments"
               class="btn-secondary btn-sm"
@@ -62,6 +69,7 @@
     <StudyCloseModal ref="studyCloseModal" />
     <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
     <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
+    <PublishAssessmentModal ref="publishAssessmentModal"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
     <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>

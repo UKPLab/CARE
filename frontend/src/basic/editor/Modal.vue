@@ -9,7 +9,6 @@
     <template #footer>
       <button
         class="btn btn-secondary"
-        data-bs-dismiss="modal"
         type="button"
         @click="$refs.editorModal.close()"
       >
@@ -50,15 +49,15 @@ export default {
     }
   },
   watch: {
+    modelValue: {
+      immediate: true,
+      handler() {
+        this.currentData = this.modelValue ?? "";
+      },
+    },
     currentData() {
       this.$emit("update:modelValue", this.currentData);
     },
-    modelValue() {
-      this.currentData = this.modelValue;
-    },
-  },
-  mounted() {
-    this.currentData = this.modelValue;
   },
   methods: {
     open() {

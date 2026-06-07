@@ -293,7 +293,7 @@ export default {
           this.errorMessage =
             response.data.message || this.$t("auth.twoFactor.verifyEmail.errors.resendFailed");
         }
-      } catch (error) {
+      } catch (_error) {
         this.showError = true;
         this.errorMessage = this.$t("auth.twoFactor.verifyEmail.errors.resendFailed");
       } finally {

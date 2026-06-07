@@ -83,7 +83,8 @@
     "emailAssignment": "Email - Assignment",
     "documentGeneral": "Document - General",
     "documentStudy": "Document - Study",
-    "emailStudyClose": "Email - Study Close"
+    "emailStudyClose": "Email - Study Close",
+    "emailSubmissionUpload": "Email - Submission upload"
   },
   "editor": {
     "newLanguage": "New language",
@@ -220,6 +221,7 @@
         "emailStudySession": "Email - Study Session",
         "emailAssignment": "Email - Assignment",
         "emailStudyClose": "Email - Study Close",
+        "emailSubmissionUpload": "Email - Submission upload",
         "documentGeneral": "Document - General",
         "documentStudy": "Document - Study"
       }

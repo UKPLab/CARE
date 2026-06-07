@@ -1,5 +1,5 @@
 <template>
-  <!-- todo opt. show progress bar -->
+  <span hidden></span>
 </template>
 
 <script>

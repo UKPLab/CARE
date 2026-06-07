@@ -93,6 +93,7 @@
           4: { placeholders: [] }, // Document - General (no placeholders)
           5: { placeholders: [] }, // Document - Study (no placeholders)
           6: { placeholders: [] }, // Email - Study Close
+          7: { placeholders: [] }, // Email - Submission upload
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
@@ -114,6 +115,7 @@
           4: this.$t("templates.types.documentGeneral"),
           5: this.$t("templates.types.documentStudy"),
           6: this.$t("templates.types.emailStudyClose"),
+          7: this.$t("templates.types.emailSubmissionUpload"),
         };
         return types[this.templateType] || this.$t("common.unknown");
       },

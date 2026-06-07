@@ -7,6 +7,7 @@
       {{ $t('modals.confirm') }} {{ name }}
     </template>
     <template #body>
+      <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-html="message"></div>
       <div
         v-if="warning"

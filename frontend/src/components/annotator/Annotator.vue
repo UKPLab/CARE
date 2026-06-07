@@ -175,7 +175,7 @@ export default {
     },
     documentId: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
     },
     studyStepId: {

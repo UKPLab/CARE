@@ -236,6 +236,7 @@ export default {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
       }
+      return null;
     },
     buttons() {
       return [

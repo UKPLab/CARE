@@ -286,8 +286,8 @@
           <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
             {{ $t('dashboard.study.reviewersWithoutMatchingStudySessions') }}
             <ul>
-              <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
-                {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+              <li v-for="unmatchedReviewer in unmatchedReviewersForSessions" :key="unmatchedReviewer.id">
+                {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }} (ID: {{ unmatchedReviewer.id }})
               </li>
             </ul>
           </span>
@@ -369,8 +369,8 @@
         <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
           {{ $t('dashboard.study.reviewersWithoutMatchingStudySessions') }}
           <ul>
-            <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
-              {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+            <li v-for="unmatchedReviewer in unmatchedReviewersForSessions" :key="unmatchedReviewer.id">
+              {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }} (ID: {{ unmatchedReviewer.id }})
             </li>
           </ul>
         </span>

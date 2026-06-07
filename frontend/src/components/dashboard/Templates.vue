@@ -101,8 +101,8 @@
             return {
               ...t,
               typeName: this.typeName(t.type),
-              // Public email templates (types 1, 2, 3, 6) cannot be deleted
-              canDelete: !(t.public && [1, 2, 3, 6].includes(t.type)),
+              // Public email templates (types 1, 2, 3, 6, 7) cannot be deleted
+              canDelete: !(t.public && [1, 2, 3, 6, 7].includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,
@@ -254,6 +254,7 @@
           case 4: return this.$t("templates.types.documentGeneral");
           case 5: return this.$t("templates.types.documentStudy");
           case 6: return this.$t("templates.types.emailStudyClose");
+          case 7: return this.$t("templates.types.emailSubmissionUpload");
           default: return this.$t("templates.dashboard.chooseType")
         }
       },

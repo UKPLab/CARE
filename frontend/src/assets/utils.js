@@ -1,4 +1,4 @@
-import { FileSaver } from "file-saver"; // DO NOT delete this import, required for window.saveAs to work
+import "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
 import yaml from "js-yaml";
 import { i18n } from '../main.js';

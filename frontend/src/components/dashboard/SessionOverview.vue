@@ -39,8 +39,8 @@
       :columns="columns"
       :data="filteredStudySessions"
       :options="tableOptions"
-      @action="handleAction"
       :max-table-height="'70vh'"
+      @action="handleAction"
     />
   </div>
 </template>

@@ -144,6 +144,7 @@ export default {
         case 4: return this.$t("templates.types.documentGeneral");
         case 5: return this.$t("templates.types.documentStudy");
         case 6: return this.$t("templates.types.emailStudyClose");
+        case 7: return this.$t("templates.types.emailSubmissionUpload");
         default: return this.$t("common.unknown");
       }
     },

@@ -408,6 +408,7 @@ export default {
           }
         });
       }
+      return [];
     },
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);

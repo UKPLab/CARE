@@ -222,6 +222,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async deleteStudySteps(study, options) {
             const studySteps = await sequelize.models.study_step.getAllByKey("studyId", study.id);
+            const documentIds = [...new Set(studySteps.map((step) => step.documentId).filter(Boolean))];
 
             for (const studyStep of studySteps) {
                 await sequelize.models.study_step.deleteById(studyStep.id, {transaction: options.transaction});
@@ -296,6 +297,12 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             }
+
+            const usedDocumentIds = [...new Set(
+                Object.values(studyStepsMap)
+                    .map((step) => step.documentId)
+                    .filter(Boolean)
+            )];
 
         }
 

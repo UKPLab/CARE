@@ -34,7 +34,7 @@ class TemplateSocket extends Socket {
     if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
         throw new Error("errors.templates.missingCreateFields");
     }
-    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(data.type)) {
+    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(data.type)) {
       throw new Error("errors.templates.adminOnlyEmailTemplateCreate");
     }
 
@@ -197,7 +197,7 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("errors.templates.accessDenied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6].includes(data.templateType)) {
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7].includes(data.templateType)) {
       throw new Error("errors.templates.typeRequired");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
@@ -248,9 +248,9 @@ class TemplateSocket extends Socket {
     }
 
     return await this.models["placeholder"].updateById(
-      data.id,
-      updateData,
-      { transaction: options.transaction }
+        data.id,
+        updateData,
+        { transaction: options.transaction }
     );
   }
 
@@ -460,7 +460,7 @@ class TemplateSocket extends Socket {
     });
 
     if (edits.length === 0) {
-      if ([1, 2, 3, 6].includes(template.type)) {
+      if ([1, 2, 3, 6, 7].includes(template.type)) {
         const templateContentModel = this.models["template_content"];
         const langRow = await templateContentModel.findOne({
           where: { templateId, language, deleted: false },
@@ -499,8 +499,8 @@ class TemplateSocket extends Socket {
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
-    // Email templates (types 1, 2, 3, 6) must include all required placeholders
-    if ([1, 2, 3, 6].includes(template.type)) {
+    // Email templates (types 1, 2, 3, 6, 7) must include all required placeholders
+    if ([1, 2, 3, 6, 7].includes(template.type)) {
       const missing = await getMissingRequiredPlaceholders(
         { ops: mergedDelta.ops },
         template.type,
@@ -610,7 +610,7 @@ class TemplateSocket extends Socket {
     if (!data.sourceTemplateId) throw new Error("errors.templates.sourceTemplateIdRequired");
 
     const source = await this.models["template"].getById(data.sourceTemplateId);
-    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(source?.type)) {
+    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(source?.type)) {
       throw new Error("errors.templates.adminOnlyEmailTemplateCopy");
     }
 
@@ -679,11 +679,11 @@ class TemplateSocket extends Socket {
       throw new Error("errors.templates.deleteOwnOnly");
     }
 
-    if (template.public && [1, 2, 3, 6].includes(template.type)) {
+    if (template.public && [1, 2, 3, 6, 7].includes(template.type)) {
       throw new Error("errors.templates.publicEmailCannotDelete");
     }
 
-    if ([1, 2, 3, 6].includes(template.type)) {
+    if ([1, 2, 3, 6, 7].includes(template.type)) {
       const usedBySettings = await this.models["setting"].findAll({
         where: {
           key: {[Op.like]: "email.template.%"},
