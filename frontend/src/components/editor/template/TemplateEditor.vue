@@ -343,7 +343,11 @@
       },
       /**
        * Persist any pending debounced edits before close/discard checks.
-       * 
+       *
+       * The debounce timer may not have fired yet when the user leaves (topbar back,
+       * route navigation). This cancels the timer and sends buffered ops via
+       * templateEditContent, waiting for the socket callback before templateClose runs.
+       *
        * @returns {Promise<void>}
        */
       flushPendingEdits() {

@@ -26,6 +26,10 @@
     name: "TemplateRoute",
     subscribeTable: ["template"],
     components: {Loader, Editor},
+    /**
+     * Save-on-leave: flush pending edits, then merge via templateClose.
+     * On merge failure (e.g. missing required placeholders), confirm discard of drafts.
+     */
     beforeRouteLeave(to, from, next) {
       this.$nextTick(async () => {
         const templateEditor = this.$refs.editor?.$refs?.templateEditor;
