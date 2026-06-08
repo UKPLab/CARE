@@ -370,11 +370,16 @@ module.exports = class Server {
             this.logger.debug("Socket connect: " + socket.id);
 
           
-            Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
-                this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
+            await Promise.all(
+                Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
+                    this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
+                    await this.availSockets[socket.id][socketName].init();
+                })
+            );
 
-                await this.availSockets[socket.id][socketName].init();
-            })
+            // All per-socket handlers are now initialized and listening, so it's
+            // safe for clients (including replay clients) to start emitting events.
+            socket.emit("ready");
 
             // If a recording is in progress and this new connection isn't in the
             // participant list, notify the recording's owner that the activity

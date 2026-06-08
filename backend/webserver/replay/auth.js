@@ -2,10 +2,7 @@
 
 const crypto = require('crypto');
 const { io: SocketIOClient } = require('socket.io-client');
-// Delay between a replay client connecting and being handed off for replay.
-// Gives the server time to finish its asynchronous per-socket handler init
-// (see Server.js connection handler) so the first trace doesn't race setup.
-const WARMUP_DELAY_MS = 500;
+
 
 /**
  * Sign a session ID using the express-session HMAC-SHA256 scheme.
@@ -83,14 +80,10 @@ async function createAuthenticatedClient(server, user, serverUrl) {
     });
 
     return new Promise((resolve, reject) => {
-        client.on('connect', () => {
-            // The server finishes registering this socket's handlers (StatisticSocket,
-            // UserSocket, etc.) asynchronously after the connect event fires. Firing a
-            // trace before that init completes races the handler setup and the first
-            // event times out. A short warm-up delay lets the server finish wiring up
-            // the socket before we start replaying.
-            setTimeout(() => resolve(client), WARMUP_DELAY_MS);
-        });
+        // Wait for the server's "ready" signal rather than a fixed delay. The
+        // server emits this once all per-socket handlers are initialized and
+        // listening, so the first replayed trace can't race handler setup.
+        client.on('ready', () => resolve(client));
         client.on('connect_error', (err) => {
             reject(new Error(`Replay auth failed for user ${user.id}: ${err.message}`));
         });
