@@ -160,6 +160,34 @@
         </label>
       </div>
     </template>
+
+    <template #step-5>
+      <div class="mb-3">
+        <h6 class="mb-3">Review AI Hook</h6>
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Name</dt>
+          <dd class="col-sm-8">{{ hookForm.name || "-" }}</dd>
+
+          <dt class="col-sm-4">Description</dt>
+          <dd class="col-sm-8">{{ hookForm.description || "-" }}</dd>
+
+          <dt class="col-sm-4">Prompt Template</dt>
+          <dd class="col-sm-8">{{ selectedPromptTemplateName }}</dd>
+
+          <dt class="col-sm-4">Model</dt>
+          <dd class="col-sm-8">{{ selectedModelName }}</dd>
+
+          <dt class="col-sm-4">Output Type</dt>
+          <dd class="col-sm-8">{{ selectedOutputModeLabel }}</dd>
+
+          <dt class="col-sm-4">Status</dt>
+          <dd class="col-sm-8">{{ hookForm.enabled ? "Enabled" : "Disabled" }}</dd>
+        </dl>
+      </div>
+      <small class="text-muted">
+        Please confirm these settings before saving the AI hook.
+      </small>
+    </template>
   </StepperModal>
 </template>
 
@@ -212,14 +240,36 @@ export default {
         { title: "Prompt" },
         { title: "Model" },
         { title: "Output" },
+        { title: "Review" },
       ];
     },
     hookStepValidation() {
+      const hasBasics = !!this.hookForm.name.trim();
+      const hasPrompt = Number.isInteger(Number(this.hookForm.templateId)) && Number(this.hookForm.templateId) > 0;
+      const hasModel = Number.isInteger(Number(this.hookForm.aiModelId)) && Number(this.hookForm.aiModelId) > 0;
       return [
-        !!this.hookForm.name.trim(),
-        Number.isInteger(Number(this.hookForm.templateId)) && Number(this.hookForm.templateId) > 0,
-        Number.isInteger(Number(this.hookForm.aiModelId)) && Number(this.hookForm.aiModelId) > 0,
+        hasBasics,
+        hasPrompt,
+        hasModel,
+        true,
+        hasBasics && hasPrompt && hasModel,
       ];
+    },
+    selectedPromptTemplateName() {
+      const selectedId = Number(this.hookForm.templateId);
+      const template = this.promptTemplates.find((item) => Number(item.id) === selectedId);
+      return template?.name || "-";
+    },
+    selectedModelName() {
+      const selectedId = Number(this.hookForm.aiModelId);
+      const model = this.modelRows.find((item) => Number(item.id) === selectedId);
+      if (!model) return "-";
+      return model.model ? `${model.name} (${model.model})` : model.name;
+    },
+    selectedOutputModeLabel() {
+      const selectedValue = Number(this.hookForm.outputMode);
+      const mode = this.outputModes.find((item) => Number(item.value) === selectedValue);
+      return mode?.label || "-";
     },
     selectablePromptTemplates() {
       const selectedId = Number(this.hookForm.templateId);
