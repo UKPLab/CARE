@@ -101,6 +101,8 @@
     "email_template_studyClosed": "Vorlagentyp für E-Mails bei Studienabschluss (E-Mail – Studienabschluss). Leer lassen für Standard-E-Mail.",
     "email_template_twoFactorOtp": "Vorlagentyp für Zwei-Faktor-Authentifizierungs-E-Mails (E-Mail – Allgemein). Leer lassen für Fallback-E-Mail von der Festplatte.",
     "email_template_verification": "Vorlagentyp für E-Mail-Verifizierung (E-Mail – Allgemein). Leer lassen für Standard-E-Mail.",
+    "email_template_submissionUpload": "Vorlagentyp für Assignment-Submission-Upload-/Erneut-Upload-E-Mails an den Assignment-Owner (E-Mail – Submission-Upload). Leer lassen für Standard-E-Mail.",
+    "email_template_submissionUploadConfirmation": "Vorlage für Submission-Upload-Bestätigung an den Submitter (E-Mail – Submission-Upload). Leer lassen für Standard-E-Mail.",
     "logo_reBgColor": "Hintergrundfarbe für den RE-Bereich des Logos.",
     "modal_nlp_request_timeout": "Zeitüberschreitung für NLP-Service-Anfragen im Modal (Frontend, ms).",
     "modal_nlp_rotation_timer_long": "Lange Rotationszeit in Millisekunden.",
@@ -157,5 +159,9 @@
     "tags_recencySortingIsOn": "Gibt an, ob Sortierung nach Aktualität für Annotations-Tags aktiviert ist.",
     "tags_tagSet_default": "Standard-Tagset für neue Annotationen.",
     "topBar_projects_hideProjectButton": "Ob die Projekt-Schaltfläche in der oberen Leiste ausgeblendet wird."
+  },
+  "displayNames": {
+    "email_template_submissionUpload": "Submission-Upload (Assignment-Owner)",
+    "email_template_submissionUploadConfirmation": "Submission-Upload (Submitter)"
   }
 }

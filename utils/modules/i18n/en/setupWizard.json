@@ -1,0 +1,28 @@
+{
+  "steps": {
+    "admin": {
+      "title": "Admin Account",
+      "description": "Create the administrator account"
+    },
+    "general": {
+      "title": "General Settings",
+      "description": "Copyright, consent, guest login, external links"
+    },
+    "mail": {
+      "title": "Mail Configuration",
+      "description": "Enable email service and configure SMTP/sendmail"
+    },
+    "registration": {
+      "title": "User Registration",
+      "description": "What is required at signup"
+    },
+    "moodle": {
+      "title": "Moodle Settings",
+      "description": "Optional Moodle API settings"
+    },
+    "summary": {
+      "title": "Summary",
+      "description": "Review your choices before finishing"
+    }
+  }
+}

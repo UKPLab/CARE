@@ -101,6 +101,8 @@
     "email_template_studyClosed": "Template type for study closed emails (Email - Study Close). Leave empty to use default hardcoded email.",
     "email_template_twoFactorOtp": "Template type for two-factor authentication code emails (Email - General). Leave empty to use the fallback email from disk.",
     "email_template_verification": "Template type for email verification emails (Email - General). Leave empty to use default hardcoded email.",
+    "email_template_submissionUpload": "Template type for assignment submission upload/reupload emails to the assignment owner (Email - Submission upload). Leave empty to use default email.",
+    "email_template_submissionUploadConfirmation": "Template for submission upload confirmation to the submitter (Email - Submission upload). Leave empty to use default email.",
     "logo_reBgColor": "Background colour for the RE section of the logo",
     "modal_nlp_request_timeout": "The timeout for the NLP Service request in modal (frontend, ms)",
     "modal_nlp_rotation_timer_long": "Long rotation timer duration in milliseconds.",
@@ -157,5 +159,9 @@
     "tags_recencySortingIsOn": "Indicates whether recency based sorting for annotation tags is turned on.",
     "tags_tagSet_default": "The default tagset to use for new annotations",
     "topBar_projects_hideProjectButton": "Whether to hide the project button in the topBar"
+  },
+  "displayNames": {
+    "email_template_submissionUpload": "Submission upload (assignment owner)",
+    "email_template_submissionUploadConfirmation": "Submission upload (submitter)"
   }
 }

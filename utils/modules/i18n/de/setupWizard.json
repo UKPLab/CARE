@@ -1,0 +1,28 @@
+{
+  "steps": {
+    "admin": {
+      "title": "Admin-Konto",
+      "description": "Administrator-Konto erstellen"
+    },
+    "general": {
+      "title": "Allgemeine Einstellungen",
+      "description": "Copyright, Einwilligung, Gast-Login, externe Links"
+    },
+    "mail": {
+      "title": "E-Mail-Konfiguration",
+      "description": "E-Mail-Dienst aktivieren und SMTP/sendmail konfigurieren"
+    },
+    "registration": {
+      "title": "Benutzerregistrierung",
+      "description": "Was bei der Registrierung erforderlich ist"
+    },
+    "moodle": {
+      "title": "Moodle-Einstellungen",
+      "description": "Optionale Moodle-API-Einstellungen"
+    },
+    "summary": {
+      "title": "Zusammenfassung",
+      "description": "Auswahl vor dem Abschluss überprüfen"
+    }
+  }
+}

@@ -71,6 +71,12 @@
         "frontend_dashboard_study_sessions_view": "Zugriff auf Studiensitzungen im Dashboard",
         "frontend_dashboard_templates_view": "Zugriff auf Vorlagen im Dashboard",
         "frontend_dashboard_workflows_view": "Zugriff auf Workflows im Dashboard",
+        "frontend_dashboard_assignments_view": "Zugriff auf Assignments im Dashboard",
+        "frontend_dashboard_assignments_viewAll": "Zugriff auf alle Assignments und Submissions in der Assignments-Dashboard-Ansicht",
+        "frontend_dashboard_assignments_uploadForOthers": "Zugriff auf das Hochladen von Submissions für andere Benutzer",
+        "frontend_dashboard_assignments_edit": "Zugriff auf das Bearbeiten von Assignments",
+        "frontend_dashboard_assignments_replaceDeleteSubmissions": "Zugriff auf das Ersetzen oder Löschen von Submissions",
+        "frontend_dashboard_submissions_view": "Zugriff auf das Submissions-Dashboard",
         "study_template_delete": "Zugriff auf das Loschen von Vorlagen"
   },
     "roleDescriptions": {

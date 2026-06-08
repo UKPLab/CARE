@@ -71,6 +71,12 @@
     "frontend_dashboard_study_sessions_view": "Access to view study sessions in the dashboard",
     "frontend_dashboard_templates_view": "Access to view templates in the dashboard",
     "frontend_dashboard_workflows_view": "Access to view workflows in the dashboard",
+    "frontend_dashboard_assignments_view": "access to view assignments in the dashboard",
+    "frontend_dashboard_assignments_viewAll": "access to view all assignments and submissions in the Assignments dashboard view",
+    "frontend_dashboard_assignments_uploadForOthers": "access to upload submissions for other users",
+    "frontend_dashboard_assignments_edit": "access to edit assignments",
+    "frontend_dashboard_assignments_replaceDeleteSubmissions": "access to replace or delete submissions",
+    "frontend_dashboard_submissions_view": "access to view submissions dashboard",
     "study_template_delete": "Access to delete templates"
   },
   "roleDescriptions": {
