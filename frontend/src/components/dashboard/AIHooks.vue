@@ -28,6 +28,13 @@
     :model-rows="models"
   />
 
+  <AIHookFallbackModal
+    ref="fallbackModal"
+    :current-user-id="currentUserId"
+    :model-rows="models"
+    :fallback-rows="fallbacks"
+  />
+
   <ConfirmModal ref="confirmModal" />
 </template>
 
@@ -36,6 +43,7 @@ import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AIHookFallbackModal from "@/components/dashboard/ai/AIHookFallbackModal.vue";
 import AIHookStepperModal from "@/components/dashboard/ai/AIHookStepperModal.vue";
 
 const OUTPUT_MODES = [
@@ -50,12 +58,13 @@ const OUTPUT_MODES_BY_VALUE = OUTPUT_MODES.reduce((acc, mode) => {
 
 export default {
   name: "DashboardAIHooks",
-  subscribeTable: ["ai_hook", "template", "ai_model"],
+  subscribeTable: ["ai_hook", "ai_hook_fallback", "template", "ai_model"],
   components: {
     BasicCard,
     BasicButton,
     BasicTable,
     ConfirmModal,
+    AIHookFallbackModal,
     AIHookStepperModal,
   },
   data() {
@@ -87,11 +96,16 @@ export default {
     templates() {
       return this.$store.getters["table/template/getAll"] || [];
     },
+    // AIHooks should use prompt templates only (`template.type === 8` from feat-192).
+    // TODO: restore type-8 filter after prompt templates are available in your environment.
     promptTemplates() {
-      return this.templates.filter((template) => Number(template.type) === 8);
+      return this.templates;
     },
     models() {
       return this.$store.getters["table/ai_model/getAll"] || [];
+    },
+    fallbacks() {
+      return this.$store.getters["table/ai_hook_fallback/getAll"] || [];
     },
     hookRows() {
       const templatesById = this.templates.reduce((acc, template) => {
@@ -132,6 +146,13 @@ export default {
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
+          icon: "shuffle",
+          title: "Manage fallback models",
+          action: "fallbacks",
+          filter: [{ key: "userId", value: this.currentUserId }],
+          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
+        },
+        {
           icon: "toggle2-on",
           title: "Disable AI hook",
           action: "toggle",
@@ -162,6 +183,9 @@ export default {
       switch (data.action) {
         case "edit":
           this.openHookModal(data.params);
+          break;
+        case "fallbacks":
+          this.$refs.fallbackModal.open(data.params);
           break;
         case "toggle":
           this.toggleHook(data.params);

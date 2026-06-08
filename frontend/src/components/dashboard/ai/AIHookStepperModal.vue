@@ -77,7 +77,8 @@
           </option>
         </select>
         <small class="text-muted">
-          Prompt templates should use template type 8 and can include placeholders such as document text or study context.
+          Production: only prompt templates (`template.type === 8`) with placeholders such as document text or study context.
+          Testing: all templates are shown until type-8 prompt templates are merged.
         </small>
         <div v-if="selectablePromptTemplates.length === 0" class="text-warning small mt-1">
           No prompt templates are available yet.
@@ -271,10 +272,10 @@ export default {
       const mode = this.outputModes.find((item) => Number(item.value) === selectedValue);
       return mode?.label || "-";
     },
+    // Production: filter to `Number(template.type) === 8` (prompt templates from feat-192).
+    // Testing: `promptTemplates` prop includes all templates from the parent.
     selectablePromptTemplates() {
-      const selectedId = Number(this.hookForm.templateId);
-      return this.promptTemplates
-        .filter((template) => Number(template.type) === 8 || Number(template.id) === selectedId)
+      return [...this.promptTemplates]
         .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
     },
     selectableModels() {
