@@ -116,5 +116,32 @@
       "loadRoleRightsFailed": "Rollenrechte konnten nicht geladen werden",
       "assignRoleRightsFailed": "Rollenrechte konnten nicht zugewiesen werden"
     }
+  },
+  "roleManagement": {
+    "title": "Rolle erstellen",
+    "fields": {
+      "name": {
+        "label": "Rollenname",
+        "placeholder": "Rollennamen eingeben",
+        "description": "Neue Systemrolle erstellen."
+      },
+      "description": {
+        "placeholder": "Optionale Rollenbeschreibung"
+      }
+    },
+    "buttons": {
+      "create": "Rolle erstellen"
+    },
+    "toasts": {
+      "alreadyExists": {
+        "title": "Rolle existiert bereits",
+        "message": "Eine Rolle mit diesem Namen existiert bereits."
+      },
+      "createSuccess": {
+        "title": "Rolle erstellt",
+        "message": "Die Rolle wurde erfolgreich erstellt."
+      },
+      "createFailed": "Rolle konnte nicht erstellt werden"
+    }
   }
 }

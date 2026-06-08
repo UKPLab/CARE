@@ -116,6 +116,33 @@
       "loadRoleRightsFailed": "Failed to load role rights",
       "assignRoleRightsFailed": "Failed to assign role rights"
     }
+  },
+  "roleManagement": {
+    "title": "Create Role",
+    "fields": {
+      "name": {
+        "label": "Role Name",
+        "placeholder": "Enter role name",
+        "description": "Create a new system role."
+      },
+      "description": {
+        "placeholder": "Optional role description"
+      }
+    },
+    "buttons": {
+      "create": "Create Role"
+    },
+    "toasts": {
+      "alreadyExists": {
+        "title": "Role already exists",
+        "message": "A role with this name already exists."
+      },
+      "createSuccess": {
+        "title": "Role created",
+        "message": "Role has been successfully created."
+      },
+      "createFailed": "Failed to create role"
+    }
   }
 }
 

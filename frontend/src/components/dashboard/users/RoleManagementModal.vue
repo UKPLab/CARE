@@ -4,7 +4,7 @@
     name="RoleManagementModal"
   >
     <template #title>
-      <span>Create Role</span>
+      <span>{{ $t('users.roleManagement.title') }}</span>
     </template>
 
     <template #body>
@@ -19,12 +19,12 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          title="Cancel"
+          :title="$t('common.cancel')"
           @click="$refs.modal.close()"
         />
         <BasicButton
           class="btn btn-primary"
-          title="Create Role"
+          :title="$t('users.roleManagement.buttons.create')"
           @click="submit"
         />
       </span>
@@ -36,6 +36,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "RoleManagementModal",
@@ -58,18 +59,18 @@ export default {
       return [
         {
           key: "name",
-          label: "Role Name",
+          label: this.$t("users.roleManagement.fields.name.label"),
           type: "text",
           required: true,
-          placeholder: "Enter role name",
-          description: "Create a new system role.",
+          placeholder: this.$t("users.roleManagement.fields.name.placeholder"),
+          description: this.$t("users.roleManagement.fields.name.description"),
         },
         {
           key: "description",
-          label: "Description",
+          label: this.$t("common.description"),
           type: "text",
           required: false,
-          placeholder: "Optional role description",
+          placeholder: this.$t("users.roleManagement.fields.description.placeholder"),
         },
       ];
     },
@@ -96,8 +97,8 @@ export default {
       );
       if (roleExists) {
         this.eventBus.emit("toast", {
-          title: "Role already exists",
-          message: "A role with this name already exists.",
+          title: this.$t("users.roleManagement.toasts.alreadyExists.title"),
+          message: this.$t("users.roleManagement.toasts.alreadyExists.message"),
           variant: "warning",
         });
         return;
@@ -117,16 +118,16 @@ export default {
           this.$refs.modal.waiting = false;
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Role created",
-              message: "Role has been successfully created.",
+              title: this.$t("users.roleManagement.toasts.createSuccess.title"),
+              message: this.$t("users.roleManagement.toasts.createSuccess.message"),
               variant: "success",
             });
             this.$emit("update-user");
             this.$refs.modal.close();
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to create role",
-              message: result.message,
+              title: this.$t("users.roleManagement.toasts.createFailed"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
