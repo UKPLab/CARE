@@ -3,7 +3,12 @@ const Socket = require("../Socket");
 const Delta = require("quill-delta");
 const {Op} = require("sequelize");
 const {dbToDelta} = require("editor-delta-conversion");
-const {resolveTemplate, resolveTemplateToDelta, getMissingRequiredPlaceholders} = require("../../utils/templateResolver");
+const {
+  resolveTemplate,
+  resolveTemplateToDelta,
+  getMissingRequiredPlaceholders,
+  formatMissingPlaceholderError,
+} = require("../../utils/templateResolver");
 
 /**
  * Handle templates through websocket
@@ -500,10 +505,7 @@ class TemplateSocket extends Socket {
           options
         );
         if (missing.length > 0) {
-          const tokens = missing.map((k) => `~${k}~`).join(", ");
-          throw new Error(
-            `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before saving.`
-          );
+          throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
         }
       }
       return;
@@ -532,10 +534,7 @@ class TemplateSocket extends Socket {
         options
       );
       if (missing.length > 0) {
-        const tokens = missing.map((k) => `~${k}~`).join(", ");
-        throw new Error(
-          `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before saving.`
-        );
+        throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
       }
     }
 
