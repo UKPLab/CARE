@@ -775,6 +775,7 @@
       "maxPoints": 2,
       "minPoints": -2,
       "calculation": "sum",
+      "isBonus": true,
       "description": "Zusätzliche Punkte für sehr gute Arbeiten oder Abzüge bei groben Fehlern",
       "criteria": [
         {

@@ -124,7 +124,6 @@
 
         if (!isEdit) {
           delete payload.id;
-          payload.defaultLanguage = payload.defaultLanguage;
           // Set minimal content for new templates
           payload.content = { ops: [{ insert: "\n" }] };
         }
