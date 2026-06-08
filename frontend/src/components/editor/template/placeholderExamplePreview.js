@@ -27,7 +27,7 @@ export function escapeHtmlForPreview(value) {
   if (typeof value === "object") {
     try {
       raw = JSON.stringify(value);
-    } catch (_e) {
+    } catch (_error) {
       raw = "";
     }
   } else {
