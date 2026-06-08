@@ -93,6 +93,7 @@ export default {
     return {
       selectedHook: null,
       fallbackSelections: [null],
+      initialFallbackIds: [],
       isSaving: false,
     };
   },
@@ -115,8 +116,14 @@ export default {
         .map((id) => Number(id))
         .filter((id) => Number.isInteger(id) && id > 0);
     },
+    hasFallbackChanges() {
+      const current = this.selectedFallbackIds;
+      const initial = this.initialFallbackIds;
+      if (current.length !== initial.length) return true;
+      return current.some((id, index) => id !== initial[index]);
+    },
     canSave() {
-      return this.selectedFallbackIds.length > 0 && !this.isSaving;
+      return this.hasFallbackChanges && this.selectedFallbackIds.length > 0 && !this.isSaving;
     },
   },
   methods: {
@@ -172,6 +179,7 @@ export default {
         .sort((a, b) => Number(a.priority) - Number(b.priority))
         .map((row) => row.aiModelId);
 
+      this.initialFallbackIds = existing.map((id) => Number(id));
       this.fallbackSelections = existing.length > 0 ? [...existing, null] : [null];
       this.isSaving = false;
       this.$refs.fallbackModal.open();
