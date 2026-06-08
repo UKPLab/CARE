@@ -119,26 +119,21 @@ export function calculateAssessmentScore(config, scores = {}) {
         rubric_max = Number(rubric_max) || 0;
 
         // 5. Compute rubric raw score according to calculation
-        let rubric_raw_score = 0;
         const sumCrit = crit_scores.reduce((acc, v) => acc + v, 0);
-
-        if (!crit_scores.length) {
-            rubric_raw_score = 0;
-        } else if (calc === "sum") {
-            rubric_raw_score = sumCrit;
-        } else if (calc === "min") {
-            rubric_raw_score = Math.min(sumCrit, rubric_max);
-        } else if (calc === "max") {
-            const base = Number(rubric.defaultPoints) || 0;
-            let computed = base + sumCrit;
-            if (computed < 0) computed = 0;
-            rubric_raw_score = computed;
-        } else {
+        const rubric_raw_score = (() => {
+            if (!crit_scores.length) return 0;
+            if (calc === "sum") return sumCrit;
+            if (calc === "min") return Math.min(sumCrit, rubric_max);
+            if (calc === "max") {
+                const base = Number(rubric.defaultPoints) || 0;
+                const computed = base + sumCrit;
+                return computed < 0 ? 0 : computed;
+            }
             warnings.push(
                 `Unknown calculation '${calc}' for rubric '${rubric_name}', falling back to 'sum'.`
             );
-            rubric_raw_score = sumCrit;
-        }
+            return sumCrit;
+        })();
 
         // 6. Clamp rubric score
         let rubric_score = rubric_raw_score;

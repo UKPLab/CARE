@@ -6,6 +6,7 @@
   },
   "scripts": {
     "start": "node index.js",
+    "start:watch": "nodemon index.js",
     "db_create": "cd db && npx sequelize-cli db:create",
     "db_migrate": "cd db && npx sequelize-cli db:migrate",
     "db_migrate:reset": "cd db && npx sequelize-cli db:drop && npm run db_create && npm run db_migrate",
@@ -14,10 +15,12 @@
     "test_rpc": "cross-env NODE_ENV=test DISABLE_LOGGING=false jest --silent=false --forceExit --testTimeout=10000  --runInBand  --testPathPattern=tests/rpcs -- ",
     "test_doh": "cross-env NODE_ENV=test jest  --detectOpenHandles --testTimeout=10000",
     "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset",
-    "set-admin-password": "node scripts/setAdminPassword.js"
+    "set-admin-password": "node scripts/setAdminPassword.js",
+    "anonymize": "node scripts/anonymize.js"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
+    "@node-saml/passport-saml": "^5.1.0",
     "archiver": "^7.0.1",
     "argparse": "^2.0.1",
     "axios": "^1.13.6",
@@ -25,7 +28,7 @@
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.2",
     "connect-ensure-login": "^0.1.1",
-    "connect-session-sequelize": "^8.0.5",
+    "connect-session-sequelize": "^8.0.6",
     "cors": "^2.8.6",
     "dayjs": "^1.11.19",
     "dotenv": "^17.3.1",
@@ -35,19 +38,19 @@
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.19.0",
     "js-yaml": "^4.1.1",
+    "jszip": "^3.10.1",
     "mustache-express": "^1.3.2",
     "nodemailer": "^8.0.1",
     "objects-to-csv": "^1.3.6",
-    "papaparse": "^5.5.3",
     "otpauth": "^9.2.2",
+    "papaparse": "^5.5.3",
     "passport": "^0.7.0",
     "passport-ldapauth": "^3.0.1",
     "passport-local": "^1.0.0",
     "passport-orcid": "^0.0.4",
-    "@node-saml/passport-saml": "^5.1.0",
     "pg-promise": "^12.1.3",
     "quill-delta": "^5.1.0",
-    "sequelize": "^6.37.7",
+    "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "sequelize-mock": "^0.10.2",
     "sequelize-simple-cache": "^1.3.5",
@@ -56,16 +59,20 @@
     "socket.io-client": "^4.8.3",
     "string-replace-middleware": "^1.1.0",
     "supertest": "^7.2.2",
-    "uuid": "^13.0.0",
+    "uuid": "^14.0.0",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
     "winston-transport": "^4.9.0",
-    "yauzl": "^3.2.0",
-    "jszip": "^3.10.1",
-    "otpauth": "^9.2.2"
+    "yauzl": "^3.2.0"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
-    "jest": "^30.2.0"
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.10"
+  },
+  "overrides": {
+    "sequelize": {
+      "uuid": "14.0.0"
+    }
   }
 }

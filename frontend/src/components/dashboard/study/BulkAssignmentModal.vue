@@ -40,10 +40,10 @@
       <div class="mt-3">
         <div class="form-check">
           <input
-            type="checkbox"
-            v-model="enableEmailNotification"
-            class="form-check-input"
             id="emailNotifyCheck"
+            v-model="enableEmailNotification"
+            type="checkbox"
+            class="form-check-input"
           />
           <label class="form-check-label" for="emailNotifyCheck">
             <strong>Send email notification to reviewer</strong>
@@ -283,8 +283,8 @@
           <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
             The following reviewers do not have matching study sessions:
             <ul>
-              <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
-                {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+              <li v-for="unmatchedReviewer in unmatchedReviewersForSessions" :key="unmatchedReviewer.id">
+                {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }} (ID: {{ unmatchedReviewer.id }})
               </li>
             </ul>
           </span>
@@ -368,8 +368,8 @@
         <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
           The following reviewers do not have matching study sessions:
           <ul>
-            <li v-for="reviewer in unmatchedReviewersForSessions" :key="reviewer.id">
-              {{ reviewer.firstName }} {{ reviewer.lastName }} (ID: {{ reviewer.id }})
+            <li v-for="unmatchedReviewer in unmatchedReviewersForSessions" :key="unmatchedReviewer.id">
+              {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }} (ID: {{ unmatchedReviewer.id }})
             </li>
           </ul>
         </span>

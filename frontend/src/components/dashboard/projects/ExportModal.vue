@@ -438,7 +438,7 @@ export default {
               );
               break;
 
-            case 2: // Editor
+            case 2: { // Editor
               // download edits + html
               const edits = this.edits.filter(edit => (
                   edit.documentId === step.documentId && edit.studyStepId === null && edit.studySessionId === null
@@ -454,6 +454,7 @@ export default {
               step_folder.file('text.txt', quill.getText());
               step_folder.file('document.delta', JSON.stringify(deltas, null, 2));
               break;
+            }
           }
         });
       });

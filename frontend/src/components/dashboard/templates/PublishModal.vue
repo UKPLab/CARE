@@ -29,8 +29,8 @@
       >
         <BasicButton
           class="btn btn-secondary"
-          @click="close"
           title="Close"
+          @click="close"
         />
       </span>
       <span
@@ -82,7 +82,7 @@ export default {
       return this.$store.getters["table/template/get"](this.id);
     },
     isEmailTemplate() {
-      return this.template && [1, 2, 3, 6].includes(this.template.type);
+      return this.template && [1, 2, 3, 6, 7].includes(this.template.type);
     },
     visibilityMessage() {
       return this.isEmailTemplate

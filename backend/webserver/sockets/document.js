@@ -11,6 +11,7 @@ const Validator = require("../../utils/validator.js");
 const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const {generateError} = require("../../utils/generic.js");
+const {getEmailContent} = require("../../utils/emailHelper.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -859,6 +860,15 @@ class DocumentSocket extends Socket {
         const downloadedSubmissions = [];
         const downloadedErrors = [];
         const submissions = data.submissions || [];
+        const assignmentId = data.assignmentId || null;
+        // Validate assignment once before the loop (if provided)
+        let assignment = null;
+        if (assignmentId) {
+            assignment = await this.models["assignment"].getById(assignmentId, {});
+            if (!assignment) {
+                throw new Error(`Assignment with id ${assignmentId} not found`);
+            }
+        }
 
         for (const submission of submissions) {
             // Create a new transaction for each submission
@@ -870,23 +880,56 @@ class DocumentSocket extends Socket {
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
-                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId);
+                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId? data.validationConfigurationId : (assignment ? assignment.validationConfigurationId : null));
 
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
-                // 3. Get previous submission for the user and project to link the new submission (if exists)
-                const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+
+                // 3. Determine previousSubmissionId
+                let previousSubmissionId = null;
+                if (assignmentId) {
+                    const assignmentSubmissions = await this.models["submission"].findAll({
+                        where: { assignmentId, userId: submission.userId, deleted: false },
+                        raw: true,
+                        transaction,
+                    });
+
+                    // Check revision limit (0 = unlimited)
+                    if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
+                        throw new Error(`Revision limit reached: user ${submission.userId} already has ${assignmentSubmissions.length} submission(s) for this assignment (max: ${assignment.maxRevisions}).`);
+                    }
+
+                    const childByParentId = new Map();
+                    for (const s of assignmentSubmissions) {
+                        if (s.previousSubmissionId) {
+                            childByParentId.set(s.previousSubmissionId, s.id);
+                        }
+                    }
+
+                    const parentIds = new Set(assignmentSubmissions.filter((s) => s.previousSubmissionId).map((s) => s.previousSubmissionId));
+                    const chainTails = assignmentSubmissions.filter((s) => !parentIds.has(s.id)).map((s) => s.id);
+
+                    if (chainTails.length > 0) {
+                        previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
+                    }
+                } else {
+                    const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+                    previousSubmissionId = previousSubmission ? previousSubmission.id : null;
+                }
+
                 // 4. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
-                        previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                        previousSubmissionId,
                         projectId: submission.projectId,
-                        group: data.group,
-                        validationConfigurationId: data.validationConfigurationId,
+                        assignmentId: assignmentId || null,
+                        name: submission.name ?? null,
+                        description: submission.description ?? null,
+                        validationConfigurationId: assignment ? assignment.validationConfigurationId : (data.validationConfigurationId || null),
                     },
                     {transaction}
                 );
@@ -939,6 +982,92 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Send submission upload/reupload notification emails to assignment owner and submitter.
+     *
+     * @author Mohammad Elwan
+     * @param {Object} data - The input data for sending the notification
+     * @param {number} data.assignmentId - Assignment ID linked to the submission
+     * @param {number} data.submissionId - Submission ID that was created/replaced
+     * @param {number} data.submitterUserId - User ID of the person who uploaded
+     * @param {string} data.eventType - Upload event type ('first_upload' or 'reupload')
+     * @returns {Promise<void>}
+     */
+    async sendSubmissionUploadEmail(data) {
+        const {assignmentId, submissionId, submitterUserId, eventType} = data;
+        const assignment = await this.models["assignment"].getById(assignmentId);
+        if (!assignment) {
+            this.server.logger.warn(`Cannot send submission upload email: assignment ${assignmentId} not found`);
+            return;
+        }
+
+        if (assignment.notifyOnSubmissionUpload === false) {
+            return;
+        }
+
+        const submission = await this.models["submission"].getById(submissionId);
+        const eventLabel = eventType === "reupload" ? "Reuploaded" : "Uploaded";
+        const eventLabelLower = eventType === "reupload" ? "reuploaded" : "uploaded";
+        const emailContext = {
+            assignmentName: assignment.name,
+            assignmentId: assignment.id,
+            submissionId: submission?.id ?? submissionId,
+            eventType: eventLabelLower,
+            eventLabel,
+            eventLabelLower,
+            timestamp: submission?.createdAt
+                ? new Date(submission.createdAt).toLocaleString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })
+                : "",
+        };
+
+        const owner = await this.models["user"].getById(assignment.userId);
+        if (!owner || !owner.email) {
+            this.server.logger.warn(`Cannot send submission upload email: assignment owner ${assignment.userId} has no email`);
+        } else {
+            const ownerEmailContent = await getEmailContent(
+                "email.template.submissionUpload",
+                "submissionUpload",
+                {
+                    userId: assignment.userId,
+                    ...emailContext,
+                },
+                this.models,
+                this.logger
+            );
+
+            await this.server.sendMail(owner.email, ownerEmailContent.subject, ownerEmailContent.body, {isHtml: ownerEmailContent.isHtml});
+        }
+
+        if (!submitterUserId || submitterUserId === assignment.userId) {
+            return;
+        }
+
+        const submitter = await this.models["user"].getById(submitterUserId);
+        if (!submitter || !submitter.email) {
+            this.server.logger.warn(`Cannot send submission upload confirmation email: submitter ${submitterUserId} has no email`);
+            return;
+        }
+
+        const submitterEmailContent = await getEmailContent(
+            "email.template.submissionUploadConfirmation",
+            "submissionUploadConfirmation",
+            {
+                userId: submitterUserId,
+                ...emailContext,
+            },
+            this.models,
+            this.logger
+        );
+
+        await this.server.sendMail(submitter.email, submitterEmailContent.subject, submitterEmailContent.body, {isHtml: submitterEmailContent.isHtml});
+    }
+
+    /**
      * Upload a single submission to the DB.
      *
      * @author Linyin Huang
@@ -947,13 +1076,15 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.files - The submissions files
      * @param {number} data.group - The group number to be assigned to the submissions
      * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
+      * @param {string|null} [data.name] - Optional submission name.
+      * @param {string|null} [data.description] - Optional submission description.
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The result of the processed submission
      * @throws {Error} - If the upload fails, or if saving to server fails
      */
     async uploadSingleSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, projectId} = data;
+        const {files, userId, group, validationConfigurationId, projectId, assignmentId, submissionId, name, description} = data;
         const transaction = options.transaction;
         try {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
@@ -961,14 +1092,97 @@ class DocumentSocket extends Socket {
             if (!result.success) {
                 throw new Error(result.message || "Validation failed");
             }
-            const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
+
+            if (assignmentId && submissionId) {
+                return await this.replaceAssignmentSubmission(
+                    {
+                        files,
+                        userId,
+                        group,
+                        validationConfigurationId,
+                        assignmentId,
+                        submissionId,
+                        name,
+                        description,
+                    },
+                    {transaction}
+                );
+            }
+
+            let previousSubmissionId = null;
+
+            if (assignmentId) {
+                const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
+                if (!assignment) {
+                    throw new Error(`Assignment with id ${assignmentId} not found`);
+                }
+
+                const assignmentSubmissions = await this.models["submission"].findAll({
+                    where: {
+                        assignmentId,
+                        userId,
+                        deleted: false,
+                    },
+                    raw: true,
+                    transaction,
+                });
+
+                const submissionById = new Map(assignmentSubmissions.map((submission) => [submission.id, submission]));
+                const childByParentId = new Map();
+                for (const submission of assignmentSubmissions) {
+                    if (submission.previousSubmissionId) {
+                        childByParentId.set(submission.previousSubmissionId, submission.id);
+                    }
+                }
+
+                const parentIds = new Set();
+                for (const submission of assignmentSubmissions) {
+                    if (submission.previousSubmissionId) {
+                        parentIds.add(submission.previousSubmissionId);
+                    }
+                }
+
+                const chainTails = assignmentSubmissions
+                    .filter((submission) => !parentIds.has(submission.id))
+                    .map((submission) => submission.id);
+
+                if (chainTails.length > 0) {
+                    previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
+                }
+
+                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && previousSubmissionId) {
+                    let chainDepth = 0;
+                    let currentId = previousSubmissionId;
+                    const visited = new Set();
+
+                    while (currentId && submissionById.has(currentId) && !visited.has(currentId)) {
+                        visited.add(currentId);
+                        chainDepth += 1;
+                        currentId = submissionById.get(currentId).previousSubmissionId;
+                    }
+
+                    if (chainDepth >= assignment.maxRevisions) {
+                        throw new Error(
+                            `Maximum revisions reached for this assignment (${chainDepth}/${assignment.maxRevisions})`
+                        );
+                    }
+                }
+            } else {
+                const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
+                previousSubmissionId = previousSubmission ? previousSubmission.id : null;
+            }
+
+
 
             const submission = await this.models["submission"].add({
                 userId,
                 group,
                 validationConfigurationId,
                 createdByUserId: this.userId,
-                previousSubmissionId: previousSubmission ? previousSubmission.id : null,
+                previousSubmissionId,
+                assignmentId: assignmentId || null,
+                name: name ?? null,
+                description: description ?? null,
             }, {transaction});
             for (const file of files) {
                 await this.addDocument(
@@ -982,10 +1196,157 @@ class DocumentSocket extends Socket {
                     {transaction}
                 );
             }
+
+            if (assignmentId) {
+                transaction.afterCommit(async () => {
+                    try {
+                        await this.sendSubmissionUploadEmail({
+                            assignmentId,
+                            submissionId: submission.id,
+                            submitterUserId: userId,
+                            eventType: "first_upload",
+                        });
+                    } catch (emailError) {
+                        this.server.logger.error("Failed to send submission upload email:", emailError);
+                    }
+                });
+            }
         } catch (error) {
             this.logger.error(error);
             throw new Error(error);
         }
+    }
+
+    /**
+     * Replace an existing assignment submission by creating a new one,
+     * deleting the old one, and reconnecting submission chain pointers.
+     *
+     * @param {Object} data - The input data for the replacement
+     * @param {Array<Object>} data.files - The new submission files to upload
+     * @param {number} data.userId - The ID of the user who owns the submission
+     * @param {number} data.group - The group number to be assigned to the submission
+     * @param {number} data.validationConfigurationId - Configuration ID referring to the validation schema
+     * @param {number} data.assignmentId - The ID of the assignment the submission belongs to
+     * @param {number} data.submissionId - The ID of the existing submission to replace
+     * @param {string|null} [data.name] - Optional submission name; falls back to the old submission's name
+     * @param {string|null} [data.description] - Optional submission description; falls back to the old submission's description
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Object>} An object containing replacedSubmissionId and newSubmissionId
+     * @throws {Error} If the assignment or submission is not found, the user lacks permission, or a linked document is used in a study
+     */
+    async replaceAssignmentSubmission(data, options) {
+        const {files, userId, group, validationConfigurationId, assignmentId, submissionId, name, description} = data;
+        const transaction = options.transaction;
+
+        const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
+        if (!assignment) {
+            throw new Error(`Assignment with id ${assignmentId} not found`);
+        }
+
+        if (assignment.closed) {
+            throw new Error("Cannot replace submission because the assignment is closed.");
+        }
+
+        const oldSubmission = await this.models["submission"].findOne({
+            where: {
+                id: submissionId,
+                assignmentId,
+                userId,
+                deleted: false,
+            },
+            raw: true,
+            transaction,
+        });
+
+        if (!oldSubmission) {
+            throw new Error(`Submission with id ${submissionId} not found for this assignment`);
+        }
+
+        const isOwner = this.userId === oldSubmission.userId;
+        const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
+        if (!isOwner && !hasRight) {
+            throw new Error("You are not allowed to replace this submission.");
+        }
+
+        const oldSubmissionDocuments = await this.models["document"].findAll({
+            where: {
+                submissionId: oldSubmission.id,
+                deleted: false,
+            },
+            raw: true,
+            transaction,
+        });
+        const hasStudyLinkedDocument = oldSubmissionDocuments.some(
+            (document) => Number(document.studyUsageCount || 0) > 0
+        );
+        if (hasStudyLinkedDocument) {
+            throw new Error("Cannot replace submission because one or more linked documents are used in studies.");
+        }
+
+        const newSubmission = await this.models["submission"].add({
+            userId,
+            group: group ?? oldSubmission.group,
+            validationConfigurationId,
+            createdByUserId: this.userId,
+            previousSubmissionId: oldSubmission.previousSubmissionId || null,
+            assignmentId,
+            name: name ?? oldSubmission.name ?? null,
+            description: description ?? oldSubmission.description ?? null,
+        }, {transaction});
+
+        // Reconnect revisions that pointed to the replaced submission.
+        const childRevision = await this.models["submission"].findOne({
+            where: {
+                previousSubmissionId: oldSubmission.id,
+                assignmentId,
+                userId,
+                deleted: false,
+            },
+            raw: true,
+            transaction,
+        });
+
+        if (childRevision) {
+            await this.models["submission"].updateById(
+                childRevision.id,
+                { previousSubmissionId: newSubmission.id },
+                { transaction }
+            );
+        }
+
+        await this.models["submission"].deleteById(oldSubmission.id, { force: true, transaction, individualHooks: true });
+
+        for (const file of files) {
+            await this.addDocument(
+                {
+                    file: file.content,
+                    name: file.fileName,
+                    userId,
+                    isUploaded: true,
+                    submissionId: newSubmission.id,
+                },
+                {transaction}
+            );
+        }
+
+        transaction.afterCommit(async () => {
+            try {
+                await this.sendSubmissionUploadEmail({
+                    assignmentId: assignment.id,
+                    submissionId: newSubmission.id,
+                    submitterUserId: userId,
+                    eventType: "reupload",
+                });
+            } catch (emailError) {
+                this.server.logger.error("Failed to send submission reupload email:", emailError);
+            }
+        });
+
+        return {
+            replacedSubmissionId: oldSubmission.id,
+            newSubmissionId: newSubmission.id,
+        };
     }
 
     /**

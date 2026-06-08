@@ -28,29 +28,8 @@
         :max-table-height="400"
       />
     </template>
-    <!-- Config Selection Step -->
-    <template #step-3>
-      <div class="p-3">
-        <div class="mb-3">
-          <h4 class="mb-3">Assign Group</h4>
-          <BasicForm
-            v-model="formData"
-            :fields="formFields"
-          />
-        </div>
-        <ValidatorSelector
-          v-model="selectedValidatorId"
-          description=""
-          @selection-changed="
-            (validatorData) => {
-              selectedValidatorData = validatorData;
-            }
-          "
-        />
-      </div>
-    </template>
     <!-- Confirm Step -->
-    <template #step-4>
+    <template #step-3>
       <div class="confirm-container">
         <h4 class="mb-3">Confirm Import Settings</h4>
         <div class="card mb-3">
@@ -58,23 +37,8 @@
             <h5 class="card-title">Import Summary</h5>
             <ul class="list-unstyled mb-0">
               <li>• Submissions to import: {{ selectedSubmissions.length }}</li>
-              <li>• Group Number: {{ formData.group }}</li>
-              <li>
-                • Validation schema:
-                {{ selectedValidatorData?.name || "None selected" }}
-              </li>
-              <li>• Total submissions: {{ selectedSubmissions.length }}</li>
-              <li v-if="selectedValidatorData">• Required files: {{ selectedValidatorData.files.join(", ") }}</li>
             </ul>
           </div>
-        </div>
-        <div class="alert alert-info">
-          <strong>Validation Details:</strong><br />
-          <span v-if="selectedValidatorData">
-            This will validate ZIP file contents according to the "<strong>{{ selectedValidatorData.name }}</strong
-            >" schema. Submissions must contain all required files: {{ selectedValidatorData.files.join(", ") }}.
-          </span>
-          <span v-else> No validation schema selected. Submissions will be imported without validation. </span>
         </div>
         <p>
           Are you sure you want to import
@@ -83,7 +47,7 @@
       </div>
     </template>
     <!-- Result Step -->
-    <template #step-5>
+    <template #step-4>
       <div class="result-container">
         <div v-if="importResults && importResults.successCount != null">
           Successfully imported <strong>{{ importResults.successCount }}</strong> submissions
@@ -118,9 +82,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicForm from "@/basic/Form.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import ValidatorSelector from "./ValidatorSelector.vue";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
@@ -129,14 +91,12 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, BasicTable, BasicButton, BasicForm, ValidatorSelector, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}],
+  components: { MoodleOptions, BasicTable, BasicButton, StepperModal },
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}, "assignment_share", "user_role_matching"],
   data() {
     return {
-      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Configure" }, { title: "Confirm" }, { title: "Result" }],
+      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
-      selectedValidatorId: 0,
-      selectedValidatorData: null,
       tableOptions: {
         striped: true,
         hover: true,
@@ -170,21 +130,7 @@ export default {
         { name: "Last Name", key: "lastName" },
         { name: "File Count", key: "fileCount" },
       ],
-      formData: {
-        group: null
-      },
-      formFields: [
-        {
-          key: "group",
-          label: "Group Number",
-          type: "number",
-          placeholder: "Enter group number",
-          min: 0,
-          class: "form-control",
-          required: true,
-          default: null,
-        },
-      ],
+      assignmentId: null,
       downloadedSubmissions: [],
       selectedSubmissions: [],
       importedSubmissions: [],
@@ -193,30 +139,51 @@ export default {
   },
   computed: {
     stepValid() {
-      return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, this.selectedValidatorId !== 0 && this.formData.group, true, true];
+      return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, true, true];
     },
     currentProject() {
-      console.log("current project id", this.$store.getters["settings/getValueAsInt"]("projects.default"));
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     message() {
-      const currentStep = this.$refs.importStepper?.currentStep ?? 0;
-      if (currentStep === 2) {
-        return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
-      }
-      if (currentStep === 3) {
-        return this.importedSubmissions.length > 1 ? "submissions" : "submission";
-      }
-      return "submissions";
+      return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
+    },
+    assignedUserIds() {
+      if (!this.assignmentId) return new Set();
+      const shares = this.$store.getters["table/assignment_share/getFiltered"](
+        (s) => s.assignmentId === this.assignmentId
+      ) || [];
+      return new Set(shares.filter(s => s.userId != null).map(s => s.userId));
+    },
+    assignedRoleIds() {
+      if (!this.assignmentId) return new Set();
+      const shares = this.$store.getters["table/assignment_share/getFiltered"](
+        (s) => s.assignmentId === this.assignmentId
+      ) || [];
+      return new Set(shares.filter(s => s.roleId != null).map(s => s.roleId));
     },
     users() {
-      return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+      const result = this.$store.getters["table/user/getFiltered"]((u) => {
+        if (u.extId === null) {
+          return false;
+        }
+        if (this.assignedUserIds.size > 0) {
+          const pass = this.assignedUserIds.has(u.id);
+          return pass;
+        }
+        if (this.assignedRoleIds.size > 0) {
+          const userRoles = u.roles || [];
+          const pass = userRoles.some(roleId => this.assignedRoleIds.has(roleId));
+          return pass;
+        }
+        return true;
+      });
+      return result;
     },
     usersExtIds() {
-      return this.users.map((u) => u.extId);
+      return this.users?.map((u) => u.extId);
     },
     userSubmissions() {
-      return this.downloadedSubmissions.filter((a) => a["files"].length > 0 && this.usersExtIds.includes(a["userid"]));
+      return this.downloadedSubmissions.filter((a) => a["files"].length > 0 && this.usersExtIds?.includes(a["userid"]));
     },
     submissions() {
       // Group rows by submission (one table row per submission)
@@ -244,14 +211,13 @@ export default {
     },
   },
   methods: {
-    open() {
+    open(assignmentId = null) {
+      this.assignmentId = assignmentId;
       this.reset();
       this.$refs.importStepper.open();
     },
     reset() {
       this.selectedSubmissions = [];
-      this.formData = {};
-      this.selectedValidatorId = 0;
       this.importResults = {};
       if (this.importedSubmissions.length > 0) {
         this.importedSubmissions = [];
@@ -267,7 +233,7 @@ export default {
         case 1:
           this.getMoodleSubmissions();
           break;
-        case 4:
+        case 3:
           this.downloadMoodleSubmissions();
           break;
       }
@@ -303,8 +269,7 @@ export default {
             files: s.files,
           })),
           options: this.moodleOptions,
-          group: this.formData.group,
-          validationConfigurationId: this.selectedValidatorId,
+          assignmentId: this.assignmentId,
           progressId: this.$refs.importStepper.startProgress(),
         },
         (res) => {

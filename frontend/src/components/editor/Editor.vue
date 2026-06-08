@@ -23,7 +23,7 @@
       <BasicSidebar
           v-if="!sidebarDisabled"
           ref="sidebar"
-          :isShown="isShown"
+          :is-shown="isShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
@@ -201,10 +201,10 @@ export default {
       return null;
     },
     hasPlaceholders() {
-      // Only email templates (types 1, 2, 3, 6) have placeholders
+      // Only email templates (types 1, 2, 3, 6, 7) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6].includes(this.template.type);
+      return [1, 2, 3, 6, 7].includes(this.template.type);
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {

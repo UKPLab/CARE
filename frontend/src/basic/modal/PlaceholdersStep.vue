@@ -3,6 +3,7 @@
     <!-- Short Preview -->
     <div v-if="shortPreview" class="short-preview mb-4">
       <h6 class="section-title">Document Preview</h6>
+      <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="preview-content" v-html="shortPreview"></div>
     </div>
 
@@ -10,8 +11,12 @@
     <div v-if="placeholders.length" class="legend mb-4">
       <h6 class="section-title">Placeholder Legend</h6>
       <div class="legend-items">
-        <span v-for="(placeholder, index) in placeholders" :key="index" class="legend-item"
-          :style="{ color: placeholderColors[index] }">
+        <span
+          v-for="(placeholder, index) in placeholders"
+          :key="index"
+          class="legend-item"
+          :style="{ color: placeholderColors[index] }"
+        >
           {{ placeholder.text }} ({{ placeholder.type }})
         </span>
       </div>
@@ -33,11 +38,18 @@
         <div v-if="placeholder.type === placeholderType.comparison" class="comparison-inputs">
           <div class="input-group mb-2">
             <label class="form-label">First Data Source:</label>
-            <select :value="formData[index]?.dataInput?.[0]?.value || ''"
-              class="form-control" @change="updateComparisonInput(index, 0, $event.target.value)">
+            <select
+              :value="formData[index]?.dataInput?.[0]?.value || ''"
+              class="form-control"
+              @change="updateComparisonInput(index, 0, $event.target.value)"
+            >
               <option value="">Select first data source...</option>
-              <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-0`"
-                :value="source.value" :data-step-id="source.stepId">
+              <option
+                v-for="source in availableDataSources"
+                :key="`${source.stepId}-${source.value}-0`"
+                :value="source.value"
+                :data-step-id="source.stepId"
+              >
                 {{ source.name }}
               </option>
             </select>
@@ -45,11 +57,18 @@
 
           <div class="input-group mb-2">
             <label class="form-label">Second Data Source:</label>
-            <select :value="formData[index]?.dataInput?.[1]?.value || ''"
-              class="form-control" @change="updateComparisonInput(index, 1, $event.target.value)">
+            <select
+              :value="formData[index]?.dataInput?.[1]?.value || ''"
+              class="form-control"
+              @change="updateComparisonInput(index, 1, $event.target.value)"
+            >
               <option value="">Select second data source...</option>
-              <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}-1`"
-                :value="source.value" :data-step-id="source.stepId">
+              <option
+                v-for="source in availableDataSources"
+                :key="`${source.stepId}-${source.value}-1`"
+                :value="source.value"
+                :data-step-id="source.stepId"
+              >
                 {{ source.name }}
               </option>
             </select>
@@ -59,11 +78,18 @@
         <!-- Single Input Types (text, chart) -->
         <div v-else class="single-input">
           <label class="form-label">Data Source:</label>
-          <select :value="formData[index]?.dataInput?.value || ''"
-            class="form-control" @change="updateSingleInput(index, $event.target.value)">
+          <select
+            :value="formData[index]?.dataInput?.value || ''"
+            class="form-control"
+            @change="updateSingleInput(index, $event.target.value)"
+          >
             <option value="">Select data source...</option>
-            <option v-for="source in availableDataSources" :key="`${source.stepId}-${source.value}`"
-              :value="source.value" :data-step-id="source.stepId">
+            <option
+              v-for="source in availableDataSources"
+              :key="`${source.stepId}-${source.value}`"
+              :value="source.value"
+              :data-step-id="source.stepId"
+            >
               {{ source.name }}
             </option>
           </select>
@@ -91,12 +117,6 @@ import Quill from "quill";
  */
 export default {
   name: "PlaceholdersStep",
-  props: {
-    modelValue: {
-      type: Array,
-      required: true
-    },
-  },
   inject: {
     studyStepId: {
       type: Number,
@@ -116,6 +136,12 @@ export default {
       type: Array,
       required: true
     }
+  },
+  props: {
+    modelValue: {
+      type: Array,
+      required: true
+    },
   },
   emits: ['update:formData', 'validation-change'],
   data() {

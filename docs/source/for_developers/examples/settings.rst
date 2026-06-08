@@ -156,3 +156,30 @@ You must manually parse them as needed based on the setting's ``type``.
    Changes made to settings in the frontend **are not automatically saved** to the database.
    After modifying any setting through the UI, you **must** click the ``Save Settings`` button.
    Otherwise, your changes will be lost and not persisted.
+
+Wizard and Settings UI Metadata
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Settings can expose additional metadata so they render with user-friendly labels and
+grouping in both setup and dashboard settings views.
+
+Relevant fields on ``setting`` rows:
+
+- ``displayName``: human-readable field label
+- ``displayGroup``: top-level settings group
+- ``displaySubsection``: subsection title inside the group
+- ``showInWizard``: include in setup wizard
+- ``wizardStep``: wizard step assignment (e.g. ``general``, ``mail``, ``registration``)
+- ``wizardOrder``: field order within the step
+- ``requiredInWizard``: required flag for setup validation
+
+When adding new settings, populate these fields during migration so the setup wizard
+and the dashboard settings page stay aligned.
+
+Mail Settings Runtime Behavior
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Mail configuration changes made from the dashboard settings page are applied on
+``Save Settings`` and do not require a backend restart.
+
+This includes toggles and provider-specific values under ``system.mailService.*``.

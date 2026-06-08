@@ -58,16 +58,34 @@ class SubmissionSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves when the update is complete
      * @throws {Error} If the user is not allowed to update the document
      */
-    async updateSubmission(data, options) {
-        const submission = await this.models['submission'].getById(data['id']);
+    async deleteSubmission(data, options) {
+        const { id, force = false } = data;
+        const transaction = options.transaction;
+
+        const submission = await this.models['submission'].getById(id, { transaction });
+        if (!submission) {
+            throw new Error("Submission not found.");
+        }
         if (!(await this.checkUserAccess(submission.userId))) {
-            throw new Error("You are not allowed to update this submission.");
+            throw new Error("You are not allowed to delete this submission.");
         }
 
-        const newSubmission = await this.models['submission'].updateById(submission.id, data);
-        options.transaction.afterCommit(async () => {
-            this.emit("submissionRefresh", await this.updateCreatorName(newSubmission));
+        const assignment = await this.models['assignment'].getById(submission.assignmentId, { transaction });
+        if (assignment && assignment.closed) {
+            throw new Error("Cannot delete submission because the assignment is closed.");
+        }
+
+        const documents = await this.models['document'].findAll({
+            where: { submissionId: id, deleted: false },
+            raw: true,
+            transaction,
         });
+        const isStudyLocked = documents.some(doc => Number(doc.studyUsageCount || 0) > 0);
+        if (isStudyLocked) {
+            throw new Error("Cannot delete submission because one or more linked documents are used in studies.");
+        }
+
+        return await this.models['submission'].deleteById(id, { force, transaction });
     }
 
     /**
@@ -92,7 +110,7 @@ class SubmissionSocket extends Socket {
 
     init() {
         this.createSocket("submissionAssignGroup", this.assignGroupToSubmissions, {}, true);
-        this.createSocket("submissionUpdate", this.updateSubmission, {}, true);
+        this.createSocket("submissionDelete", this.deleteSubmission, {}, true);
         this.createSocket("submissionPublishGrades", this.publishGrades, {}, false);
     }
 }

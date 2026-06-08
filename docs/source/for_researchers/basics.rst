@@ -18,6 +18,12 @@ Please check out the details of hosting the CARE server described in the
 
 .. note::
 
+    On a fresh CARE instance, the application opens a setup wizard before the regular login is available.
+    Complete this initial setup before inviting participants to your study.
+    After setup is finished, CARE continues with the standard login and dashboard workflow.
+
+.. note::
+
     For running internal pilot studies, running an NGINX server along with CARE is not strictly necessary, but this is highly recommended
     when opening the tool to a network, adn especially when making it accessible to the internet. Please also configure
     your firewall to ensure high levels of security (opening only essential ports etc.). Also, you should urgently change the
@@ -135,6 +141,33 @@ Users can update or withdraw their consent at any time in the profile menu under
    Without consent for research data, CARE will not log annotations or behavioural traces.  
    The backend enforces this, and admins can configure the default settings in :doc:`../for_developers/examples/settings`.
    
+Common Support Issues
+~~~~~~~~~~~~~~~~~~~~~
+
+**Participants cannot find their work after logging in**
+
+A common support request occurs when participants report that their documents or study
+sessions have "disappeared". In most cases the participant has accidentally switched to a
+different project using the project dropdown in the topbar, and their work is still present
+but scoped to the original project.
+
+To prevent this, you can hide the project switcher for specific users so they cannot change
+their active project:
+
+1. Log in with an admin account and go to the **Settings** section in the dashboard.
+2. Open the **Change User Settings** dialog (available in the admin user management area).
+3. Select the setting ``topBar.projects.hideProjectButton`` and set it to ``true``.
+4. Select the affected users and confirm.
+
+After this change, those users will no longer see the project dropdown in the topbar and
+their active project will remain fixed to the one you have assigned to them.
+
+.. note::
+
+   This setting takes effect immediately and does not require the user to log out and back
+   in. To assign a specific project to a user, set the ``projects.default`` user setting to
+   the desired project ID in the same dialog.
+
 NLP Model Debugging
 ===================
 As an administrator you can monitor the available NLP models from within the frontend under the "NLP Skills" component

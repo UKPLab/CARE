@@ -12,7 +12,10 @@ module.exports = (sequelize, DataTypes) => {
     class UserEnvironment extends MetaModel {
         static autoTable = true;
         static associate(models) {
-
+            UserEnvironment.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user",
+            });
         }
     }
 
