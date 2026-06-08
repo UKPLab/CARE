@@ -6,13 +6,20 @@ cooperative cancellation, and structured logging payloads without embedding secr
 Author: Akash Gundapuneni
 """
 import asyncio
+import json
 import logging
 import os
 import re
 import threading
 import socketio
 import litellm
+from json_repair import repair_json
 from litellm import Router
+
+OUTPUT_MODE_TEXT = 0
+OUTPUT_MODE_JSON = 1
+OUTPUT_MODE_IMAGE = 2
+OUTPUT_MODE_VALUES = {OUTPUT_MODE_TEXT, OUTPUT_MODE_JSON, OUTPUT_MODE_IMAGE}
 
 
 def create_app():
@@ -101,6 +108,53 @@ def create_app():
         except (TypeError, ValueError):
             return None
 
+    def normalize_output_mode(value):
+        if value is None:
+            return None
+        if isinstance(value, int) and value in OUTPUT_MODE_VALUES:
+            return value
+        if isinstance(value, str) and value.strip().isdigit():
+            numeric_value = int(value.strip())
+            if numeric_value in OUTPUT_MODE_VALUES:
+                return numeric_value
+        raise ValueError("Invalid AI hook output mode")
+
+    def repair_json_response(response_data):
+        if not isinstance(response_data, dict):
+            return response_data
+
+        repaired_any = False
+        for choice_index, choice in enumerate(response_data.get("choices", []) or []):
+            message = choice.get("message") if isinstance(choice, dict) else None
+            if not isinstance(message, dict):
+                continue
+            content = message.get("content")
+            if not isinstance(content, str) or not content.strip():
+                continue
+
+            try:
+                json.loads(content)
+                continue
+            except json.JSONDecodeError:
+                pass
+
+            try:
+                repaired_content = repair_json(content, ensure_ascii=False)
+                json.loads(repaired_content)
+            except Exception as exc:
+                raise ValueError(
+                    f"Failed to repair JSON response in choices[{choice_index}].message.content: {exc}"
+                ) from exc
+
+            message["content"] = repaired_content
+            repaired_any = True
+
+        response_data["json_repair"] = {
+            "attempted": True,
+            "repaired": repaired_any,
+        }
+        return response_data
+
     @sio.event
     def connect(sid, environ, auth):
         logger.info(f"Connection established with {sid}")
@@ -162,8 +216,10 @@ def create_app():
             active_requests[request_id] = request_state
 
         try:
+            output_mode = normalize_output_mode(params.get("outputMode"))
+            should_repair_json = output_mode == OUTPUT_MODE_JSON
             completion_params = {k: v for k, v in params.items()
-                                 if k not in ("model", "messages") and v is not None}
+                                 if k not in ("model", "messages", "outputMode") and v is not None}
 
             if "timeout" not in completion_params and timeout_ms:
                 completion_params["timeout"] = int(timeout_ms) / 1000
@@ -234,6 +290,8 @@ def create_app():
             usage = response_data.get("usage") or {}
             response_data["reasoning_content"] = normalize_reasoning_content(response_data)
             response_data["response_cost"] = normalize_response_cost(response_data)
+            if should_repair_json:
+                response_data = repair_json_response(response_data)
             logger.info(
                 f"chatCompletion success: model={response_data.get('model')}, "
                 f"tokens={usage.get('total_tokens', 'N/A')}"
