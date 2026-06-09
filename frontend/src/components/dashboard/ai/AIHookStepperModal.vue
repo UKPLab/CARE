@@ -219,6 +219,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    hookModelRows: {
+      type: Array,
+      default: () => [],
+    },
     currentUserId: {
       type: Number,
       required: true,
@@ -286,6 +290,13 @@ export default {
     },
   },
   methods: {
+    getPrimaryHookModelRow(hookId) {
+      return this.hookModelRows.find(
+        (row) => Number(row.aiHookId) === Number(hookId)
+          && Number(row.priority) === 1
+          && !row.deleted
+      ) || null;
+    },
     open(row = null) {
       this.hookForm = getEmptyHookForm();
       if (row) {
@@ -293,19 +304,31 @@ export default {
           this.toastError("Only hook owners can edit this AI hook");
           return;
         }
+        const primaryModelRow = this.getPrimaryHookModelRow(row.id);
         this.hookForm = {
           id: row.id,
           name: row.name || "",
           description: row.description || "",
           templateId: row.templateId || null,
-          aiModelId: row.aiModelId || null,
+          aiModelId: primaryModelRow?.aiModelId || null,
           outputMode: Number.isInteger(Number(row.outputMode)) ? Number(row.outputMode) : 0,
           enabled: row.enabled !== false,
         };
       }
       this.$refs.hookStepper.open();
     },
-    saveHook() {
+    emitUpdate(table, data) {
+      return new Promise((resolve, reject) => {
+        this.$socket.emit("appDataUpdate", { table, data }, (result) => {
+          if (result?.success) {
+            resolve(result.data);
+          } else {
+            reject(new Error(result?.message || "Failed to update data"));
+          }
+        });
+      });
+    },
+    async saveHook() {
       if (!this.hookForm.name.trim()) {
         this.toastError("Name is required");
         return;
@@ -324,26 +347,41 @@ export default {
         name: this.hookForm.name.trim(),
         description: this.hookForm.description?.trim() || null,
         templateId: Number(this.hookForm.templateId),
-        aiModelId: Number(this.hookForm.aiModelId),
         outputMode: Number(this.hookForm.outputMode),
-        additionalParameters: {},
         enabled: !!this.hookForm.enabled,
       };
 
       this.$refs.hookStepper.setWaiting(true);
-      this.$socket.emit("appDataUpdate", {
-        table: "ai_hook",
-        data: payload,
-      }, (result) => {
-        this.$refs.hookStepper.setWaiting(false);
-        if (result?.success) {
-          this.$refs.hookStepper.close();
-          this.toastSuccess(this.hookForm.id ? "AI hook updated" : "AI hook created");
-          this.$emit("saved");
-        } else {
-          this.toastError(result?.message || "Failed to save AI hook");
+      try {
+        const hookId = await this.emitUpdate("ai_hook", payload);
+        const primaryModelRow = this.getPrimaryHookModelRow(hookId);
+        const primaryPayload = {
+          id: primaryModelRow?.id || 0,
+          aiHookId: Number(hookId),
+          aiModelId: Number(this.hookForm.aiModelId),
+          priority: 1,
+          additionalParameters: primaryModelRow?.additionalParameters || {},
+        };
+
+        await this.emitUpdate("ai_hook_models", primaryPayload);
+        const conflictingFallbackRows = this.hookModelRows.filter(
+          (row) => Number(row.aiHookId) === Number(hookId)
+            && Number(row.priority) > 1
+            && Number(row.aiModelId) === Number(this.hookForm.aiModelId)
+            && !row.deleted
+        );
+        for (const row of conflictingFallbackRows) {
+          await this.emitUpdate("ai_hook_models", { id: row.id, deleted: true });
         }
-      });
+
+        this.$refs.hookStepper.close();
+        this.toastSuccess(this.hookForm.id ? "AI hook updated" : "AI hook created");
+        this.$emit("saved");
+      } catch (error) {
+        this.toastError(error.message || "Failed to save AI hook");
+      } finally {
+        this.$refs.hookStepper.setWaiting(false);
+      }
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {

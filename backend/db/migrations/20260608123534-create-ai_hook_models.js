@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('ai_hook_fallback', {
+    await queryInterface.createTable('ai_hook_models', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -33,6 +33,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
+      additionalParameters: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: {},
+      },
       deleted: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
@@ -54,9 +59,14 @@ module.exports = {
         defaultValue: Sequelize.fn('NOW'),
       },
     });
+    await queryInterface.addIndex('ai_hook_models', ['aiHookId', 'priority'], {
+      unique: true,
+      where: { deleted: false },
+      name: 'ai_hook_models_active_priority_unique',
+    });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('ai_hook_fallback');
+    await queryInterface.dropTable('ai_hook_models');
   },
 };

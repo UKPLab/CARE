@@ -26,13 +26,14 @@
     :output-modes="outputModes"
     :prompt-templates="promptTemplates"
     :model-rows="models"
+    :hook-model-rows="hookModels"
   />
 
   <AIHookFallbackModal
     ref="fallbackModal"
     :current-user-id="currentUserId"
     :model-rows="models"
-    :fallback-rows="fallbacks"
+    :hook-model-rows="hookModels"
   />
 
   <ConfirmModal ref="confirmModal" />
@@ -58,7 +59,7 @@ const OUTPUT_MODES_BY_VALUE = OUTPUT_MODES.reduce((acc, mode) => {
 
 export default {
   name: "DashboardAIHooks",
-  subscribeTable: ["ai_hook", "ai_hook_fallback", "template", "ai_model"],
+  subscribeTable: ["ai_hook", "ai_hook_models", "template", "ai_model"],
   components: {
     BasicCard,
     BasicButton,
@@ -104,8 +105,8 @@ export default {
     models() {
       return this.$store.getters["table/ai_model/getAll"] || [];
     },
-    fallbacks() {
-      return this.$store.getters["table/ai_hook_fallback/getAll"] || [];
+    hookModels() {
+      return this.$store.getters["table/ai_hook_models/getAll"] || [];
     },
     hookRows() {
       const templatesById = this.templates.reduce((acc, template) => {
@@ -116,13 +117,20 @@ export default {
         acc[model.id] = model;
         return acc;
       }, {});
+      const primaryModelRowsByHookId = this.hookModels.reduce((acc, row) => {
+        if (!row.deleted && Number(row.priority) === 1) {
+          acc[row.aiHookId] = row;
+        }
+        return acc;
+      }, {});
 
       return this.hooks.map((hook) => {
         const outputMode = OUTPUT_MODES_BY_VALUE[Number(hook.outputMode)] || OUTPUT_MODES_BY_VALUE[0];
+        const primaryModelRow = primaryModelRowsByHookId[hook.id];
         return {
           ...hook,
           templateName: templatesById[hook.templateId]?.name || "Unknown template",
-          modelName: modelsById[hook.aiModelId]?.name || "Unknown model",
+          modelName: modelsById[primaryModelRow?.aiModelId]?.name || "Unknown model",
           outputLabel: outputMode.label,
           outputBadge: {
             text: outputMode.label,

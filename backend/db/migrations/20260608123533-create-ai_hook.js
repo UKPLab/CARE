@@ -38,25 +38,10 @@ module.exports = {
         onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
       },
-      aiModelId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'ai_model',
-          key: 'id',
-        },
-        onDelete: 'RESTRICT',
-        onUpdate: 'CASCADE',
-      },
       outputMode: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0,
-      },
-      additionalParameters: {
-        type: Sequelize.JSONB,
-        allowNull: true,
-        defaultValue: {},
       },
       enabled: {
         type: Sequelize.BOOLEAN,

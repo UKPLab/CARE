@@ -84,7 +84,7 @@ export default {
       type: Array,
       default: () => [],
     },
-    fallbackRows: {
+    hookModelRows: {
       type: Array,
       default: () => [],
     },
@@ -103,9 +103,25 @@ export default {
         .filter((model) => model.enabled)
         .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
     },
+    selectedHookModelRows() {
+      if (!this.selectedHook?.id) return [];
+      return this.hookModelRows.filter(
+        (row) => Number(row.aiHookId) === Number(this.selectedHook.id)
+          && !row.deleted
+      );
+    },
+    primaryHookModelRow() {
+      return this.selectedHookModelRows.find((row) => Number(row.priority) === 1) || null;
+    },
+    fallbackHookModelRows() {
+      return this.selectedHookModelRows
+        .filter((row) => Number(row.priority) > 1)
+        .sort((a, b) => Number(a.priority) - Number(b.priority));
+    },
     primaryModel() {
-      if (!this.selectedHook?.aiModelId) return null;
-      return this.modelRows.find((model) => Number(model.id) === Number(this.selectedHook.aiModelId)) || null;
+      const primaryRow = this.primaryHookModelRow;
+      if (!primaryRow?.aiModelId) return null;
+      return this.modelRows.find((model) => Number(model.id) === Number(primaryRow.aiModelId)) || null;
     },
     primaryModelLabel() {
       if (!this.primaryModel) return "Unknown model";
@@ -134,7 +150,7 @@ export default {
     modelsForSlot(index) {
       const currentId = Number(this.fallbackSelections[index]);
       const blockedIds = new Set([
-        Number(this.selectedHook?.aiModelId),
+        Number(this.primaryModel?.id),
         ...this.fallbackSelections
           .map((id, slotIndex) => (slotIndex === index ? null : Number(id)))
           .filter((id) => Number.isInteger(id) && id > 0),
@@ -174,10 +190,7 @@ export default {
       }
 
       this.selectedHook = hookRow;
-      const existing = this.fallbackRows
-        .filter((row) => Number(row.aiHookId) === Number(hookRow.id) && !row.deleted)
-        .sort((a, b) => Number(a.priority) - Number(b.priority))
-        .map((row) => row.aiModelId);
+      const existing = this.fallbackHookModelRows.map((row) => row.aiModelId);
 
       this.initialFallbackIds = existing.map((id) => Number(id));
       this.fallbackSelections = existing.length > 0 ? [...existing, null] : [null];
@@ -210,7 +223,7 @@ export default {
         this.toastError("Each fallback model can only be selected once");
         return;
       }
-      if (uniqueIds.has(Number(this.selectedHook.aiModelId))) {
+      if (uniqueIds.has(Number(this.primaryModel?.id))) {
         this.toastError("The primary model cannot be used as a fallback");
         return;
       }
@@ -218,40 +231,47 @@ export default {
       this.isSaving = true;
       try {
         const hookId = Number(this.selectedHook.id);
-        const existingRows = this.fallbackRows.filter(
-          (row) => Number(row.aiHookId) === hookId && !row.deleted
-        );
+        const existingRows = this.fallbackHookModelRows;
+        const rowsByPriority = new Map(existingRows.map((row) => [Number(row.priority), row]));
+        const rowsByModel = new Map(existingRows.map((row) => [Number(row.aiModelId), row]));
         const desiredByPriority = this.selectedFallbackIds.map((aiModelId, index) => ({
           aiModelId,
-          priority: index + 1,
+          priority: index + 2,
         }));
-
-        for (const row of existingRows) {
-          const stillUsed = desiredByPriority.some(
-            (item) => Number(item.priority) === Number(row.priority)
-              && Number(item.aiModelId) === Number(row.aiModelId)
-          );
-          if (!stillUsed) {
-            await this.emitUpdate("ai_hook_fallback", { id: row.id, deleted: true });
-          }
-        }
+        const usedExistingRowIds = new Set();
 
         for (const item of desiredByPriority) {
-          const existing = existingRows.find((row) => Number(row.priority) === item.priority);
-          if (existing) {
-            if (Number(existing.aiModelId) !== Number(item.aiModelId)) {
-              await this.emitUpdate("ai_hook_fallback", {
-                id: existing.id,
+          const existingAtPriority = rowsByPriority.get(Number(item.priority));
+          const existingForModel = rowsByModel.get(Number(item.aiModelId));
+          const additionalParameters = existingForModel?.additionalParameters || {};
+
+          if (existingAtPriority) {
+            usedExistingRowIds.add(existingAtPriority.id);
+            if (
+              Number(existingAtPriority.aiModelId) !== Number(item.aiModelId)
+              || existingAtPriority.additionalParameters !== additionalParameters
+            ) {
+              await this.emitUpdate("ai_hook_models", {
+                id: existingAtPriority.id,
                 aiModelId: item.aiModelId,
+                priority: item.priority,
+                additionalParameters,
               });
             }
           } else {
-            await this.emitUpdate("ai_hook_fallback", {
+            await this.emitUpdate("ai_hook_models", {
               id: 0,
               aiHookId: hookId,
               aiModelId: item.aiModelId,
               priority: item.priority,
+              additionalParameters,
             });
+          }
+        }
+
+        for (const row of existingRows) {
+          if (!usedExistingRowIds.has(row.id)) {
+            await this.emitUpdate("ai_hook_models", { id: row.id, deleted: true });
           }
         }
 

@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             AiHook.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
             AiHook.belongsTo(models["template"], { foreignKey: "templateId", as: "template" });
-            AiHook.belongsTo(models["ai_model"], { foreignKey: "aiModelId", as: "model" });
+            AiHook.hasMany(models["ai_hook_models"], { foreignKey: "aiHookId", as: "hookModels" });
         }
 
         static fields = [
@@ -28,12 +28,6 @@ module.exports = (sequelize, DataTypes) => {
             {
                 key: "templateId",
                 label: "Prompt Template",
-                type: "select",
-                required: true,
-            },
-            {
-                key: "aiModelId",
-                label: "Model",
                 type: "select",
                 required: true,
             },
@@ -58,9 +52,7 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         description: DataTypes.TEXT,
         templateId: DataTypes.INTEGER,
-        aiModelId: DataTypes.INTEGER,
         outputMode: DataTypes.INTEGER,
-        additionalParameters: DataTypes.JSONB,
         enabled: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
