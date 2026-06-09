@@ -160,6 +160,7 @@ export default {
             ) {
               await this.emitUpdate("ai_hook_models", {
                 id: existingAtPriority.id,
+                aiHookId: hookId,
                 aiModelId: item.aiModelId,
                 priority: item.priority,
                 additionalParameters,
