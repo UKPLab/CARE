@@ -6,6 +6,8 @@
  * Keys match NlpRequest.saveResult: {service.name}_{service.skill}_{resultField}.
  * Service discovery for assessment drafts matches Assessment.vue (nlpService /
  * preprocessedAssessmentKeyCandidates).
+ *
+ * @author Mohammad Elwan
  */
 
 const NLP_ASSESSMENT_RESULT_FIELD = "assessment";
