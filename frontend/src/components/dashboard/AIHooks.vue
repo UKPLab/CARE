@@ -53,7 +53,6 @@ import AIHookViewModal from "@/components/dashboard/ai/AIHookViewModal.vue";
 const OUTPUT_MODES = [
   { value: 0, label: "Text", class: "bg-secondary" },
   { value: 1, label: "JSON", class: "bg-primary" },
-  { value: 2, label: "Image", class: "bg-info" },
 ];
 const OUTPUT_MODES_BY_VALUE = OUTPUT_MODES.reduce((acc, mode) => {
   acc[mode.value] = mode;

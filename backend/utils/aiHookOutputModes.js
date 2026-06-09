@@ -3,7 +3,6 @@
 const AI_HOOK_OUTPUT_MODES = Object.freeze({
     TEXT: 0,
     JSON: 1,
-    IMAGE: 2,
 });
 
 const AI_HOOK_OUTPUT_MODE_VALUES = Object.freeze(Object.values(AI_HOOK_OUTPUT_MODES));

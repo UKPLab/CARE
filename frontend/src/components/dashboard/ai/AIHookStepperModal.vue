@@ -117,7 +117,7 @@
           </option>
         </select>
         <small class="text-muted">
-          Text returns plain output. JSON expects structured data. Image is for visual output workflows.
+          Text returns plain output. JSON expects structured data.
         </small>
       </div>
 
