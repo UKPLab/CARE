@@ -29,12 +29,14 @@
     :hook-model-rows="hookModels"
   />
 
-  <AIHookFallbackModal
-    ref="fallbackModal"
+  <AIHookModelModal
+    ref="hookModelModal"
     :current-user-id="currentUserId"
     :model-rows="models"
     :hook-model-rows="hookModels"
   />
+
+  <AIHookViewModal ref="hookViewModal" />
 
   <ConfirmModal ref="confirmModal" />
 </template>
@@ -44,8 +46,9 @@ import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import AIHookFallbackModal from "@/components/dashboard/ai/AIHookFallbackModal.vue";
+import AIHookModelModal from "@/components/dashboard/ai/AIHookModelModal.vue";
 import AIHookStepperModal from "@/components/dashboard/ai/AIHookStepperModal.vue";
+import AIHookViewModal from "@/components/dashboard/ai/AIHookViewModal.vue";
 
 const OUTPUT_MODES = [
   { value: 0, label: "Text", class: "bg-secondary" },
@@ -65,8 +68,9 @@ export default {
     BasicButton,
     BasicTable,
     ConfirmModal,
-    AIHookFallbackModal,
+    AIHookModelModal,
     AIHookStepperModal,
+    AIHookViewModal,
   },
   data() {
     return {
@@ -80,7 +84,7 @@ export default {
       columns: [
         { name: "Name", key: "name", sortable: true },
         { name: "Prompt Template", key: "templateName", sortable: true },
-        { name: "Model", key: "modelName", sortable: true },
+        { name: "Models", key: "modelSummary", sortable: true, sortKey: "modelSortLabel" },
         { name: "Output", key: "outputBadge", type: "badge", sortable: true, sortKey: "outputLabel" },
         { name: "Status", key: "statusBadge", type: "badge", sortable: true, sortKey: "statusLabel" },
         { name: "Created", key: "createdAt", type: "datetime", sortable: true },
@@ -117,20 +121,37 @@ export default {
         acc[model.id] = model;
         return acc;
       }, {});
-      const primaryModelRowsByHookId = this.hookModels.reduce((acc, row) => {
-        if (!row.deleted && Number(row.priority) === 1) {
-          acc[row.aiHookId] = row;
+      const hookModelsByHookId = this.hookModels.reduce((acc, row) => {
+        if (!row.deleted) {
+          if (!acc[row.aiHookId]) acc[row.aiHookId] = [];
+          acc[row.aiHookId].push(row);
         }
         return acc;
       }, {});
 
       return this.hooks.map((hook) => {
         const outputMode = OUTPUT_MODES_BY_VALUE[Number(hook.outputMode)] || OUTPUT_MODES_BY_VALUE[0];
-        const primaryModelRow = primaryModelRowsByHookId[hook.id];
+        const hookModelRows = [...(hookModelsByHookId[hook.id] || [])]
+          .sort((a, b) => Number(a.priority) - Number(b.priority));
+        const models = hookModelRows.map((row) => {
+          const model = modelsById[row.aiModelId];
+          return {
+            ...row,
+            name: model?.name || `Model #${row.aiModelId}`,
+            model: model?.model || null,
+          };
+        });
+        const primaryModel = models[0];
+        const extraModelCount = Math.max(models.length - 1, 0);
+        const modelSummary = primaryModel
+          ? `${primaryModel.name}${extraModelCount > 0 ? ` +${extraModelCount}` : ""}`
+          : "Unknown model";
         return {
           ...hook,
           templateName: templatesById[hook.templateId]?.name || "Unknown template",
-          modelName: modelsById[primaryModelRow?.aiModelId]?.name || "Unknown model",
+          models,
+          modelSummary,
+          modelSortLabel: modelSummary,
           outputLabel: outputMode.label,
           outputBadge: {
             text: outputMode.label,
@@ -147,6 +168,12 @@ export default {
     buttons() {
       return [
         {
+          icon: "eye",
+          title: "View AI hook",
+          action: "view",
+          options: { iconOnly: true, specifiers: { "btn-outline-info": true } },
+        },
+        {
           icon: "pencil",
           title: "Edit AI hook",
           action: "edit",
@@ -155,8 +182,8 @@ export default {
         },
         {
           icon: "shuffle",
-          title: "Manage fallback models",
-          action: "fallbacks",
+          title: "Manage AI hook models",
+          action: "models",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
@@ -189,11 +216,14 @@ export default {
   methods: {
     onAction(data) {
       switch (data.action) {
+        case "view":
+          this.$refs.hookViewModal.open(data.params);
+          break;
         case "edit":
           this.openHookModal(data.params);
           break;
-        case "fallbacks":
-          this.$refs.fallbackModal.open(data.params);
+        case "models":
+          this.$refs.hookModelModal.open(data.params);
           break;
         case "toggle":
           this.toggleHook(data.params);

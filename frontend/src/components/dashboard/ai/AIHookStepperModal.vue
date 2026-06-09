@@ -87,35 +87,11 @@
     </template>
 
     <template #step-3>
-      <div class="mb-3">
-        <label class="form-label" for="hookModel">
-          Model
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Select the primary AI model used first when this hook runs."
-          />
-        </label>
-        <select
-          id="hookModel"
-          v-model.number="hookForm.aiModelId"
-          class="form-select"
-        >
-          <option :value="null">Select model</option>
-          <option
-            v-for="model in selectableModels"
-            :key="model.id"
-            :value="model.id"
-          >
-            {{ model.name }}{{ model.model ? ` (${model.model})` : "" }}
-          </option>
-        </select>
-        <small class="text-muted">
-          This is the primary model. Fallback models can be configured later with priority ordering.
-        </small>
-        <div v-if="selectableModels.length === 0" class="text-warning small mt-1">
-          No enabled AI models are available yet.
-        </div>
-      </div>
+      <AIHookModelOrder
+        v-model="hookForm.modelIds"
+        :model-rows="modelRows"
+        id-prefix="hookStepper"
+      />
     </template>
 
     <template #step-4>
@@ -175,8 +151,15 @@
           <dt class="col-sm-4">Prompt Template</dt>
           <dd class="col-sm-8">{{ selectedPromptTemplateName }}</dd>
 
-          <dt class="col-sm-4">Model</dt>
-          <dd class="col-sm-8">{{ selectedModelName }}</dd>
+          <dt class="col-sm-4">Models</dt>
+          <dd class="col-sm-8">
+            <ol v-if="selectedModelNames.length > 0" class="mb-0 ps-3">
+              <li v-for="(name, index) in selectedModelNames" :key="`${name}-${index}`">
+                {{ name }}
+              </li>
+            </ol>
+            <span v-else>-</span>
+          </dd>
 
           <dt class="col-sm-4">Output Type</dt>
           <dd class="col-sm-8">{{ selectedOutputModeLabel }}</dd>
@@ -194,6 +177,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import AIHookModelOrder from "@/components/dashboard/ai/AIHookModelOrder.vue";
 
 function getEmptyHookForm() {
   return {
@@ -201,7 +185,7 @@ function getEmptyHookForm() {
     name: "",
     description: "",
     templateId: null,
-    aiModelId: null,
+    modelIds: [],
     outputMode: 0,
     enabled: true,
   };
@@ -209,7 +193,7 @@ function getEmptyHookForm() {
 
 export default {
   name: "AIHookStepperModal",
-  components: { StepperModal },
+  components: { StepperModal, AIHookModelOrder },
   props: {
     promptTemplates: {
       type: Array,
@@ -251,7 +235,7 @@ export default {
     hookStepValidation() {
       const hasBasics = !!this.hookForm.name.trim();
       const hasPrompt = Number.isInteger(Number(this.hookForm.templateId)) && Number(this.hookForm.templateId) > 0;
-      const hasModel = Number.isInteger(Number(this.hookForm.aiModelId)) && Number(this.hookForm.aiModelId) > 0;
+      const hasModel = this.hookForm.modelIds.length > 0;
       return [
         hasBasics,
         hasPrompt,
@@ -265,11 +249,14 @@ export default {
       const template = this.promptTemplates.find((item) => Number(item.id) === selectedId);
       return template?.name || "-";
     },
-    selectedModelName() {
-      const selectedId = Number(this.hookForm.aiModelId);
-      const model = this.modelRows.find((item) => Number(item.id) === selectedId);
-      if (!model) return "-";
-      return model.model ? `${model.name} (${model.model})` : model.name;
+    modelLabelById() {
+      return this.modelRows.reduce((acc, model) => {
+        acc[model.id] = this.formatModelLabel(model);
+        return acc;
+      }, {});
+    },
+    selectedModelNames() {
+      return this.hookForm.modelIds.map((modelId) => this.modelLabelById[modelId] || `Model #${modelId}`);
     },
     selectedOutputModeLabel() {
       const selectedValue = Number(this.hookForm.outputMode);
@@ -282,20 +269,16 @@ export default {
       return [...this.promptTemplates]
         .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
     },
-    selectableModels() {
-      const selectedId = Number(this.hookForm.aiModelId);
-      return this.modelRows
-        .filter((model) => model.enabled || Number(model.id) === selectedId)
-        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
-    },
   },
   methods: {
-    getPrimaryHookModelRow(hookId) {
-      return this.hookModelRows.find(
-        (row) => Number(row.aiHookId) === Number(hookId)
-          && Number(row.priority) === 1
-          && !row.deleted
-      ) || null;
+    formatModelLabel(model) {
+      if (!model) return "-";
+      return model.model ? `${model.name} (${model.model})` : model.name;
+    },
+    getHookModelRows(hookId) {
+      return this.hookModelRows
+        .filter((row) => Number(row.aiHookId) === Number(hookId) && !row.deleted)
+        .sort((a, b) => Number(a.priority) - Number(b.priority));
     },
     open(row = null) {
       this.hookForm = getEmptyHookForm();
@@ -304,13 +287,12 @@ export default {
           this.toastError("Only hook owners can edit this AI hook");
           return;
         }
-        const primaryModelRow = this.getPrimaryHookModelRow(row.id);
         this.hookForm = {
           id: row.id,
           name: row.name || "",
           description: row.description || "",
           templateId: row.templateId || null,
-          aiModelId: primaryModelRow?.aiModelId || null,
+          modelIds: this.getHookModelRows(row.id).map((hookModel) => Number(hookModel.aiModelId)),
           outputMode: Number.isInteger(Number(row.outputMode)) ? Number(row.outputMode) : 0,
           enabled: row.enabled !== false,
         };
@@ -337,8 +319,8 @@ export default {
         this.toastError("Prompt template is required");
         return;
       }
-      if (!this.hookForm.aiModelId) {
-        this.toastError("Model is required");
+      if (this.hookForm.modelIds.length === 0) {
+        this.toastError("At least one model is required");
         return;
       }
 
@@ -354,24 +336,46 @@ export default {
       this.$refs.hookStepper.setWaiting(true);
       try {
         const hookId = await this.emitUpdate("ai_hook", payload);
-        const primaryModelRow = this.getPrimaryHookModelRow(hookId);
-        const primaryPayload = {
-          id: primaryModelRow?.id || 0,
-          aiHookId: Number(hookId),
-          aiModelId: Number(this.hookForm.aiModelId),
-          priority: 1,
-          additionalParameters: primaryModelRow?.additionalParameters || {},
-        };
+        const existingRows = this.getHookModelRows(hookId);
+        const rowsByPriority = new Map(existingRows.map((row) => [Number(row.priority), row]));
+        const rowsByModel = new Map(existingRows.map((row) => [Number(row.aiModelId), row]));
+        const usedRowIds = new Set();
 
-        await this.emitUpdate("ai_hook_models", primaryPayload);
-        const conflictingFallbackRows = this.hookModelRows.filter(
-          (row) => Number(row.aiHookId) === Number(hookId)
-            && Number(row.priority) > 1
-            && Number(row.aiModelId) === Number(this.hookForm.aiModelId)
-            && !row.deleted
-        );
-        for (const row of conflictingFallbackRows) {
-          await this.emitUpdate("ai_hook_models", { id: row.id, deleted: true });
+        for (const [index, modelId] of this.hookForm.modelIds.entries()) {
+          const priority = index + 1;
+          const existingAtPriority = rowsByPriority.get(priority);
+          const existingForModel = rowsByModel.get(Number(modelId));
+          const additionalParameters = existingForModel?.additionalParameters || {};
+
+          if (existingAtPriority) {
+            usedRowIds.add(existingAtPriority.id);
+            if (
+              Number(existingAtPriority.aiModelId) !== Number(modelId)
+              || existingAtPriority.additionalParameters !== additionalParameters
+            ) {
+              await this.emitUpdate("ai_hook_models", {
+                id: existingAtPriority.id,
+                aiModelId: Number(modelId),
+                priority,
+                additionalParameters,
+              });
+            }
+          } else {
+            const resultId = await this.emitUpdate("ai_hook_models", {
+              id: 0,
+              aiHookId: Number(hookId),
+              aiModelId: Number(modelId),
+              priority,
+              additionalParameters,
+            });
+            usedRowIds.add(resultId);
+          }
+        }
+
+        for (const row of existingRows) {
+          if (!usedRowIds.has(row.id)) {
+            await this.emitUpdate("ai_hook_models", { id: row.id, deleted: true });
+          }
         }
 
         this.$refs.hookStepper.close();
