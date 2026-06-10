@@ -200,13 +200,18 @@ class RecorderSocket extends Socket {
         for (const socketId of Object.keys(this.server.availSockets)) {
             const bucket = this.server.availSockets[socketId];
             const userSocket = bucket["UserSocket"];
-            if (userSocket && userSocket.userId) {
+            const rawSocket = this.server.io.sockets.sockets.get(socketId);
+            // Skip ghost entries: a socket may linger in availSockets after
+            // disconnecting if its cleanup didn't fully run. socket.io removes
+            // disconnected sockets from io.sockets.sockets immediately, so a
+            // missing rawSocket means this session is stale and shouldn't be
+            // listed as online.
+            if (rawSocket && userSocket && userSocket.userId) {
                 userIds.add(userSocket.userId);
-                const rawSocket = this.server.io.sockets.sockets.get(socketId);
                 sessions.push({
                     socketId,
                     userId: userSocket.userId,
-                    connectedAt: rawSocket?.connectedAt || null,
+                    connectedAt: rawSocket.connectedAt || null,
                 });
             }
         }
