@@ -36,7 +36,7 @@
     :hook-model-rows="hookModels"
   />
 
-  <AIHookViewModal ref="hookViewModal" />
+  <AIOverview ref="hookViewModal" resource-type="hook" />
 
   <AIModelShareStepper
     ref="shareHookStepper"
@@ -58,7 +58,7 @@ import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIHookModelModal from "@/components/dashboard/ai/AIHookModelModal.vue";
 import AIHookStepperModal from "@/components/dashboard/ai/AIHookStepperModal.vue";
-import AIHookViewModal from "@/components/dashboard/ai/AIHookViewModal.vue";
+import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
 import AIModelShareStepper from "@/components/dashboard/ai/AIModelShareStepper.vue";
 
 const OUTPUT_MODES = [
@@ -80,7 +80,7 @@ export default {
     ConfirmModal,
     AIHookModelModal,
     AIHookStepperModal,
-    AIHookViewModal,
+    AIOverview,
     AIModelShareStepper,
   },
   data() {

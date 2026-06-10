@@ -21,6 +21,7 @@ const SHARE_RESOURCES = {
         missingIdError: "Missing or invalid aiModelId",
         notFoundError: "AI model not found",
         ownerError: "You can only manage shares for models that you own",
+        accessDeniedError: "You do not have access to this model",
     },
     hook: {
         resourceTable: "ai_hook",
@@ -30,6 +31,7 @@ const SHARE_RESOURCES = {
         missingIdError: "Missing or invalid aiHookId",
         notFoundError: "AI hook not found",
         ownerError: "You can only manage shares for hooks that you own",
+        accessDeniedError: "You do not have access to this hook",
     },
 };
 
@@ -318,27 +320,20 @@ async function getHookShareConfig(service, client, data) {
     return getResourceShareConfig(service, client, data, SHARE_RESOURCES.hook);
 }
 
-/**
- * Returns differentiated payloads for organizers vs delegated viewers enforcing share expiry semantics.
- *
- * @param {{ server: Object }} service AIService.
- * @param {{ userId?: number }} client Possibly non-owner delegated user.
- * @param {{ aiModelId?: number }} data Requested model FK.
- */
-async function getModelOverview(service, client, data) {
+async function getResourceOverview(service, client, data, resource) {
     const viewerUserId = helpers.requireClientUserId(client);
-    const aiModel = await loadResource(
+    const row = await loadResource(
         service.server,
-        SHARE_RESOURCES.model,
-        getResourceId(SHARE_RESOURCES.model, data),
+        resource,
+        getResourceId(resource, data),
     );
 
     const now = new Date();
-    const isOwner = Number(aiModel.userId) === viewerUserId;
+    const isOwner = Number(row.userId) === viewerUserId;
 
-    const viewerShare = await service.server.db.models.ai_model_share.findOne({
+    const viewerShare = await service.server.db.models[resource.shareTable].findOne({
         where: {
-            aiModelId: aiModel.id,
+            [resource.resourceKey]: row.id,
             userId: viewerUserId,
             deleted: false,
             expiryDate: {[Op.gt]: now},
@@ -348,14 +343,14 @@ async function getModelOverview(service, client, data) {
     });
 
     if (!isOwner && !viewerShare) {
-        throw new Error("You do not have access to this model");
+        throw new Error(resource.accessDeniedError);
     }
 
     let shareRecipients = [];
     if (isOwner) {
-        const shares = await service.server.db.models.ai_model_share.findAll({
+        const shares = await service.server.db.models[resource.shareTable].findAll({
             where: {
-                aiModelId: aiModel.id,
+                [resource.resourceKey]: row.id,
                 deleted: false,
                 expiryDate: {[Op.gt]: now},
             },
@@ -371,6 +366,28 @@ async function getModelOverview(service, client, data) {
         viewerShare: !isOwner && viewerShare ? {expiryDate: viewerShare.expiryDate} : null,
         shareRecipients,
     };
+}
+
+/**
+ * Returns differentiated payloads for organizers vs delegated viewers enforcing share expiry semantics.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Possibly non-owner delegated user.
+ * @param {{ aiModelId?: number }} data Requested model FK.
+ */
+async function getModelOverview(service, client, data) {
+    return getResourceOverview(service, client, data, SHARE_RESOURCES.model);
+}
+
+/**
+ * Returns differentiated payloads for hook organizers vs delegated viewers.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Possibly non-owner delegated user.
+ * @param {{ aiHookId?: number }} data Requested hook FK.
+ */
+async function getHookOverview(service, client, data) {
+    return getResourceOverview(service, client, data, SHARE_RESOURCES.hook);
 }
 
 /**
@@ -604,6 +621,7 @@ module.exports = {
     getModelShareConfig,
     getHookShareConfig,
     getModelOverview,
+    getHookOverview,
     shareModel,
     shareHook,
     getAiModelOwnerSummaries,
