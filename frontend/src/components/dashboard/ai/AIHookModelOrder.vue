@@ -39,50 +39,14 @@
       </div>
     </div>
 
-    <div v-if="modelIds.length > 0" class="table-responsive">
-      <table class="table table-sm table-bordered align-middle">
-        <thead class="table-light">
-          <tr>
-            <th scope="col" style="width: 70px;">#</th>
-            <th scope="col">Model</th>
-            <th scope="col" style="width: 260px;">Move</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(modelId, index) in modelIds"
-            :key="modelId"
-          >
-            <th scope="row">{{ index + 1 }}</th>
-            <td>{{ modelLabelById[modelId] || `Model #${modelId}` }}</td>
-            <td>
-              <div class="btn-group btn-group-sm">
-                <BasicButton
-                  title=""
-                  class="btn btn-primary btn-sm"
-                  icon="arrow-up-short"
-                  :disabled="index === 0"
-                  @click="moveModel(index, -1)"
-                />
-                <BasicButton
-                  title=""
-                  class="btn btn-secondary btn-sm"
-                  icon="arrow-down-short"
-                  :disabled="index === modelIds.length - 1"
-                  @click="moveModel(index, 1)"
-                />
-                <BasicButton
-                  title=""
-                  class="btn btn-outline-danger btn-sm"
-                  icon="trash"
-                  @click="removeModel(index)"
-                />
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <BasicTable
+      v-if="modelIds.length > 0"
+      :columns="tableColumns"
+      :data="orderedModelRows"
+      :options="tableOptions"
+      :buttons="tableButtons"
+      @action="onTableAction"
+    />
 
     <div v-else class="text-muted small">
       Add at least one model before continuing.
@@ -92,10 +56,11 @@
 
 <script>
 import BasicButton from "@/basic/Button.vue";
+import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "AIHookModelOrder",
-  components: { BasicButton },
+  components: { BasicButton, BasicTable },
   props: {
     modelValue: {
       type: Array,
@@ -114,6 +79,45 @@ export default {
   data() {
     return {
       modelToAddId: null,
+      tableOptions: {
+        small: true,
+        bordered: true,
+      },
+      tableColumns: [
+        { name: "#", key: "priority", width: 70 },
+        { name: "Model", key: "modelLabel" },
+      ],
+      tableButtons: [
+        {
+          icon: "arrow-up-short",
+          title: "Move up",
+          action: "moveUp",
+          filter: [{ key: "canMoveUp", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: { "btn-primary": true },
+          },
+        },
+        {
+          icon: "arrow-down-short",
+          title: "Move down",
+          action: "moveDown",
+          filter: [{ key: "canMoveDown", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: { "btn-secondary": true },
+          },
+        },
+        {
+          icon: "trash",
+          title: "Remove model",
+          action: "remove",
+          options: {
+            iconOnly: true,
+            specifiers: { "btn-outline-danger": true },
+          },
+        },
+      ],
     };
   },
   computed: {
@@ -134,6 +138,16 @@ export default {
     modelsAvailableToAdd() {
       const selectedIds = new Set(this.modelIds);
       return this.selectableModels.filter((model) => !selectedIds.has(Number(model.id)));
+    },
+    orderedModelRows() {
+      return this.modelIds.map((modelId, index) => ({
+        id: modelId,
+        index,
+        priority: index + 1,
+        modelLabel: this.modelLabelById[modelId] || `Model #${modelId}`,
+        canMoveUp: index > 0,
+        canMoveDown: index < this.modelIds.length - 1,
+      }));
     },
   },
   methods: {
@@ -163,6 +177,16 @@ export default {
       const modelIds = [...this.modelIds];
       modelIds.splice(index, 1);
       this.updateModelIds(modelIds);
+    },
+    onTableAction({ action, params }) {
+      const index = params.index;
+      if (action === "moveUp") {
+        this.moveModel(index, -1);
+      } else if (action === "moveDown") {
+        this.moveModel(index, 1);
+      } else if (action === "remove") {
+        this.removeModel(index);
+      }
     },
   },
 };
