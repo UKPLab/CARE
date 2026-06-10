@@ -26,9 +26,13 @@ module.exports = class AIService extends Service {
                 "getValidModels",
                 "getModelShareOptions",
                 "getModelShareConfig",
+                "getHookShareConfig",
                 "shareModel",
+                "shareHook",
                 "getModelOverview",
                 "getAiModelOwnerSummaries",
+                "getAiHookOwnerSummaries",
+                "getAiHookDisplaySummaries",
             ],
             resTypes: [],
         });
@@ -51,9 +55,13 @@ module.exports = class AIService extends Service {
             getValidModels: () => chat.getValidModels(this, client, data),
             getModelShareOptions: () => share.getModelShareOptions(this, client),
             getModelShareConfig: () => share.getModelShareConfig(this, client, data),
+            getHookShareConfig: () => share.getHookShareConfig(this, client, data),
             shareModel: () => share.shareModel(this, client, data),
+            shareHook: () => share.shareHook(this, client, data),
             getModelOverview: () => share.getModelOverview(this, client, data),
             getAiModelOwnerSummaries: () => share.getAiModelOwnerSummaries(this, client),
+            getAiHookOwnerSummaries: () => share.getAiHookOwnerSummaries(this, client),
+            getAiHookDisplaySummaries: () => share.getAiHookDisplaySummaries(this, client),
         };
         if (handlers[command]) {
             return handlers[command]();

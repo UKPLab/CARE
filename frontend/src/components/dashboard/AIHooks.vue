@@ -38,6 +38,16 @@
 
   <AIHookViewModal ref="hookViewModal" />
 
+  <AIModelShareStepper
+    ref="shareHookStepper"
+    :current-user-id="currentUserId"
+    resource-label="AI Hook"
+    resource-id-key="aiHookId"
+    share-config-command="getHookShareConfig"
+    save-share-command="shareHook"
+    owner-only-message="Only hook owners can manage sharing"
+  />
+
   <ConfirmModal ref="confirmModal" />
 </template>
 
@@ -49,6 +59,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIHookModelModal from "@/components/dashboard/ai/AIHookModelModal.vue";
 import AIHookStepperModal from "@/components/dashboard/ai/AIHookStepperModal.vue";
 import AIHookViewModal from "@/components/dashboard/ai/AIHookViewModal.vue";
+import AIModelShareStepper from "@/components/dashboard/ai/AIModelShareStepper.vue";
 
 const OUTPUT_MODES = [
   { value: 0, label: "Text", class: "bg-secondary" },
@@ -70,9 +81,12 @@ export default {
     AIHookModelModal,
     AIHookStepperModal,
     AIHookViewModal,
+    AIModelShareStepper,
   },
   data() {
     return {
+      ownerLabelsByUserId: {},
+      hookDisplaySummariesById: {},
       tableOptions: {
         striped: true,
         hover: true,
@@ -84,6 +98,7 @@ export default {
         { name: "Name", key: "name", sortable: true },
         { name: "Prompt Template", key: "templateName", sortable: true },
         { name: "Models", key: "modelSummary", sortable: true, sortKey: "modelSortLabel" },
+        { name: "Shared by", key: "sharedBy", sortable: true },
         { name: "Output", key: "outputBadge", type: "badge", sortable: true, sortKey: "outputLabel" },
         { name: "Status", key: "statusBadge", type: "badge", sortable: true, sortKey: "statusLabel" },
         { name: "Created", key: "createdAt", type: "datetime", sortable: true },
@@ -111,6 +126,9 @@ export default {
     hookModels() {
       return this.$store.getters["table/ai_hook_models/getAll"] || [];
     },
+    aiHookRefreshCount() {
+      return this.$store.getters["table/ai_hook/refreshCount"];
+    },
     hookRows() {
       const templatesById = this.templates.reduce((acc, template) => {
         acc[template.id] = template;
@@ -128,7 +146,11 @@ export default {
         return acc;
       }, {});
 
+      const me = Number(this.currentUserId);
+
       return this.hooks.map((hook) => {
+        const ownerId = Number(hook.userId);
+        const isOwner = ownerId === me;
         const outputMode = OUTPUT_MODES_BY_VALUE[Number(hook.outputMode)] || OUTPUT_MODES_BY_VALUE[0];
         const hookModelRows = [...(hookModelsByHookId[hook.id] || [])]
           .sort((a, b) => Number(a.priority) - Number(b.priority));
@@ -142,15 +164,22 @@ export default {
         });
         const primaryModel = models[0];
         const extraModelCount = Math.max(models.length - 1, 0);
-        const modelSummary = primaryModel
+        const ownerModelSummary = primaryModel
           ? `${primaryModel.name}${extraModelCount > 0 ? ` +${extraModelCount}` : ""}`
           : "Unknown model";
+        const sharedModelSummary = this.hookDisplaySummariesById[String(hook.id)] || {};
+        const modelSummary = isOwner
+          ? ownerModelSummary
+          : (sharedModelSummary.modelSummary || "Unknown model");
+        const sharedBy = isOwner ? "—" : (this.ownerLabelsByUserId[String(ownerId)] || "—");
         return {
           ...hook,
+          isOwner,
           templateName: templatesById[hook.templateId]?.name || "Unknown template",
-          models,
+          models: isOwner ? models : (sharedModelSummary.models || []),
           modelSummary,
           modelSortLabel: modelSummary,
+          sharedBy,
           outputLabel: outputMode.label,
           outputBadge: {
             text: outputMode.label,
@@ -187,6 +216,13 @@ export default {
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
         {
+          icon: "share",
+          title: "Share AI hook",
+          action: "share",
+          filter: [{ key: "userId", value: this.currentUserId }],
+          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
+        },
+        {
           icon: "toggle2-on",
           title: "Disable AI hook",
           action: "toggle",
@@ -212,7 +248,38 @@ export default {
       ];
     },
   },
+  watch: {
+    aiHookRefreshCount: {
+      handler() {
+        this.loadAiHookOwnerSummaries();
+        this.loadAiHookDisplaySummaries();
+      },
+      immediate: true,
+    },
+  },
   methods: {
+    loadAiHookOwnerSummaries() {
+      this.$socket.emit(
+        "serviceCommand",
+        { service: "AIService", command: "getAiHookOwnerSummaries", data: {} },
+        (response) => {
+          if (response?.success) {
+            this.ownerLabelsByUserId = response.data || {};
+          }
+        },
+      );
+    },
+    loadAiHookDisplaySummaries() {
+      this.$socket.emit(
+        "serviceCommand",
+        { service: "AIService", command: "getAiHookDisplaySummaries", data: {} },
+        (response) => {
+          if (response?.success) {
+            this.hookDisplaySummariesById = response.data || {};
+          }
+        },
+      );
+    },
     onAction(data) {
       switch (data.action) {
         case "view":
@@ -223,6 +290,9 @@ export default {
           break;
         case "models":
           this.$refs.hookModelModal.open(data.params);
+          break;
+        case "share":
+          this.$refs.shareHookStepper.open(data.params);
           break;
         case "toggle":
           this.toggleHook(data.params);
