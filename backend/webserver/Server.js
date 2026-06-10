@@ -380,6 +380,9 @@ module.exports = class Server {
             // All per-socket handlers are now initialized and listening, so it's
             // safe for clients (including replay clients) to start emitting events.
             socket.emit("ready");
+            // Notify clients (e.g. an open recording session picker) that the
+            // set of online sessions changed, so they can refresh live.
+            this.io.emit("sessionsChanged");
 
             // If a recording is in progress and this new connection isn't in the
             // participant list, notify the recording's owner that the activity
@@ -471,6 +474,10 @@ module.exports = class Server {
                     }
 
                     delete this.availSockets[socket.id];
+
+                    // Notify clients that the online-session set changed so an
+                    // open recording session picker can refresh live.
+                    this.io.emit("sessionsChanged");
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);
                 }

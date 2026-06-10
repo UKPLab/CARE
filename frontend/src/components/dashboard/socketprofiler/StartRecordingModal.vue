@@ -100,6 +100,7 @@ export default {
     return {
       selectedSessions: [],
       onlineSessions: [], // [{socketId, userId, userName, connectedAt}]
+      isOpen: false,
       excludeEvents: ["stats", "subscribeAppData", "unsubscribeAppData"],
       customExcludeEvent: "",
       customExcludes: [],
@@ -154,6 +155,11 @@ export default {
       return [...this.excludeEvents, ...this.customExcludes];
     },
   },
+  sockets: {
+    sessionsChanged() {
+      if (this.isOpen) this.refreshSessions(false);
+    },
+  },
   methods: {
     open() {
       this.selectedSessions = [];
@@ -161,22 +167,38 @@ export default {
       this.excludeEvents = ["stats", "subscribeAppData", "unsubscribeAppData"];
       this.customExcludeEvent = "";
       this.customExcludes = [];
+      this.isOpen = true;
 
-      this.$socket.emit("recordingGetOnlineSessions", {}, (res) => {
-        if (res.success) {
-          this.onlineSessions = res.data || [];
-        }
-        // Pre-select the current tab's session AFTER onlineSessions is set,
-        // so sessionTable is stable and the object reference matches.
-        const ownRow = this.sessionTable.find(s => s.socketId === this.currentSocketId);
-        if (ownRow) {
-          this.selectedSessions = [ownRow];
-        }
-      });
-
+      this.refreshSessions(true);
       this.$refs.modal.open();
     },
+    /**
+     * Fetch the current online sessions. Selection is preserved across
+     * refreshes by socketId so a live update doesn't clear the user's
+     * checkboxes. On the initial open, the current tab is pre-selected.
+     */
+    refreshSessions(initial = false) {
+      const previouslySelectedIds = this.selectedSessions.map(s => s.socketId);
+
+      this.$socket.emit("recordingGetOnlineSessions", {}, (res) => {
+        if (!res.success) return;
+        this.onlineSessions = res.data || [];
+
+        if (initial) {
+          // Pre-select the current tab's session after the list is set.
+          const ownRow = this.sessionTable.find(s => s.socketId === this.currentSocketId);
+          this.selectedSessions = ownRow ? [ownRow] : [];
+        } else {
+          // Re-apply the prior selection to the refreshed rows, dropping any
+          // sessions that have since disconnected.
+          this.selectedSessions = this.sessionTable.filter(
+            s => previouslySelectedIds.includes(s.socketId)
+          );
+        }
+      });
+    },
     abort() {
+      this.isOpen = false;
       this.$refs.modal.close();
     },
     addCustomExclude() {
@@ -197,6 +219,7 @@ export default {
         excludeEvents: this.allExcludeEvents,
       }, (res) => {
         if (res.success) {
+          this.isOpen = false;
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
             title: "Recording started",
