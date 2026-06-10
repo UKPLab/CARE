@@ -1,8 +1,16 @@
 <template>
   <div>
-    <div class="mb-3">
+    <BasicTable
+      :columns="tableColumns"
+      :data="orderedModelRows"
+      :options="tableOptions"
+      :buttons="tableButtons"
+      @action="onTableAction"
+    />
+
+    <div class="mt-3">
       <label class="form-label" :for="`${idPrefix}ModelToAdd`">
-        Models
+        Add Model
         <i
           class="bi bi-info-circle text-muted ms-1"
           title="Add models in the order CARE should try them."
@@ -38,19 +46,6 @@
         No enabled AI models are available yet.
       </div>
     </div>
-
-    <BasicTable
-      v-if="modelIds.length > 0"
-      :columns="tableColumns"
-      :data="orderedModelRows"
-      :options="tableOptions"
-      :buttons="tableButtons"
-      @action="onTableAction"
-    />
-
-    <div v-else class="text-muted small">
-      Add at least one model before continuing.
-    </div>
   </div>
 </template>
 
@@ -80,11 +75,11 @@ export default {
     return {
       modelToAddId: null,
       tableOptions: {
-        small: true,
-        bordered: true,
+        striped: true,
+        hover: true,
       },
       tableColumns: [
-        { name: "#", key: "priority", width: 70 },
+        { name: "#", key: "priority", width: 1 },
         { name: "Model", key: "modelLabel" },
       ],
       tableButtons: [
