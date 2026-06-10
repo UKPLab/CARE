@@ -383,17 +383,24 @@ module.exports = class Server {
 
             // If a recording is in progress and this new connection isn't in the
             // participant list, notify the recording's owner that the activity
-            // won't be captured.
+            // won't be captured. A single browser tab opens more than one socket,
+            // so debounce the toast to avoid firing it multiple times for what is
+            // effectively one new tab.
             if (this.activeRecordingId && this.activeRecordingOwnerSocketId) {
                 const participants = this.activeParticipantSocketIds || [];
                 if (!participants.includes(socket.id)) {
-                    const ownerSocket = this.io.sockets.sockets.get(this.activeRecordingOwnerSocketId);
-                    if (ownerSocket) {
-                        ownerSocket.emit("toast", {
-                            title: "Uncaptured connection",
-                            message: "Uncaptured connection detected — not part of this recording",
-                            variant: "warning",
-                        });
+                    const now = Date.now();
+                    const UNCAPTURED_TOAST_DEBOUNCE_MS = 2000;
+                    if (now - (this._lastUncapturedToastAt || 0) > UNCAPTURED_TOAST_DEBOUNCE_MS) {
+                        this._lastUncapturedToastAt = now;
+                        const ownerSocket = this.io.sockets.sockets.get(this.activeRecordingOwnerSocketId);
+                        if (ownerSocket) {
+                            ownerSocket.emit("toast", {
+                                title: "Uncaptured connection",
+                                message: "Uncaptured connection detected — not part of this recording",
+                                variant: "warning",
+                            });
+                        }
                     }
                 }
             }
@@ -422,6 +429,45 @@ module.exports = class Server {
                         if (userSock) await userSock.broadcastStats(socket.id);
                     } catch (e) {
                         this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
+                    }
+
+                    // If a recorded participant drops mid-recording, stop the
+                    // recording and flag it "disconnected" rather than leaving it
+                    // running against a socket that no longer exists.
+                    try {
+                        const participants = this.activeParticipantSocketIds || [];
+                        if (this.activeRecordingId && participants.includes(socket.id)) {
+                            const ownerSocketId = this.activeRecordingOwnerSocketId;
+                            const recorder = this.availSockets[socket.id]['RecorderSocket'];
+                            if (recorder) {
+                                const stoppedId = this.activeRecordingId;
+                                await recorder.stopRecording({ status: "disconnected" }, {});
+
+                                // The disconnect-triggered stop runs outside the normal
+                                // socket transaction flow, so the automatic table broadcast
+                                // doesn't fire. Push the updated recording row to subscribed
+                                // clients manually so their tables reflect the new status.
+                                try {
+                                    const updatedRow = await this.db.models["recording"].getById(stoppedId);
+                                    if (updatedRow) {
+                                        await recorder.broadcastTable("recording", [updatedRow]);
+                                    }
+                                } catch (e) {
+                                    this.logger.warn("Failed to broadcast disconnected recording: " + e);
+                                }
+
+                                const ownerSocket = this.io.sockets.sockets.get(ownerSocketId);
+                                if (ownerSocket) {
+                                    ownerSocket.emit("toast", {
+                                        title: "Recording stopped",
+                                        message: "A recorded participant disconnected — recording flagged as disconnected.",
+                                        variant: "warning",
+                                    });
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        this.logger.warn("Failed to flag disconnected recording: " + e);
                     }
 
                     delete this.availSockets[socket.id];

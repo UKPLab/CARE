@@ -135,6 +135,11 @@ class RecorderSocket extends Socket {
             throw new Error("No active recording");
         }
 
+        // Allow callers to override the terminal status (e.g. "disconnected"
+        // when a participant's socket drops). Normal user-initiated stops use
+        // "finished".
+        const finalStatus = (data && data.status) || "finished";
+
         for (const socketId of Object.keys(this.server.availSockets)) {
             const recorder = this.server.availSockets[socketId]["RecorderSocket"];
             if (recorder) recorder.detachListeners();
@@ -142,7 +147,7 @@ class RecorderSocket extends Socket {
 
         await this.models["recording"].updateById(
             recordingId,
-            { status: "finished", endTime: new Date() },
+            { status: finalStatus, endTime: new Date() },
             options
         );
 
