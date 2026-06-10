@@ -43,6 +43,7 @@
     :current-user-id="currentUserId"
     resource-label="AI Hook"
     resource-id-key="aiHookId"
+    share-options-command="getModelShareOptions"
     share-config-command="getHookShareConfig"
     save-share-command="shareHook"
     owner-only-message="Only hook owners can manage sharing"

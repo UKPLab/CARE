@@ -104,27 +104,27 @@ export default {
     },
     resourceLabel: {
       type: String,
-      default: "AI Model",
+      required: true,
     },
     resourceIdKey: {
       type: String,
-      default: "aiModelId",
+      required: true,
     },
     shareOptionsCommand: {
       type: String,
-      default: "getModelShareOptions",
+      required: true,
     },
     shareConfigCommand: {
       type: String,
-      default: "getModelShareConfig",
+      required: true,
     },
     saveShareCommand: {
       type: String,
-      default: "shareModel",  
+      required: true,
     },
     ownerOnlyMessage: {
       type: String,
-      default: "Only owners can manage sharing",
+      required: true,
     },
   },
   data() {
