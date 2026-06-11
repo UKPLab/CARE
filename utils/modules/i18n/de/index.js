@@ -26,7 +26,6 @@ import components from './components.json'
 import workflow from "./workflow.json";
 import templates from './templates.json'
 import assignments from './assignments.json'
-import setupWizard from './setupWizard.json'
 
 export default {
   common,
@@ -56,6 +55,5 @@ export default {
   components,
   workflow,
   templates,
-  assignments,
-  setupWizard
+  assignments
 }

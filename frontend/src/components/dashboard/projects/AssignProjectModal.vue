@@ -30,7 +30,7 @@
         <h6>{{ $t('dashboard.projects.selectUsersToAssignProjectsTo') }}</h6>
         <BasicTable
           v-model="userSelection"
-          :columns="table.columns"
+          :columns="tableColumns"
           :data="users"
           :options="table.options"
         />

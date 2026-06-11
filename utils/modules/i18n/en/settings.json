@@ -159,9 +159,5 @@
     "tags_recencySortingIsOn": "Indicates whether recency based sorting for annotation tags is turned on.",
     "tags_tagSet_default": "The default tagset to use for new annotations",
     "topBar_projects_hideProjectButton": "Whether to hide the project button in the topBar"
-  },
-  "displayNames": {
-    "email_template_submissionUpload": "Submission upload (assignment owner)",
-    "email_template_submissionUploadConfirmation": "Submission upload (submitter)"
   }
 }

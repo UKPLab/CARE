@@ -159,9 +159,5 @@
     "tags_recencySortingIsOn": "Gibt an, ob Sortierung nach Aktualität für Annotations-Tags aktiviert ist.",
     "tags_tagSet_default": "Standard-Tagset für neue Annotationen.",
     "topBar_projects_hideProjectButton": "Ob die Projekt-Schaltfläche in der oberen Leiste ausgeblendet wird."
-  },
-  "displayNames": {
-    "email_template_submissionUpload": "Submission-Upload (Assignment-Owner)",
-    "email_template_submissionUploadConfirmation": "Submission-Upload (Submitter)"
   }
 }

@@ -6,7 +6,7 @@
       @click="(setting.type === 'boolean' || setting.type === 'bool') && $event.preventDefault()"
     >
       <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-md-end">
-        <span>{{ translateMaybeKey(setting.displayName) || setting.key }}</span>
+        <span>{{ setting.displayName || setting.key }}</span>
         <FormHelp
           v-if="setting.description"
           :help="translateMaybeKey(setting.description)"
