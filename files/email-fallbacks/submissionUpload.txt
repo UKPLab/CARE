@@ -4,8 +4,10 @@ Hello,
 
 An assignment submission has been {{eventLabelLower}}.
 
+Assignment: {{assignmentName}}
 Assignment ID: {{assignmentId}}
 Submission ID: {{submissionId}}
+Uploaded at: {{timestamp}}
 
 Best regards,
 The CARE Team

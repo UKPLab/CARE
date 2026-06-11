@@ -80,7 +80,7 @@ export default {
   props: {
     studySessionId: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
     },
     closeable: {

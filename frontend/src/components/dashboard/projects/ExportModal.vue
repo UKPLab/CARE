@@ -117,7 +117,6 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import BasicLoading from "@/basic/Loading.vue";
 import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
@@ -131,7 +130,7 @@ import getServerURL from "@/assets/serverUrl.js";
  */
 export default {
   name: "ExportProjectModal",
-  components: { BasicLoading, StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
+  components: { StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -449,7 +448,7 @@ export default {
               );
               break;
 
-            case 2: // Editor
+            case 2: { // Editor
               // download edits + html
               const edits = this.edits.filter(edit => (
                   edit.documentId === step.documentId && edit.studyStepId === null && edit.studySessionId === null
@@ -465,6 +464,7 @@ export default {
               step_folder.file('text.txt', quill.getText());
               step_folder.file('document.delta', JSON.stringify(deltas, null, 2));
               break;
+            }
           }
         });
       });

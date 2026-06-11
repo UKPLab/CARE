@@ -22,7 +22,14 @@
             title="Rights Management"
             text="Rights Management"
             icon="shield-lock"
-            @click="$refs.rightsManagementModal.open()"
+            @click="openRightsManagementModal"
+        />
+        <BasicButton
+          class="btn btn-secondary btn-sm"
+          title="Role Management"
+          text="Role Management"
+          icon="person-plus"
+          @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
           class="btn btn-secondary btn-sm"

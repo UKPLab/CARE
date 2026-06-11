@@ -1,0 +1,13 @@
+CARE - Submission {{eventLabel}} confirmation
+
+Hello,
+
+Your assignment submission has been {{eventLabelLower}} successfully.
+
+Assignment: {{assignmentName}}
+Assignment ID: {{assignmentId}}
+Submission ID: {{submissionId}}
+Uploaded at: {{timestamp}}
+
+Best regards,
+The CARE Team

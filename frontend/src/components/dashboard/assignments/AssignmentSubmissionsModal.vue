@@ -29,13 +29,6 @@
         />
         <BasicButton
           class="btn btn-primary"
-          title="Import via Moodle"
-          text="Import via Moodle"
-          icon="box-arrow-in-down"
-          @click="openImportModal()"
-        /> 
-        <BasicButton
-          class="btn btn-primary"
           title="Upload Submission"
           text="Upload Submission"
           icon="file-earmark-arrow-up"
@@ -195,9 +188,6 @@ export default {
         return;
       }
       this.$refs.uploadModal.open(this.assignmentId);
-    },
-    openImportModal() {
-      this.$refs.importModal.open(this.assignmentId);
     },
     close() {
       this.$refs.assignmentSubmissionsModal.close();

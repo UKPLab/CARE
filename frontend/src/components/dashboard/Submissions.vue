@@ -15,7 +15,7 @@
         :key="`active-${assignment.id}`"
       >
         <Card
-          :title="assignment.title"
+          :title="assignment.name"
           collapsable
           collapsed
         >
@@ -57,7 +57,7 @@
         :key="`closed-${assignment.id}`"
       >
         <Card
-          :title="assignment.title"
+          :title="assignment.name"
           collapsable
           collapsed
         >
@@ -104,7 +104,7 @@ export default {
     },
     assignments() {
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || Boolean(assignment.public)
+        (assignment) => assignment.userId === this.userId || !assignment.disable
       ) || [];
     },
     assignmentTimes() {

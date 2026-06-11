@@ -92,7 +92,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, BasicButton, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}, "assignment_share", "user_role_matching"],
   data() {
     return {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
@@ -142,20 +142,48 @@ export default {
       return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, true, true];
     },
     currentProject() {
-      console.log("current project id", this.$store.getters["settings/getValueAsInt"]("projects.default"));
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     message() {
       return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
     },
+    assignedUserIds() {
+      if (!this.assignmentId) return new Set();
+      const shares = this.$store.getters["table/assignment_share/getFiltered"](
+        (s) => s.assignmentId === this.assignmentId
+      ) || [];
+      return new Set(shares.filter(s => s.userId != null).map(s => s.userId));
+    },
+    assignedRoleIds() {
+      if (!this.assignmentId) return new Set();
+      const shares = this.$store.getters["table/assignment_share/getFiltered"](
+        (s) => s.assignmentId === this.assignmentId
+      ) || [];
+      return new Set(shares.filter(s => s.roleId != null).map(s => s.roleId));
+    },
     users() {
-      return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+      const result = this.$store.getters["table/user/getFiltered"]((u) => {
+        if (u.extId === null) {
+          return false;
+        }
+        if (this.assignedUserIds.size > 0) {
+          const pass = this.assignedUserIds.has(u.id);
+          return pass;
+        }
+        if (this.assignedRoleIds.size > 0) {
+          const userRoles = u.roles || [];
+          const pass = userRoles.some(roleId => this.assignedRoleIds.has(roleId));
+          return pass;
+        }
+        return true;
+      });
+      return result;
     },
     usersExtIds() {
-      return this.users.map((u) => u.extId);
+      return this.users?.map((u) => u.extId);
     },
     userSubmissions() {
-      return this.downloadedSubmissions.filter((a) => a["files"].length > 0 && this.usersExtIds.includes(a["userid"]));
+      return this.downloadedSubmissions.filter((a) => a["files"].length > 0 && this.usersExtIds?.includes(a["userid"]));
     },
     submissions() {
       // Group rows by submission (one table row per submission)

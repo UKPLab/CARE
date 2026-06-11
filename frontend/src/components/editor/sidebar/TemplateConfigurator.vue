@@ -191,11 +191,12 @@
             studyName: "The name of the study that was closed.",
           },
           7: { // Email - Submission upload
-            username: "The assignment owner receiving this email (not the user who uploaded).",
+            username: "The person receiving this email (assignment owner or submitter).",
             assignmentName: "The title of the assignment.",
             eventType: "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
             assignmentId: "Internal assignment ID.",
             submissionId: "Internal submission ID.",
+            timestamp: "When the submission was uploaded.",
           },
         };
 

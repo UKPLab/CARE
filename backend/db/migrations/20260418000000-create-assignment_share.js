@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('assignment_role', {
+    await queryInterface.createTable('assignment_share', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -58,12 +58,12 @@ module.exports = {
     });
 
 
-    await queryInterface.addIndex('assignment_role', ['assignmentId'], {
-      name: 'assignment_role_assignmentId_index',
+    await queryInterface.addIndex('assignment_share', ['assignmentId'], {
+      name: 'assignment_share_assignmentId_index',
     });
 
     await queryInterface.sequelize.query(
-      `ALTER TABLE "assignment_role" ADD CONSTRAINT "chk_assignment_role_exclusive"
+      `ALTER TABLE "assignment_share" ADD CONSTRAINT "chk_assignment_share_exclusive"
        CHECK (
          ("roleId" IS NOT NULL AND "userId" IS NULL) OR
          ("userId" IS NOT NULL AND "roleId" IS NULL)
@@ -72,6 +72,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('assignment_role');
+    await queryInterface.dropTable('assignment_share');
   },
 };

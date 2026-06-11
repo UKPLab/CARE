@@ -58,7 +58,7 @@ export default {
       },
       columns: [
         { name: "ID", key: "id" },
-        { name: "Submission Name", key: "submissionName" },
+        { name: "Submission Name", key: "name" },
         { name: "Username", key: "userName" },
         { name: "Studies Using", key: "studyUsageCount" },
         { name: "Created At", key: "createdAt" },
@@ -67,7 +67,7 @@ export default {
   },
   computed: {
     hasAdminRights() {
-      return this.$store.getters["auth/isAdmin"] || this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.view");
+      return this.$store.getters["auth/isAdmin"] || this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.viewAll");
     },
     canReplaceDeleteSubmissions() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.replaceDeleteSubmissions");
@@ -110,13 +110,13 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: (submission.userId === this.currentUserId || this.canReplaceDeleteSubmissions) && !isStudyLocked,
-            allowReUpload: (submission.userId === this.currentUserId || this.canReplaceDeleteSubmissions) && !isStudyLocked,
+            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null,
             isStudyLocked,
             studyUsageCount,
-            submissionName: submission.name || "-",
+            name: submission.name || "-",
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
+            description: submission.description || "",
             createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
           };
         });
@@ -150,7 +150,7 @@ export default {
           icon: "arrow-repeat",
           filter: [
             {
-              key: "allowReUpload",
+              key: "canReplaceDelete",
               value: true,
             },
           ],
@@ -303,12 +303,7 @@ export default {
         });
         return;
       }
-
-      this.$refs.uploadModal.open(assignmentId, {
-        submissionId: row.id,
-        userId: row.userId,
-        group: row.group === "-" ? null : row.group,
-      });
+      this.$refs.uploadModal.open(assignmentId, row);
     },
     deleteSubmission(row) {
       if (row.isStudyLocked) {
@@ -328,10 +323,10 @@ export default {
           if (!confirmed) return;
 
           this.$socket.emit(
-            "submissionUpdate",
+            "submissionDelete",
             {
               id: row.id,
-              deleted: true,
+              force: true,
             },
             (res) => {
               if (res.success) {

@@ -128,10 +128,17 @@ the backend, just run the basic build using the following commands in different 
 
     make docker # starts the docker containers needed for development
     make init   # initializes the database
-    make dev    # starts the development server (backend & frontend) - only linux!
+    make dev    # starts the development server (backend & frontend, wizard skipped) - only Linux!
 
 This will start the development server for the backend as well as the frontend. This also starts up
 a database in a docker container and populates it with the necessary schemas.
+
+.. note::
+
+    ``make dev`` runs with ``DEV_SKIP_WIZARD=true`` for faster iterative development.
+    If you need to test the first-time setup flow, use ``make dev-wizard``.
+    For backend-only runs, ``make dev-backend`` and ``make dev-backend-watch`` also skip the wizard,
+    while ``make dev-backend-wizard`` keeps wizard flow enabled.
 
 .. note::
 
@@ -141,7 +148,9 @@ a database in a docker container and populates it with the necessary schemas.
 .. warning::
 
         The ``make dev`` command only works on Linux systems.
-        On Windows, you need to start the frontend and backend separately with ``make dev-frontend`` and ``make dev-backend``.
+        On Windows, you need to start the frontend and backend separately.
+        Use ``make dev-frontend`` + ``make dev-backend`` for wizard-skipped backend runs, or
+        ``make dev-frontend`` + ``make dev-backend-wizard`` to test the first-time setup wizard flow.
 
 Frontend
 ~~~~~~~~~~~~
@@ -191,6 +200,13 @@ After that, the backend can be started with:
     make dev-backend
 
 To enable auto-restart of the backend when server files change, use ``make dev-backend-watch`` (runs ``nodemon``).
+Both commands run with ``DEV_SKIP_WIZARD=true``.
+
+If you want backend-only development with wizard enabled, use:
+
+.. code-block:: bash
+
+    make dev-backend-wizard
 
 To shorten things, both commands can also be executed with ``make dev-build`` at once.
 
@@ -230,11 +246,15 @@ More Commands
     * - ``make doc_clean``
       - Clean the Sphinx documentation.
     * - ``make dev``
-      - Run frontend (dev) and backend (dev) together. (Unix only)
+      - Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix only)
+    * - ``make dev-wizard``
+      - Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)
     * - ``make dev-backend``
-      - Run backend in development mode.
+      - Run backend in development mode with setup wizard skipped.
+    * - ``make dev-backend-wizard``
+      - Run backend in development mode with setup wizard enabled.
     * - ``make dev-backend-watch``
-      - Run backend in development mode with nodemon (auto-restart on file changes).
+      - Run backend in development mode with nodemon (auto-restart on file changes), setup wizard skipped.
     * - ``make dev-frontend``
       - Run frontend in development mode.
     * - ``make dev-build``

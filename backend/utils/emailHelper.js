@@ -58,6 +58,7 @@ async function getEmailFallbackContent(key, variables = {}) {
  * @param {string} [context.eventLabelLower] - Lowercase label for submission upload fallback
  * @param {number} [context.assignmentId] - Assignment ID (submission upload)
  * @param {number} [context.submissionId] - Submission ID (submission upload)
+ * @param {string} [context.timestamp] - Upload timestamp from submission createdAt (submission upload)
  * @param {Object} models - Database models
  * @param {Object} logger - Logger instance
  * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML

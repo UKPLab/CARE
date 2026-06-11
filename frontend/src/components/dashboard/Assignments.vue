@@ -27,6 +27,7 @@
   <AssignmentModal ref="assignmentModal" />
   <AssignmentSubmissionsModal ref="assignmentSubmissionsModal" />
   <AssignmentMetadataModal ref="assignmentMetadataModal" />
+  <ImportModal ref="importModal" />
   <ConfirmModal ref="deleteConf" />
 </template>
 
@@ -36,12 +37,13 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.vue";
 import AssignmentSubmissionsModal from "@/components/dashboard/assignments/AssignmentSubmissionsModal.vue";
+import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignmentMetadataModal from "./assignments/AssignmentMetadataModal.vue";
 
 export default {
   name: "DashboardAssignments",
-  subscribeTable: ["assignment", "assignment_role", "user_role", "user"],
+  subscribeTable: ["assignment", "assignment_share", "user_role", "user"],
   components: {
     Card,
     BasicTable,
@@ -49,6 +51,7 @@ export default {
     AssignmentModal,
     AssignmentSubmissionsModal,
     AssignmentMetadataModal,
+    ImportModal,
     ConfirmModal,
   },
   data() {
@@ -85,8 +88,8 @@ export default {
         { name: "Assigned To", key: "assignedRoles" },
         { name: "Max Revisions", key: "maxRevisions" },
         {
-          name: "public",
-          key: "public",
+          name: "Disable",
+          key: "disable",
           type: "badge",
           typeOptions: {
             keyMapping: {
@@ -177,17 +180,17 @@ export default {
           },
         },
         {
-          icon: "cloud-arrow-up",
+          icon: "x-octagon",
           filter: [{ key: "canEditAssignment", value: true }],
           options: {
             iconOnly: true,
             specifiers: {
-              "btn-outline-primary": true,
+              "btn-outline-danger": true,
               "btn-sm": true,
             },
           },
-          title: "Toggle public",
-          action: "togglePublic",
+          title: "Toggle Disable",
+          action: "toggleDisable",
           stats: {
             assignmentId: "id",
           },
@@ -203,6 +206,22 @@ export default {
           },
           title: "Copy assignment",
           action: "copyAssignment",
+          stats: {
+            assignmentId: "id",
+          },
+        },
+        {
+          icon: "box-arrow-in-down",
+          filter: [{ key: "canEditAssignment", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          title: "Import via Moodle",
+          action: "importMoodle",
           stats: {
             assignmentId: "id",
           },
@@ -247,7 +266,7 @@ export default {
       }
 
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || Boolean(assignment.public) 
+        (assignment) => assignment.userId === this.userId || !assignment.disable
       ) || [];
     },
     assignmentTable() {
@@ -260,23 +279,23 @@ export default {
         return acc;
       }, {});
       return this.assignments.map((assignment) => {
-        const entries = this.$store.getters["table/assignment_role/getFiltered"]((e) => e.assignmentId === assignment.id) || [];
+        const entries = this.$store.getters["table/assignment_share/getFiltered"]((e) => e.assignmentId === assignment.id) || [];
         const assignedRoles = entries
           .map((e) => (e.roleId ? rolesById[e.roleId] : null) || (e.userId ? usersById[e.userId] : null))
           .filter(Boolean)
           .join(", ") || "-";
         return {
           ...assignment,
-          isOwner: this.isAssignmentOwner(assignment),
+          isOwner: assignment.userId === this.userId,
           canEditAssignment: this.isAssignmentOwner(assignment) || this.canEditAssignments,
           canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
           submissionStatus: this.getSubmissionStatus(assignment),
           assignedRoles,
           maxRevisions: assignment.maxRevisions ?? 1,
-          public: Boolean(assignment.public),
+          disable: assignment.disable,
           start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
           end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
-          allowReUpload: Boolean(assignment.allowReUpload),
+          allowReUpload: assignment.allowReUpload,
         };
       });
     },
@@ -335,6 +354,12 @@ export default {
         case "togglePublic":
           this.togglePublic(data.params);
           break;
+        case "importMoodle":
+          this.$refs.importModal.open(data.params.id);
+          break;
+        case "toggleDisable":
+          this.toggleDisable(data.params);
+          break;
         case "closeAssignment":
           this.closeAssignment(data.params);
           break;
@@ -385,30 +410,30 @@ export default {
         }
       );
     },
-    togglePublic(params) {
+    toggleDisable(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
           title: "Access denied",
-          message: "You do not have permission to share this assignment.",
+          message: "You do not have permission to disable this assignment.",
           variant: "warning",
         });
         return;
       }
-      const newPublicState = !params.public;
+      const newDisableState = !params.disable;
       this.$socket.emit(
         "appDataUpdate",
         {
           table: "assignment",
           data: {
             id: params.id,
-            public: newPublicState,
+            disable: newDisableState,
           },
         },
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
               title: "Assignment updated",
-              message: `Assignment is now ${newPublicState ? "public" : "private"}.`,
+              message: `Assignment is now ${newDisableState ? "disabled" : "enabled"}.`,
               variant: "success",
             });
           } else {
