@@ -84,6 +84,12 @@
     },
     mounted() {
       this.templateIdNum = Number(this.templateId);
+      if (this.templateIdNum > 0) {
+        this.$socket.emit("appData", {
+          table: "template",
+          filter: [{ key: "id", value: this.templateIdNum }],
+        });
+      }
     },
     sockets: {
       templateError: function (data) {

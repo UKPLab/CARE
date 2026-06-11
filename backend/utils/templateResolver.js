@@ -7,7 +7,13 @@
  * @author Mohammad Elwan
  */
 const Delta = require("quill-delta");
-const {deltaToPlainText} = require("editor-delta-conversion");
+const fs = require("fs");
+const path = require("path");
+const {Op} = require("sequelize");
+const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
+const {resolveNlpAssessmentDraft} = require("./studyNlpDocumentData");
+const UPLOAD_PATH = `${__dirname}/../../files`;
+const TEXT_PLACEHOLDER_CHAR_CAP = 15000;
 
 /**
  * Extract plain text from Quill Delta operations
@@ -37,6 +43,381 @@ function textToDelta(text) {
         return new Delta();
     }
     return new Delta().insert(text);
+}
+
+/**
+ * Cap text deterministically to a maximum number of characters.
+ *
+ * @param {string} text - Input text
+ * @param {number} cap  - Max character count
+ * @returns {string}
+ */
+function capText(text, cap = TEXT_PLACEHOLDER_CHAR_CAP) {
+    if (typeof text !== "string") return "";
+    return text.length > cap ? text.slice(0, cap) : text;
+}
+
+/**
+ * Convert a placeholder value to a string for template replacement.
+ * Objects/arrays are serialized to JSON text.
+ *
+ * @param {*} value - Value to convert
+ * @returns {string}
+ */
+function normalizeReplacementValue(value) {
+    if (value === undefined || value === null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    try {
+        return JSON.stringify(value);
+    } catch (_error) {
+        return "";
+    }
+}
+
+/**
+ * Load a base delta from disk for HTML/MODAL documents.
+ *
+ * @param {Object} document - Document row
+ * @returns {Delta}
+ */
+function loadDocumentBaseDelta(document) {
+    const deltaPath = path.join(UPLOAD_PATH, `${document.hash}.delta`);
+    if (!fs.existsSync(deltaPath)) {
+        return new Delta();
+    }
+    try {
+        const raw = fs.readFileSync(deltaPath, "utf8");
+        const parsed = raw ? JSON.parse(raw) : {};
+        return new Delta(parsed.ops || []);
+    } catch (_error) {
+        return new Delta();
+    }
+}
+
+/**
+ * Plain text for ~editorText~ (uses context.editorText when set, else document delta + draft edits).
+ *
+ * @param {Object} models - DB models
+ * @param {Object} context - Resolver context
+ * @param {Object} options - Query options
+ * @returns {Promise<string>}
+ */
+async function resolveEditorText(models, context, options = {}) {
+    if (context.editorText) {
+        return capText(context.editorText);
+    }
+    if (!context.documentId) {
+        return "";
+    }
+
+    const document = await models["document"].getById(context.documentId, options);
+    if (!document) {
+        return "";
+    }
+
+    const docTypes = models["document"].docTypes;
+    if (![docTypes.DOC_TYPE_HTML, docTypes.DOC_TYPE_MODAL].includes(document.type)) {
+        return "";
+    }
+
+    const baseDelta = loadDocumentBaseDelta(document);
+    let edits = [];
+
+    if (context.studySessionId == null && context.studyStepId == null) {
+        edits = await models["document_edit"].findAll({
+            where: {
+                documentId: document.id,
+                studySessionId: null,
+                studyStepId: null,
+                draft: true,
+                deleted: false,
+            },
+            order: [["createdAt", "ASC"], ["order", "ASC"]],
+            raw: true,
+            ...options,
+        });
+    } else {
+        const allEdits = await models["document_edit"].findAll({
+            where: {
+                documentId: document.id,
+                deleted: false,
+            },
+            order: [["createdAt", "ASC"], ["order", "ASC"]],
+            raw: true,
+            ...options,
+        });
+        edits = allEdits.filter((edit) =>
+            edit.draft === true &&
+            (edit.studySessionId === context.studySessionId || edit.studySessionId === null)
+        );
+    }
+
+    const mergedDelta = baseDelta.compose(new Delta(dbToDelta(edits)));
+    return capText(deltaToPlainText({ops: mergedDelta.ops}));
+}
+
+/**
+ * Load merged document_data values for current document/session/step context.
+ * Session/step-specific keys override global null/null keys.
+ *
+ * @param {Object} models - DB models
+ * @param {Object} context - Resolver context
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>}
+ */
+async function getMergedDocumentData(models, context, options = {}) {
+    if (!context.documentId) {
+        return {};
+    }
+
+    const where = {
+        documentId: context.documentId,
+        deleted: false,
+    };
+
+    if (context.studySessionId != null && context.studyStepId != null) {
+        where[Op.or] = [
+            {studySessionId: context.studySessionId, studyStepId: context.studyStepId},
+            {studySessionId: null, studyStepId: null},
+        ];
+    } else {
+        where.studySessionId = null;
+        where.studyStepId = null;
+    }
+
+    const rows = await models["document_data"].findAll({
+        where,
+        order: [["updatedAt", "ASC"]],
+        raw: true,
+        ...options,
+    });
+
+    const merged = {};
+    for (const row of rows) {
+        merged[row.key] = row.value;
+    }
+    return merged;
+}
+
+/**
+ * Resolve prompt-specific placeholders (type 8) from context and database.
+ *
+ * @param {Object} context - Resolver context
+ * @param {Object} models - DB models
+ * @param {Function} allow - Allowed-key checker
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>}
+ */
+async function buildPromptPlaceholderValues(context, models, allow, options = {}) {
+    const promptValues = {};
+    const mergedDocumentData = await getMergedDocumentData(models, context, options);
+
+    const needsStudyStep =
+        context.studyStepId &&
+        (allow("nlpAssessmentSuggestion") ||
+            allow("assessmentConfiguration") ||
+            allow("studyContext") ||
+            allow("previousAssessmentResult"));
+    let studyStep = null;
+    if (needsStudyStep) {
+        studyStep = await models["study_step"].getById(context.studyStepId, options);
+    }
+
+    if (allow("pdfText")) {
+        const pdfText = context.pdfText ? capText(context.pdfText) : "";
+        promptValues["~pdfText~"] = pdfText;
+    }
+
+    if (allow("editorText")) {
+        promptValues["~editorText~"] = await resolveEditorText(models, context, options);
+    }
+
+    if (allow("assessmentResult")) {
+        promptValues["~assessmentResult~"] = mergedDocumentData.assessment_result || "";
+    }
+
+    if (allow("inlineComments")) {
+        const comments = await models["comment"].findAll({
+            where: {
+                documentId: context.documentId || null,
+                studySessionId: context.studySessionId || null,
+                studyStepId: context.studyStepId || null,
+                deleted: false,
+            },
+            order: [["createdAt", "ASC"]],
+            raw: true,
+            ...options,
+        });
+
+        const annotationsById = {};
+        if (comments.length > 0) {
+            const annotationIds = [...new Set(comments.map((comment) => comment.annotationId).filter(Boolean))];
+            if (annotationIds.length > 0) {
+                const annotations = await models["annotation"].findAll({
+                    where: {id: annotationIds, deleted: false},
+                    raw: true,
+                    ...options,
+                });
+                for (const annotation of annotations) {
+                    annotationsById[annotation.id] = annotation;
+                }
+            }
+        }
+
+        promptValues["~inlineComments~"] = comments.map((comment) => ({
+            id: comment.id,
+            comment: comment.text || "",
+            quote: annotationsById[comment.annotationId]?.text || "",
+            annotationId: comment.annotationId || null,
+            createdAt: comment.createdAt || null,
+        }));
+    }
+
+    if (allow("nlpAssessmentSuggestion")) {
+        let nlpAssessmentSuggestion = "";
+        if (
+            context.documentId &&
+            context.studySessionId != null &&
+            context.studyStepId &&
+            studyStep?.configuration
+        ) {
+            nlpAssessmentSuggestion = resolveNlpAssessmentDraft(
+                mergedDocumentData,
+                studyStep.configuration
+            );
+        }
+        promptValues["~nlpAssessmentSuggestion~"] = nlpAssessmentSuggestion;
+    }
+
+    if (allow("previousAssessmentResult")) {
+        let previous = "";
+        if (context.studyStepId && context.studySessionId != null && studyStep?.studyStepPrevious) {
+            const prevStep = await models["study_step"].getById(studyStep.studyStepPrevious, options);
+            if (prevStep?.documentId) {
+                const prevRows = await models["document_data"].findAll({
+                    where: {
+                        documentId: prevStep.documentId,
+                        studySessionId: context.studySessionId,
+                        studyStepId: prevStep.id,
+                        key: "assessment_result",
+                        deleted: false,
+                    },
+                    order: [["updatedAt", "DESC"]],
+                    limit: 1,
+                    raw: true,
+                    ...options,
+                });
+                previous = prevRows[0]?.value || "";
+            }
+        }
+        promptValues["~previousAssessmentResult~"] = previous;
+    }
+
+    if (allow("assessmentConfiguration")) {
+        let assessmentConfiguration = "";
+        if (studyStep) {
+            const configurationId = studyStep.configuration?.settings?.configurationId || null;
+            if (configurationId) {
+                const configuration = await models["configuration"].getById(configurationId, options);
+                assessmentConfiguration = configuration?.content || "";
+            } else {
+                assessmentConfiguration = studyStep.configuration || "";
+            }
+        }
+        promptValues["~assessmentConfiguration~"] = assessmentConfiguration;
+    }
+
+    if (allow("submissionFiles")) {
+        let submissionFiles = "";
+        if (context.documentId) {
+            const document = await models["document"].getById(context.documentId, options);
+            if (document?.submissionId) {
+                const docs = await models["document"].findAll({
+                    where: {
+                        submissionId: document.submissionId,
+                        deleted: false,
+                    },
+                    raw: true,
+                    ...options,
+                });
+
+                const docTypes = models["document"].docTypes;
+                const pdfDocs = docs
+                    .filter((d) => d.type === docTypes.DOC_TYPE_PDF)
+                    .sort((a, b) => a.id - b.id);
+                // non-PDF rows go to otherFiles; PDF rows are listed separately in pdfFiles.
+                const pdfIdSet = new Set(pdfDocs.map((d) => d.id));
+                const submissionPdfTexts = context.submissionPdfTexts && typeof context.submissionPdfTexts === "object"
+                    ? context.submissionPdfTexts
+                    : null;
+                const textForSubmissionPdf = (pdfDocument) => {
+                    if (submissionPdfTexts) {
+                        const fromMap =
+                            submissionPdfTexts[pdfDocument.id] ??
+                            submissionPdfTexts[String(pdfDocument.id)];
+                        if (fromMap) {
+                            return capText(fromMap);
+                        }
+                    }
+                    if (context.pdfText && context.documentId === pdfDocument.id) {
+                        return capText(context.pdfText);
+                    }
+                    return "";
+                };
+
+                const pdfFiles = pdfDocs.map((d) => ({
+                    documentId: d.id,
+                    filename: d.originalFilename || d.name || `document_${d.id}`,
+                    text: textForSubmissionPdf(d),
+                }));
+
+                const otherFiles = docs
+                    .filter((d) => !pdfIdSet.has(d.id))
+                    .map((d) => ({
+                        role: "attachment",
+                        documentId: d.id,
+                        filename: d.originalFilename || d.name || `document_${d.id}`,
+                        type:
+                            d.type === docTypes.DOC_TYPE_ZIP
+                                ? "zip"
+                                : (d.type === docTypes.DOC_TYPE_HTML || d.type === docTypes.DOC_TYPE_MODAL)
+                                    ? "text"
+                                    : "other",
+                    }));
+
+                submissionFiles = {pdfFiles, otherFiles};
+            }
+        }
+        promptValues["~submissionFiles~"] = submissionFiles;
+    }
+
+    if (allow("studyContext")) {
+        let studyName = "";
+        let stepName = "";
+        let documentTitle = "";
+
+        if (studyStep) {
+            stepName = `Step ${studyStep.stepNumber || ""}`.trim();
+            if (studyStep.studyId) {
+                const study = await models["study"].getById(studyStep.studyId, options);
+                studyName = study?.name || "";
+            }
+        }
+
+        if (context.documentId) {
+            const document = await models["document"].getById(context.documentId, options);
+            documentTitle = document?.name || "";
+        }
+
+        promptValues["~studyContext~"] = {
+            studyName,
+            stepName,
+            documentTitle,
+        };
+    }
+
+    return promptValues;
 }
 
 /**
@@ -129,6 +510,27 @@ async function buildReplacementMap(context, models, options = {}) {
     }
     if (allow("timestamp") && context.timestamp) {
         replacements["~timestamp~"] = context.timestamp;
+    }
+
+    const promptKeys = [
+        "pdfText",
+        "editorText",
+        "assessmentResult",
+        "inlineComments",
+        "nlpAssessmentSuggestion",
+        "previousAssessmentResult",
+        "assessmentConfiguration",
+        "submissionFiles",
+        "studyContext",
+    ];
+    const shouldResolvePromptPlaceholders = promptKeys.some((key) => allow(key));
+    if (shouldResolvePromptPlaceholders) {
+        const promptReplacements = await buildPromptPlaceholderValues(context, models, allow, options);
+        Object.assign(replacements, promptReplacements);
+    }
+
+    for (const key of Object.keys(replacements)) {
+        replacements[key] = normalizeReplacementValue(replacements[key]);
     }
 
     return replacements;
@@ -337,7 +739,7 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
  * Return placeholder keys that are required for the given template type but missing in content.
  *
  * @param {Object} content - Quill Delta object with ops array
- * @param {number} templateType - Template type (e.g. 1, 2, 3, 6, 7)
+ * @param {number} templateType - Template type (e.g. 1, 2, 3, 6, 7, 8)
  * @param {Object} models - Database models
  * @param {Object} [options]
  * @returns {Promise<string[]>} Array of missing required placeholder keys (e.g. ['link'])
@@ -360,4 +762,5 @@ module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
     getMissingRequiredPlaceholders,
+    resolveEditorText,
 };
