@@ -16,7 +16,6 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
-import { translateMaybeKey } from "@/assets/utils";
 
 /** Show the logs stored in the DB
  *
@@ -73,11 +72,6 @@ export default {
     logAll: function (data) {
       this.options.pagination.total = data.count;
       this.data = data.rows.map(d => {
-        // Logs can contain either raw english text or i18n keys (e.g. errors.common.resourceNotFound).
-        // Translate only when the key exists in i18n; otherwise keep the original message.
-        if (typeof d.message === "string") {
-          d.message = translateMaybeKey(d.message);
-        }
         d.icon = {
           icon: "bug",
           color: this.getBugColor(d.level),

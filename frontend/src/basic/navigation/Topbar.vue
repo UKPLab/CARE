@@ -147,7 +147,6 @@ import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import PreferencesModal from "@/basic/modal/PreferencesModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
-import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "TopBar",
@@ -162,10 +161,7 @@ export default {
   }],
   computed: {
     allProjects() {
-      return (this.$store.getters["table/project/getAll"] || []).map((project) => ({
-        ...project,
-        name: project?.userId === null ? translateMaybeKey(project.name) : project.name,
-      }));
+      return this.$store.getters["table/project/getAll"] || [];
     },
     isProjectButtonHidden() {
       return this.$store.getters["settings/getValue"]("topBar.projects.hideProjectButton") === "true"
@@ -181,7 +177,7 @@ export default {
       if (!project) {
         return "";
       }
-      return project.userId === null ? translateMaybeKey(project.name) : project.name;
+      return project.name;
     },
     username() {
       return this.$store.getters['auth/getUsername'];

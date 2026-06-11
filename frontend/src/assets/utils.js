@@ -12,7 +12,7 @@ const looksLikeI18nKey = (str) =>
 
 /**
  * Translates a value when it is a known i18n key; otherwise returns it unchanged.
- * Use for DB seed strings and metadata that may be either a key (e.g. "workflow.names.peer_review_workflow")
+ * Use for DB seed strings and metadata that may be either an i18n key
  * or user-entered plain text.
  *
  * @param {*} value String to translate, or any other value passed through as-is.

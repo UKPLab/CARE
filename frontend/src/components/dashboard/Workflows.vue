@@ -59,7 +59,7 @@ import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
+import { resolveApiMessage } from "@/assets/utils";
 
 // Modal components
 import WorkflowCreateModal from "./workflows/WorkflowCreateModal.vue";
@@ -133,22 +133,15 @@ export default {
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
           (workflow) => workflow.userId === null || workflow.userId === this.userId
-        ).map(workflow => {
-          const translated = { ...workflow };
-          if (workflow.userId === null) {
-            translated.name = translateMaybeKey(workflow.name);
-            translated.description = translateMaybeKey(workflow.description);
-          }
-          return {
-            ...translated,
+        ).map(workflow => ({
+            ...workflow,
             workflowType: workflow.userId === null ? "system" : "user",
             isEditable: this.isAdmin || workflow.userId === this.userId,
             hidden: {
               text: workflow.hideInFrontend ? this.$t("common.yes") : this.$t("common.no"),
               class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
             }
-          };
-        });
+          }));
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];

@@ -87,10 +87,6 @@
       "publishedTitle": "Projekt veröffentlicht",
       "publishedMessage": "Das Projekt wurde erfolgreich veröffentlicht."
     },
-    "default": {
-      "name": "Standardprojekt",
-      "description": "Das Standardprojekt"
-    },
     "fields": {
       "name": {
         "label": "Name des Projekts",

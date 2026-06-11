@@ -82,4 +82,20 @@ function hasKey(key) {
     return Object.prototype.hasOwnProperty.call(trans, key);
 }
 
-module.exports = { t, hasKey, loadTranslations };
+/**
+ * English text for dashboard log storage when message is an i18n key.
+ *
+ * @param {string} message
+ * @returns {string}
+ */
+function resolveLogText(message) {
+    if (typeof message !== 'string') {
+        return message;
+    }
+    if (hasKey(message)) {
+        return t(message);
+    }
+    return message;
+}
+
+module.exports = { t, hasKey, loadTranslations, resolveLogText };

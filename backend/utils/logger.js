@@ -1,6 +1,7 @@
 const winston = require('winston');
 const Transport = require('winston-transport');
 require('winston-daily-rotate-file');
+const { resolveLogText } = require('./i18n');
 
 const logging_dir = process.env.LOGGING_PATH;
 
@@ -21,6 +22,9 @@ class SQLTransport extends Transport {
             if (message.length > 1024) {
                 message = message.slice(0, 1021) + '...';
             }
+
+            // Dashboard logs (Log.vue) are always stored in English.
+            message = resolveLogText(message);
 
             // 🟢 Use safe, short message for DB insert
             const safeInfo = {...info, message};

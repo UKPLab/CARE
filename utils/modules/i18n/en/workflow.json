@@ -165,24 +165,6 @@
       "message": "Workflow \"{oldName}\" has been renamed to \"{newName}\""
     }
   },
-  "names": {
-    "peer_review_workflow": "Peer Review Workflow",
-    "peer_review_workflow_(assessment)": "Peer Review Workflow (Assessment)",
-    "peer_review_workflow_(assessment_with_ai)": "Peer Review Workflow (Assessment with AI)",
-    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Project",
-    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Project (Control)",
-    "annotation_workflow": "Annotation Workflow",
-    "review_assessment_workflow": "Review Assessment Workflow"
-  },
-  "descriptions": {
-    "peer_review_workflow": "EiWA Project: Review a PDF document and write free text.",
-    "peer_review_workflow_(assessment)": "Peer Review Workflow with Assessment: Review a PDF document, write free text, and select configuration.",
-    "peer_review_workflow_(assessment_with_ai)": "Peer Review Workflow with Assessment and AI: Review a PDF document, write free text, select configuration, and use AI assessment.",
-    "ruhr-uni_bochum_project": "Ruhr-Uni Bochum Project: Correct a document over two revisions with edits overview.",
-    "ruhr-uni_bochum_project_control": "Ruhr-Uni Bochum Project: Correct a document over two revisions with edits overview.",
-    "annotation_workflow": "Workflow with one single annotation step.",
-    "review_assessment_workflow": "Review Assessment Workflow: Review a submitted study session"
-  },
   "fields": {
     "name": {
       "label": "Name of the Workflow:",
