@@ -312,6 +312,12 @@ module.exports = function (server) {
         }
     }
 
+    /**
+     * Normalizes a folder name so it is safe to use inside a ZIP archive.
+     *
+     * @param {string|number|null|undefined} value - The raw folder name.
+     * @returns {string} A sanitized folder name with reserved characters replaced.
+     */
     function sanitizeFolderName(value) {
         return String(value || "unknown")
             .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
@@ -319,6 +325,14 @@ module.exports = function (server) {
             .trim();
     }
 
+    /**
+     * Flattens a nested object into dot-notation keys.
+     *
+     * @param {any} value - The input value to flatten.
+     * @param {string} [prefix=""] - The prefix to prepend to nested keys.
+     * @param {Object} [out={}] - The accumulator object.
+     * @returns {Object} The flattened object.
+     */
     function flattenObject(value, prefix = "", out = {}) {
         if (value === null || value === undefined) return out;
         if (typeof value !== "object" || Array.isArray(value)) {
@@ -333,12 +347,37 @@ module.exports = function (server) {
         return out;
     }
 
+    /**
+     * Resolves the display name for a user based on the current export settings.
+     *
+     * @param {Object} user - The user record to display.
+     * @param {boolean} shouldGenerateAliases - Whether aliases should replace real names.
+     * @param {boolean} hasPrivateInfoRight - Whether the current user may export real names.
+     * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
+     * @returns {string} The display name to write into the export.
+     */
     function getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
         if (shouldGenerateAliases) return userMapping[user.id];
         if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
         return user.userName;
     }
 
+    /**
+     * Exports assessment results for the selected users as a ZIP archive.
+     * Each selected user gets one or more hash-named folders containing
+     * either JSON or CSV score files depending on the requested format.
+     *
+     * @param {Object} server - The server instance providing database models and Sequelize operators.
+     * @param {number|string} projectId - The project whose grades should be exported.
+     * @param {Array<number|string>} userIds - List of user IDs included in the export.
+     * @param {Array<Object>} users - Full user records for the selected users.
+     * @param {boolean} shouldGenerateAliases - Whether student names should be anonymized.
+     * @param {boolean} hasPrivateInfoRight - Whether the requester may export real names.
+     * @param {Object} userMapping - Map of user IDs to generated aliases.
+     * @param {string} gradeFormat - The output format for grade files, `json` or `csv`.
+     * @param {Object} archive - The active ZIP archive stream.
+     * @returns {Promise<void>} Resolves when all grade files have been appended.
+     */
     async function processGradesExport(
         server,
         projectId,
