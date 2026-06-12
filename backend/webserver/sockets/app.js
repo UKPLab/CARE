@@ -85,7 +85,7 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            throw new TranslatableError("ACCESS_DENIED", "errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table});
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table}, "ACCESS_DENIED");
         }
 
         // check data exists for required fields
@@ -96,7 +96,7 @@ class AppSocket extends Socket {
                     data.data[field.key] === null ||
                     data.data[field.key] === ""
                 ) {
-                    throw new TranslatableError("VALIDATION_ERROR", "errors.validation.requiredFieldMissing", {fieldKey: field.key});
+                    throw new TranslatableError("errors.validation.requiredFieldMissing", {fieldKey: field.key}, "VALIDATION_ERROR");
                 }
             }
             // defaults

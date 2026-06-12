@@ -204,7 +204,7 @@ async function resolveTemplate(templateId, context, models, options = {}) {
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new TranslatableError(null, "errors.templates.withUpperIdNotFound", {templateId});
+        throw new TranslatableError( "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {
@@ -273,7 +273,7 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new TranslatableError(null, "errors.templates.withUpperIdNotFound", {templateId});
+        throw new TranslatableError( "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {

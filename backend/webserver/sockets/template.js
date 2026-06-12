@@ -479,7 +479,7 @@ class TemplateSocket extends Socket {
         );
         if (missing.length > 0) {
           const tokens = missing.map((k) => `~${k}~`).join(", ");
-          throw new TranslatableError(null, "errors.templates.missingRequiredPlaceholders", {tokens});
+          throw new TranslatableError( "errors.templates.missingRequiredPlaceholders", {tokens});
         }
       }
       return;
@@ -509,7 +509,7 @@ class TemplateSocket extends Socket {
       );
       if (missing.length > 0) {
         const tokens = missing.map((k) => `~${k}~`).join(", ");
-        throw new TranslatableError(null, "errors.templates.missingRequiredPlaceholders", {tokens});
+        throw new TranslatableError( "errors.templates.missingRequiredPlaceholders", {tokens});
       }
     }
 
@@ -694,7 +694,7 @@ class TemplateSocket extends Socket {
       });
       if (usedBySettings.length > 0) {
         const settingNames = usedBySettings.map(s => s.key.replace("email.template.", "")).join(", ");
-        throw new TranslatableError(null, "errors.templates.assignedEmailTemplate", {settingNames});
+        throw new TranslatableError( "errors.templates.assignedEmailTemplate", {settingNames});
       }
     }
 

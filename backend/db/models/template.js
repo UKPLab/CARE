@@ -192,7 +192,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const source = await Template.findByPk(sourceTemplateId, { transaction });
             if (!source) {
-                throw new TranslatableError(null, "errors.templates.withIdNotFound", {sourceTemplateId});
+                throw new TranslatableError("errors.templates.withIdNotFound", {sourceTemplateId});
             }
             if (!source.public) {
                 throw new Error("errors.templates.onlyPublicCanBeCopied");

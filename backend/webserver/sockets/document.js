@@ -112,7 +112,7 @@ class DocumentSocket extends Socket {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             const filename = filePath.split("/").pop();
             if (!fs.existsSync(filePath)) {
-                throw new TranslatableError("FILE_MISSING", "errors.documents.fileMissingFromServer", {filename});
+                throw new TranslatableError("errors.documents.fileMissingFromServer", {filename}, "FILE_MISSING");
             }
         }
         return document;
@@ -220,7 +220,7 @@ class DocumentSocket extends Socket {
                 });
                 if (!file) {
                     // Use TranslatableError so the catch below sees `.key` and does not embed this i18n key as a plain-text param.
-                    throw new TranslatableError(null, "errors.documents.annotationDeleteOriginalFailed");
+                    throw new TranslatableError( "errors.documents.annotationDeleteOriginalFailed");
                 }
 
                 fs.writeFileSync(target, file);
@@ -884,7 +884,7 @@ class DocumentSocket extends Socket {
         if (assignmentId) {
             assignment = await this.models["assignment"].getById(assignmentId, {});
             if (!assignment) {
-                throw new TranslatableError(null, "errors.assignment.notFound", {assignmentId});
+                throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
             }
         }
 
@@ -902,7 +902,7 @@ class DocumentSocket extends Socket {
 
                 if (!validationResult.success) {
                     if (validationResult.params) {
-                        throw new TranslatableError(null, validationResult.message, validationResult.params);
+                        throw new TranslatableError( validationResult.message, validationResult.params);
                     }
                     throw new Error(validationResult.message || "errors.validation.validationFailedGeneric");
                 }
@@ -918,7 +918,7 @@ class DocumentSocket extends Socket {
 
                     // Check revision limit (0 = unlimited)
                     if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
-                        throw new TranslatableError(null, "errors.assignment.revisionLimitReached", {
+                        throw new TranslatableError( "errors.assignment.revisionLimitReached", {
                             userId: submission.userId,
                             submissionCount: assignmentSubmissions.length,
                             maxRevisions: assignment.maxRevisions,
@@ -1116,7 +1116,7 @@ class DocumentSocket extends Socket {
 
             if (!result.success) {
                 if (result.params) {
-                    throw new TranslatableError(null, result.message, result.params);
+                    throw new TranslatableError( result.message, result.params);
                 }
                 throw new Error(result.message || "errors.validation.validationFailedGeneric");
             }
@@ -1142,7 +1142,7 @@ class DocumentSocket extends Socket {
             if (assignmentId) {
                 const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
                 if (!assignment) {
-                    throw new TranslatableError(null, "errors.assignment.notFound", {assignmentId});
+                    throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
                 }
 
                 const assignmentSubmissions = await this.models["submission"].findAll({
@@ -1190,7 +1190,7 @@ class DocumentSocket extends Socket {
                     }
 
                     if (chainDepth >= assignment.maxRevisions) {
-                        throw new TranslatableError(null, "errors.assignment.maxRevisionsReached", {
+                        throw new TranslatableError( "errors.assignment.maxRevisionsReached", {
                             currentCount: chainDepth,
                             maxRevisions: assignment.maxRevisions,
                         });
@@ -1271,7 +1271,7 @@ class DocumentSocket extends Socket {
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
         if (!assignment) {
-            throw new TranslatableError(null, "errors.assignment.notFound", {assignmentId});
+            throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
         }
 
         if (assignment.closed) {
@@ -1290,7 +1290,7 @@ class DocumentSocket extends Socket {
         });
 
         if (!oldSubmission) {
-            throw new TranslatableError(null, "errors.submission.notFoundForAssignment", {submissionId});
+            throw new TranslatableError( "errors.submission.notFoundForAssignment", {submissionId});
         }
 
         const isOwner = this.userId === oldSubmission.userId;
@@ -1464,7 +1464,7 @@ class DocumentSocket extends Socket {
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
 
             if (!fs.existsSync(filePath)) {
-                throw new TranslatableError(null, "errors.documents.fileNotFoundByName", {fileName: `${document.hash}${fileExtension}`});
+                throw new TranslatableError( "errors.documents.fileNotFoundByName", {fileName: `${document.hash}${fileExtension}`});
             }
 
             let file = fs.readFileSync(filePath); // Buffer

@@ -149,7 +149,7 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             if (!originalSubmission) {
-                throw new TranslatableError(null, "errors.submission.notFound", {submissionId: originalSubmissionId});
+                throw new TranslatableError("errors.submission.notFound", {submissionId: originalSubmissionId});
             }
 
             // Create the copied submission with parentSubmissionId and apply submission overrides
@@ -200,7 +200,7 @@ module.exports = (sequelize, DataTypes) => {
                     if (error.key) {
                         throw error;
                     }
-                    throw new TranslatableError(null, "errors.submission.documentCopyFailed", {documentId: originalDoc.id, message: error.message});
+                    throw new TranslatableError("errors.submission.documentCopyFailed", {documentId: originalDoc.id, message: error.message});
                 }
             }
 
@@ -243,7 +243,7 @@ module.exports = (sequelize, DataTypes) => {
             );
 
             if (Object.keys(submissionFiles).length === 0) {
-                throw new TranslatableError(null, "errors.submission.noValidFiles", {submissionId});
+                throw new TranslatableError("errors.submission.noValidFiles", {submissionId});
             }
 
             return submissionFiles;

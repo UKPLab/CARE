@@ -137,7 +137,7 @@ module.exports = (sequelize, DataTypes) => {
                                 })
 
                                 if (!referencedStudyStep) {
-                                    throw new TranslatableError(null, "errors.studies.studyStep.referencedStepNotFound", {originalEntryId: originalEntry.id});
+                                    throw new TranslatableError("errors.studies.studyStep.referencedStepNotFound", {originalEntryId: originalEntry.id});
                                 }
 
                                 const referencedDocument = await sequelize.models.document.getById(
@@ -145,7 +145,7 @@ module.exports = (sequelize, DataTypes) => {
                                     {transaction: options.transaction});
 
                                 if (!referencedDocument) {
-                                    throw new TranslatableError(null, "errors.studies.studyStep.referencedDocumentNotFound", {referencedStudyStepId: referencedStudyStep.id});
+                                    throw new TranslatableError("errors.studies.studyStep.referencedDocumentNotFound", {referencedStudyStepId: referencedStudyStep.id});
                                 }
 
                                 // Copy the delta file from the referenced document to the new document
@@ -200,14 +200,14 @@ module.exports = (sequelize, DataTypes) => {
 
                     // Check if document exists!
                     if (!document) {
-                        throw new TranslatableError(null, "errors.studies.studyStep.documentNotFoundExact", {
+                        throw new TranslatableError("errors.studies.studyStep.documentNotFoundExact", {
                             dataDocumentId: data.documentId,
                             dataWorkflowStepId: data.workflowStepId,
                         });
                     }
                     // Check document mismatch
                     if (document.type !== expectedDocType) {
-                        throw new TranslatableError(null, "errors.studies.studyStep.documentTypeMismatch", {
+                        throw new TranslatableError("errors.studies.studyStep.documentTypeMismatch", {
                             dataWorkflowStepId: data.workflowStepId,
                             documentType: document.type,
                         });

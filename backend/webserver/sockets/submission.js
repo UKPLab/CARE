@@ -35,7 +35,7 @@ class SubmissionSocket extends Socket {
                     if (error.key) {
                         throw error;
                     }
-                    throw new TranslatableError(null, "errors.submission.copyWithIdFailed", {submissionId, message: error.message});
+                    throw new TranslatableError( "errors.submission.copyWithIdFailed", {submissionId, message: error.message});
                 }
             }
             const copiedSubmissionIds = copiedResults.map(({copiedSubmission}) => copiedSubmission.id);

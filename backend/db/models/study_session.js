@@ -44,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
                     where: {studyId: studyId}
                 }, {transaction: options.transaction});
                 if (totalExistingSessionCount >= study.limitSessions) {
-                    throw new TranslatableError(null, 'errors.studies.sessionLimitExceeded', {limit: study.limitSessions});
+                    throw new TranslatableError('errors.studies.sessionLimitExceeded', {limit: study.limitSessions});
                 }
             }
             // Check for limited study sessions per user
@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
                     where: {studyId: studyId, userId: userId}
                 }, {transaction: options.transaction});
                 if (existingSessionCountPerUser >= study.limitSessionsPerUser) {
-                    throw new TranslatableError(null, 'errors.studies.sessionLimitPerUserExceeded', {limit: study.limitSessionsPerUser});
+                    throw new TranslatableError('errors.studies.sessionLimitPerUserExceeded', {limit: study.limitSessionsPerUser});
                 }
             }
             // Check for study closed or end date and start date

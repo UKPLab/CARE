@@ -93,7 +93,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const originalDoc = await Document.findByPk(documentId, {transaction: options.transaction});
             if (!originalDoc) {
-                throw new TranslatableError(null, "errors.documents.withIdNotFound", {documentId});
+                throw new TranslatableError("errors.documents.withIdNotFound", {documentId});
             }
 
             // Create base document data
@@ -270,7 +270,7 @@ module.exports = (sequelize, DataTypes) => {
                 const doc = await Document.findByPk(documentId, {raw: true});
 
                 if (!doc) {
-                    throw new TranslatableError(null, "errors.documents.byIdNotFound", {documentId});
+                    throw new TranslatableError("errors.documents.byIdNotFound", {documentId});
                 }
 
                 return await Document.encodeDocumentFileToBase64(doc);
@@ -278,7 +278,7 @@ module.exports = (sequelize, DataTypes) => {
                 if (err.key) {
                     throw err;
                 }
-                throw new TranslatableError(null, "errors.documents.processingError", {documentId, message: err.message})
+                throw new TranslatableError("errors.documents.processingError", {documentId, message: err.message})
             }
         }
 
@@ -304,14 +304,14 @@ module.exports = (sequelize, DataTypes) => {
             try {
                 await fs.promises.access(docFilePath, fs.constants.F_OK);
             } catch {
-                throw new TranslatableError(null, "errors.documents.fileNotFound", {documentId: doc.id, filePath: docFilePath});
+                throw new TranslatableError("errors.documents.fileNotFound", {documentId: doc.id, filePath: docFilePath});
             }
 
             try {
                 const fileBuffer = await fs.promises.readFile(docFilePath);
                 return fileBuffer.toString('base64');
             } catch (err) {
-                throw new TranslatableError(null, "errors.documents.readError", {documentId: doc.id, message: err.message});
+                throw new TranslatableError("errors.documents.readError", {documentId: doc.id, message: err.message});
             }
         }
 

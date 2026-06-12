@@ -36,7 +36,7 @@ module.exports = class PDFRPC extends RPC {
         const response = await this.emit(eventName, data);
         if (!response['success']) {
             this.logger.error("Error in request " + eventName + ": " + response['message']);
-            throw new TranslatableError(null, "errors.rpc.requestFailed", {eventName, message: response['message']});
+            throw new TranslatableError( "errors.rpc.requestFailed", {eventName, message: response['message']});
         }
         return response;
     }
@@ -55,7 +55,7 @@ module.exports = class PDFRPC extends RPC {
             const response = await this.request("annotationsExtract", data);
             if (!response['success']) {
                 this.logger.error("Error in request " + eventName + ": " + response['message']);
-                throw new TranslatableError(null, "errors.rpc.annotationExtractionFailed", {message: response['message']});
+                throw new TranslatableError( "errors.rpc.annotationExtractionFailed", {message: response['message']});
             }
             this.logger.info("Response from RPC service: " + response['message']);
             return response['data'];
@@ -78,7 +78,7 @@ module.exports = class PDFRPC extends RPC {
             const response = await this.request("embedAnnotations", data);
             if (!response['success']) {
                 this.logger.error("Error in request " + eventName + ": " + response['message']);
-                throw new TranslatableError(null, "errors.rpc.annotationEmbeddingFailed", {message: response['message']});
+                throw new TranslatableError( "errors.rpc.annotationEmbeddingFailed", {message: response['message']});
             }
             this.logger.info("Response from RPC service: " + response['message']);
             return response['data'];
@@ -101,7 +101,7 @@ module.exports = class PDFRPC extends RPC {
             const response = await this.request("deleteAllAnnotations", data);
             if (!response['success']) {
                 this.logger.error("Error in request deleteAllAnnotations: " + response['message']);
-                throw new TranslatableError(null, "errors.rpc.annotationDeletionFailed", {message: response['message']});
+                throw new TranslatableError( "errors.rpc.annotationDeletionFailed", {message: response['message']});
             }
             this.logger.info("Response from RPC service: " + response['message']);
             return response['data'];

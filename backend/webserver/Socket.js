@@ -98,19 +98,19 @@ module.exports = class Socket {
 
                 console.log(err);
 
-                // i18n error hub: handlers throw keys (TranslatableError, Error("errors.*"),
-                // generateError); we resolve English for logs and send key+params to the client.
+                // i18n error hub: TranslatableError, generateError(code, key), Error("errors.*")
+                // we resolve English for logs and send key+params to the client.
                 // The frontend translates key to the user's locale (resolveApiMessage).
                 let key;
                 let params = {};
                 if (err.isTranslatable || err.key) {
-                    // TranslatableError: err.key + optional err.params
+                    // TranslatableError: err.key + optional err.params (+ optional err.code)
                     key = err.key;
                     if (err.params) {
                         params = err.params;
                     }
                 } else if (typeof err.message === "string" && i18n.hasKey(err.message)) {
-                    // throw new Error("errors.namespace.key")
+                    // throw new Error("errors.namespace.key") or generateError(code, "errors.*")
                     key = err.message;
                     if (err.params) {
                         params = err.params;

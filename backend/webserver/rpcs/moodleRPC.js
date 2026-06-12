@@ -34,7 +34,7 @@ module.exports = class MoodleRPC extends RPC {
         const response = await this.emit(eventName, data);
         if (!response['success']) {
             this.logger.error("Error in request " + eventName + ": " + response['message']);
-            throw new TranslatableError(null, "errors.rpc.requestFailed", {eventName, message: response['message']});
+            throw new TranslatableError( "errors.rpc.requestFailed", {eventName, message: response['message']});
         }
         return response;
     }
@@ -128,7 +128,7 @@ module.exports = class MoodleRPC extends RPC {
     async downloadSubmissionsFromUrl(data) {
         const response = await this.request("downloadSubmissionsFromUrl", data);
         if (!response.success) {
-            throw new TranslatableError(null, "errors.rpc.downloadFailed", {message: response.message});
+            throw new TranslatableError( "errors.rpc.downloadFailed", {message: response.message});
         }
         return response['data'];
     }

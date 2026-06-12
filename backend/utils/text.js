@@ -10,7 +10,7 @@ const TranslatableError = require("./TranslatableError");
 function getTextPositions(exactText, wholeText) {
     const start = wholeText.indexOf(exactText);
     if (start === -1) {
-        throw new TranslatableError(null, "errors.documents.exactTextNotFound");
+        throw new TranslatableError( "errors.documents.exactTextNotFound");
     }
 
     const end = start + exactText.length;

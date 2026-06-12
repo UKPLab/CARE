@@ -40,7 +40,7 @@ class Validator {
 
                 tempFiles.push(tempFile);
             } catch (error) {
-                throw new TranslatableError(null, "errors.validation.fileDownloadFailed", {fileName: file.fileName, message: error.message});
+                throw new TranslatableError( "errors.validation.fileDownloadFailed", {fileName: file.fileName, message: error.message});
             }
         }
 

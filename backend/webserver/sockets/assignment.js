@@ -247,17 +247,17 @@ class AssignmentSocket extends Socket {
                 // create a shuffle copy of the users array for each role
                 let userQueue = _.shuffle(users);
                 if (userQueue.length === 0) {
-                    throw new TranslatableError(null, "errors.assignment.noUsersFoundForRole", {roleName: data['roles'].find((role) => role.id === roleId).name});
+                    throw new TranslatableError( "errors.assignment.noUsersFoundForRole", {roleName: data['roles'].find((role) => role.id === roleId).name});
                 }
 
                 // check if there are enough assignment for each user, that are not from the user itself
                 if (neededAssignments > shuffledAssignments.length) {
-                    throw new TranslatableError(null, "errors.assignment.notEnoughDocumentsForRole", {roleName: data['roles'].find((role) => role.id === roleId).name});
+                    throw new TranslatableError( "errors.assignment.notEnoughDocumentsForRole", {roleName: data['roles'].find((role) => role.id === roleId).name});
                 }
 
                 for (const user of userQueue) {
                     if (shuffledAssignments.filter((assignment) => assignment.userId !== user.id).length < neededAssignments) {
-                        throw new TranslatableError(null, "errors.assignment.notEnoughDocumentsForReviewer", {reviewerName: `${user.firstName} ${user.lastName}`});
+                        throw new TranslatableError( "errors.assignment.notEnoughDocumentsForReviewer", {reviewerName: `${user.firstName} ${user.lastName}`});
                     }
                 }
 
@@ -330,7 +330,7 @@ class AssignmentSocket extends Socket {
                             }
 
                             if (!swapped) {
-                                throw new TranslatableError(null, "errors.assignment.unableToAssignEnoughDocuments", {
+                                throw new TranslatableError( "errors.assignment.unableToAssignEnoughDocuments", {
                                     reviewerName: `${user.firstName} ${user.lastName}`,
                                     roleName: data['roles'].find((role) => role.id === roleId).name,
                                 });
@@ -501,7 +501,7 @@ class AssignmentSocket extends Socket {
                 // Check if the reviewer exists in selectedReviewer
                 const reviewer = data.selectedReviewer.find((r) => r.id === reviewerId);
                 if (!reviewer) {
-                    throw new TranslatableError(null, "errors.assignment.studySessionOwnerNotSelectedReviewer", {reviewerId});
+                    throw new TranslatableError( "errors.assignment.studySessionOwnerNotSelectedReviewer", {reviewerId});
                 }
 
                 // Initialize array for this reviewer if not exists
