@@ -20,7 +20,7 @@
         />
         <div v-if="selectedSetting" class="mt-2">
           <div class="text-muted small">
-            {{ translateMaybeKey(selectedSetting.description) }}
+            {{ selectedSetting.description }}
           </div>
           <div class="mt-2">
             <div v-if="selectedSetting.type === 'edits'">
@@ -91,7 +91,7 @@
               {{ selectedSetting.key }}
             </div>
             <div class="text-muted small">
-              {{ translateMaybeKey(selectedSetting.description) }}
+              {{ selectedSetting.description }}
             </div>
            <div class="mt-2">
              <span class="fw-bold">{{$t('dashboard.settings.newValue')}}</span> {{ previewValue }}
@@ -129,7 +129,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
-import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ChangeUserSettingsModal",
@@ -236,7 +236,6 @@ export default {
     },
   },
   methods: {
-    translateMaybeKey,
     toBoolean(value) {
       if (typeof value === "boolean") return value;
       if (typeof value === "string") return value.toLowerCase() === "true";

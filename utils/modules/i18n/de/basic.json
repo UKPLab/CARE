@@ -15,12 +15,6 @@
         "assessment": "Bewertung",
         "validation": "Validierung"
       },
-      "presets": {
-        "exposeAssessmentEn": "Exposé-Bewertungskonfiguration (Englisch)",
-        "exposeFeedbackEn": "Exposé-Feedbackkonfiguration (Englisch)",
-        "exposeAssessmentDe": "Exposé-Bewertungskonfiguration (Deutsch)",
-        "exposeFeedbackDe": "Exposé-Feedbackkonfiguration (Deutsch)"
-      },
       "fields": {
         "name": {
           "label": "Name",

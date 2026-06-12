@@ -9,7 +9,7 @@
         <span>{{ setting.displayName || setting.key }}</span>
         <FormHelp
           v-if="setting.description"
-          :help="translateMaybeKey(setting.description)"
+          :help="setting.description"
           icon-name="info-circle"
           button-class="text-muted flex-shrink-0"
         />
@@ -110,7 +110,6 @@
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
-import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Renders one setting row: label (displayName, optional description tooltip) and input for setting.type.
@@ -170,7 +169,6 @@ export default {
     },
   },
   methods: {
-    translateMaybeKey,
     updateColorValue(value) {
       const normalized = value && value.startsWith("#") ? value : `#${value || ""}`;
       if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {

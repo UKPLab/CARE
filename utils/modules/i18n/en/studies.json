@@ -201,54 +201,6 @@
       "label": "Study sessions cannot start after"
     }
   },
-  "workflowConfig": {
-    "addLinkEod": {
-      "reviewLink": {
-        "help": "The link is appended to the end of the document. `~SESSION_HASH~` is replaced with the current session hash."
-      },
-      "reviewText": {
-        "help": "Do you find the feedback helpful?"
-      }
-    },
-    "assessment": {
-      "configurationId": {
-        "label": "Assessment Configuration File:",
-        "help": "Select the configuration file for this workflow step assessment."
-      },
-      "forcedAssessment": {
-        "label": "Forced Assessment",
-        "help": "If enabled, reviewers must save a score and justification for every criterion before they can proceed.",
-        "helpUsers": "If enabled, users must save a score and justification for every criterion before they can proceed."
-      },
-      "configurationIdSidebar": {
-        "help": "Select the configuration file for assessment sidebar."
-      }
-    },
-    "showAllDocumentAnnotations": {
-      "label": "Show all document Annotations",
-      "help": "If enabled, all document annotations will be shown to the reviewer.",
-      "helpDefault": "If enabled, default annotations will be shown to the reviewer."
-    },
-    "assessmentWithAi": {
-      "configurationId": {
-        "label": "Configuration File:",
-        "help": "Select the configuration file for this workflow step."
-      },
-      "forcedAssessment": {
-        "label": "Forced Assessment",
-        "help": "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
-      }
-    },
-    "modalSize": {
-      "label": "Modal Size",
-      "options": {
-        "small": "Small",
-        "medium": "Medium",
-        "large": "Large",
-        "extraLarge": "Extra Large"
-      }
-    }
-  },
   "assignUserSession": {
     "title": "Assign Users to Study Session",
     "noSessionSelected": "No study session selected!",

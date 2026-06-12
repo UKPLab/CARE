@@ -505,7 +505,7 @@ export default {
       return this.configurations.map((c) => ({
         ...c,
         id: c.id,
-        name: translateMaybeKey(c.name),
+        name: c.name,
         createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "-",
       }));
     },

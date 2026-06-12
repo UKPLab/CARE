@@ -15,12 +15,6 @@
         "assessment": "Assessment",
         "validation": "Validation"
       },
-      "presets": {
-        "exposeAssessmentEn": "Exposé assessment configuration",
-        "exposeFeedbackEn": "Exposé feedback configuration",
-        "exposeAssessmentDe": "Exposé assessment configuration (German)",
-        "exposeFeedbackDe": "Exposé feedback configuration (German)"
-      },
       "fields": {
         "name": {
           "label": "Name",

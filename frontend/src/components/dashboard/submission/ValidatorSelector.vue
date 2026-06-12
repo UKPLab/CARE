@@ -29,7 +29,7 @@
             :key="validator.id"
             :value="validator.id"
           >
-            {{ translateMaybeKey(validator.name) }}
+            {{ validator.name }}
           </option>
         </select>
       </div>
@@ -52,7 +52,7 @@
         >
           <div class="mb-3">
             <p class="text-muted mb-2">
-              {{ translateMaybeKey(selectedValidatorData.description) }}
+              {{ selectedValidatorData.description }}
             </p>
           </div>
           <div class="mb-3">
@@ -81,7 +81,6 @@
 </template>
 
 <script>
-import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * This component enables users to select a validation schema and allows for UI customization.
@@ -180,7 +179,6 @@ export default {
     },
   },
   methods: {
-    translateMaybeKey,
     handleValidatorChange(event) {
       const validatorId = Number(event.target.value);
       if (validatorId === this.modelValue) return;

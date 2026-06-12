@@ -42,7 +42,6 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
-import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "AssignRolesModal",
@@ -131,7 +130,7 @@ export default {
     rightsForTable() {
       return this.allRights.map((right) => ({
         ...right,
-        description: translateMaybeKey(right.description),
+        description: right.description,
       }));
     },
   },
