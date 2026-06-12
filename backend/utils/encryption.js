@@ -1,7 +1,7 @@
 /**
  * AES-256-GCM encryption utilities for sensitive user fields.
  *
- * Key source: DB_ENCRYPTION_KEY (or DB_ENCRYPTIAN_KEY) in .env
+ * Key source: DB_ENCRYPTION_KEY in .env
  * Must be a Base64-encoded 32-byte value.
  * Generate with: openssl rand -base64 32
  *
@@ -27,7 +27,7 @@ const MIN_ENCRYPTED_LENGTH = IV_LENGTH + AUTH_TAG_LENGTH + 1;
  * @returns {Buffer} 32-byte key
  */
 function getKey() {
-    const raw = process.env.DB_ENCRYPTION_KEY || process.env.DB_ENCRYPTIAN_KEY;
+    const raw = process.env.DB_ENCRYPTION_KEY ;
     if (!raw) {
         throw new Error(
             'DB_ENCRYPTION_KEY must be set in .env. ' +
