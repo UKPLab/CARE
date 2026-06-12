@@ -12,6 +12,7 @@ const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const {generateError} = require("../../utils/generic.js");
 const TranslatableError = require("../../utils/TranslatableError");
+const i18n = require("../../utils/i18n.js");
 const {getEmailContent} = require("../../utils/emailHelper.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
@@ -250,13 +251,13 @@ class DocumentSocket extends Socket {
                                 if (error.key) {
                                     errors.push({
                                         message: error.key,
-                                        params: error.params,
+                                        params: {text: extracted.text, ...(error.params || {})},
                                     });
                                     continue;
                                 }
                                 errors.push({
                                     message: "errors.documents.textPositionExtractionFailed",
-                                    params: {text: extracted.text, message: error.message},
+                                    params: {text: extracted.text},
                                 });
                                 continue;
                             }
@@ -312,10 +313,16 @@ class DocumentSocket extends Socket {
                                 await this.models['comment'].add(newComment, {transaction: options.transaction});
 
                             } catch (annotationErr) {
-                                errors.push({
-                                    message: "errors.documents.annotationAddFailed",
-                                    params: {message: annotationErr.message},
-                                });
+                                if (annotationErr.key) {
+                                    errors.push({
+                                        message: annotationErr.key,
+                                        params: annotationErr.params,
+                                    });
+                                } else if (typeof annotationErr.message === "string" && i18n.hasKey(annotationErr.message)) {
+                                    errors.push({message: annotationErr.message});
+                                } else {
+                                    errors.push({message: "errors.documents.annotationAddFailed"});
+                                }
                                 continue;
                             }
                         }
@@ -990,7 +997,8 @@ class DocumentSocket extends Socket {
                     userExtId: submission.userExtId,
                     firstName: submission.firstName,
                     lastName: submission.lastName,
-                    message: err.key || err.message,
+                    message: err.key
+                        || (typeof err.message === "string" && i18n.hasKey(err.message) ? err.message : "errors.server.unknownError"),
                     params: err.params,
                 });
             }

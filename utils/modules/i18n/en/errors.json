@@ -182,9 +182,9 @@
         "annotationDeleteOriginalFailed": "Error deleting annotations: Couldn't delete original annotations",
         "annotationDeleteFailed": "Error deleting annotations: {message}",
         "annotationDeleteFailedGeneric": "Error deleting annotations.",
-        "exactTextNotFound": "Exact text not found in whole text",
-        "textPositionExtractionFailed": "Error extracting text positions for text {text}: {message}",
-        "annotationAddFailed": "Error adding annotation: {message}",
+        "exactTextNotFound": "Exact text \"{text}\" not found in document text",
+        "textPositionExtractionFailed": "Error extracting text positions for text \"{text}\".",
+        "annotationAddFailed": "Error adding annotation.",
         "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.",
         "notEnoughDocumentsForRole": "Not enough documents to review for role {roleName}. Please add more documents.",
         "notEnoughDocumentsForReviewer": "Not enough documents to review for {reviewerName}. Please add more documents."

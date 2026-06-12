@@ -182,9 +182,9 @@
     "annotationDeleteOriginalFailed": "Fehler beim Löschen von Annotationen: Ursprüngliche Annotationen konnten nicht gelöscht werden",
     "annotationDeleteFailed": "Fehler beim Löschen von Annotationen: {message}",
     "annotationDeleteFailedGeneric": "Fehler beim Löschen von Annotationen.",
-    "exactTextNotFound": "Exakter Text wurde im Gesamttext nicht gefunden",
-    "textPositionExtractionFailed": "Fehler beim Extrahieren von Textpositionen für Text {text}: {message}",
-    "annotationAddFailed": "Fehler beim Hinzufügen der Annotation: {message}",
+    "exactTextNotFound": "Exakter Text \"{text}\" wurde im Dokumenttext nicht gefunden",
+    "textPositionExtractionFailed": "Fehler beim Extrahieren von Textpositionen für Text \"{text}\".",
+    "annotationAddFailed": "Fehler beim Hinzufügen der Annotation.",
     "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen.",
     "notEnoughDocumentsForRole": "Nicht genügend Dokumente zur Überprüfung für die Rolle {roleName}. Bitte fügen Sie weitere Dokumente hinzu.",
     "notEnoughDocumentsForReviewer": "Nicht genügend Dokumente zur Überprüfung für {reviewerName}. Bitte fügen Sie weitere Dokumente hinzu."

@@ -61,7 +61,7 @@
               :key="index"
             >
               <li>
-                User with the User ID <strong>{{ error.userId }}</strong> cannot be imported: {{ error.message }}
+                User with the User ID <strong>{{ error.userId }}</strong> cannot be imported: {{ formatImportError(error) }}
               </li>
             </ul>
           </div>
@@ -83,7 +83,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -211,6 +211,9 @@ export default {
     },
   },
   methods: {
+    formatImportError(error) {
+      return resolveApiMessage(error);
+    },
     open(assignmentId = null) {
       this.assignmentId = assignmentId;
       this.reset();

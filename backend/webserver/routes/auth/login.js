@@ -257,7 +257,7 @@ function registerLoginRoutes(server, helpers) {
             });
         } catch (err) {
             server.logger.error('auth/check error: ' + err);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.api.internalServerError' });
         }
     });
 }
