@@ -884,7 +884,7 @@ class DocumentSocket extends Socket {
         if (assignmentId) {
             assignment = await this.models["assignment"].getById(assignmentId, {});
             if (!assignment) {
-                throw new Error(`Assignment with id ${assignmentId} not found`);
+                throw new TranslatableError(null, "errors.assignment.notFound", {assignmentId});
             }
         }
 
@@ -918,7 +918,11 @@ class DocumentSocket extends Socket {
 
                     // Check revision limit (0 = unlimited)
                     if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
-                        throw new Error(`Revision limit reached: user ${submission.userId} already has ${assignmentSubmissions.length} submission(s) for this assignment (max: ${assignment.maxRevisions}).`);
+                        throw new TranslatableError(null, "errors.assignment.revisionLimitReached", {
+                            userId: submission.userId,
+                            submissionCount: assignmentSubmissions.length,
+                            maxRevisions: assignment.maxRevisions,
+                        });
                     }
 
                     const childByParentId = new Map();
@@ -1138,7 +1142,7 @@ class DocumentSocket extends Socket {
             if (assignmentId) {
                 const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
                 if (!assignment) {
-                    throw new Error(`Assignment with id ${assignmentId} not found`);
+                    throw new TranslatableError(null, "errors.assignment.notFound", {assignmentId});
                 }
 
                 const assignmentSubmissions = await this.models["submission"].findAll({
@@ -1186,9 +1190,10 @@ class DocumentSocket extends Socket {
                     }
 
                     if (chainDepth >= assignment.maxRevisions) {
-                        throw new Error(
-                            `Maximum revisions reached for this assignment (${chainDepth}/${assignment.maxRevisions})`
-                        );
+                        throw new TranslatableError(null, "errors.assignment.maxRevisionsReached", {
+                            currentCount: chainDepth,
+                            maxRevisions: assignment.maxRevisions,
+                        });
                     }
                 }
             } else {
@@ -1266,7 +1271,7 @@ class DocumentSocket extends Socket {
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
         if (!assignment) {
-            throw new Error(`Assignment with id ${assignmentId} not found`);
+            throw new TranslatableError(null, "errors.assignment.notFound", {assignmentId});
         }
 
         if (assignment.closed) {
@@ -1285,7 +1290,7 @@ class DocumentSocket extends Socket {
         });
 
         if (!oldSubmission) {
-            throw new Error(`Submission with id ${submissionId} not found for this assignment`);
+            throw new TranslatableError(null, "errors.submission.notFoundForAssignment", {submissionId});
         }
 
         const isOwner = this.userId === oldSubmission.userId;

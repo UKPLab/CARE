@@ -276,7 +276,8 @@
     "errorSaving": "Fehler beim Speichern der Einstellungen",
     "failedToImport": "Import der Einstellungen fehlgeschlagen",
     "noAccessPermission": "Sie haben keine Berechtigung, auf die Einstellungen zuzugreifen.",
-    "noSavePermission": "Sie haben keine Berechtigung, die Einstellungen zu speichern."
+    "noSavePermission": "Sie haben keine Berechtigung, die Einstellungen zu speichern.",
+    "noTestMailPermission": "Sie haben keine Berechtigung, eine Test-E-Mail zu senden."
   },
   "users": {
     "errorFetchingUsers": "Fehler beim Abrufen der Nutzer",
@@ -304,6 +305,7 @@
   },
   "submission": {
         "notFound": "Einreichung mit ID {submissionId} nicht gefunden",
+    "notFoundForAssignment": "Einreichung mit ID {submissionId} wurde für diese Zuweisung nicht gefunden.",
         "documentCopyFailed": "Fehler beim Kopieren des Dokuments mit ID {documentId}: {message}",
         "noValidFiles": "Keine gültigen Dateien für Einreichung {submissionId} gefunden",
         "missingAdminRights": "Vorverarbeitung kann nicht abgebrochen werden: fehlende Administratorrechte",
@@ -406,6 +408,9 @@
     "confirmCompletionMissingAdminRights": "Abschluss kann nicht bestätigt werden: fehlende Administratorrechte"
   },
   "assignment": {
+    "notFound": "Zuweisung mit ID {assignmentId} wurde nicht gefunden.",
+    "revisionLimitReached": "Revisionslimit erreicht: Benutzer {userId} hat bereits {submissionCount} Einreichung(en) für diese Zuweisung (max.: {maxRevisions}).",
+    "maxRevisionsReached": "Maximale Anzahl an Revisionen für diese Zuweisung erreicht ({currentCount}/{maxRevisions}).",
     "unableToAssignEnoughDocuments": "Es konnten nicht genügend Dokumente für {reviewerName} in der Rolle {roleName} zugewiesen werden.",
     "noUsersFoundForRole": "Für die Rolle {roleName} wurden keine Benutzer gefunden. Bitte fügen Sie der Rolle Benutzer hinzu.",
     "notEnoughDocumentsForRole": "Nicht genügend Dokumente zur Überprüfung für die Rolle {roleName}. Bitte fügen Sie weitere Dokumente hinzu.",

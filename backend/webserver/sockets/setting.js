@@ -85,7 +85,7 @@ class SettingSocket extends Socket {
      */
     async mailSendTest(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to send test mail.");
+            throw new Error("errors.settings.noTestMailPermission");
         }
 
         const rows = await this.models["setting"].getMailServiceSettings();

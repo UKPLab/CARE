@@ -276,7 +276,8 @@
         "errorSaving": "Error Saving Settings",
         "failedToImport": "Failed to import settings",
         "noAccessPermission": "You do not have permission to access settings.",
-        "noSavePermission": "You do not have permission to save settings."
+        "noSavePermission": "You do not have permission to save settings.",
+        "noTestMailPermission": "You do not have permission to send test mail."
     },
     "users": {
         "errorFetchingUsers": "Error fetching users",
@@ -304,6 +305,7 @@
     },
     "submission": {
         "notFound": "Submission with id {submissionId} not found",
+        "notFoundForAssignment": "Submission with id {submissionId} not found for this assignment.",
         "documentCopyFailed": "Failed to copy document with id {documentId}: {message}",
         "noValidFiles": "No valid files found for submission {submissionId}",
         "missingAdminRights": "Cannot cancel preprocessing: missing admin rights",
@@ -406,6 +408,9 @@
         "confirmCompletionMissingAdminRights": "Cannot confirm completion: missing admin rights"
     },
     "assignment": {
+        "notFound": "Assignment with id {assignmentId} not found.",
+        "revisionLimitReached": "Revision limit reached: user {userId} already has {submissionCount} submission(s) for this assignment (max: {maxRevisions}).",
+        "maxRevisionsReached": "Maximum revisions reached for this assignment ({currentCount}/{maxRevisions}).",
         "unableToAssignEnoughDocuments": "Unable to assign enough documents for {reviewerName} in role {roleName}",
         "noUsersFoundForRole": "No users found for role {roleName}. Please add users to the role.",
         "notEnoughDocumentsForRole": "Not enough documents to review for role {roleName}. Please add more documents.",
