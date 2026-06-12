@@ -8,13 +8,19 @@
       <h5 class="card-title">
         {{ title }}
       </h5>
-      <div>
-        <slot name="headerElements" />
+      <div class="d-flex align-items-center gap-2">
+        <div
+          class="card-header-actions"
+          @click.stop
+        >
+          <slot name="headerButtons" />
+          <slot name="headerElements" />
+        </div>
         <span v-if="collapsable">
           <LoadIcon
             color="grey"
             class="me-1"
-            :icon-name="isCollapsed ? 'arrow-down-short' : 'arrow-up-short'"
+            :icon-name="isCollapsed ? 'chevron-down' : 'chevron-up'"
           />
         </span>
       </div>

@@ -9,6 +9,12 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
 module.exports = (sequelize, DataTypes) => {
     class Submission extends MetaModel {
         static autoTable = true;
+        static accessMap = [
+			{
+				right: "frontend.dashboard.assignments.viewAll",
+				columns: this.getAttributes(),
+			},
+		];
 
         static fields = [];
 
@@ -16,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
             Submission.hasMany(models["document"], {
                 foreignKey: "submissionId",
                 as: "documents",
+            });
+
+            Submission.belongsTo(models["assignment"], {
+                foreignKey: "assignmentId",
+                as: "assignment",
             });
 
             Submission.belongsTo(models["submission"], {
@@ -146,8 +157,11 @@ module.exports = (sequelize, DataTypes) => {
                     userId: originalSubmission.userId,
                     createdByUserId: createdByUserId,
                     projectId: originalSubmission.projectId || null,
+                    assignmentId: originalSubmission.assignmentId || null,
                     parentSubmissionId: originalSubmissionId, // Link to parent
                     extId: originalSubmission.extId || null,
+                    name: originalSubmission.name || null,
+                    description: originalSubmission.description || null,
                     group: originalSubmission.group,
                     additionalSettings: originalSubmission.additionalSettings || null,
                     validationConfigurationId: originalSubmission.validationConfigurationId || null,
@@ -239,10 +253,12 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.INTEGER,
             createdByUserId: DataTypes.INTEGER,
             projectId: DataTypes.INTEGER,
+            assignmentId: DataTypes.INTEGER,
             parentSubmissionId: DataTypes.INTEGER,
             previousSubmissionId: DataTypes.INTEGER,
             extId: DataTypes.INTEGER,
-            group: DataTypes.INTEGER,
+            name: DataTypes.STRING,
+            description: DataTypes.TEXT,
             additionalSettings: DataTypes.JSONB,
             validationConfigurationId: DataTypes.INTEGER,
             deleted: DataTypes.BOOLEAN,
@@ -264,6 +280,12 @@ module.exports = (sequelize, DataTypes) => {
                         for (const document of documents) {
                             await sequelize.models["document"].deleteById(document.id);
                         }
+                    }
+                },
+                beforeDestroy: async (submission, options) => {
+                    const documents = await sequelize.models.document.getAllByKey("submissionId", submission.id);
+                    for (const document of documents) {
+                        await sequelize.models.document.deleteById(document.id, { force: true, transaction: options.transaction });
                     }
                 }
             },
