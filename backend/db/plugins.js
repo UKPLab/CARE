@@ -67,6 +67,19 @@ function addEncryptionHooks(options) {
         }
     });
 
+    // Encrypt on bulk INSERT
+    addHook(options.hooks, 'beforeBulkCreate', (options) => {
+        const records = options.records || options.instances || [];
+        for (const instance of records) {
+            for (const field of fields) {
+                const val = instance[field];
+                if (val !== null && val !== undefined) {
+                    instance[field] = encrypt(val);
+                }
+            }
+        }
+    });
+
     // Decrypt on every read (single instance or array)
     addHook(options.hooks, 'afterFind', (result) => {
         if (!result) return;
