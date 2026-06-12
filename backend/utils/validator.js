@@ -89,9 +89,7 @@ class Validator {
     async getValidationSchema(validationConfigurationId) {
         const configuration = await this.models["configuration"].getById(validationConfigurationId);
         if (!configuration) {
-            const error = new Error("errors.validation.schemaNotFound");
-            error.params = {validationConfigurationId};
-            throw error;
+            throw new TranslatableError("errors.validation.schemaNotFound", {validationConfigurationId});
         }
         const { content } = configuration;
         return content;
