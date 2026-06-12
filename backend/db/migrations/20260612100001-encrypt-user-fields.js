@@ -4,7 +4,7 @@
  * Encrypt existing plaintext values in user fields: firstName, lastName, email, initialPassword.
  * Also populates emailHash from the newly encrypted email value.
  *
- * Requires DB_ENCRYPTION_KEY (or DB_ENCRYPTIAN_KEY) to be set in the environment.
+ * Requires DB_ENCRYPTION_KEY to be set in the environment.
  * Skips rows where the field already appears encrypted (safe to re-run).
  */
 
@@ -12,10 +12,10 @@ const { encrypt, isEncrypted } = require('../../utils/encryption');
 
 module.exports = {
     async up(queryInterface) {
-        const encryptionKey = process.env.DB_ENCRYPTION_KEY || process.env.DB_ENCRYPTIAN_KEY;
+        const encryptionKey = process.env.DB_ENCRYPTION_KEY;
         if (!encryptionKey) {
             throw new Error(
-                'DB_ENCRYPTION_KEY (or DB_ENCRYPTIAN_KEY) must be set before running the user encryption data migration'
+                'DB_ENCRYPTION_KEY must be set before running the user encryption data migration'
             );
         }
 
