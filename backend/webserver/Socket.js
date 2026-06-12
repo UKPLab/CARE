@@ -1,4 +1,5 @@
 const {inject} = require("../utils/generic");
+const i18n = require("../utils/i18n");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
@@ -96,20 +97,58 @@ module.exports = class Socket {
                 }
 
                 console.log(err);
-                this.logger.error(err.message);
 
-                if (callback) {
-                    const response = {success: false, message: err.message};
-                    if (err.key) {
-                        response.key = err.key;
-                    }
+                // i18n error hub: handlers throw keys (TranslatableError, Error("errors.*"),
+                // generateError); we resolve English for logs and send key+params to the client.
+                // The frontend translates key to the user's locale (resolveApiMessage).
+                let key;
+                let params = {};
+                if (err.isTranslatable || err.key) {
+                    // TranslatableError: err.key + optional err.params
+                    key = err.key;
                     if (err.params) {
-                        response.params = err.params;
+                        params = err.params;
                     }
-                    if (err.code) {
-                        response.code = err.code;
+                } else if (typeof err.message === "string" && i18n.hasKey(err.message)) {
+                    // throw new Error("errors.namespace.key")
+                    key = err.message;
+                    if (err.params) {
+                        params = err.params;
                     }
-                    callback(response);
+                }
+
+                if (key) {
+                    const englishMessage = i18n.t(key, params);
+                    this.logger.error(englishMessage);
+                    if (callback) {
+                        // key/params → localized UI; message (EN) → legacy fallback
+                        const response = {
+                            success: false,
+                            key,
+                            params,
+                            message: englishMessage,
+                        };
+                        if (err.code) {
+                            response.code = err.code;
+                        }
+                        callback(response);
+                    }
+                } else {
+                    // Not an i18n key (bug, DB failure, etc.): log full detail, generic message to user
+                    this.logger.error({
+                        message: err.message,
+                        stack: err.stack,
+                        name: err.name,
+                    });
+                    if (callback) {
+                        const unexpectedKey = "errors.server.unexpectedError";
+                        callback({
+                            success: false,
+                            key: unexpectedKey,
+                            params: {},
+                            message: i18n.t(unexpectedKey),
+                        });
+                    }
                 }
             }
             finally {
