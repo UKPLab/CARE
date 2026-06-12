@@ -38,7 +38,7 @@
       </button>
     </div>
     <h3>
-      {{ localizedSkillName }}
+      {{ currentData.name }}
     </h3>
     <div class="container py-1 px-0">
       <div class="row mb-3">
@@ -182,11 +182,6 @@ export default {
         return this.$t(key);
       }
       return this.currentData.description;
-    },
-    localizedSkillName() {
-      if (!this.currentData) return "";
-      const key = `nlp.skills.names.${this.currentData.name}`;
-      return this.$te(key) ? this.$t(key) : this.currentData.name;
     },
     validConfig() {
       if (this.currentData) {

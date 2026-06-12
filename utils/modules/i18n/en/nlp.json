@@ -131,16 +131,6 @@
     },
     "skills": {
         "title": "Skills",
-        "names": {
-            "f1000_classification": "F1000 Classification",
-            "generating_feedback_german": "Generating Feedback (German)",
-            "generating_feedback_english": "Generating Feedback (English)",
-            "grading_expose_german": "Grading Expose (German)",
-            "grading_expose_english": "Grading Expose (English)",
-            "skill_eic": "Skill EIC",
-            "summarization": "Summarization",
-            "sentiment_classification": "Sentiment Classification"
-        },
         "descriptions": {
             "f1000_classification": "This is a classification task",
             "generating_feedback_german": "This skill is used to generate feedback for the exposé based on the grading result",

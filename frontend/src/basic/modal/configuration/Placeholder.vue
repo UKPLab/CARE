@@ -89,7 +89,7 @@ export default {
       return {
         options: this.nlpSkills.map((skill) => ({
           value: skill.name,
-          name: this.getSkillDisplayName(skill.name),
+          name: skill.name,
         })),
       };
     },
@@ -101,10 +101,6 @@ export default {
     }
   },
   methods: {
-    getSkillDisplayName(skillName) {
-      const key = `nlp.skills.names.${skillName}`;
-      return this.$te(key) ? this.$t(key) : skillName;
-    },
     translateMaybeKey,
     onFieldUpdate(key, value) {
       this.$emit('update:formData', { ...this.formData, [key]: value });

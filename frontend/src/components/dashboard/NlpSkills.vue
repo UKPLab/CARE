@@ -114,7 +114,7 @@ export default {
 
       return skills ? Object.values(skills).map(s => {
         s = cloneDeep(s);
-        s.displayName = this.getSkillDisplayName(s.name);
+        s.displayName = s.name;
         // check for relevant settings
         const activeStatus = this.$store.getters["settings/getValue"](`annotator.nlp.${s.name}.activated`);
         s.activated = {
@@ -143,10 +143,6 @@ export default {
     this.checkServiceConnection();
   },
   methods: {
-    getSkillDisplayName(skillName) {
-      const key = `nlp.skills.names.${skillName}`;
-      return this.$te(key) ? this.$t(key) : skillName;
-    },
     action(data) {
       switch (data.action) {
         case "configure":

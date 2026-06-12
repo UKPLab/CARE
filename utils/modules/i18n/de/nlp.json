@@ -131,16 +131,6 @@
   },
   "skills": {
     "title": "Skills",
-    "names": {
-      "f1000_classification": "F1000-Klassifikation",
-      "generating_feedback_german": "Feedback generieren (Deutsch)",
-      "generating_feedback_english": "Feedback generieren (Englisch)",
-      "grading_expose_german": "Exposé bewerten (Deutsch)",
-      "grading_expose_english": "Exposé bewerten (Englisch)",
-      "skill_eic": "Skill EIC",
-      "summarization": "Zusammenfassung",
-      "sentiment_classification": "Sentiment-Klassifikation"
-    },
     "descriptions": {
       "f1000_classification": "Dies ist eine Klassifikationsaufgabe",
       "generating_feedback_german": "Dieser Skill erzeugt Feedback zum Exposé auf Basis des Bewertungsergebnisses.",
