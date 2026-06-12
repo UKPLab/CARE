@@ -22,40 +22,43 @@ module.exports = {
         const transaction = await queryInterface.sequelize.transaction();
         try {
             const users = await queryInterface.sequelize.query(
-                `SELECT id, "firstName", "lastName", email, "initialPassword", "twoFactorOtp", "totpSecret", "orcidId", "ldapUsername", "samlNameId" FROM "user"`,
+                `SELECT id, "firstName", "lastName", email, "initialPassword", "twoFactorOtp", "totpSecret", "orcidId", "ldapUsername", "samlNameId", "salt" FROM "user"`,
                 { type: queryInterface.sequelize.QueryTypes.SELECT, transaction }
             );
 
             for (const user of users) {
                 const updates = {};
 
-                if (user.firstName && !isEncrypted(user.firstName)) {
+                if (user.firstName) {
                     updates.firstName = encrypt(user.firstName);
                 }
-                if (user.lastName && !isEncrypted(user.lastName)) {
+                if (user.lastName) {
                     updates.lastName = encrypt(user.lastName);
                 }
-                if (user.email && !isEncrypted(user.email)) {
+                if (user.email) {
                     const encryptedEmail = encrypt(user.email);
                     updates.email = encryptedEmail;
                 }
-                if (user.initialPassword && !isEncrypted(user.initialPassword)) {
+                if (user.initialPassword) {
                     updates.initialPassword = encrypt(user.initialPassword);
                 }
-                if (user.twoFactorOtp && !isEncrypted(user.twoFactorOtp)) {
+                if (user.twoFactorOtp) {
                     updates.twoFactorOtp = encrypt(user.twoFactorOtp);
                 }
-                if (user.totpSecret && !isEncrypted(user.totpSecret)) {
+                if (user.totpSecret) {
                     updates.totpSecret = encrypt(user.totpSecret);
                 }
-                if (user.orcidId && !isEncrypted(user.orcidId)) {
+                if (user.orcidId) {
                     updates.orcidId = encrypt(user.orcidId);
                 }
-                if (user.ldapUsername && !isEncrypted(user.ldapUsername)) {
+                if (user.ldapUsername) {
                     updates.ldapUsername = encrypt(user.ldapUsername);
                 }
-                if (user.samlNameId && !isEncrypted(user.samlNameId)) {
+                if (user.samlNameId) {
                     updates.samlNameId = encrypt(user.samlNameId);
+                }
+                if (user.salt) {
+                    updates.salt = encrypt(user.salt);
                 }
 
                 if (Object.keys(updates).length > 0) {
