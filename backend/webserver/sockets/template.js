@@ -15,6 +15,62 @@ const {resolveTemplate, resolveTemplateToDelta, getMissingRequiredPlaceholders} 
 class TemplateSocket extends Socket {
 
   /**
+   * Validate access to prompt-resolution context data for non-admin users.
+   *
+   * @param {Object} context                  Resolver context
+   * @param {number} [context.documentId]     Document ID
+   * @param {number} [context.studySessionId] Study session ID
+   * @param {number} [context.studyStepId]    Study step ID
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<void>}
+   */
+  async validateResolveContextAccess(context, options = {}) {
+    let studyStep = null;
+
+    if (context.documentId && !(await this.checkDocumentAccess(context.documentId))) {
+      throw new Error("Access denied");
+    }
+
+    if (context.studyStepId) {
+      studyStep = await this.models["study_step"].getById(context.studyStepId, options);
+      if (!studyStep) {
+        throw new Error("Study step not found");
+      }
+      if (studyStep.documentId && !(await this.checkDocumentAccess(studyStep.documentId))) {
+        throw new Error("Access denied");
+      }
+      if (context.documentId && studyStep.documentId && studyStep.documentId !== context.documentId) {
+        throw new Error("Study step does not match document");
+      }
+    }
+
+    if (context.studySessionId) {
+      const studySession = await this.models["study_session"].getById(context.studySessionId, options);
+      if (!studySession) {
+        throw new Error("Study session not found");
+      }
+
+      let hasSessionAccess =
+        studySession.userId === this.userId ||
+        (await this.hasAccess("frontend.dashboard.studies.fullAccess"));
+
+      if (!hasSessionAccess) {
+        const study = await this.models["study"].getById(studySession.studyId, options);
+        hasSessionAccess = !!study && (await this.checkUserAccess(study.userId));
+      }
+
+      if (!hasSessionAccess) {
+        throw new Error("Access denied");
+      }
+
+      if (studyStep?.studyId && studySession.studyId !== studyStep.studyId) {
+        throw new Error("Study session does not match study step");
+      }
+    }
+  }
+
+  /**
    * Create a template
    *
    * @socketEvent templateAdd
@@ -33,7 +89,7 @@ class TemplateSocket extends Socket {
     if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
         throw new Error("Missing required fields: name, description, type, content");
     }
-    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(data.type)) {
+    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(data.type)) {
       throw new Error("Access denied: Only administrators can create email templates");
     }
 
@@ -184,7 +240,7 @@ class TemplateSocket extends Socket {
    *
    * @socketEvent templatePlaceholderAdd
    * @param {Object} data                   The data object
-   * @param {number} data.templateType      Template type (required, 1-5)
+   * @param {number} data.templateType      Template type (required, 1-8)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
    * @param {string} data.placeholderLabel  Placeholder label (required, e.g., "Username")
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
@@ -195,8 +251,8 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6].includes(data.templateType)) {
-      throw new Error("Template type is required and must be 1-6");
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7, 8].includes(data.templateType)) {
+      throw new Error("Template type is required and must be 1-8");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
       throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");
@@ -232,7 +288,7 @@ class TemplateSocket extends Socket {
   async updatePlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
     if (!data.id) throw new Error("Placeholder ID is required");
-
+    
     const updateData = {};
     if (data.placeholderLabel !== undefined) updateData.placeholderLabel = data.placeholderLabel;
     if (data.placeholderType !== undefined) updateData.placeholderType = data.placeholderType;
@@ -243,9 +299,9 @@ class TemplateSocket extends Socket {
     }
 
     return await this.models["placeholder"].updateById(
-      data.id,
-      updateData,
-      { transaction: options.transaction }
+        data.id,
+        updateData,
+        { transaction: options.transaction }
     );
   }
 
@@ -382,6 +438,11 @@ class TemplateSocket extends Socket {
    * @param {number} [data.context.creatorId]        Study creator ID
    * @param {number} [data.context.studyId]          Study ID (for anonymization check)
    * @param {number} [data.context.studySessionId]   Study session ID
+   * @param {number} [data.context.studyStepId]     Study step ID (prompt placeholders, editor resolution)
+   * @param {number} [data.context.documentId]      Document ID (prompt placeholders)
+   * @param {string} [data.context.pdfText]         Extracted text for the current PDF (`~pdfText~`; caller-supplied)
+   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for each submission PDF (`~submissionFiles~`)
+   * @param {string} [data.context.editorText]      Optional editor plain-text override (`~editorText~`)
    * @param {string} [data.context.studySessionHash] Study session hash (for link)
    * @param {string} [data.context.baseUrl]          Base URL for generating links
    * @param {string} [data.context.assignmentType]   Assignment type
@@ -393,10 +454,27 @@ class TemplateSocket extends Socket {
    * @returns {Promise<string|Object>} 
    */
   async resolveTemplatePlaceholders(data, options) {
-    if (!(await this.isAdmin())) throw new Error("Access denied");
     if (!data.templateId) throw new Error("Template ID is required");
     if (!data.context || typeof data.context !== 'object') {
       throw new Error("Context object is required");
+    }
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    const isAdmin = await this.isAdmin();
+    const isEmailTemplate = [1, 2, 3, 6].includes(template.type);
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+
+    if (!isAdmin && isEmailTemplate) {
+      throw new Error("Access denied");
+    }
+    if (!isAdmin && !isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied");
+    }
+    if (!isAdmin) {
+      await this.validateResolveContextAccess(data.context, options);
     }
 
     // Get baseUrl from settings if not provided in context
@@ -455,7 +533,7 @@ class TemplateSocket extends Socket {
     });
 
     if (edits.length === 0) {
-      if ([1, 2, 3, 6].includes(template.type)) {
+      if ([1, 2, 3, 6, 7].includes(template.type)) {
         const templateContentModel = this.models["template_content"];
         const langRow = await templateContentModel.findOne({
           where: { templateId, language, deleted: false },
@@ -496,8 +574,8 @@ class TemplateSocket extends Socket {
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
-    // Email templates (types 1, 2, 3, 6) must include all required placeholders
-    if ([1, 2, 3, 6].includes(template.type)) {
+    // Email templates (types 1, 2, 3, 6, 7) must include all required placeholders
+    if ([1, 2, 3, 6, 7].includes(template.type)) {
       const missing = await getMissingRequiredPlaceholders(
         { ops: mergedDelta.ops },
         template.type,
@@ -609,7 +687,7 @@ class TemplateSocket extends Socket {
     if (!data.sourceTemplateId) throw new Error("Source template ID is required");
 
     const source = await this.models["template"].getById(data.sourceTemplateId);
-    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(source?.type)) {
+    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(source?.type)) {
       throw new Error("Access denied: Only administrators can copy email templates");
     }
 
@@ -678,11 +756,11 @@ class TemplateSocket extends Socket {
       throw new Error("You can only delete templates that you own");
     }
 
-    if (template.public && [1, 2, 3, 6].includes(template.type)) {
+    if (template.public && [1, 2, 3, 6, 7].includes(template.type)) {
       throw new Error("Public email templates cannot be deleted");
     }
 
-    if ([1, 2, 3, 6].includes(template.type)) {
+    if ([1, 2, 3, 6, 7].includes(template.type)) {
       const usedBySettings = await this.models["setting"].findAll({
         where: {
           key: {[Op.like]: "email.template.%"},

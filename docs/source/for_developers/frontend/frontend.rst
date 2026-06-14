@@ -10,7 +10,7 @@ This includes adding new dashboard components, loading settings and extending th
 
    basic/basic
    components/components
-   auth
+   setup_wizard
    plugins
    vuex_store
    app

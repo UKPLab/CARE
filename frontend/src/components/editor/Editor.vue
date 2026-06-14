@@ -18,12 +18,17 @@
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
         <Editor v-if="!templateId" ref="editor" @update:data="$emit('update:data', $event)"/>
-        <TemplateEditor v-else ref="templateEditor" @update:data="$emit('update:data', $event)"/>
+        <TemplateEditor
+          v-else
+          ref="templateEditor"
+          @update:data="$emit('update:data', $event)"
+          @preview-mode-change="onTemplatePreviewModeChange"
+        />
       </div>
       <BasicSidebar
           v-if="!sidebarDisabled"
           ref="sidebar"
-          :is-shown="isShown"
+          :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
@@ -46,7 +51,7 @@
             </template>
           </SidebarTemplate>
         </template>
-        <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
+        <template v-if="showTemplateConfigurator" #templateConfigurator>
           <SidebarTemplate icon="gear-fill" title="Placeholders">
             <template #content>
               <TemplateConfigurator/>
@@ -157,6 +162,8 @@ export default {
       isSidebarVisible: false,
       hasHistory: false,
       sidebarContent: null,
+      templatePreviewMode: false,
+      sidebarOpenBeforePreview: false,
     };
   },
   computed: {
@@ -170,10 +177,25 @@ export default {
       }
       // Only show template configurator if template is loaded, not read-only, and has placeholders
       // Document templates (types 4, 5) have no placeholders, so no sidebar needed
-      if (this.templateId && this.template && !this.readOnlyOverwrite && this.hasPlaceholders) {
+      if (this.showTemplateConfigurator) {
         return 'templateConfigurator';
       }
       return null;
+    },
+    showTemplateConfigurator() {
+      return (
+        this.templateId &&
+        this.template &&
+        !this.readOnlyOverwrite &&
+        this.hasPlaceholders &&
+        !this.templatePreviewMode
+      );
+    },
+    sidebarToggleShown() {
+      if (this.templateId && this.templatePreviewMode) {
+        return false;
+      }
+      return this.isShown;
     },
     sidebarButtons() {
       // Don't show download button for templates
@@ -201,10 +223,10 @@ export default {
       return null;
     },
     hasPlaceholders() {
-      // Only email templates (types 1, 2, 3, 6) have placeholders
+      // Email templates (types 1, 2, 3, 6, 7) and prompt templates (type 8) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6].includes(this.template.type);
+      return [1, 2, 3, 6, 7, 8].includes(this.template.type);
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {
@@ -281,7 +303,26 @@ export default {
     },
     handleSidebarVisibilityChange(visible) { 
       this.isSidebarVisible = visible;
-    },  
+    },
+    onTemplatePreviewModeChange(isPreview) {
+      if (!this.templateId) {
+        return;
+      }
+      this.templatePreviewMode = !!isPreview;
+      const sidebar = this.$refs.sidebar;
+      if (!sidebar) {
+        return;
+      }
+      if (this.templatePreviewMode) {
+        if (sidebar.isSidebarVisible) {
+          this.sidebarOpenBeforePreview = true;
+          sidebar.toggleSidebar();
+        }
+      } else if (this.sidebarOpenBeforePreview && this.showTemplateConfigurator) {
+        sidebar.toggleSidebar();
+        this.sidebarOpenBeforePreview = false;
+      }
+    },
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;
@@ -333,5 +374,7 @@ export default {
 
 .sidebar-container {
   margin-top: 60px;
+  min-height: 0;
+  align-self: stretch;
 }
 </style>

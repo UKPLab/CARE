@@ -1,66 +1,35 @@
 <template>
-  <BasicModal ref="overviewModal" name="aiModelOverviewModal" size="lg">
+  <BasicModal ref="overviewModal" :name="modalName" size="lg">
     <template #title>
-      AI model overview
+      {{ config.title }}
     </template>
     <template #body>
       <div v-if="isLoading" class="text-center py-4 text-muted" role="status">
         <div class="spinner-border" />
         <div class="small mt-2">
-          Loading…
+          Loading...
         </div>
       </div>
       <div v-else-if="loadError" class="alert alert-danger mb-0">
         {{ loadError }}
       </div>
-      <template v-else-if="meta && modelRow">
+      <template v-else-if="meta && row">
         <dl class="row mb-3 small">
-          <dt class="col-sm-3">
-            Name
-          </dt>
-          <dd class="col-sm-9">
-            {{ modelRow.name || "—" }}
-          </dd>
-          <dt class="col-sm-3">
-            Provider
-          </dt>
-          <dd class="col-sm-9">
-            {{ modelRow.provider || "—" }}
-          </dd>
-          <dt class="col-sm-3">
-            Model ID
-          </dt>
-          <dd class="col-sm-9">
-            <code>{{ modelRow.model || "—" }}</code>
-          </dd>
-          <dt class="col-sm-3">
-            Status
-          </dt>
-          <dd class="col-sm-9">
-            <span class="badge" :class="modelRow.enabled ? 'bg-success' : 'bg-secondary'">
-              {{ modelRow.enabled ? "Enabled" : "Disabled" }}
-            </span>
-          </dd>
-          <template v-if="meta.isOwner && modelRow.credentialName">
+          <template v-for="item in detailRows" :key="item.key">
             <dt class="col-sm-3">
-              Credential
-            </dt>
-            <dd class="col-sm-9">
-              {{ modelRow.credentialName }}
-            </dd>
-          </template>
-          <dt class="col-sm-3">
-            Updated
-          </dt>
-          <dd class="col-sm-9">
-            {{ formatDateTime(modelRow.updatedAt) }}
-          </dd>
-          <template v-if="modelRow.description">
-            <dt class="col-sm-3">
-              Description
+              {{ item.label }}
             </dt>
             <dd class="col-sm-9 text-break">
-              {{ modelRow.description }}
+              <span v-if="item.type === 'badge'" class="badge" :class="item.class">
+                {{ item.value }}
+              </span>
+              <code v-else-if="item.type === 'code'">{{ item.value }}</code>
+              <ol v-else-if="item.type === 'list'" class="mb-0 ps-3">
+                <li v-for="(entry, index) in item.value" :key="`${item.key}-${index}`">
+                  {{ entry }}
+                </li>
+              </ol>
+              <span v-else>{{ item.value }}</span>
             </dd>
           </template>
         </dl>
@@ -74,30 +43,32 @@
         </div>
 
         <template v-if="meta.isOwner">
-          <h6 class="text-muted text-uppercase small">
+          <h6 class="text-muted text-uppercase small mb-2">
             Shared with (active)
           </h6>
-          <p v-if="!meta.shareRecipients.length" class="text-muted small mb-0">
-            No active shares.
-          </p>
-          <ul v-else class="small mb-0 list-unstyled">
+          <BasicTable
+            :columns="shareColumns"
+            :data="shareRows"
+            :options="shareTableOptions"
+            :max-table-height="300"
+          />
+          <ul v-if="resourceType === 'model' && meta.shareRecipients.length" class="list-unstyled small mt-2 mb-0">
             <li
-              v-for="row in meta.shareRecipients"
-              :key="row.id"
-              class="d-flex align-items-center justify-content-between border-bottom py-1"
+              v-for="recipient in meta.shareRecipients"
+              :key="recipient.id"
+              class="d-flex align-items-center justify-content-between py-1 border-bottom"
             >
               <span>
-                <span class="badge me-2" :class="scopeBadgeClass(row.scopeKind)">{{ row.scope }}</span>
-                {{ row.recipientLabel || "—" }} — {{ formatAccess(row) }} — {{ formatDateTime(row.expiryDate) }}
-                <span v-if="row.costLimit != null" class="text-muted ms-2">(cap ${{ Number(row.costLimit).toFixed(2) }})</span>
-                <span class="text-muted ms-2">· reset {{ row.resetAt ? formatDateTime(row.resetAt) : "never" }}</span>
+                {{ recipient.recipientLabel || "—" }}
+                <span v-if="recipient.costLimit != null" class="text-muted ms-2">(cap ${{ Number(recipient.costLimit).toFixed(2) }})</span>
+                <span class="text-muted ms-2">· reset {{ recipient.resetAt ? formatDateTime(recipient.resetAt) : "never" }}</span>
               </span>
               <button
                 class="btn btn-sm btn-outline-warning"
                 type="button"
                 title="Reset budget window for this share"
-                :disabled="resettingId === row.id"
-                @click="onResetShare(row)"
+                :disabled="resettingId === recipient.id"
+                @click="onResetShare(recipient)"
               >
                 <i class="bi bi-arrow-counterclockwise" />
               </button>
@@ -107,9 +78,11 @@
       </template>
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="$refs.overviewModal.close()">
-        Close
-      </button>
+      <BasicButton
+        title="Close"
+        class="btn btn-secondary"
+        @click="$refs.overviewModal.close()"
+      />
     </template>
   </BasicModal>
   <ConfirmModal ref="confirmModal" />
@@ -123,23 +96,114 @@
  */
 
 import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
+import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+
+const RESOURCE_CONFIGS = {
+  model: {
+    title: "AI model overview",
+    modalName: "aiModelOverviewModal",
+    command: "getModelOverview",
+    idKey: "aiModelId",
+    invalidMessage: "Invalid model",
+    loadErrorMessage: "Failed to load overview",
+    details(row, meta, helpers) {
+      return [
+        { key: "name", label: "Name", value: row.name },
+        { key: "provider", label: "Provider", value: row.provider },
+        { key: "model", label: "Model ID", value: row.model, type: "code" },
+        {
+          key: "status",
+          label: "Status",
+          value: row.enabled ? "Enabled" : "Disabled",
+          type: "badge",
+          class: row.enabled ? "bg-success" : "bg-secondary",
+        },
+        { key: "credential", label: "Credential", value: row.credentialName, visible: meta.isOwner && !!row.credentialName },
+        { key: "updated", label: "Updated", value: helpers.formatDateTime(row.updatedAt) },
+        { key: "description", label: "Description", value: row.description, visible: !!row.description },
+      ];
+    },
+  },
+  hook: {
+    title: "AI hook overview",
+    modalName: "aiHookOverviewModal",
+    command: "getHookOverview",
+    idKey: "aiHookId",
+    invalidMessage: "Invalid AI hook",
+    loadErrorMessage: "Failed to load hook overview",
+    details(row, _meta, helpers) {
+      return [
+        { key: "name", label: "Name", value: row.name },
+        { key: "description", label: "Description", value: row.description },
+        { key: "template", label: "Prompt Template", value: row.templateName },
+        { key: "models", label: "Models", value: (row.models || []).map((model) => model.name), type: "list" },
+        { key: "output", label: "Output Type", value: row.outputLabel },
+        { key: "status", label: "Status", value: row.statusLabel },
+        { key: "created", label: "Created", value: helpers.formatDateTime(row.createdAt) },
+        { key: "updated", label: "Updated", value: helpers.formatDateTime(row.updatedAt) },
+      ];
+    },
+  },
+};
 
 export default {
   name: "AIOverview",
-  components: { BasicModal, ConfirmModal },
+  components: { BasicModal, BasicButton, BasicTable, ConfirmModal },
+  props: {
+    resourceType: {
+      type: String,
+      default: "model",
+      validator: (value) => Object.keys(RESOURCE_CONFIGS).includes(value),
+    },
+  },
   data() {
     return {
       isLoading: false,
-      modelRow: null,
+      row: null,
       meta: null,
       loadError: null,
       resettingId: null,
+      shareTableOptions: {
+        striped: true,
+        hover: true,
+      },
+      shareColumns: [
+        { name: "Name", key: "recipientLabel", sortable: true },
+        { name: "Access", key: "accessLabel", sortable: true },
+        { name: "Expires", key: "expiryLabel", sortable: true },
+      ],
     };
   },
   computed: {
+    config() {
+      return RESOURCE_CONFIGS[this.resourceType] || RESOURCE_CONFIGS.model;
+    },
+    modalName() {
+      return this.config.modalName;
+    },
+    detailRows() {
+      if (!this.row || !this.meta) return [];
+      const helpers = { formatDateTime: this.formatDateTime };
+      return this.config.details(this.row, this.meta, helpers)
+        .filter((item) => item.visible !== false)
+        .map((item) => ({
+          ...item,
+          value: this.normalizeDetailValue(item),
+        }))
+        .filter((item) => item.type === "list" || item.value !== "");
+    },
+    shareRows() {
+      return (this.meta?.shareRecipients || []).map((recipient, index) => ({
+        id: index + 1,
+        recipientLabel: recipient.recipientLabel || "-",
+        accessLabel: this.formatAccess(recipient),
+        expiryLabel: this.formatDateTime(recipient.expiryDate),
+      }));
+    },
     additionalParametersJson() {
-      const ap = this.modelRow?.additionalParameters;
+      const ap = this.resourceType === "model" ? this.row?.additionalParameters : null;
       if (!ap || typeof ap !== "object" || !Object.keys(ap).length) return "";
       try {
         return JSON.stringify(ap, null, 2);
@@ -149,21 +213,20 @@ export default {
     },
   },
   methods: {
-    formatAccess(row) {
-      if (row.accessVia === "role") return row.viaLabel ? `role: ${row.viaLabel}` : "role";
-      return "direct";
-    },
-    scopeBadgeClass(kind) {
-      switch (kind) {
-        case "session": return "bg-info";
-        case "study":   return "bg-primary";
-        default:        return "bg-secondary";
+    normalizeDetailValue(item) {
+      if (item.type === "list") {
+        return Array.isArray(item.value) && item.value.length > 0 ? item.value : ["-"];
       }
+      return item.value || "-";
+    },
+    formatAccess(row) {
+      if (row.accessVia === "role") return row.viaLabel ? `Role: ${row.viaLabel}` : "Role";
+      return "User";
     },
     formatDateTime(value) {
-      if (!value) return "—";
+      if (!value) return "-";
       const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+      return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
     },
     emitAi(command, data = {}) {
       return new Promise((resolve, reject) => {
@@ -173,39 +236,18 @@ export default {
         });
       });
     },
-    async open(row) {
-      if (!row?.id) {
-        this.eventBus.emit("toast", { title: "Error", message: "Invalid model", variant: "danger" });
-        return;
-      }
-      this.modelRow = row;
-      this.meta = null;
-      this.loadError = null;
-      this.isLoading = true;
-      this.$refs.overviewModal.open();
-      try {
-        this.meta = await this.emitAi("getModelOverview", { aiModelId: row.id });
-      } catch (error) {
-        this.loadError = error.message || "Failed to load overview";
-        this.eventBus.emit("toast", { title: "Error", message: this.loadError, variant: "danger" });
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    onResetShare(row) {
+    onResetShare(recipient) {
       this.$refs.confirmModal.open(
         "Reset Share Budget",
-        `Reset the budget window for ${row.recipientLabel || "this recipient"}?`,
+        `Reset the budget window for ${recipient.recipientLabel || "this recipient"}?`,
         "",
         async (confirmed) => {
           if (!confirmed) return;
-          this.resettingId = row.id;
+          this.resettingId = recipient.id;
           try {
-            await this.emitAi("resetShareBudget", { shareId: row.id });
+            await this.emitAi("resetShareBudget", { shareId: recipient.id });
             this.eventBus.emit("toast", { title: "Success", message: "Share budget reset", variant: "success" });
-            if (this.modelRow?.id) {
-              this.meta = await this.emitAi("getModelOverview", { aiModelId: this.modelRow.id });
-            }
+            this.meta = await this.emitAi(this.config.command, { [this.config.idKey]: this.row.id });
           } catch (error) {
             this.eventBus.emit("toast", { title: "Error", message: error.message || "Reset failed", variant: "danger" });
           } finally {
@@ -213,6 +255,25 @@ export default {
           }
         }
       );
+    },
+    async open(row) {
+      if (!row?.id) {
+        this.eventBus.emit("toast", { title: "Error", message: this.config.invalidMessage, variant: "danger" });
+        return;
+      }
+      this.row = row;
+      this.meta = null;
+      this.loadError = null;
+      this.isLoading = true;
+      this.$refs.overviewModal.open();
+      try {
+        this.meta = await this.emitAi(this.config.command, { [this.config.idKey]: row.id });
+      } catch (error) {
+        this.loadError = error.message || this.config.loadErrorMessage;
+        this.eventBus.emit("toast", { title: "Error", message: this.loadError, variant: "danger" });
+      } finally {
+        this.isLoading = false;
+      }
     },
   },
 };

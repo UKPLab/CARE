@@ -192,6 +192,9 @@ export default {
   },
   watch: {
     $route(to, from) {
+      if (to.meta && to.meta.checkLogin) {
+        this.runCheckLoginFlow();
+      }
       if (to.fullPath !== from.fullPath && this.behaviorLogger) {
         this.behaviorLogger.reportRouteChange(from, to);
       }
@@ -230,13 +233,7 @@ export default {
   },
   async mounted() {
     if (this.$route.meta.checkLogin) {
-      // Check if user already authenticated, if so, we redirect him to the dashboard.
-      const response = await axios.get(getServerURL() + "/auth/check", {
-        withCredentials: true,
-      });
-      if (response.data.user) {
-        await this.$router.push(this.$route.query.redirectedFrom || "/dashboard");
-      }
+      await this.runCheckLoginFlow();
     }
   },
   beforeUnmount() {
@@ -245,6 +242,16 @@ export default {
     }
   },
   methods: {
+    async runCheckLoginFlow() {
+      const response = await axios.get(getServerURL() + "/auth/check", {
+        withCredentials: true,
+      });
+      if (response.data.user) {
+        await this.$router.push(response.data.wizardCompleted === false ? "/wizard" : "/dashboard");
+      } else if (response.data.needsSetup) {
+        await this.$router.push("/wizard");
+      }
+    },
     resetAppLoadState() {
       this.loaded = {
         users: false,

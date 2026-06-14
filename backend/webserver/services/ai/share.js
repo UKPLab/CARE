@@ -13,52 +13,53 @@ const budget = require("./budget");
 
 const DEFAULT_SHARE_MODE = "users";
 
-/**
- * Validates that `ownerUserId` controls the undeleted AI model optionally inside a Sequelize transaction.
- *
- * @param {{ db: Object }} server Server DB registry.
- * @param {number} ownerUserId Model owner asserting admin rights over shares.
- * @param {number} aiModelId Target `ai_model` primary key from RPC payload.
- * @param {import("sequelize").Transaction} [transaction] Optional Sequelize transaction scope.
- * @returns {Promise<object>} Plain ORM snapshot for downstream queries.
- */
-async function assertModelOwnership(server, ownerUserId, aiModelId, transaction) {
-    const normalizedModelId = Number(aiModelId);
-    if (!Number.isInteger(normalizedModelId) || normalizedModelId <= 0) {
-        throw new Error("Missing or invalid aiModelId");
+const SHARE_RESOURCES = {
+    model: {
+        resourceTable: "ai_model",
+        shareTable: "ai_model_share",
+        payloadKey: "aiModelId",
+        resourceKey: "aiModelId",
+        missingIdError: "Missing or invalid aiModelId",
+        notFoundError: "AI model not found",
+        ownerError: "You can only manage shares for models that you own",
+        accessDeniedError: "You do not have access to this model",
+    },
+    hook: {
+        resourceTable: "ai_hook",
+        shareTable: "ai_hook_share",
+        payloadKey: "aiHookId",
+        resourceKey: "aiHookId",
+        missingIdError: "Missing or invalid aiHookId",
+        notFoundError: "AI hook not found",
+        ownerError: "You can only manage shares for hooks that you own",
+        accessDeniedError: "You do not have access to this hook",
+    },
+};
+
+function getResourceId(resource, data) {
+    const id = Number(data?.[resource.payloadKey]);
+    if (!Number.isInteger(id) || id <= 0) {
+        throw new Error(resource.missingIdError);
     }
-    const aiModel = await server.db.models.ai_model.findOne({
-        where: {id: normalizedModelId, deleted: false},
+    return id;
+}
+
+async function loadResource(server, resource, id, transaction) {
+    const row = await server.db.models[resource.resourceTable].findOne({
+        where: {id, deleted: false},
         raw: true,
         transaction,
     });
-    if (!aiModel) {
-        throw new Error("AI model not found");
+    if (!row) {
+        throw new Error(resource.notFoundError);
     }
-    if (Number(aiModel.userId) !== Number(ownerUserId)) {
-        throw new Error("You can only manage shares for models that you own");
-    }
-    return aiModel;
+    return row;
 }
 
-/**
- * Lightweight fetch for dashboards where ownership is verified separately afterward.
- *
- * @param {{ db: Object }} server Server accessor.
- * @param {number} aiModelId Target PK.
- * @returns {Promise<object>} Active model row keyed by Sequelize attributes.
- */
-async function loadAiModelRow(server, aiModelId) {
-    const id = Number(aiModelId);
-    if (!Number.isInteger(id) || id <= 0) {
-        throw new Error("Missing or invalid aiModelId");
-    }
-    const row = await server.db.models.ai_model.findOne({
-        where: {id, deleted: false},
-        raw: true,
-    });
-    if (!row) {
-        throw new Error("AI model not found");
+async function assertResourceOwnership(server, ownerUserId, resource, data, transaction) {
+    const row = await loadResource(server, resource, getResourceId(resource, data), transaction);
+    if (Number(row.userId) !== Number(ownerUserId)) {
+        throw new Error(resource.ownerError);
     }
     return row;
 }
@@ -109,40 +110,22 @@ function selectedPayloadIds(data, payloadKey) {
 }
 
 /**
- * Creates one `ai_model_share` row snapshot.
+ * Creates one resource share row snapshot.
  *
- * @param {object} aiModel Target model.
+ * @param {string} resourceKey Share-table FK column name.
+ * @param {object} resource Target model or hook.
  * @param {number} userId Recipient user id.
  * @param {Date} expiryDate Share expiry.
  * @param {object} [extra] Additional grant metadata.
  */
-function createShareRow(aiModel, userId, expiryDate, extra = {}) {
+function createShareRow(resourceKey, resource, userId, expiryDate, extra = {}) {
     return {
-        aiModelId: aiModel.id,
+        [resourceKey]: resource.id,
         userId,
         roleId: null,
         expiryDate,
         deleted: false,
         ...extra,
-    };
-}
-
-/**
- * Extracts optional budget fields from a share payload and normalizes them to
- * numeric values or null. Reused by both users-mode and roles-mode createRows.
- *
- * @param {object} data RPC payload.
- * @returns {{costLimit: (number|null), notifyThreshold: (number|null)}}
- */
-function extractBudgetFields(data) {
-    const toNumberOrNull = (value) => {
-        if (value === undefined || value === null || value === "") return null;
-        const numeric = Number(value);
-        return Number.isFinite(numeric) ? numeric : null;
-    };
-    return {
-        costLimit: toNumberOrNull(data?.costLimit),
-        notifyThreshold: toNumberOrNull(data?.notifyThreshold),
     };
 }
 
@@ -162,7 +145,7 @@ const SHARE_TARGETS = {
             label: helpers.userDisplayLabel(user),
         }),
         getConfigIds: (shares) => helpers.uniquePositiveInts(shares.map((share) => share.userId)),
-        createRows: async ({service, ownerUserId, aiModel, expiryDate, data, transaction, target}) => {
+        createRows: async ({service, ownerUserId, resource, resourceKey, expiryDate, data, transaction, target}) => {
             const userIds = selectedPayloadIds(data, target.payloadKey)
                 .filter((userId) => userId !== ownerUserId);
             if (userIds.length === 0) {
@@ -176,8 +159,7 @@ const SHARE_TARGETS = {
                 transaction,
             );
 
-            const budgetFields = extractBudgetFields(data);
-            return userIds.map((userId) => createShareRow(aiModel, userId, expiryDate, budgetFields));
+            return userIds.map((userId) => createShareRow(resourceKey, resource, userId, expiryDate));
         },
     },
     roles: {
@@ -196,7 +178,7 @@ const SHARE_TARGETS = {
             label: role.name || `Role ${role.id}`,
         }),
         getConfigIds: (shares) => helpers.uniquePositiveInts(shares.map((share) => share.roleId)),
-        createRows: async ({service, ownerUserId, aiModel, expiryDate, data, transaction, target}) => {
+        createRows: async ({service, ownerUserId, resource, resourceKey, expiryDate, data, transaction, target}) => {
             const roleIds = selectedPayloadIds(data, target.payloadKey);
             if (roleIds.length === 0) {
                 throw new Error(target.emptySelectionError);
@@ -227,12 +209,10 @@ const SHARE_TARGETS = {
                 throw new Error(target.emptyExpandedSelectionError);
             }
 
-            const budgetFields = extractBudgetFields(data);
             return [...uniqueRoleUserPairs].map((pair) => {
                 const [userIdText, roleIdText] = pair.split(":");
-                return createShareRow(aiModel, Number(userIdText), expiryDate, {
+                return createShareRow(resourceKey, resource, Number(userIdText), expiryDate, {
                     roleId: Number(roleIdText),
-                    ...budgetFields,
                 });
             });
         },
@@ -248,7 +228,6 @@ const SHARE_TARGETS = {
 async function loadShareEnrichmentMaps(server, shares) {
     const userIds = helpers.uniquePositiveInts(shares.map((share) => share.userId));
     const roleIds = helpers.uniquePositiveInts(shares.map((share) => share.roleId));
-    const studyIds = helpers.uniquePositiveInts(shares.map((share) => share.studyId));
 
     const users = userIds.length === 0 ? [] : await server.db.models.user.findAll({
         where: {id: userIds, deleted: false},
@@ -264,14 +243,7 @@ async function loadShareEnrichmentMaps(server, shares) {
     });
     const roleById = Object.fromEntries(roles.map((roleRow) => [Number(roleRow.id), roleRow]));
 
-    const studies = studyIds.length === 0 ? [] : await server.db.models.study.findAll({
-        where: {id: studyIds, deleted: false},
-        attributes: ["id", "name"],
-        raw: true,
-    });
-    const studyById = Object.fromEntries(studies.map((studyRow) => [Number(studyRow.id), studyRow]));
-
-    return {userById, roleById, studyById};
+    return {userById, roleById};
 }
 
 /**
@@ -297,23 +269,7 @@ async function getModelShareOptions(service, client) {
     return Object.fromEntries(entries);
 }
 
-/**
- * Reconstructs aggregated share knobs for reopening editors from normalized DB rows (mode/expiry/multi-select IDs).
- *
- * @param {{ server: Object }} service AIService.
- * @param {{ userId?: number }} client Owner context.
- * @param {{ aiModelId?: number }} data Identifies persisted model FK.
- */
-async function getModelShareConfig(service, client, data) {
-    const ownerUserId = helpers.requireClientUserId(client);
-    const aiModel = await assertModelOwnership(service.server, ownerUserId, data?.aiModelId);
-
-    const shares = await service.server.db.models.ai_model_share.findAll({
-        where: {aiModelId: aiModel.id, studyId: null, studySessionId: null, deleted: false},
-        attributes: ["id", "userId", "roleId", "expiryDate", "costLimit"],
-        raw: true,
-    });
-
+function mapShareConfig(shares) {
     const {expiryDate} = helpers.shareAggregatesFromRows(shares);
     const configIdsByMode = Object.fromEntries(Object.values(SHARE_TARGETS).map((target) => [
         target.mode,
@@ -322,37 +278,63 @@ async function getModelShareConfig(service, client, data) {
     const activeTarget = Object.values(SHARE_TARGETS)
         .find((target) => configIdsByMode[target.mode]?.length > 0) || SHARE_TARGETS[DEFAULT_SHARE_MODE];
 
-    // shareModel writes the same costLimit to every row in a batch, so the
-    // first row's value represents the current setting for the form.
-    const firstWithCostLimit = shares.find((row) => row.costLimit !== null && row.costLimit !== undefined);
-    const costLimit = firstWithCostLimit ? firstWithCostLimit.costLimit : null;
-
     return {
         userIds: configIdsByMode.users || [],
         roleIds: configIdsByMode.roles || [],
         expiryDate,
         mode: activeTarget.mode,
-        costLimit,
     };
 }
 
+async function getResourceShareConfig(service, client, data, resource) {
+    const ownerUserId = helpers.requireClientUserId(client);
+    const row = await assertResourceOwnership(service.server, ownerUserId, resource, data);
+
+    const shares = await service.server.db.models[resource.shareTable].findAll({
+        where: {[resource.resourceKey]: row.id, deleted: false},
+        attributes: ["id", "userId", "roleId", "expiryDate"],
+        raw: true,
+    });
+
+    return mapShareConfig(shares);
+}
+
 /**
- * Returns differentiated payloads for organizers vs delegated viewers enforcing share expiry semantics.
+ * Reconstructs aggregated share knobs for reopening editors from normalized DB rows (mode/expiry/multi-select IDs).
  *
  * @param {{ server: Object }} service AIService.
- * @param {{ userId?: number }} client Possibly non-owner delegated user.
- * @param {{ aiModelId?: number }} data Requested model FK.
+ * @param {{ userId?: number }} client Owner context.
+ * @param {{ aiModelId?: number }} data Identifies persisted model FK.
  */
-async function getModelOverview(service, client, data) {
+async function getModelShareConfig(service, client, data) {
+    return getResourceShareConfig(service, client, data, SHARE_RESOURCES.model);
+}
+
+/**
+ * Reconstructs aggregated hook share knobs for reopening editors.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Owner context.
+ * @param {{ aiHookId?: number }} data Identifies persisted hook FK.
+ */
+async function getHookShareConfig(service, client, data) {
+    return getResourceShareConfig(service, client, data, SHARE_RESOURCES.hook);
+}
+
+async function getResourceOverview(service, client, data, resource) {
     const viewerUserId = helpers.requireClientUserId(client);
-    const aiModel = await loadAiModelRow(service.server, data?.aiModelId);
+    const row = await loadResource(
+        service.server,
+        resource,
+        getResourceId(resource, data),
+    );
 
     const now = new Date();
-    const isOwner = Number(aiModel.userId) === viewerUserId;
+    const isOwner = Number(row.userId) === viewerUserId;
 
-    const viewerShare = await service.server.db.models.ai_model_share.findOne({
+    const viewerShare = await service.server.db.models[resource.shareTable].findOne({
         where: {
-            aiModelId: aiModel.id,
+            [resource.resourceKey]: row.id,
             userId: viewerUserId,
             deleted: false,
             expiryDate: {[Op.gt]: now},
@@ -362,14 +344,14 @@ async function getModelOverview(service, client, data) {
     });
 
     if (!isOwner && !viewerShare) {
-        throw new Error("You do not have access to this model");
+        throw new Error(resource.accessDeniedError);
     }
 
     let shareRecipients = [];
     if (isOwner) {
-        const shares = await service.server.db.models.ai_model_share.findAll({
+        const shares = await service.server.db.models[resource.shareTable].findAll({
             where: {
-                aiModelId: aiModel.id,
+                [resource.resourceKey]: row.id,
                 deleted: false,
                 expiryDate: {[Op.gt]: now},
             },
@@ -388,7 +370,108 @@ async function getModelOverview(service, client, data) {
 }
 
 /**
- * Re-materializes delegated access rows atomically (`users` or expanded `roles`).
+ * Returns differentiated payloads for organizers vs delegated viewers enforcing share expiry semantics.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Possibly non-owner delegated user.
+ * @param {{ aiModelId?: number }} data Requested model FK.
+ */
+async function getModelOverview(service, client, data) {
+    return getResourceOverview(service, client, data, SHARE_RESOURCES.model);
+}
+
+/**
+ * Returns differentiated payloads for hook organizers vs delegated viewers.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Possibly non-owner delegated user.
+ * @param {{ aiHookId?: number }} data Requested hook FK.
+ */
+async function getHookOverview(service, client, data) {
+    return getResourceOverview(service, client, data, SHARE_RESOURCES.hook);
+}
+
+/**
+ * Adds selected share rows without removing existing recipients.
+ * Existing direct/role grants for the same recipient are refreshed with the new expiry.
+ *
+ * @param {import("sequelize").Model} shareModel Share table model.
+ * @param {string} resourceKey FK column name on the share table.
+ * @param {number} resourceId Shared model/hook id.
+ * @param {object[]} rowsToCreate Normalized share rows requested by the UI.
+ * @param {import("sequelize").Transaction} transaction Sequelize transaction scope.
+ */
+async function extendShareRows(shareModel, resourceKey, resourceId, rowsToCreate, transaction) {
+    const existingRows = await shareModel.findAll({
+        where: {[resourceKey]: resourceId},
+        attributes: ["id", "userId", "roleId", "deleted"],
+        raw: true,
+        transaction,
+    });
+    const existingByRecipient = new Map();
+    for (const row of existingRows) {
+        const key = `${Number(row.userId)}:${Number(row.roleId) || 0}`;
+        if (!existingByRecipient.has(key) || !row.deleted) {
+            existingByRecipient.set(key, row);
+        }
+    }
+
+    let changedCount = 0;
+    for (const row of rowsToCreate) {
+        const key = `${Number(row.userId)}:${Number(row.roleId) || 0}`;
+        const existing = existingByRecipient.get(key);
+        if (existing) {
+            await shareModel.update(
+                {expiryDate: row.expiryDate, deleted: false, deletedAt: null},
+                {where: {id: existing.id}, transaction},
+            );
+        } else {
+            await shareModel.create(row, {transaction});
+        }
+        changedCount += 1;
+    }
+
+    return changedCount;
+}
+
+async function shareResource(service, client, data, resource) {
+    const ownerUserId = helpers.requireClientUserId(client);
+    const target = getShareTarget(data?.mode);
+    const expiryDate = helpers.parseShareExpiryInput(data?.expiryDate);
+    const transaction = await service.server.db.sequelize.transaction();
+
+    try {
+        const row = await assertResourceOwnership(service.server, ownerUserId, resource, data, transaction);
+
+        const rowsToCreate = await target.createRows({
+            service,
+            ownerUserId,
+            resource: row,
+            resourceKey: resource.resourceKey,
+            expiryDate,
+            data,
+            transaction,
+            target,
+        });
+
+        const sharedCount = await extendShareRows(
+            service.server.db.models[resource.shareTable],
+            resource.resourceKey,
+            row.id,
+            rowsToCreate,
+            transaction,
+        );
+
+        await transaction.commit();
+        return {ok: true, sharedCount};
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
+}
+
+/**
+ * Extends delegated access rows atomically (`users` or expanded `roles`).
  *
  * @param {{ server: Object }} service AIService.
  * @param {{ userId?: number }} client Organizer principal.
@@ -401,74 +484,60 @@ async function getModelOverview(service, client, data) {
  * }} data Wizard payload reconstructed from dashboards.
  */
 async function shareModel(service, client, data) {
-    const ownerUserId = helpers.requireClientUserId(client);
-    const target = getShareTarget(data?.mode);
-    const expiryDate = helpers.parseShareExpiryInput(data?.expiryDate);
-    const transaction = await service.server.db.sequelize.transaction();
-
-    try {
-        const aiModel = await assertModelOwnership(service.server, ownerUserId, data?.aiModelId, transaction);
-
-        // Scope the wipe to global shares only — study-scoped rows belong to a
-        // different lifecycle (study creation/deletion) and must not be touched
-        // when the model owner re-shares globally. 
-        // TODO: make sure with Akash
-        await service.server.db.models.ai_model_share.update(
-            {deleted: true, deletedAt: new Date()},
-            {where: {aiModelId: aiModel.id, studyId: null, studySessionId: null,  deleted: false}, transaction},
-        );
-
-        const rowsToCreate = await target.createRows({
-            service,
-            ownerUserId,
-            aiModel,
-            expiryDate,
-            data,
-            transaction,
-            target,
-        });
-
-        if (rowsToCreate.length > 0) {
-            await service.server.db.models.ai_model_share.bulkCreate(rowsToCreate, {transaction});
-        }
-
-        await transaction.commit();
-        return {ok: true, sharedCount: rowsToCreate.length};
-    } catch (error) {
-        await transaction.rollback();
-        throw error;
-    }
+    return shareResource(service, client, data, SHARE_RESOURCES.model);
 }
 
-/** Owner-id → label for AI model rows visible to `client` (`ai_model` autotable parity). */
-async function getAiModelOwnerSummaries(service, client) {
+/**
+ * Extends delegated AI hook access rows atomically (`users` or expanded `roles`).
+ *
+ * @param {{ server: Object }} service AIService.
+ * @param {{ userId?: number }} client Organizer principal.
+ * @param {{
+ *   mode?: "users"|"roles",
+ *   aiHookId?: number,
+ *   expiryDate?: string,
+ *   roleIds?: number[],
+ *   userIds?: number[],
+ * }} data Wizard payload reconstructed from dashboards.
+ */
+async function shareHook(service, client, data) {
+    return shareResource(service, client, data, SHARE_RESOURCES.hook);
+}
+
+async function loadVisibleResources(service, client, resource, attributes = ["id", "userId"]) {
     const viewerUserId = helpers.requireClientUserId(client);
     const db = service.server.db.models;
-    let whereModel = {deleted: false};
+    let whereResource = {deleted: false};
 
     if (!(await client.isAdmin())) {
-        const shareLinks = await db.ai_model_share.findAll({
+        const shareLinks = await db[resource.shareTable].findAll({
             where: {
                 userId: viewerUserId,
                 deleted: false,
                 expiryDate: {[Op.gt]: new Date()},
             },
-            attributes: ["aiModelId"],
+            attributes: [resource.resourceKey],
             raw: true,
         });
-        const sharedIds = [...new Set(shareLinks.map((link) => link.aiModelId))];
+        const sharedIds = helpers.uniquePositiveInts(shareLinks.map((link) => link[resource.resourceKey]));
         const orClauses = [{userId: viewerUserId}];
         if (sharedIds.length) {
             orClauses.push({id: {[Op.in]: sharedIds}});
         }
-        whereModel = {[Op.and]: [whereModel, {[Op.or]: orClauses}]};
+        whereResource = {[Op.and]: [whereResource, {[Op.or]: orClauses}]};
     }
 
-    const visible = await db.ai_model.findAll({
-        where: whereModel,
-        attributes: ["userId"],
+    return db[resource.resourceTable].findAll({
+        where: whereResource,
+        attributes,
         raw: true,
     });
+}
+
+async function getResourceOwnerSummaries(service, client, resource) {
+    const viewerUserId = helpers.requireClientUserId(client);
+    const db = service.server.db.models;
+    const visible = await loadVisibleResources(service, client, resource, ["userId"]);
     const ownerIds = [...new Set(visible.map((row) => row.userId))]
         .map(Number)
         .filter((uid) => uid > 0 && uid !== viewerUserId);
@@ -492,15 +561,62 @@ async function getAiModelOwnerSummaries(service, client) {
     }, {});
 }
 
-/**
- * Reset the per-user cost cap window on one share row.
- * Verifies the caller owns the underlying model (or owns the study) before delegating to the budget module.
- *
- * @param {{ server: Object }} service AIService.
- * @param {{ userId?: number }} client Authenticated caller.
- * @param {{ shareId?: number, aiModelId?: number }} data RPC payload with the target share + model FK.
- * @returns {Promise<{ok: true}>}
- */
+/** Owner-id → label for AI model rows visible to `client` (`ai_model` autotable parity). */
+async function getAiModelOwnerSummaries(service, client) {
+    return getResourceOwnerSummaries(service, client, SHARE_RESOURCES.model);
+}
+
+/** Owner-id → label for AI hook rows visible to `client` (`ai_hook` autotable parity). */
+async function getAiHookOwnerSummaries(service, client) {
+    return getResourceOwnerSummaries(service, client, SHARE_RESOURCES.hook);
+}
+
+/** Hook-id → ordered model labels for hook rows visible to `client`, without sharing model records. */
+async function getAiHookDisplaySummaries(service, client) {
+    helpers.requireClientUserId(client);
+    const db = service.server.db.models;
+    const visibleHooks = await loadVisibleResources(service, client, SHARE_RESOURCES.hook, ["id"]);
+    const hookIds = helpers.uniquePositiveInts(visibleHooks.map((hook) => hook.id));
+    if (hookIds.length === 0) {
+        return {};
+    }
+
+    const hookModels = await db.ai_hook_models.findAll({
+        where: {aiHookId: hookIds, deleted: false},
+        attributes: ["aiHookId", "aiModelId", "priority"],
+        order: [["aiHookId", "ASC"], ["priority", "ASC"]],
+        raw: true,
+    });
+    const modelIds = helpers.uniquePositiveInts(hookModels.map((row) => row.aiModelId));
+    const models = modelIds.length === 0 ? [] : await db.ai_model.findAll({
+        where: {id: modelIds, deleted: false},
+        attributes: ["id", "name", "model"],
+        raw: true,
+    });
+    const modelById = Object.fromEntries(models.map((model) => [Number(model.id), model]));
+
+    return hookModels.reduce((acc, row) => {
+        const hookId = String(row.aiHookId);
+        const model = modelById[Number(row.aiModelId)];
+        const name = model?.name || `Model #${row.aiModelId}`;
+        if (!acc[hookId]) {
+            acc[hookId] = {models: []};
+        }
+        acc[hookId].models.push({
+            priority: Number(row.priority),
+            aiModelId: Number(row.aiModelId),
+            name,
+            model: model?.model || null,
+        });
+        const primaryModel = acc[hookId].models[0];
+        const extraModelCount = Math.max(acc[hookId].models.length - 1, 0);
+        acc[hookId].modelSummary = primaryModel
+            ? `${primaryModel.name}${extraModelCount > 0 ? ` +${extraModelCount}` : ""}`
+            : "Unknown model";
+        return acc;
+    }, {});
+}
+
 async function resetShareBudget(service, client, data) {
     const userId = helpers.requireClientUserId(client);
     const shareId = Number(data?.shareId);
@@ -510,7 +626,6 @@ async function resetShareBudget(service, client, data) {
         throw new Error("Share not found");
     }
 
-    // Allowed if the caller owns the model OR (for study-scoped rows) owns the study.
     const model = await service.server.db.models.ai_model.findByPk(share.aiModelId, {raw: true});
     const isModelOwner = model && Number(model.userId) === Number(userId);
 
@@ -528,31 +643,13 @@ async function resetShareBudget(service, client, data) {
     return {ok: true};
 }
 
-/**
- * Reset the model-wide global cap window. Verifies caller owns the model.
- *
- * @param {{ server: Object }} service AIService.
- * @param {{ userId?: number }} client Authenticated caller.
- * @param {{ modelId?: number }} data RPC payload with the target model PK.
- * @returns {Promise<{ok: true}>}
- */
 async function resetModelBudget(service, client, data) {
     const ownerUserId = helpers.requireClientUserId(client);
-    await assertModelOwnership(service.server, ownerUserId, data?.modelId);
+    await assertResourceOwnership(service.server, ownerUserId, SHARE_RESOURCES.model, {aiModelId: data?.aiModelId ?? data?.modelId});
     await budget.resetModelBudget(service, data);
     return {ok: true};
 }
 
-
-/**
- * Read the study-level AI budget so the study form can prefill its AI fields
- * and surface the share row id (used by the coordinator's reset button).
- *
- * @param {{ server: Object }} service AIService.
- * @param {{ userId?: number }} client Authenticated caller.
- * @param {{ studyId?: number }} data RPC payload with the target study PK.
- * @returns {Promise<{aiModelId: ?number, aiCostLimitPerUser: ?number, aiApplyPerSession: boolean, aiShareId: ?number}>}
- */
 async function getStudyAiBudget(service, client, data) {
     helpers.requireClientUserId(client);
     const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false, aiShareId: null, aiResetAt: null};
@@ -579,9 +676,14 @@ async function getStudyAiBudget(service, client, data) {
 module.exports = {
     getModelShareOptions,
     getModelShareConfig,
+    getHookShareConfig,
     getModelOverview,
+    getHookOverview,
     shareModel,
+    shareHook,
     getAiModelOwnerSummaries,
+    getAiHookOwnerSummaries,
+    getAiHookDisplaySummaries,
     resetShareBudget,
     resetModelBudget,
     getStudyAiBudget,

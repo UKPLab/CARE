@@ -23,12 +23,12 @@ module.exports = (sequelize, DataTypes) => {
                 // Admins: own templates (all types) OR public templates from others
                 return {[Op.or]: [{userId: userId}, {public: true}]};
             } else {
-                // Non-admins: own templates (types 4, 5 only) OR public templates from others (types 4, 5 only)
-                // Email templates (types 1, 2, 3, 6) are admin-only
+                // Non-admins: own templates (types 4, 5, 8 only) OR public templates from others (types 4, 5, 8 only)
+                // Email templates (types 1, 2, 3, 6, 7) are admin-only
                 return {
                     [Op.or]: [
-                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5]}}]},
-                        {[Op.and]: [{public: true}, {type: {[Op.in]: [4, 5]}}]}
+                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5, 8]}}]},
+                        {[Op.and]: [{public: true}, {type: {[Op.in]: [4, 5, 8]}}]}
                     ]
                 };
             }
@@ -66,7 +66,7 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Override getAutoTable to apply custom filtering for templates:
          * - All users (including admins): own templates OR public templates from others
-         * - Non-admins: exclude email templates (types 1, 2, 3, 6) - admin-only
+         * - Non-admins: exclude email templates (types 1, 2, 3, 6, 7) - admin-only
          */
         static async getAutoTable(filterList = [], userId = null, attributes = null) {
             const {Op} = require("sequelize");
@@ -150,12 +150,20 @@ module.exports = (sequelize, DataTypes) => {
                         value: 6
                     },
                     {
+                        name: "Email - Submission upload",
+                        value: 7
+                    },
+                    {
                         name: "Document - General", 
                         value: 4
                     },
                     {
                         name: "Document - Study", 
                         value: 5
+                    },
+                    {
+                        name: "Prompt",
+                        value: 8
                     }
                 ],
             },
@@ -468,12 +476,12 @@ module.exports = (sequelize, DataTypes) => {
                         );
                     }
 
-                    // updateData sets context.currentUserId (same pattern as study model)
-                    if (options.context?.currentUserId === undefined) {
+                    // appDataUpdate / updateData passes callerUserId so hooks can enforce ownership
+                    if (options.callerUserId === undefined) {
                         return;
                     }
 
-                    if (template.userId !== options.context.currentUserId) {
+                    if (template.userId !== options.callerUserId) {
                         throw new Error(
                             "You can only update templates that you own"
                         );
