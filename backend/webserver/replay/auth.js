@@ -107,7 +107,10 @@ async function cleanupSession(server, client) {
         }
         client.disconnect();
     } catch (err) {
-        // best-effort cleanup
+        // Best-effort cleanup: a failure here won't corrupt replay results,
+        // but a failed session DELETE leaves orphaned rows in "Sessions",
+        // so surface it rather than swallowing.
+        console.warn("Replay session cleanup failed: " + err.message);
     }
 }
 
