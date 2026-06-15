@@ -89,6 +89,9 @@ class RecorderSocket extends Socket {
     }
 
     async startRecording(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
         if (this.server.activeRecordingId) {
             throw new Error("A recording is already in progress");
         }
@@ -130,6 +133,13 @@ class RecorderSocket extends Socket {
     }
 
     async stopRecording(data, options) {
+        // Internal callers (e.g. disconnect cleanup in Server.js) pass
+        // options.internal to bypass the admin check, since the triggering
+        // socket isn't an admin. User-initiated stops via recorderStop are
+        // not internal and must be admin-gated.
+        if (!(options && options.internal) && !(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
         const recordingId = this.server.activeRecordingId || (data && data.id);
         if (!recordingId) {
             throw new Error("No active recording");

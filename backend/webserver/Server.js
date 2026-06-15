@@ -444,7 +444,7 @@ module.exports = class Server {
                             const recorder = this.availSockets[socket.id]['RecorderSocket'];
                             if (recorder) {
                                 const stoppedId = this.activeRecordingId;
-                                await recorder.stopRecording({ status: "disconnected" }, {});
+                                await recorder.stopRecording({ status: "disconnected" }, { internal: true });
 
                                 // The disconnect-triggered stop runs outside the normal
                                 // socket transaction flow, so the automatic table broadcast
