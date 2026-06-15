@@ -237,7 +237,12 @@ export default {
           traces,
         };
 
-        downloadObjectsAs(payload, `recording_${row.id}_${Date.now()}`, "json");
+        // Name the file after the recording, sanitized for the filesystem.
+        // Fall back to the id-based name if the recording has no name.
+        const safeName = (recordingRow.name || `recording_${row.id}`)
+          .replace(/[^a-z0-9_-]+/gi, "_")
+          .replace(/^_+|_+$/g, "");
+        downloadObjectsAs(payload, safeName || `recording_${row.id}`, "json");
         this.eventBus.emit("toast", {
           title: "Export successful",
           message: `Recording exported with ${traces.length} trace(s)`,
