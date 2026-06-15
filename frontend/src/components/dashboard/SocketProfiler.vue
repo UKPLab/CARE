@@ -199,6 +199,18 @@ export default {
         }
       });
     },
+    /**
+     * Export a recording and its traces as a downloadable JSON file.
+     *
+     * After stripping DB-managed and environment-specific fields, runs an
+     * integrity check: any replayable trace that had a payload but lost it
+     * during stripping aborts the export, so we never ship a file that
+     * silently fails on replay. The trace count is stamped in for the
+     * import side to verify against.
+     *
+     * @param {Object} row - Recording table row selected for export.
+     * @returns {void}
+     */
     exportRecording(row) {
       this.$socket.emit("recordingGetTraces", { id: row.id }, (res) => {
         if (!res.success) {
@@ -228,11 +240,38 @@ export default {
           Object.entries(obj).filter(([key]) => !stripFields.includes(key))
         );
 
-        const traces = (res.data || []).map(strip);
+        const raw = res.data || [];
+        const traces = raw.map(strip);
+
+        // Integrity guard: a replayable trace (client->server, excluding
+        // recorder bookkeeping) that had a payload must still have it after
+        // stripping. A dropped payload would fail on replay, so abort loudly
+        // rather than write a quietly-broken file.
+        const recorderEvents = ["recorderStart", "recorderStop"];
+        const hasContent = (p) =>
+          p !== null && p !== undefined &&
+          !(typeof p === "object" && Object.keys(p).length === 0);
+        const dropped = raw.filter((t, i) =>
+          t.direction === true &&
+          !recorderEvents.includes(t.action) &&
+          hasContent(t.payload) &&
+          !hasContent(traces[i] && traces[i].payload)
+        );
+
+        if (dropped.length > 0) {
+          const actions = [...new Set(dropped.map(t => t.action))].join(", ");
+          this.eventBus.emit("toast", {
+            title: "Export aborted",
+            message: `Export would drop payloads for ${dropped.length} trace(s) (${actions}). Cancelled to avoid a broken file.`,
+            variant: "danger",
+          });
+          return;
+        }
 
         const payload = {
           schemaVersion: 1,
           exportedAt: new Date().toISOString(),
+          traceCount: traces.length,
           recording: strip(recordingRow),
           traces,
         };
