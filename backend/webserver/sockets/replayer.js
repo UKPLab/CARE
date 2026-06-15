@@ -76,8 +76,15 @@ class ReplayerSocket extends Socket {
         const sessions = [];
         const userIdSet = new Set();
 
+        // Fetch all recordings up front (one query) and index by id, rather
+        // than a findByPk per id inside the loop.
+        const recordings = await this.models['recording'].findAll({
+            where: { id: recordingIds },
+        });
+        const recordingById = new Map(recordings.map(r => [r.id, r]));
+
         for (const recordingId of recordingIds) {
-            const recording = await this.models['recording'].findByPk(recordingId);
+            const recording = recordingById.get(recordingId);
             if (!recording) continue;
 
             const traces = await this.models['trace'].findAll({
