@@ -3,6 +3,7 @@
 const Service = require("../../Service.js");
 const chat = require("./chat");
 const share = require("./share");
+const hook = require("./hook");
 
 /**
  * AIService — AI / LLM and model-sharing RPC handlers.
@@ -20,6 +21,7 @@ module.exports = class AIService extends Service {
         super(server, {
             cmdTypes: [
                 "chatCompletion",
+                "runHook",
                 "abortChatCompletion",
                 "getStatus",
                 "testModel",
@@ -50,6 +52,7 @@ module.exports = class AIService extends Service {
     async command(client, command, data) {
         const handlers = {
             chatCompletion: () => chat.chatCompletion(this, client, data),
+            runHook: () => hook.runHook(this, client, data),
             abortChatCompletion: () => chat.abortChatCompletion(this, data),
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
