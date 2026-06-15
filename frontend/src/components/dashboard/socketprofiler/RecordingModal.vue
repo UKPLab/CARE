@@ -112,7 +112,7 @@ export default {
       return ordered.map((t, index) => ({
         ...t,
         sequence: index + 1,
-        directionLabel: t.direction ? '→ backend' : '← frontend',
+        directionLabel: t.direction ? '→ backend' : '→ frontend',
         timeDisplay: this.formatAbsoluteTime(t.startTime),
         elapsedDisplay: this.formatElapsed(t.startTime, startMs),
       }));
