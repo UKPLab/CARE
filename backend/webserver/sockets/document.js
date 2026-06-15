@@ -860,23 +860,21 @@ class DocumentSocket extends Socket {
         const downloadedErrors = [];
         const submissions = data.submissions || [];
 
-        for (const submission of submissions) {
-            // Create a new transaction for each submission
-            const transaction = await this.server.db.sequelize.transaction();
+        await this.runBulkWithProgress(submissions, data.progressId, async (submission, transaction) => {
             let tempFiles = [];
-
             try {
                 // 1. Download files to temporary location
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
                 const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId);
-
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
+
                 // 3. Get previous submission for the user and project to link the new submission (if exists)
                 const previousSubmission = await this.models["submission"].getParentSubmission(submission.userId, submission.projectId, true, {transaction});
+
                 // 4. Only if validation passes, create submission and save documents
                 const submissionEntry = await this.models["submission"].add(
                     {
@@ -905,18 +903,11 @@ class DocumentSocket extends Socket {
                     );
                     documentIds.push(doc.id);
                 }
-                transaction.afterCommit(() => {
-                    this.broadcastTransactionChanges(transaction);
-                });
-                await transaction.commit();
 
-                downloadedSubmissions.push({
-                    submissionId: submissionEntry.id,
-                    documentIds,
-                });
+                transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
+
+                downloadedSubmissions.push({ submissionId: submissionEntry.id, documentIds });
             } catch (err) {
-                this.logger.error(err.message);
-                await transaction.rollback();
                 downloadedErrors.push({
                     userId: submission.userId,
                     userExtId: submission.userExtId,
@@ -924,15 +915,9 @@ class DocumentSocket extends Socket {
                     lastName: submission.lastName,
                     message: err.message,
                 });
+                throw err; // re-throw so runBulkWithProgress handles the rollback
             }
-
-            // update frontend progress
-            this.socket.emit("progressUpdate", {
-                id: data.progressId,
-                current: submissions.indexOf(submission) + 1,
-                total: submissions.length,
-            });
-        }
+        });
 
         return {downloadedSubmissions, downloadedErrors};
     }
