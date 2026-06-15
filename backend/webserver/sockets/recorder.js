@@ -188,6 +188,7 @@ class RecorderSocket extends Socket {
             userId: t.userId,
             socketId: t.socketId,
             action: t.action,
+            payload: t.payload,
             direction: t.direction,
             startTime: t.startTime,
             endTime: t.endTime,
