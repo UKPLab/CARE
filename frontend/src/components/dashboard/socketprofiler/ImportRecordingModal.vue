@@ -190,9 +190,17 @@ export default {
 
       const { recording, traces } = this.parsed;
 
-      // Create the recording row, owned by the current user. Drop the
-      // original userId and socket references they're meaningless on
-      // this machine.
+      // The traces keep their original socketIds, which replay uses purely
+      // as grouping keys to reconstruct sessions. Derive the distinct set so
+      // the recording knows how many sessions it contains (drives the session
+      // count and the replay load estimate), mirroring a normal recording.
+      const participantSocketIds = [...new Set(
+        traces.map(t => t.socketId).filter(Boolean)
+      )];
+
+      // Create the recording row, owned by the current user. The original
+      // userId is dropped (meaningless on this machine), but socketIds are
+      // kept as opaque grouping keys so sessions reconstruct correctly.
       const recordingResult = await new Promise((resolve) => {
         this.$socket.emit(
           "appDataUpdate",
@@ -206,7 +214,7 @@ export default {
               userId: this.userId,
               excludeEvents: recording.excludeEvents || null,
               participantUserIds: null,
-              participantSocketIds: null,
+              participantSocketIds,
             },
           },
           (r) => resolve(r)
