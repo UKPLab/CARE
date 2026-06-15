@@ -197,6 +197,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'studyStepId',
                 as: 'studyStep',
             });
+
+            Comment.belongsTo(models["user"], {
+                foreignKey: 'userId',
+                as: 'user',
+            });
         }
     }
 

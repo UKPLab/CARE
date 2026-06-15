@@ -19,6 +19,58 @@ Authentication
 
 -----
 
+First-Time Setup Wizard
+-----------------------
+
+.. container:: user-story
+
+   :Story:
+     I as an administrator, am guided through an initial setup wizard on a fresh CARE instance instead of being dropped into fragmented configuration screens.
+
+   :Acceptance:
+     When no admin account exists, opening CARE leads to a setup wizard with steps for admin account creation, general settings, mail settings, registration settings, and a summary. I can move through the steps, review values on summary, and finish setup. After completion, the instance is marked as configured and normal login/dashboard access is used.
+
+-----
+
+Import Setup Settings from JSON
+-------------------------------
+
+.. container:: user-story
+
+   :Story:
+     I as an administrator, can import setup values from a JSON file exported from another CARE instance to avoid re-entering settings manually.
+
+   :Acceptance:
+     In setup wizard steps after admin creation, I can open the import modal and select a JSON file with setting key/value pairs. Valid keys are loaded into the wizard state and reflected on the summary page. Unknown keys are ignored and this is shown in feedback. If the file is invalid JSON, I receive an error message and no values are imported.
+
+-----
+
+Export Setup Settings to JSON
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     I as an administrator, can export the current setup configuration as a JSON snapshot to reuse it in another CARE instance.
+
+   :Acceptance:
+     In setup wizard steps after admin creation, I can use the download action to export a JSON file containing the current setup values. The exported file can be used as input for the setup import flow on another instance.
+
+-----
+
+Test Mail During Setup
+----------------------
+
+.. container:: user-story
+
+   :Story:
+     I as an administrator, can test mail delivery during setup before finishing the wizard.
+
+   :Acceptance:
+     In the mail step, I can enter a recipient address and trigger a test email. I receive clear success or error feedback based on the response of the test mail endpoint and can continue editing mail settings before finishing setup.
+
+-----
+
 Landing Page
 ------------
 
@@ -1441,6 +1493,65 @@ Customise the Platform Logo
 
 -----
 
+Admin Settings
+--------------
+
+.. container:: user-story
+
+   :Story:
+     I as an admin user want to access and modify the settings of the system in the frontend.
+   :Acceptance:
+     As an admin, I can see the Settings component in the navigation sidebar. When I access this, I can see the list of settings, reload them from the server backend, make changes and save these on the server. The changes have immediate effect on the behavior of the application.
+
+-----
+
+Wizard-Style Settings Configuration
+-----------------------------------
+
+.. container:: user-story
+
+   :Story:
+     I as an admin can edit system settings in a structured, step-based layout consistent with first-time setup, including mail and registration dependencies.
+
+   :Acceptance:
+     In the Settings area, I see grouped, user-facing labels and subsections aligned with the setup flow. Mail-dependent options are shown consistently with the mail service state. A test mail action is available to validate mail configuration. When I change mail settings and click "Save Settings", the new values are applied immediately without requiring a backend restart.
+
+-----
+
+Admin Logs
+----------
+
+.. container:: user-story
+
+   :Story:
+     As an admin user, I can see the server logs in the frontend.
+   :Acceptance:
+     As an admin, I can see the Logs component in the navigation sidebar. When I access this, I can see the list of logs with meta information including timestamps.
+
+-----
+
+User Statistics
+---------------
+
+.. container:: user-story
+
+   :Story:
+     I as an admin user can view the users and user behavior statistics in the frontend.
+   :Acceptance:
+     As an admin user, I can see the User Statistics component in the navigation sidebar. When accessing the component I can see a list of all registered users. For each user, I can view the last login time. When selecting a user another panel shows me the list of behavior logs. I can export all behavior logs of all users via a button click. All user behavior statistics can be downloaded as CSV or JSON.
+
+-----
+
+Submissions Import via Moodle
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     I as an admin can import assignment submissions via the Moodle API into CARE and assign a group id to the submissions when importing.
+
+   :Acceptance:
+     As an admin, I can access the Submissions Import component in the frontend. There I can test the Moodle API credentials and fetch assignment submissions from a selected Moodle assignment. During import, I can provide a group id that gets assigned to all imported submissions.
 Manage Workflows
 -----------------
 

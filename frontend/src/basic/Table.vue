@@ -49,7 +49,8 @@
               'width' in c ? 'col-' + c.width : 'col-auto',
               getFixedColumnClass(c, index),
             ]"
-            :style="getFixedColumnStyle(c)"
+          
+            :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             {{ c.name }}
             <span
@@ -191,7 +192,7 @@
               { pointer: selectableRows && !r.isDisabled },
               getFixedColumnClass(c, index),
             ]"
-            :style="getFixedColumnStyle(c)"
+            :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
               <TIcon
@@ -199,6 +200,7 @@
                 :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
                 :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
                 :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
+                :size="c.typeOptions?.size ?? 16"
               />
               <TBadge
                 v-else-if="c.type === 'badge'"
@@ -637,7 +639,7 @@ export default {
           [c.key]:
             c.filter.type === "numeric"
               ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" } // initialize numeric filter
-              : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
+              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))), // initialize checkbox filter
         }))
     );
 

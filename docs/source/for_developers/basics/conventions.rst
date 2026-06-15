@@ -104,6 +104,7 @@ Backend — Models
 - All multi-step write flows (create + update, create + send email, copy chains) are wrapped in a single Sequelize transaction
 - ``options.transaction`` is passed to every ``MetaModel`` call inside a transaction
 - Sensitive fields (``passwordHash``, ``salt``, ``initialPassword``) are never returned to the frontend — use ``relevantFields(user)`` from ``utils/auth.js`` or verify the model's ``fields`` array excludes them
+- When adding a migration that introduces a table or column referencing ``user``, add or update the corresponding ``static associate()`` block so the consent-aware anonymize pipeline can reach it (see :doc:`../backend/anonymize_dump`)
 
 Frontend — Vue Style
 ~~~~~~~~~~~~~~~~~~~~

@@ -9,6 +9,7 @@
  * @author: Dennis Zyska, Nils Dycke
 **/
 import * as VueRouter from 'vue-router'
+import getServerURL from "@/assets/serverUrl";
 
 const routes = [
     {
@@ -70,6 +71,12 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
+        path: "/wizard",
+        name: "wizard",
+        component: () => import("@/auth/SetupWizard.vue"),
+        meta: {requireAuth: false, hideTopbar: true}
+    },
+    {
         path: "/document/:documentHash",
         component: () => import('@/components/Document.vue'),
         props: true,
@@ -112,28 +119,56 @@ const router = VueRouter.createRouter({
     history: VueRouter.createWebHistory(),
     hashbang: false,
     routes: routes,
-    mode: 'html5',
-    root: "/"
-})
+    mode: "html5",
+    root: "/",
+});
 
-// Navigation guard to check if self-registration is enabled
-router.beforeEach((to, from, next) => {
-    // Check if trying to access register page
+/**
+ * Single navigation guard: registration toggle, /wizard access rules, and forcing
+ * incomplete setup to /wizard only for requireAuth routes.
+ */
+router.beforeEach(async (to, from, next) => {
     if (to.name === "register") {
-        // Check if self-registration is enabled
         const isSelfRegistrationEnabled = window.config && window.config["app.register.enabled"] === "true";
         if (!isSelfRegistrationEnabled) {
-            // Redirect to login
-            next({
+            return next({
                 name: "login",
-                query: { 
+                query: {
                     redirectedFrom: to.query.redirectedFrom,
                     registrationDisabled: "true"
                 }
             });
-            return;
         }
     }
+
+    if (to.path === "/wizard") {
+        try {
+            const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
+            if (!r.ok) return next({ path: "/" });
+            const d = await r.json();
+            if (d.needsSetup === true) return next();
+            if (d.user && d.wizardCompleted === false) return next();
+            return next({ path: "/" });
+        } catch (_error) {
+            return next();
+        }
+    }
+
+    if (!to.meta.requireAuth) return next();
+
+    if (to.meta.requireAuth) {
+        try {
+            const r = await fetch(getServerURL() + "/auth/check", { credentials: "include" });
+            if (!r.ok) return next();
+            const d = await r.json();
+            if (d.user && d.wizardCompleted === false) {
+                return next({ path: "/wizard" });
+            }
+        } catch (_error) {
+            // auth check failed, proceed to next handler
+        }
+    }
+
     next();
 });
 
