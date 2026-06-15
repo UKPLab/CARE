@@ -11,62 +11,12 @@ const {getEmailContent} = require("../../utils/emailHelper");
  * @class StudySocket
  */
 class StudySocket extends Socket {
-
-    /**
-     * Normalizes study id list from bulk-close payload (array may be lost or re-shaped in transit).
-     * @param {object} data
-     * @returns {number[]}
-     */
-    static resolveBulkCloseStudyIds(data) {
-        let raw = data.studyIds;
-        if (Array.isArray(raw) && raw.length > 0) {
-            return raw.map((id) => Number(id)).filter((n) => Number.isFinite(n));
+    
+    async hasManageStudiesPermission() {
+        const hasPermission = await this.hasAccess("frontend.dashboard.studies.closeAllStudies");
+        if (!hasPermission) {
+            throw new Error("No permission to manage studies");
         }
-        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-            raw = Object.values(raw);
-            if (Array.isArray(raw) && raw.length > 0) {
-                return raw.map((id) => Number(id)).filter((n) => Number.isFinite(n));
-            }
-        }
-        if (typeof data.studyIdsJson === "string" && data.studyIdsJson.trim().length > 0) {
-            try {
-                const parsed = JSON.parse(data.studyIdsJson);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed.map((id) => Number(id)).filter((n) => Number.isFinite(n));
-                }
-            } catch (e) {
-                // fall through
-            }
-        }
-        return [];
-    }
-
-    /**
-     * Loads study rows for bulk close when the client sent an explicit id list.
-     * @param {number} projectId
-     * @param {number[]} resolvedStudyIds
-     * @returns {Promise<object[]>}
-     */
-    async loadStudiesForBulkCloseByIds(projectId, resolvedStudyIds) {
-        const studies = [];
-        const seen = new Set();
-        const pid = Number(projectId);
-        for (const rawId of resolvedStudyIds) {
-            const id = Number(rawId);
-            if (!Number.isFinite(id) || seen.has(id)) {
-                continue;
-            }
-            seen.add(id);
-            const s = await this.models['study'].getById(id, {}, false);
-            if (!s || s.template || s.deleted) {
-                continue;
-            }
-            if (Number(s.projectId) !== pid) {
-                continue;
-            }
-            studies.push(s);
-        }
-        return studies;
     }
 
     /**
@@ -208,6 +158,9 @@ class StudySocket extends Socket {
         if (!study) {
             throw new Error("Study not found");
         }
+        if (!(await this.checkUserAccess(study.userId))) {
+            throw new Error("No permission to close this study");
+        }
 
         if (study.closed) {
             throw new Error("Study is already closed");
@@ -236,116 +189,99 @@ class StudySocket extends Socket {
         return updatedStudy;
     }
 
+
     /**
-     * Closes studies associated with a given project ID in a loop.
-     * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
+     * Closes studies identified by studyIds.
      *
      * @socketEvent studyCloseBulk
-     * @param data The data required for the bulk close operation.
-     * @param data.projectId the project ID of the studies to close
-     * @param data.ignoreClosedState if true, also close studies that are already closed
-     * @param data.progressId the ID of the progress bar to update
-     * @param data.workflowId optional; when set, only studies with this workflowId are closed
-     * @param data.studyUserId optional; when set, only studies with this userId (study owner) are closed
-     * @param data.userRoleName optional; when set (e.g. "guest"), only studies whose userId has this role are closed (takes precedence over studyUserId)
-     * @param data.studyIds optional; when non-empty, only these study IDs are closed (must belong to projectId, not template, not deleted). Preferred over workflow/user filters so server matches the client preview exactly.
-     * @param data.studyIdsJson optional; JSON array string of study ids (used if studyIds is missing after transport, e.g. some socket clients).
-     * @param data.bulkCloseUseIdList when true, only the id list is used; missing ids after transport causes an error instead of falling back to closing the whole project.
-     * @param options Additional configuration parameters (currently unused).
-     * @returns {Promise<{closedCount: number}>} Number of studies that were closed (updated).
+     * @param {object} data
+     * @param {number[]} data.studyIds IDs of the studies to close
+     * @param {number} [data.projectId] optional project scope for validation
+     * @param {boolean} [data.notifySessions] if true, send emails to participants with open sessions
+     * @param {string} [data.progressId] optional id for progressUpdate events
+     * @returns {Promise<{ closedCount: number }>}
      */
     async closeBulk(data, options) {
+        await this.hasManageStudiesPermission();
 
-        const pid = Number(data.projectId);
-        if (!Number.isFinite(pid)) {
-            throw new Error("Invalid projectId");
-        }
+        const notifySessions = data.notifySessions === true;
 
-        const resolvedStudyIds = StudySocket.resolveBulkCloseStudyIds(data);
-        const idListMode = data.bulkCloseUseIdList === true;
-
-        let studies;
-        if (idListMode) {
-            if (resolvedStudyIds.length === 0) {
-                throw new Error(
-                    "Bulk close: expected a study id list from the client but none arrived (try refreshing the page)"
-                );
-            }
-            studies = await this.loadStudiesForBulkCloseByIds(pid, resolvedStudyIds);
-        } else if (resolvedStudyIds.length > 0) {
-            studies = await this.loadStudiesForBulkCloseByIds(pid, resolvedStudyIds);
-        } else {
-            studies = await this.models['study'].getAllByKey('projectId', pid);
-            const wf = data.workflowId;
-            if (wf !== undefined && wf !== null && Number(wf) > 0) {
-                const workflowId = Number(wf);
-                studies = studies.filter((s) => Number(s.workflowId) === workflowId);
-            }
-
-            const roleName = typeof data.userRoleName === "string" ? data.userRoleName.trim() : "";
-            if (roleName.length > 0) {
-                const role = await this.models['user_role'].getByKey('name', roleName);
-                if (!role) {
-                    throw new Error(`Unknown role: ${roleName}`);
-                }
-                const matchings = await this.models['user_role_matching'].getAllByKey('userRoleId', role.id);
-                const userIds = new Set(matchings.map((m) => Number(m.userId)));
-                studies = studies.filter((s) => userIds.has(Number(s.userId)));
-            } else {
-                const su = data.studyUserId;
-                if (su !== undefined && su !== null && Number(su) > 0) {
-                    const studyUserId = Number(su);
-                    studies = studies.filter((s) => Number(s.userId) === studyUserId);
-                }
-            }
-        }
-
-        let closedCount = 0;
-        for (let i = 0; i < studies.length; i++) {
-            const study = studies[i];
-            if (study.closed) {
-                if (!("ignoreClosedState" in data) || !data.ignoreClosedState) {
-                    continue;
-                }
-            }
-            const transaction = await this.server.db.sequelize.transaction();
-
-            try {
-
-                await this.models['study'].updateById(study.id, {closed: true, userIdClosed: this.userId}, {transaction: transaction});
-                const notifySessions = data.notifySessions === true;
-                transaction.afterCommit(async () => {
-                    this.broadcastTransactionChanges(transaction);
-                    // Send study closed emails after transaction commits (optional, based on notifySessions flag)
-                    if (notifySessions) {
-                        try {
-                            const updatedStudy = await this.models['study'].getById(study.id);
-                            await this.sendStudyClosedEmails(updatedStudy);
-                        } catch (error) {
-                            this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
-                        }
+        const closedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.models["study"].updateById(
+                id,
+                { closed: true, userIdClosed: this.userId },
+                { transaction }
+            );
+            transaction.afterCommit(async () => {
+                this.broadcastTransactionChanges(transaction);
+                if (notifySessions) {
+                    try {
+                        const updated = await this.models["study"].getById(id);
+                        await this.sendStudyClosedEmails(updated);
+                    } catch (err) {
+                        this.logger.error(`Failed to send study closed emails for study ${id}:`, err);
                     }
-                });
-                await transaction.commit();
-                closedCount += 1;
-            } catch (e) {
-                this.logger.error(e);
-                await transaction.rollback();
-            }
-
-            // update frontend progress
-            this.socket.emit("progressUpdate", {
-                id: data["progressId"], current: i + 1, total: studies.length,
+                }
             });
+        });
 
-        }
+        return { closedCount };
+    }
 
-        return {closedCount};
+    /**
+     * Reopens studies identified by studyIds.
+     *
+     * @socketEvent studyOpenBulk
+     * @param {object} data
+     * @param {number[]} data.studyIds IDs of the studies to reopen
+     * @param {string} [data.progressId] optional id for progressUpdate events
+     * @returns {Promise<{ openedCount: number }>}
+     */
+    async openBulk(data, options) {
+        await this.hasManageStudiesPermission();
+
+        const openedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.models["study"].updateById(
+                id,
+                { closed: null, userIdClosed: null },
+                { transaction }
+            );
+            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
+        });
+
+        return { openedCount };
+    }
+
+    /**
+     * Soft-deletes studies identified by studyIds.
+     *
+     * @socketEvent studyDeleteBulk
+     * @param {object} data
+     * @param {number[]} data.studyIds IDs of the studies to delete
+     * @param {number} [data.projectId] optional project scope for validation
+     * @param {string} [data.progressId] optional id for progressUpdate events
+     * @returns {Promise<{ deletedCount: number }>}
+     */
+    async deleteBulk(data, options) {
+        await this.hasManageStudiesPermission();
+
+        const deletedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.models["study"].updateById(
+                id,
+                { deleted: true },
+                { transaction }
+            );
+            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
+        });
+
+        return { deletedCount };
     }
 
     async init() {
         this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
         this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
+        this.createSocket("studyOpenBulk", this.openBulk, {}, false);
+        this.createSocket("studyDeleteBulk", this.deleteBulk, {}, false);
         this.createSocket("studyClose", this.closeStudy, {}, true);
     }
 }
