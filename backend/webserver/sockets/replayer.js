@@ -39,6 +39,7 @@ class ReplayerSocket extends Socket {
             continueOnFailure = false,
             maxIterations,
             ackTimeout = 2000,
+            progressId = null,
         } = data;
 
         if (!Array.isArray(recordingIds) || recordingIds.length === 0) {
@@ -58,7 +59,7 @@ class ReplayerSocket extends Socket {
         const serverUrl = `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
 
         const iterations = await this.runScalingTest(
-            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout
+            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId
         );
 
         return iterations;
@@ -149,7 +150,7 @@ class ReplayerSocket extends Socket {
      * @param {number} maxIterations - Number of iterations to run
      * @returns {Promise<Array<Object>>} Iteration results
      */
-    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout) {
+    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null) {
         const allResults = [];
         const N = pool.sessions.length;
 
@@ -163,11 +164,16 @@ class ReplayerSocket extends Socket {
                 activeSessions.push(pool.sessions[i % N]);
             }
 
-            this.sendToast(
-                `Iteration ${level}/${maxIterations}: ${totalSockets} parallel session(s)`,
-                'Replay',
-                'info'
-            );
+            // Drive the BasicModal progress bar on the admin's socket. current
+            // is the level we're entering, total is the configured ceiling, so
+            // the bar fills as the scaling test climbs toward maxIterations.
+            if (progressId) {
+                this.socket.emit("progressUpdate", {
+                    id: progressId,
+                    current: level,
+                    total: maxIterations,
+                });
+            }
 
             const levelResults = await Promise.all(
                 activeSessions.map(session => {

@@ -312,12 +312,19 @@ export default {
         message: `Replaying ${recordingIds.length} recording(s)`,
         variant: "info",
       });
-      const runConfig = { recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout };
+      // Open the results modal in progress mode first; its progress id is
+      // threaded into the run so the backend can emit progressUpdate against
+      // it while the scaling test climbs. The same modal flips to results
+      // when the ack returns.
+      const progressId = this.$refs.replayResultsModal.openProgress();
+      const runConfig = { recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId };
       this.$socket.emit("replayRun", runConfig, (res) => {
+        this.$refs.replayResultsModal.stopProgress();
         if (res.success) {
           this.downloadReplayResults(res.data, runConfig);
           this.$refs.replayResultsModal.open(res.data);
         } else {
+          this.$refs.replayResultsModal.close();
           this.eventBus.emit("toast", {
             title: "Replay failed",
             message: res.message,

@@ -180,6 +180,31 @@ export default {
       this.selectedTraceSessionIdx = null;
       this.$refs.modal.open();
     },
+    /**
+     * Open the modal in progress mode before a replay run. Mints a progress
+     * id, shows the BasicModal progress bar, and returns the id so the caller
+     * can hand it to the backend, which emits progressUpdate against it.
+     *
+     * @returns {string} The progress id to pass into the replayRun payload.
+     */
+    openProgress() {
+      this.results = [];
+      // Open the modal first: open() internally resets progress to false, so
+      // startProgress() must come after it or the bar never shows.
+      this.$refs.modal.open();
+      const id = this.$refs.modal.getProgressId();
+      this.$refs.modal.startProgress();
+      return id;
+    },
+    /**
+     * Stop progress mode (called when the replay ack returns). Leaves the
+     * modal open so open(results) can render the results in place.
+     *
+     * @returns {void}
+     */
+    stopProgress() {
+      this.$refs.modal.stopProgress();
+    },
     close() {
       this.$refs.modal.close();
     },
