@@ -19,12 +19,12 @@
               @click="openSavedTemplates"
           />
           <BasicButton
-              v-if="canCloseStudies"
+              v-if="canManageStudies"
               class="btn-secondary btn-sm"
-              title="Bulk close open studies"
-              text="Close Studies"
-              icon="x-octagon"
-              @click="closeStudies"
+              title="Manage studies"
+              text="Manage Studies"
+              icon="gear-fill"
+              @click="manageStudies"
           />
           <BasicButton
               v-if="canAddBulkAssignments"
@@ -66,7 +66,7 @@
     <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
     <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
-    <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
+    <ManageStudiesModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
     <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
     <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
@@ -86,7 +86,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
-import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
+import ManageStudiesModal from "@/components/dashboard/study/ManageStudiesModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import OverViewModal from "./study/OverViewModal.vue";
@@ -99,7 +99,7 @@ import OverViewModal from "./study/OverViewModal.vue";
 export default {
   name: "DashboardStudy",
   components: {
-    BulkCloseModal,
+    ManageStudiesModal,
     StudyCloseModal,
     Card,
     BasicTable,
@@ -448,8 +448,8 @@ export default {
     canAddSingleAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
-    canCloseStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeAllStudies");
+    canManageStudies() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.manageStudies");
     },
   },
   methods: {
@@ -469,7 +469,7 @@ export default {
       this.modals.confirm = true;
       this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
     },
-    openBulkConfirmModal() {
+    openManageStudiesModal() {
       this.modals.bulkConfirm = true;
       this.$nextTick(() => this.$refs.bulkConfirmModal?.open());
     },
@@ -577,8 +577,8 @@ export default {
     studyCoordinator(row, linkOnly = false) {
       this.openStudyCoordinator(row.id, linkOnly);
     },
-    closeStudies() {
-      this.openBulkConfirmModal();
+    manageStudies() {
+      this.openManageStudiesModal();
     },
     saveAsTemplate(study) {
       this.openConfirmModal(
