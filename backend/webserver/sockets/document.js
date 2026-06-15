@@ -874,6 +874,7 @@ class DocumentSocket extends Socket {
             // Create a new transaction for each submission
             const transaction = await this.server.db.sequelize.transaction();
             let tempFiles = [];
+
             try {
                 // 1. Download files to temporary location
                 tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
@@ -947,11 +948,18 @@ class DocumentSocket extends Socket {
                     );
                     documentIds.push(doc.id);
                 }
+                transaction.afterCommit(() => {
+                    this.broadcastTransactionChanges(transaction);
+                });
+                await transaction.commit();
 
-                transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
-
-                downloadedSubmissions.push({ submissionId: submissionEntry.id, documentIds });
+                downloadedSubmissions.push({
+                    submissionId: submissionEntry.id,
+                    documentIds,
+                });
             } catch (err) {
+                this.logger.error(err.message);
+                await transaction.rollback();
                 downloadedErrors.push({
                     userId: submission.userId,
                     userExtId: submission.userExtId,
@@ -959,9 +967,15 @@ class DocumentSocket extends Socket {
                     lastName: submission.lastName,
                     message: err.message,
                 });
-                throw err; // re-throw so runBulkWithProgress handles the rollback
             }
-        });
+
+            // update frontend progress
+            this.socket.emit("progressUpdate", {
+                id: data.progressId,
+                current: submissions.indexOf(submission) + 1,
+                total: submissions.length,
+            });
+        }
 
         return {downloadedSubmissions, downloadedErrors};
     }
