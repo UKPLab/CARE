@@ -41,6 +41,7 @@ module.exports = {
         type: Sequelize.JSONB,
         allowNull: true,
       },
+      // true = frontend -> backend (onAny), false = backend -> frontend (onAnyOutgoing)
       direction: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
