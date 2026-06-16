@@ -32,7 +32,7 @@
           @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
-          class="btn btn-secondary btn-sm"
+            class="btn btn-secondary btn-sm"
             title="Upload Password"
             text="Upload Password"
             icon="key"
