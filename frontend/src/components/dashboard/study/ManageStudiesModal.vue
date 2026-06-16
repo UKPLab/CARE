@@ -16,19 +16,10 @@
         <p class="text-muted mb-4">
           Choose the action you want to perform on the selected studies:
         </p>
-        <ul class="mb-4">
-          <li><strong>Close Studies:</strong> Mark selected open studies as closed, preventing new sessions</li>
-          <li><strong>Open Studies:</strong> Reopen closed studies to allow new participant sessions</li>
-          <li><strong>Delete Studies:</strong> Permanently delete selected studies (cannot be undone)</li>
-        </ul>
         <BasicForm
+          class="mb-3"
           v-model="selectedMode"
           :fields="modeSelectionFields"
-        />
-        <BasicForm
-          v-model="notificationSettings"
-          :fields="notificationFields"
-          class="mt-4"
         />
       </div>
       
@@ -67,11 +58,14 @@
     <!-- Confirmation step -->
     <template #step-3>
       <div class="confirmation-container">
-        <div class="alert alert-info mb-3">
-          <strong>{{ modeTitle }}</strong>
-        </div>
 
         <!-- Mode-specific confirmation content -->
+        <BasicForm
+          v-if="selectedMode.mode === 'bulkClose'"
+          v-model="notificationSettings"
+          :fields="notificationFields"
+          class="mt-4"
+        />
         <div v-if="selectedMode.mode === 'bulkClose'" class="confirmation-content">
           <h6>Studies to Close</h6>
           <p class="text-muted">You are about to close <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}:</p>
@@ -103,7 +97,7 @@
             <div class="d-flex align-items-start gap-3">
               <i class="fas fa-exclamation-circle fs-4"></i>
               <div>
-                <strong class="fs-5">⚠️ Critical Warning: Permanent Deletion</strong>
+                <strong class="fs-5">Critical Warning: Permanent Deletion</strong>
                 <p class="mb-0 mt-2">This action will <strong>permanently delete</strong> the selected studies and <strong>cannot be undone</strong>. All associated data will be lost.</p>
               </div>
             </div>
@@ -115,28 +109,16 @@
               {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
             </li>
           </ul>
-          <div class="form-check mt-4 confirm-checkbox-container">
-            <input
-              id="confirmDeleteCheckbox"
-              v-model="confirmDelete"
-              class="form-check-input"
-              type="checkbox"
-            >
-            <label
-              class="form-check-label text-danger fw-bold"
-              for="confirmDeleteCheckbox"
-            >
-              I understand that this action will permanently delete these studies and cannot be undone
-            </label>
-          </div>
         </div>
       </div>
     </template>
   </StepperModal>
+  <ConfirmModal ref="deleteConf"/>
 </template>
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
@@ -153,13 +135,13 @@ export default {
     BasicButton,
     BasicTable,
     BasicForm,
+    ConfirmModal,
   },
   data() {
     return {
       selectedMode: { mode: null },
       selectedStudies: [],
       notificationSettings: { notifySessions: false },
-      confirmDelete: false,
       workflowFilter: "all",
       tableOptions: {
         striped: true,
@@ -171,23 +153,17 @@ export default {
         search: true,
         selectableRows: true,
       },
-      steps: [
-        { title: "Select Action" },
-        { title: "Select Studies" },
-        { title: "Confirm" },
-      ],
       modeSelectionFields: [
         {
           key: "mode",
-          label: "Select Action",
-          type: "select",
-          required: true,
+          type: "checkbox",
+          selectionMode: "single",
           options: [
-            { name: "Close Studies", value: "bulkClose" },
-            { name: "Open Studies", value: "bulkOpen" },
-            { name: "Delete Studies", value: "bulkDelete" },
+            { value: "bulkClose", label: "Close Studies" },
+            { value: "bulkOpen", label: "Open Studies" },
+            { value: "bulkDelete", label: "Delete Studies" },
           ],
-        },
+        }
       ],
       notificationFields: [
         {
@@ -200,11 +176,18 @@ export default {
     };
   },
   computed: {
+    steps() {
+        return [
+          { title: "Select Action" },
+          { title: "Select Studies" },
+          { title: "Confirm" + (this.selectedMode.mode === "bulkDelete" ? " Delete" : this.selectedMode.mode === "bulkClose" ? " Close" : this.selectedMode.mode === "bulkOpen" ? " Open" : "") },
+        ];
+    },
     stepValid() {
       return [
         this.selectedMode.mode !== null, // Step 1 - mode selected
         this.selectedCount > 0, // Step 2 - at least one study selected
-        this.selectedMode.mode === 'bulkDelete' ? this.confirmDelete : true, // Step 3 - confirm delete if applicable
+        true, // Step 3 - confirm delete if applicable
       ];
     },
     modeTitle() {
@@ -342,7 +325,6 @@ export default {
       this.selectedStudies = [];
       this.workflowFilter = "all";
       this.notificationSettings = { notifySessions: false };
-      this.confirmDelete = false;
       this.$refs.bulkCloseModal.open();
     },
     handleSubmit() {
@@ -351,7 +333,17 @@ export default {
       } else if (this.selectedMode.mode === 'bulkOpen') {
         this.openMatchingStudies();
       } else if (this.selectedMode.mode === 'bulkDelete') {
-        this.deleteMatchingStudies();
+        this.$refs.bulkCloseModal.close();
+         this.$refs.deleteConf.open(
+          "Delete Studies",
+          "",
+          "Are you sure you want to delete these studies?",
+          (confirmed) => {
+            if (confirmed) {
+              this.deleteMatchingStudies();
+            }
+          }
+        );
       }
     },
     closeMatchingStudies() {
@@ -446,14 +438,6 @@ export default {
           variant: "warning",
         });
         return;
-      }
-      
-      // Final confirmation before deletion
-      const studyNames = matches.map(s => s.name).join(", ");
-      const confirmMessage = `Are you absolutely sure you want to permanently delete ${matches.length} ${matches.length === 1 ? 'study' : 'studies'}?\n\nStudies: ${studyNames}\n\nThis action CANNOT be undone!`;
-      
-      if (!confirm(confirmMessage)) {
-        return; // User cancelled the deletion
       }
       
       const ids = matches
