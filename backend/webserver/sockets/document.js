@@ -840,21 +840,6 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Build the canonical metadata payload stored in document_metadata.
-     *
-     * @param {*} value
-     * @param {Object} context
-     * @returns {Object}
-     */
-    buildImportedMetadataValue(value, context = {}) {
-        return {
-            value,
-            sourceField: context.sourceField ?? null,
-            sourceFile: context.sourceFile ?? null,
-        };
-    }
-
-    /**
      * Persist mapped metadata for all documents of one matched submission row.
      *
      * @param {Object} data
@@ -862,7 +847,6 @@ class DocumentSocket extends Socket {
      * @param {number} data.userId
      * @param {Object} data.row
      * @param {Object[]} data.mappings
-     * @param {string|null} data.fileName
      * @param {Object} options
      * @returns {Promise<number>}
      */
@@ -879,10 +863,7 @@ class DocumentSocket extends Socket {
                     documentId,
                     userId: data.userId,
                     metaKey: mapping.metaKey,
-                    metaValue: this.buildImportedMetadataValue(data.row[mapping.sourceField], {
-                        sourceField: mapping.sourceField,
-                        sourceFile: data.fileName || null,
-                    }),
+                    metaValue: data.row[mapping.sourceField] == null ? "" : String(data.row[mapping.sourceField]),
                 }, options);
                 writes += 1;
             }
@@ -1274,7 +1255,6 @@ class DocumentSocket extends Socket {
                 userId: match.userId,
                 row: match.row,
                 mappings: match.mappings,
-                fileName: data.fileName || null,
             }, options);
         }
 
