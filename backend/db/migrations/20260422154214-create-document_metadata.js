@@ -39,7 +39,7 @@ module.exports = {
                 allowNull: false,
             },
             metaValue: {
-                type: Sequelize.JSONB,
+                type: Sequelize.TEXT,
                 allowNull: false,
             },
             deleted: {

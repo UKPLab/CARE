@@ -78,7 +78,7 @@ module.exports = (sequelize, DataTypes) => {
         documentId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
         metaKey: DataTypes.STRING,
-        metaValue: DataTypes.JSONB,
+        metaValue: DataTypes.TEXT,
         deleted: DataTypes.BOOLEAN,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
