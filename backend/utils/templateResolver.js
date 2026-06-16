@@ -13,7 +13,7 @@ const {Op} = require("sequelize");
 const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
 const {resolveNlpAssessmentDraft} = require("./studyNlpDocumentData");
 const UPLOAD_PATH = `${__dirname}/../../files`;
-const TEXT_PLACEHOLDER_CHAR_CAP = 15000;
+const TEXT_PLACEHOLDER_CHAR_CAP = 150;
 
 /**
  * Extract plain text from Quill Delta operations
@@ -201,7 +201,7 @@ async function getMergedDocumentData(models, context, options = {}) {
 }
 
 /**
- * Resolve prompt-specific placeholders (type 8) from context and database.
+ * Resolve prompt-specific placeholders (type 8) from context and database. It is similar to the payload that NLP skills had built.
  *
  * @param {Object} context - Resolver context
  * @param {Object} models - DB models
@@ -211,22 +211,33 @@ async function getMergedDocumentData(models, context, options = {}) {
  */
 async function buildPromptPlaceholderValues(context, models, allow, options = {}) {
     const promptValues = {};
-    const mergedDocumentData = await getMergedDocumentData(models, context, options);
 
-    const needsStudyStep =
-        context.studyStepId &&
-        (allow("nlpAssessmentSuggestion") ||
-            allow("assessmentConfiguration") ||
-            allow("studyContext") ||
-            allow("previousAssessmentResult"));
+    // Fetch the anchor step once and derive the document/study from it when the caller supplied
+    // only a step id. This makes the step id the single required input and avoids callers (and
+    // this function) fetching the same row twice.
     let studyStep = null;
-    if (needsStudyStep) {
+    if (context.studyStepId) {
         studyStep = await models["study_step"].getById(context.studyStepId, options);
+        if (studyStep) {
+            if (context.documentId == null) {
+                context.documentId = studyStep.documentId ?? null;
+            }
+            if (context.studyId == null) {
+                context.studyId = studyStep.studyId ?? null;
+            }
+        }
     }
 
+    const mergedDocumentData = await getMergedDocumentData(models, context, options);
+
     if (allow("pdfText")) {
-        const pdfText = context.pdfText ? capText(context.pdfText) : "";
-        promptValues["~pdfText~"] = pdfText;
+        // Prefer caller-supplied text; otherwise extract it from the document on demand
+        // (loadPlainText returns "" for non file-based types, e.g. editor/modal documents).
+        let pdfText = context.pdfText;
+        if (!pdfText && context.documentId) {
+            pdfText = await models["document"].loadPlainText(context.documentId);
+        }
+        promptValues["~pdfText~"] = pdfText ? capText(pdfText) : "";
     }
 
     if (allow("editorText")) {
@@ -351,39 +362,51 @@ async function buildPromptPlaceholderValues(context, models, allow, options = {}
                 const submissionPdfTexts = context.submissionPdfTexts && typeof context.submissionPdfTexts === "object"
                     ? context.submissionPdfTexts
                     : null;
-                const textForSubmissionPdf = (pdfDocument) => {
+                // Resolve a file's text: caller-supplied map → primary-doc context.pdfText → on-demand extraction.
+                const textForSubmissionFile = async (submissionDocument) => {
                     if (submissionPdfTexts) {
                         const fromMap =
-                            submissionPdfTexts[pdfDocument.id] ??
-                            submissionPdfTexts[String(pdfDocument.id)];
+                            submissionPdfTexts[submissionDocument.id] ??
+                            submissionPdfTexts[String(submissionDocument.id)];
                         if (fromMap) {
                             return capText(fromMap);
                         }
                     }
-                    if (context.pdfText && context.documentId === pdfDocument.id) {
+                    if (context.pdfText && context.documentId === submissionDocument.id) {
                         return capText(context.pdfText);
                     }
-                    return "";
+                    const extracted = await models["document"].loadPlainText(submissionDocument.id);
+                    return extracted ? capText(extracted) : "";
                 };
 
-                const pdfFiles = pdfDocs.map((d) => ({
+                const pdfFiles = await Promise.all(pdfDocs.map(async (d) => ({
                     documentId: d.id,
                     filename: d.originalFilename || d.name || `document_${d.id}`,
-                    text: textForSubmissionPdf(d),
-                }));
+                    text: await textForSubmissionFile(d),
+                })));
 
-                const otherFiles = docs
+                const otherFiles = await Promise.all(docs
                     .filter((d) => !pdfIdSet.has(d.id))
-                    .map((d) => ({
-                        role: "attachment",
-                        documentId: d.id,
-                        filename: d.originalFilename || d.name || `document_${d.id}`,
-                        type:
-                            d.type === docTypes.DOC_TYPE_ZIP
-                                ? "zip"
-                                : (d.type === docTypes.DOC_TYPE_HTML || d.type === docTypes.DOC_TYPE_MODAL)
-                                    ? "text"
-                                    : "other",
+                    .map(async (d) => {
+                        const entry = {
+                            role: "attachment",
+                            documentId: d.id,
+                            filename: d.originalFilename || d.name || `document_${d.id}`,
+                            type:
+                                d.type === docTypes.DOC_TYPE_ZIP
+                                    ? "zip"
+                                    : (d.type === docTypes.DOC_TYPE_HTML || d.type === docTypes.DOC_TYPE_MODAL)
+                                        ? "text"
+                                        : "other",
+                        };
+                        // Surface extractable text for zip attachments (.tex entries); other types stay manifest-only.
+                        if (d.type === docTypes.DOC_TYPE_ZIP) {
+                            const extracted = await textForSubmissionFile(d);
+                            if (extracted) {
+                                entry.text = extracted;
+                            }
+                        }
+                        return entry;
                     }));
 
                 submissionFiles = {pdfFiles, otherFiles};

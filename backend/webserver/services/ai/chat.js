@@ -54,6 +54,10 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         aiCredentialId: _aiCredentialId,
         credentialId: _credentialId,
         __requestId: _requestId,
+        studyId: _studyId,
+        studySessionId: _studySessionId,
+        studyStepId: _studyStepId,
+        documentId: _documentId,
         ...completionParams
     } = data || {};
     const successStatus = logOptions.successStatus || "success";

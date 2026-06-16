@@ -186,14 +186,15 @@ export default {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Try to find the exact NLP assessment service
+      // Try to find an assessment-producing service: an NLP assessment skill or an AI hook.
       const svc =
           cfg.services.find(
               (s) =>
-                  s.skill && (
+                  (s.skill && (
                       s.name === "nlpAssessment" ||
                       s.type === "nlpRequest"
-                  )
+                  )) ||
+                  s.type === "aiHook"
           ) || cfg.services[0];
 
       return svc || null;
@@ -201,7 +202,14 @@ export default {
 
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
-      if (!svc || !svc.skill) return [];
+      if (!svc) return [];
+
+      // AI hook results are stored under `${name}_assessment` (no skill segment).
+      if (svc.type === "aiHook") {
+        return svc.name ? [`${svc.name}_assessment`] : [];
+      }
+
+      if (!svc.skill) return [];
 
       const keys = [
         svc.name && svc.skill ? `${svc.name}_${svc.skill}_assessment` : null,

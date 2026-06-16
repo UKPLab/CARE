@@ -11,13 +11,6 @@ const { resolveTemplateToDelta } = require("../../../utils/templateResolver");
 const { deltaToPlainText } = require("editor-delta-conversion");
 
 /**
- * Context keys that {@link resolveTemplateToDelta} consumes and bind with.
- *
- * @type {string[]}
- */
-const HOOK_BINDABLE_CONTEXT_KEYS = ["documentId", "studyStepId", "studySessionId", "studyId", "pdfText", "language"];
-
-/**
  * Loads an enabled, non-deleted AI hook by id.
  *
  * @param {{ server: Object }} service AIService runtime with DB access.
@@ -49,7 +42,7 @@ async function loadEnabledHook(service, hookId) {
  * @throws {Error} If no usable model/credential is configured for the hook.
  */
 async function resolveHookModelParams(service, hookId) {
-    const hookModel = await service.server.db.models.ai_hook_models.findOne({
+    const hookModel = await service.server.db.models['ai_hook_models'].findOne({
         where: { aiHookId: hookId, deleted: false },
         order: [["priority", "ASC"]],
         raw: true,
@@ -58,7 +51,7 @@ async function resolveHookModelParams(service, hookId) {
         throw new Error("AI hook has no configured model");
     }
 
-    const aiModel = await service.server.db.models.ai_model.getById(hookModel.aiModelId);
+    const aiModel = await service.server.db.models['ai_model'].getById(hookModel.aiModelId);
     if (!aiModel || aiModel.deleted) {
         throw new Error("AI hook model not found");
     }
@@ -66,7 +59,7 @@ async function resolveHookModelParams(service, hookId) {
         throw new Error("AI hook model is disabled");
     }
 
-    const credential = await service.server.db.models.ai_credential.getById(aiModel.aiCredentialId, {
+    const credential = await service.server.db.models['ai_credential'].getById(aiModel.aiCredentialId, {
         attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
@@ -93,36 +86,6 @@ async function resolveHookModelParams(service, hookId) {
 }
 
 /**
- * Builds the template-resolution context parameters from the runtime study-step data, 
- *
- * @param {{ studyId?: number, studySessionId?: number, studyStepId?: number, documentId?: number, inputs?: Object }} data Hook execution payload containing context info plus optional input specs.
- * @returns {Object} Context object accepted by {@link resolveTemplateToDelta}.
- */
-function buildHookContext(data) {
-    const context = {
-        studyId: data?.studyId,
-        studySessionId: data?.studySessionId,
-        studyStepId: data?.studyStepId,
-        documentId: data?.documentId,
-    };
-
-    const inputs = data?.inputs;
-    if (inputs && typeof inputs === "object") {
-        for (const spec of Object.values(inputs)) {
-            if (!spec || typeof spec !== "object") {
-                continue;
-            }
-            for (const key of HOOK_BINDABLE_CONTEXT_KEYS) {
-                if (spec[key] !== undefined && spec[key] !== null) {
-                    context[key] = spec[key];
-                }
-            }
-        }
-    }
-    return context;
-}
-
-/**
  * Resolves the hook's prompt template to clean plain text suitable for an LLM message.
  * Uses the Delta variant (not the HTML one) so placeholder values are not HTML-escaped.
  *
@@ -142,7 +105,7 @@ async function buildHookPrompt(service, templateId, context) {
  *
  * @param {{ logger: Object, server: Object }} service AIService runtime.
  * @param {{ userId?: number }} client Authenticated RPC client triggering the hook.
- * @param {{ hookId: number, inputs?: Object, studyId?: number, studySessionId?: number, studyStepId?: number, documentId?: number }} data Hook execution payload.
+ * @param {{ hookId: number, studyStepId?: number, studySessionId?: number }} data Hook execution payload.
  * @returns {Promise<{choices: unknown[], outputText: string}>} Provider choices plus first-choice text.
  * @throws {Error} If the hook id is invalid or any required model/credential/template is missing.
  */
@@ -154,7 +117,12 @@ async function runHook(service, client, data) {
 
     const hook = await loadEnabledHook(service, hookId);
     const modelParams = await resolveHookModelParams(service, hookId);
-    const context = buildHookContext(data);
+    // Pass only the anchor step + session; the resolver derives documentId/studyId from the step
+    // (and back-fills them onto this context object as a side effect of resolution).
+    const context = {
+        studyStepId: Number(data?.studyStepId) || null,
+        studySessionId: data?.studySessionId ?? null,
+    };
     const promptText = await buildHookPrompt(service, hook.templateId, context);
 
     const { additionalParameters, ...credentialParams } = modelParams;
@@ -163,15 +131,15 @@ async function runHook(service, client, data) {
         ...credentialParams,
         messages: [{ role: "user", content: promptText }],
         outputMode: hook.outputMode,
-        studyId: data?.studyId,
-        studySessionId: data?.studySessionId,
-        studyStepId: data?.studyStepId,
-        documentId: data?.documentId,
+        studyId: context.studyId,
+        studySessionId: context.studySessionId,
+        studyStepId: context.studyStepId,
+        documentId: context.documentId,
     };
 
     service.logger.info(
         `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
-        `aiModelId=${modelParams.aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
+        `aiModelId=${modelParams.aiModelId} studyStepId=${context.studyStepId ?? "N/A"}`
     );
 
     const result = await chat.chatCompletion(service, client, completionData);
