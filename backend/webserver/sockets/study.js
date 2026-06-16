@@ -13,7 +13,7 @@ const {getEmailContent} = require("../../utils/emailHelper");
 class StudySocket extends Socket {
     
     async hasManageStudiesPermission() {
-        const hasPermission = await this.hasAccess("frontend.dashboard.studies.closeAllStudies");
+        const hasPermission = await this.hasAccess("frontend.dashboard.studies.canManageStudies");
         if (!hasPermission) {
             throw new Error("No permission to manage studies");
         }

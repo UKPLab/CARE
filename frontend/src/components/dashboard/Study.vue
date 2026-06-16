@@ -445,7 +445,7 @@ export default {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
     canManageStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.manageStudies");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.canManageStudies");
     },
   },
   methods: {
