@@ -9,25 +9,34 @@
           :key="index"
           class="skill-item mb-3"
       >
-        <div class="skill-selection mb-2">
-          <SkillSelector
-              v-model="skill.skillName"
-          />
-        </div>
-        <!-- Input Mappings for Selected Skill -->
-        <InputMap
-            v-if="skill.skillName"
-            :skill-name="skill.skillName"
-            :study-based="true"
-            :model-value="modelValue.services[index].inputs"
-            :study-step-id="studyStepId"
-            :workflow-steps="workflowSteps"
-            :current-stepper-step="currentStepperStep"
-            :step-config="modelValue"
-            :selected-skills="selectedSkills"
-            :document-id="documentId"
-            @update:model-value="handleInputMappingUpdate(index, $event)"
+        <!-- AI hook slot -->
+        <AiHookConfig
+            v-if="modelValue.services[index] && modelValue.services[index].type === 'aiHook'"
+            :model-value="modelValue.services[index]"
+            @update:model-value="handleHookConfigUpdate(index, $event)"
         />
+        <!-- NLP skill slot -->
+        <template v-else>
+          <div class="skill-selection mb-2">
+            <SkillSelector
+                v-model="skill.skillName"
+            />
+          </div>
+          <!-- Input Mappings for Selected Skill -->
+          <InputMap
+              v-if="skill.skillName"
+              :skill-name="skill.skillName"
+              :study-based="true"
+              :model-value="modelValue.services[index].inputs"
+              :study-step-id="studyStepId"
+              :workflow-steps="workflowSteps"
+              :current-stepper-step="currentStepperStep"
+              :step-config="modelValue"
+              :selected-skills="selectedSkills"
+              :document-id="documentId"
+              @update:model-value="handleInputMappingUpdate(index, $event)"
+          />
+        </template>
       </div>
     </div>
 
@@ -43,6 +52,7 @@
 <script>
 import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
+import AiHookConfig from "@/basic/modal/skills/AiHookConfig.vue";
 
 /**
  * ServicesStep Component
@@ -55,6 +65,7 @@ export default {
   components: {
     SkillSelector,
     InputMap,
+    AiHookConfig,
   },
   inject: {
     studyStepId: {
@@ -116,14 +127,18 @@ export default {
       );
     },
     isValid() {
-      // In template mode, allow null/empty input mappings
-      if (this.isTemplateMode) {
-        return this.selectedSkills?.every(skill => skill.skillName !== "");
-      }
-      // In normal mode, require all input mappings to be filled
-      return this.selectedSkills?.every(skill => {
+      return this.selectedSkills?.every((skill, index) => {
+        const service = this.modelValue.services[index];
+        // AI hook slot: only requires a chosen hook (lenient in template mode).
+        if (service && service.type === "aiHook") {
+          return  !!service.hookId;
+        }
+        // NLP skill slot: in template mode only a skill is required.
+        if (this.isTemplateMode) {
+          return skill.skillName !== "";
+        }
+        // In normal mode, require all input mappings to be filled.
         if (!skill.skillName) return false;
-        // Check if all inputs have valid mappings
         const inputs = this.getSkillInputs(skill.skillName);
         return inputs.every(input => {
           const mapping = skill.dataInput?.[input];
@@ -221,14 +236,48 @@ export default {
       updatedSkills[skillIndex].dataInput = dataInput;
       updatedSkills[skillIndex].dataOutput = dataOutput;
       
-      // Emit the properly formatted data for the parent
-      const updatedFormData = updatedSkills.map((skill, index) => ({
-        name: this.modelValue.services[index]?.name || "",
-        type: this.modelValue.services[index]?.type || "",
-        skill: skill.skillName,
-        inputs: skill.dataInput,
-        outputs: skill.dataOutput,
-      }));
+      // Emit the properly formatted data for the parent, preserving AI hook slots untouched.
+      const updatedFormData = updatedSkills.map((skill, index) => {
+        const service = this.modelValue.services[index];
+        if (service && service.type === "aiHook") {
+          return service;
+        }
+        return {
+          name: service?.name || "",
+          type: service?.type || "",
+          skill: skill.skillName,
+          inputs: skill.dataInput,
+          outputs: skill.dataOutput,
+        };
+      });
+      this.$emit("update:form-data", updatedFormData);
+    },
+
+    /**
+     * Replaces the AI hook slot at the given index with its updated configuration, keeping all
+     * other slots (skills and other hooks) intact, then emits the full services array.
+     *
+     * @param {number} index Index of the AI hook slot within the services array.
+     * @param {Object} service Updated AI hook service object emitted by AiHookConfig.
+     * @returns {void}
+     */
+    handleHookConfigUpdate(index, service) {
+      const updatedFormData = this.selectedSkills.map((skill, i) => {
+        if (i === index) {
+          return service;
+        }
+        const existing = this.modelValue.services[i];
+        if (existing && existing.type === "aiHook") {
+          return existing;
+        }
+        return {
+          name: existing?.name || "",
+          type: existing?.type || "",
+          skill: skill.skillName,
+          inputs: skill.dataInput,
+          outputs: skill.dataOutput,
+        };
+      });
       this.$emit("update:form-data", updatedFormData);
     },
 
