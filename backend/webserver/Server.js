@@ -20,6 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/generic");
+const { initializeEncryptionKey } = require("../utils/encryption");
 
 /**
  * Defines Express Webserver of Content Server
@@ -121,7 +122,7 @@ module.exports = class Server {
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
         this.#discoverComponents("./services", Service, this.addService.bind(this));
-
+        initializeEncryptionKey();
         // Graceful shutdown: flush all stats buffers on kill signals
         const handleShutdown = async (signal) => {
             try {

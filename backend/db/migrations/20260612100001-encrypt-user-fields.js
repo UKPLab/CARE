@@ -8,11 +8,12 @@
  * Skips rows where the field already appears encrypted (safe to re-run).
  */
 
-const { encrypt, isEncrypted } = require('../../utils/encryption');
+const { encrypt, getKey, initializeEncryptionKey } = require('../../utils/encryption');
 
 module.exports = {
     async up(queryInterface) {
-        const encryptionKey = process.env.DB_ENCRYPTION_KEY;
+        initializeEncryptionKey();
+        const encryptionKey = getKey();
         if (!encryptionKey) {
             throw new Error(
                 'DB_ENCRYPTION_KEY must be set before running the user encryption data migration'

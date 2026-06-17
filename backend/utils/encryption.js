@@ -15,10 +15,14 @@
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
+const PROJECT_ROOT = path.resolve(__dirname, "../");
+const KEY_FILE = path.join(PROJECT_ROOT, "encryption.key");
 // Minimum byte length of a valid encrypted buffer: IV + authTag + 1 byte ciphertext
 const MIN_ENCRYPTED_LENGTH = IV_LENGTH + AUTH_TAG_LENGTH + 1;
 
@@ -27,23 +31,31 @@ const MIN_ENCRYPTED_LENGTH = IV_LENGTH + AUTH_TAG_LENGTH + 1;
  * @returns {Buffer} 32-byte key
  */
 function getKey() {
-    const raw = process.env.DB_ENCRYPTION_KEY ;
-    if (!raw) {
+    const keyFilePath = KEY_FILE;
+
+    if (!fs.existsSync(keyFilePath)) {
         throw new Error(
-            'DB_ENCRYPTION_KEY must be set in .env. ' +
-            'Generate one with: openssl rand -base64 32'
+            `Encryption key file not found: ${keyFilePath}. ` +
+            "Start the server once to generate it."
         );
     }
-    const key = Buffer.from(raw, 'base64');
+
+    const raw = fs.readFileSync(keyFilePath, "utf8").trim();
+
+    if (!raw) {
+        throw new Error("Encryption key file is empty.");
+    }
+
+    const key = Buffer.from(raw, "hex");
+
     if (key.length !== 32) {
         throw new Error(
-            `DB_ENCRYPTION_KEY must decode to exactly 32 bytes (got ${key.length}). ` +
-            'Generate a valid key with: openssl rand -base64 32'
+            `Encryption key must decode to exactly 32 bytes (got ${key.length}).`
         );
     }
+
     return key;
 }
-
 /**
  * Encrypt a plaintext string with AES-256-GCM.
  * Each call uses a fresh random IV so the same plaintext produces different ciphertext.
@@ -107,20 +119,24 @@ function decrypt(value) {
     }
 }
 
-/**
- * Returns true if the value looks like it was produced by encrypt().
- * Useful in migration scripts to skip rows that are already encrypted.
- *
- * @param {string|null|undefined} value
- * @returns {boolean}
- */
-function isEncrypted(value) {
-    if (!value || typeof value !== 'string') return false;
-    try {
-        return Buffer.from(value, 'base64').length >= MIN_ENCRYPTED_LENGTH;
-    } catch {
-        return false;
-    }
+function initializeEncryptionKey() {
+  const keyFile = KEY_FILE;
+
+  if (fs.existsSync(keyFile)) {
+    const key = fs.readFileSync(keyFile, "utf8").trim();
+    console.log("Using existing encryption key");
+    return key;
+  }
+
+  const key = crypto.randomBytes(32).toString("hex");
+
+  fs.writeFileSync(keyFile, key, {
+    encoding: "utf8",
+    mode: 0o600, // owner read/write only
+  });
+
+  console.log("Generated new encryption key");
+  return key;
 }
 
-module.exports = { encrypt, decrypt, isEncrypted };
+module.exports = { encrypt, decrypt, initializeEncryptionKey, getKey };
