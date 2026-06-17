@@ -1,6 +1,6 @@
 <template>
   <StepperModal
-    ref="bulkCloseModal"
+    ref="manageStudiesModal"
     :steps="steps"
     :validation="stepValid"
     size="xl"
@@ -205,8 +205,7 @@ export default {
       const allStudies = this.$store.getters["table/study/getFiltered"](
           (study) =>
             study.projectId === this.projectId &&
-            !study.template &&
-            !study.deleted
+            !study.template
       );
       
       // Filter based on selected mode
@@ -325,7 +324,7 @@ export default {
       this.selectedStudies = [];
       this.workflowFilter = "all";
       this.notificationSettings = { notifySessions: false };
-      this.$refs.bulkCloseModal.open();
+      this.$refs.manageStudiesModal.open();
     },
     handleSubmit() {
       if (this.selectedMode.mode === 'bulkClose') {
@@ -333,7 +332,7 @@ export default {
       } else if (this.selectedMode.mode === 'bulkOpen') {
         this.openMatchingStudies();
       } else if (this.selectedMode.mode === 'bulkDelete') {
-        this.$refs.bulkCloseModal.close();
+        this.$refs.manageStudiesModal.close();
          this.$refs.deleteConf.open(
           "Delete Studies",
           "",
@@ -341,6 +340,9 @@ export default {
           (confirmed) => {
             if (confirmed) {
               this.deleteMatchingStudies();
+            }
+            else{
+              this.$refs.manageStudiesModal.open();
             }
           }
         );
@@ -361,12 +363,12 @@ export default {
           .filter((n) => Number.isFinite(n));
       const data = {
         notifySessions: this.notificationSettings.notifySessions,
-        progressId: this.$refs.bulkCloseModal.getProgressId(),
+        progressId: this.$refs.manageStudiesModal.getProgressId(),
         studyIds: ids,
       };
-      this.$refs.bulkCloseModal.startProgress();
+      this.$refs.manageStudiesModal.startProgress();
       this.$socket.emit("studyCloseBulk", data, (res) => {
-        this.$refs.bulkCloseModal.stopProgress();
+        this.$refs.manageStudiesModal.stopProgress();
         this.operationInProgress = false;
         if (res.success) {
           const closed = res.data?.closedCount ?? 0;
@@ -378,7 +380,7 @@ export default {
                 : "No studies were updated (they may already be closed).",
             variant: closed > 0 ? "success" : "info",
           });
-          this.$refs.bulkCloseModal.close();
+          this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
             title: "Bulk close failed",
@@ -403,12 +405,12 @@ export default {
           .filter((n) => Number.isFinite(n));
       const data = {
         notifySessions: this.notificationSettings.notifySessions,
-        progressId: this.$refs.bulkCloseModal.getProgressId(),
+        progressId: this.$refs.manageStudiesModal.getProgressId(),
         studyIds: ids,
       };
-      this.$refs.bulkCloseModal.startProgress();
+      this.$refs.manageStudiesModal.startProgress();
       this.$socket.emit("studyOpenBulk", data, (res) => {
-        this.$refs.bulkCloseModal.stopProgress();
+        this.$refs.manageStudiesModal.stopProgress();
         if (res.success) {
           const opened = res.data?.openedCount ?? 0;
           this.eventBus.emit("toast", {
@@ -419,7 +421,7 @@ export default {
                 : "No studies were updated.",
             variant: opened > 0 ? "success" : "info",
           });
-          this.$refs.bulkCloseModal.close();
+          this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
             title: "Bulk open failed",
@@ -444,12 +446,12 @@ export default {
           .map((s) => Number(s.id))
           .filter((n) => Number.isFinite(n));
       const data = {
-        progressId: this.$refs.bulkCloseModal.getProgressId(),
+        progressId: this.$refs.manageStudiesModal.getProgressId(),
         studyIds: ids,
       };
-      this.$refs.bulkCloseModal.startProgress();
+      this.$refs.manageStudiesModal.startProgress();
       this.$socket.emit("studyDeleteBulk", data, (res) => {
-        this.$refs.bulkCloseModal.stopProgress();
+        this.$refs.manageStudiesModal.stopProgress();
         if (res.success) {
           const deleted = res.data?.deletedCount ?? 0;
           this.eventBus.emit("toast", {
@@ -460,7 +462,7 @@ export default {
                 : "No studies were deleted.",
             variant: deleted > 0 ? "success" : "info",
           });
-          this.$refs.bulkCloseModal.close();
+          this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
             title: "Bulk delete failed",
