@@ -277,7 +277,8 @@
         "failedToImport": "Failed to import settings",
         "noAccessPermission": "You do not have permission to access settings.",
         "noSavePermission": "You do not have permission to save settings.",
-        "noTestMailPermission": "You do not have permission to send test mail."
+        "noTestMailPermission": "You do not have permission to send test mail.",
+        "cannotOverrideSystemSetting": "The setting \"{key}\" is a system setting and cannot be changed as a user preference."
     },
     "users": {
         "errorFetchingUsers": "Error fetching users",

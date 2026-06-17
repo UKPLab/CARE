@@ -441,10 +441,12 @@ class AppSocket extends Socket {
         // Admin can set settings for other users (single or bulk)
         if (Array.isArray(data.userIds) && data.userIds.length > 0 && await this.isAdmin()) {
             for (const uid of data.userIds) {
-                await this.models["user_setting"].set(key, value, uid);
+                // Admin may assign any key; skip allowUserOverride guard in user_setting hooks
+                await this.models["user_setting"].set(key, value, uid, { bypassSystemSettingCheck: true });
             }
         } else if (data.userId && await this.isAdmin()) {
-            await this.models["user_setting"].set(key, value, data.userId);
+            // Admin may assign any key; skip allowUserOverride guard in user_setting hooks
+            await this.models["user_setting"].set(key, value, data.userId, { bypassSystemSettingCheck: true });
         } else {
             // Default: set for current user and refresh their settings
             console.log(`Setting ${key} for user ${this.userId} to ${value}`);
