@@ -8,12 +8,14 @@ files/*.zip
 
 # database dumps
 db_dumps/
+backups/
 
 # backend
 backend/sessions
 backend/node_modules
 backend/logs
 backend/coverage
+backend/encryption.key
 
 # ignore build files
 dist/

@@ -28,6 +28,7 @@ help:
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
+	@echo "make backup CONTAINER=<name/id>      Create full backup (DB dump + .env + encryptionkey + files)"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
@@ -151,6 +152,19 @@ ifeq ($(OS),Windows_NT)
 else
 	@cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
 endif
+
+.PHONY: backup
+backup: backup_db
+	@echo "Creating full backup archive"
+	mkdir -p backups
+	@LATEST_DUMP=$$(ls -t db_dumps/*.sql | head -n 1); \
+	TIMESTAMP=$$(date +%d-%m-%Y_%H_%M_%S); \
+	tar -czf "backups/backup_$$TIMESTAMP.tar.gz" \
+		"$$LATEST_DUMP" \
+		.env \
+		backend/encryption.key \
+		files; \
+	echo "Backup created: backups/backup_$$TIMESTAMP.tar.gz"
 
 # Internal target: zip document files from a live DB. Requires DB and FILEZIP to be set.
 .PHONY: _export_document_files
