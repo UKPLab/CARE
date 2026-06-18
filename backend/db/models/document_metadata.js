@@ -61,6 +61,42 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
+        /**
+         * Duplicate active metadata rows from one document to another.
+         *
+         * @param {number} originalDocumentId
+         * @param {number} targetDocumentId
+         * @param {Object} [options={}]
+         * @returns {Promise<Object[]>}
+         */
+        static async duplicateDocumentMetadata(originalDocumentId, targetDocumentId, options = {}) {
+            const metadataRows = await this.findAll({
+                where: {
+                    documentId: originalDocumentId,
+                    deleted: false,
+                },
+                raw: true,
+                transaction: options.transaction,
+            });
+
+            const duplicatedRows = [];
+
+            for (const metadataRow of metadataRows) {
+                const duplicatedRow = await this.upsertByDocumentAndKey({
+                    documentId: targetDocumentId,
+                    userId: metadataRow.userId,
+                    metaKey: metadataRow.metaKey,
+                    metaValue: metadataRow.metaValue,
+                    deleted: false,
+                    deletedAt: null,
+                }, options);
+
+                duplicatedRows.push(duplicatedRow);
+            }
+
+            return duplicatedRows;
+        }
+
         static associate(models) {
             DocumentMetadata.belongsTo(models["document"], {
                 foreignKey: "documentId",
