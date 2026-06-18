@@ -5,7 +5,7 @@
  * enforcing credential ownership, and recording `ai_log` rows via the budget module.
  *
  * @module webserver/services/ai/chat
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohamed Rawhani
  */
 
 const {randomUUID} = require("crypto");

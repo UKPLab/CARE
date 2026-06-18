@@ -4,6 +4,7 @@
  * AIService helpers for executing an AI hook
  *
  * @module webserver/services/ai/hook
+ * @author Mohammed Rawhani
  */
 
 const chat = require("./chat");

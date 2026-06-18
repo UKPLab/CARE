@@ -11,7 +11,7 @@ const hook = require("./hook");
  * Implementation is split under `./ai/` (`helpers`, `runtime`, `chat`, `share`).
  *
  * @extends Service
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohamed Rawhani
  */
 module.exports = class AIService extends Service {
     /**

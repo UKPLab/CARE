@@ -4,7 +4,7 @@
  * Handlers backing AI model-sharing flows (ownership checks, hydrate UI selectors, transactional writes).
  *
  * @module webserver/services/ai/share
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohamed Rawhani
  */
 
 const {Op} = require("sequelize");
