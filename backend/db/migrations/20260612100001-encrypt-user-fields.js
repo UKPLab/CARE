@@ -12,6 +12,10 @@ const { encrypt, getKey, initializeEncryptionKey, decrypt } = require('../../uti
 
 module.exports = {
     async up(queryInterface) {
+        const isEncryptionEnabled = process.env.ENCRYPTION_ENABLED === 'true';
+        if (!isEncryptionEnabled) {
+            return;
+        }
         initializeEncryptionKey();
         const encryptionKey = getKey();
         if (!encryptionKey) {
@@ -85,7 +89,11 @@ module.exports = {
     },
 
     async down(queryInterface) {
-initializeEncryptionKey();
+        const isEncryptionEnabled = process.env.ENCRYPTION_ENABLED === 'true';
+        if (!isEncryptionEnabled) {
+            return;
+        }
+        initializeEncryptionKey();
         const encryptionKey = getKey();
         if (!encryptionKey) {
             throw new Error(

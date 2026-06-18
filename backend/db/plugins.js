@@ -31,6 +31,8 @@ function addHook(hooks, hookName, fn) {
  * @param {Object} options - The model options passed to Model.init()
  */
 function addEncryptionHooks(options) {
+    const isEncryptionEnabled = process.env.ENCRYPTION_ENABLED === 'true';
+    if (!isEncryptionEnabled) return; // skip adding hooks if encryption is disabled
     const fields = options.encryptedFields;
     if (!fields || !Array.isArray(fields) || fields.length === 0) return;
 
