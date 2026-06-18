@@ -905,6 +905,29 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Validate target metadata keys before adding system-generated provenance rows.
+     *
+     * @param {Object[]} mappings
+     */
+    validateMetadataMappings(mappings = []) {
+        const reservedSuffixes = [".sourceFile", ".sourceField"];
+        const metaKeys = mappings.map((mapping) => mapping.metaKey);
+
+        if (new Set(metaKeys).size !== metaKeys.length) {
+            throw new Error("Target metaKeys must be unique.");
+        }
+
+        const reservedMetaKeys = metaKeys.filter((metaKey) => (
+            reservedSuffixes.some((suffix) => metaKey.endsWith(suffix))
+        ));
+        if (reservedMetaKeys.length > 0) {
+            throw new Error(
+                `Target metaKeys cannot end with reserved provenance suffixes: ${reservedMetaKeys.join(", ")}`
+            );
+        }
+    }
+
+    /**
      * Normalize the primary key mapping into a canonical backend shape.
      *
      * @param {Object} primaryKeyMapping
@@ -1003,6 +1026,7 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * TODO: Need to break down this method
      * Build a generic metadata import plan for one assignment target.
      *
      * @param {Object} data
@@ -1043,6 +1067,7 @@ class DocumentSocket extends Socket {
         if (mappings.length === 0) {
             throw new Error("At least one metadata mapping is required.");
         }
+        this.validateMetadataMappings(mappings);
 
         const submissions = await this.models["submission"].findAll({
             where: {
