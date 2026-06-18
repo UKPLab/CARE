@@ -115,45 +115,6 @@ module.exports = (sequelize, DataTypes) => {
             return duplicatedSession;
         }
 
-        /**
-         * Materialize per-session AI budget rows for a newly created session.
-         * Finds ai_model_share rows on the parent study marked as per-session
-         * finds (applyPerSession=true) and clones each into a session-scoped
-         * row tied to this session id. 
-         *
-         * @param {Object} studySession - The new session instance id.
-         * @param {Object} options - Sequelize options bundle.
-         */
-        static async materializeAiBudgets(studySession, options) {
-            const Shares = sequelize.models.ai_model_share;
-            const templates = await Shares.findAll({
-                where: {
-                    studyId: studySession.studyId,
-                    studySessionId: null,
-                    applyPerSession: true,
-                    deleted: false,
-                },
-                transaction: options.transaction,
-                raw: true,
-            });
-            if (templates.length === 0) return;
-
-            const rows = templates.map((template) => ({
-                aiModelId: template.aiModelId,
-                userId: null,
-                roleId: null,
-                studyId: studySession.studyId,
-                studySessionId: studySession.id,
-                costLimit: template.costLimit,
-                notifyThreshold: template.notifyThreshold,
-                expiryDate: template.expiryDate,
-                applyPerSession: false,
-                enabled: true,
-                deleted: false,
-            }));
-            await Shares.bulkCreate(rows, { transaction: options.transaction });
-        }
-
         static associate(models) {
             // define association here
             StudySession.belongsTo(models["study"], {
@@ -205,11 +166,6 @@ module.exports = (sequelize, DataTypes) => {
                 studySession.numberSteps = 1;
                 studySession.studyStepIdMax = firstStep.id
 
-            },
-            afterCreate: async (studySession, options) => {
-                // Clone any per-session AI budget templates from the parent study
-                // into session-scoped rows tied to this session.
-                await StudySession.materializeAiBudgets(studySession, options);
             },
             beforeUpdate: async (studySession, options) => {
                 // Check if study step changed

@@ -193,37 +193,13 @@ module.exports = (sequelize, DataTypes) => {
             help: "Specify whether participants can submit their study multiple times.",
             advanced: true
         }, {
-            key: "aiModelId",
-            label: "AI Model (optional):",
-            type: "select",
-            options: {
-                table: "ai_model",
-                name: "name",
-                value: "id",
-                filter: [
-                    {key: "enabled", value: true},
-                    {key: "deleted", value: false},
-                ]
-            },
-            icon: "robot",
-            required: false,
-            advanced: true,
-            help: "Enable AI features for this study by selecting a model. Leave empty to disable AI in this study."
-        }, {
-            key: "aiCostLimitPerUser",
-            label: "AI cost limit per participant ($):",
+            key: "aiCostLimit",
+            label: "AI cost limit ($):",
             type: "number",
             required: false,
             default: null,
             advanced: true,
-            help: "Maximum AI spend per participant. Leave empty for no cap."
-        }, {
-            key: "aiApplyPerSession",
-            label: "Reset AI budget each session?",
-            type: "switch",
-            default: false,
-            advanced: true,
-            help: "ON: each session gets a fresh cap. OFF: the cap spans all sessions for the same participant in this study."
+            help: "Maximum total AI spend across all participants for this study. Leave empty for no cap."
         },];
 
         /**
@@ -370,69 +346,6 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Create the AI budget share row for this study from the coordinator
-         * payload. No-op if the form did not supply aiModelId + costLimit.
-         * Validates the creator has access to the chosen model before writing.
-         *
-         * @param {Object} study - Newly created study instance.
-         * @param {Object} options - Sequelize options bundle (transaction + context).
-         */
-        static async createAiBudgetShare(study, options) {
-            const ctx = options.context || {};
-            const aiModelId = Number(ctx.aiModelId);
-            const costLimit = Number(ctx.aiCostLimitPerUser);
-            const hasInput =
-                Number.isInteger(aiModelId) && aiModelId > 0 &&
-                Number.isFinite(costLimit) && costLimit > 0;
-            if (!hasInput) return;
-
-            const applyPerSession =
-                ctx.aiApplyPerSession === true || ctx.aiApplyPerSession === "true";
-
-            // Validate the creator has access to the chosen model
-            // (owner OR active user-scoped share). Prevents arbitrary model
-            // ids from arriving via socket.
-            const model = await sequelize.models.ai_model.findByPk(aiModelId, {
-                transaction: options.transaction,
-                raw: true,
-            });
-            if (!model || model.deleted) {
-                throw new Error("Selected AI model does not exist");
-            }
-            if (model.userId !== study.userId) {
-                const ownerShare = await sequelize.models.ai_model_share.findOne({
-                    where: {
-                        aiModelId,
-                        userId: study.userId,
-                        studyId: null,
-                        studySessionId: null,
-                        deleted: false,
-                    },
-                    transaction: options.transaction,
-                });
-                if (!ownerShare) {
-                    throw new Error("You do not have access to the selected AI model");
-                }
-            }
-
-            // expiryDate is NOT NULL — use study.end if set, otherwise +1y.
-            const fallbackExpiry = new Date();
-            fallbackExpiry.setFullYear(fallbackExpiry.getFullYear() + 1);
-
-            await sequelize.models.ai_model_share.create({
-                aiModelId,
-                userId: null,
-                roleId: null,
-                studyId: study.id,
-                studySessionId: null,
-                costLimit,
-                applyPerSession,
-                expiryDate: study.end || fallbackExpiry,
-                deleted: false,
-            }, {transaction: options.transaction});
-        }
-
-        /**
          * Handle possible configuration from study steps
          * @param {Object} study
          * @param {Object} transaction
@@ -509,6 +422,8 @@ module.exports = (sequelize, DataTypes) => {
         projectId: DataTypes.INTEGER,
         anonymize: DataTypes.BOOLEAN,
         enableEmailNotifications: DataTypes.BOOLEAN,
+        aiCostLimit: DataTypes.FLOAT,
+        aiResetAt: DataTypes.DATE,
         parentStudyId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -531,7 +446,6 @@ module.exports = (sequelize, DataTypes) => {
                 }
 
                 await Study.createStudySteps(study, options);
-                await Study.createAiBudgetShare(study, options);
             },
             beforeUpdate: async (study, options) => {
                 // Keep close metadata in model layer to avoid transport-specific logic.

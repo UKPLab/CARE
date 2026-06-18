@@ -51,6 +51,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         : randomUUID();
     const {
         aiModelId: _aiModelId,
+        aiHookId: _aiHookId,
         aiCredentialId: _aiCredentialId,
         credentialId: _credentialId,
         __requestId: _requestId,
@@ -64,6 +65,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
     const guard = await budget.beginRequest(service, {
         userId: client?.userId,
         aiModelId,
+        aiHookId: data?.aiHookId,
         requestId,
         input: helpers.extractInputText(data?.messages),
         studyId: data?.studyId,

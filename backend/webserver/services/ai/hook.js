@@ -164,6 +164,7 @@ async function runHook(service, client, data) {
     const completionData = {
         ...additionalParameters,
         ...credentialParams,
+        aiHookId: hookId,
         messages: [{ role: "user", content: promptText }],
         outputMode: hook.outputMode,
         studyId: data?.studyId,

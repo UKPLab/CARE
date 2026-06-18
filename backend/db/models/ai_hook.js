@@ -54,6 +54,14 @@ module.exports = (sequelize, DataTypes) => {
                 required: true,
                 default: AI_HOOK_OUTPUT_MODES.TEXT,
             },
+            {
+                key: "costLimit",
+                label: "Cost limit ($)",
+                type: "number",
+                required: false,
+                default: null,
+                help: "Global cap across all invocations of this hook. Leave empty for no cap.",
+            },
         ];
 
         static validateOutputMode(aiHook) {
@@ -81,6 +89,8 @@ module.exports = (sequelize, DataTypes) => {
         templateId: DataTypes.INTEGER,
         outputMode: DataTypes.INTEGER,
         enabled: DataTypes.BOOLEAN,
+        costLimit: DataTypes.FLOAT,
+        resetAt: DataTypes.DATE,
         deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

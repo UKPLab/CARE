@@ -628,14 +628,7 @@ async function resetShareBudget(service, client, data) {
 
     const model = await service.server.db.models.ai_model.findByPk(share.aiModelId, {raw: true});
     const isModelOwner = model && Number(model.userId) === Number(userId);
-
-    let isStudyOwner = false;
-    if (!isModelOwner && share.studyId) {
-        const study = await service.server.db.models.study.findByPk(share.studyId, {raw: true});
-        isStudyOwner = study && Number(study.userId) === Number(userId);
-    }
-
-    if (!isModelOwner && !isStudyOwner) {
+    if (!isModelOwner) {
         throw new Error("You do not have permission to reset this share's budget");
     }
 
@@ -650,27 +643,30 @@ async function resetModelBudget(service, client, data) {
     return {ok: true};
 }
 
-async function getStudyAiBudget(service, client, data) {
-    helpers.requireClientUserId(client);
-    const empty = {aiModelId: null, aiCostLimitPerUser: null, aiApplyPerSession: false, aiShareId: null, aiResetAt: null};
+async function resetHookBudget(service, client, data) {
+    const ownerUserId = helpers.requireClientUserId(client);
+    await assertResourceOwnership(service.server, ownerUserId, SHARE_RESOURCES.hook, {aiHookId: data?.aiHookId ?? data?.hookId});
+    await budget.resetHookBudget(service, {hookId: data?.aiHookId ?? data?.hookId});
+    return {ok: true};
+}
 
+async function resetStudyBudget(service, client, data) {
+    const userId = helpers.requireClientUserId(client);
     const studyId = Number(data?.studyId);
-    if (!Number.isInteger(studyId) || studyId <= 0) return empty;
+    if (!Number.isInteger(studyId) || studyId <= 0) {
+        throw new Error("Missing or invalid studyId");
+    }
 
-    const share = await service.server.db.models.ai_model_share.findOne({
-        where: {studyId, studySessionId: null, deleted: false},
-        attributes: ["id", "aiModelId", "costLimit", "applyPerSession", "resetAt"],
-        raw: true,
-    });
-    if (!share) return empty;
+    const study = await service.server.db.models.study.findByPk(studyId, {raw: true});
+    if (!study || study.deleted) {
+        throw new Error("Study not found");
+    }
+    if (Number(study.userId) !== Number(userId)) {
+        throw new Error("Only study owners can reset this budget");
+    }
 
-    return {
-        aiModelId: share.aiModelId,
-        aiCostLimitPerUser: share.costLimit,
-        aiApplyPerSession: !!share.applyPerSession,
-        aiShareId: share.id,
-        aiResetAt: share.resetAt ?? null,
-    };
+    await budget.resetStudyBudget(service, {studyId});
+    return {ok: true};
 }
 
 module.exports = {
@@ -686,5 +682,6 @@ module.exports = {
     getAiHookDisplaySummaries,
     resetShareBudget,
     resetModelBudget,
-    getStudyAiBudget,
+    resetHookBudget,
+    resetStudyBudget,
 };

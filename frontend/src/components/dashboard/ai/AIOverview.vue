@@ -52,28 +52,6 @@
             :options="shareTableOptions"
             :max-table-height="300"
           />
-          <ul v-if="resourceType === 'model' && meta.shareRecipients.length" class="list-unstyled small mt-2 mb-0">
-            <li
-              v-for="recipient in meta.shareRecipients"
-              :key="recipient.id"
-              class="d-flex align-items-center justify-content-between py-1 border-bottom"
-            >
-              <span>
-                {{ recipient.recipientLabel || "—" }}
-                <span v-if="recipient.costLimit != null" class="text-muted ms-2">(cap ${{ Number(recipient.costLimit).toFixed(2) }})</span>
-                <span class="text-muted ms-2">· reset {{ recipient.resetAt ? formatDateTime(recipient.resetAt) : "never" }}</span>
-              </span>
-              <button
-                class="btn btn-sm btn-outline-warning"
-                type="button"
-                title="Reset budget window for this share"
-                :disabled="resettingId === recipient.id"
-                @click="onResetShare(recipient)"
-              >
-                <i class="bi bi-arrow-counterclockwise" />
-              </button>
-            </li>
-          </ul>
         </template>
       </template>
     </template>
@@ -85,7 +63,6 @@
       />
     </template>
   </BasicModal>
-  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
@@ -98,7 +75,6 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 const RESOURCE_CONFIGS = {
   model: {
@@ -150,7 +126,7 @@ const RESOURCE_CONFIGS = {
 
 export default {
   name: "AIOverview",
-  components: { BasicModal, BasicButton, BasicTable, ConfirmModal },
+  components: { BasicModal, BasicButton, BasicTable },
   props: {
     resourceType: {
       type: String,
@@ -164,7 +140,6 @@ export default {
       row: null,
       meta: null,
       loadError: null,
-      resettingId: null,
       shareTableOptions: {
         striped: true,
         hover: true,
@@ -235,26 +210,6 @@ export default {
           else reject(new Error(result?.message || "Request failed"));
         });
       });
-    },
-    onResetShare(recipient) {
-      this.$refs.confirmModal.open(
-        "Reset Share Budget",
-        `Reset the budget window for ${recipient.recipientLabel || "this recipient"}?`,
-        "",
-        async (confirmed) => {
-          if (!confirmed) return;
-          this.resettingId = recipient.id;
-          try {
-            await this.emitAi("resetShareBudget", { shareId: recipient.id });
-            this.eventBus.emit("toast", { title: "Success", message: "Share budget reset", variant: "success" });
-            this.meta = await this.emitAi(this.config.command, { [this.config.idKey]: this.row.id });
-          } catch (error) {
-            this.eventBus.emit("toast", { title: "Error", message: error.message || "Reset failed", variant: "danger" });
-          } finally {
-            this.resettingId = null;
-          }
-        }
-      );
     },
     async open(row) {
       if (!row?.id) {

@@ -32,28 +32,12 @@
           @click="copyURL"
       >Copy Link
       </button>
-      <span
-          v-if="!isSuccess && currentAiShareId"
-          class="d-inline-flex align-items-center gap-2"
-      >
-        <small class="text-muted"> {{ currentAiResetLabel ? `last reset: ${currentAiResetLabel}` : '' }}</small>
-        <button
-            class="btn btn-warning"
-            type="button"
-            title="Reset the usage counter for this study's AI budget"
-            @click="onResetAiBudget"
-        >
-          <i class="bi bi-arrow-counterclockwise me-1" />Reset AI Budget
-        </button>
-      </span>
     </template>
   </BasicCoordinator>
-  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * StudyCoordinator - coordinator to add or edit studies
@@ -63,8 +47,8 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "CoordinatorStudy",
-  subscribeTable: ['document', 'tag_set', 'ai_model'],
-  components: {BasicCoordinator, ConfirmModal},
+  subscribeTable: ['document', 'tag_set'],
+  components: {BasicCoordinator},
   data() {
     return {
       studyId: 0,
@@ -72,8 +56,6 @@ export default {
       isSuccess: false,
       isTemplateMode: false,
       isUsingTemplate: false,
-      currentAiShareId: null,
-      currentAiResetAt: null,
     }
   },
   computed: {
@@ -91,14 +73,9 @@ export default {
       const suffix = this.isTemplateMode ? 'Template' : 'Study';
       return `${prefix} ${suffix}`;
     },
-    currentAiResetLabel() {
-      if (!this.currentAiResetAt) return null;
-      const date = new Date(this.currentAiResetAt);
-      return Number.isNaN(date.getTime()) ? null : date.toLocaleString();
-    },
   },
   methods: {
-    async open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
+    open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
       if (documentId !== null) {
         this.documentId = documentId;
       }
@@ -107,47 +84,16 @@ export default {
       this.isTemplateMode = templateMode;
       this.isUsingTemplate = copy && studyId !== 0;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
-      this.currentAiShareId = null;
-      this.currentAiResetAt = null;
 
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
 
-      // The ai_model_share row is not synced to the store, so fetch this
-      // study's AI budget on open and inject it into the form fields.
-      let aiOverrides = {};
-      if (studyId !== 0) {
-        try {
-          aiOverrides = await this.fetchAiBudget(studyId);
-          this.currentAiShareId = aiOverrides?.aiShareId || null;
-          this.currentAiResetAt = aiOverrides?.aiResetAt || null;
-        } catch (_error) {
-          // Leave AI fields at their defaults if the lookup fails.
-        }
-      }
-
       this.$refs.coordinator.open(
           studyId,
           {documentId: this.documentId, isTemplateMode: templateMode},
-          copy,
-          aiOverrides
+          copy
       );
-    },
-    fetchAiBudget(studyId) {
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("serviceCommand", {
-          service: "AIService",
-          command: "getStudyAiBudget",
-          data: {studyId},
-        }, (result) => {
-          if (result?.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(result?.message || "Failed to load AI budget"));
-          }
-        });
-      });
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
@@ -203,30 +149,6 @@ export default {
         });
       }
     },
-    onResetAiBudget() {
-      const shareId = this.currentAiShareId;
-      if (!shareId) return;
-      this.$refs.confirmModal.open(
-        "Reset AI Budget",
-        "Reset the AI budget window for this study? Usage counters are cleared; the configured limit is kept.",
-        "",
-        (confirmed) => {
-          if (!confirmed) return;
-          this.$socket.emit(
-            "serviceCommand",
-            {service: "AIService", command: "resetShareBudget", data: {shareId}},
-            (result) => {
-              if (result?.success) {
-                this.currentAiResetAt = new Date().toISOString();
-                this.eventBus.emit('toast', {title: "Success", message: "AI budget reset", variant: "success"});
-              } else {
-                this.eventBus.emit('toast', {title: "Error", message: result?.message || "Reset failed", variant: "danger"});
-              }
-            }
-          );
-        }
-      );
-    }
   }
 }
 </script>

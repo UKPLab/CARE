@@ -121,6 +121,28 @@
         </small>
       </div>
 
+      <div class="mb-3">
+        <label class="form-label" for="hookCostLimit">
+          Cost limit ($)
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="Global cap across all invocations of this hook. Leave empty for no cap."
+          />
+        </label>
+        <input
+          id="hookCostLimit"
+          v-model.number="hookForm.costLimit"
+          type="number"
+          min="0"
+          step="0.01"
+          class="form-control"
+          placeholder="No limit"
+        />
+        <small class="text-muted">
+          Optional. Total AI spend allowed for this hook across all studies.
+        </small>
+      </div>
+
       <div class="form-check">
         <input
           id="hookEnabled"
@@ -164,6 +186,9 @@
           <dt class="col-sm-4">Output Type</dt>
           <dd class="col-sm-8">{{ selectedOutputModeLabel }}</dd>
 
+          <dt class="col-sm-4">Cost limit</dt>
+          <dd class="col-sm-8">{{ costLimitLabel }}</dd>
+
           <dt class="col-sm-4">Status</dt>
           <dd class="col-sm-8">{{ hookForm.enabled ? "Enabled" : "Disabled" }}</dd>
         </dl>
@@ -188,6 +213,7 @@ function getEmptyHookForm() {
     modelIds: [],
     outputMode: 0,
     enabled: true,
+    costLimit: null,
   };
 }
 
@@ -263,6 +289,11 @@ export default {
       const mode = this.outputModes.find((item) => Number(item.value) === selectedValue);
       return mode?.label || "-";
     },
+    costLimitLabel() {
+      const value = Number(this.hookForm.costLimit);
+      if (!Number.isFinite(value) || value <= 0) return "No limit";
+      return `$${value.toFixed(2)}`;
+    },
     // Production: filter to `Number(template.type) === 8` (prompt templates from feat-192).
     // Testing: `promptTemplates` prop includes all templates from the parent.
     selectablePromptTemplates() {
@@ -295,6 +326,7 @@ export default {
           modelIds: this.getHookModelRows(row.id).map((hookModel) => Number(hookModel.aiModelId)),
           outputMode: Number.isInteger(Number(row.outputMode)) ? Number(row.outputMode) : 0,
           enabled: row.enabled !== false,
+          costLimit: row.costLimit ?? null,
         };
       }
       this.$refs.hookStepper.open();
@@ -324,6 +356,7 @@ export default {
         return;
       }
 
+      const costLimitValue = Number(this.hookForm.costLimit);
       const payload = {
         id: this.hookForm.id || 0,
         name: this.hookForm.name.trim(),
@@ -331,6 +364,7 @@ export default {
         templateId: Number(this.hookForm.templateId),
         outputMode: Number(this.hookForm.outputMode),
         enabled: !!this.hookForm.enabled,
+        costLimit: Number.isFinite(costLimitValue) && costLimitValue > 0 ? costLimitValue : null,
       };
 
       this.$refs.hookStepper.setWaiting(true);

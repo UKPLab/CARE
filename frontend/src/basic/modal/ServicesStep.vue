@@ -34,25 +34,13 @@
         <div v-if="isHook(skill)" class="cap-fields mt-2">
           <h6 class="text-secondary">Budget limit</h6>
           <div class="row g-2">
-            <div class="col-6">
+            <div class="col-12">
               <label class="form-label">Cost limit:</label>
               <input
                   v-model.number="skill.costLimit"
                   type="number"
                   min="0"
                   step="0.01"
-                  class="form-control"
-                  @change="emitServices"
-              />
-            </div>
-            <div class="col-6">
-              <label class="form-label">Notify at threshold (0-1):</label>
-              <input
-                  v-model.number="skill.notifyThreshold"
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="0.05"
                   class="form-control"
                   @change="emitServices"
               />
@@ -68,17 +56,6 @@
               <label class="form-check-label" :for="`applyPerSession_${index}`">
                 Apply the cost limit per session (otherwise per study)
               </label>
-            </div>
-            <div v-if="initiallyHadHook[index]" class="col-12 d-flex align-items-center gap-2 mt-2">
-              <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  title="Reset usage now"
-                  @click="resetUsage(index)"
-              >
-                <i class="bi bi-arrow-counterclockwise"></i> Reset usage
-              </button>
-              <small class="text-muted">Last reset: {{ resetAtDisplay(skill) }}</small>
             </div>
           </div>
         </div>
@@ -152,7 +129,6 @@ export default {
             dataOutput: service.outputs || {},
             costLimit: service.costLimit ?? null,
             applyPerSession: service.applyPerSession ?? false,
-            notifyThreshold: service.notifyThreshold ?? null,
             resetAt: service.resetAt ?? null,
           };
         }
@@ -165,8 +141,6 @@ export default {
         }
         return {skillName: "", dataInput: {}, dataOutput: {}};
       }),
-      // Reset usage is only meaningful for an already-configured hook (edit), not on create.
-      initiallyHadHook: services.map((service) => !!service.hookId),
     };
   },
   computed: {
@@ -227,7 +201,6 @@ export default {
           hookId: this.hookIdFor(skill),
           costLimit: skill.costLimit ?? null,
           applyPerSession: !!skill.applyPerSession,
-          notifyThreshold: skill.notifyThreshold ?? null,
           resetAt: skill.resetAt ?? null,
         };
       }
@@ -265,19 +238,6 @@ export default {
       updated[index] = {...updated[index], dataInput, dataOutput};
       this.selectedSkills = updated;
       this.emitServices();
-    },
-    /** Stamps the reset time on a hook slot, then emits. */
-    resetUsage(index) {
-      const updated = [...this.selectedSkills];
-      updated[index] = {...updated[index], resetAt: new Date().toISOString()};
-      this.selectedSkills = updated;
-      this.emitServices();
-    },
-    /** Human-readable last-reset timestamp. */
-    resetAtDisplay(skill) {
-      if (!skill.resetAt) return "Never";
-      const date = new Date(skill.resetAt);
-      return Number.isNaN(date.getTime()) ? "Never" : date.toLocaleString();
     },
     /** Returns an NLP skill's declared input keys. */
     getSkillInputs(skillName) {
