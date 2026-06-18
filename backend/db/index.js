@@ -1,7 +1,7 @@
 /**
  * Declare all necessary dependencies to work with the database models
  *
- * @author Nils Dycke, Dennis Zyska, Junaid Feroz
+ * @author Nils Dycke, Dennis Zyska
  */
 
 'use strict';
