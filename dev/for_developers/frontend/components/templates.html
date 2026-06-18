@@ -161,8 +161,8 @@ Only placeholders listed in <code class="docutils literal notranslate"><span cla
 <section id="implementing-the-template-editor">
 <h2>Implementing the Template Editor<a class="headerlink" href="#implementing-the-template-editor" title="Link to this heading"></a></h2>
 <p>The main Editor provides <code class="docutils literal notranslate"><span class="pre">templateId</span></code> via <code class="docutils literal notranslate"><span class="pre">provide</span></code> and conditionally shows the Placeholders sidebar when the document is a template with placeholders.
-TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template. When the user saves and closes the editor, draft edits are merged from
-<code class="docutils literal notranslate"><span class="pre">template_edit</span></code> into <code class="docutils literal notranslate"><span class="pre">template_content</span></code> so that the next resolution uses the latest saved content.</p>
+TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template. When the user leaves the editor (e.g. topbar back), draft edits are merged from
+<code class="docutils literal notranslate"><span class="pre">template_edit</span></code> into <code class="docutils literal notranslate"><span class="pre">template_content</span></code> so that the next resolution uses the latest saved content. See <a class="reference internal" href="#template-editor-leave-ref"><span class="std std-ref">Leaving the template editor</span></a> below.</p>
 <p>Location:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/Editor.vue</span></code></p></li>
@@ -175,6 +175,18 @@ TemplateEditor and TemplateConfigurator are used inside this Editor when editing
 <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 </pre></div>
 </div>
+<section id="leaving-the-template-editor-unsaved-changes">
+<span id="template-editor-leave-ref"></span><h3>Leaving the template editor (unsaved changes)<a class="headerlink" href="#leaving-the-template-editor-unsaved-changes" title="Link to this heading"></a></h3>
+<p>Templates use the same debounced autosave as documents (see <a class="reference internal" href="editor.html#debounce-ref"><span class="std std-ref">Debounce Behaviour</span></a>). While editing, ops are stored as drafts in <code class="docutils literal notranslate"><span class="pre">template_edit</span></code>; stable content used by Settings and email resolution lives in <code class="docutils literal notranslate"><span class="pre">template_content</span></code>.</p>
+<p><strong>Save-on-leave:</strong> In-app navigation (topbar back, dashboard links) runs <code class="docutils literal notranslate"><span class="pre">beforeRouteLeave</span></code> in <code class="docutils literal notranslate"><span class="pre">frontend/src/components/Template.vue</span></code>. The guard calls <code class="docutils literal notranslate"><span class="pre">flushPendingEdits</span></code> on <code class="docutils literal notranslate"><span class="pre">TemplateEditor</span></code> (cancels debounce and sends buffered ops), then emits <code class="docutils literal notranslate"><span class="pre">templateClose</span></code>, which calls <code class="docutils literal notranslate"><span class="pre">saveTemplate</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> to merge drafts into <code class="docutils literal notranslate"><span class="pre">template_content</span></code>.</p>
+<p><strong>Required placeholders:</strong> For email types (1, 2, 3, 6, 7), stable <code class="docutils literal notranslate"><span class="pre">template_content</span></code> in every language must include all required placeholders (<code class="docutils literal notranslate"><span class="pre">getMissingRequiredPlaceholders</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>). Enforcement points:</p>
+<ul class="simple">
+<li><p><strong>Editor save:</strong> <code class="docutils literal notranslate"><span class="pre">saveTemplate</span></code> rejects merges that omit required placeholders. The user may confirm discard; <code class="docutils literal notranslate"><span class="pre">templateDiscardDrafts</span></code> soft-deletes draft rows without updating <code class="docutils literal notranslate"><span class="pre">template_content</span></code>.</p></li>
+<li><p><strong>Publish:</strong> The <code class="docutils literal notranslate"><span class="pre">template</span></code> model <code class="docutils literal notranslate"><span class="pre">beforeUpdate</span></code> hook calls <code class="docutils literal notranslate"><span class="pre">assertStableEmailTemplateContent</span></code> when <code class="docutils literal notranslate"><span class="pre">public</span></code> becomes <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></li>
+<li><p><strong>Settings:</strong> <code class="docutils literal notranslate"><span class="pre">validateEmailTemplateSettings</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/webserver/utils/settingSave.js</span></code> runs before persisting <code class="docutils literal notranslate"><span class="pre">email.template.*</span></code> keys (missing placeholders in any language row blocks assignment).</p></li>
+</ul>
+<p><strong>Tab close / full reload:</strong> <code class="docutils literal notranslate"><span class="pre">beforeunload</span></code> on <code class="docutils literal notranslate"><span class="pre">TemplateEditor</span></code> shows the browser’s generic leave warning; the route guard does not run. Orphan drafts may remain until the next visit.</p>
+</section>
 <section id="template-types-placeholders-and-usage">
 <h3>Template Types, Placeholders, and Usage<a class="headerlink" href="#template-types-placeholders-and-usage" title="Link to this heading"></a></h3>
 <p>At resolution time, only the placeholder keys listed in the following table are substituted.</p>
@@ -185,10 +197,11 @@ TemplateEditor and TemplateConfigurator are used inside this Editor when editing
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Placeholders marked with <code class="docutils literal notranslate"><span class="pre">*</span></code> in the table above are <strong>required</strong> for that type.
-If a required placeholder is missing from the template text, validation will fail
-(e.g. publishing or using the template) until it is added. The set of required
-placeholders is defined in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table (<code class="docutils literal notranslate"><span class="pre">required:</span> <span class="pre">true</span></code>) and
-enforced via <code class="docutils literal notranslate"><span class="pre">getMissingRequiredPlaceholders</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>.</p>
+If a required placeholder is missing from stable content in any language, validation
+fails on editor save, publish, or Settings assignment until it is added. The set of
+required placeholders is defined in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table (<code class="docutils literal notranslate"><span class="pre">required:</span> <span class="pre">true</span></code>) and
+enforced via <code class="docutils literal notranslate"><span class="pre">getMissingRequiredPlaceholders</span></code> and <code class="docutils literal notranslate"><span class="pre">assertStableEmailTemplateContent</span></code>
+in <code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>.</p>
 </div>
 <p>Here is a concrete example for adding a new placeholder (e.g. <code class="docutils literal notranslate"><span class="pre">studyEndDate</span></code> for type 6):</p>
 <ol class="arabic simple">
