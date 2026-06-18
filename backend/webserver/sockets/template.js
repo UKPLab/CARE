@@ -3,7 +3,7 @@ const Socket = require("../Socket");
 const Delta = require("quill-delta");
 const {Op} = require("sequelize");
 const {dbToDelta} = require("editor-delta-conversion");
-const {resolveTemplate, resolveTemplateToDelta, getMissingRequiredPlaceholders} = require("../../utils/templateResolver");
+const {resolveTemplate, resolveTemplateToDelta, getMissingRequiredPlaceholders, getUsedPlaceholders} = require("../../utils/templateResolver");
 
 /**
  * Handle templates through websocket
@@ -337,6 +337,36 @@ class TemplateSocket extends Socket {
       template.type,
       { transaction: options.transaction }
     );
+  }
+
+  /**
+   * Get the placeholders a specific template actually uses (tokens present in its content).
+   *
+   * Placeholders are defined per template type, not per template, so "used" is derived from the
+   * template's content. Returns the same row shape as {@link getAllPlaceholders}.
+   *
+   * @socketEvent templatePlaceholderGetUsed
+   * @param {Object} data            The data object
+   * @param {number} data.templateId Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Array>}
+   */
+  async getUsedPlaceholders(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+    }
+
+    return await getUsedPlaceholders(data.templateId, this.models, { transaction: options.transaction });
   }
 
 
@@ -788,6 +818,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
+    this.createSocket("templatePlaceholderGetUsed", this.getUsedPlaceholders, {}, false);
     this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
     this.createSocket("templateCopy", this.copyTemplate, {}, true);
     this.createSocket("templateDetach", this.detachTemplate, {}, true);

@@ -2,6 +2,8 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const fs = require('fs')
+const JSZip = require("jszip");
+const {extractPdfText} = require("../../utils/pdfText.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -276,6 +278,72 @@ module.exports = (sequelize, DataTypes) => {
             } catch (err) {
                 throw new Error(`Error processing document ${documentId}: ${err.message}`)
             }
+        }
+
+        /**
+         * Load a file-based document by id and return its content as plain text.
+         *
+         * Only file-based document types are handled: PDF → extracted text (via the swappable
+         * {@link extractPdfText} helper); ZIP → the concatenated text of its `.tex` entries only
+         * (other entries are ignored). Editor/modal text is session-specific and resolved elsewhere,
+         * so those types return "". Returns "" for unsupported/empty content.
+         *
+         * @param {number} documentId - The id of the document.
+         * @returns {Promise<string>} Plain text extracted from the document, or "" when unavailable.
+         */
+        static async loadPlainText(documentId) {
+            const doc = await Document.findByPk(documentId, {raw: true});
+            if (!doc) {
+                return "";
+            }
+
+            switch (doc.type) {
+                case docTypes.DOC_TYPE_PDF: {
+                    const buffer = await Document.readDocumentFile(doc, ".pdf");
+                    return buffer ? await extractPdfText(buffer) : "";
+                }
+                case docTypes.DOC_TYPE_ZIP: {
+                    const buffer = await Document.readDocumentFile(doc, ".zip");
+                    return buffer ? await Document.extractZipText(buffer) : "";
+                }
+                default:
+                    return "";
+            }
+        }
+
+        /**
+         * Reads a document's backing file from disk by hash and extension.
+         *
+         * @param {object} doc - The document record (must include `hash`).
+         * @param {string} extension - File extension including the dot (e.g. ".pdf").
+         * @returns {Promise<Buffer|null>} File buffer, or null if the file is missing.
+         */
+        static async readDocumentFile(doc, extension) {
+            const filePath = path.join(UPLOAD_PATH, `${doc.hash}${extension}`);
+            try {
+                return await fs.promises.readFile(filePath);
+            } catch {
+                return null;
+            }
+        }
+
+        /**
+         * Extracts and concatenates the text of all `.tex` entries inside a zip buffer.
+         * Non-`.tex` entries are intentionally ignored.
+         *
+         * @param {Buffer} buffer - Raw zip bytes.
+         * @returns {Promise<string>} Concatenated text of `.tex` entries, or "" if none.
+         */
+        static async extractZipText(buffer) {
+            const zip = await JSZip.loadAsync(buffer);
+            const textEntries = Object.values(zip.files).filter(
+                (entry) => !entry.dir && entry.name.toLowerCase().endsWith(".tex")
+            );
+            const texts = [];
+            for (const entry of textEntries) {
+                texts.push(await entry.async("string"));
+            }
+            return texts.join("\n\n");
         }
 
         /**

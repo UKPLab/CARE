@@ -114,6 +114,18 @@ export default {
                         },
 
                         /**
+                         * Run an AI hook against a study step: the backend resolves the hook's prompt
+                         * template from the step context and forwards it through the chat path.
+                         * @param {object} params - { hookId, studyStepId, studySessionId }
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{choices: object[], outputText: string}>}
+                         */
+                        runHook(params, opts = {}) {
+                            return emitAiCommand(socket, "runHook", params, opts);
+                        },
+
+                        /**
                          * Get current LiteLLM / AIService connection status.
                          * @returns {Promise<{online: boolean, error?: string}>}
                          */
