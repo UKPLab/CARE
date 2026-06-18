@@ -10,7 +10,9 @@
  *
  * decrypt() returns the input unchanged when the value is not encrypted,
  * so it is safe to call on legacy plaintext rows during migration.
+ * @author karim ouf
  */
+
 
 'use strict';
 
