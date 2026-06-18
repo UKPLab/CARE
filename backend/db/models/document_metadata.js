@@ -8,15 +8,15 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Create or update one metadata entry for a document and key.
          *
-         * The topic import stores one logical record per document/key pair.
+         * Metadata import stores one logical record per document/key pair.
          * If the key already exists for the document, the entry is updated in place
          * instead of creating duplicate active rows.
          *
          * @param {Object} data
-         * @param {number} data.documentId｀
+         * @param {number} data.documentId
          * @param {number} data.userId
          * @param {string} data.metaKey
-         * @param {*} data.metaValue
+         * @param {string} data.metaValue
          * @param {Object} [options={}]
          * @returns {Promise<Object>}
          */
