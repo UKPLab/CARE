@@ -52,7 +52,7 @@ export default {
       default: false,
     },
   },
-  subscribeTable: [{
+  subscribeTable: ["ai_hook", {
     table: "configuration",
     filter: [
       {key: "type", value: 0},
@@ -92,6 +92,10 @@ export default {
       type: Number,
       default: null,
     },
+    hookId: {
+      type: Number,
+      default: null,
+    },
   },
   emits: ["update:modelValue"],
   data() {
@@ -99,6 +103,7 @@ export default {
       inputMappings: {},
       outputMappings: {},
       isUpdatingFromWithin: false,
+      hookPlaceholders: [],
     };
   },
   computed: {
@@ -161,13 +166,29 @@ export default {
 
       return ordered;
     },
+    isHook() {
+      return !!this.hookId;
+    },
+    hookTemplateId() {
+      if (!this.hookId) return null;
+      const hook = this.$store.getters["table/ai_hook/get"](this.hookId);
+      return hook?.templateId || null;
+    },
     skillInputs() {
+      // Hooks map the prompt template's placeholders (fetched async); skills map their declared inputs.
+      if (this.isHook) {
+        return this.hookPlaceholders;
+      }
       if (!this.skillName) return [];
       const skill = this.nlpSkills.find((s) => s.name === this.skillName);
       if (!skill) return [];
       return Object.keys(skill.config.input.data || {});
     },
     skillOutputs() {
+      // A hook produces a single output (the completion) → one destination row.
+      if (this.isHook) {
+        return ["result"];
+      }
       if (!this.skillName) return [];
       const skill = this.nlpSkills.find((s) => s.name === this.skillName);
       if (!skill) return [];
@@ -282,6 +303,32 @@ export default {
       },
       immediate: true,
     },
+    hookTemplateId: {
+      handler(templateId) {
+        if (templateId) {
+          this.fetchHookPlaceholders(templateId);
+        } else {
+          this.hookPlaceholders = [];
+        }
+      },
+      immediate: true,
+    },
+    hookPlaceholders: {
+      handler() {
+        // Placeholders arrive asynchronously; (re)align the input/output mapping rows once they load.
+        if (!this.isHook) return;
+        const inputs = {};
+        this.skillInputs.forEach((input) => {
+          inputs[input] = this.inputMappings[input] || null;
+        });
+        this.inputMappings = inputs;
+        const outputs = {};
+        this.skillOutputs.forEach((output) => {
+          outputs[output] = this.outputMappings[output] || null;
+        });
+        this.outputMappings = outputs;
+      },
+    },
     modelValue: {
       handler(newValue, oldValue) {
         // Prevent loops: if we're currently updating from within, skip
@@ -316,6 +363,15 @@ export default {
     },
   },
   methods: {
+    // Fetch the placeholders this hook's template actually uses; they become the input-mapping rows.
+    fetchHookPlaceholders(templateId) {
+      this.$socket.emit("templatePlaceholderGetUsed", {templateId}, (result) => {
+        const list = Array.isArray(result) ? result : (result?.data ?? []);
+        this.hookPlaceholders = list
+            .map((placeholder) => placeholder.placeholderKey)
+            .filter(Boolean);
+      });
+    },
     // Append resolved document and submission-derived sources for the current step
     appendResolvedDocSources(sources, stepIndex) {
       if (!this.resolvedSourceDocument) return;

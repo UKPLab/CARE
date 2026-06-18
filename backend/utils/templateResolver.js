@@ -781,9 +781,82 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
     return missing;
 }
 
+/**
+ * Resolve a prompt template by substituting caller-supplied placeholder values (push model).
+ *
+ * Unlike {@link resolveTemplate}, this does NOT query the database for placeholder data — the
+ * caller provides a `{ placeholderKey: value }` map (e.g. assembled in the frontend and the runhook function from the
+ * input mapping). Each `~placeholderKey~` token is replaced by its value (objects/arrays are
+ * JSON-stringified). Used by the AI-hook runtime.
+ *
+ * @param {number} templateId - Prompt template id.
+ * @param {Object} values - Map of placeholderKey → value (optional `language`).
+ * @param {Object} models - Database models object.
+ * @param {Object} [options] - Sequelize options (e.g. transaction).
+ * @returns {Promise<string>} Resolved prompt as plain text.
+ * @throws {Error} If the template is missing.
+ */
+async function resolveTemplateWithValues(templateId, values, models, options = {}) {
+    if (!templateId) {
+        throw new Error("Template ID is required");
+    }
+    if (!models) {
+        throw new Error("Models object is required");
+    }
+
+    const template = await models["template"].getById(templateId, options);
+    if (!template) {
+        throw new Error(`Template with ID ${templateId} not found`);
+    }
+
+    const language = (values && values.language) || template.defaultLanguage || "en";
+    let content = await getTemplateContentForLanguage(templateId, language, models, options);
+    if (!content && language !== (template.defaultLanguage || "en")) {
+        content = await getTemplateContentForLanguage(templateId, template.defaultLanguage || "en", models, options);
+    }
+
+    let resolvedText = deltaToPlainText(content || {ops: []});
+    const toText = (value) => {
+        if (value === null || value === undefined) return "";
+        return typeof value === "string" ? value : JSON.stringify(value);
+    };
+    for (const [key, value] of Object.entries(values || {})) {
+        if (key === "language") continue;
+        const escaped = `~${key}~`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        resolvedText = resolvedText.replace(new RegExp(escaped, 'g'), toText(value));
+    }
+    return resolvedText;
+}
+
+/**
+ * Return the placeholders a specific template actually *uses* — i.e. the type's catalog placeholders
+ * whose `~placeholderKey~` token appears in the template's content.
+ *
+ *
+ * @param {number} templateId - Template id.
+ * @param {Object} models - Database models object.
+ * @param {Object} [options] - Sequelize options (e.g. transaction).
+ * @returns {Promise<Object[]>} Placeholder rows present in the template's content.
+ * @throws {Error} If the template is missing.
+ */
+async function getUsedPlaceholders(templateId, models, options = {}) {
+    const template = await models["template"].getById(templateId, options);
+    if (!template) {
+        throw new Error(`Template with ID ${templateId} not found`);
+    }
+    const content = await getTemplateContentForLanguage(
+        templateId, template.defaultLanguage || "en", models, options
+    );
+    const text = content ? deltaToPlainText(content) : "";
+    const rows = await models["placeholder"].getAllByKey("type", template.type, options);
+    return rows.filter((row) => text.includes(`~${row.placeholderKey}~`));
+}
+
 module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
+    resolveTemplateWithValues,
     getMissingRequiredPlaceholders,
+    getUsedPlaceholders,
     resolveEditorText,
 };

@@ -7,8 +7,7 @@
  */
 
 const chat = require("./chat");
-const { resolveTemplateToDelta } = require("../../../utils/templateResolver");
-const { deltaToPlainText } = require("editor-delta-conversion");
+const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
 
 /**
  * Loads an enabled, non-deleted AI hook by id.
@@ -86,26 +85,66 @@ async function resolveHookModelParams(service, hookId) {
 }
 
 /**
- * Resolves the hook's prompt template to clean plain text suitable for an LLM message.
- * Uses the Delta variant (not the HTML one) so placeholder values are not HTML-escaped.
+ * Resolves a single backend-side input reference (mirrors NLP `serviceReplacement`, but yields
+ * text/JSON for prompt substitution rather than base64).
  *
  * @param {{ server: Object }} service AIService runtime with DB access.
- * @param {number} templateId Prompt template id referenced by the hook.
- * @param {Object} context Context object for placeholder resolution.
- * @returns {Promise<string>} Resolved prompt text.
+ * @param {Object} input The reference's `input` spec (carries `type` + ids).
+ * @returns {Promise<*>} Resolved value for the placeholder.
  */
-async function buildHookPrompt(service, templateId, context) {
-    const delta = await resolveTemplateToDelta(templateId, context, service.server.db.models);
-    return deltaToPlainText({ ops: delta?.ops || [] });
+async function resolveServiceInput(service, input) {
+    if (!input || typeof input !== "object") return null;
+    switch (input.type) {
+        case "configuration": {
+            const config = await service.server.db.models["configuration"].findByPk(input.configurationId, {raw: true});
+            if (!config) return null;
+            if (typeof config.content === "string") {
+                try {
+                    return JSON.parse(config.content);
+                } catch (e) {
+                    return config.content;
+                }
+            }
+            return config.content;
+        }
+        case "submission":
+            // TODO: resolve the submission to text — extract the PDF's text and unzip the `.tex`
+            // from its zip (reuse submission.loadSubmissionForNlpRequest to find the files +
+            // document.loadPlainText per file), returning e.g. { pdf, zip }.
+            return "";
+        default:
+            return null;
+    }
 }
 
 /**
- * Executes an AI hook for the calling client: resolves the prompt template against study-step
- * context, attaches the hook's primary model credential, and forwards through the shared chat path.
+ * Resolves any backend-side references in the pushed values map (configuration, submission),
+ * leaving frontend-resolved values (document text, study data) as-is.
+ *
+ * @param {{ server: Object }} service AIService runtime with DB access.
+ * @param {Object} values Map of placeholderKey → value or `{type:"serviceReplacement", input}`.
+ * @returns {Promise<Object>} Map with references resolved to values.
+ */
+async function resolveHookReferences(service, values) {
+    const resolved = {};
+    for (const [key, value] of Object.entries(values || {})) {
+        if (value && typeof value === "object" && value.type === "serviceReplacement") {
+            resolved[key] = await resolveServiceInput(service, value.input);
+        } else {
+            resolved[key] = value;
+        }
+    }
+    return resolved;
+}
+
+/**
+ * Executes an AI hook for the calling client: fills the hook's prompt template from the
+ * caller-supplied placeholder `values` (assembled in the frontend from the input mapping),
+ * attaches the hook's primary model credential, and forwards through the shared chat path.
  *
  * @param {{ logger: Object, server: Object }} service AIService runtime.
  * @param {{ userId?: number }} client Authenticated RPC client triggering the hook.
- * @param {{ hookId: number, studyStepId?: number, studySessionId?: number }} data Hook execution payload.
+ * @param {{ hookId: number, values?: Object, studyId?: number, studySessionId?: number, studyStepId?: number, documentId?: number }} data Hook execution payload.
  * @returns {Promise<{choices: unknown[], outputText: string}>} Provider choices plus first-choice text.
  * @throws {Error} If the hook id is invalid or any required model/credential/template is missing.
  */
@@ -117,13 +156,9 @@ async function runHook(service, client, data) {
 
     const hook = await loadEnabledHook(service, hookId);
     const modelParams = await resolveHookModelParams(service, hookId);
-    // Pass only the anchor step + session; the resolver derives documentId/studyId from the step
-    // (and back-fills them onto this context object as a side effect of resolution).
-    const context = {
-        studyStepId: Number(data?.studyStepId) || null,
-        studySessionId: data?.studySessionId ?? null,
-    };
-    const promptText = await buildHookPrompt(service, hook.templateId, context);
+    const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
+    const values = await resolveHookReferences(service, rawValues);
+    const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
 
     const { additionalParameters, ...credentialParams } = modelParams;
     const completionData = {
@@ -131,15 +166,15 @@ async function runHook(service, client, data) {
         ...credentialParams,
         messages: [{ role: "user", content: promptText }],
         outputMode: hook.outputMode,
-        studyId: context.studyId,
-        studySessionId: context.studySessionId,
-        studyStepId: context.studyStepId,
-        documentId: context.documentId,
+        studyId: data?.studyId,
+        studySessionId: data?.studySessionId,
+        studyStepId: data?.studyStepId,
+        documentId: data?.documentId,
     };
 
     service.logger.info(
         `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
-        `aiModelId=${modelParams.aiModelId} studyStepId=${context.studyStepId ?? "N/A"}`
+        `aiModelId=${modelParams.aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
     );
 
     const result = await chat.chatCompletion(service, client, completionData);

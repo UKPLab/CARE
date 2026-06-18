@@ -53,18 +53,6 @@
                 @update:data="documentDataRefresh"
             />
           </div>
-          <div v-for="service in aiHookServices" :key="service.name" class="mt-3">
-            <AiHookRequest
-                :ref="`aiHookRequest[${service.name}]`"
-                :service="service"
-                :name="service.name"
-                :document-data="documentData"
-                :study-step-id="studyStepId"
-                :document-id="documentId"
-                @update:state="aiHookRequests[service.name] = $event"
-                @update:data="documentDataRefresh"
-            />
-          </div>
         </div>
 
       </div>
@@ -83,12 +71,11 @@
  */
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
-import AiHookRequest from "@/basic/service/AiHookRequest.vue";
 import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "StudyLoadingModal",
-  components: {NlpRequest, AiHookRequest, BasicModal, BasicButton},
+  components: {NlpRequest, BasicModal, BasicButton},
   inject: {
     readOnly: {
       type: Boolean,
@@ -132,7 +119,6 @@ export default {
       rotatingIndex: 0,
       documentData: null,
       nlpRequests: {},
-      aiHookRequests: {},
       rotatingMessages: [
         "Thinking through your request...",
         "Almost there, just refining the details...",
@@ -203,42 +189,15 @@ export default {
           req => req.status === 'timeout' || req.status === 'failed'
       );
     },
-    aiHookServices() {
-      return this.config.services?.filter(s => s.type === 'aiHook') || [];
-    },
-    aiHookShouldWait() {
-      return !this.readOnly && this.aiHookServices.length > 0;
-    },
-    aiHookRequestsInProgress() {
-      if (!this.aiHookShouldWait) {
-        return false;
-      }
-      if (this.aiHookServices.length !== Object.keys(this.aiHookRequests).length) {
-        return true;
-      }
-      return Object.values(this.aiHookRequests).some(
-          req => req.status === 'pending'
-      );
-    },
-    aiHookRequestsFailed() {
-      if (!this.aiHookShouldWait) {
-        return false;
-      }
-      if (this.aiHookServices.length !== Object.keys(this.aiHookRequests).length) {
-        return false;
-      }
-      return Object.values(this.aiHookRequests).some(
-          req => req.status === 'timeout' || req.status === 'failed'
-      );
-    },
+    // Hooks are nlpRequest slots (distinguished by hookId), so they flow through nlpServices/nlpRequests.
     servicesShouldWait() {
-      return this.nlpShouldWait || this.aiHookShouldWait;
+      return this.nlpShouldWait;
     },
     anyRequestsInProgress() {
-      return this.nlpRequestsInProgress || this.aiHookRequestsInProgress;
+      return this.nlpRequestsInProgress;
     },
     anyRequestsFailed() {
-      return this.nlpRequestsFailed || this.aiHookRequestsFailed;
+      return this.nlpRequestsFailed;
     },
     modalTitle() {
       if (this.error) {
@@ -278,12 +237,6 @@ export default {
       }
     },
     nlpRequests: {
-      handler() {
-        this.closeWhenAllDone();
-      },
-      deep: true
-    },
-    aiHookRequests: {
       handler() {
         this.closeWhenAllDone();
       },
@@ -365,25 +318,21 @@ export default {
         updatedData[key] = value;
       }
 
-      // Emit editor-insertions for any output marked insertIntoEditor. NLP and AI-hook slots share
-      // the same `outputs` shape; they differ only in the document_data key (NLP includes the skill).
-      const emitEditorInserts = (services, hasSkill) => {
-        services.forEach(service => {
-          if (!service.outputs || typeof service.outputs !== 'object') {
-            return;
+      // Emit editor-insertions for any output marked insertIntoEditor. Skills key by
+      // `${name}_${skill}_${outputKey}`; hooks (single output) key by `${name}_${hookId}`.
+      this.nlpServices.forEach(service => {
+        if (!service.outputs || typeof service.outputs !== 'object') {
+          return;
+        }
+        Object.entries(service.outputs).forEach(([outputKey, outputConfig]) => {
+          const responseKey = service.hookId
+              ? `${service.name}_${service.hookId}`
+              : `${service.name}_${service.skill}_${outputKey}`;
+          if (updatedData[responseKey] && outputConfig?.value === "insertIntoEditor") {
+            this.$emit("insert-nlp-response", {response: updatedData[responseKey]});
           }
-          Object.entries(service.outputs).forEach(([outputKey, outputConfig]) => {
-            const responseKey = hasSkill
-                ? `${service.name}_${service.skill}_${outputKey}`
-                : `${service.name}_${outputKey}`;
-            if (updatedData[responseKey] && outputConfig?.value === "insertIntoEditor") {
-              this.$emit("insert-nlp-response", {response: updatedData[responseKey]});
-            }
-          });
         });
-      };
-      emitEditorInserts(this.nlpServices, true);
-      emitEditorInserts(this.aiHookServices, false);
+      });
 
       this.documentData = updatedData;
     },
@@ -402,27 +351,21 @@ export default {
       }
     },
     /**
-     * Invokes a method on the request components whose status is timeout/failed, across both
-     * NLP and AI-hook services.
+     * Invokes a method on the request components whose status is timeout/failed.
+     * Hooks render as NlpRequest too, so they're covered here.
      *
      * @param {string} action Component method name to call ("retryRequest" or "markSkipped").
      * @returns {void}
      */
     forEachFailedRequest(action) {
-      const groups = [
-        {requests: this.nlpRequests, prefix: "nlpRequest"},
-        {requests: this.aiHookRequests, prefix: "aiHookRequest"},
-      ];
-      groups.forEach(({requests, prefix}) => {
-        Object.entries(requests).forEach(([key, request]) => {
-          if (request.status === 'timeout' || request.status === 'failed') {
-            const ref = this.$refs[`${prefix}[${key}]`];
-            const component = Array.isArray(ref) ? ref[0] : ref;
-            if (component && typeof component[action] === 'function') {
-              component[action]();
-            }
+      Object.entries(this.nlpRequests).forEach(([key, request]) => {
+        if (request.status === 'timeout' || request.status === 'failed') {
+          const ref = this.$refs[`nlpRequest[${key}]`];
+          const component = Array.isArray(ref) ? ref[0] : ref;
+          if (component && typeof component[action] === 'function') {
+            component[action]();
           }
-        });
+        }
       });
     },
     retryFailedRequests() {

@@ -186,7 +186,7 @@ export default {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Try to find an assessment-producing service: an NLP assessment skill or an AI hook.
+      // Find an assessment-producing service: an NLP assessment skill, or a hook (carries hookId).
       const svc =
           cfg.services.find(
               (s) =>
@@ -194,7 +194,7 @@ export default {
                       s.name === "nlpAssessment" ||
                       s.type === "nlpRequest"
                   )) ||
-                  s.type === "aiHook"
+                  s.hookId
           ) || cfg.services[0];
 
       return svc || null;
@@ -204,9 +204,9 @@ export default {
       const svc = this.nlpService;
       if (!svc) return [];
 
-      // AI hook results are stored under `${name}_assessment` (no skill segment).
-      if (svc.type === "aiHook") {
-        return svc.name ? [`${svc.name}_assessment`] : [];
+      // Hook: single output keyed `${name}_${hookId}`.
+      if (svc.hookId) {
+        return svc.name ? [`${svc.name}_${svc.hookId}`] : [];
       }
 
       if (!svc.skill) return [];
