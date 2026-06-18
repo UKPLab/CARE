@@ -847,6 +847,7 @@ class DocumentSocket extends Socket {
      * @param {number} data.userId
      * @param {Object} data.row
      * @param {Object[]} data.mappings
+     * @param {string|null} data.fileName
      * @param {Object} options
      * @returns {Promise<number>}
      */
@@ -864,6 +865,22 @@ class DocumentSocket extends Socket {
                     userId: data.userId,
                     metaKey: mapping.metaKey,
                     metaValue: data.row[mapping.sourceField] == null ? "" : String(data.row[mapping.sourceField]),
+                }, options);
+                writes += 1;
+
+                await this.models["document_metadata"].upsertByDocumentAndKey({
+                    documentId,
+                    userId: data.userId,
+                    metaKey: `${mapping.metaKey}.sourceFile`,
+                    metaValue: data.fileName || "",
+                }, options);
+                writes += 1;
+
+                await this.models["document_metadata"].upsertByDocumentAndKey({
+                    documentId,
+                    userId: data.userId,
+                    metaKey: `${mapping.metaKey}.sourceField`,
+                    metaValue: mapping.sourceField,
                 }, options);
                 writes += 1;
             }
@@ -1083,11 +1100,17 @@ class DocumentSocket extends Socket {
             return acc;
         }, new Map());
 
+        const metadataKeys = mappings.flatMap((mapping) => [
+            mapping.metaKey,
+            `${mapping.metaKey}.sourceFile`,
+            `${mapping.metaKey}.sourceField`,
+        ]);
+
         const existingMetadataRows = documents.length > 0
             ? await this.models["document_metadata"].findAll({
                 where: {
                     documentId: documents.map((document) => document.id),
-                    metaKey: mappings.map((mapping) => mapping.metaKey),
+                    metaKey: metadataKeys,
                     deleted: false,
                 },
                 raw: true,
@@ -1170,14 +1193,22 @@ class DocumentSocket extends Socket {
             for (const document of submissionDocuments) {
                 const existingKeys = existingByDocumentId.get(Number(document.id)) || new Set();
                 for (const mapping of effectiveMappings) {
-                    if (existingKeys.has(mapping.metaKey)) {
-                        overwrittenKeys.push(mapping.metaKey);
-                        rowOverwrittenEntryCount += 1;
+                    const effectiveMetadataKeys = [
+                        mapping.metaKey,
+                        `${mapping.metaKey}.sourceFile`,
+                        `${mapping.metaKey}.sourceField`,
+                    ];
+
+                    for (const metaKey of effectiveMetadataKeys) {
+                        if (existingKeys.has(metaKey)) {
+                            overwrittenKeys.push(metaKey);
+                            rowOverwrittenEntryCount += 1;
+                        }
                     }
                 }
             }
 
-            const rowMetadataEntryCount = submissionDocuments.length * effectiveMappings.length;
+            const rowMetadataEntryCount = submissionDocuments.length * effectiveMappings.length * 3;
             matched.push({
                 submissionId: resolvedSubmissions[0].id,
                 submissionIds: resolvedSubmissions.map((submission) => submission.id),
@@ -1255,6 +1286,7 @@ class DocumentSocket extends Socket {
                 userId: match.userId,
                 row: match.row,
                 mappings: match.mappings,
+                fileName: data.fileName || null,
             }, options);
         }
 
