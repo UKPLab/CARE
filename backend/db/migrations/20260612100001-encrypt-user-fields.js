@@ -8,7 +8,7 @@
  * Skips rows where the field already appears encrypted (safe to re-run).
  */
 
-const { encrypt, getKey, initializeEncryptionKey } = require('../../utils/encryption');
+const { encrypt, getKey, initializeEncryptionKey, decrypt } = require('../../utils/encryption');
 
 module.exports = {
     async up(queryInterface) {
@@ -85,13 +85,75 @@ module.exports = {
     },
 
     async down(queryInterface) {
-        // Reversing this migration would require decrypting all rows.
-        // Use the DB_ENCRYPTION_KEY to manually decrypt if needed.
-        // This down() is intentionally a no-op to avoid accidental data loss.
-        console.warn(
-            '[down] 20260612100001-encrypt-user-fields: ' +
-            'This migration cannot be automatically reversed. ' +
-            'Decrypt rows manually using the encryption key if needed.'
-        );
+initializeEncryptionKey();
+        const encryptionKey = getKey();
+        if (!encryptionKey) {
+            throw new Error(
+                'DB_ENCRYPTION_KEY must be set before running the user encryption data migration'
+            );
+        }
+
+        const transaction = await queryInterface.sequelize.transaction();
+        try {
+            const users = await queryInterface.sequelize.query(
+                `SELECT id, "firstName", "lastName", email, "initialPassword", "twoFactorOtp", "totpSecret", "orcidId", "ldapUsername", "samlNameId", "salt" FROM "user"`,
+                { type: queryInterface.sequelize.QueryTypes.SELECT, transaction }
+            );
+
+            for (const user of users) {
+                const updates = {};
+
+                if (user.firstName) {
+                    updates.firstName = decrypt(user.firstName);
+                }
+                if (user.lastName) {
+                    updates.lastName = decrypt(user.lastName);
+                }
+                if (user.email) {
+                    const decryptedEmail = decrypt(user.email);
+                    updates.email = decryptedEmail;
+                }
+                if (user.initialPassword) {
+                    updates.initialPassword = decrypt(user.initialPassword);
+                }
+                if (user.twoFactorOtp) {
+                    updates.twoFactorOtp = decrypt(user.twoFactorOtp);
+                }
+                if (user.totpSecret) {
+                    updates.totpSecret = decrypt(user.totpSecret);
+                }
+                if (user.orcidId) {
+                    updates.orcidId = decrypt(user.orcidId);
+                }
+                if (user.ldapUsername) {
+                    updates.ldapUsername = decrypt(user.ldapUsername);
+                }
+                if (user.samlNameId) {
+                    updates.samlNameId = decrypt(user.samlNameId);
+                }
+                if (user.salt) {
+                    updates.salt = decrypt(user.salt);
+                }
+
+                if (Object.keys(updates).length > 0) {
+                    const setClauses = Object.keys(updates)
+                        .map(col => `"${col}" = :${col}`)
+                        .join(', ');
+
+                    await queryInterface.sequelize.query(
+                        `UPDATE "user" SET ${setClauses} WHERE id = :id`,
+                        {
+                            replacements: { ...updates, id: user.id },
+                            transaction,
+                        }
+                    );
+                }
+            }
+
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
     },
 };
