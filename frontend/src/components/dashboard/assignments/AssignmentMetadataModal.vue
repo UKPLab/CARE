@@ -208,52 +208,21 @@
         <div v-if="hasResult">
           <div class="mb-2">
             <span v-if="result.metadataEntryCount > 0">
-              Wrote <strong>{{ result.metadataEntryCount }}</strong> metadata entries across <strong>{{ result.documentCount }}</strong> documents.
+              Wrote <strong>{{ result.metadataEntryCount }}</strong> metadata entries across <strong>{{ result.documentCount }}</strong> documents
+              (<strong>{{ result.matchedRowCount || 0 }}</strong> matched rows).
             </span>
             <span v-else>
               No metadata entries were written.
             </span>
           </div>
-          <div class="small mb-2">
-            Matched rows: <strong>{{ result.matchedRowCount || 0 }}</strong>
-          </div>
-          <div class="small mb-2">
-            Primary key mapping:
-            <strong>{{ result.primaryKeyMapping?.sourceField || "-" }}</strong>
-            ->
-            <strong>{{ result.primaryKeyMapping?.targetField || "-" }}</strong>
-          </div>
-          <div v-if="(result.overwritten || []).length > 0" class="warning-container">
-            Overwritten metadata:
-            <ul
-              v-for="(entry, index) in result.overwritten"
-              :key="`overwritten-${index}`"
-            >
-              <li>
-                Submission <strong>{{ entry.submissionId }}</strong>:
-                {{ entry.message }}
-              </li>
-            </ul>
-          </div>
-          <div v-if="(result.unmatched || []).length > 0" class="warning-container">
-            Unmatched rows:
-            <ul
-              v-for="(entry, index) in result.unmatched"
-              :key="`unmatched-${index}`"
-            >
-              <li>
-                Value <strong>{{ entry.primaryKeyValue ?? "unknown" }}</strong>: {{ entry.message }}
-              </li>
-            </ul>
-          </div>
-          <div v-if="(result.skipped || []).length > 0" class="warning-container">
-            Skipped rows:
-            <ul
-              v-for="(entry, index) in result.skipped"
-              :key="`skipped-${index}`"
-            >
-              <li>
-                Submission <strong>{{ entry.submissionId }}</strong>: {{ entry.message }}
+          <div v-if="importIssues.length > 0" class="warning-container">
+            <div class="mb-1">Issues:</div>
+            <ul>
+              <li
+                v-for="(issue, index) in importIssues"
+                :key="`import-issue-${index}`"
+              >
+                {{ issue }}
               </li>
             </ul>
           </div>
@@ -425,6 +394,21 @@ export default {
     },
     hasResult() {
       return Object.keys(this.result || {}).length > 0;
+    },
+    importIssues() {
+      const issues = [];
+      for (const entry of this.result.unmatched || []) {
+        issues.push(`Unmatched value "${entry.primaryKeyValue ?? "unknown"}": ${entry.message}`);
+      }
+      for (const entry of this.result.skipped || []) {
+        const prefix = entry.submissionId ? `Submission ${entry.submissionId}` : "Row";
+        issues.push(`${prefix}: ${entry.message}`);
+      }
+      for (const entry of this.result.overwritten || []) {
+        const prefix = entry.submissionId ? `Submission ${entry.submissionId}` : "Import";
+        issues.push(`${prefix}: ${entry.message}`);
+      }
+      return issues;
     },
     stepValid() {
       return [

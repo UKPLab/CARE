@@ -840,6 +840,39 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Ensure the caller may import metadata for the given assignment.
+     *
+     * @param {Object} assignment
+     * @param {Object} [options={}]
+     */
+    async assertMetadataImportAccess(assignment, options = {}) {
+        if (assignment.closed) {
+            throw new Error("Cannot import metadata because the assignment is closed.");
+        }
+        if (await this.isAdmin()) return;
+
+        if (Number(assignment.userId) === Number(this.userId)) return;
+
+        if (await this.hasAccess("frontend.dashboard.assignments.edit")) return;
+
+        const userFilter = await this.models["assignment"].getUserFilter(this.userId);
+        const accessibleAssignment = await this.models["assignment"].findOne({
+            where: {
+                id: assignment.id,
+                deleted: false,
+                ...userFilter,
+            },
+            attributes: ["id"],
+            raw: true,
+            transaction: options.transaction,
+        });
+
+        if (!accessibleAssignment) {
+            throw new Error("You do not have permission to import metadata for this assignment.");
+        }
+    }
+
+    /**
      * Persist mapped metadata for all documents of one matched submission row.
      *
      * @param {Object} data
@@ -852,7 +885,8 @@ class DocumentSocket extends Socket {
      * @returns {Promise<number>}
      */
     async attachMappedMetadataToDocuments(data, options = {}) {
-        let writes = 0;
+        const entries = [];
+        const fileName = data.fileName || "";
 
         for (const documentId of data.documentIds) {
             for (const mapping of data.mappings) {
@@ -860,33 +894,21 @@ class DocumentSocket extends Socket {
                     continue;
                 }
 
-                await this.models["document_metadata"].upsertByDocumentAndKey({
-                    documentId,
-                    userId: data.userId,
-                    metaKey: mapping.metaKey,
-                    metaValue: data.row[mapping.sourceField] == null ? "" : String(data.row[mapping.sourceField]),
-                }, options);
-                writes += 1;
-
-                await this.models["document_metadata"].upsertByDocumentAndKey({
-                    documentId,
-                    userId: data.userId,
-                    metaKey: `${mapping.metaKey}.sourceFile`,
-                    metaValue: data.fileName || "",
-                }, options);
-                writes += 1;
-
-                await this.models["document_metadata"].upsertByDocumentAndKey({
-                    documentId,
-                    userId: data.userId,
-                    metaKey: `${mapping.metaKey}.sourceField`,
-                    metaValue: mapping.sourceField,
-                }, options);
-                writes += 1;
+                const metaValue = data.row[mapping.sourceField] == null ? "" : String(data.row[mapping.sourceField]);
+                entries.push(
+                    {documentId, userId: data.userId, metaKey: mapping.metaKey, metaValue},
+                    {documentId, userId: data.userId, metaKey: `${mapping.metaKey}.sourceFile`, metaValue: fileName},
+                    {documentId, userId: data.userId, metaKey: `${mapping.metaKey}.sourceField`, metaValue: mapping.sourceField},
+                );
             }
         }
 
-        return writes;
+        if (entries.length === 0) {
+            return 0;
+        }
+
+        await this.models["document_metadata"].bulkUpsertByDocumentAndKey(entries, options);
+        return entries.length;
     }
 
     /**
@@ -1026,8 +1048,7 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * TODO: Need to break down this method
-     * Build a generic metadata import plan for one assignment target.
+     * Build a metadata import plan for one assignment target.
      *
      * @param {Object} data
      * @param {Object} options
@@ -1048,6 +1069,7 @@ class DocumentSocket extends Socket {
         if (!assignment) {
             throw new Error(`Assignment with id ${assignmentId} not found`);
         }
+        await this.assertMetadataImportAccess(assignment, options);
 
         const primaryKeyMapping = this.normalizePrimaryKeyMapping(data.primaryKeyMapping);
         if (!primaryKeyMapping.sourceField) {
@@ -1078,7 +1100,18 @@ class DocumentSocket extends Socket {
             transaction: options.transaction,
         });
 
-        const users = await this.models["user"].getAll({transaction: options.transaction});
+        const ownerUserIds = [...new Set(submissions.map((submission) => Number(submission.userId)))];
+        const users = ownerUserIds.length > 0
+            ? await this.models["user"].findAll({
+                where: {
+                    id: ownerUserIds,
+                    deleted: false,
+                },
+                attributes: ["id", "extId", "email"],
+                raw: true,
+                transaction: options.transaction,
+            })
+            : [];
         const usersById = new Map(users.map((user) => [Number(user.id), user]));
         const submissionByExtId = new Map();
         const submissionByEmail = new Map();
@@ -1178,29 +1211,30 @@ class DocumentSocket extends Socket {
                 continue;
             }
 
+            const ownerUserIdsForRow = new Set(resolvedSubmissions.map((submission) => Number(submission.userId)));
+            if (ownerUserIdsForRow.size > 1) {
+                unmatched.push({
+                    primaryKeyValue: primaryKeyValue ?? null,
+                    message: "Primary key matched submissions owned by different users.",
+                });
+                continue;
+            }
+
             const effectiveMappings = mappings.filter((mapping) => Object.prototype.hasOwnProperty.call(row, mapping.sourceField));
             if (effectiveMappings.length === 0) {
                 skipped.push({
-                    submissionIds: resolvedSubmissions.map((submission) => submission.id),
                     submissionId: resolvedSubmissions[0]?.id || null,
-                    userId: resolvedSubmissions[0]?.userId || null,
-                    primaryKeyValue: primaryKeyValue ?? null,
                     message: "Row does not contain any mapped source fields.",
                 });
                 continue;
             }
 
             const submissionDocuments = [];
-            const submissionsWithoutDocuments = [];
             for (const submission of resolvedSubmissions) {
                 const documentsForSubmission = documentsBySubmissionId.get(submission.id) || [];
                 if (documentsForSubmission.length === 0) {
-                    submissionsWithoutDocuments.push(submission);
                     skipped.push({
-                        submissionIds: [submission.id],
                         submissionId: submission.id,
-                        userId: submission.userId,
-                        primaryKeyValue: primaryKeyValue ?? null,
                         message: "Submission has no documents.",
                     });
                     continue;
@@ -1212,21 +1246,13 @@ class DocumentSocket extends Socket {
                 continue;
             }
 
-            const overwrittenKeys = [];
             let rowOverwrittenEntryCount = 0;
 
             for (const document of submissionDocuments) {
                 const existingKeys = existingByDocumentId.get(Number(document.id)) || new Set();
                 for (const mapping of effectiveMappings) {
-                    const effectiveMetadataKeys = [
-                        mapping.metaKey,
-                        `${mapping.metaKey}.sourceFile`,
-                        `${mapping.metaKey}.sourceField`,
-                    ];
-
-                    for (const metaKey of effectiveMetadataKeys) {
+                    for (const metaKey of [mapping.metaKey, `${mapping.metaKey}.sourceFile`, `${mapping.metaKey}.sourceField`]) {
                         if (existingKeys.has(metaKey)) {
-                            overwrittenKeys.push(metaKey);
                             rowOverwrittenEntryCount += 1;
                         }
                     }
@@ -1235,28 +1261,16 @@ class DocumentSocket extends Socket {
 
             const rowMetadataEntryCount = submissionDocuments.length * effectiveMappings.length * 3;
             matched.push({
-                submissionId: resolvedSubmissions[0].id,
-                submissionIds: resolvedSubmissions.map((submission) => submission.id),
                 userId: resolvedSubmissions[0].userId,
-                primaryKeyValue: primaryKeyValue ?? null,
                 row,
                 documentIds: submissionDocuments.map((document) => document.id),
-                documentCount: submissionDocuments.length,
-                metadataEntryCount: rowMetadataEntryCount,
-                overwrittenEntryCount: rowOverwrittenEntryCount,
                 mappings: effectiveMappings,
-                skippedSubmissionIds: submissionsWithoutDocuments.map((submission) => submission.id),
             });
 
             if (rowOverwrittenEntryCount > 0) {
                 overwritten.push({
                     submissionId: resolvedSubmissions[0].id,
-                    submissionIds: resolvedSubmissions.map((submission) => submission.id),
-                    userId: resolvedSubmissions[0].userId,
-                    primaryKeyValue: primaryKeyValue ?? null,
-                    overwrittenEntryCount: rowOverwrittenEntryCount,
-                    overwrittenMetaKeys: [...new Set(overwrittenKeys)],
-                    message: `${rowOverwrittenEntryCount} metadata entries will be overwritten.`,
+                    message: `${rowOverwrittenEntryCount} metadata entries were overwritten.`,
                 });
             }
 
@@ -1266,11 +1280,6 @@ class DocumentSocket extends Socket {
         }
 
         return {
-            targetType,
-            assignmentId,
-            assignmentName: assignment.name || null,
-            primaryKeyMapping,
-            mappings,
             matchedRowCount: matched.length,
             unmatchedRowCount: unmatched.length,
             skippedRowCount: skipped.length,
@@ -1292,7 +1301,15 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>}
      */
     async previewMetadataImport(data, options = {}) {
-        return await this.buildMetadataImportPlan(data, options);
+        const plan = await this.buildMetadataImportPlan(data, options);
+        return {
+            matchedRowCount: plan.matchedRowCount,
+            unmatchedRowCount: plan.unmatchedRowCount,
+            skippedRowCount: plan.skippedRowCount,
+            documentCount: plan.documentCount,
+            metadataEntryCount: plan.metadataEntryCount,
+            overwrittenEntryCount: plan.overwrittenEntryCount,
+        };
     }
 
     /**
@@ -1316,28 +1333,14 @@ class DocumentSocket extends Socket {
         }
 
         return {
-            targetType: plan.targetType,
-            assignmentId: plan.assignmentId,
-            assignmentName: plan.assignmentName,
-            primaryKeyMapping: plan.primaryKeyMapping,
-            mappings: plan.mappings,
             matchedRowCount: plan.matchedRowCount,
             unmatchedRowCount: plan.unmatchedRowCount,
             skippedRowCount: plan.skippedRowCount,
             documentCount: plan.documentCount,
             metadataEntryCount: plan.metadataEntryCount,
-            overwrittenEntryCount: plan.overwrittenEntryCount,
-            matched: plan.matched.map((entry) => ({
-                submissionId: entry.submissionId,
-                submissionIds: entry.submissionIds,
-                userId: entry.userId,
-                primaryKeyValue: entry.primaryKeyValue,
-                documentCount: entry.documentCount,
-                metadataEntryCount: entry.metadataEntryCount,
-            })),
             unmatched: plan.unmatched,
-            overwritten: plan.overwritten,
             skipped: plan.skipped,
+            overwritten: plan.overwritten,
         };
     }
 

@@ -44,6 +44,82 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Create or update many metadata entries in bulk.
+         *
+         * Duplicate document/key pairs in the input are deduplicated with last-write-wins semantics.
+         *
+         * @param {Object[]} entries
+         * @param {Object} [options={}]
+         * @returns {Promise<number>} Number of entries processed
+         */
+        static async bulkUpsertByDocumentAndKey(entries, options = {}) {
+            if (!Array.isArray(entries) || entries.length === 0) {
+                return 0;
+            }
+
+            const dedupedEntries = [];
+            const pairIndex = new Map();
+            for (const entry of entries) {
+                const pairKey = `${entry.documentId}:${entry.metaKey}`;
+                if (pairIndex.has(pairKey)) {
+                    dedupedEntries[pairIndex.get(pairKey)] = entry;
+                    continue;
+                }
+                pairIndex.set(pairKey, dedupedEntries.length);
+                dedupedEntries.push(entry);
+            }
+
+            const documentIds = Array.from(new Set(dedupedEntries.map((entry) => entry.documentId)));
+            const metaKeys = Array.from(new Set(dedupedEntries.map((entry) => entry.metaKey)));
+            const existingRows = await this.findAll({
+                where: {
+                    documentId: documentIds,
+                    metaKey: metaKeys,
+                    deleted: false,
+                },
+                raw: true,
+                transaction: options.transaction,
+            });
+
+            const existingByPair = new Map(
+                existingRows.map((row) => [`${row.documentId}:${row.metaKey}`, row])
+            );
+
+            const rowsToCreate = [];
+            const updatePromises = [];
+
+            for (const entry of dedupedEntries) {
+                const pairKey = `${entry.documentId}:${entry.metaKey}`;
+                const existing = existingByPair.get(pairKey);
+                const payload = {
+                    documentId: entry.documentId,
+                    userId: entry.userId,
+                    metaKey: entry.metaKey,
+                    metaValue: entry.metaValue,
+                    deleted: false,
+                    deletedAt: null,
+                };
+
+                if (existing) {
+                    updatePromises.push(this.updateById(existing.id, payload, options));
+                } else {
+                    rowsToCreate.push(payload);
+                }
+            }
+
+            if (rowsToCreate.length > 0) {
+                await this.bulkCreate(rowsToCreate, {
+                    transaction: options.transaction,
+                });
+            }
+            if (updatePromises.length > 0) {
+                await Promise.all(updatePromises);
+            }
+
+            return dedupedEntries.length;
+        }
+
+        /**
          * Load active metadata rows for a given document.
          *
          * @param {number} documentId
