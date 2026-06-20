@@ -194,12 +194,18 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1.25rem;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background-color: var(--bs-body-bg, #fff);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 
   &:after {
     content: "";
     position: absolute;
-    top: 15px;
+    top: calc(1rem + 15px);
     left: 0;
     right: 0;
     height: 2px;

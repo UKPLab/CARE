@@ -6,7 +6,7 @@
       </div>
 
       <!-- Stepper -->
-      <div v-if="displaySteps.length" class="stepper mb-4">
+      <div v-if="displaySteps.length" class="stepper">
         <div
           v-for="(step, index) in displaySteps"
           :key="step.key"
@@ -626,13 +626,20 @@ export default {
 .stepper {
   display: flex;
   justify-content: space-between;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--bs-body-bg, #fff);
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .stepper::after {
   content: "";
   position: absolute;
-  top: 15px;
+  top: calc(1.25rem + 14px);
   left: 0;
   right: 0;
   height: 2px;
