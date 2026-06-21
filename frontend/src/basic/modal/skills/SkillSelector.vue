@@ -44,11 +44,11 @@ export default {
     skillOptions() {
       const skillOpts = this.nlpSkills.map((skill) => ({
         value: skill.name,
-        name: `Skill: ${skill.name}`,
+        name: `<Skill> ${skill.name}`,
       }));
       const hookOpts = this.hooks.map((hook) => ({
         value: `hook:${hook.id}`,
-        name: `Hook: ${hook.name}`,
+        name: `<Hook> ${hook.name}`,
       }));
       return { options: [...skillOpts, ...hookOpts] };
     },

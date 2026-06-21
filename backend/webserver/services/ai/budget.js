@@ -63,17 +63,31 @@ async function beginRequest(service, request, opts = {}) {
             return { allowed: false, reason: "AI model is not available" };
         }
 
-        const share = await _findUserShareForModel(service, userId, aiModelId);
-        const isOwner = model.userId === userId;
+        // Inside a study, model access rides on the study owner. Participants
+        // themselves are not required to hold a share; the study creator is.
+        const accessHolderId = studyId
+            ? await _getStudyOwnerId(service, studyId)
+            : userId;
+        if (!accessHolderId) {
+            return { allowed: false, reason: "Study owner could not be resolved" };
+        }
+
+        const isOwner = model.userId === accessHolderId;
+        const share = await _findUserShareForModel(service, accessHolderId, aiModelId);
         if (!isOwner && !share) {
-            return { allowed: false, reason: "You do not have access to this AI model" };
+            return {
+                allowed: false,
+                reason: studyId
+                    ? "Study creator no longer has access to this AI model"
+                    : "You do not have access to this AI model",
+            };
         }
 
         const modelBlock = await _checkModelCap(service, model);
         if (modelBlock) return { allowed: false, reason: modelBlock };
 
         if (share) {
-            const shareBlock = await _checkShareCap(service, share, userId);
+            const shareBlock = await _checkShareCap(service, share, accessHolderId);
             if (shareBlock) return { allowed: false, reason: shareBlock };
         }
 
@@ -241,13 +255,32 @@ async function _hasInflight(service, userId, studySessionId) {
 }
 
 /**
- * Find the active share row for this (user, model) pair, if any.
+ * Find the active (non-expired) share row for this (user, model) pair, if any.
  */
 async function _findUserShareForModel(service, userId, aiModelId) {
     return service.server.db.models["ai_model_share"].findOne({
-        where: { aiModelId, userId, deleted: false },
+        where: {
+            aiModelId,
+            userId,
+            deleted: false,
+            expiryDate: { [Op.gt]: new Date() },
+        },
         raw: true,
     });
+}
+
+/**
+ * Resolve the owning userId for a study (the share/access-holder of record).
+ *
+ * @returns {Promise<number|null>} null when the study is missing or deleted.
+ */
+async function _getStudyOwnerId(service, studyId) {
+    const study = await service.server.db.models["study"].findByPk(studyId, {
+        attributes: ["userId", "deleted"],
+        raw: true,
+    });
+    if (!study || study.deleted) return null;
+    return Number(study.userId);
 }
 
 /**
@@ -266,18 +299,59 @@ async function _checkModelCap(service, model) {
 }
 
 /**
- * Returns a deny reason if the per-user share cap is exhausted, else null.
+ * Returns a deny reason if the share-holder's attributable cap is exhausted,
+ * else null. Attributable usage = the share owner's direct logs plus logs by
+ * any user inside studies owned by the share owner. Participants don't get
+ * sliced here — that's the step-hook cap's job.
  */
-async function _checkShareCap(service, share, userId) {
+async function _checkShareCap(service, share, ownerId) {
     if (!share || share.costLimit == null) return null;
-    const used = await _sumLogs(service, {
-        where: { aiModelId: share.aiModelId, userId },
-        resetAt: share.resetAt,
-    });
+    const used = await _sumLogsAttributableToOwner(service, share, ownerId);
     if (used >= share.costLimit) {
         return `Budget exceeded: $${used.toFixed(2)} / $${share.costLimit.toFixed(2)}`;
     }
     return null;
+}
+
+/**
+ * Sum ai_log.costs attributable to the share owner: their direct usage on the
+ * model + spend by anyone inside studies they own. Respects share.resetAt.
+ */
+async function _sumLogsAttributableToOwner(service, share, ownerId) {
+    const Sequelize = service.server.db.Sequelize;
+    const models = service.server.db.models;
+    const base = {
+        aiModelId: share.aiModelId,
+        deleted: false,
+        status: { [Op.in]: ["completed", "in_progress"] },
+    };
+    if (share.resetAt) base.createdAt = { [Op.gte]: share.resetAt };
+
+    const direct = await models["ai_log"].findOne({
+        where: { ...base, userId: ownerId },
+        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
+        raw: true,
+    });
+
+    const studyOwned = await models["ai_log"].findOne({
+        where: { ...base, userId: { [Op.ne]: ownerId } },
+        include: [{
+            model: models["study_session"],
+            required: true,
+            attributes: [],
+            include: [{
+                model: models["study"],
+                as: "study",
+                required: true,
+                where: { userId: ownerId },
+                attributes: [],
+            }],
+        }],
+        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
+        raw: true,
+    });
+
+    return parseFloat(direct?.total || 0) + parseFloat(studyOwned?.total || 0);
 }
 
 /**

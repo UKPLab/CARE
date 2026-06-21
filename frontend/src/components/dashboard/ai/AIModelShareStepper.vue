@@ -84,6 +84,7 @@
         <div><strong>Selected:</strong> {{ activeSelectionIds.length }}</div>
         <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
         <div><strong>Per-user cost limit:</strong> {{ shareCostLimitLabel }}</div>
+        <div><strong>Total cost limit:</strong> {{ activeSelectionIds.length * (this.shareForm.costLimit || 0) }}</div>
       </div>
       <BasicTable
         :columns="shareSelectionColumns"

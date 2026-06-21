@@ -35,7 +35,6 @@
           <h6 class="text-secondary">Budget limit</h6>
           <div class="row g-2">
             <div class="col-12">
-              <label class="form-label">Cost limit:</label>
               <input
                   v-model.number="skill.costLimit"
                   type="number"
