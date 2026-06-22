@@ -16,8 +16,6 @@ module.exports = (sequelize, DataTypes) => {
         aiModelId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
-        costLimit: DataTypes.FLOAT,
-        resetAt: DataTypes.DATE,
         expiryDate: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,

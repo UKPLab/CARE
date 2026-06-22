@@ -192,14 +192,6 @@ module.exports = (sequelize, DataTypes) => {
             default: false,
             help: "Specify whether participants can submit their study multiple times.",
             advanced: true
-        }, {
-            key: "aiCostLimit",
-            label: "AI cost limit ($):",
-            type: "number",
-            required: false,
-            default: null,
-            advanced: true,
-            help: "Maximum total AI spend across all participants for this study. Leave empty for no cap."
         },];
 
         /**
@@ -422,8 +414,6 @@ module.exports = (sequelize, DataTypes) => {
         projectId: DataTypes.INTEGER,
         anonymize: DataTypes.BOOLEAN,
         enableEmailNotifications: DataTypes.BOOLEAN,
-        aiCostLimit: DataTypes.FLOAT,
-        aiResetAt: DataTypes.DATE,
         parentStudyId: {
             type: DataTypes.INTEGER,
             allowNull: true,

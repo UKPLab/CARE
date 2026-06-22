@@ -617,56 +617,90 @@ async function getAiHookDisplaySummaries(service, client) {
     }, {});
 }
 
-async function resetShareBudget(service, client, data) {
+/**
+ * Creates, updates, or removes one cap row. Checks the caller owns the
+ * target entity before any DB write.
+ *
+ * @param {Object} service - AIService, used for DB access.
+ * @param {Object} client - The authenticated RPC client (we need its userId).
+ * @param {Object} data - Identifies the cap (one of: modelId / shareId / hookId /
+ *   hookShareId / studyId / studyStepId+hookId) plus limitType, costLimit, resetAt.
+ * @returns {Promise<{ ok: boolean, budgetId?: number, deleted?: boolean }>}
+ */
+async function setBudget(service, client, data) {
     const userId = helpers.requireClientUserId(client);
-    const shareId = Number(data?.shareId);
-
-    const share = await service.server.db.models.ai_model_share.findByPk(shareId, {raw: true});
-    if (!share || share.deleted) {
-        throw new Error("Share not found");
-    }
-
-    const model = await service.server.db.models.ai_model.findByPk(share.aiModelId, {raw: true});
-    const isModelOwner = model && Number(model.userId) === Number(userId);
-    if (!isModelOwner) {
-        throw new Error("You do not have permission to reset this share's budget");
-    }
-
-    await budget.resetShareBudget(service, data);
-    return {ok: true};
+    await assertBudgetOwnership(service, userId, data);
+    return budget.setBudget(service, data);
 }
 
-async function resetModelBudget(service, client, data) {
-    const ownerUserId = helpers.requireClientUserId(client);
-    await assertResourceOwnership(service.server, ownerUserId, SHARE_RESOURCES.model, {aiModelId: data?.aiModelId ?? data?.modelId});
-    await budget.resetModelBudget(service, data);
-    return {ok: true};
-}
-
-async function resetHookBudget(service, client, data) {
-    const ownerUserId = helpers.requireClientUserId(client);
-    await assertResourceOwnership(service.server, ownerUserId, SHARE_RESOURCES.hook, {aiHookId: data?.aiHookId ?? data?.hookId});
-    await budget.resetHookBudget(service, {hookId: data?.aiHookId ?? data?.hookId});
-    return {ok: true};
-}
-
-async function resetStudyBudget(service, client, data) {
+/**
+ * Resets one cap so past spend stops counting against it from now on.
+ * Loads the cap row first to know which entity to check ownership against.
+ *
+ * @param {Object} service - AIService, used for DB access.
+ * @param {Object} client - The authenticated RPC client (we need its userId).
+ * @param {{ budgetId: number }} data - The cap row to reset.
+ * @returns {Promise<{ ok: boolean }>}
+ */
+async function resetBudget(service, client, data) {
     const userId = helpers.requireClientUserId(client);
-    const studyId = Number(data?.studyId);
-    if (!Number.isInteger(studyId) || studyId <= 0) {
-        throw new Error("Missing or invalid studyId");
+    const budgetId = Number(data?.budgetId);
+    if (!Number.isInteger(budgetId) || budgetId <= 0) {
+        throw new Error("Missing or invalid budgetId");
     }
 
-    const study = await service.server.db.models.study.findByPk(studyId, {raw: true});
-    if (!study || study.deleted) {
-        throw new Error("Study not found");
-    }
-    if (Number(study.userId) !== Number(userId)) {
-        throw new Error("Only study owners can reset this budget");
+    const row = await service.server.db.models.ai_budget.findByPk(budgetId, {raw: true});
+    if (!row || row.deleted) {
+        throw new Error("Budget not found");
     }
 
-    await budget.resetStudyBudget(service, {studyId});
+    await assertBudgetOwnership(service, userId, row);
+    await budget.resetBudget(service, {budgetId});
     return {ok: true};
+}
+
+// Throws unless the caller owns the entity this cap belongs to.
+// Model/hook caps check the entity directly. Share/hookShare/step-hook caps
+// walk to the parent entity (the model, hook, or study) and check that owner.
+async function assertBudgetOwnership(service, userId, refs) {
+    if (refs?.modelId) {
+        await assertResourceOwnership(service.server, userId, SHARE_RESOURCES.model, {aiModelId: refs.modelId});
+        return;
+    }
+    // you need to be model id owner to manage a share's budget
+    if (refs?.shareId) {
+        const share = await service.server.db.models.ai_model_share.findByPk(refs.shareId, {raw: true});
+        if (!share) throw new Error("Share not found");
+        await assertResourceOwnership(service.server, userId, SHARE_RESOURCES.model, {aiModelId: share.aiModelId});
+        return;
+    }
+    if (refs?.studyStepId && refs?.hookId) {
+        const step = await service.server.db.models.study_step.findByPk(refs.studyStepId, {raw: true});
+        if (!step) throw new Error("Study step not found");
+        const study = await service.server.db.models.study.findByPk(step.studyId, {raw: true});
+        if (!study || Number(study.userId) !== Number(userId)) {
+            throw new Error("Only study owners can manage this budget");
+        }
+        return;
+    }
+    if (refs?.hookId) {
+        await assertResourceOwnership(service.server, userId, SHARE_RESOURCES.hook, {aiHookId: refs.hookId});
+        return;
+    }
+    if (refs?.hookShareId) {
+        const hookShare = await service.server.db.models.ai_hook_share.findByPk(refs.hookShareId, {raw: true});
+        if (!hookShare) throw new Error("Hook share not found");
+        await assertResourceOwnership(service.server, userId, SHARE_RESOURCES.hook, {aiHookId: hookShare.aiHookId});
+        return;
+    }
+    if (refs?.studyId) {
+        const study = await service.server.db.models.study.findByPk(refs.studyId, {raw: true});
+        if (!study || Number(study.userId) !== Number(userId)) {
+            throw new Error("Only study owners can manage this budget");
+        }
+        return;
+    }
+    throw new Error("Invalid budget scope");
 }
 
 module.exports = {
@@ -680,8 +714,6 @@ module.exports = {
     getAiModelOwnerSummaries,
     getAiHookOwnerSummaries,
     getAiHookDisplaySummaries,
-    resetShareBudget,
-    resetModelBudget,
-    resetHookBudget,
-    resetStudyBudget,
+    setBudget,
+    resetBudget,
 };

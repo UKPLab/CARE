@@ -1,56 +1,31 @@
 "use strict";
 
 /**
- * AI budget enforcement, ai_log status management, and concurrency for chat requests.
- *
- * Cap walker (first failure denies the request):
- *   1. Model global cap        — ai_model.costLimit       (all users on this model)
- *   2. Model share per-user    — ai_model_share.costLimit (this user on this model)
- *   3. Hook global cap         — ai_hook.costLimit        (all users on this hook)
- *   4. Study global cap        — study.aiCostLimit        (all users in this study)
- *   5. Step-hook cap           — study_step.configuration.services[].costLimit
- *                                (per-user or per-session via applyPerSession)
- *
- * Each cap has its own resetAt; only ai_log rows at or after that timestamp
- * count toward the cap.
- *
- * Concurrency: one in-flight request per (userId, studySessionId).
+ * Checks budgets before AI requests and tracks each request in ai_log.
+ * All cap rows live in the ai_budget table. Each request loads the caps
+ * that apply, sums the related spend, and denies on the first one that's full.
  *
  * @module webserver/services/ai/budget
  * @author Mohammed Rawhani
  */
 
 const { Op } = require("sequelize");
+const { AI_BUDGET_LIMIT_TYPES: LT, normalizeAiBudgetLimitType } = require("../../../utils/aiBudgetLimitTypes");
 
 /**
- * Gate a new AI request: concurrency + cap walker, then create the ai_log row.
+ * Decides if an AI request can run. If yes, creates the ai_log row for it.
+ * Blocks a second request from the same user in the same session while one is still running.
  *
- * @param {Object} service - AIService instance.
- * @param {Object} request - The AI request envelope.
- * @param {number} request.userId - Authenticated user triggering the request.
- * @param {number} request.aiModelId - Model the request targets.
- * @param {number} [request.aiHookId] - Hook driving the request (if any).
- * @param {string} request.requestId - Client-generated request id.
- * @param {string} request.input - Serialized messages payload.
- * @param {number} [request.studyId] - Study scope when inside a study.
- * @param {number} [request.studySessionId] - Session scope when inside a study.
- * @param {number} [request.studyStepId] - Step scope when inside a study.
- * @param {number} [request.documentId] - Document id, when applicable.
- * @param {Object} [opts] - Options bundle.
- * @param {boolean} [opts.bypassChecks] - Skip access + cap checks (test prompts).
+ * @param {Object} service - AIService, used for DB access.
+ * @param {Object} request - The request being made (user, model, hook, study, etc).
+ * @param {Object} [opts]
+ * @param {boolean} [opts.bypassChecks] - Skip the access + cap checks (used for admin test prompts).
  * @returns {Promise<{ allowed: boolean, logId?: number, reason?: string }>}
  */
 async function beginRequest(service, request, opts = {}) {
     const {
-        userId,
-        aiModelId,
-        aiHookId,
-        requestId,
-        input,
-        studyId,
-        studySessionId,
-        studyStepId,
-        documentId,
+        userId, aiModelId, aiHookId, requestId, input,
+        studyId, studySessionId, studyStepId, documentId,
     } = request || {};
 
     if (await _hasInflight(service, userId, studySessionId)) {
@@ -63,8 +38,8 @@ async function beginRequest(service, request, opts = {}) {
             return { allowed: false, reason: "AI model is not available" };
         }
 
-        // Inside a study, model access rides on the study owner. Participants
-        // themselves are not required to hold a share; the study creator is.
+        // Inside a study, access (and per-share budget attribution) rides on the
+        // study owner — participants don't carry shares.
         const accessHolderId = studyId
             ? await _getStudyOwnerId(service, studyId)
             : userId;
@@ -72,9 +47,9 @@ async function beginRequest(service, request, opts = {}) {
             return { allowed: false, reason: "Study owner could not be resolved" };
         }
 
-        const isOwner = model.userId === accessHolderId;
-        const share = await _findUserShareForModel(service, accessHolderId, aiModelId);
-        if (!isOwner && !share) {
+        const isModelOwner = model.userId === accessHolderId;
+        const modelShare = await _findActiveShare(service, "ai_model_share", "aiModelId", accessHolderId, aiModelId);
+        if (!isModelOwner && !modelShare) {
             return {
                 allowed: false,
                 reason: studyId
@@ -83,32 +58,28 @@ async function beginRequest(service, request, opts = {}) {
             };
         }
 
-        const modelBlock = await _checkModelCap(service, model);
-        if (modelBlock) return { allowed: false, reason: modelBlock };
+        if (!model.exemptFromCaps) {
+            // We look up hookShare only to know if there is a hook-share budget to check.
+            //We are not checking whether the user is allowed to use the hook here.
+             const hookShare = aiHookId
+                ? await _findActiveShare(service, "ai_hook_share", "aiHookId", accessHolderId, aiHookId)
+                : null;
 
-        if (share) {
-            const shareBlock = await _checkShareCap(service, share, accessHolderId);
-            if (shareBlock) return { allowed: false, reason: shareBlock };
-        }
-
-        if (aiHookId) {
-            const hookBlock = await _checkHookCap(service, aiHookId);
-            if (hookBlock) return { allowed: false, reason: hookBlock };
-        }
-
-        if (studyId) {
-            const studyBlock = await _checkStudyCap(service, studyId);
-            if (studyBlock) return { allowed: false, reason: studyBlock };
-        }
-
-        if (studyStepId && aiHookId) {
-            const stepHookBlock = await _checkStepHookCap(service, {
+            const caps = await _loadApplicableCaps(service, {
+                modelId: aiModelId,
+                shareId: modelShare?.id,
+                hookId: aiHookId,
+                hookShareId: hookShare?.id,
+                studyId,
                 studyStepId,
-                aiHookId,
-                userId,
-                studySessionId,
             });
-            if (stepHookBlock) return { allowed: false, reason: stepHookBlock };
+
+            for (const cap of caps) {
+                const used = await _sumLogsFor(service, cap, { userId, studySessionId, accessHolderId });
+                if (used >= cap.costLimit) {
+                    return { allowed: false, reason: _capDenyMessage(cap, used) };
+                }
+            }
         }
     }
 
@@ -128,12 +99,11 @@ async function beginRequest(service, request, opts = {}) {
 }
 
 /**
- * Record a successful response: persist parsed outcome, flip status.
+ * Marks a request as completed and saves the provider response.
  *
- * @param {Object} service - AIService instance.
- * @param {number} logId - ai_log.id.
- * @param {Object} outcome - Pre-parsed fields ready for ai_log persistence.
- * @returns {Promise<void>}
+ * @param {Object} service - AIService, used for DB access.
+ * @param {number} logId - The ai_log row id returned by beginRequest.
+ * @param {Object} outcome - Parsed response fields to save (output, tokens, costs, etc).
  */
 async function completeRequest(service, logId, outcome) {
     await service.server.db.models["ai_log"].update({
@@ -143,12 +113,11 @@ async function completeRequest(service, logId, outcome) {
 }
 
 /**
- * Record a failed response: flip status, store error message in output.
+ * Marks a request as failed and stores the error.
  *
- * @param {Object} service - AIService instance.
- * @param {number} logId - ai_log.id returned from beginRequest.
- * @param {string} [errorMessage] - Human-readable error message to store.
- * @returns {Promise<void>}
+ * @param {Object} service - AIService, used for DB access.
+ * @param {number} logId - The ai_log row id returned by beginRequest.
+ * @param {string} [errorMessage] - Error text to save on the log row.
  */
 async function failRequest(service, logId, errorMessage) {
     await service.server.db.models["ai_log"].update({
@@ -158,11 +127,10 @@ async function failRequest(service, logId, errorMessage) {
 }
 
 /**
- * Cancel the user's in-flight request: flip status to aborted.
+ * Marks a running request as aborted (used after the caller stops it at the provider).
  *
- * @param {Object} service - AIService instance.
- * @param {number} logId - ai_log.id to cancel.
- * @returns {Promise<{ cancelled: boolean }>}
+ * @param {Object} service - AIService, used for DB access.
+ * @param {number} logId - The ai_log row id returned by beginRequest.
  */
 async function cancelRequest(service, logId) {
     await service.server.db.models["ai_log"].update(
@@ -173,74 +141,92 @@ async function cancelRequest(service, logId) {
 }
 
 /**
- * Reset a share's cap window (single-row update).
+ * Resets one budget so past spend stops counting against it from now on.
  *
- * @param {Object} service - AIService instance.
- * @param {{ shareId: number }} request - Reset target.
- * @returns {Promise<void>}
+ * @param {Object} service - AIService, used for DB access.
+ * @param {{ budgetId: number }} request - The cap row to reset.
  */
-async function resetShareBudget(service, request) {
-    const shareId = Number(request?.shareId);
-    if (!Number.isInteger(shareId) || shareId <= 0) return;
-    await service.server.db.models["ai_model_share"].update(
+async function resetBudget(service, request) {
+    const budgetId = Number(request?.budgetId);
+    if (!Number.isInteger(budgetId) || budgetId <= 0) return;
+    await service.server.db.models["ai_budget"].update(
         { resetAt: new Date() },
-        { where: { id: shareId } }
+        { where: { id: budgetId } }
     );
 }
 
 /**
- * Reset a model's global cap window.
+ * Creates, updates, or removes one cap row.
+ * If costLimit is a positive number, the row is created or updated.
+ * If costLimit is empty/zero, the existing row is soft-deleted.
  *
- * @param {Object} service - AIService instance.
- * @param {{ modelId: number }} request - Reset target.
- * @returns {Promise<void>}
+ * Ownership of the target is checked by the caller in share.js.
+ *
+ * @param {Object} service - AIService, used for DB access.
+ * @param {Object} data - Identifies which cap to write. Includes one of: modelId,
+ *   shareId, hookId, hookShareId, studyId, or (studyStepId + hookId).
+ *   Plus: limitType (default TOTAL), costLimit, optional resetAt.
+ * @returns {Promise<{ ok: boolean, budgetId?: number, deleted?: boolean }>}
  */
-async function resetModelBudget(service, request) {
-    const modelId = Number(request?.modelId);
-    if (!Number.isInteger(modelId) || modelId <= 0) return;
-    await service.server.db.models["ai_model"].update(
-        { resetAt: new Date() },
-        { where: { id: modelId } }
-    );
+async function setBudget(service, data) {
+    const refs = _capRefsFrom(data);
+    const limitType = data?.limitType == null ? LT.TOTAL : normalizeAiBudgetLimitType(data.limitType);
+
+    const Budget = service.server.db.models["ai_budget"];
+    const where = { ..._refsWhere(refs), limitType, deleted: false };
+
+    const costLimitValue = Number(data?.costLimit);
+
+    const existing = await Budget.findOne({ where });
+
+
+    if (existing) {
+        await existing.update({
+            costLimit: costLimitValue,
+            resetAt: data?.resetAt ?? existing.resetAt,
+        });
+        return { ok: true, budgetId: existing.id };
+    }
+
+    const created = await Budget.create({
+        ...refs,
+        limitType,
+        costLimit: costLimitValue,
+        resetAt: data?.resetAt ?? null,
+        deleted: false,
+    });
+    return { ok: true, budgetId: created.id };
 }
 
-/**
- * Reset a hook's global cap window.
- *
- * @param {Object} service - AIService instance.
- * @param {{ hookId: number }} request - Reset target.
- * @returns {Promise<void>}
- */
-async function resetHookBudget(service, request) {
-    const hookId = Number(request?.hookId);
-    if (!Number.isInteger(hookId) || hookId <= 0) return;
-    await service.server.db.models["ai_hook"].update(
-        { resetAt: new Date() },
-        { where: { id: hookId } }
-    );
+// Pulls the FK columns out of the payload. Only one entity pattern is valid;
+// the DB CHECK constraint rejects bad combinations.
+function _capRefsFrom(data) {
+    const refs = {};
+    if (data?.modelId) refs.modelId = Number(data.modelId);
+    if (data?.shareId) refs.shareId = Number(data.shareId);
+    if (data?.hookShareId) refs.hookShareId = Number(data.hookShareId);
+    if (data?.studyId) refs.studyId = Number(data.studyId);
+    if (data?.studyStepId) refs.studyStepId = Number(data.studyStepId);
+    if (data?.hookId) refs.hookId = Number(data.hookId);
+    return refs;
 }
 
-/**
- * Reset a study's global cap window.
- *
- * @param {Object} service - AIService instance.
- * @param {{ studyId: number }} request - Reset target.
- * @returns {Promise<void>}
- */
-async function resetStudyBudget(service, request) {
-    const studyId = Number(request?.studyId);
-    if (!Number.isInteger(studyId) || studyId <= 0) return;
-    await service.server.db.models["study"].update(
-        { aiResetAt: new Date() },
-        { where: { id: studyId } }
-    );
+// Build the WHERE for one specific cap row. Unset FKs are explicitly null
+// so a hook-only query doesn't match a step_hook row that also has hookId.
+function _refsWhere(refs) {
+    return {
+        modelId:     refs.modelId     ?? null,
+        shareId:     refs.shareId     ?? null,
+        hookId:      refs.hookId      ?? null,
+        hookShareId: refs.hookShareId ?? null,
+        studyId:     refs.studyId     ?? null,
+        studyStepId: refs.studyStepId ?? null,
+    };
 }
 
 /// Internal helpers
 
-/**
- * True if the user already has an in-flight request in this session.
- */
+// True if this user already has a request running in this session.
 async function _hasInflight(service, userId, studySessionId) {
     const existing = await service.server.db.models["ai_log"].findOne({
         where: {
@@ -254,26 +240,7 @@ async function _hasInflight(service, userId, studySessionId) {
     return existing !== null;
 }
 
-/**
- * Find the active (non-expired) share row for this (user, model) pair, if any.
- */
-async function _findUserShareForModel(service, userId, aiModelId) {
-    return service.server.db.models["ai_model_share"].findOne({
-        where: {
-            aiModelId,
-            userId,
-            deleted: false,
-            expiryDate: { [Op.gt]: new Date() },
-        },
-        raw: true,
-    });
-}
-
-/**
- * Resolve the owning userId for a study (the share/access-holder of record).
- *
- * @returns {Promise<number|null>} null when the study is missing or deleted.
- */
+// Returns the userId of the study's owner, or null if the study is gone.
 async function _getStudyOwnerId(service, studyId) {
     const study = await service.server.db.models["study"].findByPk(studyId, {
         attributes: ["userId", "deleted"],
@@ -283,49 +250,200 @@ async function _getStudyOwnerId(service, studyId) {
     return Number(study.userId);
 }
 
-/**
- * Returns a deny reason if the model's global cap is exhausted, else null.
- */
-async function _checkModelCap(service, model) {
-    if (!model || model.costLimit == null) return null;
-    const used = await _sumLogs(service, {
-        where: { aiModelId: model.id },
-        resetAt: model.resetAt,
+// Returns the user's active (non-expired) share row for a model or hook, or null.
+// One function handles both share tables since they have the same shape.
+async function _findActiveShare(service, tableName, fkColumn, userId, entityId) {
+    return service.server.db.models[tableName].findOne({
+        where: {
+            [fkColumn]: entityId,
+            userId,
+            deleted: false,
+            expiryDate: { [Op.gt]: new Date() },
+        },
+        raw: true,
     });
-    if (used >= model.costLimit) {
-        return `Model budget exhausted: $${used.toFixed(2)} / $${model.costLimit.toFixed(2)}`;
-    }
-    return null;
 }
 
-/**
- * Returns a deny reason if the share-holder's attributable cap is exhausted,
- * else null. Attributable usage = the share owner's direct logs plus logs by
- * any user inside studies owned by the share owner. Participants don't get
- * sliced here — that's the step-hook cap's job.
- */
-async function _checkShareCap(service, share, ownerId) {
-    if (!share || share.costLimit == null) return null;
-    const used = await _sumLogsAttributableToOwner(service, share, ownerId);
-    if (used >= share.costLimit) {
-        return `Budget exceeded: $${used.toFixed(2)} / $${share.costLimit.toFixed(2)}`;
+// Loads every cap row that could apply to this request (model, share, hook,
+// hook share, study, step-hook) in one DB query.
+async function _loadApplicableCaps(service, ctx) {
+    const orClauses = [];
+    if (ctx.modelId)      orClauses.push({ modelId: ctx.modelId });
+    if (ctx.shareId)      orClauses.push({ shareId: ctx.shareId });
+    if (ctx.hookShareId)  orClauses.push({ hookShareId: ctx.hookShareId });
+    if (ctx.studyId)      orClauses.push({ studyId: ctx.studyId });
+    if (ctx.hookId)       orClauses.push({ hookId: ctx.hookId, studyStepId: null });
+    if (ctx.studyStepId && ctx.hookId) {
+        orClauses.push({ studyStepId: ctx.studyStepId, hookId: ctx.hookId });
     }
-    return null;
+    if (orClauses.length === 0) return [];
+
+    return service.server.db.models["ai_budget"].findAll({
+        where: { deleted: false, [Op.or]: orClauses },
+        raw: true,
+    });
 }
 
-/**
- * Sum ai_log.costs attributable to the share owner: their direct usage on the
- * model + spend by anyone inside studies they own. Respects share.resetAt.
- */
-async function _sumLogsAttributableToOwner(service, share, ownerId) {
+// Picks the right sum function for this cap row based on its FKs and limitType.
+// service: DB access. cap: an ai_budget row. ctx: { userId, studySessionId, accessHolderId }.
+async function _sumLogsFor(service, cap, ctx) {
+    if (cap.modelId)      return _sumModelTotal(service, cap);
+    if (cap.shareId)      return _sumShareAttributable(service, cap, ctx.accessHolderId);
+    if (cap.hookShareId)  return _sumHookShareAttributable(service, cap, ctx.accessHolderId);
+    // before hook id condition 
+    if (cap.studyStepId && cap.hookId) {
+        if (cap.limitType === LT.PER_SESSION) return _sumStepHookSession(service, cap, ctx);
+        if (cap.limitType === LT.PER_USER)    return _sumStepHookUser(service, cap, ctx);
+        return _sumStepHookTotal(service, cap);
+    }
+    if (cap.hookId && !cap.studyStepId) return _sumHookTotal(service, cap);
+    if (cap.studyId) {
+        if (cap.limitType === LT.PER_SESSION) return _sumStudySession(service, cap, ctx);
+        if (cap.limitType === LT.PER_USER)    return _sumStudyUser(service, cap, ctx);
+        return _sumStudyTotal(service, cap);
+    }
+    return 0;
+}
+
+// Human-readable deny message for the cap that blocked the request.
+function _capDenyMessage(cap, used) {
+    const limit = Number(cap.costLimit).toFixed(2);
+    const spent = used.toFixed(2);
+    if (cap.modelId)      return `Model budget exhausted: $${spent} / $${limit}`;
+    if (cap.shareId)      return `Model share budget exhausted: $${spent} / $${limit}`;
+    if (cap.hookShareId)  return `Hook share budget exhausted: $${spent} / $${limit}`;
+    if (cap.studyStepId)  return `Step-hook budget exhausted: $${spent} / $${limit}`;
+    if (cap.hookId)       return `Hook budget exhausted: $${spent} / $${limit}`;
+    if (cap.studyId)      return `Study budget exhausted: $${spent} / $${limit}`;
+    return `Budget exhausted: $${spent} / $${limit}`;
+}
+
+/// Sum helpers
+
+// Sums ai_log.costs for any WHERE the caller passes. Skips logs older than resetAt if set.
+async function _sumLogs(service, where, resetAt, include = []) {
     const Sequelize = service.server.db.Sequelize;
-    const models = service.server.db.models;
-    const base = {
-        aiModelId: share.aiModelId,
+    const filter = {
+        ...where,
         deleted: false,
         status: { [Op.in]: ["completed", "in_progress"] },
     };
-    if (share.resetAt) base.createdAt = { [Op.gte]: share.resetAt };
+    if (resetAt) filter.createdAt = { [Op.gte]: resetAt };
+
+    const result = await service.server.db.models["ai_log"].findOne({
+        where: filter,
+        include,
+        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
+        raw: true,
+    });
+    return parseFloat(result?.total || 0);
+}
+
+async function _sumModelTotal(service, cap) {
+    return _sumLogs(service, { aiModelId: cap.modelId }, cap.resetAt);
+}
+
+async function _sumHookTotal(service, cap) {
+    return _sumLogs(service, { aiHookId: cap.hookId }, cap.resetAt);
+}
+
+async function _sumStudyTotal(service, cap) {
+    return _sumLogs(service, {}, cap.resetAt, [{
+        model: service.server.db.models["study_session"],
+        where: { studyId: cap.studyId },
+        required: true,
+        attributes: [],
+    }]);
+}
+
+async function _sumStudySession(service, cap, ctx) {
+    if (!ctx.studySessionId) return 0;
+    return _sumLogs(service, { studySessionId: ctx.studySessionId }, cap.resetAt);
+}
+
+async function _sumStudyUser(service, cap, ctx) {
+    return _sumLogs(service, { userId: ctx.userId }, cap.resetAt, [{
+        model: service.server.db.models["study_session"],
+        where: { studyId: cap.studyId },
+        required: true,
+        attributes: [],
+    }]);
+}
+
+// count hook usage but only inside this study
+async function _sumStepHookTotal(service, cap) {
+    const step = await service.server.db.models["study_step"].findByPk(cap.studyStepId, {
+        attributes: ["studyId"],
+        raw: true,
+    });
+    if (!step) return 0;
+    return _sumLogs(service, { aiHookId: cap.hookId }, cap.resetAt, [{
+        model: service.server.db.models["study_session"],
+        where: { studyId: step.studyId },
+        required: true,
+        attributes: [],
+    }]);
+}
+
+// count hook usage inside this session
+async function _sumStepHookSession(service, cap, ctx) {
+    if (!ctx.studySessionId) return 0;
+    return _sumLogs(service, {
+        aiHookId: cap.hookId,
+        studySessionId: ctx.studySessionId,
+    }, cap.resetAt);
+}
+
+// sum for this user using hook across all their sessions within this study
+async function _sumStepHookUser(service, cap, ctx) {
+    const step = await service.server.db.models["study_step"].findByPk(cap.studyStepId, {
+        attributes: ["studyId"],
+        raw: true,
+    });
+    if (!step) return 0;
+    return _sumLogs(service, {
+        aiHookId: cap.hookId,
+        userId: ctx.userId,
+    }, cap.resetAt, [{
+        model: service.server.db.models["study_session"],
+        where: { studyId: step.studyId },
+        required: true,
+        attributes: [],
+    }]);
+}
+
+// Spend on this model that belongs to the share owner: their own usage
+// plus anyone using it inside studies they own.
+async function _sumShareAttributable(service, cap, ownerId) {
+    const share = await service.server.db.models["ai_model_share"].findByPk(cap.shareId, {
+        attributes: ["aiModelId"],
+        raw: true,
+    });
+    if (!share) return 0;
+    return _sumAttributableForEntity(service, { aiModelId: share.aiModelId }, ownerId, cap.resetAt);
+}
+
+// Same as _sumShareAttributable but for hooks instead of models.
+async function _sumHookShareAttributable(service, cap, ownerId) {
+    const hookShare = await service.server.db.models["ai_hook_share"].findByPk(cap.hookShareId, {
+        attributes: ["aiHookId"],
+        raw: true,
+    });
+    if (!hookShare) return 0;
+    return _sumAttributableForEntity(service, { aiHookId: hookShare.aiHookId }, ownerId, cap.resetAt);
+}
+
+// Owner's own usage on the entity + usage by anyone in studies they own.
+// entityWhere narrows to one model or one hook.
+async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt) {
+    const Sequelize = service.server.db.Sequelize;
+    const models = service.server.db.models;
+    const base = {
+        ...entityWhere,
+        deleted: false,
+        status: { [Op.in]: ["completed", "in_progress"] },
+    };
+    if (resetAt) base.createdAt = { [Op.gte]: resetAt };
 
     const direct = await models["ai_log"].findOne({
         where: { ...base, userId: ownerId },
@@ -354,148 +472,11 @@ async function _sumLogsAttributableToOwner(service, share, ownerId) {
     return parseFloat(direct?.total || 0) + parseFloat(studyOwned?.total || 0);
 }
 
-/**
- * Returns a deny reason if the hook's global cap is exhausted, else null.
- */
-async function _checkHookCap(service, aiHookId) {
-    const hook = await service.server.db.models["ai_hook"].findByPk(aiHookId, { raw: true });
-    if (!hook || hook.costLimit == null) return null;
-    const used = await _sumLogs(service, {
-        where: { aiHookId },
-        resetAt: hook.resetAt,
-    });
-    if (used >= hook.costLimit) {
-        return `Hook budget exhausted: $${used.toFixed(2)} / $${hook.costLimit.toFixed(2)}`;
-    }
-    return null;
-}
-
-/**
- * Returns a deny reason if the study's global cap is exhausted, else null.
- * The study scope joins study_session because ai_log only carries
- * studySessionId, not studyId.
- */
-async function _checkStudyCap(service, studyId) {
-    const study = await service.server.db.models["study"].findByPk(studyId, { raw: true });
-    if (!study || study.aiCostLimit == null) return null;
-    const used = await _sumLogsForStudy(service, study);
-    if (used >= study.aiCostLimit) {
-        return `Study budget exhausted: $${used.toFixed(2)} / $${study.aiCostLimit.toFixed(2)}`;
-    }
-    return null;
-}
-
-/**
- * Returns a deny reason if the per-hook cap on this step is exhausted.
- * The cap config lives in study_step.configuration.services[] keyed by hookId.
- * applyPerSession=true → sum is per-session; otherwise per-user-per-study.
- */
-async function _checkStepHookCap(service, { studyStepId, aiHookId, userId, studySessionId }) {
-    const step = await service.server.db.models["study_step"].findByPk(studyStepId, { raw: true });
-    if (!step) return null;
-    const services = Array.isArray(step.configuration?.services) ? step.configuration.services : [];
-    const entry = services.find((row) => Number(row?.hookId) === Number(aiHookId));
-    if (!entry || entry.costLimit == null) return null;
-
-    const used = entry.applyPerSession
-        ? await _sumLogs(service, {
-            where: { aiHookId, userId, studySessionId: studySessionId ?? null },
-            resetAt: entry.resetAt,
-        })
-        : await _sumLogsForHookInStudy(service, { aiHookId, userId, studyId: step.studyId, resetAt: entry.resetAt });
-
-    if (used >= entry.costLimit) {
-        return `Hook step budget exhausted: $${used.toFixed(2)} / $${Number(entry.costLimit).toFixed(2)}`;
-    }
-    return null;
-}
-
-/**
- * Generic ai_log sum over a where clause + optional resetAt cutoff.
- *
- * @param {Object} service - AIService instance.
- * @param {Object} opts
- * @param {Object} opts.where - Sequelize where clause to apply.
- * @param {Date} [opts.resetAt] - Only logs at or after this count.
- * @returns {Promise<number>}
- */
-async function _sumLogs(service, { where, resetAt }) {
-    const Sequelize = service.server.db.Sequelize;
-    const filter = {
-        ...where,
-        deleted: false,
-        status: { [Op.in]: ["completed", "in_progress"] },
-    };
-    if (resetAt) filter.createdAt = { [Op.gte]: resetAt };
-
-    const result = await service.server.db.models["ai_log"].findOne({
-        where: filter,
-        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
-        raw: true,
-    });
-    return parseFloat(result?.total || 0);
-}
-
-/**
- * Sum ai_log.costs for every log under a study (joins study_session).
- */
-async function _sumLogsForStudy(service, study) {
-    const Sequelize = service.server.db.Sequelize;
-    const where = {
-        deleted: false,
-        status: { [Op.in]: ["completed", "in_progress"] },
-    };
-    if (study.aiResetAt) where.createdAt = { [Op.gte]: study.aiResetAt };
-
-    const result = await service.server.db.models["ai_log"].findOne({
-        where,
-        include: [{
-            model: service.server.db.models["study_session"],
-            where: { studyId: study.id },
-            required: true,
-            attributes: [],
-        }],
-        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
-        raw: true,
-    });
-    return parseFloat(result?.total || 0);
-}
-
-/**
- * Sum ai_log.costs for one user on one hook inside a single study
- * (per-user-per-study, the !applyPerSession step-hook scope).
- */
-async function _sumLogsForHookInStudy(service, { aiHookId, userId, studyId, resetAt }) {
-    const Sequelize = service.server.db.Sequelize;
-    const where = {
-        aiHookId,
-        userId,
-        deleted: false,
-        status: { [Op.in]: ["completed", "in_progress"] },
-    };
-    if (resetAt) where.createdAt = { [Op.gte]: resetAt };
-
-    const result = await service.server.db.models["ai_log"].findOne({
-        where,
-        include: [{
-            model: service.server.db.models["study_session"],
-            where: { studyId },
-            required: true,
-            attributes: [],
-        }],
-        attributes: [[Sequelize.fn("SUM", Sequelize.col("costs")), "total"]],
-        raw: true,
-    });
-    return parseFloat(result?.total || 0);
-}
-
 module.exports = {
     beginRequest,
     completeRequest,
     failRequest,
     cancelRequest,
-    resetShareBudget,
-    resetModelBudget,
-    resetHookBudget,
-    resetStudyBudget,
+    resetBudget,
+    setBudget,
 };

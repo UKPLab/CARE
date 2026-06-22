@@ -36,10 +36,8 @@ module.exports = class AIService extends Service {
                 "getAiModelOwnerSummaries",
                 "getAiHookOwnerSummaries",
                 "getAiHookDisplaySummaries",
-                "resetShareBudget",
-                "resetModelBudget",
-                "resetHookBudget",
-                "resetStudyBudget",
+                "setBudget",
+                "resetBudget",
             ],
             resTypes: [],
         });
@@ -71,10 +69,8 @@ module.exports = class AIService extends Service {
             getAiModelOwnerSummaries: () => share.getAiModelOwnerSummaries(this, client),
             getAiHookOwnerSummaries: () => share.getAiHookOwnerSummaries(this, client),
             getAiHookDisplaySummaries: () => share.getAiHookDisplaySummaries(this, client),
-            resetShareBudget: () => share.resetShareBudget(this, client, data),
-            resetModelBudget: () => share.resetModelBudget(this, client, data),
-            resetHookBudget: () => share.resetHookBudget(this, client, data),
-            resetStudyBudget: () => share.resetStudyBudget(this, client, data),
+            setBudget: () => share.setBudget(this, client, data),
+            resetBudget: () => share.resetBudget(this, client, data),
         };
         if (handlers[command]) {
             return handlers[command]();
