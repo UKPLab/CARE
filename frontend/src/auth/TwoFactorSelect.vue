@@ -58,7 +58,7 @@
             <div class="col-md-6 offset-md-4 my-4">
               <BasicButton
                 class="btn btn-primary btn-block"
-                native-type="submit"
+                type="submit"
                 :disabled="!selectedMethod || isSubmitting"
                 :text="isSubmitting ? 'Continuing...' : 'Continue'"
               />

@@ -58,13 +58,10 @@ export default [
         },
     },
     {
-        files: ['src/basic/**/*.vue'],
-        rules: {
-            'vue/no-restricted-html-elements': 'off',
-        },
-    },
-    {
-        files: ['src/components/**/Button.vue'],
+        files: [
+            'src/basic/**/*.vue',
+            'src/components/**/Button.vue',
+        ],
         rules: {
             'vue/no-restricted-html-elements': 'off',
         },

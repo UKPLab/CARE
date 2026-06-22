@@ -191,7 +191,7 @@
             <div class="col-md-6 offset-md-4">
               <BasicButton
                 class="btn btn-primary"
-                native-type="submit"
+                type="submit"
                 :disabled="!config['isRegistrationEnabled']"
                 text="Register"
               />
