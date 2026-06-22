@@ -194,7 +194,7 @@ const SUBSECTION_ORDER = {
   registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
   moodle: ["Connection", "Course", "Show inputs"],
   annotations: ["Comments", "Download", "NLP in annotations", "Sidebar"],
-  interface: ["Navigation and dashboard", "Branding", "Projects", "Statistics and tags"],
+  interface: ["Localization", "Navigation and dashboard", "Branding", "Projects", "Statistics and tags"],
   "text editor": ["Document buttons", "Edit history", "Toolbar"],
   "ai & nlp": ["Modal NLP", "NLP service"],
   system: ["Token expiry"],

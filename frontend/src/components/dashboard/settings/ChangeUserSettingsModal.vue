@@ -38,6 +38,17 @@
                 type="checkbox"
               >
             </div>
+            <div v-else-if="isLocaleSetting">
+              <select v-model="settingSelection.value" class="form-select w-50">
+                <option
+                  v-for="lang in supportedLocales"
+                  :key="lang.code"
+                  :value="lang.code"
+                >
+                  {{ lang.name }}
+                </option>
+              </select>
+            </div>
             <input v-else v-model="settingSelection.value" class="w-50" type="text">
           </div>
            <div class="mt-1">
@@ -130,6 +141,7 @@ import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import { LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/locale.js";
 
 export default {
   name: "ChangeUserSettingsModal",
@@ -192,6 +204,12 @@ export default {
     isBooleanType() {
       return this.selectedType === "boolean" || this.selectedType === "bool";
     },
+    isLocaleSetting() {
+      return this.settingSelection.settingKey === LOCALE_SETTING_KEY;
+    },
+    supportedLocales() {
+      return SUPPORTED_LOCALES;
+    },
     settingFields() {
       return [
         {
@@ -220,6 +238,10 @@ export default {
       const v = this.settingSelection.value;
       if (this.isBooleanType) {
         return this.toBoolean(v) ? "true" : "false";
+      }
+      if (this.isLocaleSetting) {
+        const match = SUPPORTED_LOCALES.find((lang) => lang.code === v);
+        return `${match.name} (${v})`;
       }
       return String(v ?? "");
     },
