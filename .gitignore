@@ -16,6 +16,7 @@ backend/node_modules
 backend/logs
 backend/coverage
 backend/encryption.key
+backend/encryption.state
 
 # ignore build files
 dist/

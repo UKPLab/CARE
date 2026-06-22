@@ -25,6 +25,7 @@ const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const PROJECT_ROOT = path.resolve(__dirname, "../");
 const KEY_FILE = path.join(PROJECT_ROOT, "encryption.key");
+const STATE_FILE = path.join(PROJECT_ROOT, "encryption.state");
 // Minimum byte length of a valid encrypted buffer: IV + authTag + 1 byte ciphertext
 const MIN_ENCRYPTED_LENGTH = IV_LENGTH + AUTH_TAG_LENGTH + 1;
 
@@ -63,14 +64,15 @@ function getKey() {
  * Each call uses a fresh random IV so the same plaintext produces different ciphertext.
  *
  * @param {string|null|undefined} plaintext
+ * @param {Buffer|string} [key]  32-byte key — defaults to the key stored in encryption.key
  * @returns {string|null} Base64-encoded encrypted string, or null for null/undefined input
  */
-function encrypt(plaintext) {
+function encrypt(plaintext, key) {
     if (plaintext === null || plaintext === undefined) return null;
 
-    const key = getKey();
+    const resolvedKey = key ? parseKey(key) : getKey();
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
+    const cipher = crypto.createCipheriv(ALGORITHM, resolvedKey, iv, { authTagLength: AUTH_TAG_LENGTH });
 
     const ciphertext = Buffer.concat([
         cipher.update(String(plaintext), 'utf8'),
@@ -141,4 +143,166 @@ function initializeEncryptionKey() {
   return key;
 }
 
-module.exports = { encrypt, decrypt, initializeEncryptionKey, getKey };
+/**
+ * Parse a key argument that may be a 32-byte Buffer or a 64-char hex string.
+ * @param {Buffer|string} keyInput
+ * @returns {Buffer}
+ */
+function parseKey(keyInput) {
+    if (Buffer.isBuffer(keyInput)) {
+        if (keyInput.length !== 32) throw new Error(`Key buffer must be 32 bytes (got ${keyInput.length}).`);
+        return keyInput;
+    }
+    if (typeof keyInput === 'string') {
+        const buf = Buffer.from(keyInput, 'hex');
+        if (buf.length !== 32) throw new Error(`Key hex must decode to 32 bytes (got ${buf.length}).`);
+        return buf;
+    }
+    throw new Error('Key must be a Buffer or a hex string.');
+}
+
+/**
+ * Re-encrypt a single value from the current key (read from file) to newKey.
+ * decrypt() uses the file key, which is still the old key at rotation time.
+ *
+ * - If the value is null/undefined it is returned as-is.
+ * - If the value does not decrypt (not encrypted, or wrong key) it is returned unchanged.
+ *
+ * @param {string|null|undefined} encryptedValue  Value currently stored in the DB
+ * @param {Buffer|string} newKey                  32-byte key to re-encrypt with
+ * @returns {string|null}                         Value re-encrypted with newKey, or original if not encrypted
+ */
+function reEncryptValue(encryptedValue, newKey) {
+    if (encryptedValue === null || encryptedValue === undefined) return null;
+    if (typeof encryptedValue !== 'string') return encryptedValue;
+
+    const newKeyBuf = parseKey(newKey);
+    const plaintext = decrypt(encryptedValue);
+
+    // decrypt() returns the original value when decryption fails
+    if (plaintext === encryptedValue) return encryptedValue;
+
+    return encrypt(plaintext, newKeyBuf);
+}
+
+/**
+ * Iterate every model table that declares `encryptedFields`, apply `transformFn` to each
+ * field value, and persist the results. Each table runs in its own transaction.
+ *
+ * @param {object}   db           The db object exported from backend/db
+ * @param {Function} transformFn  (value: string) => string  — called for every non-null field value
+ * @returns {Promise<Array<{model: string, total: number, updated: number}>>}
+ */
+async function _applyToAllModels(db, transformFn) {
+    const { sequelize, models } = db;
+    const results = [];
+
+    for (const [modelName, Model] of Object.entries(models)) {
+        const fields = Model.options && Model.options.encryptedFields;
+        if (!fields || fields.length === 0) continue;
+
+        const tableName = Model.tableName;
+        const pk = Model.primaryKeyAttribute || 'id';
+
+        const transaction = await sequelize.transaction();
+        try {
+            const rows = await sequelize.query(
+                `SELECT "${pk}", ${fields.map(f => `"${f}"`).join(', ')} FROM "${tableName}"`,
+                { type: sequelize.QueryTypes.SELECT, transaction }
+            );
+
+            let updated = 0;
+            for (const row of rows) {
+                const updates = {};
+                for (const field of fields) {
+                    if (row[field] != null) {
+                        updates[field] = transformFn(row[field]);
+                    }
+                }
+                if (Object.keys(updates).length > 0) {
+                    const setClauses = Object.keys(updates).map(col => `"${col}" = :${col}`).join(', ');
+                    await sequelize.query(
+                        `UPDATE "${tableName}" SET ${setClauses} WHERE "${pk}" = :pk`,
+                        { replacements: { ...updates, pk: row[pk] }, transaction }
+                    );
+                    updated++;
+                }
+            }
+
+            await transaction.commit();
+            results.push({ model: modelName, total: rows.length, updated });
+        } catch (err) {
+            await transaction.rollback();
+            throw Object.assign(err, { model: modelName });
+        }
+    }
+
+    return results;
+}
+
+/**
+ * Re-encrypt all encryptedFields using the current file key as the old key and newKey as the new key.
+ * @param {object} db  The db object exported from backend/db
+ * @param {Buffer|string} newKey
+ */
+async function reEncryptAllModels(db, newKey) {
+    const newKeyBuf = parseKey(newKey);
+    return _applyToAllModels(db, value => reEncryptValue(value, newKeyBuf));
+}
+
+/**
+ * Decrypt all encryptedFields back to plaintext.
+ * Call this when ENCRYPTION_ENABLED is switched from true → false.
+ * @param {object} db  The db object exported from backend/db
+ */
+async function decryptAllModels(db) {
+    return _applyToAllModels(db, value => decrypt(value));
+}
+
+/**
+ * Encrypt all encryptedFields using the current key.
+ * Call this when ENCRYPTION_ENABLED is switched from false → true.
+ * Safe to re-run: values already encrypted are decrypted first to avoid double-encryption.
+ * @param {object} db  The db object exported from backend/db
+ */
+async function encryptAllModels(db) {
+    return _applyToAllModels(db, value => encrypt(decrypt(value)));
+}
+
+/**
+ * Detect changes to ENCRYPTION_ENABLED and automatically encrypt or decrypt all model tables.
+ * Compares the current env value against the last recorded state in encryption.state.
+ * On the very first call (no state file) the state is recorded without migrating data,
+ * since the migration is responsible for the initial encryption.
+ *
+ * @param {object} db  The db object exported from backend/db
+ */
+async function syncEncryptionState(db) {
+    const isEnabled = process.env.ENCRYPTION_ENABLED === 'true';
+
+    if (!fs.existsSync(STATE_FILE)) {
+        fs.writeFileSync(STATE_FILE, String(isEnabled), { encoding: 'utf8', mode: 0o600 });
+        return;
+    }
+
+    const wasEnabled = fs.readFileSync(STATE_FILE, 'utf8').trim() === 'true';
+    if (isEnabled === wasEnabled) return;
+
+    if (isEnabled) {
+        console.log('[encryption] ENCRYPTION_ENABLED changed to true — encrypting all fields...');
+        const results = await encryptAllModels(db);
+        for (const { model, total, updated } of results) {
+            console.log(`  [${model}] encrypted ${updated}/${total} row(s)`);
+        }
+    } else {
+        console.log('[encryption] ENCRYPTION_ENABLED changed to false — decrypting all fields...');
+        const results = await decryptAllModels(db);
+        for (const { model, total, updated } of results) {
+            console.log(`  [${model}] decrypted ${updated}/${total} row(s)`);
+        }
+    }
+
+    fs.writeFileSync(STATE_FILE, String(isEnabled), { encoding: 'utf8', mode: 0o600 });
+}
+
+module.exports = { encrypt, decrypt, initializeEncryptionKey, getKey, reEncryptValue, reEncryptAllModels, decryptAllModels, encryptAllModels, syncEncryptionState };
