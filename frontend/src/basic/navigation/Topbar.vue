@@ -212,14 +212,18 @@ export default {
       return this.$store.getters["auth/isAdmin"];
     },
     activeRecording() {
+      // This tab's active recording. There can be several concurrent
+      // recordings (one per recorded socket), so match on THIS tab's socket
+      // rather than picking the first active one.
       const recordings = this.$store.getters["table/recording/getAll"] || [];
-      return recordings.find(r => r.status === "recording") || null;
+      if (!this.$socket?.id) return null;
+      return recordings.find(r =>
+        r.status === "recording" &&
+        (r.participantSocketIds || []).includes(this.$socket.id)
+      ) || null;
     },
     isParticipant() {
-      const rec = this.activeRecording;
-      if (!rec || !this.$socket?.id) return false;
-      const sockets = rec.participantSocketIds || [];
-      return sockets.includes(this.$socket.id);
+      return this.activeRecording !== null;
     },
     showRecordingIcon() {
       // Session-based: only the sessions actually being recorded show the
