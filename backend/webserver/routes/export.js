@@ -542,8 +542,6 @@ module.exports = function (server) {
             return;
         }
 
-        const meta = {};
-
         for (const study of studies) {
             const studyFolder = `${baseFolderName}/${study.hash}`;
 
@@ -559,7 +557,7 @@ module.exports = function (server) {
 
             if (!shouldIncludeEmptyStudies && sessions.length === 0) continue;
 
-            meta[study.hash] = {
+            const studyMeta = {
                 id: study.id,
                 name: study.name,
                 userId: study.userId,
@@ -577,6 +575,8 @@ module.exports = function (server) {
                     }))
                 }))
             };
+
+            archive.append(JSON.stringify(studyMeta, null, 2), { name: `${studyFolder}/meta.json` });
 
             for (const session of sessions) {
                 const sessionFolder = `${studyFolder}/${session.hash}`;
@@ -680,8 +680,5 @@ module.exports = function (server) {
                 }
             }
         }
-
-        // single meta.json at the root of the export
-        archive.append(JSON.stringify(meta, null, 2), { name: `${baseFolderName}/meta.json` });
     }
 };
