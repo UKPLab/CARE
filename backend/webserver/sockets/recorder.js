@@ -21,20 +21,17 @@ class RecorderSocket extends Socket {
      * Returns true if this socket should be recorded under the current configuration.
      */
     isSessionIncluded(socketId) {
-        const participants = this.server.activeParticipantSocketIds;
-        if (!participants || participants.length === 0) {
-            return false;
-        }
-        return participants.includes(socketId);
+        return Boolean(this.server.activeRecordings && this.server.activeRecordings[socketId]);
     }
 
     attachListeners() {
         if (this.incomingHandler || this.outgoingHandler) return;
 
         this.incomingHandler = async (eventName, ...args) => {
-            const recordingId = this.server.activeRecordingId;
-            if (!recordingId) return;
-            const excludes = this.server.activeExcludeEvents;
+            const entry = this.server.activeRecordings && this.server.activeRecordings[this.socket.id];
+            if (!entry) return;
+            const recordingId = entry.recordingId;
+            const excludes = entry.excludeEvents;
             if (excludes && excludes.includes(eventName)) return;
             try {
                 await this.models["trace"].add({
@@ -53,9 +50,10 @@ class RecorderSocket extends Socket {
         };
 
         this.outgoingHandler = async (eventName, ...args) => {
-            const recordingId = this.server.activeRecordingId;
-            if (!recordingId) return;
-            const excludes = this.server.activeExcludeEvents;
+            const entry = this.server.activeRecordings && this.server.activeRecordings[this.socket.id];
+            if (!entry) return;
+            const recordingId = entry.recordingId;
+            const excludes = entry.excludeEvents;
             if (excludes && excludes.includes(eventName)) return;
             try {
                 await this.models["trace"].add({
@@ -92,8 +90,8 @@ class RecorderSocket extends Socket {
         if (!(await this.isAdmin())) {
             throw new Error("Admin access required");
         }
-        if (this.server.activeRecordingId) {
-            throw new Error("A recording is already in progress");
+        if (!this.server.activeRecordings) {
+            this.server.activeRecordings = {};
         }
 
         const participantSocketIds = Array.isArray(data?.participantSocketIds) && data.participantSocketIds.length > 0
@@ -104,29 +102,35 @@ class RecorderSocket extends Socket {
             throw new Error("At least one session must be selected");
         }
 
+        const alreadyRecording = participantSocketIds.filter(id => this.server.activeRecordings[id]);
+        if (alreadyRecording.length > 0) {
+            throw new Error("One or more selected sessions are already being recorded");
+        }
+
         const excludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
             ? data.excludeEvents
             : null;
 
-        const recording = await this.models["recording"].add({
-            name: data.name || "Recording " + new Date().toLocaleString(),
-            status: "recording",
-            startTime: new Date(),
-            userId: this.userId,
-            participantSocketIds,
-            excludeEvents,
-        }, options);
+        for (const socketId of participantSocketIds) {
+            const recorder = this.server.availSockets[socketId] && this.server.availSockets[socketId]["RecorderSocket"];
+            const recordedUserId = recorder ? recorder.userId : null;
 
-        this.server.activeRecordingId = recording.id;
-        this.server.activeParticipantSocketIds = participantSocketIds;
-        this.server.activeRecordingOwnerSocketId = this.socket.id;
-        this.server.activeExcludeEvents = excludeEvents;
+            const recording = await this.models["recording"].add({
+                name: data.name || "Recording " + new Date().toLocaleString(),
+                status: "recording",
+                startTime: new Date(),
+                userId: recordedUserId,
+                participantSocketIds: [socketId],
+                excludeEvents,
+            }, options);
 
+            this.server.activeRecordings[socketId] = {
+                recordingId: recording.id,
+                ownerSocketId: this.socket.id,
+                excludeEvents,
+            };
 
-        for (const socketId of Object.keys(this.server.availSockets)) {
-            const recorder = this.server.availSockets[socketId]["RecorderSocket"];
-            const included = recorder ? recorder.isSessionIncluded(recorder.socket.id) : "no recorder";
-            if (recorder && recorder.isSessionIncluded(recorder.socket.id)) {
+            if (recorder) {
                 recorder.attachListeners();
             }
         }
@@ -140,9 +144,9 @@ class RecorderSocket extends Socket {
         if (!(options && options.internal) && !(await this.isAdmin())) {
             throw new Error("Admin access required");
         }
-        const recordingId = this.server.activeRecordingId || (data && data.id);
-        if (!recordingId) {
-            throw new Error("No active recording");
+
+        if (!this.server.activeRecordings) {
+            this.server.activeRecordings = {};
         }
 
         // Allow callers to override the terminal status (e.g. "disconnected"
@@ -150,40 +154,61 @@ class RecorderSocket extends Socket {
         // "finished".
         const finalStatus = (data && data.status) || "finished";
 
-        for (const socketId of Object.keys(this.server.availSockets)) {
-            const recorder = this.server.availSockets[socketId]["RecorderSocket"];
-            if (recorder) recorder.detachListeners();
+        // Determine which sockets to stop:
+        // - data.socketId given (e.g. disconnect path): stop only that socket.
+        // - otherwise: stop every recording started by this caller (their batch),
+        //   so one admin stopping doesn't end another admin's recordings.
+        let socketIdsToStop;
+        if (data && data.socketId) {
+            socketIdsToStop = this.server.activeRecordings[data.socketId] ? [data.socketId] : [];
+        } else {
+            socketIdsToStop = Object.keys(this.server.activeRecordings)
+                .filter(sid => this.server.activeRecordings[sid].ownerSocketId === this.socket.id);
         }
 
-        await this.models["recording"].updateById(
-            recordingId,
-            { status: finalStatus, endTime: new Date() },
-            options
-        );
+        if (socketIdsToStop.length === 0) {
+            throw new Error("No active recording");
+        }
 
-        this.server.activeRecordingId = null;
-        this.server.activeParticipantSocketIds = null;
-        this.server.activeRecordingOwnerSocketId = null;
-        this.server.activeExcludeEvents = null;
+        const stopped = [];
 
-        const traces = await this.models["trace"].findAll({
-            where: { recordingId },
-            order: [["id", "ASC"]],
-        });
+        for (const socketId of socketIdsToStop) {
+            const entry = this.server.activeRecordings[socketId];
+            const recordingId = entry.recordingId;
 
-        return {
-            id: recordingId,
-            traces: traces.map(t => ({
-                id: t.id,
-                recordingId: t.recordingId,
-                userId: t.userId,
-                socketId: t.socketId,
-                action: t.action,
-                direction: t.direction,
-                startTime: t.startTime,
-                endTime: t.endTime,
-            })),
-        };
+            const recorder = this.server.availSockets[socketId] && this.server.availSockets[socketId]["RecorderSocket"];
+            if (recorder) recorder.detachListeners();
+
+            await this.models["recording"].updateById(
+                recordingId,
+                { status: finalStatus, endTime: new Date() },
+                options
+            );
+
+            delete this.server.activeRecordings[socketId];
+
+            const traces = await this.models["trace"].findAll({
+                where: { recordingId },
+                order: [["id", "ASC"]],
+            });
+
+            stopped.push({
+                id: recordingId,
+                socketId,
+                traces: traces.map(t => ({
+                    id: t.id,
+                    recordingId: t.recordingId,
+                    userId: t.userId,
+                    socketId: t.socketId,
+                    action: t.action,
+                    direction: t.direction,
+                    startTime: t.startTime,
+                    endTime: t.endTime,
+                })),
+            });
+        }
+
+        return { stopped };
     }
 
     async getTraces(data, options) {
@@ -256,7 +281,7 @@ class RecorderSocket extends Socket {
         this.createSocket("recordingGetTraces", this.getTraces, {}, false);
         this.createSocket("recordingGetOnlineSessions", this.getOnlineSessions, {}, false);
 
-        if (this.server.activeRecordingId && this.isSessionIncluded(this.socket.id)) {
+        if (this.isSessionIncluded(this.socket.id)) {
             this.attachListeners();
         }
     }

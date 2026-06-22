@@ -389,24 +389,10 @@ module.exports = class Server {
             // won't be captured. A single browser tab opens more than one socket,
             // so debounce the toast to avoid firing it multiple times for what is
             // effectively one new tab.
-            if (this.activeRecordingId && this.activeRecordingOwnerSocketId) {
-                const participants = this.activeParticipantSocketIds || [];
-                if (!participants.includes(socket.id)) {
-                    const now = Date.now();
-                    const UNCAPTURED_TOAST_DEBOUNCE_MS = 2000;
-                    if (now - (this._lastUncapturedToastAt || 0) > UNCAPTURED_TOAST_DEBOUNCE_MS) {
-                        this._lastUncapturedToastAt = now;
-                        const ownerSocket = this.io.sockets.sockets.get(this.activeRecordingOwnerSocketId);
-                        if (ownerSocket) {
-                            ownerSocket.emit("toast", {
-                                title: "Uncaptured connection",
-                                message: "Uncaptured connection detected — not part of this recording",
-                                variant: "warning",
-                            });
-                        }
-                    }
-                }
-            }
+            // (Removed) Uncaptured-connection warning: with per-socket recordings
+            // there is no single active batch a new connection is "outside" of,
+            // so the warning no longer has a clear meaning. New connections are
+            // simply not recorded unless explicitly selected.
 
             socket.on("disconnect", async (reason) => {
                 try {
@@ -434,17 +420,21 @@ module.exports = class Server {
                         this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
                     }
 
-                    // If a recorded participant drops mid-recording, stop the
-                    // recording and flag it "disconnected" rather than leaving it
-                    // running against a socket that no longer exists.
+                    // If a recorded socket drops mid-recording, stop ONLY that
+                    // socket's recording and flag it "disconnected". Other active
+                    // recordings (including other admins' batches) keep running.
                     try {
-                        const participants = this.activeParticipantSocketIds || [];
-                        if (this.activeRecordingId && participants.includes(socket.id)) {
-                            const ownerSocketId = this.activeRecordingOwnerSocketId;
+                        const activeRecordings = this.activeRecordings || {};
+                        const entry = activeRecordings[socket.id];
+                        if (entry) {
+                            const ownerSocketId = entry.ownerSocketId;
                             const recorder = this.availSockets[socket.id]['RecorderSocket'];
                             if (recorder) {
-                                const stoppedId = this.activeRecordingId;
-                                await recorder.stopRecording({ status: "disconnected" }, { internal: true });
+                                const stoppedId = entry.recordingId;
+                                await recorder.stopRecording(
+                                    { socketId: socket.id, status: "disconnected" },
+                                    { internal: true }
+                                );
 
                                 // The disconnect-triggered stop runs outside the normal
                                 // socket transaction flow, so the automatic table broadcast
@@ -604,7 +594,7 @@ module.exports = class Server {
     /**
      * Mark any recordings still in "recording" status as "interrupted".
      * These are recordings whose server died mid-capture — the in-memory
-     * activeRecordingId is gone but the DB row was never closed out.
+     * activeRecordings map is gone but the DB rows were never closed out.
      */
     async recoverInterruptedRecordings() {
         try {
