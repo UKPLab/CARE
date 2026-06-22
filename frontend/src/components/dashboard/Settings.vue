@@ -65,12 +65,44 @@
         <Loading v-if="settings === null"/>
 
         <div v-else class="mt-3">
-          <template v-for="(group, key) in groupedSettings" :key="key">
-            <SettingItem
-                :group="group"
-                :title="key"
-            />
-          </template>
+          <SettingsSection
+              v-for="section in sectionLayout"
+              :key="section.title"
+              :title="section.title"
+              :subsections="section.subsections"
+              :settings="displaySettings"
+          >
+            <template v-if="section.title === 'Mail'" #footer>
+              <div class="border-top pt-3 mt-2">
+                <h6 class="step-group-heading text-muted border-bottom pb-1 mb-2">Send test email</h6>
+                <p class="small text-muted mb-2">
+                  Sends a short fixed message using the currently saved mail configuration.
+                </p>
+                <div class="form-group row my-2">
+                  <label class="col-md-4 col-form-label text-md-right" for="settings-test-mail-to">Recipient</label>
+                  <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
+                    <input
+                        id="settings-test-mail-to"
+                        v-model="mailTestTo"
+                        class="form-control"
+                        type="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                    />
+                    <BasicButton
+                        class="btn btn-outline-primary flex-shrink-0"
+                        :title="mailTestSending ? 'Sending...' : 'Send test email'"
+                        :disabled="mailTestSending || !mailTestTo.trim()"
+                        @click="sendMailTest"
+                    />
+                  </div>
+                </div>
+                <p v-if="mailTestMessage" class="small mb-0" :class="mailTestError ? 'text-danger' : 'text-success'">
+                  {{ mailTestMessage }}
+                </p>
+              </div>
+            </template>
+          </SettingsSection>
         </div>
       </template>
     </Card>
@@ -104,18 +136,20 @@
       </template>
 
       <template #footer>
-        <BasicButton
-            class="btn-secondary me-2"
-            text="Close"
-            :disabled="uploading"
-            @click="$refs.settingsUploadModal.close()"
-        />
-        <BasicButton
-            class="btn-primary"
-            text="Import"
-            :disabled="!uploadFile || uploading"
-            @click="importSettings"
-        />
+        <span class="btn-group">
+          <BasicButton
+              class="btn btn-secondary"
+              title="Close"
+              :disabled="uploading"
+              @click="$refs.settingsUploadModal.close()"
+          />
+          <BasicButton
+              class="btn btn-primary"
+              :title="uploading ? 'Importing…' : 'Import'"
+              :disabled="!uploadFile || uploading"
+              @click="importSettings"
+          />
+        </span>
       </template>
     </Modal>
   </div>
@@ -132,12 +166,37 @@
 import Card from "@/basic/dashboard/card/Card.vue";
 import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
+import SettingsSection from "@/components/dashboard/settings/SettingsSection.vue";
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
-import {onBeforeRouteUpdate} from 'vue-router'
+import {onBeforeRouteUpdate} from "vue-router";
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
+
+/**
+ * Order of subsections within each section (for display).
+ */
+const SUBSECTION_ORDER = {
+  general: [
+    "Copyright and consent",
+    "Login options",
+    "Study mode",
+    "Landing page links",
+    "ORCID login",
+    "LDAP login",
+    "SAML login",
+    "Two-factor authentication",
+    "Auth redirects",
+  ],
+  mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification", "Email templates"],
+  registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
+  moodle: ["Connection", "Course", "Show inputs"],
+  annotations: ["Comments", "Download", "NLP in annotations", "Sidebar"],
+  interface: ["Navigation and dashboard", "Branding", "Projects", "Statistics and tags"],
+  "text editor": ["Document buttons", "Edit history", "Toolbar"],
+  "ai & nlp": ["Modal NLP", "NLP service"],
+  system: ["Token expiry"],
+};
 
 export default {
   name: "DashboardSettings",
@@ -146,7 +205,7 @@ export default {
     Card,
     LoadIcon,
     Loading,
-    SettingItem,
+    SettingsSection,
     BasicButton,
     Modal,
     ChangeUserSettingsModal,
@@ -154,21 +213,65 @@ export default {
   data() {
     return {
       settings: null,
-      collapseFirst: {},
       uploadFile: null,
       uploading: false,
       originalSettingsSnapshot: null,
+      mailTestTo: "",
+      mailTestSending: false,
+      mailTestMessage: "",
+      mailTestError: false,
     };
   },
   computed: {
-    groupedSettings() {
-      if (!this.settings) return {};
-      return this.settings.reduce((acc, setting) => {
-        const keys = setting.key.split(".");
-        if (!acc[keys[0]]) acc[keys[0]] = {};
-        this.nestSettings(acc[keys[0]], keys.slice(1), setting);
-        return acc;
-      }, {});
+    displaySettings() {
+      if (!this.settings) return [];
+      return this.settings.filter((s) => !s.key.startsWith("app.setup."));
+    },
+    sectionLayout() {
+      if (!this.displaySettings.length) return [];
+      const wizardSteps = ["general", "mail", "registration", "moodle"];
+      const sections = [];
+      for (const step of wizardSteps) {
+        let keys = this.displaySettings
+          .filter((s) => s.wizardStep === step && s.showInWizard)
+          .sort((a, b) => (a.wizardOrder || 0) - (b.wizardOrder || 0))
+          .map((s) => s.key);
+        const otherInStep = this.displaySettings.filter(
+          (s) => !s.showInWizard && (s.displayGroup || "").toLowerCase() === step
+        );
+        if (otherInStep.length) {
+          keys = [...keys, ...otherInStep.map((s) => s.key)];
+        }
+
+        // Terms of Service should be visible in both "General" and "Registration".
+        if (step === "registration" && this.displaySettings.some((s) => s.key === "app.register.terms")) {
+          if (!keys.includes("app.register.terms")) keys.push("app.register.terms");
+        }
+
+        if (keys.length) {
+          const settingsInSection = keys.map((k) => this.displaySettings.find((s) => s.key === k)).filter(Boolean);
+          sections.push({
+            title: step.charAt(0).toUpperCase() + step.slice(1),
+            subsections: this.buildSubsections(step, settingsInSection),
+          });
+        }
+      }
+      const other = this.displaySettings.filter((s) => !s.showInWizard);
+      const mergedSteps = new Set(wizardSteps);
+      const otherGroups = {};
+      for (const s of other) {
+        const group = s.displayGroup || "Other";
+        if (mergedSteps.has((group || "").toLowerCase())) continue;
+        if (!otherGroups[group]) otherGroups[group] = [];
+        otherGroups[group].push(s);
+      }
+      for (const [groupTitle, settingsInGroup] of Object.entries(otherGroups).sort((a, b) => a[0].localeCompare(b[0]))) {
+        sections.push({
+          title: groupTitle,
+          subsections: this.buildSubsections(groupTitle.toLowerCase(), settingsInGroup),
+        });
+      }
+      return sections;
     },
     hasUnsavedChanges() {
       if (!this.settings || this.originalSettingsSnapshot === null) return false;
@@ -196,14 +299,35 @@ export default {
     });
   },
   methods: {
-    nestSettings(obj, keys, setting) {
-      if (keys.length === 1) {
-        if (!obj[keys[0]]) obj[keys[0]] = [];
-        obj[keys[0]].push(setting);
-      } else {
-        if (!obj[keys[0]]) obj[keys[0]] = {};
-        this.nestSettings(obj[keys[0]], keys.slice(1), setting);
+    /**
+     * Build subsections from settings grouped by displaySubsection.
+     * @param {string} sectionKey - Section key (e.g. "general", "annotations")
+     * @param {Array} settingsInSection - Setting objects in this section
+     * @returns {Array<{title: string, keys: string[]}>}
+     */
+    buildSubsections(sectionKey, settingsInSection) {
+      if (!settingsInSection.length) return [];
+      const order = SUBSECTION_ORDER[sectionKey];
+      const bySubsection = {};
+      for (const s of settingsInSection) {
+        const sub = s.displaySubsection || "";
+        if (!bySubsection[sub]) bySubsection[sub] = [];
+        bySubsection[sub].push(s.key);
       }
+      const result = [];
+      if (order) {
+        for (const title of order) {
+          if (bySubsection[title]?.length) {
+            result.push({ title, keys: bySubsection[title] });
+          }
+        }
+      }
+      for (const [title, keys] of Object.entries(bySubsection)) {
+        if (!order || !order.includes(title)) {
+          result.push({ title: title || "", keys });
+        }
+      }
+      return result.length ? result : [{ title: "", keys: settingsInSection.map((s) => s.key) }];
     },
     setSettingsSnapshot() {
       if (!this.settings) {
@@ -211,6 +335,23 @@ export default {
         return;
       }
       this.originalSettingsSnapshot = JSON.stringify(this.settings);
+    },
+    sendMailTest() {
+      const to = (this.mailTestTo || "").trim();
+      if (!to || !this.$socket) return;
+      this.mailTestSending = true;
+      this.mailTestMessage = "";
+      this.mailTestError = false;
+      this.$socket.emit("mailSendTest", { to }, (res) => {
+        this.mailTestSending = false;
+        if (res.success) {
+          this.mailTestError = false;
+          this.mailTestMessage = typeof res.data === "string" ? res.data : "Test email sent.";
+        } else {
+          this.mailTestError = true;
+          this.mailTestMessage = res.message || "Failed to send test email.";
+        }
+      });
     },
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
@@ -244,11 +385,6 @@ export default {
             });
           }
           this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
-          this.collapseFirst = this.settings.reduce((acc, setting) => {
-            const key = setting.key.split(".")[0];
-            acc[key] = true;
-            return acc;
-          }, {});
           this.setSettingsSnapshot();
         } else {
           this.eventBus.emit("toast", {
@@ -261,7 +397,7 @@ export default {
     },
     exportSettings() {
       downloadObjectsAs(
-          this.settings.reduce(
+          this.displaySettings.reduce(
               (acc, {key, value}) => ({...acc, [key]: value}),
               {}
           ),
@@ -328,10 +464,11 @@ export default {
 
         let updatedCount = 0;
         const flat = json;
+        const visibleKeys = new Set(this.displaySettings.map((setting) => setting.key));
 
         // Overwrite only existing keys
         this.settings = this.settings.map((setting) => {
-          if (Object.prototype.hasOwnProperty.call(flat, setting.key)) {
+          if (visibleKeys.has(setting.key) && Object.prototype.hasOwnProperty.call(flat, setting.key)) {
             setting.value = flat[setting.key];
             updatedCount++;
           }

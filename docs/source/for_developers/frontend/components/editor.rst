@@ -151,6 +151,10 @@ This logic is implemented in:
 
 To persist in-progress edits, the system uses **autosave** (see :ref:`Debounce Behaviour <debounce-ref>`).  
 Autosave runs at defined intervals **and** on specific events, such as when the editor component is unmounted or when the WebSocket connection closes while a document is still open.  
+Before ``documentClose`` on unmount, ``flushPendingEdits`` in ``frontend/src/components/editor/editor/Editor.vue`` cancels the debounce timer and sends any ops still in the client buffer via ``documentEdit``, waiting for the socket callback so the server sees the latest edits. The template editor uses the same pattern in ``TemplateEditor.vue`` before ``templateClose`` (see :ref:`Leaving the template editor <template-editor-leave-ref>` in :doc:`templates`).
+
+For **regular documents** (``studySessionId`` is null), ``documentClose`` then calls ``saveDocument`` to merge draft rows into the ``.delta`` file. For **study documents**, flush still persists session-scoped drafts to ``document_edit``, but ``documentClose`` does not run ``saveDocument``; session drafts remain the store until the study workflow completes.
+
 This ensures that the backend always has the latest state, even if the user navigates away or loses connection unexpectedly.
 
 Additionally, when the WebSocket disconnects, the backend triggers a final save of all open documents by calling ``saveDocument``. This is why the list of open components (like editors) is tracked during mount.

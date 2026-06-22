@@ -2,7 +2,8 @@
   <span
     v-if="help"
     ref="tooltip"
-    class="btn btn-sm mt-0 pt-0"
+    class="btn btn-sm mt-0 pt-0 border-0"
+    :class="buttonClass"
     :title="help"
     data-bs-html="true"
     data-bs-placement="top"
@@ -10,7 +11,7 @@
   >
     <LoadIcon
       :size="16"
-      icon-name="question-square-fill"
+      :icon-name="iconName"
     />
   </span>
 </template>
@@ -30,6 +31,14 @@ export default {
     help: {
       type: String,
       required: false,
+      default: null,
+    },
+    iconName: {
+      type: String,
+      default: "question-square-fill",
+    },
+    buttonClass: {
+      type: [String, Object, Array],
       default: null,
     },
   },

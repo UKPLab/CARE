@@ -18,6 +18,12 @@ Please check out the details of hosting the CARE server described in the
 
 .. note::
 
+    On a fresh CARE instance, the application opens a setup wizard before the regular login is available.
+    Complete this initial setup before inviting participants to your study.
+    After setup is finished, CARE continues with the standard login and dashboard workflow.
+
+.. note::
+
     For running internal pilot studies, running an NGINX server along with CARE is not strictly necessary, but this is highly recommended
     when opening the tool to a network, adn especially when making it accessible to the internet. Please also configure
     your firewall to ensure high levels of security (opening only essential ports etc.). Also, you should urgently change the

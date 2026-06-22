@@ -100,7 +100,7 @@ async function buildReplacementMap(context, models, options = {}) {
     if (allow("assignmentType") && context.assignmentType) {
         replacements["~assignmentType~"] = context.assignmentType;
     }
-    if (allow("assignmentName") && context.assignmentName) {
+    if (allow("assignmentName") && context.assignmentName != null) {
         replacements["~assignmentName~"] = context.assignmentName;
     }
 
@@ -115,6 +115,20 @@ async function buildReplacementMap(context, models, options = {}) {
 
     if (allow("tokenExpiry") && context.tokenExpiry !== undefined && context.tokenExpiry !== null) {
         replacements["~tokenExpiry~"] = String(context.tokenExpiry);
+    }
+
+    // Submission upload notification (template type 7)
+    if (allow("eventType") && context.eventType) {
+        replacements["~eventType~"] = context.eventType;
+    }
+    if (allow("assignmentId") && context.assignmentId != null) {
+        replacements["~assignmentId~"] = String(context.assignmentId);
+    }
+    if (allow("submissionId") && context.submissionId != null) {
+        replacements["~submissionId~"] = String(context.submissionId);
+    }
+    if (allow("timestamp") && context.timestamp) {
+        replacements["~timestamp~"] = context.timestamp;
     }
 
     return replacements;
@@ -323,7 +337,7 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
  * Return placeholder keys that are required for the given template type but missing in content.
  *
  * @param {Object} content - Quill Delta object with ops array
- * @param {number} templateType - Template type (e.g. 1, 2, 3, 6)
+ * @param {number} templateType - Template type (e.g. 1, 2, 3, 6, 7)
  * @param {Object} models - Database models
  * @param {Object} [options]
  * @returns {Promise<string[]>} Array of missing required placeholder keys (e.g. ['link'])
@@ -342,8 +356,60 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
     return missing;
 }
 
+function formatMissingPlaceholderError(missing, { action = "saving", language } = {}) {
+    const tokens = missing.map((k) => `~${k}~`).join(", ");
+    if (language) {
+        return `This email template must include the required placeholder(s): ${tokens} in ${language} before ${action}. Add them from the toolbar in the template editor.`;
+    }
+    return `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before ${action}.`;
+}
+
+/**
+ * Check stable template_content for required placeholders (email types 1, 2, 3, 6, 7).
+ * Used when publishing or assigning a template in Settings.
+ *
+ * @param {number} templateId
+ * @param {Object} models
+ * @param {Object}
+ * @returns {Promise<void>}
+ */
+async function assertStableEmailTemplateContent(templateId, models, options = {}) {
+    const action = options.action || "publishing";
+    const template = await models["template"].getById(templateId, options);
+    if (!template) {
+        throw new Error("Template not found");
+    }
+    if (![1, 2, 3, 6, 7].includes(template.type)) {
+        return;
+    }
+
+    const rows = await models["template_content"].findAll({
+        where: { templateId, deleted: false },
+        raw: true,
+        ...options,
+    });
+
+    if (!rows || rows.length === 0) {
+        const missing = await getMissingRequiredPlaceholders({ ops: [] }, template.type, models, options);
+        if (missing.length > 0) {
+            throw new Error(formatMissingPlaceholderError(missing, { action }));
+        }
+        return;
+    }
+
+    for (const row of rows) {
+        const content = row.content && row.content.ops ? { ops: row.content.ops } : { ops: [] };
+        const missing = await getMissingRequiredPlaceholders(content, template.type, models, options);
+        if (missing.length > 0) {
+            throw new Error(formatMissingPlaceholderError(missing, { action, language: row.language }));
+        }
+    }
+}
+
 module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
     getMissingRequiredPlaceholders,
+    formatMissingPlaceholderError,
+    assertStableEmailTemplateContent,
 };
