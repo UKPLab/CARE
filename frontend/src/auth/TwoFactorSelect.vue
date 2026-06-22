@@ -56,24 +56,17 @@
             </div>
 
             <div class="col-md-6 offset-md-4 my-4">
-              <button
+              <BasicButton
                 class="btn btn-primary btn-block"
-                type="submit"
+                native-type="submit"
                 :disabled="!selectedMethod || isSubmitting"
-              >
-                <span
-                  v-if="isSubmitting"
-                  class="spinner-border spinner-border-sm me-2"
-                ></span>
-                {{ isSubmitting ? "Continuing..." : "Continue" }}
-              </button>
-              <button
+                :text="isSubmitting ? 'Continuing...' : 'Continue'"
+              />
+              <BasicButton
                 class="btn btn-link"
-                type="button"
+                text="Cancel"
                 @click="cancel"
-              >
-                Cancel
-              </button>
+              />
             </div>
 
             <div class="text-center text-muted small">
@@ -97,12 +90,13 @@
  * 
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "TwoFactorSelect",
-  components: { IconAsset },
+  components: { IconAsset, BasicButton },
   data() {
     return {
       methods: [],

@@ -13,20 +13,16 @@
     </template>
     <template #footer>
       <div class="btn-group">
-        <button
-          type="button"
-          class="btn btn-secondary"
+        <BasicButton
+          class="btn-secondary"
+          text="Cancel"
           @click="onCancel"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
+        />
+        <BasicButton
+          class="btn-primary"
+          text="Continue"
           @click="onConfirm"
-        >
-          Continue
-        </button>
+        />
       </div>
     </template>
   </BasicModal>
@@ -34,6 +30,7 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal shown when user wants to edit a template copy.
@@ -41,7 +38,7 @@ import BasicModal from "@/basic/Modal.vue";
  */
 export default {
   name: "TemplateDetachModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {
       template: null,

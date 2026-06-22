@@ -80,12 +80,11 @@
             </div>
 
             <div class="col-md-6 offset-md-4 my-4">
-              <button
+              <BasicButton
                   class="btn btn-primary btn-block"
-                  type="submit"
-              >
-                Login
-              </button>
+                  native-type="submit"
+                  text="Login"
+              />
               <a
                   v-if="showGuestLogin"
                   class="btn btn-link"
@@ -105,30 +104,24 @@
                 Or sign in with
               </p>
               <div class="d-grid gap-2">
-                <button
+                <BasicButton
                   v-if="showOrcidLogin"
-                  type="button"
                   class="btn btn-outline-success btn-block"
+                  text="ORCID"
                   @click="loginWithOrcid"
-                >
-                  ORCID
-                </button>
-                <button
+                />
+                <BasicButton
                   v-if="showLdapLogin"
-                  type="button"
                   class="btn btn-outline-secondary btn-block"
+                  text="LDAP"
                   @click="toLdapLogin"
-                >
-                  LDAP
-                </button>
-                <button
+                />
+                <BasicButton
                   v-if="showSamlLogin"
-                  type="button"
                   class="btn btn-outline-dark btn-block"
+                  text="SSO"
                   @click="loginWithSaml"
-                >
-                  SSO
-                </button>
+                />
               </div>
             </div>
           </div>
@@ -184,6 +177,7 @@
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import BasicButton from "@/basic/Button.vue";
 import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
@@ -191,7 +185,7 @@ import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthLogin",
-  components: {LogoSvg, ForgotPasswordModal, EmailVerificationModal},
+  components: {LogoSvg, BasicButton, ForgotPasswordModal, EmailVerificationModal},
   data() {
     return {
       showError: false,

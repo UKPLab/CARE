@@ -53,23 +53,18 @@
       </div>
     </template>
     <template #footer>
-      <button
-          class="btn btn-secondary"
+      <BasicButton
+          class="btn-secondary"
+          text="Cancel"
           data-bs-dismiss="modal"
-          type="button"
           @click="$refs.editModal.close()"
-      >
-        Cancel
-      </button>
-      <button
-          class="btn btn-primary"
-          type="button"
+      />
+      <BasicButton
+          class="btn-primary"
+          text="Save"
           :disabled="saving"
           @click="saveConfiguration"
-      >
-        <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
-        Save
-      </button>
+      />
     </template>
   </Modal>
 </template>

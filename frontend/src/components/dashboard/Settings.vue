@@ -104,28 +104,18 @@
       </template>
 
       <template #footer>
-        <button
-            class="btn btn-secondary me-2"
-            type="button"
+        <BasicButton
+            class="btn-secondary me-2"
+            text="Close"
             :disabled="uploading"
             @click="$refs.settingsUploadModal.close()"
-        >
-          Close
-        </button>
-        <button
-            class="btn btn-primary"
-            type="button"
+        />
+        <BasicButton
+            class="btn-primary"
+            text="Import"
             :disabled="!uploadFile || uploading"
             @click="importSettings"
-        >
-          <span
-              v-if="uploading"
-              class="spinner-border spinner-border-sm me-1"
-              role="status"
-              aria-hidden="true"
-          ></span>
-          Import
-        </button>
+        />
       </template>
     </Modal>
   </div>

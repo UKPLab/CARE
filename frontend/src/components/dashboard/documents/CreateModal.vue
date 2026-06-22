@@ -49,17 +49,17 @@
     </template>
     <template #footer>
       <div>
-        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
-          Close
-        </button>
-        <button
-          class="btn btn-primary"
-          type="button"
+        <BasicButton
+          class="btn-secondary"
+          text="Close"
+          data-bs-dismiss="modal"
+        />
+        <BasicButton
+          class="btn-primary"
+          text="Create"
           @click="create"
           @keyup.enter="create"
-        >
-          Create
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -67,6 +67,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Document create component
@@ -78,7 +79,7 @@ import Modal from "@/basic/Modal.vue";
  */
 export default {
   name: "DocumentCreateModal",
-  components: {Modal},
+  components: {Modal, BasicButton},
   subscribeTable: ["template"],
   data() {
     return {

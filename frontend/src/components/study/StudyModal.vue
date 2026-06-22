@@ -88,52 +88,39 @@
       </span>
     </template>
     <template #footer>
-      <button
-          class="btn btn-outline-secondary"
-          type="button"
+      <BasicButton
+          class="btn-outline-secondary"
+          text="Return to dashboard"
           @click="$router.push('/dashboard')"
-      >
-        <span>Return to dashboard</span>
-      </button>
+      />
       <vr/>
       <div
           v-if="showSessions"
           class="btn-group"
       >
-        <button
-            class="btn btn-primary"
-            type="button"
+        <BasicButton
+            class="btn-primary"
+            text="Back"
             @click="showSessions=!showSessions"
-        >
-          <span>Back</span>
-        </button>
+        />
       </div>
       <div
           v-else
           class="btn-group"
       >
-        <button
+        <BasicButton
             v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
-            class="btn btn-secondary"
-            type="button"
+            class="btn-secondary"
+            :text="`Open Sessions (${studySessions.length})`"
             @click="showSessions=!showSessions"
-        >
-          <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
-            {{ studySessions.length }}
-            <span class="visually-hidden">open sessions</span>
-          </span>
-          <span>Open Sessions</span>
-        </button>
-        <button
+        />
+        <BasicButton
             v-if="studyId !== 0 && !foreignUnstartedSession"
             :disabled="!available"
-            class="btn btn-primary"
-            type="button"
+            class="btn-primary"
+            :text="study.collab ? 'Join Study' : 'Start Study'"
             @click="start"
-        >
-          <span v-if="study.collab">Join Study</span>
-          <span v-else>Start Study</span>
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -144,6 +131,7 @@ import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue";
 import BasicTable from "@/basic/Table.vue";
 import Editor from "@/basic/editor/Editor.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for accessing a study
@@ -155,7 +143,7 @@ import Editor from "@/basic/editor/Editor.vue";
 export default {
   name: "StudyModal",
   subscribeTable: ["study_session"],
-  components: {Loader, BasicTable, Modal, Editor},
+  components: {Loader, BasicTable, Modal, Editor, BasicButton},
   inject: {
     acceptStats: {default: () => false},
   },

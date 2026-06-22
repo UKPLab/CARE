@@ -131,22 +131,18 @@
                 </div>
               </div>
               <div class="d-flex gap-2 mt-3">
-                <button
-                  type="button"
+                <BasicButton
                   class="btn btn-primary"
                   :disabled="!canVerifyTotpSetup || isSubmitting"
+                  :text="isSubmitting ? 'Verifying...' : 'Verify & Enable'"
                   @click="verifyTotpSetup"
-                >
-                  {{ isSubmitting ? "Verifying..." : "Verify & Enable" }}
-                </button>
-                <button
-                  type="button"
+                />
+                <BasicButton
                   class="btn btn-secondary"
                   :disabled="isSubmitting"
+                  text="Cancel"
                   @click="cancelTotpSetup"
-                >
-                  Cancel
-                </button>
+                />
               </div>
             </div>
           </div>

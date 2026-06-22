@@ -76,14 +76,13 @@
                             :height="40"
                             :re-bg-color="setting.value"
                           />
-                          <button
+                          <BasicButton
                             v-if="hasResetValue(setting)"
-                            class="btn btn-outline-secondary btn-sm"
+                            class="btn-outline-secondary btn-sm"
+                            text="Reset"
                             :disabled="setting.value.toLowerCase() === getResetValue(setting).toLowerCase()"
                             @click="setting.value = getResetValue(setting)"
-                          >
-                            Reset
-                          </button>
+                          />
                         </div>
                         <input v-else v-model="setting.value" class="w-50" type="text">
                       </div>
@@ -102,12 +101,13 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 
 export default {
   name: "SettingItem",
-  components: { LoadIcon, EditorModal, LogoSvg },
+  components: { LoadIcon, BasicButton, EditorModal, LogoSvg },
   subscribeTable: ["template"],
   props: {
     group: {

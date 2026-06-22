@@ -3,7 +3,7 @@
     :title="tooltip || title"
     :disabled="disabled"
     class="btn"
-    type="button"
+    :type="nativeType"
     @click="action"
   >
     <!-- class="btn btn-sm me-1" -->
@@ -70,6 +70,12 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    nativeType: {
+      type: String,
+      required: false,
+      default: "button",
+      validator: (value) => ["button", "submit", "reset"].includes(value),
     }
   },
   emits: ["click"],
