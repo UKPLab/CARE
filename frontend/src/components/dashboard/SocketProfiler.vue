@@ -152,10 +152,7 @@ export default {
     isRecording() {
       return this.recordings.some(r => r.status === "recording");
     },
-    activeRecordingId() {
-      const active = this.recordings.find(r => r.status === "recording");
-      return active ? active.id : null;
-    },
+    
   },
   methods: {
     action(data) {
@@ -181,15 +178,17 @@ export default {
       this.$refs.importRecordingModal.open();
     },
     stopActiveRecording() {
-      const id = this.activeRecordingId;
-      if (!id) return;
+      if (!this.isRecording) return;
 
-      this.$socket.emit("recorderStop", { id }, (res) => {
+      this.$socket.emit("recorderStop", {}, (res) => {
         if (res.success) {
           const payload = res.data || res;
-          const recordingId = payload.id ?? id;
-          const traces = payload.traces || [];
-          this.$refs.recordingModal.open(recordingId, traces);
+          const stopped = payload.stopped || [];
+          this.eventBus.emit("toast", {
+            title: "Recording stopped",
+            message: `Stopped ${stopped.length} recording(s). Manage them in the table below.`,
+            variant: "success",
+          });
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to stop recording",

@@ -185,6 +185,18 @@ class RecorderSocket extends Socket {
                 options
             );
 
+            // Push the updated row to subscribers so their tables reflect the
+            // new status (recorderStop runs without a transaction, so the
+            // automatic table broadcast doesn't fire on its own).
+            try {
+                const updatedRow = await this.models["recording"].getById(recordingId);
+                if (updatedRow) {
+                    await this.broadcastTable("recording", [updatedRow]);
+                }
+            } catch (e) {
+                this.logger.warn("Failed to broadcast stopped recording: " + e);
+            }
+
             delete this.server.activeRecordings[socketId];
 
             const traces = await this.models["trace"].findAll({
