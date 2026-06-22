@@ -1,35 +1,43 @@
 /**
  * Helpers for choosing and applying the UI language (German or English).
  *
- * Where the language comes from:
- * 1. If the user saved a choice in Preferences → use localStorage key "locale"
- * 2. Otherwise → use the browser language (if we support it)
- * 3. Otherwise → English
+ * Logged-in users:
+ * 1. `app.locale` from the server
+ * 2. localStorage key "locale" until appSettings arrived
+ * 3. Browser language, then English
  *
- * The language is stored only in the browser, not in the database.
+ * Preferences → `app.locale` in DB. Auth pages (`meta.checkLogin`) use browser language
+ * and clear the localStorage cache when `/auth/check` returns no user.
+ * After login, App.vue applies app.locale from appSettings when they arrive.
  *
  * @author Andrii Nikitin
  */
 
 /** @typedef {{ code: string, name: string, flag: string }} LocaleOption */
 
+/** Fallback when nothing else applies */
 export const DEFAULT_LOCALE = "en";
+
+/** Row key in `setting` (system default) and `user_setting` (per-user choice); same string in both tables. */
+export const LOCALE_SETTING_KEY = "app.locale";
+
+/** Browser localStorage key */
 const STORAGE_KEY = "locale";
 
-/** @type {LocaleOption[]} */
+/** Languages shown in the language switcher */
 export const SUPPORTED_LOCALES = [
     { code: "de", name: "Deutsch", flag: "🇩🇪" },
     { code: "en", name: "English", flag: "🇬🇧" },
 ];
 
+/** Supported locale codes for fast lookup in {@link normalizeLocale} */
 const SUPPORTED_CODES = new Set(SUPPORTED_LOCALES.map((lang) => lang.code));
 
 /**
- * Turns values like "de-DE" or "en-US" into "de" or "en".
- * Returns null if the app does not support that language.
+ * Normalizes a locale tag to a supported app code.
  *
- * @param {string|null|undefined} locale
- * @returns {string|null}
+ * @param {string|null|undefined} locale - `"de"` / `"en"` from the app, or a browser tag like `"de-DE"` / `"en-US"`
+ * @returns {string|null} code e.g. `"de"` or `"en"` when supported; otherwise `null`
  */
 export function normalizeLocale(locale) {
     if (!locale || typeof locale !== "string") {
@@ -40,38 +48,35 @@ export function normalizeLocale(locale) {
 }
 
 /**
- * Returns the language the user saved in Preferences, or null if nothing was saved.
+ * Reads the locale saved in the browser.
  *
- * @returns {string|null}
+ * @returns {string|null} Normalized code from `localStorage`, or `null` if unset or unsupported
  */
 export function getStoredLocale() {
     return normalizeLocale(localStorage.getItem(STORAGE_KEY));
 }
 
 /**
- * Saves the language to localStorage. Called when the user clicks Confirm in Preferences.
+ * Saves the language to localStorage.
  *
- * @param {string} locale
+ * @param {string} locale clear code e.g. `"de"` or `"en"`
  */
 export function setStoredLocale(locale) {
-    const normalized = normalizeLocale(locale);
-    if (normalized) {
-        localStorage.setItem(STORAGE_KEY, normalized);
-    }
+    localStorage.setItem(STORAGE_KEY, locale);
 }
 
 /**
- * Removes the saved locale preference (guest sessions use browser language again).
+ * Removes the cached UI locale from browser localStorage (stored under key `"locale"`).
  */
-export function clearStoredLocale() {
+export function clearCachedLocale() {
     localStorage.removeItem(STORAGE_KEY);
 }
 
 /**
- * Picks a language from the browser settings (navigator.languages).
- * Uses the first entry we support (de or en). If none match, returns English.
+ * Picks a language from the browser settings
+ * Uses the first entry we support. If none match, returns English.
  *
- * @returns {string}
+ * @returns {string} First supported code from `navigator.languages`, or {@link DEFAULT_LOCALE}
  */
 export function getBrowserLocale() {
     const candidates = navigator.languages?.length
@@ -88,56 +93,43 @@ export function getBrowserLocale() {
 }
 
 /**
- * Language used when the app starts (see file header for the order).
+ * Language used when the app starts in main.js (before the router runs).
  *
- * @returns {string}
+ * @returns {string} localStorage cache, or browser locale
  */
 export function getInitialLocale() {
     return getStoredLocale() || getBrowserLocale();
 }
 
 /**
- * Language for login, register, and similar pages before the user is logged in.
- * Same rules as on first load: saved choice, else browser, else English.
+ * Reads `app.locale` from merged app settings.
  *
- * @returns {string}
+ * @param {Object|null|undefined} settings - Merged `setting` + `user_setting` from `appSettings`
+ * @returns {string|null} Normalized locale code, or `null` if missing or unsupported
  */
-export function getGuestLocale() {
-    return getStoredLocale() || getBrowserLocale();
+export function getLocaleFromSettings(settings) {
+    if (!settings || typeof settings !== "object") {
+        return null;
+    }
+    return normalizeLocale(settings[LOCALE_SETTING_KEY]);
 }
 
 /**
- * True for routes like login, register, or reset-password (user not in the app yet).
+ * Browser locale for routes with `meta.checkLogin` (login, register, …). Ignores localStorage cache.
  *
- * @param {import("vue-router").RouteLocationNormalized} route
- * @returns {boolean}
+ * @returns {string} Browser locale, or {@link DEFAULT_LOCALE}
  */
-export function isGuestAuthRoute(route) {
-    return !!(
-        route.meta.checkLogin
-        || route.name === "register"
-        || route.name === "reset-password"
-    );
+export function getAuthPageLocale() {
+    return getBrowserLocale();
 }
 
 /**
- * Switches the active UI language in vue-i18n right away.
+ * Applies a locale to a vue-i18n instance.
  *
- * @param {import("vue-i18n").I18n|{ locale: string }} i18nInstance
- * @param {string} locale
- * @returns {string} The locale code that was applied ("de" or "en")
+ * @param {import("vue-i18n").I18n} i18nInstance - export from main.js
+ * @param {string} locale - `"de"` or `"en"`
  */
 export function applyLocale(i18nInstance, locale) {
     const normalized = normalizeLocale(locale) || DEFAULT_LOCALE;
-    const target = i18nInstance?.global ?? i18nInstance;
-    if (!target) {
-        return normalized;
-    }
-
-    if (typeof target.locale === "string") {
-        target.locale = normalized;
-    } else if (target.locale?.value !== undefined) {
-        target.locale.value = normalized;
-    }
-    return normalized;
+    i18nInstance.global.locale = normalized;
 }

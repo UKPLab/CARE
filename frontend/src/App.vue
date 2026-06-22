@@ -52,9 +52,11 @@ import {computed} from "vue";
 import { i18n } from "@/main.js";
 import {
   applyLocale,
-  getGuestLocale,
+  clearCachedLocale,
+  getAuthPageLocale,
+  getLocaleFromSettings,
   getStoredLocale,
-  isGuestAuthRoute,
+  setStoredLocale,
 } from "@/assets/locale.js";
 
 /**
@@ -115,6 +117,13 @@ export default {
     appSettings: function (data) {
       this.$store.commit("settings/setSettings", data);
       this.loaded.settings = true;
+      if (this.requireAuth) {
+        const locale = getLocaleFromSettings(data);
+        if (locale) {
+          applyLocale(i18n, locale);
+          setStoredLocale(locale);
+        }
+      }
     },
     appSystemRoles: function (data) {
       this.$store.commit("admin/setSystemRoles", data);
@@ -264,6 +273,8 @@ export default {
         await this.$router.push(response.data.wizardCompleted === false ? "/wizard" : "/dashboard");
       } else if (response.data.needsSetup) {
         await this.$router.push("/wizard");
+      } else {
+        clearCachedLocale();
       }
     },
     resetAppLoadState() {
@@ -294,14 +305,19 @@ export default {
     },
     syncLocaleForRoute(route) {
       if (route.meta.requireAuth) {
+        const fromSettings = getLocaleFromSettings(this.$store.getters["settings/getSettings"]);
+        if (fromSettings) {
+          applyLocale(i18n, fromSettings);
+          return;
+        }
         const stored = getStoredLocale();
         if (stored) {
           applyLocale(i18n, stored);
         }
         return;
       }
-      if (isGuestAuthRoute(route)) {
-        applyLocale(i18n, getGuestLocale());
+      if (route.meta.checkLogin) {
+        applyLocale(i18n, getAuthPageLocale());
       }
     },
     syncPostLoginModalFlow() {

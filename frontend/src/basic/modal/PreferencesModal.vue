@@ -72,7 +72,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import LanguageSwitcher from "@/basic/LanguageSwitcher.vue";
 import { resolveApiMessage } from "@/assets/utils";
-import { clearStoredLocale, getStoredLocale, setStoredLocale } from "@/assets/locale.js";
+import { clearCachedLocale, getLocaleFromSettings, getStoredLocale, LOCALE_SETTING_KEY, setStoredLocale } from "@/assets/locale.js";
 
 /**
  * User preferences: language and consent settings.
@@ -90,6 +90,8 @@ export default {
       savedAcceptStats: false,
       savedAcceptDataSharing: false,
       confirmed: false,
+      /** True if localStorage already had `"locale"` when the modal opened (used by revert()). */
+      localeCacheExistedAtOpen: false,
     };
   },
   computed: {
@@ -120,8 +122,9 @@ export default {
   methods: {
     open() {
       this.confirmed = false;
-      this.hadStoredLocaleAtOpen = !!getStoredLocale();
-      this.savedLocale = getStoredLocale() || this.$i18n.locale;
+      this.localeCacheExistedAtOpen = !!getStoredLocale();
+      const fromSettings = getLocaleFromSettings(this.$store.getters["settings/getSettings"]);
+      this.savedLocale = fromSettings || getStoredLocale() || this.$i18n.locale;
       const user = this.user;
       if (user) {
         this.savedAcceptStats = user.acceptStats;
@@ -142,17 +145,19 @@ export default {
     },
     revert() {
       this.$i18n.locale = this.savedLocale;
-      if (this.hadStoredLocaleAtOpen) {
+      if (this.localeCacheExistedAtOpen) {
         setStoredLocale(this.savedLocale);
       } else {
-        clearStoredLocale();
+        clearCachedLocale();
       }
       this.acceptStats = this.savedAcceptStats;
       this.acceptDataSharing = this.savedAcceptDataSharing;
     },
     persistLocale() {
-      setStoredLocale(this.$i18n.locale);
-      this.hadStoredLocaleAtOpen = true;
+      const locale = this.$i18n.locale;
+      setStoredLocale(locale);
+      this.localeCacheExistedAtOpen = true;
+      this.$socket.emit("appSettingSet", { key: LOCALE_SETTING_KEY, value: locale });
     },
     hasLocaleChanged() {
       return this.$i18n.locale !== this.savedLocale;
