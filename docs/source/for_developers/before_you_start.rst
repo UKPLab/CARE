@@ -137,8 +137,6 @@ a database in a docker container and populates it with the necessary schemas.
 
     ``make dev`` runs with ``DEV_SKIP_WIZARD=true`` for faster iterative development.
     If you need to test the first-time setup flow, use ``make dev-wizard``.
-    For backend-only runs, ``make dev-backend`` and ``make dev-backend-watch`` also skip the wizard,
-    while ``make dev-backend-wizard`` keeps wizard flow enabled.
 
 .. note::
 
@@ -148,9 +146,7 @@ a database in a docker container and populates it with the necessary schemas.
 .. warning::
 
         The ``make dev`` command only works on Linux systems.
-        On Windows, you need to start the frontend and backend separately.
-        Use ``make dev-frontend`` + ``make dev-backend`` for wizard-skipped backend runs, or
-        ``make dev-frontend`` + ``make dev-backend-wizard`` to test the first-time setup wizard flow.
+        On Windows, you need to start the frontend and backend separately with ``make dev-frontend`` and ``make dev-backend``.
 
 Frontend
 ~~~~~~~~~~~~
@@ -200,13 +196,6 @@ After that, the backend can be started with:
     make dev-backend
 
 To enable auto-restart of the backend when server files change, use ``make dev-backend-watch`` (runs ``nodemon``).
-Both commands run with ``DEV_SKIP_WIZARD=true``.
-
-If you want backend-only development with wizard enabled, use:
-
-.. code-block:: bash
-
-    make dev-backend-wizard
 
 To shorten things, both commands can also be executed with ``make dev-build`` at once.
 
@@ -250,11 +239,9 @@ More Commands
     * - ``make dev-wizard``
       - Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)
     * - ``make dev-backend``
-      - Run backend in development mode with setup wizard skipped.
-    * - ``make dev-backend-wizard``
-      - Run backend in development mode with setup wizard enabled.
+      - Run backend in development mode.
     * - ``make dev-backend-watch``
-      - Run backend in development mode with nodemon (auto-restart on file changes), setup wizard skipped.
+      - Run backend in development mode with nodemon (auto-restart on file changes).
     * - ``make dev-frontend``
       - Run frontend in development mode.
     * - ``make dev-build``

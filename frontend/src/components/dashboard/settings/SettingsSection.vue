@@ -67,17 +67,17 @@ export default {
       isCollapsed: true,
     };
   },
-  computed: {
-    visibleSubsections() {
-      return this.subsections;
-    },
-  },
   watch: {
     collapsed: {
       immediate: true,
       handler(val) {
         this.isCollapsed = val;
       },
+    },
+  },
+  computed: {
+    visibleSubsections() {
+      return this.subsections;
     },
   },
   methods: {

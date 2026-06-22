@@ -5,6 +5,8 @@ const { faker } = require('@faker-js/faker');
 const JSZip = require('jszip');
 const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
+const { dbToDelta, deltaToPlainText, deltaToHtml } = require('editor-delta-conversion');
+const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
 module.exports = function (server) {
 
@@ -35,12 +37,11 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat } = req.body;
-        let { userIds = [] } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits, includeNonConsentingAnnotations } = req.body;
+        let { userIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
-        const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
-        const supportedExportTypes = new Set(["submissions", "grades"]);
-        const { Op } = server.db.Sequelize;
+        const shouldIncludeNonConsentingEdits = String(includeNonConsentingEdits) === 'true';
+        const shouldIncludeNonConsentingAnnotations = String(includeNonConsentingAnnotations) === 'true';
 
         try {
             userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
@@ -51,18 +52,6 @@ module.exports = function (server) {
         }
 
         try {
-            if (!projectId) return res.status(400).send("Missing projectId.");
-            if (!supportedExportTypes.has(exportType)) {
-                return res.status(400).send("Unsupported export type.");
-            }
-            if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
-                return res.status(400).send("Unsupported grade format. Use json or csv.");
-            }
-            if (userIds.length === 0) {
-                console.warn("Export aborted: No valid users selected.");
-                return res.status(400).send("No valid users selected.");
-            }
-
             // check if the project is valid
             const projectCheck = await server.db.models.project.findOne({ where: { id: projectId } });
             if (!projectCheck) {
@@ -70,9 +59,10 @@ module.exports = function (server) {
                 return res.status(403).send("The selected project does not exist.");
             }
 
-            const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
-            if (users.length === 0) {
-                console.warn("Export aborted: No existing users to export.");
+            const users = await server.db.models.user.findAll({ where: { id: userIds } });
+
+            if (userIds.length === 0) {
+                console.warn(`Export aborted: No authorized users to export.`);
                 return res.status(400).send("No authorized users to export.");
             }
 
@@ -109,21 +99,20 @@ module.exports = function (server) {
                         archive
                     );
                     break;
-                case 'grades':
-                    await processGradesExport(
+                case 'documents':
+                    await processDocumentBasedExport(
                         server,
                         projectId,
                         userIds,
-                        users,
-                        shouldGenerateAliases,
-                        hasPrivateInfoRight,
-                        userMapping,
-                        normalizedGradeFormat,
+                        documentTypes,
+                        shouldIncludeNonConsentingEdits,
+                        shouldIncludeNonConsentingAnnotations,
+                        exportFolderName.split('.')[0],
                         archive
                     );
                     break;
                 default:
-                    return res.status(400).send("Unsupported export type.");
+                    console.warn(`Export type ${exportType} not implemented.`);
             }
 
             await archive.finalize();
@@ -148,9 +137,6 @@ module.exports = function (server) {
     async function replaceAuthorInZip(filePath, realName, fakeName) {
         const fileData = fs.readFileSync(filePath);
         const zip = await JSZip.loadAsync(fileData);
-        // TODO: What if the realName contains middle name?
-        const [realFirstName = "", realLastName = ""] = String(realName || "").split(/\s+/, 2);
-        const [fakeFirstName = "", fakeLastName = ""] = String(fakeName || "").split(/\s+/, 2);
 
         const authorRegex = /\\author\s*\{[^}]*\}/g;
 
@@ -158,8 +144,8 @@ module.exports = function (server) {
             if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.tex')) {
                 let text = await zipEntry.async("string");
                 text = text.replace(authorRegex, `\\author{${fakeName}}`);
-                if (realFirstName && fakeFirstName) text = text.replace(realFirstName, fakeFirstName);
-                if (realLastName && fakeLastName) text = text.replace(realLastName, fakeLastName);
+                text = text.replace(realName.split(" ")[0], fakeName.split(" ")[0]);
+                text = text.replace(realName.split(" ")[1], fakeName.split(" ")[1]);
                 
                 zip.file(relativePath, text); 
             }
@@ -193,8 +179,7 @@ module.exports = function (server) {
                 faker.seed(derivedFakerSeed);
             }
 
-            const sortedUsers = [...users].sort((a, b) => Number(a.id) - Number(b.id));
-            sortedUsers.forEach(u => {
+            users.forEach(u => {
                 const realUsername = u.userName;
                 const realName = `${u.firstName} ${u.lastName}`;
                 const fakeName = `${faker.person.firstName()} ${faker.person.lastName()}`;
@@ -262,7 +247,6 @@ module.exports = function (server) {
             1: ".html",
             4: ".zip"
         };
-        const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
         for (const submission of submissions) {
             const student = users.find(u => u.id === submission.userId);
@@ -270,7 +254,6 @@ module.exports = function (server) {
 
             const validationRules = configMap.get(submission.validationConfigurationId);
             let folderName = shouldGenerateAliases ? userMapping[student.id] : (hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : `${student.userName}`);
-            folderName = sanitizeFolderName(folderName);
 
             for (const doc of submission.documents) {
                 const version = calculateSubmissionVersion(submission, submissionMap);
@@ -293,7 +276,7 @@ module.exports = function (server) {
 
                 if (fs.existsSync(filePath)) {
                     if (shouldGenerateAliases && doc.type == 4) {
-                        const realName = `${student.firstName || ""} ${student.lastName || ""}`.trim();
+                        const realName = `${student.firstName} ${student.lastName}`;
                         const fakeName = userMapping[student.id];
                         try {
                             const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
@@ -307,230 +290,6 @@ module.exports = function (server) {
                     }
                 } else {
                     console.error(`[NOT FOUND] Looking for document: ${doc.hash} at ${filePath}`);
-                }
-            }
-        }
-    }
-
-    function sanitizeFolderName(value) {
-        return String(value || "unknown")
-            .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
-    function flattenObject(value, prefix = "", out = {}) {
-        if (value === null || value === undefined) return out;
-        if (typeof value !== "object" || Array.isArray(value)) {
-            out[prefix] = value;
-            return out;
-        }
-
-        for (const [key, child] of Object.entries(value)) {
-            const nextPrefix = prefix ? `${prefix}.${key}` : key;
-            flattenObject(child, nextPrefix, out);
-        }
-        return out;
-    }
-
-    function getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
-        if (shouldGenerateAliases) return userMapping[user.id];
-        if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
-        return user.userName;
-    }
-
-    async function processGradesExport(
-        server,
-        projectId,
-        userIds,
-        users,
-        shouldGenerateAliases,
-        hasPrivateInfoRight,
-        userMapping,
-        gradeFormat,
-        archive
-    ) {
-        const { Op } = server.db.Sequelize;
-        const gradeRows = await server.db.models.document_data.findAll({
-            where: {
-                key: "assessment_result",
-                deleted: false,
-                studySessionId: { [Op.ne]: null }
-            },
-            include: [{
-                model: server.db.models.document,
-                as: "document",
-                required: true,
-                where: {
-                    projectId,
-                    userId: { [Op.in]: userIds },
-                    deleted: false
-                },
-                include: [{
-                    model: server.db.models.submission,
-                    as: "submission",
-                    required: false
-                }]
-            }],
-            order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
-        });
-
-        const sessionIds = [...new Set(gradeRows.map((row) => row.studySessionId).filter(Boolean))];
-        const studySessions = sessionIds.length > 0
-            ? await server.db.models.study_session.findAll({
-                where: { id: { [Op.in]: sessionIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const sessionsById = new Map(studySessions.map((session) => [session.id, session]));
-
-        const studyIds = [...new Set(studySessions.map((session) => session.studyId).filter(Boolean))];
-        const studies = studyIds.length > 0
-            ? await server.db.models.study.findAll({
-                where: { id: { [Op.in]: studyIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const studiesById = new Map(studies.map((study) => [study.id, study]));
-
-        const relatedUserIds = [...new Set([
-            ...users.map((user) => user.id),
-            ...studySessions.map((session) => session.userId),
-            ...studies.map((study) => study.userId)
-        ].filter(Boolean))];
-        const relatedUsers = relatedUserIds.length > 0
-            ? await server.db.models.user.findAll({ where: { id: { [Op.in]: relatedUserIds } }, raw: true })
-            : [];
-        const usersById = new Map(relatedUsers.map((user) => [user.id, user]));
-
-        const roleMatches = relatedUserIds.length > 0
-            ? await server.db.models.user_role_matching.findAll({
-                where: { userId: { [Op.in]: relatedUserIds } },
-                raw: true
-            })
-            : [];
-        const roleIds = [...new Set(roleMatches.map((match) => match.userRoleId))];
-        const roles = roleIds.length > 0
-            ? await server.db.models.user_role.findAll({
-                where: { id: { [Op.in]: roleIds } },
-                attributes: ["id", "name"],
-                raw: true
-            })
-            : [];
-        const roleNameById = new Map(roles.map((role) => [role.id, role.name]));
-        const rolesByUserId = new Map();
-        for (const match of roleMatches) {
-            const roleName = roleNameById.get(match.userRoleId);
-            if (!roleName) continue;
-            if (!rolesByUserId.has(match.userId)) rolesByUserId.set(match.userId, []);
-            rolesByUserId.get(match.userId).push(roleName);
-        }
-
-        const recordsByUser = new Map();
-        for (const row of gradeRows) {
-            const document = row.document;
-            const ownerUser = usersById.get(document.userId);
-            if (!ownerUser) continue;
-            const session = sessionsById.get(row.studySessionId);
-            const reviewerUser = session ? usersById.get(session.userId) : null;
-            const study = session ? studiesById.get(session.studyId) : null;
-            const graderUser = study ? usersById.get(study.userId) : null;
-            const submission = document.submission;
-
-            const scoreObject = row.value || {};
-            const totalPoints =
-                typeof scoreObject.total === "number"
-                    ? scoreObject.total
-                    : (typeof scoreObject.achieved_points === "number" ? scoreObject.achieved_points : null);
-
-            const record = {
-                projectId,
-                userId: ownerUser.id,
-                userExtId: ownerUser.extId ?? null,
-                userName: ownerUser.userName ?? "",
-                displayName: getDisplayName(ownerUser, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
-                submissionId: submission?.id ?? document.submissionId ?? null,
-                submissionExtId: submission?.extId ?? null,
-                studySessionId: row.studySessionId ?? null,
-                studyStepId: row.studyStepId ?? null,
-                sessionHash: session?.hash ?? null,
-                roles: rolesByUserId.get(study?.userId) || [],
-                grader: graderUser ? `${graderUser.firstName} ${graderUser.lastName}`.trim() : null,
-                reviewer: reviewerUser ? `${reviewerUser.firstName} ${reviewerUser.lastName}`.trim() : null,
-                author: ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}`.trim() : null,
-                scores: scoreObject,
-                totalPoints,
-                createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-                sourceKey: "assessment_result"
-            };
-
-            if (!recordsByUser.has(ownerUser.id)) recordsByUser.set(ownerUser.id, []);
-            recordsByUser.get(ownerUser.id).push(record);
-        }
-
-        const usedFolderNames = new Set();
-        const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
-            const raw = baseHash || `session_${sessionId || "unknown"}_user_${userId}`;
-            const safeBase = sanitizeFolderName(raw);
-            let candidate = safeBase;
-            let suffix = 1;
-            while (usedFolderNames.has(candidate)) {
-                candidate = `${safeBase}_${suffix}`;
-                suffix += 1;
-            }
-            usedFolderNames.add(candidate);
-            return candidate;
-        };
-
-        for (const user of users) {
-            const records = (recordsByUser.get(user.id) || []).sort((a, b) => {
-                const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return (
-                    (a.studySessionId || 0) - (b.studySessionId || 0) ||
-                    (a.studyStepId || 0) - (b.studyStepId || 0) ||
-                    createdA - createdB
-                );
-            });
-
-            const recordsByHash = new Map();
-            for (const record of records) {
-                const hashKey = record.sessionHash || null;
-                if (!recordsByHash.has(hashKey)) recordsByHash.set(hashKey, []);
-                recordsByHash.get(hashKey).push(record);
-            }
-
-            for (const [hashKey, hashRecords] of recordsByHash.entries()) {
-                const folderName = getUniqueHashFolderName(hashKey, user.id, hashRecords[0]?.studySessionId);
-                const hashFolder = `grades/${folderName}`;
-                const exportedRecords = hashRecords.map(({ sessionHash, ...rest }) => rest);
-
-                if (gradeFormat === "csv") {
-                    const csvRows = exportedRecords.map((record) => {
-                        const flatScores = flattenObject(record.scores, "scores");
-                        return {
-                            projectId: record.projectId,
-                            userId: record.userId,
-                            userExtId: record.userExtId,
-                            userName: record.userName,
-                            displayName: record.displayName,
-                            submissionId: record.submissionId,
-                            submissionExtId: record.submissionExtId,
-                            studySessionId: record.studySessionId,
-                            studyStepId: record.studyStepId,
-                            roles: record.roles.join("|"),
-                            grader: record.grader,
-                            reviewer: record.reviewer,
-                            author: record.author,
-                            totalPoints: record.totalPoints,
-                            createdAt: record.createdAt,
-                            sourceKey: record.sourceKey,
-                            ...flatScores
-                        };
-                    });
-                    archive.append(Papa.unparse(csvRows), { name: `${hashFolder}/scores.csv` });
-                } else {
-                    archive.append(JSON.stringify(exportedRecords, null, 2), { name: `${hashFolder}/scores.json` });
                 }
             }
         }
@@ -554,5 +313,228 @@ module.exports = function (server) {
             currentSub = prevSub;
         }
         return version;
+    }
+
+    /**
+     * Exports a single document to the archive based on its type.
+     * - Type 0 (PDF): exports annotations, comments (with votes), document_data, and the PDF file.
+     * - Type 1 (HTML) / Type 2 (Modal): exports edits, plain text, HTML, and document_data.
+     * - Type 4 (ZIP): exports the zip file and document_data.
+     * @param {Object} server - The server instance providing database models.
+     * @param {Object} doc - The document record from the database.
+     * @param {string} docFolder - The target folder path inside the archive.
+     * @param {Object} archive - The archiver instance to append files to.
+     * @returns {Promise<void>}
+     */
+    async function processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, includeNonConsentingAnnotations, docUserRoles, archive) {
+        // document_data for all types, at the doc level.
+        const documentData = await server.db.models.document_data.findAll({
+            where: { documentId: doc.id, deleted: false },
+            raw: true,
+        });
+        if (documentData.length > 0) {
+            archive.append(JSON.stringify(documentData, null, 2), { name: `${docFolder}/document_data.json` });
+        }
+
+        const docMeta = {
+            hash: doc.hash,
+            type: doc.type,
+            userId: doc.userId,
+            userRoles: docUserRoles,
+        };
+        archive.append(JSON.stringify(docMeta, null, 2), { name: `${docFolder}/meta.json` });
+
+        switch (doc.type) {
+            case 0: { // PDF
+                // Annotations live on study-session copies (parentDocumentId = doc.id),
+                // not on the root document. Collect all copy IDs and query across them.
+                const copies = await server.db.models.document.findAll({
+                    where: { parentDocumentId: doc.id },
+                    attributes: ['id'],
+                    raw: true,
+                });
+                const allDocIds = [doc.id, ...copies.map(c => c.id)];
+
+                let [annotations, comments] = await Promise.all([
+                    server.db.models.annotation.findAll({ where: { documentId: allDocIds }, raw: true }),
+                    server.db.models.comment.findAll({ where: { documentId: allDocIds }, raw: true }),
+                ]);
+
+                if (!includeNonConsentingAnnotations) {
+                    const allUserIds = [...new Set([
+                        ...annotations.map(a => a.userId),
+                        ...comments.map(c => c.userId),
+                    ].filter(Boolean))];
+                    const annotationUsers = await server.db.models.user.findAll({
+                        where: { id: allUserIds },
+                        attributes: ['id', 'acceptDataSharing'],
+                        raw: true,
+                    });
+                    const consentedUserIds =  new Set(
+                        annotationsUsers.filter(u => u.acceptDataSharing).map(u => u.id)
+                    );
+                    annotations = annotations.filter(a => !a.userId || consentedUserIds.has(a.userId));
+                    comments = comments.filter(c => !c.userId || consentedUserIds.has(c.userId));
+                }
+
+                const commentVotes = await server.db.models.comment_vote.findAll({
+                    where: { commentId: comments.map(c => c.id), deleted: false },
+                    raw: true,
+                });
+                const commentsWithVotes = comments.map(c => ({
+                    ...c,
+                    votes: commentVotes.filter(v => v.commentId === c.id),
+                }));
+
+                // All annotations and comments go into one file each.
+                if (annotations.length > 0) {
+                    archive.append(JSON.stringify(annotations, null, 2), { name: `${docFolder}/annotations.json` });
+                }
+                if (commentsWithVotes.length > 0) {
+                    archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
+                }
+
+                const pdfPath = path.join(storageDir, `${doc.hash}.pdf`);
+                if (fs.existsSync(pdfPath)) {
+                    archive.file(pdfPath, { name: `${docFolder}/document.pdf` });
+                } else {
+                    console.warn(`[DocumentExport] PDF not found for document ${doc.hash}`);
+                }
+                break;
+            }
+
+            case 1: // HTML
+            case 2: { // MODAL
+                // fetch all edits for this document, ordered chronologically
+                let allEdits = await server.db.models.document_edit.findAll({
+                    where: { documentId: doc.id, deleted: false },
+                    order: [['createdAt', 'ASC']],
+                    raw: true,
+                });
+
+                // filter by consent unless the option is enabled
+                if (!includeNonConsentingEdits) {
+                    const editorUserIds = [...new Set(allEdits.map(e => e.userId).filter(Boolean))];
+                    const editorUsers = await server.db.models.user.findAll({
+                        where: { id: editorUserIds },
+                        attributes: ['id', 'acceptDataSharing'],
+                        raw: true,
+                    });
+                    const consentedUserIds = new Set(
+                        editorUsers.filter(u => u.acceptDataSharing).map(u => u.id)
+                    );
+                    allEdits = allEdits.filter(e => !e.userId || consentedUserIds.has(e.userId));
+                }
+
+                // group edits by studySessionId (null = template)
+                const sessionGroups = new Map();
+                for (const edit of allEdits) {
+                    const key = edit.studySessionId ?? '__template__';
+                    if (!sessionGroups.has(key)) sessionGroups.set(key, []);
+                    sessionGroups.get(key).push(edit);
+                }
+
+                // fetch study sessions to resolve hashes
+                const sessionIds = [...sessionGroups.keys()].filter(k => k !== '__template__');
+                const sessions = sessionIds.length > 0
+                    ? await server.db.models.study_session.findAll({
+                        where: { id: sessionIds },
+                        attributes: ['id', 'hash'],
+                        raw: true,
+                    })
+                    : [];
+                const sessionHashMap = new Map(sessions.map(s => [s.id, s.hash]));
+
+                for (const [key, edits] of sessionGroups.entries()) {
+                    const isTemplate = key === '__template__';
+                    const delta = dbToDelta(edits);
+
+                    // skip empty content
+                    const text = deltaToPlainText(delta);
+                    if (!text.trim()) continue;
+
+                    const subFolder = isTemplate
+                        ? `${docFolder}/template`
+                        : `${docFolder}/${sessionHashMap.get(key) ?? key}`;
+
+                    archive.append(text,                                  { name: `${subFolder}/text.txt` });
+                    archive.append(deltaToHtml(delta),                    { name: `${subFolder}/html.html` });
+                    archive.append(JSON.stringify(edits, null, 2),        { name: `${subFolder}/edits.json` });
+                }
+                break;
+            }
+
+            case 4: { // ZIP
+                const zipPath = path.join(storageDir, `${doc.hash}.zip`);
+                if (fs.existsSync(zipPath)) {
+                    archive.file(zipPath, { name: `${docFolder}/document.zip` });
+                } else {
+                    console.warn(`[DocumentExport] ZIP not found for document ${doc.hash}`);
+                }
+                break;
+            }
+
+            default:
+                console.warn(`[DocumentExport] Unhandled document type ${doc.type} for document ${doc.hash}, skipping.`);
+        }
+    }
+
+    /**
+     * Main export function for the "documents" export type.
+     * Fetches all studies and steps for a project, collects unique documents,
+     * filters by owner data sharing consent, and exports each document to the archive.
+     * @param {Object} server - The server instance providing database models.
+     * @param {number|string} projectId - The ID of the project to export.
+     * @param {string} baseFolderName - The root folder name inside the ZIP archive.
+     * @param {Object} archive - The archiver instance to append files to.
+     * @param {Array<number>} userIds - List of user IDs to filter documents by.
+     * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
+     * @returns {Promise<void>}
+     */
+    async function processDocumentBasedExport(server, projectId, userIds, documentTypes, includeNonConsentingEdits, includeNonConsentingAnnotations, baseFolderName, archive) {
+        try {
+            documentTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes;
+            if (!Array.isArray(documentTypes)) documentTypes = [0, 1, 2, 4];
+        } catch (e) {
+            console.warn("Could not parse documentTypes:", documentTypes);
+            documentTypes = [0, 1, 2, 4];
+        }
+        
+        const docs = await server.db.models.document.findAll({
+            where: { projectId, userId: userIds, deleted: false, parentDocumentId: null },
+        });
+
+        if (docs.length === 0) {
+            console.warn(`[DocumentExport] No documents found for project ${projectId}`);
+            return;
+        }
+
+        const filteredDocs = docs.filter(doc =>
+            documentTypes.includes(doc.type) || documentTypes.includes(String(doc.type))
+        );
+
+        if (filteredDocs.length === 0) {
+            console.warn(`[DocumentExport] No documents matching selected types found for project ${projectId}`);
+            return;
+        }
+
+        const uniqueUserIds = [...new Set(filteredDocs.map(doc => doc.userId).filter(Boolean))];
+
+        const userRoleRows = await server.db.models.user_role_matching.findAll({
+            where: { userId: uniqueUserIds },
+            raw: true,
+        });
+        
+        const rolesMap = {};
+        for (const row of userRoleRows) {
+            if (!rolesMap[row.userId]) rolesMap[row.userId] = [];
+            rolesMap[row.userId].push(row.userRoleId);
+        }
+
+        for (const doc of filteredDocs) {
+            const docFolder = `${baseFolderName}/${doc.hash}`;
+            const docUserRoles = rolesMap[doc.userId] || [];
+            await processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, includeNonConsentingAnnotations, docUserRoles, archive);
+        }
     }
 };

@@ -1,12 +1,12 @@
 {
-  "name": "Review feedback configuration",
+  "name": "Exposé feedback configuration",
   "description": "Review Criteria by rubrics including calculation",
   "version": "1.0.0",
   "type": "assessment",
   "rubrics": [
     {
       "name": "Structure and Clarity",
-      "code": "SC",
+      "code": "structure",
       "description": "Assessment of overall structure and clarity",
       "calculation": "sum",
       "minPoints": 0,
@@ -14,7 +14,6 @@
       "criteria": [
         {
           "name": "Summary available",
-          "code": "SC1",
           "description": "Concise summary that reflects understanding of the performance",
           "function": "auto_grading",
           "minPoints": 0,
@@ -38,7 +37,6 @@
         },
         {
           "name": "Clarity",
-          "code": "SC2",
           "description": "Clarity with regard to the overall structure",
           "function": "auto_grading",
           "maxPoints": 2,
@@ -64,7 +62,7 @@
     },
     {
       "name": "Language",
-      "code": "LG",
+      "code": "language",
       "description": "Assessment of language quality and tone",
       "calculation": "sum",
       "minPoints": 0,
@@ -72,7 +70,6 @@
       "criteria": [
         {
           "name": "Language",
-          "code": "LG1",
           "description": "Accuracy and correctness of language used",
           "function": "auto_grading",
           "minPoints": 0,
@@ -92,7 +89,6 @@
         },
         {
           "name": "Tone",
-          "code": "LG2",
           "description": "Evaluates the respectfulness, clarity, and constructiveness of feedback",
           "function": "auto_grading",
           "minPoints": 0,
@@ -118,7 +114,7 @@
     },
     {
       "name": "Feed Up",
-      "code": "FU",
+      "code": "feed_up",
       "description": "Assessment of learning goals and success criteria",
       "calculation": "sum",
       "minPoints": 0,
@@ -126,7 +122,6 @@
       "criteria": [
         {
           "name": "Learning Goals",
-          "code": "FU1",
           "description": "Measures the clarity, specificity, and guidance of learning objectives.",
           "function": "auto_grading",
           "minPoints": 0,
@@ -150,7 +145,6 @@
         },
         {
           "name": "Success Criteria",
-          "code": "FU2",
           "description": "Measures the clarity and specificity of success criteria for achieving learning goals.",
           "function": "auto_grading",
           "minPoints": 0,
@@ -176,7 +170,7 @@
     },
     {
       "name": "Feed Back",
-      "code": "FB",
+      "code": "feed_back",
       "description": "Assessment of feedback quality and knowledge transfer",
       "calculation": "min",
       "minPoints": 0,
@@ -184,7 +178,6 @@
       "criteria": [
         {
           "name": "Knowledge of result",
-          "code": "FB1",
           "description": "Information on whether the task has been solved or not",
           "function": "auto_grading",
           "minPoints": 0,
@@ -204,7 +197,6 @@
         },
         {
           "name": "Knowledge of correct response",
-          "code": "FB2",
           "description": "Information on the correct answer or solution",
           "function": "auto_grading",
           "minPoints": 0,
@@ -224,7 +216,6 @@
         },
         {
           "name": "Knowledge about task constraints",
-          "code": "FB3",
           "description": "Information on rules, requirements or restrictions of the task",
           "function": "auto_grading",
           "minPoints": 0,
@@ -244,7 +235,6 @@
         },
         {
           "name": "Knowledge about concepts",
-          "code": "FB4",
           "description": "Information on relevant concepts, principles or relationships",
           "function": "auto_grading",
           "minPoints": 0,
@@ -264,7 +254,6 @@
         },
         {
           "name": "Knowledge about mistakes",
-          "code": "FB5",
           "description": "Information on the number, location, source or type of errors",
           "function": "auto_grading",
           "minPoints": 0,
@@ -284,7 +273,6 @@
         },
         {
           "name": "Self-feedback",
-          "code": "FB6",
           "description": "Self Feedback (e.g. praise or recognition) not available or only in combination with learning strategies or self-regulation",
           "function": "auto_grading",
           "minPoints": 0,
@@ -306,7 +294,7 @@
     },
     {
       "name": "Feed Forward",
-      "code": "FF",
+      "code": "feed_forward",
       "description": "Assessment of future learning guidance",
       "calculation": "sum",
       "minPoints": 0,
@@ -314,7 +302,6 @@
       "criteria": [
         {
           "name": "Self-regulation",
-          "code": "FF1",
           "description": "Knowledge about how to process the task or about self regulation",
           "function": "auto_grading",
           "minPoints": 0,
@@ -334,7 +321,6 @@
         },
         {
           "name": "Learning Skills",
-          "code": "FF2",
           "description": "Information on how to develop or improve learning skills",
           "function": "auto_grading",
           "minPoints": 0,
@@ -356,7 +342,7 @@
     },
     {
       "name": "Content Quality",
-      "code": "CQ",
+      "code": "content_quality",
       "description": "Assessment of content accuracy and usefulness",
       "calculation": "sum",
       "minPoints": 0,
@@ -364,7 +350,6 @@
       "criteria": [
         {
           "name": "Correctness",
-          "code": "CQ1",
           "description": "Evaluates the accuracy and correctness of the feedback content",
           "function": "auto_grading",
           "minPoints": 0,
@@ -388,7 +373,6 @@
         },
         {
           "name": "Actionability",
-          "code": "CQ2",
           "description": "Assesses whether the feedback provides clear and specific instructions for improvement",
           "function": "auto_grading",
           "minPoints": 0,
@@ -412,7 +396,6 @@
         },
         {
           "name": "Argumentation",
-          "code": "CQ3",
           "description": "Evaluates the quality of argumentation and evidence provided in the feedback",
           "function": "auto_grading",
           "minPoints": 0,
@@ -434,7 +417,7 @@
     },
     {
       "name": "Errors",
-      "code": "ER",
+      "code": "errors",
       "description": "Assessment of potential errors and issues in feedback",
       "calculation": "max",
       "defaultPoints": 4,
@@ -443,7 +426,6 @@
       "criteria": [
         {
           "name": "Neglect",
-          "code": "ER1",
           "description": "Assesses whether important details have been overlooked",
           "function": "auto_grading",
           "minPoints": -1,
@@ -463,7 +445,6 @@
         },
         {
           "name": "Vague Critic",
-          "code": "ER2",
           "description": "Assesses the specificity and clarity of criticism provided",
           "function": "auto_grading",
           "minPoints": -1,
@@ -483,7 +464,6 @@
         },
         {
           "name": "Out-of-Scope",
-          "code": "ER3",
           "description": "Assesses whether suggestions remain within the intended scope",
           "function": "auto_grading",
           "minPoints": -1,
@@ -503,7 +483,6 @@
         },
         {
           "name": "Missing Reference",
-          "code": "ER4",
           "description": "Assesses whether suggestions are supported by justification or references",
           "function": "auto_grading",
           "minPoints": -1,
@@ -523,7 +502,6 @@
         },
         {
           "name": "Contradiction",
-          "code": "ER5",
           "description": "Assesses whether the feedback is consistent and free of contradictions",
           "function": "auto_grading",
           "minPoints": -1,
@@ -545,7 +523,7 @@
     },
     {
       "name": "Additional points",
-      "code": "AD",
+      "code": "additional",
       "maxPoints": 1,
       "minPoints": -1,
       "calculation": "sum",
@@ -554,9 +532,8 @@
       "criteria": [
         {
           "name": "Additional points",
-          "code": "AD1",
           "description": "Additional points for very good reviews",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "maxPoints": 1,
           "minPoints": 0,
           "expertLevel": 1,
@@ -564,19 +541,18 @@
           "scoring": [
             {
               "points": 0,
-              "description": "No additional strengths identified."
+              "description": ""
             },
             {
               "points": 1,
-              "description": "Notable additional strengths beyond other criteria."
+              "description": ""
             }
           ]
         },
         {
           "name": "Negative points",
-          "code": "AD2",
           "description": "Major mistakes in the reviews",
-          "function": "manual_grading",
+          "function": "auto_grading",
           "maxPoints": 0,
           "minPoints": -1,
           "expertLevel": 1,
@@ -584,11 +560,11 @@
           "scoring": [
             {
               "points": 0,
-              "description": "No additional major issues identified."
+              "description": ""
             },
             {
               "points": -1,
-              "description": "Significant issues beyond other criteria."
+              "description": ""
             }
           ]
         }

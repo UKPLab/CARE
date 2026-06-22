@@ -245,29 +245,10 @@ module.exports = class MetaModel extends Model {
      * Delete db entry by id
      * @param {number} id
      * @param {Object} [options={}] - Optional Sequelize query options
-     * @param {boolean} [options.force=false] - If true, permanently destroys the record instead of soft-deleting.
      * @return {Promise<object|undefined>}
      */
     static async deleteById(id, options = {}) {
-        const { force = false, ...restOptions } = options;
-        if (force) {
-            return await this.destroyById(id, restOptions);
-        }
-        return await this.updateById(id, {deleted: true}, restOptions);
-    }
-
-    /**
-     * Physically destroy a db entry by id, firing all instance-level hooks
-     * (beforeDestroy, afterDestroy) so that plugins like GlobalChangeTrackingPlugin
-     * can track the change automatically.
-     * @param {number} id
-     * @param {Object} [options={}] - Optional Sequelize query options (e.g. transaction)
-     * @return {Promise<void>}
-     */
-    static async destroyById(id, options = {}) {
-        const instance = await this.findOne({ where: { id }, transaction: options.transaction });
-        if (!instance) return;
-        return await instance.destroy(options);
+        return await this.updateById(id, {deleted: true}, options);
     }
 
     /**

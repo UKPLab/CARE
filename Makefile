@@ -16,7 +16,6 @@ help:
 	@echo "make doc 							Build the documentation"
 	@echo "make dev-build       		  		Build the frontend (make dev-build-frontend) and run the backend in development mode"
 	@echo "make dev-backend      		 		Run backend in development mode"
-	@echo "make dev-backend-wizard            	Run backend in development mode with setup wizard enabled"
 	@echo "make dev-backend-watch  			    Run backend in development mode with nodemon (auto-restart)"
 	@echo "make dev-frontend     		 		Run frontend in development mode"
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
@@ -99,16 +98,10 @@ dev-build: backend/node_modules/.uptodate build-frontend
 	cd backend && npm run start
 
 .PHONY: dev-backend
-dev-backend: DEV_SKIP_WIZARD=true
 dev-backend: backend/node_modules/.uptodate
-	cd backend && npm run start 
-
-.PHONY: dev-backend-wizard
-dev-backend-wizard: backend/node_modules/.uptodate
 	cd backend && npm run start
 
 .PHONY: dev-backend-watch
-dev-backend-watch: DEV_SKIP_WIZARD=true
 dev-backend-watch: backend/node_modules/.uptodate
 	cd backend && npm run start:watch
 

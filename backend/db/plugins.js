@@ -31,7 +31,6 @@ function GlobalChangeTrackingPlugin(sequelize) {
             afterDestroy: (instance, options) => {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
-                    instance.dataValues.deleted = true;
                     options.transaction.changes.push(instance);
                 }
             }

@@ -7,10 +7,8 @@
       <Editor ref="editor" v-model="currentData"></Editor>
     </template>
     <template #footer>
-      <button
-        class="btn btn-secondary"
-        type="button"
-        @click="$refs.editorModal.close()">Close
+      <button class="btn btn-secondary" type="button"
+              @click="$refs.editorModal.close()">Close
       </button>
     </template>
   </Modal>

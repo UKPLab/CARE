@@ -18,24 +18,59 @@
           :fields="dataSelectionFields"
       />
     </template>
+
+    <!--
     <template #step-2>
+      <div class="table-scroll-container">
+        <div class="list-group">
+          <button
+            v-for="(f, i) in filter"
+            :key="f"
+            type="button"
+            class="list-group-item d-flex justify-content-between list-group-item-action"
+            @click="openFilterModal(i)">
+            <div v-if="f.data" class="ms-2 me-auto">
+              <div class="fw-bold">Filter for {{ f.data.options.table }}</div>
+              Include entries from {{ f.data.options.table }}
+            </div>
+            <span v-if="f.data"  class="badge bg-primary rounded-pill">{{ f.data.selected.length }} </span>
+            <FilterModal
+              :ref="'filter_' + i"
+              v-model="f.data"/>
+          </button>
+        </div>
+        <br>
+        <BasicButton
+          class="btn btn-primary"
+          title="Add Filter"
+          @click="filter.push({data: null})"
+        />
+      </div>
+    </template>
+    -->
+
+    <template #step-2>
+
       <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>Exporting a list of all study sessions with hash:</p>
+
         <p>
           Total Studies: {{ studies.length }}<br>
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
-        <StepSelectStudents 
+      <div v-else-if="dataSelection.exportType === 'submissions' || dataSelection.exportType === 'documents'">
+        <StepSelectUsers
           v-if="dataSelection.projectId"
-          v-model="submissionSelection" 
-          :project-id="dataSelection.projectId" 
+          :project-id="dataSelection.projectId"
+          :export-type="dataSelection.exportType"
+          v-model="userSelection"
         />
-        <!-- We send the project ID and get the selected students back -->
+        <!-- We send the project ID and get the selected users back -->
       </div>
       <div v-else>
         <p>Exporting all data</p>
+
         <p>
           Total Studies: {{ studies.length }}<br>
           Total Study Sessions: {{ studySessions.length }}<br>
@@ -49,31 +84,37 @@
           Total Edits: {{ edits.length }}<br>
         </p>
       </div>
+
     </template>
-    <template 
-      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
-      #step-3 
-    >
-      <StepOptions 
-        v-model:generate-aliases="generateAliases"
-        v-model:faker-seed="fakerSeed"
-        v-model:grade-format="gradeFormat"
-        :show-grade-format="dataSelection.exportType === 'grades'"
-      />
-      <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+
+    
+    <template #step-3>
+      <div v-if="dataSelection.exportType === 'submissions'">
+        <StepOptionsSubmissions 
+          v-model:generateAliases="generateAliases"
+          v-model:fakerSeed="fakerSeed"
+        />
+        <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+      </div>
+      <div v-else-if="dataSelection.exportType === 'documents'">
+        <StepOptionsDocuments
+          v-model:selectedTypes="selectedDocumentTypes"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
+          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
+        />
+        <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
+      </div>
     </template>
-    <template 
-      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
-      #step-4
-    >
-      <StepConfirmDownload 
-        v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+
+    <template #step-4 v-if="dataSelection.exportType === 'submissions' || dataSelection.exportType === 'documents'">
+      <StepConfirmDownload
         :wait="wait"
         :generate-aliases="generateAliases"
-        :submission-selection="submissionSelection"
+        :user-selection="userSelection"
+        :export-type="dataSelection.exportType"
       />
-      <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
     </template>
+
   </StepperModal>
 </template>
 
@@ -86,8 +127,10 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
-import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
+import BasicLoading from "@/basic/Loading.vue";
+import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
+import StepOptionsSubmissions from "@/components/dashboard/projects/export/StepOptionsSubmissions.vue";
+import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
 
@@ -95,11 +138,11 @@ import getServerURL from "@/assets/serverUrl.js";
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska, Mélissa Loew, Linyin Huang
+ * @author Dennis Zyska, Mélissa Loew
  */
 export default {
   name: "ExportProjectModal",
-  components: { StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
+  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptionsSubmissions, StepOptionsDocuments, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -134,20 +177,29 @@ export default {
       filter: [],
       wait: false,
       // Data for Export Submissions
-      submissionSelection: [],
+      userSelection: [],
       generateAliases:false,
       fakerSeed: 846569412,
-      gradeFormat: "json"
+      selectedDocumentTypes: [0, 1, 2, 4],
+      excludeNonConsentingEdits: false,
+      excludeNonConsentingAnnotations: false
     };
   },
   computed: {
     stepValid() {
-      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
+      if (this.dataSelection.exportType === "submissions") {
         return [
           !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
-          this.submissionSelection.length > 0, // must select at least one student
+          this.userSelection.length > 0, // must select at least one student
           true,
           true
+        ];
+      } else if (this.dataSelection.exportType === "documents") {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          this.selectedDocumentTypes.length > 0,
+          true,
         ];
       }
       return [
@@ -156,10 +208,17 @@ export default {
       ];
     },
     steps() {
-      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
+      if (this.dataSelection.exportType === 'submissions') {
         return [
           { title: "Settings" },
-          { title: "Select Students" },
+          { title: "Select Users" },
+          { title: "Options" },
+          { title: "Confirm Download" }
+        ];
+      } else if (this.dataSelection.exportType === 'documents') {
+        return [
+          { title: "Settings" },
+          { title: "Select Users" },
           { title: "Options" },
           { title: "Confirm Download" }
         ];
@@ -188,7 +247,7 @@ export default {
           options: [
             {name: "Export a list of all reviewers", value: "reviewerList"},
             {name: "Export submissions", value: "submissions"},
-            {name: "Export grades", value: "grades"},
+            {name: "Export documents", value:"documents"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -254,14 +313,21 @@ export default {
     },
     hide() {
       this.filter = [];
+      this.userSelection = [];
+      this.generateAliases = false;
+      this.fakerSeed = 846569412;
+      this.selectedDocumentTypes = [0, 1, 2, 4];
+      this.excludeNonConsentingEdits = false;
+      this.excludeNonConsentingAnnotations = false;
+      this.wait = false;
     },
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
         this.downloadReviewerList();
       } else if (this.dataSelection.exportType === "submissions") {
         this.downloadSubmissions();
-      } else if (this.dataSelection.exportType === "grades") {
-        this.downloadGrades();
+      } else if (this.dataSelection.exportType === "documents") {
+        this.downloadDocuments();
       } else {
         this.downloadAllData();
       }
@@ -325,7 +391,7 @@ export default {
     async downloadSubmissions() {
       try {
         // get the selected student's user ids
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        const selectedUserIds = this.userSelection.map(row => row.userId);
 
         // call helper function to trigger the stream download
         this.triggerStreamDownload({
@@ -342,21 +408,22 @@ export default {
         this.$toast.error("An error occurred starting the stream. Please try again.");
       }
     },
-    async downloadGrades() {
+    async downloadDocuments() {
       try {
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        const selectedUserIds = this.userSelection.map(row => row.userId);
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
-          exportType: 'grades',
+          exportType: 'documents',
           userIds: selectedUserIds,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null,
-          gradeFormat: this.gradeFormat
+          documentTypes: this.selectedDocumentTypes,
+          includeNonConsentingEdits: !this.excludeNonConsentingEdits,
+          includeNonConsentingAnnotations: !this.excludeNonConsentingAnnotations
         });
+
         this.$refs.exportStepper.close();
       } catch (error) {
-        console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
+          console.error("Streaming error:", error);
+          this.$toast.error("An error occurred starting the stream. Please try again.");
       }
     },
     async downloadAllData() {

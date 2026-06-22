@@ -98,8 +98,8 @@
             return {
               ...t,
               typeName: this.typeName(t.type),
-              // Public email templates (types 1, 2, 3, 6, 7) cannot be deleted
-              canDelete: !(t.public && [1, 2, 3, 6, 7].includes(t.type)),
+              // Public email templates (types 1, 2, 3, 6) cannot be deleted
+              canDelete: !(t.public && [1, 2, 3, 6].includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,
@@ -251,7 +251,6 @@
           case 4: return "Document - General";
           case 5: return "Document - Study";
           case 6: return "Email - Study Close";
-          case 7: return "Email - Submission upload";
           default: return "Choose Type"
         }
       },

@@ -45,55 +45,28 @@ export default {
     }
   },
   computed: {
-    unlimitedStoredValue() {
-      return Number(this.options.unlimitedStoredValue ?? 0);
-    },
-    hasUnlimitedAtMax() {
-      return Boolean(this.options.unlimitedAtMax);
-    },
-    isAtUnlimitedPosition() {
-      return this.hasUnlimitedAtMax && Number(this.currentData) === Number(this.options.max);
-    },
-    emittedValue() {
-      if (this.isAtUnlimitedPosition) {
-        return this.unlimitedStoredValue;
-      }
-      return Number(this.currentData);
-    },
-    displayValue() {
-      if (this.isAtUnlimitedPosition) {
-        return this.options.unlimitedLabel || "unlimited";
-      }
-      return Number(this.currentData);
-    },
-    normalizedModelValue() {
-      if (this.hasUnlimitedAtMax && Number(this.modelValue) === this.unlimitedStoredValue) {
-        return Number(this.options.max);
-      }
-      return Number(this.modelValue);
-    },
     displayText() {
       if (this.options.textMapping && Array.isArray(this.options.textMapping)) {
         const mapping = this.options.textMapping.find(
-          (item) => item.from === this.displayValue
+          (item) => item.from === Number(this.currentData)
         );
         if (mapping) {
           return mapping.to;
         }
       }
-      return this.displayValue;
+      return this.currentData;
     },
   },
   watch: {
     currentData() {
-      this.$emit("update:modelValue", this.emittedValue);
+      this.$emit("update:modelValue", Number(this.currentData));
     },
     modelValue() {
-      this.currentData = this.normalizedModelValue;
+      this.currentData = this.modelValue;
     },
   },
   beforeMount() {
-    this.currentData = this.normalizedModelValue;
+    this.currentData = this.modelValue;
   },
 }
 </script>
