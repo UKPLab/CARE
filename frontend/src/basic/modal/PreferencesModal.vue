@@ -9,7 +9,10 @@
       <span>{{ $t("auth.preferences.title") }}</span>
     </template>
     <template #body>
-      <div class="preferences-section mb-4">
+      <div
+        v-if="!languageSelectionDisabled"
+        class="preferences-section mb-4"
+      >
         <h6 class="section-title">{{ $t("auth.preferences.sections.language") }}</h6>
         <LanguageSwitcher
           :persist="false"
@@ -107,6 +110,9 @@ export default {
     requestData() {
       return this.$store.getters["settings/getValue"]("app.register.requestData") === "true";
     },
+    languageSelectionDisabled() {
+      return this.$store.getters["auth/isLanguageSelectionDisabled"];
+    },
   },
   watch: {
     user: {
@@ -178,7 +184,7 @@ export default {
         return;
       }
 
-      if (localeChanged) {
+      if (localeChanged && !this.languageSelectionDisabled) {
         this.persistLocale();
       }
 

@@ -438,6 +438,16 @@ class AppSocket extends Socket {
      */
     async sendOverallSetting(data, options) {
         const { key, value } = data;
+
+        // Users with disableLanguageSelection cannot save app.locale as a user preference
+        if (
+            key === "app.locale"
+            && !(await this.isAdmin())
+            && await this.hasAccess("frontend.preferences.disableLanguageSelection")
+        ) {
+            throw new TranslatableError("errors.settings.cannotChangeLanguage");
+        }
+
         // Admin can set settings for other users (single or bulk)
         if (Array.isArray(data.userIds) && data.userIds.length > 0 && await this.isAdmin()) {
             for (const uid of data.userIds) {

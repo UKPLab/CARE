@@ -2,7 +2,7 @@
     <div :class="['language-switcher', { 'language-switcher--standalone': standalone }]">
         <div class="btn-group" role="group">
             <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle language-toggle"
-                data-bs-toggle="dropdown" aria-expanded="false" :title="$t('common.language')">
+                :disabled="disabled" data-bs-toggle="dropdown" aria-expanded="false" :title="$t('common.language')">
                 <span class="language-flag">
                     <img v-if="currentLanguage?.flagImage" :src="currentLanguage.flagImage" :alt="currentLanguage.code"
                         class="flag-image" />
@@ -45,6 +45,10 @@ export default {
             type: Boolean,
             default: true,
         },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -70,6 +74,9 @@ export default {
     },
     methods: {
         setLanguage(locale) {
+            if (this.disabled) {
+                return;
+            }
             const normalized = normalizeLocale(locale);
             if (!normalized) {
                 return;

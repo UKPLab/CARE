@@ -278,7 +278,8 @@
     "noAccessPermission": "Sie haben keine Berechtigung, auf die Einstellungen zuzugreifen.",
     "noSavePermission": "Sie haben keine Berechtigung, die Einstellungen zu speichern.",
     "noTestMailPermission": "Sie haben keine Berechtigung, eine Test-E-Mail zu senden.",
-    "cannotOverrideSystemSetting": "Die Einstellung \"{key}\" ist eine Systemeinstellung und kann nicht als Benutzereinstellung geändert werden."
+    "cannotOverrideSystemSetting": "Die Einstellung \"{key}\" ist eine Systemeinstellung und kann nicht als Benutzereinstellung geändert werden.",
+    "cannotChangeLanguage": "Sie dürfen die Benutzeroberflächensprache nicht ändern."
   },
   "users": {
     "errorFetchingUsers": "Fehler beim Abrufen der Nutzer",
