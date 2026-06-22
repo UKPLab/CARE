@@ -38,6 +38,7 @@ help:
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 	@echo "make audit            				npm audit for frontend, backend, utils/modules/editor-delta-conversion"
+	@echo "make change_encryption_key NEW_KEY=<64-char hex>	Re-encrypt all user fields with a new encryption key"
 
 .PHONY: doc
 doc: doc_sphinx
@@ -227,6 +228,11 @@ export_dump_files:
 	    docker exec -i $${CONTAINER} psql -q -U postgres -d $$SIDECAR > /dev/null; \
 	$(MAKE) _export_document_files CONTAINER=$${CONTAINER} DB=$$SIDECAR FILEZIP=$$FILEZIP; \
 	docker exec $${CONTAINER} psql -q -U postgres -c "DROP DATABASE $$SIDECAR" > /dev/null
+
+.PHONY: change_encryption_key
+change_encryption_key: backend/node_modules/.uptodate
+	@echo "Changing encryption key..."
+	@cd backend && npm run --silent change-encryption-key
 
 .PHONY: admin-password
 admin-password: backend/node_modules/.uptodate

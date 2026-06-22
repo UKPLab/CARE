@@ -16,7 +16,8 @@
     "test_doh": "cross-env NODE_ENV=test jest  --detectOpenHandles --testTimeout=10000",
     "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset",
     "set-admin-password": "node scripts/setAdminPassword.js",
-    "anonymize": "node scripts/anonymize.js"
+    "anonymize": "node scripts/anonymize.js",
+    "change-encryption-key": "node scripts/changeEncryptionKey.js"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
