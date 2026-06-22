@@ -61,7 +61,7 @@
     <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
     <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
-    <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
+    <BulkAssignmentsModal v-if="modals.singleAssignment" ref="singleAssignmentModal" :bulk="false" @hide="modals.singleAssignment = false"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
     <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>
@@ -75,7 +75,6 @@ import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vu
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
-import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
@@ -98,7 +97,6 @@ export default {
     BasicButton,
     ConfirmModal,
     BulkAssignmentsModal,
-    SingleAssignmentModal,
     InformationModal,
     SavedTemplatesModal
   },
