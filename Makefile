@@ -29,7 +29,7 @@ help:
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
 	@echo "make backup CONTAINER=<name/id>      Create full backup (DB dump + .env + encryptionkey + files)"
-	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
+	@echo "make backup_db CONTAINER=<name/id>	Backup the database (prompts whether to decrypt before dumping)"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
@@ -138,10 +138,24 @@ build-clean:
 	@docker network rm ${PROJECT_NAME}_default || echo "IGNORING ERROR"
 
 .PHONY: backup_db
-backup_db:
-	@echo "Backing up database"
-	mkdir -p db_dumps
-	@docker exec -t $${CONTAINER} pg_dumpall -c -U postgres > db_dumps/dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+backup_db: backend/node_modules/.uptodate
+ifndef CONTAINER
+	$(error CONTAINER is not set. Usage: make backup_db CONTAINER=<name/id>)
+endif
+	@echo "Backing up database"; \
+	mkdir -p db_dumps; \
+	printf "Decrypt DB before backup? [y/N] "; \
+	read DECRYPT_ANSWER; \
+	if [ "$$DECRYPT_ANSWER" = "y" ] || [ "$$DECRYPT_ANSWER" = "Y" ]; then \
+		echo "[backup] Decrypting DB before dump..."; \
+		(cd backend && npm run --silent decrypt-db); \
+	fi; \
+	docker exec -t $(CONTAINER) pg_dumpall -c -U postgres > db_dumps/dump_$$(date +%d-%m-%Y_%H_%M_%S).sql; \
+	if [ "$$DECRYPT_ANSWER" = "y" ] || [ "$$DECRYPT_ANSWER" = "Y" ]; then \
+		echo "[backup] Re-encrypting DB after dump..."; \
+		(cd backend && npm run --silent encrypt-db); \
+		echo "[backup] Done - dump is plaintext"; \
+	fi
 
 .PHONY: recover_db
 recover_db:
@@ -156,8 +170,11 @@ endif
 
 .PHONY: backup
 backup: backup_db
+ifndef CONTAINER
+	$(error CONTAINER is not set. Usage: make backup CONTAINER=<name/id>)
+endif
 	@echo "Creating full backup archive"
-	mkdir -p backups
+	@mkdir -p backups
 	@LATEST_DUMP=$$(ls -t db_dumps/*.sql | head -n 1); \
 	TIMESTAMP=$$(date +%d-%m-%Y_%H_%M_%S); \
 	tar -czf "backups/backup_$$TIMESTAMP.tar.gz" \
