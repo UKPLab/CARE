@@ -41,6 +41,7 @@ module.exports = function (server) {
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const supportedExportTypes = new Set(["submissions", "grades"]);
         const { Op } = server.db.Sequelize;
+        const parsedProjectId = Number(projectId);
 
         try {
             userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
@@ -51,7 +52,7 @@ module.exports = function (server) {
         }
 
         try {
-            if (!projectId) return res.status(400).send("Missing projectId.");
+            if (!Number.isInteger(parsedProjectId)) return res.status(400).send("Missing projectId.");
             if (!supportedExportTypes.has(exportType)) {
                 return res.status(400).send("Unsupported export type.");
             }
@@ -64,9 +65,9 @@ module.exports = function (server) {
             }
 
             // check if the project is valid
-            const projectCheck = await server.db.models.project.findOne({ where: { id: projectId } });
+            const projectCheck = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
             if (!projectCheck) {
-                console.warn(`${projectId} does not exist.`);
+                console.warn(`${parsedProjectId} does not exist.`);
                 return res.status(403).send("The selected project does not exist.");
             }
 
@@ -99,7 +100,7 @@ module.exports = function (server) {
                 case 'submissions': 
                     await processSubmissionsExport(
                         server,
-                        projectId,
+                        parsedProjectId,
                         userIds,
                         users,
                         shouldGenerateAliases,
@@ -112,7 +113,7 @@ module.exports = function (server) {
                 case 'grades':
                     await processGradesExport(
                         server,
-                        projectId,
+                        parsedProjectId,
                         userIds,
                         users,
                         shouldGenerateAliases,
@@ -348,6 +349,130 @@ module.exports = function (server) {
     }
 
     /**
+     * Parses an assessment state payload when it is stored as JSON text.
+     *
+     * @param {string} rawAssessmentState - The raw JSON string from document_data.
+     * @returns {Object} The parsed assessment state or an empty object on failure.
+     */
+    function parseAssessmentState(rawAssessmentState) {
+        try {
+            const parsed = JSON.parse(rawAssessmentState);
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+            console.warn("Failed to parse assessment state:", error.message);
+            return {};
+        }
+    }
+
+    /**
+     * Extracts criterion scores from a stored assessment state.
+     *
+     * @param {Object} assessmentState - The stored assessment state.
+     * @returns {Object} A flat map of criterion names to numeric scores.
+     */
+    function buildScoresFromAssessmentState(assessmentState = {}) {
+        const scores = {};
+        for (const [name, state] of Object.entries(assessmentState || {})) {
+            if (!state || typeof state !== "object") continue;
+            const rawScore = typeof state.currentScore === "number" ? state.currentScore : Number(state.currentScore);
+            scores[name] = Number.isFinite(rawScore) ? rawScore : 0;
+        }
+        return scores;
+    }
+
+    /**
+     * Calculates the assessment totals using the rubric configuration.
+     *
+     * @param {Object} config - Study step configuration containing rubrics.
+     * @param {Object} scores - Flat map of criterion scores.
+     * @returns {Object} Assessment totals and rubric breakdown.
+     */
+    function calculateAssessmentScore(config, scores = {}) {
+        const rubrics = Array.isArray(config?.rubrics) ? config.rubrics : [];
+        let total_max_points = 0;
+        let total_min_points = 0;
+        let achieved_points = 0;
+        const rubricResults = {};
+
+        rubrics.forEach((rubric) => {
+            const rubricName = rubric?.name || "";
+            const rubricCode = rubric?.code || rubricName;
+            const criteria = Array.isArray(rubric?.criteria) ? rubric.criteria : [];
+            const calc = rubric?.calculation || "sum";
+
+            const critScores = [];
+            let critMinPointsSum = 0;
+            let critMaxPointsSum = 0;
+
+            criteria.forEach((crit) => {
+                if (!crit) return;
+                const criterionName = crit.name || "<unnamed>";
+                let minPoints = crit.minPoints;
+                let maxPoints = crit.maxPoints;
+
+                if (minPoints === undefined || minPoints === null) minPoints = 0;
+                if (maxPoints === undefined || maxPoints === null) maxPoints = 0;
+
+                minPoints = Number(minPoints) || 0;
+                maxPoints = Number(maxPoints) || 0;
+
+                critMinPointsSum += minPoints;
+                critMaxPointsSum += maxPoints;
+
+                const rawScore = Object.prototype.hasOwnProperty.call(scores, criterionName) && scores[criterionName] != null
+                    ? Number(scores[criterionName])
+                    : 0;
+                let clampedScore = Number.isFinite(rawScore) ? rawScore : 0;
+                if (clampedScore < minPoints) clampedScore = minPoints;
+                if (clampedScore > maxPoints) clampedScore = maxPoints;
+
+                critScores.push(clampedScore);
+            });
+
+            let rubricMin = rubric?.minPoints;
+            let rubricMax = rubric?.maxPoints;
+            if (rubricMin === undefined || rubricMin === null) rubricMin = critMinPointsSum;
+            if (rubricMax === undefined || rubricMax === null) rubricMax = critMaxPointsSum;
+
+            rubricMin = Number(rubricMin) || 0;
+            rubricMax = Number(rubricMax) || 0;
+
+            const sumCrit = critScores.reduce((acc, value) => acc + value, 0);
+            let rubricScore = sumCrit;
+            if (calc === "min") rubricScore = Math.min(sumCrit, rubricMax);
+            if (calc === "max") {
+                const base = Number(rubric?.defaultPoints) || 0;
+                rubricScore = Math.max(base + sumCrit, 0);
+            }
+
+            if (rubricScore < rubricMin) rubricScore = rubricMin;
+            if (rubricScore > rubricMax) rubricScore = rubricMax;
+
+            rubricResults[rubricCode] = {
+                name: rubricName,
+                score: rubricScore,
+                min: rubricMin,
+                max: rubricMax,
+                isBonus: rubric?.isBonus === true,
+            };
+
+            if (rubric?.isBonus !== true) {
+                total_max_points += rubricMax;
+                total_min_points += rubricMin;
+            }
+            achieved_points += rubricScore;
+            achieved_points = Math.min(achieved_points, total_max_points);
+        });
+
+        return {
+            total_max_points,
+            total_min_points,
+            achieved_points,
+            rubrics: rubricResults,
+        };
+    }
+
+    /**
      * Resolves the display name for a user based on the current export settings.
      *
      * @param {Object} user - The user record to display.
@@ -432,6 +557,15 @@ module.exports = function (server) {
             : [];
         const studiesById = new Map(studies.map((study) => [study.id, study]));
 
+        const studyStepIds = [...new Set(gradeRows.map((row) => row.studyStepId).filter(Boolean))];
+        const studySteps = studyStepIds.length > 0
+            ? await server.db.models.study_step.findAll({
+                where: { id: { [Op.in]: studyStepIds }, deleted: false },
+                raw: true
+            })
+            : [];
+        const studyStepsById = new Map(studySteps.map((studyStep) => [studyStep.id, studyStep]));
+
         const relatedUserIds = [...new Set([
             ...users.map((user) => user.id),
             ...studySessions.map((session) => session.userId),
@@ -442,29 +576,6 @@ module.exports = function (server) {
             : [];
         const usersById = new Map(relatedUsers.map((user) => [user.id, user]));
 
-        const roleMatches = relatedUserIds.length > 0
-            ? await server.db.models.user_role_matching.findAll({
-                where: { userId: { [Op.in]: relatedUserIds } },
-                raw: true
-            })
-            : [];
-        const roleIds = [...new Set(roleMatches.map((match) => match.userRoleId))];
-        const roles = roleIds.length > 0
-            ? await server.db.models.user_role.findAll({
-                where: { id: { [Op.in]: roleIds } },
-                attributes: ["id", "name"],
-                raw: true
-            })
-            : [];
-        const roleNameById = new Map(roles.map((role) => [role.id, role.name]));
-        const rolesByUserId = new Map();
-        for (const match of roleMatches) {
-            const roleName = roleNameById.get(match.userRoleId);
-            if (!roleName) continue;
-            if (!rolesByUserId.has(match.userId)) rolesByUserId.set(match.userId, []);
-            rolesByUserId.get(match.userId).push(roleName);
-        }
-
         const recordsByUser = new Map();
         for (const row of gradeRows) {
             const document = row.document;
@@ -474,16 +585,17 @@ module.exports = function (server) {
             const reviewerUser = session ? usersById.get(session.userId) : null;
             const study = session ? studiesById.get(session.studyId) : null;
             const graderUser = study ? usersById.get(study.userId) : null;
+            const studyStep = studyStepsById.get(row.studyStepId);
             const submission = document.submission;
 
             const scoreObject = row.value || {};
-            const totalPoints =
-                typeof scoreObject.total === "number"
-                    ? scoreObject.total
-                    : (typeof scoreObject.achieved_points === "number" ? scoreObject.achieved_points : null);
+            const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
+            const flatScores = buildScoresFromAssessmentState(assessmentState);
+            const assessmentScore = calculateAssessmentScore(studyStep?.configuration, flatScores);
+            const totalPoints = assessmentScore.achieved_points;
 
             const record = {
-                projectId,
+                projectId: parsedProjectId,
                 userId: ownerUser.id,
                 userExtId: ownerUser.extId ?? null,
                 userName: ownerUser.userName ?? "",
@@ -493,9 +605,8 @@ module.exports = function (server) {
                 studySessionId: row.studySessionId ?? null,
                 studyStepId: row.studyStepId ?? null,
                 sessionHash: session?.hash ?? null,
-                roles: rolesByUserId.get(study?.userId) || [],
-                grader: graderUser ? `${graderUser.firstName} ${graderUser.lastName}`.trim() : null,
-                reviewer: reviewerUser ? `${reviewerUser.firstName} ${reviewerUser.lastName}`.trim() : null,
+                studyOwner: graderUser ? `${graderUser.firstName} ${graderUser.lastName}`.trim() : null,
+                sessionOwner: reviewerUser ? `${reviewerUser.firstName} ${reviewerUser.lastName}`.trim() : null,
                 author: ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}`.trim() : null,
                 scores: scoreObject,
                 totalPoints,
@@ -557,9 +668,8 @@ module.exports = function (server) {
                             submissionExtId: record.submissionExtId,
                             studySessionId: record.studySessionId,
                             studyStepId: record.studyStepId,
-                            roles: record.roles.join("|"),
-                            grader: record.grader,
-                            reviewer: record.reviewer,
+                            studyOwner: record.studyOwner,
+                            sessionOwner: record.sessionOwner,
                             author: record.author,
                             totalPoints: record.totalPoints,
                             createdAt: record.createdAt,
