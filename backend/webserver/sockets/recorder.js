@@ -236,6 +236,9 @@ class RecorderSocket extends Socket {
     }
 
     async getTraces(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
         if (!data || !data.id) throw new Error("Recording ID required");
         const traces = await this.models["trace"].findAll({
             where: { recordingId: data.id, deleted: false },
@@ -260,6 +263,9 @@ class RecorderSocket extends Socket {
      * Offline users have no sessions and are not returned.
      */
     async getOnlineSessions(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
         const userIds = new Set();
         const sessions = [];
         for (const socketId of Object.keys(this.server.availSockets)) {
