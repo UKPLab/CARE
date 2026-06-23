@@ -165,6 +165,7 @@ module.exports = function (server) {
             try {
                 const { touchesMailService } = await saveSettings(server.db.models["setting"], settings, {
                     transaction,
+                    models: server.db.models,
                 });
                 await server.db.models["setting"].set("app.setup.wizardCompleted", "true", { transaction });
                 await transaction.commit();

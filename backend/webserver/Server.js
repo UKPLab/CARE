@@ -294,7 +294,7 @@ module.exports = class Server {
 
         //Session management
         return session({
-            secret: "secretString",
+            secret: process.env.SESSION_SECRET,
             store: dbStore,
             resave: false,
             proxy: true,
