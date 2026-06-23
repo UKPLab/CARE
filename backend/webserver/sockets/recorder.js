@@ -1,5 +1,15 @@
 const Socket = require("../Socket.js");
 
+// The recorder's own control events. These are recording machinery, not user
+// activity, so they're never captured — otherwise a recording would include
+// its own recorderStop, and replaying it fails with "No active recording".
+const RECORDER_CONTROL_EVENTS = [
+    "recorderStart",
+    "recorderStop",
+    "recordingGetTraces",
+    "recordingGetOnlineSessions",
+];
+
 /**
  * Recorder Socket
  *
@@ -32,6 +42,7 @@ class RecorderSocket extends Socket {
             if (!entry) return;
             const recordingId = entry.recordingId;
             const excludes = entry.excludeEvents;
+            if (RECORDER_CONTROL_EVENTS.includes(eventName)) return;
             if (excludes && excludes.includes(eventName)) return;
             try {
                 await this.models["trace"].add({
@@ -54,6 +65,7 @@ class RecorderSocket extends Socket {
             if (!entry) return;
             const recordingId = entry.recordingId;
             const excludes = entry.excludeEvents;
+            if (RECORDER_CONTROL_EVENTS.includes(eventName)) return;
             if (excludes && excludes.includes(eventName)) return;
             try {
                 await this.models["trace"].add({

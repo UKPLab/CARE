@@ -175,6 +175,7 @@ class ReplayerSocket extends Socket {
                 });
             }
 
+            const levelStart = Date.now();
             const levelResults = await Promise.all(
                 activeSessions.map(session => {
                     const user = pool.userMap.get(session.userId);
@@ -187,6 +188,7 @@ class ReplayerSocket extends Socket {
                         }));
                 })
             );
+            const levelDuration = Date.now() - levelStart;
 
             const levelFailed = levelResults.some(r => r.failed > 0);
             allResults.push({
@@ -194,6 +196,7 @@ class ReplayerSocket extends Socket {
                 sessions: totalSockets,
                 results: levelResults,
                 passed: !levelFailed,
+                duration: levelDuration,
             });
 
             if (levelFailed && !continueOnFailure) {
