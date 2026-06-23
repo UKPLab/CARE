@@ -30,31 +30,45 @@
             :document-id="documentId"
             @update:model-value="handleInputMappingUpdate(index, $event)"
         />
-        <!-- Hook-only budget extras -->
+        <!-- Hook-only budget caps: total / per session / per user -->
         <div v-if="isHook(skill)" class="cap-fields mt-2">
-          <h6 class="text-secondary">Budget limit</h6>
+          <h6 class="text-secondary">Cost limits (optional)</h6>
           <div class="row g-2">
-            <div class="col-12">
+            <div class="col-md-4">
+              <label class="form-label">Total ($)</label>
               <input
-                  v-model.number="skill.costLimit"
+                  v-model.number="skill.capTotal"
                   type="number"
                   min="0"
                   step="0.01"
                   class="form-control"
+                  placeholder="No limit"
                   @change="emitServices"
               />
             </div>
-            <div class="col-12 form-check ms-1 mt-2">
+            <div class="col-md-4">
+              <label class="form-label">Per session ($)</label>
               <input
-                  :id="`applyPerSession_${index}`"
-                  v-model="skill.applyPerSession"
-                  type="checkbox"
-                  class="form-check-input"
+                  v-model.number="skill.capPerSession"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-control"
+                  placeholder="No limit"
                   @change="emitServices"
               />
-              <label class="form-check-label" :for="`applyPerSession_${index}`">
-                Apply the cost limit per session (otherwise per study)
-              </label>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Per user ($)</label>
+              <input
+                  v-model.number="skill.capPerUser"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-control"
+                  placeholder="No limit"
+                  @change="emitServices"
+              />
             </div>
           </div>
         </div>
@@ -78,11 +92,13 @@ import InputMap from "@/basic/modal/skills/InputMap.vue";
  * ServicesStep Component
  *
  * Configures a step's service slots. Each slot is filled with either an NLP skill or an AI hook
- * (chosen from the same dropdown). Skills and hooks share the same input/output mapping; hooks add
- * budget-limit fields. A slot stores `skill` (NLP) or `hookId` (hook); `type` stays `nlpRequest`.
+ * (chosen from the same dropdown). Skills and hooks share the same input/output mapping.
+ * Budget caps for hook entries live in ai_budget (configured in the budget operations dashboard).
+ * A slot stores `skill` (NLP) or `hookId` (hook); `type` stays `nlpRequest`.
  */
 export default {
   name: "ServicesStep",
+  subscribeTable: ["ai_budget"],
   components: {
     SkillSelector,
     InputMap,
@@ -122,13 +138,16 @@ export default {
     return {
       selectedSkills: services.map((service) => {
         if (service.hookId) {
+          // Cap values come from ai_budget (the authority), not the
+          // step config JSONB. 
+          const caps = this.lookupStepHookCaps(service.hookId);
           return {
             skillName: `hook:${service.hookId}`,
             dataInput: service.inputs || {},
             dataOutput: service.outputs || {},
-            costLimit: service.costLimit ?? null,
-            applyPerSession: service.applyPerSession ?? false,
-            resetAt: service.resetAt ?? null,
+            capTotal: caps.total,
+            capPerSession: caps.perSession,
+            capPerUser: caps.perUser,
           };
         }
         if (service.skill) {
@@ -179,6 +198,29 @@ export default {
     isHook(skill) {
       return typeof skill.skillName === "string" && skill.skillName.startsWith("hook:");
     },
+    /**
+     * Reads the latest ai_budget rows for this (studyStepId, hookId).
+     * Returns { total, perSession, perUser }
+     */
+    lookupStepHookCaps(hookId) {
+      const out = { total: null, perSession: null, perUser: null };
+      if (!this.studyStepId || !hookId) return out;
+      const getter = this.$store.getters["table/ai_budget/getFiltered"];
+      if (!getter) return out;
+      const rows = getter(
+        (b) => !b.deleted
+          && Number(b.studyStepId) === Number(this.studyStepId)
+          && Number(b.hookId) === Number(hookId)
+      );
+      for (const row of rows) {
+        const value = Number(row.costLimit);
+        if (!Number.isFinite(value)) continue;
+        if (Number(row.limitType) === 0) out.total = value;
+        if (Number(row.limitType) === 1) out.perSession = value;
+        if (Number(row.limitType) === 2) out.perUser = value;
+      }
+      return out;
+    },
     /** Parses the hook id from a `hook:<id>` selection, or null for skills. */
     hookIdFor(skill) {
       if (!this.isHook(skill)) return null;
@@ -198,9 +240,9 @@ export default {
         return {
           ...base,
           hookId: this.hookIdFor(skill),
-          costLimit: skill.costLimit ?? null,
-          applyPerSession: !!skill.applyPerSession,
-          resetAt: skill.resetAt ?? null,
+          capTotal: skill.capTotal ?? null,
+          capPerSession: skill.capPerSession ?? null,
+          capPerUser: skill.capPerUser ?? null,
         };
       }
       return {...base, skill: skill.skillName};

@@ -107,25 +107,6 @@
 
         <div class="col-md-12">
           <label class="form-label">
-            Global Cost Limit ($, optional)
-            <i
-              class="bi bi-info-circle text-muted ms-1"
-              title="Total spend ceiling across all users on this model. Leave empty for no cap."
-            />
-          </label>
-          <input
-            v-model.number="modelForm.costLimit"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-            placeholder="No limit"
-          />
-          <small class="text-muted">Sums spend across every user on this model. Hard ceiling.</small>
-        </div>
-
-        <div class="col-md-12">
-          <label class="form-label">
             Additional Parameters (JSON, optional)
             <i
               class="bi bi-info-circle text-muted ms-1"
@@ -141,6 +122,24 @@
         </div>
 
         <div class="col-md-12">
+          <label class="form-label">
+            Cost limit ($)
+            <i
+              class="bi bi-info-circle text-muted ms-1"
+              title="Global cap across all users on this model. Leave empty for no cap."
+            />
+          </label>
+          <input
+            v-model.number="modelForm.costLimit"
+            type="number"
+            min="0"
+            step="0.01"
+            class="form-control"
+            placeholder="No limit"
+          />
+        </div>
+
+        <div class="col-md-12">
           <div class="form-check">
             <input
               id="modelEnabled"
@@ -150,6 +149,24 @@
             />
             <label class="form-check-label" for="modelEnabled">
               Enabled
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-check">
+            <input
+              id="modelExemptFromCaps"
+              v-model="modelForm.exemptFromCaps"
+              class="form-check-input"
+              type="checkbox"
+            />
+            <label class="form-check-label" for="modelExemptFromCaps">
+              Exempt from budget caps
+              <i
+                class="bi bi-info-circle text-muted ms-1"
+                title="When checked, no AI budget cap (model/share/hook/study/step-hook) blocks usage of this model. Use for self-hosted or free models."
+              />
             </label>
           </div>
         </div>
@@ -192,6 +209,7 @@ function getEmptyModelForm() {
     description: "",
     enabled: true,
     additionalParameters: "{}",
+    exemptFromCaps: false,
     costLimit: null,
   };
 }
@@ -209,6 +227,7 @@ export default {
       default: () => [],
     },
   },
+  subscribeTable: ["ai_budget"],
   data() {
     return {
       modelForm: getEmptyModelForm(),
@@ -255,10 +274,24 @@ export default {
           description: row.description || "",
           enabled: !!row.enabled,
           additionalParameters: JSON.stringify(row.additionalParameters || {}, null, 2),
-          costLimit: row.costLimit ?? null,
+          exemptFromCaps: !!row.exemptFromCaps,
+          costLimit: this.findExistingCap(row.id),
         };
       }
       this.$refs.modelModal.open();
+    },
+    findExistingCapRow(modelId) {
+      if (!modelId) return null;
+      const budgets = this.$store.getters["table/ai_budget/getFiltered"]
+        ? this.$store.getters["table/ai_budget/getFiltered"](
+            (b) => !b.deleted && Number(b.modelId) === Number(modelId) && Number(b.limitType) === 0
+          )
+        : [];
+      return budgets.length > 0 ? budgets[0] : null;
+    },
+    findExistingCap(modelId) {
+      const row = this.findExistingCapRow(modelId);
+      return row ? Number(row.costLimit) : null;
     },
     clearModelOptions() {
       this.modelOptions = [];
@@ -327,7 +360,6 @@ export default {
         }
       }
 
-      const costLimitValue = Number(this.modelForm.costLimit);
       const payload = {
         id: this.modelForm.id || 0,
         name: this.modelForm.name.trim(),
@@ -336,19 +368,34 @@ export default {
         description: this.modelForm.description?.trim() || null,
         additionalParameters,
         enabled: !!this.modelForm.enabled,
-        costLimit: Number.isFinite(costLimitValue) && costLimitValue > 0 ? costLimitValue : null,
+        exemptFromCaps: !!this.modelForm.exemptFromCaps,
       };
 
       this.$socket.emit("appDataUpdate", {
         table: "ai_model",
         data: payload,
       }, (result) => {
-        if (result.success) {
-          this.$refs.modelModal.close();
-          this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
-        } else {
+        if (!result.success) {
           this.toastError(result.message || "Failed to save model");
+          return;
         }
+        const savedModelId = result.data?.id || result.data || this.modelForm.id;
+        const costLimitValue = Number(this.modelForm.costLimit);
+        const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
+        // Standard appDataUpdate chain: save the model, then update or create the ai_budget row.
+        if (wantsCap) {
+          const existing = this.findExistingCapRow(savedModelId);
+          const capData = existing
+            ? { id: existing.id, costLimit: costLimitValue }
+            : { modelId: Number(savedModelId), limitType: 0, costLimit: costLimitValue };
+          this.$socket.emit("appDataUpdate", { table: "ai_budget", data: capData }, (capResult) => {
+            if (!capResult?.success) {
+              this.toastError(capResult?.message || "Failed to save cost limit");
+            }
+          });
+        }
+        this.$refs.modelModal.close();
+        this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
       });
     },
     testModel() {

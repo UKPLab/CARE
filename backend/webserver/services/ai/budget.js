@@ -10,7 +10,7 @@
  */
 
 const { Op } = require("sequelize");
-const { AI_BUDGET_LIMIT_TYPES: LT, normalizeAiBudgetLimitType } = require("../../../utils/aiBudgetLimitTypes");
+const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../utils/aiBudgetLimitTypes");
 
 /**
  * Decides if an AI request can run. If yes, creates the ai_log row for it.
@@ -140,89 +140,6 @@ async function cancelRequest(service, logId) {
     return { cancelled: true };
 }
 
-/**
- * Resets one budget so past spend stops counting against it from now on.
- *
- * @param {Object} service - AIService, used for DB access.
- * @param {{ budgetId: number }} request - The cap row to reset.
- */
-async function resetBudget(service, request) {
-    const budgetId = Number(request?.budgetId);
-    if (!Number.isInteger(budgetId) || budgetId <= 0) return;
-    await service.server.db.models["ai_budget"].update(
-        { resetAt: new Date() },
-        { where: { id: budgetId } }
-    );
-}
-
-/**
- * Creates, updates, or removes one cap row.
- * If costLimit is a positive number, the row is created or updated.
- * If costLimit is empty/zero, the existing row is soft-deleted.
- *
- * Ownership of the target is checked by the caller in share.js.
- *
- * @param {Object} service - AIService, used for DB access.
- * @param {Object} data - Identifies which cap to write. Includes one of: modelId,
- *   shareId, hookId, hookShareId, studyId, or (studyStepId + hookId).
- *   Plus: limitType (default TOTAL), costLimit, optional resetAt.
- * @returns {Promise<{ ok: boolean, budgetId?: number, deleted?: boolean }>}
- */
-async function setBudget(service, data) {
-    const refs = _capRefsFrom(data);
-    const limitType = data?.limitType == null ? LT.TOTAL : normalizeAiBudgetLimitType(data.limitType);
-
-    const Budget = service.server.db.models["ai_budget"];
-    const where = { ..._refsWhere(refs), limitType, deleted: false };
-
-    const costLimitValue = Number(data?.costLimit);
-
-    const existing = await Budget.findOne({ where });
-
-
-    if (existing) {
-        await existing.update({
-            costLimit: costLimitValue,
-            resetAt: data?.resetAt ?? existing.resetAt,
-        });
-        return { ok: true, budgetId: existing.id };
-    }
-
-    const created = await Budget.create({
-        ...refs,
-        limitType,
-        costLimit: costLimitValue,
-        resetAt: data?.resetAt ?? null,
-        deleted: false,
-    });
-    return { ok: true, budgetId: created.id };
-}
-
-// Pulls the FK columns out of the payload. Only one entity pattern is valid;
-// the DB CHECK constraint rejects bad combinations.
-function _capRefsFrom(data) {
-    const refs = {};
-    if (data?.modelId) refs.modelId = Number(data.modelId);
-    if (data?.shareId) refs.shareId = Number(data.shareId);
-    if (data?.hookShareId) refs.hookShareId = Number(data.hookShareId);
-    if (data?.studyId) refs.studyId = Number(data.studyId);
-    if (data?.studyStepId) refs.studyStepId = Number(data.studyStepId);
-    if (data?.hookId) refs.hookId = Number(data.hookId);
-    return refs;
-}
-
-// Build the WHERE for one specific cap row. Unset FKs are explicitly null
-// so a hook-only query doesn't match a step_hook row that also has hookId.
-function _refsWhere(refs) {
-    return {
-        modelId:     refs.modelId     ?? null,
-        shareId:     refs.shareId     ?? null,
-        hookId:      refs.hookId      ?? null,
-        hookShareId: refs.hookShareId ?? null,
-        studyId:     refs.studyId     ?? null,
-        studyStepId: refs.studyStepId ?? null,
-    };
-}
 
 /// Internal helpers
 
@@ -477,6 +394,4 @@ module.exports = {
     completeRequest,
     failRequest,
     cancelRequest,
-    resetBudget,
-    setBudget,
 };

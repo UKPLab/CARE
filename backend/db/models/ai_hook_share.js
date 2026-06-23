@@ -6,10 +6,34 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiHookShare extends MetaModel {
-        static autoTable = false;
+        // Chain user → recipient row comes along when ai_hook_share is loaded
+        // via another model's parentTables (e.g. ai_budget).
+        static autoTable = {
+            parentTables: [
+                { table: "user", by: "userId" },
+            ],
+        };
+
+        // Visibility:
+        //   - owner of the parent hook sees ALL share rows on their hooks
+        //   - the share's recipient sees their own row
+        static async getUserFilter(userId) {
+            const hooks = await sequelize.models.ai_hook.findAll({
+                where: {userId, deleted: false},
+                attributes: ["id"],
+                raw: true,
+            });
+            const hookIds = hooks.map((h) => h.id);
+            const orClauses = [{userId}];
+            if (hookIds.length > 0) {
+                orClauses.push({aiHookId: {[Op.in]: hookIds}});
+            }
+            return {[Op.or]: orClauses};
+        }
     }
 
     AiHookShare.init({
@@ -17,7 +41,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
         expiryDate: DataTypes.DATE,
-        deleted: DataTypes.BOOLEAN,
+        deleted: {type: DataTypes.BOOLEAN, defaultValue: false},
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

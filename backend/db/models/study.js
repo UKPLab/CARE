@@ -192,6 +192,30 @@ module.exports = (sequelize, DataTypes) => {
             default: false,
             help: "Specify whether participants can submit their study multiple times.",
             advanced: true
+        }, {
+            key: "aiCostLimitTotal",
+            label: "AI cost limit - total ($):",
+            type: "number",
+            required: false,
+            default: null,
+            advanced: true,
+            help: "Total AI spend allowed in this study across all participants. Leave empty for no cap."
+        }, {
+            key: "aiCostLimitPerSession",
+            label: "AI cost limit - per session ($):",
+            type: "number",
+            required: false,
+            default: null,
+            advanced: true,
+            help: "AI spend allowed in a single session. Leave empty for no per-session cap."
+        }, {
+            key: "aiCostLimitPerUser",
+            label: "AI cost limit - per participant ($):",
+            type: "number",
+            required: false,
+            default: null,
+            advanced: true,
+            help: "AI spend allowed per participant in this study. Leave empty for no per-participant cap."
         },];
 
         /**
@@ -241,6 +265,46 @@ module.exports = (sequelize, DataTypes) => {
             for (const studySession of studySessions) {
                 await sequelize.models.study_session.deleteById(studySession.id, {transaction: options.transaction});
             }
+        }
+
+        /**
+         * Soft-delete every ai_budget row tied to this study or any of its
+         * steps. Called when the study is deleted (afterUpdate sees deleted=true)
+         * and when the study closes due to a new version (afterUpdate sees
+         * closed + _isVersioning). 
+         *
+         * @param {Object} study - The study being closed or deleted.
+         * @param {Object} options - Sequelize options bundle (transaction + context).
+         */
+        static async deleteAiBudgets(study, options) {
+            const {Op} = require("sequelize");
+            const transaction = options.transaction;
+            const db = sequelize.models;
+
+            const steps = await db.study_step.findAll({
+                where: {studyId: study.id},
+                attributes: ["id"],
+                raw: true,
+                transaction,
+            });
+            const stepIds = steps.map((s) => s.id);
+
+            const orClauses = [{studyId: study.id}];
+            if (stepIds.length > 0) {
+                orClauses.push({studyStepId: {[Op.in]: stepIds}});
+            }
+
+            // individualHooks: true makes Sequelize load each matching row
+            // and fire the per-instance afterUpdate hook. 
+            await db.ai_budget.update(
+                {deleted: true, deletedAt: new Date()},
+                {
+                    where: {deleted: false, [Op.or]: orClauses},
+                    transaction,
+                    context: options.context,
+                    individualHooks: true,
+                }
+            );
         }
 
         /**
@@ -304,6 +368,82 @@ module.exports = (sequelize, DataTypes) => {
                     .filter(Boolean)
             )];
 
+            // Return the workflowStepId → studyStep map so callers 
+            return studyStepsMap;
+        }
+
+        /**
+         * Persist AI budget caps requested by the coordinator payload.
+         * Two layers are written here:
+         *   - one study-level cap row per limitType (TOTAL/PER_SESSION/PER_USER)
+         *   - one step-hook cap row per (studyStep, hook, limitType)
+         *
+         * Budget shape in options.context.budgets:
+         *   {
+         *     study: { total?, perSession?, perUser? },
+         *     steps: [{ workflowStepId, hooks: [{ hookId, total?, perSession?, perUser? }] }]
+         *   }
+         *
+         * @param {Object} study - Newly created study row.
+         * @param {Object} options - Sequelize options bundle (transaction + context).
+         * @param {Object} studyStepsMap - workflowStepId → study_step instance.
+         */
+        static async createBudgets(study, options, studyStepsMap) {
+            const ctx = options.context || {};
+            const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../utils/aiBudgetLimitTypes");
+            const Budget = sequelize.models.ai_budget;
+            const { transaction } = options;
+
+            // Each create runs in the same transaction that's writing the
+            // study and its steps. options.context is forwarded so the
+            // ai_budget.validateOwner hook sees the caller's userId.
+            const createCap = (rowData) =>
+                Budget.create(
+                    { ...rowData, deleted: false },
+                    { transaction, context: options.context }
+                );
+
+            // Study-level caps, read from the three virtual fields on the coordinator form (aiCostLimitTotal / PerSession / PerUser).
+            const studyDimensions = [
+                [ctx.aiCostLimitTotal, LT.TOTAL],
+                [ctx.aiCostLimitPerSession, LT.PER_SESSION],
+                [ctx.aiCostLimitPerUser, LT.PER_USER],
+            ];
+            for (const [rawValue, limitType] of studyDimensions) {
+                const value = Number(rawValue);
+                if (Number.isFinite(value) && value > 0) {
+                    await createCap({ studyId: study.id, limitType, costLimit: value });
+                }
+            }
+
+            // Step-hook caps — live in each step's configuration.services[]
+            
+            const stepDocuments = Array.isArray(ctx.stepDocuments) ? ctx.stepDocuments : [];
+            for (const stepDoc of stepDocuments) {
+                const studyStep = studyStepsMap[stepDoc?.id];
+                if (!studyStep) continue;
+                const services = Array.isArray(stepDoc.configuration?.services) ? stepDoc.configuration.services : [];
+                for (const serviceEntry of services) {
+                    const hookId = Number(serviceEntry?.hookId);
+                    if (!Number.isInteger(hookId) || hookId <= 0) continue;
+                    const hookDimensions = [
+                        [serviceEntry.capTotal, LT.TOTAL],
+                        [serviceEntry.capPerSession,  LT.PER_SESSION],
+                        [serviceEntry.capPerUser, LT.PER_USER],
+                    ];
+                    for (const [rawValue, limitType] of hookDimensions) {
+                        const value = Number(rawValue);
+                        if (Number.isFinite(value) && value > 0) {
+                            await createCap({
+                                studyStepId: studyStep.id,
+                                hookId,
+                                limitType,
+                                costLimit: value,
+                            });
+                        }
+                    }
+                }
+            }
         }
 
         /**
@@ -435,7 +575,8 @@ module.exports = (sequelize, DataTypes) => {
                     throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
                 }
 
-                await Study.createStudySteps(study, options);
+                const studyStepsMap = await Study.createStudySteps(study, options);
+                await Study.createBudgets(study, options, studyStepsMap || {});
             },
             beforeUpdate: async (study, options) => {
                 // Keep close metadata in model layer to avoid transport-specific logic.
@@ -457,12 +598,20 @@ module.exports = (sequelize, DataTypes) => {
                 if (study.deleted) {
                     await Study.deleteStudySteps(study, options);
                     await Study.deleteStudySessions(study, options);
+                    await Study.deleteAiBudgets(study, options);
                 }
 
                 // Check if this is a versioning operation (_isVersioning is a custom flag)
                 // Only when it is NOT a versioning operation, we will trigger handleConfiguration method.
                 if (study.closed && !options._isVersioning) {
                     await Study.handleConfiguration(study, transaction);
+                }
+
+                // Versioning just closed this study; soft-delete its budget rows
+                // (study-level + step-hook) so they don't linger as orphans on
+                // the closed version. 
+                if (study.closed && options._isVersioning) {
+                    await Study.deleteAiBudgets(study, options);
                 }
 
                 // NOTE: Comment out the following update operation since we now use versioning.

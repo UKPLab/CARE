@@ -36,7 +36,7 @@
         <small class="text-muted">Required. Access expires on this date.</small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="shareCostLimit">Per-user cost limit ($)</label>
+        <label class="form-label" for="shareCostLimit">Cost limit per recipient ($)</label>
         <input
           id="shareCostLimit"
           v-model.number="shareForm.costLimit"
@@ -46,7 +46,7 @@
           step="0.01"
           placeholder="No limit"
         />
-        <small class="text-muted">Optional. Each shared user can spend up to this amount on the model. Leave empty for unlimited.</small>
+        <small class="text-muted">Optional. Same limit applied to every selected {{ shareAudienceLabel.toLowerCase() }}.</small>
       </div>
       <small class="text-muted">Next step: select {{ shareAudienceLabel.toLowerCase() }}.</small>
     </template>
@@ -83,8 +83,10 @@
         <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
         <div><strong>Selected:</strong> {{ activeSelectionIds.length }}</div>
         <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
-        <div><strong>Per-user cost limit:</strong> {{ shareCostLimitLabel }}</div>
-        <div><strong>Total cost limit:</strong> {{ activeSelectionIds.length * (this.shareForm.costLimit || 0) }}</div>
+        <div><strong>Cost limit per recipient:</strong> {{ shareCostLimitLabel }}</div>
+        <div v-if="shareTotalLimitLabel">
+          <strong>Total potential spend:</strong> {{ shareTotalLimitLabel }}
+        </div>
       </div>
       <BasicTable
         :columns="shareSelectionColumns"
@@ -108,6 +110,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 
 export default {
   name: "AIModelShareStepper",
+  subscribeTable: ["ai_budget"],
   components: {
     BasicTable,
     StepperModal,
@@ -238,6 +241,11 @@ export default {
       if (!Number.isFinite(value) || value <= 0) return "No limit";
       return `$${value.toFixed(2)}`;
     },
+    shareTotalLimitLabel() {
+      const value = Number(this.shareForm.costLimit);
+      if (!Number.isFinite(value) || value <= 0) return "";
+      return `$${(value * this.activeSelectionIds.length).toFixed(2)}`;
+    },
     resourceLabelLower() {
       return this.resourceLabel.toLowerCase();
     },
@@ -294,6 +302,24 @@ export default {
         });
       });
     },
+    emitAppDataUpdate(table, data) {
+      return new Promise((resolve, reject) => {
+        this.$socket.emit("appDataUpdate", { table, data }, (result) => {
+          if (result?.success) resolve(result.data);
+          else reject(new Error(result?.message || "Failed to update data"));
+        });
+      });
+    },
+    findExistingShareCap(shareKey, shareId) {
+      const getter = this.$store.getters["table/ai_budget/getFiltered"];
+      if (!getter) return null;
+      const matches = getter(
+        (b) => !b.deleted
+          && Number(b[shareKey]) === Number(shareId)
+          && Number(b.limitType) === 0
+      );
+      return matches.length > 0 ? matches[0] : null;
+    },
     async open(row) {
       if (!row?.id) {
         this.toastError("Invalid model selected");
@@ -324,7 +350,7 @@ export default {
         this.shareForm = {
           mode: ["users", "roles"].includes(shareConfig?.mode) ? shareConfig.mode : "users",
           expiryDate: shareConfig?.expiryDate ? this.toDateInputString(shareConfig.expiryDate) : "",
-          costLimit: shareConfig?.costLimit ?? null,
+          costLimit: null,
         };
         this.selectedUserIds = this.normalizeIdList(shareConfig?.userIds);
         this.selectedRoleIds = this.normalizeIdList(shareConfig?.roleIds);
@@ -340,12 +366,10 @@ export default {
         return;
       }
 
-      const costLimitValue = Number(this.shareForm.costLimit);
       const payload = {
         [this.resourceIdKey]: this.selectedShareModel.id,
         mode: this.shareForm.mode,
         expiryDate: this.shareForm.expiryDate,
-        costLimit: Number.isFinite(costLimitValue) && costLimitValue > 0 ? costLimitValue : null,
       };
       if (!this.shareForm.expiryDate) {
         this.toastError("Please select an expiry date");
@@ -370,7 +394,23 @@ export default {
       this.isSavingShare = true;
       try {
         this.$refs.shareStepper.setWaiting(true);
-        await this.emitAiServiceCommand(this.saveShareCommand, payload);
+        const result = await this.emitAiServiceCommand(this.saveShareCommand, payload);
+
+        // Apply the per-recipient cost limit to every share row that was created/refreshed in this batch. Backend returns their ids; we
+        // create or update the matching ai_budget row per share via the standard appDataUpdate path.
+        const costLimitValue = Number(this.shareForm.costLimit);
+        const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
+        if (wantsCap && Array.isArray(result?.sharedIds)) {
+          const shareKey = this.resourceIdKey === "aiHookId" ? "hookShareId" : "shareId";
+          for (const shareId of result.sharedIds) {
+            const existing = this.findExistingShareCap(shareKey, shareId);
+            const capData = existing
+              ? { id: existing.id, costLimit: costLimitValue }
+              : { [shareKey]: Number(shareId), limitType: 0, costLimit: costLimitValue };
+            await this.emitAppDataUpdate("ai_budget", capData);
+          }
+        }
+
         this.$refs.shareStepper.close();
         this.eventBus.emit("toast", {
           title: "Success",
