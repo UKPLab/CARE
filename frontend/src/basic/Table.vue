@@ -179,7 +179,7 @@
                   pointer: selectableRows && !r.isDisabled,
                 }"
                 :disabled="r.isDisabled"
-                :checked="currentData.includes(r)"
+                :checked="isRowSelected(r)"
                 @change="(e) => selectRow(r)"
               />
             </div>
@@ -959,19 +959,15 @@ export default {
     },
     selectRow(row) {
       if (this.selectableRows) {
-        if (!this.currentData.includes(row)) {
+        if (!this.isRowSelected(row)) {
           // check if selected
           if (this.options && this.options.singleSelect) {
             this.currentData = [row];
           } else {
-            // Check if the row is already selected
-
-            if (!this.currentData.includes(row)) {
-              this.currentData.push(row);
-            }
+            this.currentData.push(row);
           }
         } else {
-          const toRemove = this.currentData.findIndex((r) => deepEqual(r, row));
+          const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
           if (toRemove >= 0) {
             this.currentData.splice(toRemove, 1);
           }
@@ -1094,6 +1090,13 @@ export default {
         this.allObserver.disconnect();
         this.allObserver = null;
       }
+    },
+
+    isRowSelected(row) {
+      if (row.id !== undefined) {
+        return this.currentData.some(r => r.id === row.id);
+      }
+      return this.currentData.some(r => deepEqual(r, row));
     },
   },
 };
