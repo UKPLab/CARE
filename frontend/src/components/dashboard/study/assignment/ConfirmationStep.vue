@@ -117,6 +117,14 @@
 </template>
 
 <script>
+/**
+ * Final confirmation step of the bulk assignment wizard. Displays a read-only summary
+ * of all choices made in previous steps before the user submits the assignment.
+ * Supports four variants: doc-sub-single, doc-sub-bulk, session-single, and session-bulk,
+ * each rendering an appropriate summary layout. Also warns when reviewers lack matching
+ * study sessions in session_user mode.
+ * @author karim ouf
+ */
 export default {
   name: "ConfirmationStep",
   props: {

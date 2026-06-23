@@ -35,6 +35,14 @@
 <script>
 import FormSelect from "@/basic/form/Select.vue";
 
+/**
+ * Step component for mapping source workflow steps (from the template) to steps in a
+ * target workflow. Only shown in the study_session assignment flow. The user selects a
+ * target workflow and then maps each annotator/editor step from the template to a
+ * corresponding step in the target. Also allows choosing the new study owner (session
+ * user vs. study owner) when creating bulk assignments.
+ * @author karim ouf
+ */
 export default {
   name: "WorkflowMappingStep",
   components: { FormSelect },

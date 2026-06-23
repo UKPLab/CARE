@@ -21,6 +21,14 @@
 <script>
 import BasicForm from "@/basic/Form.vue";
 
+/**
+ * Step component for configuring how assignments are distributed across reviewers.
+ * Supports three modes: role-based (each role gets N reviews), reviewer-based
+ * (documents split manually between selected reviewers), and session-user-based
+ * (each study session is assigned to its original user).
+ * State is persisted via modalValue so navigating back restores the user's choices.
+ * @author karim ouf
+ */
 export default {
   name: "DistributionStep",
   components: { BasicForm },

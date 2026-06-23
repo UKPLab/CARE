@@ -20,6 +20,13 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 
+/**
+ * Step component for selecting which users will act as reviewers in the assignment.
+ * Displays a filterable, selectable table of all users with optional filters to
+ * show only users who have documents or users from previously selected assignments.
+ * State is persisted via modalValue so navigating back restores the selection.
+ * @author karim ouf
+ */
 export default {
   name: "ReviewerSelectionStep",
   components: { BasicTable },

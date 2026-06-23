@@ -144,16 +144,16 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import { downloadObjectsAs } from "@/assets/utils";
 import { computed } from "vue";
-import TemplateSelectionStep from "./bulk-assignment/TemplateSelectionStep.vue";
-import WorkflowMappingStep from "./bulk-assignment/WorkflowMappingStep.vue";
-import AssignmentSelectionStep from "./bulk-assignment/AssignmentSelectionStep.vue";
-import ReviewerSelectionStep from "./bulk-assignment/ReviewerSelectionStep.vue";
-import DistributionStep from "./bulk-assignment/DistributionStep.vue";
-import ConfirmationStep from "./bulk-assignment/ConfirmationStep.vue";
+import TemplateSelectionStep from "./assignment/TemplateSelectionStep.vue";
+import WorkflowMappingStep from "./assignment/WorkflowMappingStep.vue";
+import AssignmentSelectionStep from "./assignment/AssignmentSelectionStep.vue";
+import ReviewerSelectionStep from "./assignment/ReviewerSelectionStep.vue";
+import DistributionStep from "./assignment/DistributionStep.vue";
+import ConfirmationStep from "./assignment/ConfirmationStep.vue";
 
 /**
  * Modal for bulk creating assignments
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "ImportModal",

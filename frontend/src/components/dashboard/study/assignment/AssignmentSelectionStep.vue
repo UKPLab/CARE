@@ -13,6 +13,13 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 
+/**
+ * Step component for selecting the items to be assigned in the bulk assignment wizard.
+ * Renders a selectable table of documents, submissions, or study sessions depending
+ * on the assignment type chosen in the template step. Supports both single-select
+ * (for single assignment flow) and multi-select (for bulk flow).
+ * @author karim ouf
+ */
 export default {
   name: "AssignmentSelectionStep",
   subscribeTable: [

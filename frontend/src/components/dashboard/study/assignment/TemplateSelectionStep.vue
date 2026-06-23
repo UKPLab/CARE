@@ -35,6 +35,13 @@
 import BasicForm from "@/basic/Form.vue";
 import FormSelect from "@/basic/form/Select.vue";
 
+/**
+ * First step of the bulk assignment wizard. Allows the user to pick a study template,
+ * choose whether assignments are based on documents, submissions, or study sessions,
+ * and opt in to email notifications for reviewers. Emits template and workflow data
+ * to the parent so downstream steps can filter and map workflow steps accordingly.
+ * @author karim ouf
+ */
 export default {
   name: "TemplateSelectionStep",
   components: { BasicForm, FormSelect },
