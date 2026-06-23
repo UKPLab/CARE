@@ -305,4 +305,12 @@ async function syncEncryptionState(db) {
     fs.writeFileSync(STATE_FILE, String(isEnabled), { encoding: 'utf8', mode: 0o600 });
 }
 
-module.exports = { encrypt, decrypt, initializeEncryptionKey, getKey, reEncryptValue, reEncryptAllModels, decryptAllModels, encryptAllModels, syncEncryptionState };
+/**
+ * Generate a cryptographically secure random AES-256 key.
+ * @returns {string} 64-character lowercase hex string (32 bytes)
+ */
+function generateEncryptionKey() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+module.exports = { encrypt, decrypt, initializeEncryptionKey, getKey, generateEncryptionKey, reEncryptValue, reEncryptAllModels, decryptAllModels, encryptAllModels, syncEncryptionState };

@@ -15,21 +15,35 @@
 
 const fs = require('fs');
 const path = require('path');
-const { getKey, reEncryptAllModels } = require('../utils/encryption');
+const readline = require('readline');
+const { getKey, generateEncryptionKey, reEncryptAllModels } = require('../utils/encryption');
 const db = require('../db');
 
 const KEY_FILE = path.resolve(__dirname, '../encryption.key');
 
+function prompt(question) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise(resolve => rl.question(question, ans => { rl.close(); resolve(ans.trim()); }));
+}
+
 async function main() {
-    if (!process.env.NEW_KEY) {
-        console.error('ERROR: NEW_KEY is not set.');
-        process.exit(1);
+    let newKeyHex = process.env.NEW_KEY;
+
+    if (!newKeyHex) {
+        const answer = await prompt('No NEW_KEY provided. Generate a new key automatically? [y/N] ');
+        if (answer.toLowerCase() !== 'y') {
+            console.log('Aborted.');
+            process.exit(0);
+        }
+        newKeyHex = generateEncryptionKey();
+        console.log(`Generated new key: ${newKeyHex}`);
+        console.log('Store this somewhere safe — it cannot be recovered after rotation.');
     }
 
     if (db?.sequelize?.options) db.sequelize.options.logging = false;
 
-    const oldKey = getKey(); // reads and validates backend/encryption.key
-    const newKey = Buffer.from(process.env.NEW_KEY, 'hex');
+    const oldKey = getKey();
+    const newKey = Buffer.from(newKeyHex, 'hex');
 
     if (newKey.length !== 32) {
         console.error(`ERROR: NEW_KEY must be a 64-character hex string (32 bytes, got ${newKey.length}).`);
@@ -48,7 +62,7 @@ async function main() {
         console.log(`  [${model}] re-encrypted ${updated}/${total} row(s)`);
     }
 
-    fs.writeFileSync(KEY_FILE, process.env.NEW_KEY, { encoding: 'utf8', mode: 0o600 });
+    fs.writeFileSync(KEY_FILE, newKeyHex, { encoding: 'utf8', mode: 0o600 });
     console.log('encryption.key updated with new key.');
 
     if (db.sequelize?.close) await db.sequelize.close();
