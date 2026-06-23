@@ -366,6 +366,30 @@ module.exports = function (server) {
     }
 
     /**
+     * Resolves the assessment rubric configuration from a study step.
+     * Study steps store a reference (configurationId); rubrics live in the configuration table.
+     *
+     * @param {Object|null|undefined} studyStepConfiguration - The study step's configuration JSON.
+     * @param {Map<number, Object>} configurationsById - Loaded configuration records by id.
+     * @returns {Object|null} Assessment config content (with rubrics) or null.
+     */
+    function resolveAssessmentConfigurationContent(studyStepConfiguration, configurationsById) {
+        if (!studyStepConfiguration || typeof studyStepConfiguration !== "object") return null;
+
+        const configurationId =
+            studyStepConfiguration.settings?.configurationId ??
+            studyStepConfiguration.configurationId ??
+            null;
+
+        if (configurationId != null) {
+            const configuration = configurationsById.get(Number(configurationId));
+            if (configuration?.content) return configuration.content;
+        }
+
+        return Array.isArray(studyStepConfiguration.rubrics) ? studyStepConfiguration : null;
+    }
+
+    /**
      * Resolves the display name for a user based on the current export settings.
      *
      * @param {Object} user - The user record to display.
@@ -459,6 +483,23 @@ module.exports = function (server) {
             : [];
         const studyStepsById = new Map(studySteps.map((studyStep) => [studyStep.id, studyStep]));
 
+        const configurationIds = [...new Set(
+            studySteps
+                .map((studyStep) => studyStep.configuration)
+                .filter((cfg) => cfg && typeof cfg === "object")
+                .map((cfg) => cfg.settings?.configurationId ?? cfg.configurationId)
+                .filter((id) => id != null)
+                .map((id) => Number(id))
+                .filter((id) => Number.isInteger(id))
+        )];
+        const configurations = configurationIds.length > 0
+            ? await server.db.models.configuration.findAll({
+                where: { id: { [Op.in]: configurationIds }, deleted: false },
+                raw: true
+            })
+            : [];
+        const configurationsById = new Map(configurations.map((configuration) => [configuration.id, configuration]));
+
         const relatedUserIds = [...new Set([
             ...users.map((user) => user.id),
             ...studySessions.map((session) => session.userId),
@@ -484,12 +525,14 @@ module.exports = function (server) {
             const scoreObject = row.value || {};
             const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
             const flatScores = buildScoresFromState(assessmentState);
-            const assessmentScore = calculateAssessmentScore(studyStep?.configuration, flatScores);
+            const assessmentConfig = resolveAssessmentConfigurationContent(
+                studyStep?.configuration,
+                configurationsById
+            );
+            const assessmentScore = calculateAssessmentScore(assessmentConfig, flatScores);
             const totalPoints = assessmentScore.achieved_points;
 
-            // FIXME: parsedProjectId is not declared.
             const record = {
-                // projectId: parsedProjectId,
                 projectId,
                 userId: ownerUser.id,
                 userExtId: ownerUser.extId ?? null,
