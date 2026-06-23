@@ -5,6 +5,7 @@ const { faker } = require('@faker-js/faker');
 const JSZip = require('jszip');
 const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
+const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
 
 module.exports = function (server) {
 
@@ -365,114 +366,6 @@ module.exports = function (server) {
     }
 
     /**
-     * Extracts criterion scores from a stored assessment state.
-     *
-     * @param {Object} assessmentState - The stored assessment state.
-     * @returns {Object} A flat map of criterion names to numeric scores.
-     */
-    function buildScoresFromAssessmentState(assessmentState = {}) {
-        const scores = {};
-        for (const [name, state] of Object.entries(assessmentState || {})) {
-            if (!state || typeof state !== "object") continue;
-            const rawScore = typeof state.currentScore === "number" ? state.currentScore : Number(state.currentScore);
-            scores[name] = Number.isFinite(rawScore) ? rawScore : 0;
-        }
-        return scores;
-    }
-
-    /**
-     * Calculates the assessment totals using the rubric configuration.
-     *
-     * @param {Object} config - Study step configuration containing rubrics.
-     * @param {Object} scores - Flat map of criterion scores.
-     * @returns {Object} Assessment totals and rubric breakdown.
-     */
-    function calculateAssessmentScore(config, scores = {}) {
-        const rubrics = Array.isArray(config?.rubrics) ? config.rubrics : [];
-        let total_max_points = 0;
-        let total_min_points = 0;
-        let achieved_points = 0;
-        const rubricResults = {};
-
-        rubrics.forEach((rubric) => {
-            const rubricName = rubric?.name || "";
-            const rubricCode = rubric?.code || rubricName;
-            const criteria = Array.isArray(rubric?.criteria) ? rubric.criteria : [];
-            const calc = rubric?.calculation || "sum";
-
-            const critScores = [];
-            let critMinPointsSum = 0;
-            let critMaxPointsSum = 0;
-
-            criteria.forEach((crit) => {
-                if (!crit) return;
-                const criterionName = crit.name || "<unnamed>";
-                let minPoints = crit.minPoints;
-                let maxPoints = crit.maxPoints;
-
-                if (minPoints === undefined || minPoints === null) minPoints = 0;
-                if (maxPoints === undefined || maxPoints === null) maxPoints = 0;
-
-                minPoints = Number(minPoints) || 0;
-                maxPoints = Number(maxPoints) || 0;
-
-                critMinPointsSum += minPoints;
-                critMaxPointsSum += maxPoints;
-
-                const rawScore = Object.prototype.hasOwnProperty.call(scores, criterionName) && scores[criterionName] != null
-                    ? Number(scores[criterionName])
-                    : 0;
-                let clampedScore = Number.isFinite(rawScore) ? rawScore : 0;
-                if (clampedScore < minPoints) clampedScore = minPoints;
-                if (clampedScore > maxPoints) clampedScore = maxPoints;
-
-                critScores.push(clampedScore);
-            });
-
-            let rubricMin = rubric?.minPoints;
-            let rubricMax = rubric?.maxPoints;
-            if (rubricMin === undefined || rubricMin === null) rubricMin = critMinPointsSum;
-            if (rubricMax === undefined || rubricMax === null) rubricMax = critMaxPointsSum;
-
-            rubricMin = Number(rubricMin) || 0;
-            rubricMax = Number(rubricMax) || 0;
-
-            const sumCrit = critScores.reduce((acc, value) => acc + value, 0);
-            let rubricScore = sumCrit;
-            if (calc === "min") rubricScore = Math.min(sumCrit, rubricMax);
-            if (calc === "max") {
-                const base = Number(rubric?.defaultPoints) || 0;
-                rubricScore = Math.max(base + sumCrit, 0);
-            }
-
-            if (rubricScore < rubricMin) rubricScore = rubricMin;
-            if (rubricScore > rubricMax) rubricScore = rubricMax;
-
-            rubricResults[rubricCode] = {
-                name: rubricName,
-                score: rubricScore,
-                min: rubricMin,
-                max: rubricMax,
-                isBonus: rubric?.isBonus === true,
-            };
-
-            if (rubric?.isBonus !== true) {
-                total_max_points += rubricMax;
-                total_min_points += rubricMin;
-            }
-            achieved_points += rubricScore;
-            achieved_points = Math.min(achieved_points, total_max_points);
-        });
-
-        return {
-            total_max_points,
-            total_min_points,
-            achieved_points,
-            rubrics: rubricResults,
-        };
-    }
-
-    /**
      * Resolves the display name for a user based on the current export settings.
      *
      * @param {Object} user - The user record to display.
@@ -590,12 +483,14 @@ module.exports = function (server) {
 
             const scoreObject = row.value || {};
             const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
-            const flatScores = buildScoresFromAssessmentState(assessmentState);
+            const flatScores = buildScoresFromState(assessmentState);
             const assessmentScore = calculateAssessmentScore(studyStep?.configuration, flatScores);
             const totalPoints = assessmentScore.achieved_points;
 
+            // FIXME: parsedProjectId is not declared.
             const record = {
-                projectId: parsedProjectId,
+                // projectId: parsedProjectId,
+                projectId,
                 userId: ownerUser.id,
                 userExtId: ownerUser.extId ?? null,
                 userName: ownerUser.userName ?? "",
