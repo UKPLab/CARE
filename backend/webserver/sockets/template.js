@@ -3,7 +3,12 @@ const Socket = require("../Socket");
 const Delta = require("quill-delta");
 const {Op} = require("sequelize");
 const {dbToDelta} = require("editor-delta-conversion");
-const {resolveTemplate, resolveTemplateToDelta, getMissingRequiredPlaceholders} = require("../../utils/templateResolver");
+const {
+  resolveTemplate,
+  resolveTemplateToDelta,
+  getMissingRequiredPlaceholders,
+  formatMissingPlaceholderError,
+} = require("../../utils/templateResolver");
 
 /**
  * Handle templates through websocket
@@ -33,7 +38,7 @@ class TemplateSocket extends Socket {
     if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
         throw new Error("Missing required fields: name, description, type, content");
     }
-    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(data.type)) {
+    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(data.type)) {
       throw new Error("Access denied: Only administrators can create email templates");
     }
 
@@ -116,7 +121,34 @@ class TemplateSocket extends Socket {
 
       if (draftEdits.length > 0) {
         const draftDelta = new Delta(dbToDelta(draftEdits));
-        delta = delta.compose(draftDelta);
+        const composed = delta.compose(draftDelta);
+
+        // Self-heal: drafts left unmerged by a forced URL navigation or tab close
+        // (which bypass the editor's close/discard flow) must not resurface as if saved
+        // when they omit required placeholders. Discard such invalid drafts and fall back
+        // to stable content; valid drafts are still resumed.
+        let composedIsInvalid = false;
+        if ([1, 2, 3, 6, 7].includes(template.type)) {
+          const missing = await getMissingRequiredPlaceholders(
+            { ops: composed.ops },
+            template.type,
+            this.models,
+            options
+          );
+          composedIsInvalid = missing.length > 0;
+        }
+
+        if (composedIsInvalid) {
+          await this.models["template_edit"].update(
+            { deleted: true, deletedAt: new Date() },
+            {
+              where: { templateId: data.templateId, language: data.language, draft: true, deleted: false },
+              transaction: options.transaction,
+            }
+          );
+        } else {
+          delta = composed;
+        }
       }
     }
 
@@ -195,8 +227,8 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6].includes(data.templateType)) {
-      throw new Error("Template type is required and must be 1-6");
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7].includes(data.templateType)) {
+      throw new Error("Template type is required and must be 1-7");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
       throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");
@@ -232,7 +264,7 @@ class TemplateSocket extends Socket {
   async updatePlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
     if (!data.id) throw new Error("Placeholder ID is required");
-
+    
     const updateData = {};
     if (data.placeholderLabel !== undefined) updateData.placeholderLabel = data.placeholderLabel;
     if (data.placeholderType !== undefined) updateData.placeholderType = data.placeholderType;
@@ -243,9 +275,9 @@ class TemplateSocket extends Socket {
     }
 
     return await this.models["placeholder"].updateById(
-      data.id,
-      updateData,
-      { transaction: options.transaction }
+        data.id,
+        updateData,
+        { transaction: options.transaction }
     );
   }
 
@@ -455,7 +487,7 @@ class TemplateSocket extends Socket {
     });
 
     if (edits.length === 0) {
-      if ([1, 2, 3, 6].includes(template.type)) {
+      if ([1, 2, 3, 6, 7].includes(template.type)) {
         const templateContentModel = this.models["template_content"];
         const langRow = await templateContentModel.findOne({
           where: { templateId, language, deleted: false },
@@ -473,10 +505,7 @@ class TemplateSocket extends Socket {
           options
         );
         if (missing.length > 0) {
-          const tokens = missing.map((k) => `~${k}~`).join(", ");
-          throw new Error(
-            `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before saving.`
-          );
+          throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
         }
       }
       return;
@@ -496,8 +525,8 @@ class TemplateSocket extends Socket {
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
-    // Email templates (types 1, 2, 3, 6) must include all required placeholders
-    if ([1, 2, 3, 6].includes(template.type)) {
+    // Email templates (types 1, 2, 3, 6, 7) must include all required placeholders
+    if ([1, 2, 3, 6, 7].includes(template.type)) {
       const missing = await getMissingRequiredPlaceholders(
         { ops: mergedDelta.ops },
         template.type,
@@ -505,10 +534,7 @@ class TemplateSocket extends Socket {
         options
       );
       if (missing.length > 0) {
-        const tokens = missing.map((k) => `~${k}~`).join(", ");
-        throw new Error(
-          `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before saving.`
-        );
+        throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
       }
     }
 
@@ -569,6 +595,42 @@ class TemplateSocket extends Socket {
   }
 
   /**
+   * Discard draft edits for a template language without merging into template_content.
+   *
+   * Used when the user leaves the editor after declining to save invalid content.
+   *
+   * @socketEvent templateDiscardDrafts
+   * @param {Object} data
+   * @param {number} data.templateId Template ID (required)
+   * @param {string} data.language   Language code (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<void>}
+   */
+  async discardDrafts(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.language) throw new Error("Language is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) return;
+
+    if (template.userId === this.userId) {
+      await this.models["template_edit"].update(
+        { deleted: true, deletedAt: new Date() },
+        {
+          where: {
+            templateId: data.templateId,
+            language: data.language,
+            draft: true,
+            deleted: false,
+          },
+          transaction: options.transaction,
+        }
+      );
+    }
+  }
+
+  /**
    * Detach a template copy from its source (set sourceId to null).
    * After detachment, the template can be edited like any user-created template.
    *
@@ -609,7 +671,7 @@ class TemplateSocket extends Socket {
     if (!data.sourceTemplateId) throw new Error("Source template ID is required");
 
     const source = await this.models["template"].getById(data.sourceTemplateId);
-    if (!(await this.isAdmin()) && [1, 2, 3, 6].includes(source?.type)) {
+    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(source?.type)) {
       throw new Error("Access denied: Only administrators can copy email templates");
     }
 
@@ -678,11 +740,11 @@ class TemplateSocket extends Socket {
       throw new Error("You can only delete templates that you own");
     }
 
-    if (template.public && [1, 2, 3, 6].includes(template.type)) {
+    if (template.public && [1, 2, 3, 6, 7].includes(template.type)) {
       throw new Error("Public email templates cannot be deleted");
     }
 
-    if ([1, 2, 3, 6].includes(template.type)) {
+    if ([1, 2, 3, 6, 7].includes(template.type)) {
       const usedBySettings = await this.models["setting"].findAll({
         where: {
           key: {[Op.like]: "email.template.%"},
@@ -707,6 +769,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templateEditContent", this.editContent, {}, true);
     this.createSocket("templateAddLanguageContent", this.addContent, {}, true);
     this.createSocket("templateClose", this.closeTemplate, {}, true);
+    this.createSocket("templateDiscardDrafts", this.discardDrafts, {}, true);
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);

@@ -247,6 +247,41 @@ module.exports = (sequelize, DataTypes) => {
             return await super.add(data, options);
         }
 
+                /**
+         * Recalculate and persist how many studies use a given document.
+         *
+         * @param {number} documentId - The document ID to recalculate usage for.
+         * @param {object} options - Optional sequelize options with transaction.
+         * @returns {Promise<number>} The recalculated study usage count.
+         */
+        static async updateDocumentStudyUsageCount(documentId, options = {}) {
+            if (!documentId) {
+                return 0;
+            }
+
+            const transaction = options.transaction;
+            const count = await sequelize.models.study_step.count({
+                distinct: true,
+                col: "studyId",
+                where: {
+                    documentId,
+                    deleted: false,
+                },
+                include: [{
+                    model: sequelize.models.study,
+                    as: "study",
+                    attributes: [],
+                    where: { deleted: false },
+                    required: true,
+                }],
+                transaction,
+            });
+
+            await sequelize.models.document.updateById(documentId, { studyUsageCount: count }, { transaction });
+            return count;
+        }
+
+
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -311,9 +346,16 @@ module.exports = (sequelize, DataTypes) => {
                             }
                         }
                     }*/
+                   if(studyStep.deleted) {
+                       await StudyStep.updateDocumentStudyUsageCount(studyStep.documentId, {transaction: options.transaction});
+                   }
+
+                },
+                afterCreate: async (studyStep, options) => {
+                    // if a new step is created with a document, we need to update the study usage count for this document
+                    await StudyStep.updateDocumentStudyUsageCount(studyStep.documentId, {transaction: options.transaction});
                 }
             }
-
         }
     );
 

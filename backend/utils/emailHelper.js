@@ -53,6 +53,12 @@ async function getEmailFallbackContent(key, variables = {}) {
  * @param {string} [context.otp] - One-time password code (2FA email)
  * @param {number} [context.tokenExpiry] - Token expiry hours
  * @param {Object} [context.options] - Extra resolver options (e.g. transaction)
+ * @param {string} [context.eventType] - Upload event for ~eventType~ (submission upload; uploaded/reuploaded)
+ * @param {string} [context.eventLabel] - Title-style label for submission upload fallback
+ * @param {string} [context.eventLabelLower] - Lowercase label for submission upload fallback
+ * @param {number} [context.assignmentId] - Assignment ID (submission upload)
+ * @param {number} [context.submissionId] - Submission ID (submission upload)
+ * @param {string} [context.timestamp] - Upload timestamp from submission createdAt (submission upload)
  * @param {Object} models - Database models
  * @param {Object} logger - Logger instance
  * @returns {Promise<{subject: string, body: string, isHtml: boolean}>} Email subject, body, and whether body is HTML
