@@ -22,7 +22,7 @@ class StudySessionSocket extends Socket {
      */
     async sendSessionsByStudyId(studyId) {
         const study = await this.models['study'].getById(studyId);
-        if (this.checkUserAccess(study.userId)) {
+        if (await this.checkUserAccess(study.userId)) {
             this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey("studyId", studyId));
         } else {
             this.sendToast("You are not allowed to see this study", "Error", "Danger");
