@@ -332,11 +332,11 @@ module.exports = class Socket {
     /**
      * Check if the user has access to a document
      * @param {number} documentId The documentId to check
-     * @return {boolean} True if the user has document access
+     * @return {Promise<boolean>} True if the user has document access
      */
-    checkDocumentAccess(documentId) {
+    async checkDocumentAccess(documentId) {
         if ("DocumentSocket" in this.server.sockets) {
-            return this.getSocket("DocumentSocket").checkDocumentAccess(documentId);
+            return await this.getSocket("DocumentSocket").checkDocumentAccess(documentId);
         } else {
             return true;
         }

@@ -27,26 +27,52 @@
     name: "TemplateRoute",
     subscribeTable: ["template"],
     components: {Loader, Editor},
+    /**
+     * Save-on-leave: flush pending edits, then merge via templateClose.
+     * On merge failure (e.g. missing required placeholders), confirm discard of drafts.
+     */
     beforeRouteLeave(to, from, next) {
-      const templateEditor = this.$refs.editor?.$refs?.templateEditor;
-      if (!templateEditor || typeof templateEditor.requestClose !== "function") {
-        next();
-        return;
-      }
-      templateEditor.requestClose().then((res) => {
-        if (res && res.success) {
-          next();
-        } else {
-          if (res && !res.success) {
+      this.$nextTick(async () => {
+        const templateEditor = this.$refs.editor?.$refs?.templateEditor;
+        if (
+          !templateEditor
+          || typeof templateEditor.flushPendingEdits !== "function"
+          || typeof templateEditor.requestClose !== "function"
+          || typeof templateEditor.requestDiscard !== "function"
+        ) {
+          next(false);
+          return;
+        }
+        try {
+          await templateEditor.flushPendingEdits();
+          const res = await templateEditor.requestClose();
+          if (res && res.success) {
+            next();
+            return;
+          }
+          const confirmMessage = [
+            this.$t("templates.editor.leave.missingPlaceholdersConfirm"),
+            resolveApiMessage(res),
+          ].filter(Boolean).join("\n\n");
+          if (!window.confirm(confirmMessage)) {
+            next(false);
+            return;
+          }
+          const discardRes = await templateEditor.requestDiscard();
+          if (!discardRes || !discardRes.success) {
             this.eventBus.emit("toast", {
-              title: this.$t("templates.editor.toasts.templateSaveFailed"),
-              message: resolveApiMessage(res),
+              title: this.$t("templates.editor.toasts.templateDiscardFailed"),
+              message: resolveApiMessage(discardRes),
               variant: "danger",
             });
+            next(false);
+            return;
           }
+          next();
+        } catch (_error) {
           next(false);
         }
-      }).catch(() => next(false));
+      });
     },
     props: {
       'templateId': {

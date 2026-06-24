@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const TranslatableError = require("../../utils/TranslatableError");
+const { assertStableEmailTemplateContent } = require("../../utils/templateResolver");
 
 module.exports = (sequelize, DataTypes) => {
     /**
@@ -471,6 +472,18 @@ module.exports = (sequelize, DataTypes) => {
                         throw new Error(
                             "errors.templates.cannotMakeNonPublic"
                         );
+                    }
+
+                    // Email templates must have required placeholders in stable content before publish
+                    if (
+                        template.public === true &&
+                        template._previousDataValues?.public !== true &&
+                        [1, 2, 3, 6, 7].includes(template.type)
+                    ) {
+                        await assertStableEmailTemplateContent(template.id, sequelize.models, {
+                            transaction: options.transaction,
+                            action: "publishing",
+                        });
                     }
 
                     // appDataUpdate / updateData passes callerUserId so hooks can enforce ownership

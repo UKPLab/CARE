@@ -343,18 +343,70 @@ export default {
     this.eventBus.off("editorInsertText", this.insertTextHandler);
     this.eventBus.off('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
 
-    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
-      if (!res.success) {
-        this.eventBus.emit("toast", {
-          title: this.$t('errors.documents.documentCloseError'),
-          message: resolveApiMessage(res),
-          variant: "danger",
+    this.flushPendingEdits()
+      .catch(() => {})
+      .finally(() => {
+        this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: this.$t('errors.documents.documentCloseError'),
+              message: resolveApiMessage(res),
+              variant: "danger",
+            });
+          }
         });
-      }
-    });
-    this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
+        this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
+      });
   },
   methods: {
+    /**
+     * Persist any pending debounced edits before documentClose.
+     *
+     * The debounce timer may not have fired yet when the editor unmounts. This
+     * cancels the timer and sends buffered ops via documentEdit, waiting for the
+     * socket callback before close (and saveDocument for regular documents).
+     *
+     * @returns {Promise<void>}
+     */
+    flushPendingEdits() {
+      if (this.debouncedProcessDelta) {
+        this.debouncedProcessDelta.cancel();
+      }
+      if (!this.editor || this.deltaBuffer.length === 0) {
+        return Promise.resolve();
+      }
+      const quill = this.editor.getEditor();
+      const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+      const dbOps = deltaToDb(combinedDelta.ops);
+      if (dbOps.length === 0) {
+        this.deltaBuffer = [];
+        return Promise.resolve();
+      }
+      const backup = quill.getContents();
+      return new Promise((resolve) => {
+        this.$socket.emit(
+          "documentEdit",
+          {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId || null,
+            studyStepId: this.studyStepId || null,
+            ops: dbOps,
+          },
+          (res) => {
+            if (!res.success) {
+              quill.setContents(backup);
+              this.eventBus.emit("toast", {
+                title: this.$t("errors.documents.previousEditFailed"),
+                message: resolveApiMessage(res),
+                variant: "danger",
+              });
+            }
+            this.deltaBuffer = [];
+            resolve();
+          }
+        );
+      });
+    },
     isEditorEmpty() {
       if (!this.editor || typeof this.editor.getEditor !== "function") {
         return false;

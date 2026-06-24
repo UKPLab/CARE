@@ -60,6 +60,7 @@ class SettingSocket extends Socket {
 
         const { touchesMailService } = await saveSettings(this.models["setting"], data, {
             transaction: options.transaction,
+            models: this.models,
         });
 
         options.transaction.afterCommit(async () => {

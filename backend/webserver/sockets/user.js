@@ -306,7 +306,7 @@ class UserSocket extends Socket {
      */
     async resetUserPwd(data, options) {
         const {userId, password, oldPassword} = data;
-        if (!this.isAdmin() || this.userId === userId) {
+        if (!(await this.isAdmin()) || this.userId === userId) {
             if (userId !== this.userId) {
                 throw new Error("errors.users.userRightsArgumentMismatch");
             }

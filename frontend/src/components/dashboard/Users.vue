@@ -32,13 +32,6 @@
           @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
-          class="btn btn-secondary btn-sm"
-          title="Role Management"
-          text="Role Management"
-          icon="person-plus"
-          @click="$refs.roleManagementModal.open()"
-        />
-        <BasicButton
             class="btn btn-secondary btn-sm"
             :title="$t('users.uploadPassword')"
             :text="$t('users.uploadPassword')"

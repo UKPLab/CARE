@@ -116,8 +116,12 @@
     "copyContent": "Inhalt kopieren",
     "language": "Sprache",
     "newLanguageMessage": "Für dieses Template wird eine neue Sprache hinzugefügt. Soll der aktuelle Inhalt in diese Sprache kopiert werden?<br><br><strong>Beim Verlassen der aktuellen Sprache wird deren Inhalt gespeichert.</strong>",
+    "leave": {
+        "missingPlaceholdersConfirm": "Dieses Template enthält nicht alle erforderlichen Platzhalter; Ihre Änderungen werden nicht gespeichert."
+    },
     "toasts": {
         "templateSaveFailed": "Template konnte nicht gespeichert werden",
+        "templateDiscardFailed": "Template-Änderungen konnten nicht verworfen werden",
         "failedToLoadTemplate": "Template konnte nicht geladen werden",
         "failedToAddLanguage": "Sprache konnte nicht hinzugefügt werden",
         "noCursorPosition": {

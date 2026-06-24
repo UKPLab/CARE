@@ -357,8 +357,84 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
     return missing;
 }
 
+/**
+ * Build i18n key and params for a missing-placeholder validation failure.
+ *
+ * @param {string[]} missing placeholder keys still required
+ * @param {Object} [options]
+ * @param {string} [options.action="saving"] saving | publishing | assigning
+ * @param {string} [options.language] template_content language code, when checking one locale
+ * @returns {{ key: string, params: Object }} i18n key + params (tokens; language if set) for the caller to throw
+ */
+function formatMissingPlaceholderError(missing, { action = "saving", language } = {}) {
+    const tokens = missing.map((k) => `~${k}~`).join(", ");
+    const inLanguageKeys = {
+        publishing: "errors.templates.missingRequiredPlaceholdersInLanguagePublishing",
+        assigning: "errors.templates.missingRequiredPlaceholdersInLanguageAssigning",
+    };
+    const plainKeys = {
+        saving: "errors.templates.missingRequiredPlaceholders",
+        publishing: "errors.templates.missingRequiredPlaceholdersPublishing",
+        assigning: "errors.templates.missingRequiredPlaceholdersAssigning",
+    };
+
+    if (language) {
+        const key = inLanguageKeys[action] || inLanguageKeys.publishing;
+        return { key, params: { tokens, language } };
+    }
+
+    const key = plainKeys[action] || plainKeys.saving;
+    return { key, params: { tokens } };
+}
+
+/**
+ * Check stable template_content for required placeholders (email types 1, 2, 3, 6, 7).
+ * Used when publishing or assigning a template in Settings.
+ *
+ * @param {number} templateId
+ * @param {Object} models
+ * @param {Object}
+ * @returns {Promise<void>}
+ */
+async function assertStableEmailTemplateContent(templateId, models, options = {}) {
+    const action = options.action || "publishing";
+    const template = await models["template"].getById(templateId, options);
+    if (!template) {
+        throw new Error("errors.templates.notFound");
+    }
+    if (![1, 2, 3, 6, 7].includes(template.type)) {
+        return;
+    }
+
+    const rows = await models["template_content"].findAll({
+        where: { templateId, deleted: false },
+        raw: true,
+        ...options,
+    });
+
+    if (!rows || rows.length === 0) {
+        const missing = await getMissingRequiredPlaceholders({ ops: [] }, template.type, models, options);
+        if (missing.length > 0) {
+            const { key, params } = formatMissingPlaceholderError(missing, { action });
+            throw new TranslatableError(key, params);
+        }
+        return;
+    }
+
+    for (const row of rows) {
+        const content = row.content && row.content.ops ? { ops: row.content.ops } : { ops: [] };
+        const missing = await getMissingRequiredPlaceholders(content, template.type, models, options);
+        if (missing.length > 0) {
+            const { key, params } = formatMissingPlaceholderError(missing, { action, language: row.language });
+            throw new TranslatableError(key, params);
+        }
+    }
+}
+
 module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
     getMissingRequiredPlaceholders,
+    formatMissingPlaceholderError,
+    assertStableEmailTemplateContent,
 };
