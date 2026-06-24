@@ -4,7 +4,7 @@
  * Resolves template placeholders with context data and handles privacy/anonymity.
  * Converts Quill Delta format templates to resolved HTML or Delta format.
  * 
- * @author Mohammad Elwan
+ * @author Mohammad Elwan, Mohammed Rawhani
  */
 const Delta = require("quill-delta");
 const fs = require("fs");
