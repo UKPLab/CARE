@@ -18,8 +18,7 @@
 <script>
 /**
  * AI Budget overview : lists every cap the user owns and supports editing the
- * cost limit or removing the cap. Reset action is intentionally not exposed
- * here yet.
+ * cost limit, resetting the spending window, or removing the cap.
  *
  * All data resolved from the autoTable store: ai_budget rows + parents
  * (ai_model, ai_model_share, ai_hook, ai_hook_share, study, study_step, user).
@@ -126,6 +125,12 @@ export default {
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
+          icon: "arrow-counterclockwise",
+          title: "Reset spending window",
+          action: "reset",
+          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
+        },
+        {
           icon: "trash",
           title: "Remove cap",
           action: "delete",
@@ -207,11 +212,33 @@ export default {
     onAction(data) {
       switch (data.action) {
         case "edit":   this.openEdit(data.params); break;
+        case "reset":  this.openReset(data.params); break;
         case "delete": this.openDelete(data.params); break;
       }
     },
     openEdit(row) {
       this.$refs.editModal.open(row);
+    },
+    openReset(row) {
+      this.$refs.confirmModal.open(
+        "Reset spending window",
+        `Reset the spending counter for this cap? Past usage will no longer count toward the limit.`,
+        "",
+        (confirmed) => {
+          if (!confirmed) return;
+          this.$socket.emit(
+            "appDataUpdate",
+            { table: "ai_budget", data: { id: row.id, resetAt: new Date().toISOString() } },
+            (result) => {
+              if (result?.success) {
+                this.toastSuccess("Spending window reset");
+              } else {
+                this.toastError(result?.message || "Failed to reset");
+              }
+            }
+          );
+        }
+      );
     },
     openDelete(row) {
       this.$refs.confirmModal.open(
