@@ -13,7 +13,7 @@ const {Op} = require("sequelize");
 const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
 const {resolveNlpAssessmentDraft} = require("./studyNlpDocumentData");
 const UPLOAD_PATH = `${__dirname}/../../files`;
-const TEXT_PLACEHOLDER_CHAR_CAP = 150;
+const TEXT_PLACEHOLDER_CHAR_CAP = 2000;
 
 /**
  * Extract plain text from Quill Delta operations
@@ -823,7 +823,7 @@ async function resolveTemplateWithValues(templateId, values, models, options = {
     for (const [key, value] of Object.entries(values || {})) {
         if (key === "language") continue;
         const escaped = `~${key}~`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        resolvedText = resolvedText.replace(new RegExp(escaped, 'g'), toText(value));
+        resolvedText = resolvedText.replace(new RegExp(escaped, 'g'), () => toText(value));
     }
     return resolvedText;
 }

@@ -271,9 +271,17 @@ export default {
           // PDF text extracted in the browser and sent as a value.
           return this.extractDocumentText(spec.documentId || this.documentId);
         case 'configuration':
-        case 'submission':
-          // Resolved on the backend (reuses serviceReplacement); submission text extraction is a backend TODO.
           return {type: "serviceReplacement", input: spec};
+        case 'submission': {
+          // PDF is extracted in the browser; zip contents are resolved on the backend.
+          // Both travel together inside one serviceReplacement so the backend combines them.
+          const selectedFiles = spec.selectedFiles || [];
+          let pdfText = null;
+          if (selectedFiles.includes("pdf") && spec.pdfDocumentId) {
+            pdfText = await this.extractDocumentText(spec.pdfDocumentId);
+          }
+          return {type: "serviceReplacement", input: {...spec, pdfText}};
+        }
         case 'assessment':
         case 'annotator':
         case 'editor':

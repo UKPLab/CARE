@@ -108,11 +108,42 @@ async function resolveServiceInput(service, input) {
             }
             return config.content;
         }
-        case "submission":
-            // TODO: resolve the submission to text — extract the PDF's text and unzip the `.tex`
-            // from its zip (reuse submission.loadSubmissionForNlpRequest to find the files +
-            // document.loadPlainText per file), returning e.g. { pdf, zip }.
-            return "";
+        case "submission": {
+            const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
+            if (!submissionId || !selectedFiles.length) return "";
+
+            const parts = [];
+
+            // PDF was extracted in the browser; embed with label.
+            if (selectedFiles.includes("pdf") && pdfText != null) {
+                parts.push(`pdf:\n${pdfText}`);
+            }
+
+            // Zip-based files (tex, bib, …) — unzip on the backend.
+            // filePatterns maps logical name → validation-config regex (e.g. "expose" → "Expose\\.tex$").
+            const zipFileSpecs = selectedFiles
+                .filter(f => f !== "pdf")
+                .map(name => ({name, pattern: filePatterns[name] || null}));
+            if (zipFileSpecs.length) {
+                const zipDoc = await service.server.db.models["document"].findOne({
+                    where: { submissionId, type: 4, deleted: false },
+                    raw: true,
+                });
+                if (zipDoc) {
+                    const buffer = await service.server.db.models["document"]
+                        .readDocumentFile(zipDoc, ".zip");
+                    if (buffer) {
+                        const extracted = await service.server.db.models["document"]
+                            .extractZipFiles(buffer, zipFileSpecs);
+                        for (const [fileName, content] of Object.entries(extracted)) {
+                            parts.push(`${fileName}:\n${content}`);
+                        }
+                    }
+                }
+            }
+
+            return parts.join("\n\n");
+        }
         default:
             return null;
     }
@@ -160,7 +191,7 @@ async function runHook(service, client, data) {
     const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
     const values = await resolveHookReferences(service, rawValues);
     const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
-
+    
     const { additionalParameters, ...credentialParams } = modelParams;
     const completionData = {
         ...additionalParameters,
