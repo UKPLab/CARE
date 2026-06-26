@@ -4,6 +4,7 @@
       Options
     </h6>
 
+    <!-- TODO: Change it to BasicForm component -->
     <div class="form-check form-switch mb-2">
       <input 
         id="aliasSwitch" 
