@@ -25,10 +25,11 @@
         >
           <input
               :id="`file_${input}_${fileOpt.value}`"
-              type="checkbox"
+              type="radio"
+              :name="`submission_file_${input}`"
               class="form-check-input"
               :checked="(submissionFileSelections[input] || []).includes(fileOpt.value)"
-              @change="toggleSubmissionFile(input, fileOpt.value, $event.target.checked)"
+              @change="toggleSubmissionFile(input, fileOpt.value)"
           />
           <label
               class="form-check-label small"
@@ -409,10 +410,9 @@ export default {
     },
   },
   methods: {
-    // Toggle a file selection for a hook submission input; re-emits with updated selectedFiles + filePatterns.
-    toggleSubmissionFile(input, fileName, checked) {
-      const current = this.submissionFileSelections[input] || [];
-      const next = checked ? [...current, fileName] : current.filter(f => f !== fileName);
+    // Select a single file for a hook submission input (radio); re-emits with updated selectedFiles + filePatterns.
+    toggleSubmissionFile(input, fileName) {
+      const next = [fileName];
       this.submissionFileSelections = {...this.submissionFileSelections, [input]: next};
       const source = this.inputMappings[input];
       if (source) {
