@@ -4,11 +4,7 @@
       Edit cost limit
     </template>
     <template #body>
-      <div v-if="row" class="mb-3 alert alert-light small">
-        <div><strong>Scope:</strong> {{ row.entityLabel }}</div>
-        <div><strong>Limit type:</strong> {{ row.limitTypeLabel }}</div>
-      </div>
-
+    
       <label class="form-label" for="aiBudgetCostLimit">Cost limit ($)</label>
       <input
         id="aiBudgetCostLimit"

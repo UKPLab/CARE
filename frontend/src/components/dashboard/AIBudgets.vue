@@ -221,7 +221,7 @@ export default {
     },
     openReset(row) {
       this.$refs.confirmModal.open(
-        "Reset spending window",
+        "Reset",
         `Reset the spending counter for this cap? Past usage will no longer count toward the limit.`,
         "",
         (confirmed) => {
