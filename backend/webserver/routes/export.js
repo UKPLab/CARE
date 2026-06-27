@@ -36,9 +36,10 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles } = req.body;
         let { userIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
+        const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const supportedExportTypes = new Set(["submissions", "grades"]);
         const { Op } = server.db.Sequelize;
@@ -121,6 +122,7 @@ module.exports = function (server) {
                         hasPrivateInfoRight,
                         userMapping,
                         normalizedGradeFormat,
+                        shouldMergeCsvFiles,
                         archive
                     );
                     break;
@@ -328,28 +330,6 @@ module.exports = function (server) {
     }
 
     /**
-     * Flattens a nested object into dot-notation keys.
-     *
-     * @param {any} value - The input value to flatten.
-     * @param {string} [prefix=""] - The prefix to prepend to nested keys.
-     * @param {Object} [out={}] - The accumulator object.
-     * @returns {Object} The flattened object.
-     */
-    function flattenObject(value, prefix = "", out = {}) {
-        if (value === null || value === undefined) return out;
-        if (typeof value !== "object" || Array.isArray(value)) {
-            out[prefix] = value;
-            return out;
-        }
-
-        for (const [key, child] of Object.entries(value)) {
-            const nextPrefix = prefix ? `${prefix}.${key}` : key;
-            flattenObject(child, nextPrefix, out);
-        }
-        return out;
-    }
-
-    /**
      * Parses an assessment state payload when it is stored as JSON text.
      *
      * @param {string} rawAssessmentState - The raw JSON string from document_data.
@@ -387,6 +367,78 @@ module.exports = function (server) {
         }
 
         return Array.isArray(studyStepConfiguration.rubrics) ? studyStepConfiguration : null;
+    }
+
+    /**
+     * Reads the rubric configuration id from a study step configuration payload.
+     *
+     * @param {Object|null|undefined} studyStepConfiguration - The study step's configuration object.
+     * @returns {number|null} The referenced configuration id or null when unavailable.
+     */
+    function getAssessmentConfigurationId(studyStepConfiguration) {
+        if (!studyStepConfiguration || typeof studyStepConfiguration !== "object") return null;
+        const rawId =
+            studyStepConfiguration.settings?.configurationId ??
+            studyStepConfiguration.configurationId ??
+            null;
+        const parsedId = Number(rawId);
+        return Number.isInteger(parsedId) ? parsedId : null;
+    }
+
+    /**
+     * Returns a user's display name based on private info permissions.
+     *
+     * @param {Object|null} user - The user record.
+     * @param {boolean} hasPrivateInfoRight - Whether real names are allowed.
+     * @returns {string|null} Full name or username depending on permissions.
+     */
+    function getPrivateAwareName(user, hasPrivateInfoRight) {
+        if (!user) return null;
+        if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
+        return user.userName ?? null;
+    }
+
+    /**
+     * Sanitizes a label so it is safe for CSV file names.
+     *
+     * @param {string|number|null|undefined} value - Raw label value.
+     * @returns {string} A safe filename segment.
+     */
+    function sanitizeFileSegment(value) {
+        return sanitizeFolderName(value || "unknown").replace(/\s+/g, "_");
+    }
+
+    /**
+     * Builds a flat CSV row for a grade export record.
+     * The row contains backend export metadata columns followed by
+     * one column per assessment criterion score.
+     *
+     * @param {Object} record - Prepared grade export record.
+     * @returns {Object} A flat object suitable for Papa.unparse.
+     */
+    function buildGradeCsvRow(record) {
+        const criterionScores = record.scores && typeof record.scores === "object" ? record.scores : {};
+        return {
+            projectId: record.projectId,
+            userId: record.userId,
+            userExtId: record.userExtId,
+            userName: record.userName,
+            displayName: record.displayName,
+            submissionId: record.submissionId,
+            submissionExtId: record.submissionExtId,
+            studySessionId: record.studySessionId,
+            studyName: record.studyName,
+            studyStepId: record.studyStepId,
+            studyStepType: record.studyStepType,
+            configurationId: record.configurationId,
+            studyOwner: record.studyOwner,
+            sessionOwner: record.sessionOwner,
+            author: record.author,
+            totalPoints: record.totalPoints,
+            createdAt: record.createdAt,
+            sourceKey: record.sourceKey,
+            ...criterionScores
+        };
     }
 
     /**
@@ -429,6 +481,7 @@ module.exports = function (server) {
         hasPrivateInfoRight,
         userMapping,
         gradeFormat,
+        mergeCsvFiles,
         archive
     ) {
         const { Op } = server.db.Sequelize;
@@ -521,6 +574,8 @@ module.exports = function (server) {
             const graderUser = study ? usersById.get(study.userId) : null;
             const studyStep = studyStepsById.get(row.studyStepId);
             const submission = document.submission;
+            const configurationId = getAssessmentConfigurationId(studyStep?.configuration);
+            const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
 
             const scoreObject = row.value || {};
             const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
@@ -542,14 +597,17 @@ module.exports = function (server) {
                 submissionExtId: submission?.extId ?? null,
                 studySessionId: row.studySessionId ?? null,
                 studyStepId: row.studyStepId ?? null,
+                configurationId,
+                studyName,
                 sessionHash: session?.hash ?? null,
-                studyOwner: graderUser ? `${graderUser.firstName} ${graderUser.lastName}`.trim() : null,
-                sessionOwner: reviewerUser ? `${reviewerUser.firstName} ${reviewerUser.lastName}`.trim() : null,
-                author: ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}`.trim() : null,
-                scores: scoreObject,
+                studyOwner: getPrivateAwareName(graderUser, hasPrivateInfoRight),
+                sessionOwner: getPrivateAwareName(reviewerUser, hasPrivateInfoRight),
+                author: getPrivateAwareName(ownerUser, hasPrivateInfoRight),
+                scores: flatScores,
                 totalPoints,
                 createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-                sourceKey: "assessment_result"
+                sourceKey: "assessment_result",
+                studyStepType: studyStep?.stepType ?? null
             };
 
             if (!recordsByUser.has(ownerUser.id)) recordsByUser.set(ownerUser.id, []);
@@ -569,6 +627,40 @@ module.exports = function (server) {
             usedFolderNames.add(candidate);
             return candidate;
         };
+
+        if (gradeFormat === "csv" && mergeCsvFiles) {
+            const mergedGroups = new Map();
+            for (const user of users) {
+                const userRecords = recordsByUser.get(user.id) || [];
+                for (const record of userRecords) {
+                    const studyNameKey = sanitizeFileSegment(record.studyName || "study");
+                    const configurationIdKey = record.configurationId != null ? record.configurationId : "no_config";
+                    const stepIdKey = record.studyStepId != null ? record.studyStepId : "no_step";
+                    const groupKey = `${studyNameKey}__${stepIdKey}__${configurationIdKey}`;
+                    if (!mergedGroups.has(groupKey)) mergedGroups.set(groupKey, []);
+                    mergedGroups.get(groupKey).push(record);
+                }
+            }
+
+            for (const [groupKey, groupRecords] of mergedGroups.entries()) {
+                const sortedRecords = [...groupRecords].sort((a, b) => {
+                    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return (
+                        (a.studySessionId || 0) - (b.studySessionId || 0) ||
+                        (a.studyStepId || 0) - (b.studyStepId || 0) ||
+                        createdA - createdB
+                    );
+                });
+
+                const csvRows = sortedRecords.map((record) => buildGradeCsvRow(record));
+
+                const [studyNamePart, stepIdPart, configurationIdPart] = groupKey.split("__");
+                const fileName = `${studyNamePart}_${stepIdPart}_${configurationIdPart}.csv`;
+                archive.append(Papa.unparse(csvRows), { name: `grades/${fileName}` });
+            }
+            return;
+        }
 
         for (const user of users) {
             const records = (recordsByUser.get(user.id) || []).sort((a, b) => {
@@ -594,27 +686,7 @@ module.exports = function (server) {
                 const exportedRecords = hashRecords.map(({ sessionHash, ...rest }) => rest);
 
                 if (gradeFormat === "csv") {
-                    const csvRows = exportedRecords.map((record) => {
-                        const flatScores = flattenObject(record.scores, "scores");
-                        return {
-                            projectId: record.projectId,
-                            userId: record.userId,
-                            userExtId: record.userExtId,
-                            userName: record.userName,
-                            displayName: record.displayName,
-                            submissionId: record.submissionId,
-                            submissionExtId: record.submissionExtId,
-                            studySessionId: record.studySessionId,
-                            studyStepId: record.studyStepId,
-                            studyOwner: record.studyOwner,
-                            sessionOwner: record.sessionOwner,
-                            author: record.author,
-                            totalPoints: record.totalPoints,
-                            createdAt: record.createdAt,
-                            sourceKey: record.sourceKey,
-                            ...flatScores
-                        };
-                    });
+                    const csvRows = exportedRecords.map((record) => buildGradeCsvRow(record));
                     archive.append(Papa.unparse(csvRows), { name: `${hashFolder}/scores.csv` });
                 } else {
                     archive.append(JSON.stringify(exportedRecords, null, 2), { name: `${hashFolder}/scores.json` });
