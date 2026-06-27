@@ -58,6 +58,7 @@
         v-model:generate-aliases="generateAliases"
         v-model:faker-seed="fakerSeed"
         v-model:grade-format="gradeFormat"
+        v-model:merge-csv-files="mergeCsvFiles"
         :show-grade-format="dataSelection.exportType === 'grades'"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
@@ -137,7 +138,8 @@ export default {
       submissionSelection: [],
       generateAliases:false,
       fakerSeed: 846569412,
-      gradeFormat: "json"
+      gradeFormat: "json",
+      mergeCsvFiles: false
     };
   },
   computed: {
@@ -351,7 +353,8 @@ export default {
           userIds: selectedUserIds,
           generateAliases: this.generateAliases,
           fakerSeed: this.generateAliases ? this.fakerSeed : null,
-          gradeFormat: this.gradeFormat
+          gradeFormat: this.gradeFormat,
+          mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
         });
         this.$refs.exportStepper.close();
       } catch (error) {
