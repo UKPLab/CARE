@@ -7,6 +7,8 @@ const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
 const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
 
+const ASSESSMENT_RESULT_KEY = "assessment_result";
+
 module.exports = function (server) {
 
     server.app.post('/export/stream', async function (req, res) {
@@ -152,9 +154,14 @@ module.exports = function (server) {
     async function replaceAuthorInZip(filePath, realName, fakeName) {
         const fileData = fs.readFileSync(filePath);
         const zip = await JSZip.loadAsync(fileData);
-        // TODO: What if the realName contains middle name?
-        const [realFirstName = "", realLastName = ""] = String(realName || "").split(/\s+/, 2);
-        const [fakeFirstName = "", fakeLastName = ""] = String(fakeName || "").split(/\s+/, 2);
+        const getFirstAndLastNameTokens = (name) => {
+            const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return ["", ""];
+            if (parts.length === 1) return [parts[0], ""];
+            return [parts[0], parts[parts.length - 1]];
+        };
+        const [realFirstName, realLastName] = getFirstAndLastNameTokens(realName);
+        const [fakeFirstName, fakeLastName] = getFirstAndLastNameTokens(fakeName);
 
         const authorRegex = /\\author\s*\{[^}]*\}/g;
 
@@ -226,7 +233,7 @@ module.exports = function (server) {
      * Handles file renaming based on validation rules and manages directory structures
      * (Student Name/Version/File) within the ZIP archive.
      * @param {Object} server - The server instance providing database models and Sequelize operators.
-     * @param {number|string} projectId - The ID of the project to export submissions from.
+     * @param {number} projectId - The ID of the project to export submissions from.
      * @param {Array<number|string>} userIds - List of user IDs for this export.
      * @param {Array<Object>} users - Full user objects.
      * @param {boolean} shouldGenerateAliases - If true, students' real names are replaced with fake names.
@@ -317,13 +324,14 @@ module.exports = function (server) {
     }
 
     /**
-     * Normalizes a folder name so it is safe to use inside a ZIP archive.
+     * Normalizes a folder name so it can be used as a ZIP path segment without
+     * accidentally introducing invalid filename characters or nested paths.
      *
      * @param {string|number|null|undefined} value - The raw folder name.
      * @returns {string} A sanitized folder name with reserved characters replaced.
      */
     function sanitizeFolderName(value) {
-        return String(value || "unknown")
+        return String(value || "unknown") 
             .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
             .replace(/\s+/g, " ")
             .trim();
@@ -395,6 +403,7 @@ module.exports = function (server) {
     function getPrivateAwareName(user, hasPrivateInfoRight) {
         if (!user) return null;
         if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
+        // Usernames are considered anonymous-enough for exports when real names are restricted.
         return user.userName ?? null;
     }
 
@@ -436,13 +445,13 @@ module.exports = function (server) {
             author: record.author,
             totalPoints: record.totalPoints,
             createdAt: record.createdAt,
-            sourceKey: record.sourceKey,
             ...criterionScores
         };
     }
 
     /**
      * Resolves the display name for a user based on the current export settings.
+     * This wraps getPrivateAwareName with alias support for anonymized exports.
      *
      * @param {Object} user - The user record to display.
      * @param {boolean} shouldGenerateAliases - Whether aliases should replace real names.
@@ -452,8 +461,7 @@ module.exports = function (server) {
      */
     function getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
         if (shouldGenerateAliases) return userMapping[user.id];
-        if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
-        return user.userName;
+        return getPrivateAwareName(user, hasPrivateInfoRight);
     }
 
     /**
@@ -462,7 +470,7 @@ module.exports = function (server) {
      * either JSON or CSV score files depending on the requested format.
      *
      * @param {Object} server - The server instance providing database models and Sequelize operators.
-     * @param {number|string} projectId - The project whose grades should be exported.
+     * @param {number} projectId - The project whose grades should be exported.
      * @param {Array<number|string>} userIds - List of user IDs included in the export.
      * @param {Array<Object>} users - Full user records for the selected users.
      * @param {boolean} shouldGenerateAliases - Whether student names should be anonymized.
@@ -487,13 +495,14 @@ module.exports = function (server) {
         const { Op } = server.db.Sequelize;
         const gradeRows = await server.db.models.document_data.findAll({
             where: {
-                key: "assessment_result",
+                key: ASSESSMENT_RESULT_KEY,
                 deleted: false,
                 studySessionId: { [Op.ne]: null }
             },
             include: [{
                 model: server.db.models.document,
                 as: "document",
+                // required: true turns this include into an inner join.
                 required: true,
                 where: {
                     projectId,
@@ -506,6 +515,7 @@ module.exports = function (server) {
                     required: false
                 }]
             }],
+            // Sort by session first, then step within the session, then creation time within the step.
             order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
         });
 
@@ -553,6 +563,7 @@ module.exports = function (server) {
             : [];
         const configurationsById = new Map(configurations.map((configuration) => [configuration.id, configuration]));
 
+        // The export references study/session owners in addition to the selected document owners.
         const relatedUserIds = [...new Set([
             ...users.map((user) => user.id),
             ...studySessions.map((session) => session.userId),
@@ -567,7 +578,15 @@ module.exports = function (server) {
         for (const row of gradeRows) {
             const document = row.document;
             const ownerUser = usersById.get(document.userId);
-            if (!ownerUser) continue;
+            if (!ownerUser) {
+                console.warn("Skipping grade export row because the document owner could not be resolved.", {
+                    documentId: document.id,
+                    documentUserId: document.userId,
+                    studySessionId: row.studySessionId,
+                    studyStepId: row.studyStepId
+                });
+                continue;
+            }
             const session = sessionsById.get(row.studySessionId);
             const reviewerUser = session ? usersById.get(session.userId) : null;
             const study = session ? studiesById.get(session.studyId) : null;
@@ -606,7 +625,6 @@ module.exports = function (server) {
                 scores: flatScores,
                 totalPoints,
                 createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-                sourceKey: "assessment_result",
                 studyStepType: studyStep?.stepType ?? null
             };
 
