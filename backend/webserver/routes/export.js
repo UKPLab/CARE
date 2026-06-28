@@ -267,6 +267,7 @@ module.exports = function (server) {
 
         const configMap = new Map(configurations.map(c => [c.id, c.content?.rules || null]));
         const submissionMap = new Map(submissions.map(s => [s.id, s]));
+        const usersById = new Map(users.map((user) => [user.id, user]));
 
         const extensionMap = {
             0: ".pdf",
@@ -276,12 +277,13 @@ module.exports = function (server) {
         const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
         for (const submission of submissions) {
-            const student = users.find(u => u.id === submission.userId);
+            const student = usersById.get(submission.userId);
             if (!student) continue;
 
             const validationRules = configMap.get(submission.validationConfigurationId);
-            let folderName = shouldGenerateAliases ? userMapping[student.id] : (hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : `${student.userName}`);
-            folderName = sanitizeFolderName(folderName);
+            const folderName = sanitizeFolderName(
+                getDisplayName(student, shouldGenerateAliases, hasPrivateInfoRight, userMapping)
+            );
 
             for (const doc of submission.documents) {
                 const version = calculateSubmissionVersion(submission, submissionMap);
