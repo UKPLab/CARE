@@ -146,15 +146,19 @@ endif
 	mkdir -p db_dumps; \
 	printf "Decrypt DB before backup? [y/N] "; \
 	read DECRYPT_ANSWER; \
+	OUTFILE="db_dumps/dump_$$(date +%d-%m-%Y_%H_%M_%S).sql"; \
 	if [ "$$DECRYPT_ANSWER" = "y" ] || [ "$$DECRYPT_ANSWER" = "Y" ]; then \
-		echo "[backup] Decrypting DB before dump..."; \
-		(cd backend && npm run --silent decrypt-db); \
-	fi; \
-	docker exec -t $(CONTAINER) pg_dumpall -c -U postgres > db_dumps/dump_$$(date +%d-%m-%Y_%H_%M_%S).sql; \
-	if [ "$$DECRYPT_ANSWER" = "y" ] || [ "$$DECRYPT_ANSWER" = "Y" ]; then \
-		echo "[backup] Re-encrypting DB after dump..."; \
-		(cd backend && npm run --silent encrypt-db); \
-		echo "[backup] Done - dump is plaintext"; \
+		SIDECAR="$(POSTGRES_CAREDB)_backup_$$(date +%s)"; \
+		echo "[backup] Cloning live DB into $$SIDECAR..."; \
+		docker exec $(CONTAINER) psql -q -U postgres -c "CREATE DATABASE $$SIDECAR TEMPLATE $(POSTGRES_CAREDB)"; \
+		echo "[backup] Decrypting clone (live DB stays encrypted)..."; \
+		(cd backend && POSTGRES_CAREDB=$$SIDECAR npm run --silent decrypt-db); \
+		echo "[backup] Dumping plaintext clone..."; \
+		docker exec -t $(CONTAINER) pg_dump -c -C -U postgres $$SIDECAR > $$OUTFILE; \
+		docker exec $(CONTAINER) psql -q -U postgres -c "DROP DATABASE $$SIDECAR"; \
+		echo "[backup] Done - plaintext dump: $$OUTFILE"; \
+	else \
+		docker exec -t $(CONTAINER) pg_dumpall -c -U postgres > $$OUTFILE; \
 	fi
 
 .PHONY: recover_db
