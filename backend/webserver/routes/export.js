@@ -467,59 +467,16 @@ module.exports = function (server) {
     }
 
     /**
-     * Exports assessment results for the selected users as a ZIP archive.
-     * Each selected user gets one or more hash-named folders containing
-     * either JSON or CSV score files depending on the requested format.
+     * Loads the related entities needed to turn raw assessment_result rows into
+     * export-ready grade records. 
      *
-     * @param {Object} server - The server instance providing database models and Sequelize operators.
-     * @param {number} projectId - The project whose grades should be exported.
-     * @param {Array<number|string>} userIds - List of user IDs included in the export.
-     * @param {Array<Object>} users - Full user records for the selected users.
-     * @param {boolean} shouldGenerateAliases - Whether student names should be anonymized.
-     * @param {boolean} hasPrivateInfoRight - Whether the requester may export real names.
-     * @param {Object} userMapping - Map of user IDs to generated aliases.
-     * @param {string} gradeFormat - The output format for grade files, `json` or `csv`.
-     * @param {Object} archive - The active ZIP archive stream.
-     * @returns {Promise<void>} Resolves when all grade files have been appended.
+     * @param {Object} server - The server instance with Sequelize models.
+     * @param {Array<Object>} gradeRows - Assessment result rows with attached documents.
+     * @param {Array<Object>} users - The selected document owners for the export.
+     * @returns {Promise<Object>} Lookup maps for related grade-export entities.
      */
-    async function processGradesExport(
-        server,
-        projectId,
-        userIds,
-        users,
-        shouldGenerateAliases,
-        hasPrivateInfoRight,
-        userMapping,
-        gradeFormat,
-        mergeCsvFiles,
-        archive
-    ) {
+    async function loadGradeExportContext(server, gradeRows, users) {
         const { Op } = server.db.Sequelize;
-        const gradeRows = await server.db.models.document_data.findAll({
-            where: {
-                key: ASSESSMENT_RESULT_KEY,
-                deleted: false,
-                studySessionId: { [Op.ne]: null }
-            },
-            include: [{
-                model: server.db.models.document,
-                as: "document",
-                // required: true turns this include into an inner join.
-                required: true,
-                where: {
-                    projectId,
-                    userId: { [Op.in]: userIds },
-                    deleted: false
-                },
-                include: [{
-                    model: server.db.models.submission,
-                    as: "submission",
-                    required: false
-                }]
-            }],
-            // Sort by session first, then step within the session, then creation time within the step.
-            order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
-        });
 
         const sessionIds = [...new Set(gradeRows.map((row) => row.studySessionId).filter(Boolean))];
         const studySessions = sessionIds.length > 0
@@ -575,6 +532,78 @@ module.exports = function (server) {
             ? await server.db.models.user.findAll({ where: { id: { [Op.in]: relatedUserIds } }, raw: true })
             : [];
         const usersById = new Map(relatedUsers.map((user) => [user.id, user]));
+
+        return {
+            sessionsById,
+            studiesById,
+            studyStepsById,
+            configurationsById,
+            usersById
+        };
+    }
+
+    /**
+     * Exports assessment results for the selected users as a ZIP archive.
+     * Each selected user gets one or more hash-named folders containing
+     * either JSON or CSV score files depending on the requested format.
+     *
+     * @param {Object} server - The server instance providing database models and Sequelize operators.
+     * @param {number} projectId - The project whose grades should be exported.
+     * @param {Array<number|string>} userIds - List of user IDs included in the export.
+     * @param {Array<Object>} users - Full user records for the selected users.
+     * @param {boolean} shouldGenerateAliases - Whether student names should be anonymized.
+     * @param {boolean} hasPrivateInfoRight - Whether the requester may export real names.
+     * @param {Object} userMapping - Map of user IDs to generated aliases.
+     * @param {string} gradeFormat - The output format for grade files, `json` or `csv`.
+     * @param {Object} archive - The active ZIP archive stream.
+     * @returns {Promise<void>} Resolves when all grade files have been appended.
+     */
+    async function processGradesExport(
+        server,
+        projectId,
+        userIds,
+        users,
+        shouldGenerateAliases,
+        hasPrivateInfoRight,
+        userMapping,
+        gradeFormat,
+        mergeCsvFiles,
+        archive
+    ) {
+        const { Op } = server.db.Sequelize;
+        const gradeRows = await server.db.models.document_data.findAll({
+            where: {
+                key: ASSESSMENT_RESULT_KEY,
+                deleted: false,
+                studySessionId: { [Op.ne]: null }
+            },
+            include: [{
+                model: server.db.models.document,
+                as: "document",
+                // required: true turns this include into an inner join.
+                required: true,
+                where: {
+                    projectId,
+                    userId: { [Op.in]: userIds },
+                    deleted: false
+                },
+                include: [{
+                    model: server.db.models.submission,
+                    as: "submission",
+                    required: false
+                }]
+            }],
+            // Sort by session first, then step within the session, then creation time within the step.
+            order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
+        });
+
+        const {
+            sessionsById,
+            studiesById,
+            studyStepsById,
+            configurationsById,
+            usersById
+        } = await loadGradeExportContext(server, gradeRows, users);
 
         const recordsByUser = new Map();
         for (const row of gradeRows) {
