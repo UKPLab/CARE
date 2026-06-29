@@ -188,7 +188,9 @@
         if (!this.previewMode || !this.templateSupportsPlaceholderPreview) {
           return "";
         }
-        return buildExamplePreviewHtml(this.lastEditorHtml, this.placeholderPreviewList);
+        return buildExamplePreviewHtml(this.lastEditorHtml, this.placeholderPreviewList, {
+          bracketOnly: this.template?.type === 8,
+        });
       },
       editorOptions() {
         const toolsMap = {

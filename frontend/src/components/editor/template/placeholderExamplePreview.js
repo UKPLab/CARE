@@ -1,9 +1,11 @@
 /**
  * Build HTML preview for template placeholders using DB example strings only.
- * Replaces literal ~key~ tokens in Quill output HTML with example text.
+ * Replaces ~key~ and ~key[N]~ tokens in Quill output HTML with example text.
  *
  * @author Mohammad Elwan
  */
+
+import { applyPlaceholderReplacements } from "@/components/editor/template/placeholderTokens.js";
 
 /**
  * Map API rows to the minimal shape needed for example preview substitution.
@@ -40,29 +42,32 @@ export function escapeHtmlForPreview(value) {
     .replace(/"/g, "&quot;");
 }
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /**
- * Replace ~placeholderKey~ in Quill HTML with escaped placeholderExample values.
+ * Replace placeholder tokens in Quill HTML with escaped placeholderExample values.
+ *
+ * @param {string} editorRootInnerHtml - Quill root innerHTML
+ * @param {Object[]} placeholders - Rows with id (base key) and example
+ * @param {Object} [options] - Options
+ * @param {boolean} [options.bracketOnly] - When true, ignore legacy ~key~ tokens (default: false)
+ * @returns {string} Preview HTML with example text substituted for known tokens
  */
-export function buildExamplePreviewHtml(editorRootInnerHtml, placeholders) {
+export function buildExamplePreviewHtml(editorRootInnerHtml, placeholders, options = {}) {
   if (!editorRootInnerHtml || !Array.isArray(placeholders) || placeholders.length === 0) {
     return editorRootInnerHtml || "";
   }
 
-  const sorted = [...placeholders].sort((a, b) => (b.text || "").length - (a.text || "").length);
+  const { bracketOnly = false } = options;
+  const examplesByKey = Object.fromEntries(
+    placeholders.map((ph) => [ph.id, ph.example])
+  );
 
-  let html = editorRootInnerHtml;
-  for (const ph of sorted) {
-    const token = ph.text;
-    if (!token) {
-      continue;
+  return applyPlaceholderReplacements(editorRootInnerHtml, (baseKey, index) => {
+    if (bracketOnly && index == null) {
+      return undefined;
     }
-    const replacement = escapeHtmlForPreview(ph.example);
-    const re = new RegExp(escapeRegex(token), "g");
-    html = html.replace(re, replacement);
-  }
-  return html;
+    if (!baseKey || !Object.prototype.hasOwnProperty.call(examplesByKey, baseKey)) {
+      return undefined;
+    }
+    return escapeHtmlForPreview(examplesByKey[baseKey]);
+  });
 }
