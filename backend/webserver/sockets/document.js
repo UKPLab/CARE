@@ -845,8 +845,7 @@ class DocumentSocket extends Socket {
      * Access is granted when the assignment is open and the caller is any of:
      * - a global admin,
      * - the assignment owner,
-     * - a user with `frontend.dashboard.assignments.edit` (same right used for editing assignments in the dashboard),
-     * - a user linked to the assignment via `assignment_share` (direct user share or role share).
+     * - a user with `frontend.dashboard.assignments.edit` (same right used for editing assignments in the dashboard).
      *
      * @param {Object} assignment
      * @param {Object} [options={}]
@@ -861,21 +860,7 @@ class DocumentSocket extends Socket {
 
         if (await this.hasAccess("frontend.dashboard.assignments.edit")) return;
 
-        const userFilter = await this.models["assignment"].getUserFilter(this.userId);
-        const accessibleAssignment = await this.models["assignment"].findOne({
-            where: {
-                id: assignment.id,
-                deleted: false,
-                ...userFilter,
-            },
-            attributes: ["id"],
-            raw: true,
-            transaction: options.transaction,
-        });
-
-        if (!accessibleAssignment) {
-            throw new Error("You do not have permission to import metadata for this assignment.");
-        }
+        throw new Error("You do not have permission to import metadata for this assignment.");
     }
 
     /**
