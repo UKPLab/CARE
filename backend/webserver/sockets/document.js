@@ -842,6 +842,12 @@ class DocumentSocket extends Socket {
     /**
      * Ensure the caller may import metadata for the given assignment.
      *
+     * Access is granted when the assignment is open and the caller is any of:
+     * - a global admin,
+     * - the assignment owner,
+     * - a user with `frontend.dashboard.assignments.edit` (same right used for editing assignments in the dashboard),
+     * - a user linked to the assignment via `assignment_share` (direct user share or role share).
+     *
      * @param {Object} assignment
      * @param {Object} [options={}]
      */
@@ -1050,9 +1056,23 @@ class DocumentSocket extends Socket {
     /**
      * Build a metadata import plan for one assignment target.
      *
+     * Validates caller access, normalizes mappings, and resolves uploaded rows to
+     * submission documents without writing metadata.
+     *
      * @param {Object} data
-     * @param {Object} options
-     * @returns {Promise<Object>}
+     * @param {string} [data.targetType="assignment"] - Import target type; only `"assignment"` is supported.
+     * @param {number} data.assignmentId - Assignment whose submission documents receive metadata.
+     * @param {Object} data.primaryKeyMapping - How uploaded rows are matched to submission owners.
+     * @param {string} data.primaryKeyMapping.sourceField - Column/key from each uploaded row.
+     * @param {"extId"|"email"} data.primaryKeyMapping.targetField - Submission-owner field to match against.
+     * @param {Object[]} data.mappings - Field mappings from uploaded rows to document `metaKey` values.
+     * @param {string} data.mappings[].sourceField - Source column/key in each uploaded row.
+     * @param {string} data.mappings[].metaKey - Target metadata key written on matched documents.
+     * @param {Object[]} data.rows - Parsed metadata rows from the uploaded file.
+     * @param {string} [data.fileName] - Original upload filename stored as metadata provenance.
+     * @param {Object} [options={}]
+     * @param {Object} [options.transaction] - Sequelize transaction passed to DB reads.
+     * @returns {Promise<Object>} Import plan with counts plus `matched`, `unmatched`, `skipped`, and `overwritten` details.
      */
     async buildMetadataImportPlan(data, options = {}) {
         const targetType = data.targetType || "assignment";
@@ -1069,6 +1089,8 @@ class DocumentSocket extends Socket {
         if (!assignment) {
             throw new Error(`Assignment with id ${assignmentId} not found`);
         }
+
+        // Check if caller has the right to import metadata
         await this.assertMetadataImportAccess(assignment, options);
 
         const primaryKeyMapping = this.normalizePrimaryKeyMapping(data.primaryKeyMapping);
@@ -1296,9 +1318,11 @@ class DocumentSocket extends Socket {
     /**
      * Preview metadata import without mutating documents.
      *
-     * @param {Object} data
-     * @param {Object} options
-     * @returns {Promise<Object>}
+     * Authorization is enforced inside `buildMetadataImportPlan`.
+     *
+     * @param {Object} data - Same payload as `buildMetadataImportPlan`.
+     * @param {Object} [options={}]
+     * @returns {Promise<Object>} Summary counts only (no `matched` / `unmatched` row details).
      */
     async previewMetadataImport(data, options = {}) {
         const plan = await this.buildMetadataImportPlan(data, options);
@@ -1315,9 +1339,11 @@ class DocumentSocket extends Socket {
     /**
      * Import metadata rows for existing submissions in one assignment.
      *
-     * @param {Object} data
-     * @param {Object} options
-     * @returns {Promise<Object>}
+     * Authorization is enforced inside `buildMetadataImportPlan`.
+     *
+     * @param {Object} data - Same payload as `buildMetadataImportPlan`.
+     * @param {Object} [options={}]
+     * @returns {Promise<Object>} Import summary counts plus unmatched, skipped, and overwritten row details.
      */
     async importMetadata(data, options = {}) {
         const plan = await this.buildMetadataImportPlan(data, options);
