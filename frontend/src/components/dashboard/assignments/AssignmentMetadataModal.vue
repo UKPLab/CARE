@@ -288,6 +288,9 @@ export default {
     canViewAllAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.viewAll");
     },
+    canEditAssignments() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.edit");
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -297,7 +300,7 @@ export default {
       }
 
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || Boolean(assignment.public)
+        (assignment) => assignment.userId === this.userId || this.canEditAssignments
       ) || [];
     },
     selectedAssignment() {

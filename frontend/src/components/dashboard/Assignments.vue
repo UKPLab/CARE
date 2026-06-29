@@ -166,6 +166,7 @@ export default {
         },
         {
           icon: "upload",
+          filter: [{ key: "canEditAssignment", value: true }],
           options: {
             iconOnly: true,
             specifiers: {
