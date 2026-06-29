@@ -169,7 +169,6 @@
           </div>
         </div>
 
-        <!-- TODO: Metadata presets, not sure what options are common here, to be discussed -->
         <datalist id="metadata-key-presets">
           <option value="topic"></option>
           <option value="category"></option>
@@ -539,7 +538,18 @@ export default {
         Papa.parse(file, {
           header: true,
           skipEmptyLines: true,
-          complete: ({ data, meta }) => {
+          complete: ({ data, meta, errors }) => {
+            if (Array.isArray(errors) && errors.length > 0) {
+              const summarizedErrors = errors
+                .slice(0, 3)
+                .map((entry) => {
+                  const rowInfo = Number.isInteger(entry?.row) ? `row ${entry.row + 1}` : "unknown row";
+                  return `${rowInfo}: ${entry?.message || "Malformed CSV content."}`;
+                })
+                .join(" | ");
+              reject(new Error(`Failed to parse CSV. ${summarizedErrors}`));
+              return;
+            }
             resolve({
               rows: data.filter((row) => row && typeof row === "object"),
               fields: meta.fields || [],
@@ -622,6 +632,10 @@ export default {
       });
     },
     executeImport() {
+      // setWaiting controls UI state only; this guard prevents duplicate socket emits
+      // while the same request is already in-flight.
+      // lastImportedSignature avoids re-importing the same unchanged payload when users
+      // revisit the Result step after a successful run.
       if (this.isImportRunning || this.lastImportedSignature === this.payloadSignature) {
         return;
       }
