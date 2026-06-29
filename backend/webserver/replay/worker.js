@@ -34,7 +34,7 @@ function emitWithTimeout(client, action, payload, timeoutMs) {
  * @param {number} ackTimeout - Max wait time in ms for the server to ack each trace (default 2000)
  * @returns {Promise<Object>} Results with pass/fail counts, errors, latencies, and DB changes
  */
-async function replayUserTraces(server, user, traces, serverUrl, timingMode, ackTimeout = 2000) {
+async function replayUserTraces(server, user, traces, serverUrl, timingMode, ackTimeout = 2000, onProgress = null) {
     const results = {
         userId: user.id,
         userName: user.userName,
@@ -121,6 +121,14 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
                     message: err.message,
                     dbChanges: [],
                 });
+            }
+
+            if (onProgress) {
+                try {
+                    onProgress();
+                } catch (e) {
+                    // progress reporting must never break replay
+                }
             }
         }
     } finally {

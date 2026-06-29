@@ -154,6 +154,30 @@ class ReplayerSocket extends Socket {
         const allResults = [];
         const N = pool.sessions.length;
 
+        // Total traces replayed across the whole run, for fine-grained progress.
+        // One pool pass replays the sum of every session's traces; iteration K
+        // runs K passes, so the grand total is that sum times (1+2+...+max).
+        const tracesPerPass = pool.sessions.reduce((sum, s) => sum + s.traces.length, 0);
+        const totalTraces = tracesPerPass * (maxIterations * (maxIterations + 1) / 2);
+
+        // Emit progress per trace, but throttle to once per whole-percent change
+        // so a large run doesn't flood the admin socket with thousands of events.
+        let completedTraces = 0;
+        let lastPct = -1;
+        const onTraceProgress = () => {
+            completedTraces++;
+            if (!progressId || totalTraces === 0) return;
+            const pct = Math.floor((completedTraces / totalTraces) * 100);
+            if (pct !== lastPct) {
+                lastPct = pct;
+                this.socket.emit("progressUpdate", {
+                    id: progressId,
+                    current: completedTraces,
+                    total: totalTraces,
+                });
+            }
+        };
+
         for (let level = 1; level <= maxIterations; level++) {
             // Iteration K runs K full copies of the pool. Total sockets = K * N.
             // Sessions are picked with wraparound, so iteration K's list is
@@ -164,22 +188,11 @@ class ReplayerSocket extends Socket {
                 activeSessions.push(pool.sessions[i % N]);
             }
 
-            // Drive the BasicModal progress bar on the admin's socket. current
-            // is the level we're entering, total is the configured ceiling, so
-            // the bar fills as the scaling test climbs toward maxIterations.
-            if (progressId) {
-                this.socket.emit("progressUpdate", {
-                    id: progressId,
-                    current: level,
-                    total: maxIterations,
-                });
-            }
-
             const levelStart = Date.now();
             const levelResults = await Promise.all(
                 activeSessions.map(session => {
                     const user = pool.userMap.get(session.userId);
-                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout)
+                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress)
                         .then(result => ({
                             ...result,
                             sessionKey: session.sessionKey,
