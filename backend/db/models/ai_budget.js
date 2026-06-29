@@ -15,12 +15,12 @@ module.exports = (sequelize, DataTypes) => {
         // when ai_budget rows are sent. Same shape as study_session.autoTable.
         static autoTable = {
             parentTables: [
-                { table: "ai_model",       by: "modelId"     },
-                { table: "ai_model_share", by: "shareId"     },
-                { table: "ai_hook",        by: "hookId"      },
+                { table: "ai_model", by: "modelId" },
+                { table: "ai_model_share", by: "shareId" },
+                { table: "ai_hook", by: "hookId" },
                 { table: "ai_hook_share",  by: "hookShareId" },
-                { table: "study",          by: "studyId"     },
-                { table: "study_step",     by: "studyStepId" },
+                { table: "study", by: "studyId" },
+                { table: "study_step", by: "studyStepId" },
             ],
         };
 
@@ -33,12 +33,12 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         static associate(models) {
-            AiBudget.belongsTo(models["ai_model"],       { foreignKey: "modelId",     as: "model"     });
-            AiBudget.belongsTo(models["ai_model_share"], { foreignKey: "shareId",     as: "share"     });
-            AiBudget.belongsTo(models["ai_hook"],        { foreignKey: "hookId",      as: "hook"      });
+            AiBudget.belongsTo(models["ai_model"], { foreignKey: "modelId", as: "model" });
+            AiBudget.belongsTo(models["ai_model_share"], { foreignKey: "shareId", as: "share" });
+            AiBudget.belongsTo(models["ai_hook"], { foreignKey: "hookId", as: "hook" });
             AiBudget.belongsTo(models["ai_hook_share"],  { foreignKey: "hookShareId", as: "hookShare" });
-            AiBudget.belongsTo(models["study"],          { foreignKey: "studyId",     as: "study"     });
-            AiBudget.belongsTo(models["study_step"],     { foreignKey: "studyStepId", as: "studyStep" });
+            AiBudget.belongsTo(models["study"], { foreignKey: "studyId", as: "study" });
+            AiBudget.belongsTo(models["study_step"], { foreignKey: "studyStepId", as: "studyStep" });
         }
 
         // Walk the FK chain to find which user owns the referenced entity.

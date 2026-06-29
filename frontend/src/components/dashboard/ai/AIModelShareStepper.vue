@@ -242,7 +242,7 @@ export default {
     },
     shareTotalLimitLabel() {
       const value = Number(this.shareForm.costLimit);
-      if (!Number.isFinite(value) || value <= 0) return "";
+      if (!Number.isFinite(value) || value <= 0 || this.activeSelectionIds.length <= 1) return "";
       return `$${(value * this.activeSelectionIds.length).toFixed(2)}`;
     },
     resourceLabelLower() {

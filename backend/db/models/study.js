@@ -199,22 +199,25 @@ module.exports = (sequelize, DataTypes) => {
             required: false,
             default: null,
             advanced: true,
+            size: 4,
             help: "Total AI spend allowed in this study across all participants. Leave empty for no cap."
         }, {
             key: "aiCostLimitPerSession",
-            label: "AI cost limit - per session ($):",
+            label: "Per session ($):",
             type: "number",
             required: false,
             default: null,
             advanced: true,
+            size: 4,
             help: "AI spend allowed in a single session. Leave empty for no per-session cap."
         }, {
             key: "aiCostLimitPerUser",
-            label: "AI cost limit - per participant ($):",
+            label: "Per participant ($):",
             type: "number",
             required: false,
             default: null,
             advanced: true,
+            size: 4,
             help: "AI spend allowed per participant in this study. Leave empty for no per-participant cap."
         },];
 
