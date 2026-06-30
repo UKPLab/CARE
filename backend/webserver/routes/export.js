@@ -356,8 +356,9 @@ module.exports = function (server) {
     }
 
     /**
-     * Resolves the assessment rubric configuration from a study step.
-     * Study steps store a reference (configurationId); rubrics live in the configuration table.
+     * Resolves the assessment rubric configuration referenced by a study step.
+     * Study steps are expected to store only a configurationId; rubric content
+     * is loaded from the configuration table.
      *
      * @param {Object|null|undefined} studyStepConfiguration - The study step's configuration JSON.
      * @param {Map<number, Object>} configurationsById - Loaded configuration records by id.
@@ -375,8 +376,8 @@ module.exports = function (server) {
             const configuration = configurationsById.get(Number(configurationId));
             if (configuration?.content) return configuration.content;
         }
-
-        return Array.isArray(studyStepConfiguration.rubrics) ? studyStepConfiguration : null;
+        
+        return null;
     }
 
     /**
@@ -393,6 +394,51 @@ module.exports = function (server) {
             null;
         const parsedId = Number(rawId);
         return Number.isInteger(parsedId) ? parsedId : null;
+    }
+
+    /**
+     * Builds the stable identity for the single assessment configuration used
+     * by the current grade export.
+     *
+     * @param {number|null} configurationId - Resolved persisted configuration id.
+     * @returns {string|null} Stable identity for the one expected configuration, or null.
+     */
+    function buildCriteriaReferenceKey(configurationId) {
+        if (Number.isInteger(configurationId)) return `configuration:${configurationId}`;
+        return null;
+    }
+
+    /**
+     * Captures the single assessment configuration used by the current grade
+     * export for inclusion in the shared criteria_reference.json sidecar file.
+     *
+     * The first valid configuration becomes the export reference. If another
+     * different configuration is encountered later, the export aborts because
+     * grade exports are expected to use exactly one configuration.
+     *
+     * @param {{ key: string|null, reference: Object|null }} referenceState - Mutable single-reference state.
+     * @param {number|null} configurationId - Resolved persisted configuration id.
+     * @param {Object|null} assessmentConfig - Resolved assessment configuration content.
+     * @returns {void}
+     */
+    function addCriteriaReferenceEntry(referenceState, configurationId, assessmentConfig) {
+        if (!assessmentConfig || typeof assessmentConfig !== "object") return;
+
+        const referenceKey = buildCriteriaReferenceKey(configurationId);
+        if (!referenceKey) return;
+
+        if (!referenceState.reference) {
+            referenceState.key = referenceKey;
+            referenceState.reference = {
+                configurationId: Number.isInteger(configurationId) ? configurationId : null,
+                ...assessmentConfig
+            };
+            return;
+        }
+
+        if (referenceState.key !== referenceKey) {
+            throw new Error("Expected exactly one assessment configuration for grade export, found multiple.");
+        }
     }
 
     /**
@@ -606,6 +652,11 @@ module.exports = function (server) {
         } = await loadGradeExportContext(server, gradeRows, users);
 
         const recordsByUser = new Map();
+        // Grade export currently assumes that all exported rows point to one assessment config.
+        const criteriaReferenceState = {
+            key: null,
+            reference: null
+        };
         for (const row of gradeRows) {
             const document = row.document;
             const ownerUser = usersById.get(document.userId);
@@ -633,6 +684,11 @@ module.exports = function (server) {
             const assessmentConfig = resolveAssessmentConfigurationContent(
                 studyStep?.configuration,
                 configurationsById
+            );
+            addCriteriaReferenceEntry(
+                criteriaReferenceState,
+                configurationId,
+                assessmentConfig
             );
             const assessmentScore = calculateAssessmentScore(assessmentConfig, flatScores);
             const totalPoints = assessmentScore.achieved_points;
@@ -662,6 +718,11 @@ module.exports = function (server) {
             if (!recordsByUser.has(ownerUser.id)) recordsByUser.set(ownerUser.id, []);
             recordsByUser.get(ownerUser.id).push(record);
         }
+
+        archive.append(
+            JSON.stringify(criteriaReferenceState.reference || {}, null, 2),
+            { name: "grades/criteria_reference.json" }
+        );
 
         const usedFolderNames = new Set();
         const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
