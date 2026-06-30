@@ -470,6 +470,11 @@ module.exports = class Socket {
                 rowVisibilityConditions.push({userId});
             }
 
+            // --- Public rows: always visible regardless of ownership or access rights ---
+            if ('public' in model.getAttributes()) {
+                rowVisibilityConditions.push({public: true});
+            }
+
             // --- User-level row filter ---
             if (hasModelUserFilter) {
                 const userFilter = await model.getUserFilter(userId);
