@@ -365,19 +365,11 @@ module.exports = function (server) {
      * @returns {Object|null} Assessment config content (with rubrics) or null.
      */
     function resolveAssessmentConfigurationContent(studyStepConfiguration, configurationsById) {
-        if (!studyStepConfiguration || typeof studyStepConfiguration !== "object") return null;
+        const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
+        if (configurationId === null) return null;
 
-        const configurationId =
-            studyStepConfiguration.settings?.configurationId ??
-            studyStepConfiguration.configurationId ??
-            null;
-
-        if (configurationId != null) {
-            const configuration = configurationsById.get(Number(configurationId));
-            if (configuration?.content) return configuration.content;
-        }
-        
-        return null;
+        const configuration = configurationsById.get(configurationId);
+        return configuration?.content ?? null;
     }
 
     /**
@@ -397,18 +389,6 @@ module.exports = function (server) {
     }
 
     /**
-     * Builds the stable identity for the single assessment configuration used
-     * by the current grade export.
-     *
-     * @param {number|null} configurationId - Resolved persisted configuration id.
-     * @returns {string|null} Stable identity for the one expected configuration, or null.
-     */
-    function buildCriteriaReferenceKey(configurationId) {
-        if (Number.isInteger(configurationId)) return `configuration:${configurationId}`;
-        return null;
-    }
-
-    /**
      * Captures the single assessment configuration used by the current grade
      * export for inclusion in the shared criteria_reference.json sidecar file.
      *
@@ -424,7 +404,7 @@ module.exports = function (server) {
     function addCriteriaReferenceEntry(referenceState, configurationId, assessmentConfig) {
         if (!assessmentConfig || typeof assessmentConfig !== "object") return;
 
-        const referenceKey = buildCriteriaReferenceKey(configurationId);
+        const referenceKey = Number.isInteger(configurationId) ? `configuration:${configurationId}` : null;
         if (!referenceKey) return;
 
         if (!referenceState.reference) {
@@ -453,16 +433,6 @@ module.exports = function (server) {
         if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
         // Usernames are considered anonymous-enough for exports when real names are restricted.
         return user.userName ?? null;
-    }
-
-    /**
-     * Sanitizes a label so it is safe for CSV file names.
-     *
-     * @param {string|number|null|undefined} value - Raw label value.
-     * @returns {string} A safe filename segment.
-     */
-    function sanitizeFileSegment(value) {
-        return sanitizeFolderName(value || "unknown").replace(/\s+/g, "_");
     }
 
     /**
@@ -553,12 +523,8 @@ module.exports = function (server) {
 
         const configurationIds = [...new Set(
             studySteps
-                .map((studyStep) => studyStep.configuration)
-                .filter((cfg) => cfg && typeof cfg === "object")
-                .map((cfg) => cfg.settings?.configurationId ?? cfg.configurationId)
-                .filter((id) => id != null)
-                .map((id) => Number(id))
-                .filter((id) => Number.isInteger(id))
+                .map((studyStep) => getAssessmentConfigurationId(studyStep.configuration))
+                .filter((id) => id !== null)
         )];
         const configurations = configurationIds.length > 0
             ? await server.db.models.configuration.findAll({
@@ -675,14 +641,17 @@ module.exports = function (server) {
             const graderUser = study ? usersById.get(study.userId) : null;
             const studyStep = studyStepsById.get(row.studyStepId);
             const submission = document.submission;
-            const configurationId = getAssessmentConfigurationId(studyStep?.configuration);
+            const studyStepConfiguration = studyStep?.configuration;
+            // configurationId is exported as metadata; assessmentConfig is the rubric content
+            // needed for score calculation and criteria_reference.json.
+            const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
             const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
 
             const scoreObject = row.value || {};
             const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
             const flatScores = buildScoresFromState(assessmentState);
             const assessmentConfig = resolveAssessmentConfigurationContent(
-                studyStep?.configuration,
+                studyStepConfiguration,
                 configurationsById
             );
             addCriteriaReferenceEntry(
@@ -743,7 +712,7 @@ module.exports = function (server) {
             for (const user of users) {
                 const userRecords = recordsByUser.get(user.id) || [];
                 for (const record of userRecords) {
-                    const studyNameKey = sanitizeFileSegment(record.studyName || "study");
+                    const studyNameKey = sanitizeFolderName(record.studyName || "study").replace(/\s+/g, "_");
                     const configurationIdKey = record.configurationId != null ? record.configurationId : "no_config";
                     const stepIdKey = record.studyStepId != null ? record.studyStepId : "no_step";
                     const groupKey = `${studyNameKey}__${stepIdKey}__${configurationIdKey}`;
