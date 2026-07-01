@@ -32,7 +32,7 @@
     <BasicButton
       class="toolbar-toggle-btn"
       :icon="toolbarVisible ? 'chevron-right' : 'tools'"
-      :title="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
+      tooltip="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
       @click="toggleToolbar"
     />
   </div>

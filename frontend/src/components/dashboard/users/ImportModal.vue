@@ -58,7 +58,7 @@
               </div>
               <BasicButton
                 icon="x-circle-fill"
-                title="Clear file"
+                tooltip="Clear file"
                 @click="clearFile"
               />
             </div>

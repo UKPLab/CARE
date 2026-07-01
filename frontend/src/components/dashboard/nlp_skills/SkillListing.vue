@@ -3,13 +3,13 @@
     <div class="btn-group btn-group-sm position-absolute top-0 end-0 px-3 py-3">
       <BasicButton
           class="btn-outline-secondary"
-          title="Copy config"
+          tooltip="Copy config"
           icon="clipboard"
           @click="copyConfig"
       />
       <BasicButton
         class="btn-outline-secondary"
-        title="Download config"
+        tooltip="Download config" 
         icon="cloud-arrow-down"
         @click="downloadConfig"
       />
@@ -17,7 +17,7 @@
         class="btn-outline-secondary"
         :class="commandEditorActive ? 'active' : ''"
         :aria-pressed="commandEditorActive"
-        title="Send command"
+        tooltip="Send command"
         icon="send"
         @click="commandEditorActive=!commandEditorActive"
       />

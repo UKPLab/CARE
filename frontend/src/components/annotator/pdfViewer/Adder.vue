@@ -41,7 +41,7 @@
       v-if="shouldShowExtender"
       class="expand-btn"
       icon="three-dots"
-      title="Expand Adder"
+      tooltip="Expand Adder"
       @click="isExtended=true"
     />
   </div>
