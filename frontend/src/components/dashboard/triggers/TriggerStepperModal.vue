@@ -24,15 +24,43 @@
     </template>
     <template #step-3>
       <BasicForm v-model="triggerForm" :fields="actionSelectFields" />
-      <hr v-if="isPreprocessingAction || actionConfigFields.length" />
-      <TriggerPreprocessingConfig
-        v-if="isPreprocessingAction"
-        v-model="actionData"
-        :assignment-id="eventData.assignmentId"
-        @update:valid="preprocessingConfigValid = $event"
-      />
+      <hr v-if="actionComponentFields.length || actionConfigFields.length" />
+      <template
+        v-for="field in actionComponentFields"
+        :key="field.key || field.type"
+      >
+        <SkillSelector
+          v-if="field.type === 'skillSelector'"
+          :model-value="actionData[field.key]"
+          @update:model-value="updateSkillSelection(field, $event)"
+        />
+        <InputMap
+          v-else-if="field.type === 'inputMap' && actionData[field.skillKey || 'skillName']"
+          :model-value="actionData[field.key]"
+          :skill-name="actionData[field.skillKey || 'skillName']"
+          :study-based="field.studyBased !== false"
+          @update:model-value="updateInputMappings(field, $event)"
+        />
+        <InputFiles
+          v-else-if="field.type === 'inputFiles' && shouldRenderActionComponent(field)"
+          :model-value="actionData[field.key] || {}"
+          :input-mappings="actionData[field.inputMappingsKey || 'inputMappings'] || {}"
+          @update:model-value="updateSelectedFiles(field, $event)"
+          @update:valid="setComponentValidity(field, $event)"
+        />
+        <InputGroup
+          v-else-if="field.type === 'inputGroup' && shouldRenderActionComponent(field)"
+          :model-value="actionData[field.key] || {}"
+          :base-file-parameter="actionData[field.baseFileParameterKey || 'baseFileParameter']"
+          :selected-files="actionData[field.selectedFilesKey || 'selectedFiles'] || {}"
+          :validation-configuration-ids="validationConfigurationIds"
+          @update:model-value="updateBaseFiles(field, $event)"
+          @update:valid="setComponentValidity(field, $event)"
+          @update:validation-configurations="updateValidationConfigurationNames"
+        />
+      </template>
       <BasicForm
-        v-else-if="actionConfigFields.length"
+        v-if="!actionComponentFields.length && actionConfigFields.length"
         v-model="actionData"
         :fields="actionConfigFields"
       />
@@ -80,12 +108,15 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import TriggerPreprocessingConfig from "@/components/dashboard/triggers/TriggerPreprocessingConfig.vue";
+import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
+import InputMap from "@/basic/modal/skills/InputMap.vue";
+import InputFiles from "@/basic/modal/skills/InputFiles.vue";
+import InputGroup from "@/basic/modal/skills/InputGroup.vue";
 
 export default {
   name: "TriggerStepperModal",
   subscribeTable: ["trigger_event", "trigger_action", "project", "template", "assignment", "configuration"],
-  components: { StepperModal, BasicModal, BasicForm, TriggerPreprocessingConfig },
+  components: { StepperModal, BasicModal, BasicForm, SkillSelector, InputMap, InputFiles, InputGroup },
   emits: ["saved"],
   data() {
     return {
@@ -192,7 +223,7 @@ export default {
       triggerForm: {},
       eventData: {},
       actionData: {},
-      preprocessingConfigValid: false,
+      componentValidity: {},
       editingId: null,
       viewModalTitleTemplate: "Trigger: {name}",
       viewFormSchema: [
@@ -242,6 +273,40 @@ export default {
       const schema = this.selectedAction?.configuration?.formSchema || [];
       return schema.map((field) => this.resolveField(field));
     },
+    actionComponentFields() {
+      return this.selectedAction?.configuration?.componentSchema || [];
+    },
+    autoBaseFileParameter() {
+      const inputMappings = this.actionData.inputMappings || {};
+      for (const [paramName, mapping] of Object.entries(inputMappings)) {
+        if (mapping?.requiresTableSelection && ["submission", "document"].includes(mapping.type)) {
+          return paramName;
+        }
+      }
+      return null;
+    },
+    requireValidation() {
+      if (!this.autoBaseFileParameter) return false;
+      return this.actionData.inputMappings?.[this.autoBaseFileParameter]?.type === "submission";
+    },
+    validationConfigurationIds() {
+      const assignmentId = this.eventData.assignmentId;
+      if (!assignmentId) return [];
+      const assignment = this.$store.getters["table/assignment/get"](assignmentId);
+      return assignment?.validationConfigurationId != null
+        ? [assignment.validationConfigurationId]
+        : [];
+    },
+    hasTableBasedParameter() {
+      return Object.values(this.actionData.inputMappings || {}).some(
+        (mapping) => mapping && mapping.requiresTableSelection
+      );
+    },
+    hasValidInputMappings() {
+      const inputMappings = this.actionData.inputMappings || {};
+      const entries = Object.entries(inputMappings).filter(([key]) => key !== "output");
+      return entries.length > 0 && entries.every(([, mapping]) => !!mapping);
+    },
     reviewSummarySections() {
       return [
         {
@@ -281,7 +346,16 @@ export default {
     },
     "triggerForm.triggerActionId"(newVal, oldVal) {
       this.resetStepConfig(oldVal, newVal, "actionData");
-      this.preprocessingConfigValid = false;
+      this.componentValidity = {};
+    },
+    "eventData.assignmentId"(newVal, oldVal) {
+      if (oldVal != null && newVal !== oldVal) {
+        this.updateActionData({
+          baseFiles: {},
+          validationConfigurationNames: {},
+        });
+        this.componentValidity = {};
+      }
     },
   },
   methods: {
@@ -392,8 +466,8 @@ export default {
       );
     },
     isStepActionValid() {
-      if (this.isPreprocessingAction) {
-        return !!this.selectedAction && this.preprocessingConfigValid;
+      if (this.actionComponentFields.length) {
+        return !!this.selectedAction && this.isConfiguredActionValid();
       }
       return this.isStepConfigValid(
         this.selectedAction,
@@ -402,6 +476,138 @@ export default {
         this.actionSelectFields,
         this.actionConfigFields
       );
+    },
+    isConfiguredActionValid() {
+      return this.actionComponentFields.every((field) => {
+        if (field.type === "skillSelector") {
+          return !field.required || this.isFilled(this.actionData[field.key]);
+        }
+
+        if (field.type === "inputMap") {
+          const requiresTableBasedInput = field.requireTableBasedInput !== false;
+          return (
+            this.isFilled(this.actionData[field.skillKey || "skillName"]) &&
+            this.hasValidInputMappings &&
+            (!requiresTableBasedInput || this.hasTableBasedParameter)
+          );
+        }
+
+        if (!this.shouldRenderActionComponent(field)) {
+          if (field.type === "inputGroup" && field.visibleWhen === "requiresValidation") {
+            return !this.requireValidation;
+          }
+          return true;
+        }
+
+        if (field.type === "inputFiles" || field.type === "inputGroup") {
+          return !field.required || this.componentValidity[field.key] === true;
+        }
+
+        return true;
+      });
+    },
+    shouldRenderActionComponent(field) {
+      if (field.visibleWhen === "hasTableBasedInput") {
+        return this.hasTableBasedParameter;
+      }
+      if (field.visibleWhen === "requiresValidation") {
+        return this.requireValidation && this.validationConfigurationIds.length > 0;
+      }
+      if (field.visibleWhen === "hasBaseFileParameter") {
+        return !!this.actionData[field.baseFileParameterKey || "baseFileParameter"];
+      }
+      return true;
+    },
+    updateActionData(values) {
+      this.actionData = {
+        ...this.actionData,
+        ...values,
+      };
+    },
+    updateSkillSelection(field, skillName) {
+      this.updateActionData({
+        [field.key]: skillName,
+        inputMappings: {},
+        selectedFiles: {},
+        baseFileParameter: null,
+        baseFiles: {},
+        skillParameterMappings: null,
+        validationConfigurationNames: {},
+      });
+      this.componentValidity = {};
+    },
+    updateInputMappings(field, inputMappings) {
+      const previousBaseFileParameter = this.actionData.baseFileParameter;
+      const baseFileParameter = this.getBaseFileParameter(inputMappings);
+      const baseFiles = previousBaseFileParameter === baseFileParameter
+        ? this.actionData.baseFiles || {}
+        : {};
+
+      this.updateActionData({
+        [field.key]: inputMappings,
+        baseFileParameter,
+        baseFiles,
+        skillParameterMappings: this.formatSkillParameterMappings(inputMappings, field),
+      });
+
+      if (previousBaseFileParameter !== baseFileParameter) {
+        this.componentValidity = {};
+      }
+    },
+    updateBaseFiles(field, baseFiles) {
+      this.updateActionData({ [field.key]: baseFiles });
+    },
+    updateSelectedFiles(field, selectedFiles) {
+      const inputMapField = this.getInputMapField();
+      this.updateActionData({
+        [field.key]: selectedFiles,
+        skillParameterMappings: this.formatSkillParameterMappings(
+          this.actionData[field.inputMappingsKey || "inputMappings"],
+          inputMapField,
+          selectedFiles
+        ),
+      });
+    },
+    updateValidationConfigurationNames(validationConfigurationNames) {
+      this.updateActionData({ validationConfigurationNames });
+    },
+    setComponentValidity(field, value) {
+      this.componentValidity = {
+        ...this.componentValidity,
+        [field.key]: value,
+      };
+    },
+    getBaseFileParameter(inputMappings) {
+      for (const [paramName, mapping] of Object.entries(inputMappings || {})) {
+        if (mapping?.requiresTableSelection && ["submission", "document"].includes(mapping.type)) {
+          return paramName;
+        }
+      }
+      return null;
+    },
+    getInputMapField() {
+      return this.actionComponentFields.find((field) => field.type === "inputMap") || {};
+    },
+    formatSkillParameterMappings(inputMappings, field = {}, selectedFiles = this.actionData.selectedFiles || {}) {
+      const mappings = {};
+      for (const [paramName, mapping] of Object.entries(inputMappings || {})) {
+        if (!mapping || paramName === "output") continue;
+
+        if (mapping.requiresTableSelection) {
+          mappings[paramName] = {
+            table: mapping.table,
+            ...(field.tableSelectionSource === "eventContext"
+              ? { fromContext: field.contextKey || "submissionId" }
+              : { fileIds: (selectedFiles[paramName] || []).map((file) => file.id) }),
+          };
+        } else {
+          mappings[paramName] = {
+            table: mapping.table || "configuration",
+            fileIds: [mapping.configurationId],
+          };
+        }
+      }
+      return Object.keys(mappings).length > 0 ? mappings : null;
     },
     resolveField(field, context = {}) {
       if (field.options) return field;
@@ -467,7 +673,7 @@ export default {
       this.triggerForm = this.defaultTriggerForm(projectId);
       this.eventData = {};
       this.actionData = {};
-      this.preprocessingConfigValid = false;
+      this.componentValidity = {};
       this.$refs.stepper.open();
     },
     openView(row) {
@@ -497,6 +703,7 @@ export default {
       };
       this.eventData = config.event || {};
       this.actionData = config.action || {};
+      this.componentValidity = {};
       this.$refs.stepper.open();
     },
     save() {

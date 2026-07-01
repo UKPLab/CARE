@@ -71,6 +71,31 @@ const triggerActions = [
         'Runs an NLP skill on the uploaded submission with the same skill, input mapping, and base file options as Dashboard → Submissions → Apply Skills. Results are stored in document_data.',
       requires: ['submissionId'],
       handler: 'nlp_preprocess',
+      componentSchema: [
+        {
+          type: 'skillSelector',
+          key: 'skillName',
+          required: true,
+        },
+        {
+          type: 'inputMap',
+          key: 'inputMappings',
+          skillKey: 'skillName',
+          studyBased: false,
+          required: true,
+          requireTableBasedInput: true,
+          tableSelectionSource: 'eventContext',
+          contextKey: 'submissionId',
+        },
+        {
+          type: 'inputGroup',
+          key: 'baseFiles',
+          baseFileParameterKey: 'baseFileParameter',
+          selectedFilesKey: 'selectedFiles',
+          visibleWhen: 'requiresValidation',
+          required: true,
+        },
+      ],
     },
   },
 ];
