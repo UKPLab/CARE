@@ -5,10 +5,10 @@
  * The current key is read from backend/encryption.key.
  *
  * Usage (via Makefile):
- *   make rotate-key NEW_KEY=<64-char hex>
+ *   make change_encryption_key NEW_KEY=<64-char hex>
  *
  * Or directly:
- *   cd backend && NEW_KEY=<hex> node scripts/rotateEncryptionKey.js
+ *   cd backend && NEW_KEY=<hex> node scripts/changeEncryptionKey.js
  *
  * On success the new key is written to backend/encryption.key.
  */
