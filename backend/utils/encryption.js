@@ -162,6 +162,16 @@ function parseKey(keyInput) {
 }
 
 /**
+ * HMAC-SHA256 of plaintext using the encryption key.
+ * Use this as the value for a {field}Hash column when the plaintext field is encrypted but must remain uniquely queryable.
+ * Keyed hash prevents offline enumeration (unlike plain SHA256).
+ */
+function hashForUnique(plaintext) {
+    if (plaintext === null || plaintext === undefined) return null;
+    return crypto.createHmac('sha256', getKey()).update(String(plaintext)).digest('hex');
+}
+
+/**
  * Re-encrypt a single value from the current key (read from file) to newKey.
  * decrypt() uses the file key, which is still the old key at rotation time.
  *
@@ -205,16 +215,17 @@ async function _applyToAllModels(db, transformFn) {
         const pk = Model.primaryKeyAttribute || 'id';
 
         const transaction = await sequelize.transaction();
+        const fieldNames = fields.map(f => typeof f === 'string' ? f : f.name);
         try {
             const rows = await sequelize.query(
-                `SELECT "${pk}", ${fields.map(f => `"${f}"`).join(', ')} FROM "${tableName}"`,
+                `SELECT "${pk}", ${fieldNames.map(f => `"${f}"`).join(', ')} FROM "${tableName}"`,
                 { type: sequelize.QueryTypes.SELECT, transaction }
             );
 
             let updated = 0;
             for (const row of rows) {
                 const updates = {};
-                for (const field of fields) {
+                for (const field of fieldNames) {
                     if (row[field] != null) {
                         updates[field] = transformFn(row[field]);
                     }
@@ -313,4 +324,67 @@ function generateEncryptionKey() {
     return crypto.randomBytes(32).toString('hex');
 }
 
-module.exports = { encrypt, decrypt, initializeEncryptionKey, getKey, generateEncryptionKey, reEncryptValue, reEncryptAllModels, decryptAllModels, encryptAllModels, syncEncryptionState };
+/**
+ * For each model with uniqueEncryptedFields, ensures the {field}Hash column exists in the DB,
+ * back-fills HMAC hashes for any rows missing them, then adds a unique constraint.
+ * Safe to call on every startup — all steps are idempotent.
+ *
+ * @param {object} db  The db object exported from backend/db
+ */
+async function syncHashColumns(db) {
+    if (process.env.ENCRYPTION_ENABLED !== 'true') return;
+    const { DataTypes } = require('sequelize');
+    const { sequelize, models } = db;
+    const qi = sequelize.getQueryInterface();
+
+    for (const [, Model] of Object.entries(models)) {
+        const uniqueFields = (Model.options?.encryptedFields || [])
+            .filter(f => typeof f !== 'string' && f.unique)
+            .map(f => f.name);
+        if (!uniqueFields.length) continue;
+
+        const tableName = Model.tableName;
+        let tableDesc;
+        try {
+            tableDesc = await qi.describeTable(tableName);
+        } catch {
+            continue; // table doesn't exist yet (migrations haven't run)
+        }
+
+        const pk = Model.primaryKeyAttribute || 'id';
+
+        for (const fieldName of uniqueFields) {
+            const hashField = `${fieldName}Hash`;
+            const isNew = !tableDesc[hashField];
+
+            if (isNew) {
+                await qi.addColumn(tableName, hashField, { type: DataTypes.STRING, allowNull: true, unique: true });
+            }
+
+            // Back-fill rows where the hash is missing
+            const rows = await sequelize.query(
+                `SELECT "${pk}", "${fieldName}" FROM "${tableName}" WHERE "${hashField}" IS NULL AND "${fieldName}" IS NOT NULL`,
+                { type: sequelize.QueryTypes.SELECT }
+            );
+            for (const row of rows) {
+                const plaintext = decrypt(row[fieldName]);
+                await sequelize.query(
+                    `UPDATE "${tableName}" SET "${hashField}" = :hash WHERE "${pk}" = :id`,
+                    { replacements: { hash: hashForUnique(plaintext), id: row[pk] } }
+                );
+            }
+
+            if (isNew) {
+                try {
+                    await qi.addConstraint(tableName, {
+                        fields: [hashField],
+                        type: 'unique',
+                        name: `${tableName}_${hashField}_unique`,
+                    });
+                } catch { /* constraint already exists */ }
+            }
+        }
+    }
+}
+
+module.exports = { encrypt, decrypt, hashForUnique, syncHashColumns, initializeEncryptionKey, getKey, generateEncryptionKey, reEncryptValue, reEncryptAllModels, decryptAllModels, encryptAllModels, syncEncryptionState };

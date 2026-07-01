@@ -597,8 +597,8 @@ module.exports = (sequelize, DataTypes) => {
             sequelize,
             modelName: "user",
             tableName: "user",
-            //Keys that require encryptian
-            encryptedFields: ['firstName', 'lastName', 'email', 'salt', 'initialPassword', 'twoFactorOtp', 'totpSecret', 'orcidId', 'ldapUsername', 'samlNameId'],
+            //Keys that require encryption unique set to false by default
+            encryptedFields: ['firstName', 'lastName', { name: 'email', unique: true }, 'salt', 'initialPassword', 'twoFactorOtp', 'totpSecret', 'orcidId', 'ldapUsername', 'samlNameId'],
             hooks: {
                 afterCreate: async (user, options) => {
                     const {context, transaction} = options;

@@ -1,4 +1,5 @@
-const { encrypt, decrypt } = require('../utils/encryption');
+const { DataTypes } = require('sequelize');
+const { encrypt, decrypt, hashForUnique } = require('../utils/encryption');
 
 /**
  * Merge a new hook function into a model's hooks options object.
@@ -22,63 +23,65 @@ function addHook(hooks, hookName, fn) {
 /**
  * Plugin to add generic field-level encryption to any model that declares encryptedFields.
  *
- * Usage in a model's User.init() options:
- *   encryptedFields: ['firstName', 'lastName', 'email']
+ * Each entry in encryptedFields can be a plain string or an object:
+ *   encryptedFields: ['firstName', { name: 'email', unique: true }]
  *
- * The plugin automatically injects beforeCreate, beforeUpdate, and afterFind hooks
- * that encrypt/decrypt those fields transparently. No per-model hook code needed.
+ * When unique: true, the plugin automatically:
+ *   - Adds a {name}Hash column (STRING, unique) to the model attributes
+ *   - Writes an HMAC-SHA256 of the plaintext into {name}Hash on every create/update
+ *   - The DB migration must still add the {name}Hash column; the model definition is handled here
  *
- * @param {Object} options - The model options passed to Model.init()
+ * @param {Object} options    - The model options passed to Model.init()
+ * @param {Object} attributes - The model attributes passed to Model.init() — mutated to inject hash columns
  */
-function addEncryptionHooks(options) {
-    const isEncryptionEnabled = process.env.ENCRYPTION_ENABLED === 'true';
-    if (!isEncryptionEnabled) return; // skip adding hooks if encryption is disabled
-    const fields = options.encryptedFields;
-    if (!fields || !Array.isArray(fields) || fields.length === 0) return;
+function addEncryptionHooks(options, attributes = {}) {
+    if (process.env.ENCRYPTION_ENABLED !== 'true') return;
+    const rawFields = options.encryptedFields;
+    if (!rawFields?.length) return;
+
+    const parsed = rawFields.map(f => typeof f === 'string' ? { name: f, unique: false } : { name: f.name, unique: !!f.unique });
+    const fieldNames = parsed.map(f => f.name);
+    const uniqueFields = new Set(parsed.filter(f => f.unique).map(f => f.name));
+
+    // Auto-inject {name}Hash into model attributes for unique encrypted fields
+    for (const name of uniqueFields) {
+        const hashField = `${name}Hash`;
+        if (!attributes[hashField]) {
+            attributes[hashField] = { type: DataTypes.STRING, unique: true };
+        }
+    }
 
     if (!options.hooks) options.hooks = {};
 
+    // Hash plaintext then encrypt — must happen in this order
+    const encryptField = (instance, name) => {
+        const val = instance[name];
+        if (val == null) return;
+        if (uniqueFields.has(name)) instance[`${name}Hash`] = hashForUnique(val);
+        instance[name] = encrypt(val);
+    };
+
     // Encrypt on INSERT
     addHook(options.hooks, 'beforeCreate', (instance) => {
-        for (const field of fields) {
-            const val = instance[field];
-            if (val !== null && val !== undefined) {
-                instance[field] = encrypt(val);
-            }
-        }
+        for (const name of fieldNames) encryptField(instance, name);
     });
 
     addHook(options.hooks, 'beforeUpsert', (instance) => {
-        for (const field of fields) {
-            const val = instance[field];
-            if (val !== null && val !== undefined) {
-                instance[field] = encrypt(val);
-            }
-        }
+        for (const name of fieldNames) encryptField(instance, name);
     });
 
     // Encrypt changed fields on UPDATE
     addHook(options.hooks, 'beforeUpdate', (instance) => {
-        for (const field of fields) {
-            if (instance.changed(field)) {
-                const val = instance[field];
-                if (val !== null && val !== undefined) {
-                    instance[field] = encrypt(val);
-                }
-            }
+        for (const name of fieldNames) {
+            if (instance.changed(name)) encryptField(instance, name);
         }
     });
 
     // Encrypt on bulk INSERT
-    addHook(options.hooks, 'beforeBulkCreate', (options) => {
-        const records = options.records || options.instances || [];
+    addHook(options.hooks, 'beforeBulkCreate', (opts) => {
+        const records = opts.records || opts.instances || [];
         for (const instance of records) {
-            for (const field of fields) {
-                const val = instance[field];
-                if (val !== null && val !== undefined) {
-                    instance[field] = encrypt(val);
-                }
-            }
+            for (const name of fieldNames) encryptField(instance, name);
         }
     });
 
@@ -88,11 +91,9 @@ function addEncryptionHooks(options) {
         const rows = Array.isArray(result) ? result : [result];
         for (const row of rows) {
             if (!row || typeof row !== 'object') continue;
-            for (const field of fields) {
-                const val = row[field];
-                if (val !== null && val !== undefined) {
-                    row[field] = decrypt(val);
-                }
+            for (const name of fieldNames) {
+                const val = row[name];
+                if (val != null) row[name] = decrypt(val);
             }
         }
     });
@@ -107,7 +108,7 @@ function GlobalChangeTrackingPlugin(sequelize) {
     // Register global hooks for all models
     sequelize.addHook('beforeDefine', (attributes, options) => {
         // Inject encryption hooks for models that declare encryptedFields
-        addEncryptionHooks(options);
+        addEncryptionHooks(options, attributes);
 
         // Add hooks to the model
         const globalHooks = {
@@ -183,4 +184,4 @@ function TimeoutTrackerPlugin(instance) {
 module.exports = {
     GlobalChangeTrackingPlugin,
     TimeoutTrackerPlugin,
-};  
+};

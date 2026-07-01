@@ -20,7 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/generic");
-const { initializeEncryptionKey, syncEncryptionState } = require("../utils/encryption");
+const { initializeEncryptionKey, syncEncryptionState, syncHashColumns } = require("../utils/encryption");
 
 /**
  * Defines Express Webserver of Content Server
@@ -482,6 +482,7 @@ module.exports = class Server {
     async start(port) {
         this.logger.debug("Start Webserver...");
         await syncEncryptionState(this.db);
+        await syncHashColumns(this.db);
         this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
