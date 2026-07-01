@@ -28,7 +28,7 @@ class AnnotationSocket extends Socket {
     async sendAnnotation(data, options) {
         const anno = await this.models['annotation'].getById(data.annotationId);
 
-        if (!this.checkDocumentAccess(anno.documentId)) {
+        if (!(await this.checkDocumentAccess(anno.documentId))) {
             throw new Error("You have no permission to change this annotation");
         }
 

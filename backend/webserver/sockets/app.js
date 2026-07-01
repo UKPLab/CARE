@@ -69,7 +69,7 @@ class AppSocket extends Socket {
 
 
         if (("id" in data.data && data.data.id !== 0) &&
-            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data)) {
+            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data || 'enabled' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
@@ -415,7 +415,7 @@ class AppSocket extends Socket {
      */
     async unsubscribeAppData(data, options) {
         // remove subscription from the list
-        if (this.socket.appDataSubscriptions["ids"][data].table) {
+        if (this.socket.appDataSubscriptions["ids"][data]?.table) {
             const tableName = this.socket.appDataSubscriptions["ids"][data].table;
             delete this.socket.appDataSubscriptions["ids"][data];
             this.socket.appDataSubscriptions["tables"][tableName].delete(data);

@@ -1,4 +1,5 @@
 const RPC = require("../RPC.js");
+const {normalizeAiHookOutputMode} = require("../../utils/aiHookOutputModes.js");
 
 const ACK_TIMEOUT_BUFFER_MS = 5000;
 
@@ -30,6 +31,7 @@ module.exports = class LiteLLMRPC extends RPC {
      * @param {Object} data - Arbitrary params forwarded to litellm.completion()
      * @param {string} data.model - Model identifier (provider-specific, e.g. "gpt-4o", "ollama/llama3")
      * @param {Array<Object>} data.messages - OpenAI-format messages array
+     * @param {number} [data.outputMode] - Internal CARE output mode. `1` repairs JSON content in the Python bridge.
      * @returns {Promise<Object>} LiteLLM response with choices and usage
      * @throws {Error} If the RPC service call fails
      */
@@ -47,6 +49,9 @@ module.exports = class LiteLLMRPC extends RPC {
             ? Math.min(timeoutOverride, this.timeout)
             : this.timeout;
         const ackTimeoutMs = timeoutMs + ACK_TIMEOUT_BUFFER_MS;
+        if (params.outputMode !== undefined) {
+            params.outputMode = normalizeAiHookOutputMode(params.outputMode);
+        }
 
         this.logger.info("Sending chatCompletion request: model=" + params.model + " requestId=" + requestId);
 

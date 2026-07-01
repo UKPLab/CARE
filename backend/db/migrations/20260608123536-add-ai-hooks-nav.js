@@ -2,46 +2,29 @@
 
 const navElements = [
   {
-    name: 'AI Log',
-    icon: 'journal-text',
-    order: 2,
+    name: 'AI Hooks',
+    icon: 'link-45deg',
+    order: 4,
     admin: false,
-    path: 'ai_log',
-    component: 'AILog',
-  },
-  {
-    name: 'AI Models',
-    icon: 'robot',
-    order: 3,
-    admin: false,
-    path: 'ai_models',
-    component: 'AIModels',
+    path: 'ai_hooks',
+    component: 'AIHooks',
   },
 ];
 
 const userRights = [
   {
-    name: 'frontend.dashboard.ai_log.view',
-    description: 'access to view AI logs in the dashboard',
-  },
-  {
-    name: 'frontend.dashboard.ai_models.view',
-    description: 'access to view AI models in the dashboard',
+    name: 'frontend.dashboard.ai_hooks.view',
+    description: 'access to view AI hooks in the dashboard',
   },
 ];
 
 const roleRights = [
   {
     role: 'user',
-    userRightName: 'frontend.dashboard.ai_log.view',
-  },
-  {
-    role: 'user',
-    userRightName: 'frontend.dashboard.ai_models.view',
+    userRightName: 'frontend.dashboard.ai_hooks.view',
   },
 ];
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     const aiGroupId = await queryInterface.rawSelect(

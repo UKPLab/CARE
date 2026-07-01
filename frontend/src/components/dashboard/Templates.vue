@@ -9,6 +9,20 @@
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Import Templates"
+          text="Import"
+          icon="upload"
+          @click="$refs.importFormatModal.open('template')"
+        />
+        <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Export All Templates"
+          text="Export All"
+          icon="download"
+          @click="$refs.exportFormatModal.open(null, 'template')"
+        />
+        <BasicButton
           class="btn-primary btn-sm"
           title="Add new template"
           text="Add Template"
@@ -32,6 +46,8 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
+    <ExportFormatModal ref="exportFormatModal" title="Export Template" />
+    <ImportFormatModal ref="importFormatModal" title="Import Templates" />
   </template>
   
   <script>
@@ -44,6 +60,8 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
+  import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+  import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   /**
    * Templates dashboard component
    *
@@ -66,6 +84,8 @@
       TemplateDetachModal,
       TemplateUpdateModal,
       PublicTemplatesModal,
+      ExportFormatModal,
+      ImportFormatModal,
     },
     data() {
       return {
@@ -219,6 +239,18 @@
             title: "Source updated",
             action: "openUpdateModal",
           },
+          // Export
+          {
+            icon: "download",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            title: "Export template",
+            action: "export",
+          },
           // Delete - own templates that can be deleted (including copies)
           {
             icon: "trash",
@@ -252,6 +284,7 @@
           case 5: return "Document - Study";
           case 6: return "Email - Study Close";
           case 7: return "Email - Submission upload";
+          case 8: return "Prompt";
           default: return "Choose Type"
         }
       },
@@ -310,6 +343,9 @@
           case "openUpdateModal":
             this.$refs.updateModal.open(data.params);
             break;
+          case "export":
+            this.$refs.exportFormatModal.open(data.params.id, "template");
+            break;
         }
       },
       /**
@@ -319,12 +355,17 @@
         this.$refs.detachModal.open(template, (t) => {
           this.$socket.emit("templateDetach", { templateId: t.id }, (result) => {
             if (result.success) {
-              this.eventBus.emit("toast", {
-                title: "Template detached",
-                message: "You can now edit this template",
-                variant: "success",
+              this.$socket.emit("appData", {
+                table: "template",
+                filter: [{ key: "id", value: t.id }],
+              }, () => {
+                this.eventBus.emit("toast", {
+                  title: "Template detached",
+                  message: "You can now edit this template",
+                  variant: "success",
+                });
+                this.$router.push(`/template/${t.id}`);
               });
-              this.$router.push(`/template/${t.id}`);
             } else {
               this.eventBus.emit("toast", {
                 title: "Detach failed",
