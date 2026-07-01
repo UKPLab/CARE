@@ -17,6 +17,15 @@ module.exports = (sequelize, DataTypes) => {
             FAILED: 4,
         };
 
+        static sanitizeOptions(options = {}) {
+            const nextOptions = { ...options };
+            if (nextOptions.where && "deleted" in nextOptions.where) {
+                nextOptions.where = { ...nextOptions.where };
+                delete nextOptions.where.deleted;
+            }
+            return nextOptions;
+        }
+
         static associate(models) {
             TriggerQueue.belongsTo(models["trigger"], { foreignKey: "triggerId", as: "trigger" });
             TriggerQueue.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
@@ -24,8 +33,9 @@ module.exports = (sequelize, DataTypes) => {
 
         static async getAll(options = {}) {
             try {
-                options.raw = true;
-                return await this.findAll(options);
+                const nextOptions = this.sanitizeOptions(options);
+                nextOptions.raw = true;
+                return await this.findAll(nextOptions);
             } catch (err) {
                 console.log(err);
             }

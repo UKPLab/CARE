@@ -152,7 +152,7 @@ class TriggerSocket extends Socket {
     }
 
     /**
-     * Re-queue a failed trigger execution for another run.
+     * Re-queue a failed or cancelled trigger execution for another run.
      *
      * @socketEvent triggerQueueRetry
      * @param {Object} data Must contain `id` (queue item id)
@@ -171,9 +171,9 @@ class TriggerSocket extends Socket {
         if (!item) {
             throw new Error("Queue item not found.");
         }
-        const failedStatus = QUEUE_STATUS.FAILED;
-        if (item.status !== failedStatus) {
-            throw new Error("Only failed queue items can be retried.");
+        const retryableStatuses = [QUEUE_STATUS.FAILED, QUEUE_STATUS.CANCELLED];
+        if (!retryableStatuses.includes(item.status)) {
+            throw new Error("Only failed or cancelled queue items can be retried.");
         }
 
         const trigger = await this.models["trigger"].getById(item.triggerId, {}, true);

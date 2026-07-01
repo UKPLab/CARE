@@ -63,7 +63,7 @@ export default {
         { name: "PENDING", value: 0, label: "Pending", badgeClass: "bg-secondary", flags: ["canCancel"] },
         { name: "RUNNING", value: 1, label: "Running", badgeClass: "bg-primary", flags: ["canCancel"] },
         { name: "COMPLETED", value: 2, label: "Completed", badgeClass: "bg-success", flags: [] },
-        { name: "CANCELLED", value: 3, label: "Cancelled", badgeClass: "bg-warning text-dark", flags: [] },
+        { name: "CANCELLED", value: 3, label: "Cancelled", badgeClass: "bg-warning text-dark", flags: ["canRetry"] },
         { name: "FAILED", value: 4, label: "Failed", badgeClass: "bg-danger", flags: ["canRetry", "hasError"] },
       ],
       columnDefs: [
@@ -96,7 +96,7 @@ export default {
           socketEvent: "triggerQueueRetry",
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
           filter: [{ key: "canRetry", value: true }],
-          successToast: { title: "Retry queued", message: "The failed execution has been set back to pending." },
+          successToast: { title: "Retry queued", message: "The trigger execution has been set back to pending." },
           errorToast: { title: "Retry failed" },
         },
         {
