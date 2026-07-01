@@ -7,11 +7,11 @@
     @submit="saveShare"
   >
     <template #title>
-      Share AI Model
+      Share {{ resourceLabel }}
     </template>
     <template #step-1>
       <div v-if="selectedShareModel" class="mb-3">
-        <strong>Model:</strong> {{ selectedShareModel.name }}
+        <strong>{{ resourceLabel }}:</strong> {{ selectedShareModel.name }}
       </div>
       <div class="mb-3">
         <label class="form-label d-block">Share by</label>
@@ -66,7 +66,7 @@
     </template>
     <template #step-3>
       <div class="mb-3">
-        <div><strong>Model:</strong> {{ selectedShareModel?.name || "-" }}</div>
+        <div><strong>{{ resourceLabel }}:</strong> {{ selectedShareModel?.name || "-" }}</div>
         <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
         <div><strong>Selected:</strong> {{ activeSelectionIds.length }}</div>
         <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
@@ -100,6 +100,30 @@ export default {
   props: {
     currentUserId: {
       type: Number,
+      required: true,
+    },
+    resourceLabel: {
+      type: String,
+      required: true,
+    },
+    resourceIdKey: {
+      type: String,
+      required: true,
+    },
+    shareOptionsCommand: {
+      type: String,
+      required: true,
+    },
+    shareConfigCommand: {
+      type: String,
+      required: true,
+    },
+    saveShareCommand: {
+      type: String,
+      required: true,
+    },
+    ownerOnlyMessage: {
+      type: String,
       required: true,
     },
   },
@@ -194,6 +218,9 @@ export default {
       if (Number.isNaN(date.getTime())) return this.shareForm.expiryDate;
       return date.toLocaleDateString();
     },
+    resourceLabelLower() {
+      return this.resourceLabel.toLowerCase();
+    },
   },
   methods: {
     getEmptyShareForm() {
@@ -252,7 +279,7 @@ export default {
         return;
       }
       if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError("Only model owners can manage sharing");
+        this.toastError(this.ownerOnlyMessage);
         return;
       }
 
@@ -265,8 +292,8 @@ export default {
 
       try {
         const [targets, shareConfig] = await Promise.all([
-          this.emitAiServiceCommand("getModelShareOptions"),
-          this.emitAiServiceCommand("getModelShareConfig", { aiModelId: row.id }),
+          this.emitAiServiceCommand(this.shareOptionsCommand),
+          this.emitAiServiceCommand(this.shareConfigCommand, { [this.resourceIdKey]: row.id }),
         ]);
 
         this.shareTargets = {
@@ -280,7 +307,7 @@ export default {
         this.selectedUserIds = this.normalizeIdList(shareConfig?.userIds);
         this.selectedRoleIds = this.normalizeIdList(shareConfig?.roleIds);
       } catch (error) {
-        this.toastError(error.message || "Failed to load share data");
+        this.toastError(error.message || `Failed to load ${this.resourceLabelLower} share data`);
       } finally {
         this.isLoadingShareData = false;
       }
@@ -292,7 +319,7 @@ export default {
       }
 
       const payload = {
-        aiModelId: this.selectedShareModel.id,
+        [this.resourceIdKey]: this.selectedShareModel.id,
         mode: this.shareForm.mode,
         expiryDate: this.shareForm.expiryDate,
       };
@@ -319,15 +346,15 @@ export default {
       this.isSavingShare = true;
       try {
         this.$refs.shareStepper.setWaiting(true);
-        await this.emitAiServiceCommand("shareModel", payload);
+        await this.emitAiServiceCommand(this.saveShareCommand, payload);
         this.$refs.shareStepper.close();
         this.eventBus.emit("toast", {
           title: "Success",
-          message: "Model sharing updated",
+          message: `${this.resourceLabel} sharing updated`,
           variant: "success",
         });
       } catch (error) {
-        this.toastError(error.message || "Failed to save model sharing");
+        this.toastError(error.message || `Failed to save ${this.resourceLabelLower} sharing`);
       } finally {
         this.$refs.shareStepper.setWaiting(false);
         this.isSavingShare = false;

@@ -53,6 +53,12 @@
     <AIModelShareStepper
       ref="shareModelStepper"
       :current-user-id="currentUserId"
+      resource-label="AI Model"
+      resource-id-key="aiModelId"
+      share-options-command="getModelShareOptions"
+      share-config-command="getModelShareConfig"
+      save-share-command="shareModel"
+      owner-only-message="Only model owners can manage sharing"
     />
 
     <AIOverview ref="aiOverview" />
