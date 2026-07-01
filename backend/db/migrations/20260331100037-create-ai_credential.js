@@ -25,7 +25,8 @@ module.exports = {
       },
       apiKey: {
         type: Sequelize.TEXT,
-        allowNull: false,
+        allowNull: true,
+        defaultValue: null,
       },
       provider: {
         type: Sequelize.STRING,
