@@ -104,12 +104,12 @@ module.exports = class MetaModel extends Model {
                     }
                 }
             }
-            if (userId && 'userId' in this.getAttributes()) {
-                if ("public" in this.getAttributes()) {
-                    filter[Op.or] = [{userId: userId}, {public: true}];
-                } else {
-                    filter['userId'] = userId;
-                }
+            if ("public" in this.getAttributes()) {
+                filter[Op.or] = userId && userId !== null && 'userId' in this.getAttributes()
+                    ? [{userId: userId}, {public: true}]
+                    : [{public: true}];
+            } else if (userId && 'userId' in this.getAttributes()) {
+                filter['userId'] = userId;
             }
             let options = {where: filter, raw: true};
             if (attributes && attributes.length > 0) {

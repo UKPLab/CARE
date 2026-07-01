@@ -1,6 +1,43 @@
 "use strict";
 
+const { assertStableEmailTemplateContent } = require("../../utils/templateResolver");
+
 const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
+
+/**
+ * Reject email.template.* settings that point at a missing or incomplete template.
+ *
+ * @param {Object} models
+ * @param {Object[]} settings
+ * @param {Object} [options]
+ * @returns {Promise<void>}
+ */
+async function validateEmailTemplateSettings(models, settings, options = {}) {
+    if (!Array.isArray(settings)) {
+        return;
+    }
+
+    for (const setting of settings) {
+        if (!setting || typeof setting.key !== "string" || !setting.key.startsWith("email.template.")) {
+            continue;
+        }
+
+        const rawValue = setting.value === null || setting.value === undefined ? "" : String(setting.value).trim();
+        if (rawValue === "" || rawValue === "0") {
+            continue;
+        }
+
+        const templateId = parseInt(rawValue, 10);
+        if (isNaN(templateId) || templateId <= 0) {
+            continue;
+        }
+
+        await assertStableEmailTemplateContent(templateId, models, {
+            ...options,
+            action: "assigning",
+        });
+    }
+}
 
 /**
  * Returns whether a settings payload includes any key under system.mailService.*.
@@ -50,10 +87,14 @@ function normalizeSettingValue(value) {
  * @param {*} settings.value setting value
  * @param {Object} [options] additional options
  * @param {Object} [options.transaction] sequelize transaction
+ * @param {Object} [options.models] full models object for email template validation
  * @returns {Promise<object>} result with touchesMailService flag
  */
 async function saveSettings(Setting, settings, options = {}) {
     const list = Array.isArray(settings) ? settings : [];
+    if (options.models) {
+        await validateEmailTemplateSettings(options.models, list, options);
+    }
     const touchesMailService = payloadTouchesMailService(list);
     for (const setting of list) {
         if (!setting || typeof setting.key !== "string" || setting.key.trim() === "") {

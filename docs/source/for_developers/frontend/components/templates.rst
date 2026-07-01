@@ -38,8 +38,8 @@ Implementing the Template Editor
 ---------------------------------
 
 The main Editor provides ``templateId`` via ``provide`` and conditionally shows the Placeholders sidebar when the document is a template with placeholders.  
-TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template. When the user saves and closes the editor, draft edits are merged from
-``template_edit`` into ``template_content`` so that the next resolution uses the latest saved content.
+TemplateEditor and TemplateConfigurator are used inside this Editor when editing a template. When the user leaves the editor (e.g. topbar back), draft edits are merged from
+``template_edit`` into ``template_content`` so that the next resolution uses the latest saved content. See :ref:`Leaving the template editor <template-editor-leave-ref>` below.
 
 Location:
 
@@ -54,6 +54,22 @@ Location:
       <TemplateConfigurator />
     </template>
 
+.. _template-editor-leave-ref:
+
+Leaving the template editor (unsaved changes)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Templates use the same debounced autosave as documents (see :ref:`Debounce Behaviour <debounce-ref>`). While editing, ops are stored as drafts in ``template_edit``; stable content used by Settings and email resolution lives in ``template_content``.
+
+**Save-on-leave:** In-app navigation (topbar back, dashboard links) runs ``beforeRouteLeave`` in ``frontend/src/components/Template.vue``. The guard calls ``flushPendingEdits`` on ``TemplateEditor`` (cancels debounce and sends buffered ops), then emits ``templateClose``, which calls ``saveTemplate`` in ``backend/webserver/sockets/template.js`` to merge drafts into ``template_content``.
+
+**Required placeholders:** For email types (1, 2, 3, 6, 7), stable ``template_content`` in every language must include all required placeholders (``getMissingRequiredPlaceholders`` in ``backend/utils/templateResolver.js``). Enforcement points:
+
+- **Editor save:** ``saveTemplate`` rejects merges that omit required placeholders. The user may confirm discard; ``templateDiscardDrafts`` soft-deletes draft rows without updating ``template_content``.
+- **Publish:** The ``template`` model ``beforeUpdate`` hook calls ``assertStableEmailTemplateContent`` when ``public`` becomes ``true``.
+- **Settings:** ``validateEmailTemplateSettings`` in ``backend/webserver/utils/settingSave.js`` runs before persisting ``email.template.*`` keys (missing placeholders in any language row blocks assignment).
+
+**Tab close / full reload:** ``beforeunload`` on ``TemplateEditor`` shows the browser's generic leave warning; the route guard does not run. Orphan drafts may remain until the next visit.
 
 Template Types, Placeholders, and Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,10 +142,11 @@ Adding a New Template Type or Placeholder
 .. note::
 
    Placeholders marked with ``*`` in the table above are **required** for that type.
-   If a required placeholder is missing from the template text, validation will fail
-   (e.g. publishing or using the template) until it is added. The set of required
-   placeholders is defined in the ``placeholder`` table (``required: true``) and
-   enforced via ``getMissingRequiredPlaceholders`` in ``backend/utils/templateResolver.js``.
+   If a required placeholder is missing from stable content in any language, validation
+   fails on editor save, publish, or Settings assignment until it is added. The set of
+   required placeholders is defined in the ``placeholder`` table (``required: true``) and
+   enforced via ``getMissingRequiredPlaceholders`` and ``assertStableEmailTemplateContent``
+   in ``backend/utils/templateResolver.js``.
 
 Email placeholders (types 1, 2, 3, 6) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
 Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` (often from ``document_data`` or
