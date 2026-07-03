@@ -12,12 +12,12 @@ module.exports = (sequelize, DataTypes) => {
          * If the key already exists for the document, the entry is updated in place
          * instead of creating duplicate active rows.
          *
-         * @param {Object} data
-         * @param {number} data.documentId
-         * @param {number} data.userId
-         * @param {string} data.metaKey
-         * @param {string} data.metaValue
-         * @param {Object} [options={}]
+         * @param {Object} data - Metadata entry to create or update.
+         * @param {number} data.documentId - Document that owns the metadata row.
+         * @param {number} data.userId - User ID stored as the metadata author.
+         * @param {string} data.metaKey - Metadata key for the document.
+         * @param {string} data.metaValue - Metadata value to persist.
+         * @param {Object} [options={}] - Optional Sequelize transaction and related DB options.
          * @returns {Promise<Object>}
          */
         static async upsertByDocumentAndKey(data, options = {}) {
@@ -48,8 +48,12 @@ module.exports = (sequelize, DataTypes) => {
          *
          * Duplicate document/key pairs in the input are deduplicated with last-write-wins semantics.
          *
-         * @param {Object[]} entries
-         * @param {Object} [options={}]
+         * @param {Object[]} entries - Metadata entries to create or update.
+         * @param {number} entries[].documentId - Document that owns each metadata row.
+         * @param {number} entries[].userId - User ID stored as the metadata author.
+         * @param {string} entries[].metaKey - Metadata key for the document.
+         * @param {string} entries[].metaValue - Metadata value to persist.
+         * @param {Object} [options={}] - Optional Sequelize transaction and related DB options.
          * @returns {Promise<number>} Number of entries processed
          */
         static async bulkUpsertByDocumentAndKey(entries, options = {}) {
@@ -120,29 +124,11 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Load active metadata rows for a given document.
-         *
-         * @param {number} documentId
-         * @param {Object} [options={}]
-         * @returns {Promise<Object[]>}
-         */
-        static async getByDocumentId(documentId, options = {}) {
-            return await this.findAll({
-                where: {
-                    documentId,
-                    deleted: false,
-                },
-                raw: true,
-                ...options,
-            });
-        }
-
-        /**
          * Duplicate active metadata rows from one document to another.
          *
-         * @param {number} originalDocumentId
-         * @param {number} targetDocumentId
-         * @param {Object} [options={}]
+         * @param {number} originalDocumentId - Source document to copy metadata from.
+         * @param {number} targetDocumentId - Destination document that receives duplicated metadata.
+         * @param {Object} [options={}] - Optional Sequelize transaction and related DB options.
          * @returns {Promise<Object[]>}
          */
         static async duplicateDocumentMetadata(originalDocumentId, targetDocumentId, options = {}) {
