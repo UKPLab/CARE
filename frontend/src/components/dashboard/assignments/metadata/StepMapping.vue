@@ -1,0 +1,291 @@
+<template>
+  <div class="p-3">
+    <div class="mb-4">
+      <h6>Primary Key Mapping</h6>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Source key</label>
+          <select v-model="primaryKeyMappingModel.sourceField" class="form-select">
+            <option disabled value="">Select a field</option>
+            <option
+              v-for="field in sourceFields"
+              :key="`primary-source-${field}`"
+              :value="field"
+            >
+              {{ field }}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Match against</label>
+          <select v-model="primaryKeyMappingModel.targetField" class="form-select">
+            <option value="extId">extId</option>
+            <option value="email">email</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-text">
+        This mapping controls how CARE matches uploaded rows to submission owners in the selected assignment.
+      </div>
+    </div>
+
+    <h6 class="mb-3">Metadata Mappings</h6>
+
+    <div v-if="mappingValidationMessages.length > 0" class="alert alert-warning">
+      <div
+        v-for="(message, index) in mappingValidationMessages"
+        :key="`mapping-warning-${index}`"
+      >
+        {{ message }}
+      </div>
+    </div>
+
+    <div class="mapping-panel">
+      <div class="mapping-panel-header">
+        <div class="mapping-panel-title-row">
+          <div class="mapping-col-source">Source key</div>
+          <div class="mapping-col-target">Target metaKey</div>
+          <div class="mapping-col-action">Action</div>
+        </div>
+        <button
+          class="btn btn-outline-primary btn-sm"
+          type="button"
+          @click="addMappingRow"
+        >
+          Add Mapping
+        </button>
+      </div>
+
+      <div
+        v-if="metadataMappingsModel.length === 0"
+        class="text-muted small"
+      >
+        No metadata mappings configured yet.
+      </div>
+
+      <div
+        v-for="(mapping, index) in metadataMappingsModel"
+        :key="mapping.id"
+        class="mapping-item"
+      >
+        <div class="mapping-col-source">
+          <select
+            v-model="mapping.sourceField"
+            class="form-select"
+          >
+            <option disabled value="">Select a field</option>
+            <option
+              v-for="field in sourceFields"
+              :key="`mapping-source-${mapping.id}-${field}`"
+              :value="field"
+            >
+              {{ field }}
+            </option>
+          </select>
+        </div>
+        <div class="mapping-arrow">→</div>
+        <div class="mapping-col-target">
+          <input
+            v-model="mapping.metaKey"
+            class="form-control"
+            list="metadata-key-presets"
+            placeholder="topic"
+            type="text"
+          >
+        </div>
+        <div class="mapping-col-action">
+          <button
+            class="btn btn-outline-danger btn-sm"
+            type="button"
+            :disabled="metadataMappingsModel.length === 1"
+            @click="removeMappingRow(index)"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <datalist id="metadata-key-presets">
+      <option value="topic"></option>
+      <option value="category"></option>
+      <option value="tag"></option>
+    </datalist>
+  </div>
+</template>
+
+<script>
+/**
+ * Third step of the metadata import flow: configure primary key and metadata field mappings.
+ *
+ * @author Linyin Huang
+ */
+export default {
+  name: "StepMapping",
+  props: {
+    primaryKeyMapping: {
+      type: Object,
+      required: true,
+    },
+    metadataMappings: {
+      type: Array,
+      default: () => [],
+    },
+    sourceFields: {
+      type: Array,
+      default: () => [],
+    },
+    mappingValidationMessages: {
+      type: Array,
+      default: () => [],
+    },
+  },
+  emits: ["update:primaryKeyMapping", "update:metadataMappings"],
+  data() {
+    return {
+      nextMappingId: 1,
+    };
+  },
+  computed: {
+    primaryKeyMappingModel: {
+      get() {
+        return this.primaryKeyMapping;
+      },
+      set(value) {
+        this.$emit("update:primaryKeyMapping", value);
+      },
+    },
+    metadataMappingsModel: {
+      get() {
+        return this.metadataMappings;
+      },
+      set(value) {
+        this.$emit("update:metadataMappings", value);
+      },
+    },
+  },
+  methods: {
+    createMappingRow(defaults = {}) {
+      return {
+        id: this.nextMappingId++,
+        sourceField: defaults.sourceField || "",
+        metaKey: defaults.metaKey || "",
+      };
+    },
+    addMappingRow() {
+      this.$emit("update:metadataMappings", [
+        ...this.metadataMappingsModel,
+        this.createMappingRow(),
+      ]);
+    },
+    removeMappingRow(index) {
+      if (this.metadataMappingsModel.length === 1) {
+        return;
+      }
+      const updatedMappings = [...this.metadataMappingsModel];
+      updatedMappings.splice(index, 1);
+      this.$emit("update:metadataMappings", updatedMappings);
+    },
+    initializeMappings(sourceFields) {
+      const preferredPrimaryField = sourceFields.includes("id")
+        ? "id"
+        : (sourceFields.includes("email") ? "email" : "");
+
+      this.$emit("update:primaryKeyMapping", {
+        sourceField: preferredPrimaryField,
+        targetField: preferredPrimaryField === "email" ? "email" : "extId",
+      });
+      this.$emit("update:metadataMappings", [
+        this.createMappingRow(),
+      ]);
+    },
+    resetMappings() {
+      this.nextMappingId = 1;
+      this.$emit("update:primaryKeyMapping", {
+        sourceField: "",
+        targetField: "extId",
+      });
+      this.$emit("update:metadataMappings", []);
+    },
+  },
+};
+</script>
+
+<style scoped>
+.mapping-panel {
+  border: 1px dashed #b9b9b9;
+  border-radius: 0.5rem;
+  padding: 0.9rem;
+  background: #fafafa;
+}
+
+.mapping-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.mapping-panel-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  padding: 0 0.125rem;
+}
+
+.mapping-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.mapping-item + .mapping-item {
+  margin-top: 0.75rem;
+}
+
+.mapping-col-source,
+.mapping-col-target {
+  min-width: 0;
+}
+
+.mapping-col-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mapping-arrow {
+  color: #6c757d;
+  font-size: 1rem;
+  line-height: 1;
+  padding-top: 0.1rem;
+}
+
+@media (max-width: 767.98px) {
+  .mapping-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mapping-panel-title-row {
+    display: none;
+  }
+
+  .mapping-item {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-col-action {
+    justify-content: flex-start;
+  }
+
+  .mapping-arrow {
+    display: none;
+  }
+}
+</style>
