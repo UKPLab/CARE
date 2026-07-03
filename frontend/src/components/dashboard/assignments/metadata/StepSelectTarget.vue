@@ -2,13 +2,21 @@
   <div class="p-3">
     <div class="mb-3">
       <label class="form-label">Target type</label>
-      <select v-model="targetTypeModel" class="form-select">
+      <select
+        :value="targetType"
+        class="form-select"
+        @change="$emit('update:targetType', $event.target.value)"
+      >
         <option value="assignment">Assignment</option>
       </select>
     </div>
     <div class="mb-3">
       <label class="form-label">Assignment</label>
-      <select v-model.number="selectedAssignmentIdModel" class="form-select">
+      <select
+        :value="selectedAssignmentId"
+        class="form-select"
+        @change="$emit('update:selectedAssignmentId', Number($event.target.value))"
+      >
         <option
           v-for="assignmentOption in visibleAssignments"
           :key="assignmentOption.id"
@@ -47,23 +55,5 @@ export default {
     },
   },
   emits: ["update:targetType", "update:selectedAssignmentId"],
-  computed: {
-    targetTypeModel: {
-      get() {
-        return this.targetType;
-      },
-      set(value) {
-        this.$emit("update:targetType", value);
-      },
-    },
-    selectedAssignmentIdModel: {
-      get() {
-        return this.selectedAssignmentId;
-      },
-      set(value) {
-        this.$emit("update:selectedAssignmentId", value);
-      },
-    },
-  },
 };
 </script>
