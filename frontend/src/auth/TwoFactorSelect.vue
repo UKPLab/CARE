@@ -59,7 +59,8 @@
               <BasicButton
                 class="btn btn-primary btn-block"
                 type="submit"
-                :disabled="!selectedMethod || isSubmitting"
+                :disabled="!selectedMethod"
+                :loading="isSubmitting"
                 :text="isSubmitting ? 'Continuing...' : 'Continue'"
               />
               <BasicButton

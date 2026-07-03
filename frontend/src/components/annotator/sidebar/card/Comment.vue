@@ -154,19 +154,19 @@
     <div class="btn-group">
       <BasicButton
         v-if="showExtenderButton"
-        class="btn-light btn-sm"
+        class="btn btn-light btn-sm"
         text="Show more"
         @click="maxComments+=5"
       />
       <BasicButton
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
-        class="btn-light btn-sm"
+        class="btn btn-light btn-sm"
         text="Show less"
         @click="maxComments=defaultNumComments"
       />
       <BasicButton
         v-if="maxComments > defaultNumComments"
-        class="btn-light btn-sm"
+        class="btn btn-light btn-sm"
         text="Hide replies"
         @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
       />

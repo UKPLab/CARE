@@ -83,7 +83,8 @@
               <BasicButton
                   class="btn btn-primary btn-block"
                   type="submit"
-                  text="Login"
+                  :loading="isSubmitting"
+                  :text="isSubmitting ? 'Signing in...' : 'Login'"
               />
               <a
                   v-if="showGuestLogin"
@@ -197,6 +198,7 @@ export default {
         password: ""
       },
       validity: null,
+      isSubmitting: false,
       version: APP_VERSION,
       showVersion: (process.env.NODE_ENV !== 'production'),
     }
@@ -316,6 +318,7 @@ export default {
       }
     },
     async login_user() {
+      this.isSubmitting = true;
       try {
         const loginResult = await this.login({
           username: this.formData.username,
@@ -330,6 +333,8 @@ export default {
       } catch (error) {
         this.showError = true;
         this.errorMessage = error;
+      } finally {
+        this.isSubmitting = false;
       }
     },
     toRegister() {

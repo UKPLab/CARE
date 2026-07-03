@@ -120,7 +120,7 @@
             <div class="col">
               <BasicButton
                   v-if="numberReplies > 0"
-                  class="btn-light btn-sm"
+                  class="btn btn-light btn-sm"
                   data-placement="top"
                   data-toggle="tooltip"
                   title="Reply"
@@ -195,19 +195,19 @@
           <div class="btn-group">
             <BasicButton
             v-if="showExtenderButton"
-            class="btn-light btn-sm"
+            class="btn btn-light btn-sm"
             text="Show more"
             @click="maxComments+=5"
             />
             <BasicButton
             v-if="!showExtenderButton && numChildComments > defaultNumComments"
-            class="btn-light btn-sm"
+            class="btn btn-light btn-sm"
             text="Show less"
             @click="maxComments=defaultNumComments"
             />
             <BasicButton
             v-if="maxComments > defaultNumComments"
-            class="btn-light btn-sm"
+            class="btn btn-light btn-sm"
             text="Hide replies"
             @click="maxComments=defaultNumComments; showReplies = !showReplies"
             />

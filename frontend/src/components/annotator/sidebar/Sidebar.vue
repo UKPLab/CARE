@@ -18,7 +18,7 @@
               </template>
               <template #footer>
                 <BasicButton
-                  class="btn-primary btn-sm"
+                  class="btn btn-primary btn-sm"
                   text="Show"
                   @click="handleEditClick(edit)"
                 />
@@ -64,7 +64,7 @@
 
     <li v-if="!componentReadOnly" id="addPageNote">
       <BasicButton
-        class="btn-light"
+        class="btn btn-light"
         icon="plus-lg"
         text="Document Note"
         @click="createDocumentComment"

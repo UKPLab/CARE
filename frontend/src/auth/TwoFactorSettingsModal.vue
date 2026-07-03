@@ -133,7 +133,8 @@
               <div class="d-flex gap-2 mt-3">
                 <BasicButton
                   class="btn btn-primary"
-                  :disabled="!canVerifyTotpSetup || isSubmitting"
+                  :disabled="!canVerifyTotpSetup"
+                  :loading="isSubmitting"
                   :text="isSubmitting ? 'Verifying...' : 'Verify & Enable'"
                   @click="verifyTotpSetup"
                 />
@@ -173,7 +174,7 @@
     <template #footer>
       <span v-if="!(enforced && enabledMethods.length === 0)" class="btn-group">
         <BasicButton
-          title="Close"
+          text="Close"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
         />

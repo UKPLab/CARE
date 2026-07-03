@@ -36,12 +36,12 @@
         </template>
         <template #footer>
           <BasicButton
-            class="btn-outline-primary"
+            class="btn btn-outline-primary"
             text="Create Empty"
             @click="chooseNewLanguageEmpty"
           />
           <BasicButton
-            class="btn-primary"
+            class="btn btn-primary"
             text="Copy Content"
             @click="chooseNewLanguageCopied"
           />

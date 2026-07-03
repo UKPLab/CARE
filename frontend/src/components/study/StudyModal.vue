@@ -89,7 +89,7 @@
     </template>
     <template #footer>
       <BasicButton
-          class="btn-outline-secondary"
+          class="btn btn-outline-secondary"
           text="Return to dashboard"
           @click="$router.push('/dashboard')"
       />
@@ -99,7 +99,7 @@
           class="btn-group"
       >
         <BasicButton
-            class="btn-primary"
+            class="btn btn-primary"
             text="Back"
             @click="showSessions=!showSessions"
         />
@@ -110,14 +110,19 @@
       >
         <BasicButton
             v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
-            class="btn-secondary"
-            :text="`Open Sessions (${studySessions.length})`"
+            class="btn btn-secondary position-relative"
             @click="showSessions=!showSessions"
-        />
+        >
+          <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
+            {{ studySessions.length }}
+            <span class="visually-hidden">open sessions</span>
+          </span>
+          Open Sessions
+        </BasicButton>
         <BasicButton
             v-if="studyId !== 0 && !foreignUnstartedSession"
             :disabled="!available"
-            class="btn-primary"
+            class="btn btn-primary"
             :text="study.collab ? 'Join Study' : 'Start Study'"
             @click="start"
         />

@@ -36,7 +36,7 @@
     <template #footer>
       <div v-if="finished">
         <BasicButton
-          class="btn-primary"
+          class="btn btn-primary"
           text="Back to Dashboard"
           @click="toDashboard"
         />

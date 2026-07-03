@@ -61,7 +61,7 @@
     </template>
     <template #footer>
       <BasicButton
-        class="btn-primary"
+        class="btn btn-primary"
         text="Close"
         data-bs-dismiss="modal"
       />

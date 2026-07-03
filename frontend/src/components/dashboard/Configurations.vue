@@ -3,7 +3,7 @@
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
-            class="btn-secondary btn-sm"
+            class="btn btn-secondary btn-sm"
             text="Import Configuration"
             title="Import configuration file"
             icon="upload"
@@ -14,7 +14,7 @@
             })"
         />
         <BasicButton
-            class="btn-secondary btn-sm"
+            class="btn btn-secondary btn-sm"
             text="Export All"
             title="Export all configurations"
             icon="download"
@@ -67,13 +67,13 @@
     </template>
     <template #footer>
       <BasicButton
-          class="btn-secondary"
+          class="btn btn-secondary"
           text="Cancel"
           data-bs-dismiss="modal"
           @click="$refs.editModal.close()"
       />
       <BasicButton
-          class="btn-primary"
+          class="btn btn-primary"
           text="Save"
           :disabled="saving"
           @click="saveConfiguration"

@@ -14,12 +14,12 @@
     <template #footer>
       <div class="btn-group">
         <BasicButton
-          class="btn-secondary"
+          class="btn btn-secondary"
           text="Cancel"
           @click="onCancel"
         />
         <BasicButton
-          class="btn-primary"
+          class="btn btn-primary"
           text="Continue"
           @click="onConfirm"
         />

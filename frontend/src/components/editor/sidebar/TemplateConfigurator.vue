@@ -44,7 +44,7 @@
                 <div class="d-flex align-items-center">
                   <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] || 0 }}</span>
                   <BasicButton
-                    class="btn-primary btn-sm d-flex align-items-center"
+                    class="btn btn-primary btn-sm d-flex align-items-center"
                     icon="plus-lg"
                     text="Add"
                     @click="handlePlaceholderClick(placeholder)"

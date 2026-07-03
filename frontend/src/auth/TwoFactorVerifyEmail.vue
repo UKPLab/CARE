@@ -57,7 +57,7 @@
               <BasicButton
                 class="btn btn-primary btn-block"
                 type="submit"
-                :disabled="isSubmitting"
+                :loading="isSubmitting"
                 :text="isSubmitting ? 'Verifying...' : 'Verify'"
               />
               <BasicButton

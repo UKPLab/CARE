@@ -9,7 +9,7 @@
   <BasicButton
     id="cite"
     :title="citationText"
-    class="btn-link btn-sm"
+    class="btn btn-link btn-sm"
     data-placement="top"
     data-toggle="tooltip"
     :text="citation ? `(ref. ${citation})` : '(show)'"

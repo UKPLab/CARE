@@ -23,7 +23,7 @@
     </template>
     <template #footer>
        <BasicButton
-        class="btn-secondary"
+        class="btn btn-secondary"
         text="Close"
         data-bs-dismiss="modal"
       />

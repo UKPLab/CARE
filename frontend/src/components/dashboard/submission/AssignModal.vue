@@ -29,7 +29,7 @@
             </span>
 
             <BasicButton
-                class="btn-sm btn-outline-primary text-nowrap"
+                class="btn btn-sm btn-outline-primary text-nowrap"
                 text="Apply"
                 :disabled="selectedSubmissions.length === 0"
                 @click="applySelectionPercentage"

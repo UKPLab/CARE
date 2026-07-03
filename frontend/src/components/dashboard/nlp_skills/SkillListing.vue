@@ -2,19 +2,19 @@
   <div v-if="validConfig">
     <div class="btn-group btn-group-sm position-absolute top-0 end-0 px-3 py-3">
       <BasicButton
-          class="btn-outline-secondary"
+          class="btn btn-outline-secondary"
           tooltip="Copy config"
           icon="clipboard"
           @click="copyConfig"
       />
       <BasicButton
-        class="btn-outline-secondary"
+        class="btn btn-outline-secondary"
         tooltip="Download config" 
         icon="cloud-arrow-down"
         @click="downloadConfig"
       />
       <BasicButton
-        class="btn-outline-secondary"
+        class="btn btn-outline-secondary"
         :class="commandEditorActive ? 'active' : ''"
         :aria-pressed="commandEditorActive"
         tooltip="Send command"

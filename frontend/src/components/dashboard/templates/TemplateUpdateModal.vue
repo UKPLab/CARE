@@ -17,12 +17,12 @@
     <template #footer>
       <div class="btn-group">
         <BasicButton
-          class="btn-outline-primary"
+          class="btn btn-outline-primary"
           text="Update"
           @click="onUpdate"
         />
         <BasicButton
-          class="btn-primary"
+          class="btn btn-primary"
           text="Make new copy"
           @click="onMakeNewCopy"
         />

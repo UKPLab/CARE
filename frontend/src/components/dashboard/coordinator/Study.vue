@@ -28,7 +28,7 @@
     <template v-if="isSuccess" #buttons>
       <BasicButton
           v-if="!isTemplateMode"
-          class="btn-primary"
+          class="btn btn-primary"
           text="Copy Link"
           @click="copyURL"
       />
