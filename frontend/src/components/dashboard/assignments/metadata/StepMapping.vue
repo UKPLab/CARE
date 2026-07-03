@@ -5,7 +5,11 @@
       <div class="row g-3 align-items-end">
         <div class="col-md-6">
           <label class="form-label">Source key</label>
-          <select v-model="primaryKeyMappingModel.sourceField" class="form-select">
+          <select
+            :value="primaryKeyMapping.sourceField"
+            class="form-select"
+            @change="updatePrimaryKeyField('sourceField', $event.target.value)"
+          >
             <option disabled value="">Select a field</option>
             <option
               v-for="field in sourceFields"
@@ -18,7 +22,11 @@
         </div>
         <div class="col-md-6">
           <label class="form-label">Match against</label>
-          <select v-model="primaryKeyMappingModel.targetField" class="form-select">
+          <select
+            :value="primaryKeyMapping.targetField"
+            class="form-select"
+            @change="updatePrimaryKeyField('targetField', $event.target.value)"
+          >
             <option value="extId">extId</option>
             <option value="email">email</option>
           </select>
@@ -50,28 +58,29 @@
         <button
           class="btn btn-outline-primary btn-sm"
           type="button"
-          @click="addMappingRow"
+          @click="$emit('add-mapping')"
         >
           Add Mapping
         </button>
       </div>
 
       <div
-        v-if="metadataMappingsModel.length === 0"
+        v-if="metadataMappings.length === 0"
         class="text-muted small"
       >
         No metadata mappings configured yet.
       </div>
 
       <div
-        v-for="(mapping, index) in metadataMappingsModel"
+        v-for="(mapping, index) in metadataMappings"
         :key="mapping.id"
         class="mapping-item"
       >
         <div class="mapping-col-source">
           <select
-            v-model="mapping.sourceField"
+            :value="mapping.sourceField"
             class="form-select"
+            @change="updateMappingField(index, 'sourceField', $event.target.value)"
           >
             <option disabled value="">Select a field</option>
             <option
@@ -86,19 +95,20 @@
         <div class="mapping-arrow">→</div>
         <div class="mapping-col-target">
           <input
-            v-model="mapping.metaKey"
+            :value="mapping.metaKey"
             class="form-control"
             list="metadata-key-presets"
             placeholder="topic"
             type="text"
+            @input="updateMappingField(index, 'metaKey', $event.target.value)"
           >
         </div>
         <div class="mapping-col-action">
           <button
             class="btn btn-outline-danger btn-sm"
             type="button"
-            :disabled="metadataMappingsModel.length === 1"
-            @click="removeMappingRow(index)"
+            :disabled="metadataMappings.length === 1"
+            @click="$emit('remove-mapping', index)"
           >
             Remove
           </button>
@@ -140,72 +150,18 @@ export default {
       default: () => [],
     },
   },
-  emits: ["update:primaryKeyMapping", "update:metadataMappings"],
-  data() {
-    return {
-      nextMappingId: 1,
-    };
-  },
-  computed: {
-    primaryKeyMappingModel: {
-      get() {
-        return this.primaryKeyMapping;
-      },
-      set(value) {
-        this.$emit("update:primaryKeyMapping", value);
-      },
-    },
-    metadataMappingsModel: {
-      get() {
-        return this.metadataMappings;
-      },
-      set(value) {
-        this.$emit("update:metadataMappings", value);
-      },
-    },
-  },
+  emits: ["update:primaryKeyMapping", "update:metadataMappings", "add-mapping", "remove-mapping"],
   methods: {
-    createMappingRow(defaults = {}) {
-      return {
-        id: this.nextMappingId++,
-        sourceField: defaults.sourceField || "",
-        metaKey: defaults.metaKey || "",
-      };
-    },
-    addMappingRow() {
-      this.$emit("update:metadataMappings", [
-        ...this.metadataMappingsModel,
-        this.createMappingRow(),
-      ]);
-    },
-    removeMappingRow(index) {
-      if (this.metadataMappingsModel.length === 1) {
-        return;
-      }
-      const updatedMappings = [...this.metadataMappingsModel];
-      updatedMappings.splice(index, 1);
-      this.$emit("update:metadataMappings", updatedMappings);
-    },
-    initializeMappings(sourceFields) {
-      const preferredPrimaryField = sourceFields.includes("id")
-        ? "id"
-        : (sourceFields.includes("email") ? "email" : "");
-
+    updatePrimaryKeyField(field, value) {
       this.$emit("update:primaryKeyMapping", {
-        sourceField: preferredPrimaryField,
-        targetField: preferredPrimaryField === "email" ? "email" : "extId",
+        ...this.primaryKeyMapping,
+        [field]: value,
       });
-      this.$emit("update:metadataMappings", [
-        this.createMappingRow(),
-      ]);
     },
-    resetMappings() {
-      this.nextMappingId = 1;
-      this.$emit("update:primaryKeyMapping", {
-        sourceField: "",
-        targetField: "extId",
-      });
-      this.$emit("update:metadataMappings", []);
+    updateMappingField(index, field, value) {
+      this.$emit("update:metadataMappings", this.metadataMappings.map((mapping, i) => (
+        i === index ? { ...mapping, [field]: value } : mapping
+      )));
     },
   },
 };

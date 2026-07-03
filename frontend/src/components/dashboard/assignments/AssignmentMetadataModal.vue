@@ -32,11 +32,12 @@
 
     <template #step-3>
       <StepMapping
-        ref="stepMapping"
         v-model:primary-key-mapping="primaryKeyMapping"
         v-model:metadata-mappings="metadataMappings"
         :source-fields="sourceFields"
         :mapping-validation-messages="mappingValidationMessages"
+        @add-mapping="addMappingRow"
+        @remove-mapping="removeMappingRow"
       />
     </template>
 
@@ -96,6 +97,7 @@ export default {
         targetField: "extId",
       },
       metadataMappings: [],
+      nextMappingId: 1,
       fileName: "",
       parseError: "",
       preview: {
@@ -291,12 +293,41 @@ export default {
       this.resetMappings();
     },
     resetMappings() {
+      this.nextMappingId = 1;
       this.primaryKeyMapping = {
         sourceField: "",
         targetField: "extId",
       };
       this.metadataMappings = [];
-      this.$refs.stepMapping?.resetMappings();
+    },
+    createMappingRow(defaults = {}) {
+      return {
+        id: this.nextMappingId++,
+        sourceField: defaults.sourceField || "",
+        metaKey: defaults.metaKey || "",
+      };
+    },
+    initializeMappings(sourceFields) {
+      const preferredPrimaryField = sourceFields.includes("id")
+        ? "id"
+        : (sourceFields.includes("email") ? "email" : "");
+
+      this.primaryKeyMapping = {
+        sourceField: preferredPrimaryField,
+        targetField: preferredPrimaryField === "email" ? "email" : "extId",
+      };
+      this.metadataMappings = [
+        this.createMappingRow(),
+      ];
+    },
+    addMappingRow() {
+      this.metadataMappings.push(this.createMappingRow());
+    },
+    removeMappingRow(index) {
+      if (this.metadataMappings.length === 1) {
+        return;
+      }
+      this.metadataMappings.splice(index, 1);
     },
     resetPreview() {
       this.preview = {
@@ -309,7 +340,7 @@ export default {
       };
     },
     handleFileParsed() {
-      this.$refs.stepMapping.initializeMappings(this.sourceFields);
+      this.initializeMappings(this.sourceFields);
     },
     handleStepChange(step) {
       switch (step) {

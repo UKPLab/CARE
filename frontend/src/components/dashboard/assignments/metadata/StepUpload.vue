@@ -81,7 +81,6 @@ export default {
      * // Output: [{ id: "1" }, { id: "2" }]
      * const flatRows = this.flattenRows(payload);
      */
-
     flattenRows(payload) {
       if (Array.isArray(payload)) {
         return payload.flatMap((entry) => this.flattenRows(entry));
