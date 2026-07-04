@@ -2,7 +2,7 @@
 
 const navElements = [
   {
-    name: 'AIHooks',
+    name: 'AI Hooks',
     icon: 'link-45deg',
     order: 4,
     admin: false,

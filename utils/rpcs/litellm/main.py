@@ -45,6 +45,11 @@ def create_app():
                 models.append(as_text)
         return list(dict.fromkeys(models))
 
+    def clear_model_discovery_cache():
+        model_cache = getattr(getattr(litellm, "utils", None), "_model_cache", None)
+        if model_cache and hasattr(model_cache, "flush_cache"):
+            model_cache.flush_cache()
+
     def build_router(model, completion_params):
         fallback_models = normalize_model_list(completion_params.pop("fallback_models", []))
         model_order = [model] + [m for m in fallback_models if m != model]
@@ -52,7 +57,7 @@ def create_app():
         router_model_list = []
         for model_name in model_order:
             litellm_params = {"model": model_name}
-            for key in ("api_key", "api_base", "api_version"):
+            for key in ("api_key", "api_base", "api_version", "custom_llm_provider"):
                 if completion_params.get(key) is not None:
                     litellm_params[key] = completion_params[key]
             router_model_list.append({"model_name": model_name, "litellm_params": litellm_params})
@@ -323,6 +328,8 @@ def create_app():
         logger.info(f"getValidModels from {sid}: provider={provider or 'auto'}")
 
         try:
+            clear_model_discovery_cache()
+
             kwargs = {
                 "check_provider_endpoint": True,
                 "custom_llm_provider": provider or None,
@@ -347,6 +354,8 @@ def create_app():
                     kwargs.pop(unexpected_key, None)
 
             models = sorted({str(model) for model in (valid_models or []) if model})
+            if provider:
+                models = [model if "/" in model else f"{provider}/{model}" for model in models]
             return {"success": True, "data": {"models": models}}
         except Exception as e:
             logger.error(f"getValidModels error: provider={provider} {e}")

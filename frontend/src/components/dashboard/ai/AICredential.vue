@@ -155,10 +155,6 @@ export default {
         this.toastError("Credential name is required");
         return;
       }
-      if (!this.credentialForm.id && !this.credentialForm.apiKey.trim()) {
-        this.toastError("API key is required for new credentials");
-        return;
-      }
       if (!this.credentialForm.provider.trim()) {
         this.toastError("Provider is required");
         return;

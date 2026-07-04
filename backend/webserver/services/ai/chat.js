@@ -213,7 +213,7 @@ async function testModel(service, client, data) {
     }
 
     const credential = await service.server.db.models.ai_credential.getById(credentialId, {
-        attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
         throw new Error("Credential not found");
@@ -236,6 +236,10 @@ async function testModel(service, client, data) {
     }
     if (credential.apiVersion) {
         params.api_version = credential.apiVersion;
+    }
+    const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
+    if (provider) {
+        params.custom_llm_provider = provider;
     }
     if (
         data?.additionalParameters &&
