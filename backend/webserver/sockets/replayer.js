@@ -41,12 +41,14 @@ class ReplayerSocket extends Socket {
             maxIterations,
             ackTimeout = 2000,
             progressId = null,
+            latencyThreshold = Infinity,
+            singleLevel = null,
         } = data;
 
         if (!Array.isArray(recordingIds) || recordingIds.length === 0) {
             throw new Error('recordingIds must be a non-empty array');
         }
-        if (!Number.isInteger(maxIterations) || maxIterations < 1) {
+        if (!singleLevel && (!Number.isInteger(maxIterations) || maxIterations < 1)) {
             throw new Error('maxIterations must be a positive integer');
         }
 
@@ -59,8 +61,12 @@ class ReplayerSocket extends Socket {
 
         const serverUrl = `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
 
+        if (Number.isInteger(singleLevel) && singleLevel > 0) {
+            return await this.runOneLevel(pool, serverUrl, timingMode, singleLevel, ackTimeout, progressId);
+        }
+
         const iterations = await this.runScalingTest(
-            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId
+            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId, latencyThreshold
         );
 
         return iterations;
@@ -137,6 +143,40 @@ class ReplayerSocket extends Socket {
     }
 
     /**
+     * Run one level of `concurrency` parallel sessions once, return its results.
+     * Used by the client-driven ceiling finder (open-ended escalation).
+     */
+    async runOneLevel(pool, serverUrl, timingMode, concurrency, ackTimeout, progressId = null) {
+        const N = pool.sessions.length;
+        const activeSessions = [];
+        for (let i = 0; i < concurrency; i++) activeSessions.push(pool.sessions[i % N]);
+
+        // Per-trace progress for this one level. Total = concurrency * traces-per-session.
+        const totalTraces = concurrency * (N > 0 ? Math.round(pool.sessions.reduce((s, x) => s + x.traces.length, 0) / N) : 0);
+        let completed = 0, lastPct = -1;
+        const emitProgress = throttle(() => {
+            this.socket.emit("progressUpdate", { id: progressId, current: completed, total: totalTraces });
+        }, 500);
+        const onTraceProgress = () => {
+            completed++;
+            if (!progressId || totalTraces === 0) return;
+            const pct = Math.floor((completed / totalTraces) * 100);
+            if (pct !== lastPct) { lastPct = pct; emitProgress(); }
+        };
+
+        const start = Date.now();
+        const results = await Promise.all(
+            activeSessions.map(session => {
+                const user = pool.userMap.get(session.userId);
+                return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress)
+                    .then(r => ({ ...r, sessionKey: session.sessionKey, recordingId: session.recordingId, recordingName: session.recordingName }));
+            })
+        );
+        emitProgress.flush();
+        return { sessions: concurrency, results, duration: Date.now() - start };
+    }
+
+    /**
      * Execute the scaling-correctness loop on the pooled session list.
      * Iteration K runs K * N parallel sockets, cycling through the pool
      * with wraparound (linear add: each iteration adds one full copy of
@@ -151,7 +191,7 @@ class ReplayerSocket extends Socket {
      * @param {number} maxIterations - Number of iterations to run
      * @returns {Promise<Array<Object>>} Iteration results
      */
-    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null) {
+    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null, latencyThreshold = Infinity) {
         const allResults = [];
         const N = pool.sessions.length;
 
@@ -214,16 +254,34 @@ class ReplayerSocket extends Socket {
             const levelDuration = Date.now() - levelStart;
 
             const levelFailed = levelResults.some(r => r.failed > 0);
+
+            // p95 latency across all this level's traces — the "too much delay"
+            // stop signal. Catches degradation (pool pressure) before hard
+            // failures. Off by default (Infinity); the perf tool opts in.
+            const levelLatencies = [];
+            for (const r of levelResults) {
+                for (const l of (r.latencies || [])) levelLatencies.push(l.latency);
+            }
+            levelLatencies.sort((a, b) => a - b);
+            const p95 = levelLatencies.length
+                ? levelLatencies[Math.min(levelLatencies.length - 1, Math.floor(0.95 * levelLatencies.length))]
+                : 0;
+            const latencyExceeded = p95 > latencyThreshold;
+
             allResults.push({
                 level,
                 sessions: totalSockets,
                 results: levelResults,
                 passed: !levelFailed,
                 duration: levelDuration,
+                p95,
             });
 
-            if (levelFailed && !continueOnFailure) {
-                this.sendToast(`Replay stopped at iteration ${level}`, 'Replay', 'danger');
+            if ((levelFailed || latencyExceeded) && !continueOnFailure) {
+                const reason = levelFailed
+                    ? 'trace failure'
+                    : `p95 latency ${p95}ms exceeded threshold ${latencyThreshold}ms`;
+                this.sendToast(`Replay stopped at iteration ${level} (${reason})`, 'Replay', 'danger');
                 break;
             }
         }
