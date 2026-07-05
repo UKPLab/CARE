@@ -2,6 +2,7 @@
 
 const Socket = require('../Socket.js');
 const { replayUserTraces } = require('../replay/worker');
+const throttle = require('lodash/throttle');
 
 /**
  * Handles replaying recorded socket events for stress testing.
@@ -164,17 +165,26 @@ class ReplayerSocket extends Socket {
         // so a large run doesn't flood the admin socket with thousands of events.
         let completedTraces = 0;
         let lastPct = -1;
+
+        // Rate-limit the emit to at most once per 500ms (trailing: always sends
+        // the latest value). Layered on top of the percent-change filter below,
+        // so on fast runs where the percent changes many times a second we still
+        // cap the socket traffic. Per Dennis's suggestion (lodash throttle).
+        const emitProgress = throttle(() => {
+            this.socket.emit("progressUpdate", {
+                id: progressId,
+                current: completedTraces,
+                total: totalTraces,
+            });
+        }, 500);
+
         const onTraceProgress = () => {
             completedTraces++;
             if (!progressId || totalTraces === 0) return;
             const pct = Math.floor((completedTraces / totalTraces) * 100);
             if (pct !== lastPct) {
                 lastPct = pct;
-                this.socket.emit("progressUpdate", {
-                    id: progressId,
-                    current: completedTraces,
-                    total: totalTraces,
-                });
+                emitProgress();
             }
         };
 
@@ -217,6 +227,11 @@ class ReplayerSocket extends Socket {
                 break;
             }
         }
+
+        // Force out the final throttled update so the bar lands on its true
+        // end value instead of being left one throttle-window short. Runs on
+        // both normal completion and early-failure break above.
+        emitProgress.flush();
 
         return allResults;
     }
