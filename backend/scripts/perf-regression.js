@@ -21,7 +21,7 @@ async function runRegression(cfg, ctx) {
         continueOnFailure: true,   // run all stories so we report every failure, not just the first
         maxIterations: 1,          // once — no scaling
         ackTimeout: cfg.ackTimeout,
-    });
+    },0);
 
     if (!ack || !ack.success) {
         console.error('REGRESSION ERROR — replayRun failed: ' + (ack && ack.message));
