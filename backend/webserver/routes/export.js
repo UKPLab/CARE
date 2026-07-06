@@ -38,7 +38,7 @@ module.exports = function (server) {
         }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, includeNonConsentingEdits, includeNonConsentingAnnotations } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, includeNonConsentingEdits, includeNonConsentingAnnotations } = req.body;
         let { userIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldIncludeNonConsentingEdits = String(includeNonConsentingEdits) === 'true';
@@ -69,6 +69,17 @@ module.exports = function (server) {
                 return res.status(400).send("No valid users selected.");
             }
 
+            const projectCheck = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
+            if (!projectCheck) {
+                console.warn(`${parsedProjectId} does not exist.`);
+                return res.status(403).send("The selected project does not exist.");
+            }
+
+            const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
+            if (users.length === 0) {
+                console.warn("Export aborted: No existing users to export.");
+                return res.status(400).send("No authorized users to export.");
+            }
 
             // build user mapping for aliases
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
@@ -103,6 +114,19 @@ module.exports = function (server) {
                         archive
                     );
                     break;
+                case 'grades':
+                    await processGradesExport(
+                        server,
+                        parsedProjectId,
+                        userIds,
+                        users,
+                        shouldGenerateAliases,
+                        hasPrivateInfoRight,
+                        userMapping,
+                        normalizedGradeFormat,
+                        archive
+                    );
+                    break;
                 case 'documents':
                     await processDocumentBasedExport(
                         server,
@@ -116,7 +140,7 @@ module.exports = function (server) {
                     );
                     break;
                 default:
-                    console.warn(`Export type ${exportType} not implemented.`);
+                    return res.status(400).send("Unsupported export type.");
             }
 
             await archive.finalize();
@@ -142,14 +166,18 @@ module.exports = function (server) {
         const fileData = fs.readFileSync(filePath);
         const zip = await JSZip.loadAsync(fileData);
 
+         // TODO: What if the realName contains middle name?
+        const [realFirstName = "", realLastName = ""] = String(realName || "").split(/\s+/, 2);
+        const [fakeFirstName = "", fakeLastName = ""] = String(fakeName || "").split(/\s+/, 2);
+
         const authorRegex = /\\author\s*\{[^}]*\}/g;
 
         for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
             if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.tex')) {
                 let text = await zipEntry.async("string");
                 text = text.replace(authorRegex, `\\author{${fakeName}}`);
-                text = text.replace(realName.split(" ")[0], fakeName.split(" ")[0]);
-                text = text.replace(realName.split(" ")[1], fakeName.split(" ")[1]);
+                if (realFirstName && fakeFirstName) text = text.replace(realFirstName, fakeFirstName);
+                if (realLastName && fakeLastName) text = text.replace(realLastName, fakeLastName);
                 
                 zip.file(relativePath, text); 
             }
@@ -183,7 +211,8 @@ module.exports = function (server) {
                 faker.seed(derivedFakerSeed);
             }
 
-            users.forEach(u => {
+            const sortedUsers = [...users].sort((a, b) => Number(a.id) - Number(b.id));
+            sortedUsers.forEach(u => {
                 const realUsername = u.userName;
                 const realName = `${u.firstName} ${u.lastName}`;
                 const fakeName = `${faker.person.firstName()} ${faker.person.lastName()}`;
@@ -258,6 +287,7 @@ module.exports = function (server) {
 
             const validationRules = configMap.get(submission.validationConfigurationId);
             let folderName = shouldGenerateAliases ? userMapping[student.id] : (hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : `${student.userName}`);
+            folderName = sanitizeFolderName(folderName);
 
             for (const doc of submission.documents) {
                 const version = calculateSubmissionVersion(submission, submissionMap);
@@ -280,7 +310,7 @@ module.exports = function (server) {
 
                 if (fs.existsSync(filePath)) {
                     if (shouldGenerateAliases && doc.type == 4) {
-                        const realName = `${student.firstName} ${student.lastName}`;
+                        const realName = `${student.firstName || ""} ${student.lastName || ""}`.trim();
                         const fakeName = userMapping[student.id];
                         try {
                             const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
