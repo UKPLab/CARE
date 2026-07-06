@@ -624,22 +624,24 @@ export default {
 }
 
 .stepper {
+  --stepper-pad-top: 1.25rem;
+  --stepper-circle: 30px;
   display: flex;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 2;
-  background-color: var(--bs-body-bg, #fff);
-  padding-top: 1.25rem;
-  padding-bottom: 1.25rem;
   margin-bottom: 1.5rem;
+  background-color: var(--bs-body-bg, #fff);
+  padding-top: var(--stepper-pad-top);
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .stepper::after {
   content: "";
   position: absolute;
-  top: calc(1.25rem + 14px);
+  top: calc(var(--stepper-pad-top) + (var(--stepper-circle) / 2) - 1px);
   left: 0;
   right: 0;
   height: 2px;
@@ -652,13 +654,20 @@ export default {
   padding: 0 5px;
 }
 
+.stepper > div:first-child {
+  padding-left: 0;
+}
+
+.stepper > div:last-child {
+  padding-right: 0;
+}
+
 .stepper > div::before {
-  --dim: 28px;
   content: attr(data-index);
   margin-right: 6px;
   display: inline-flex;
-  width: var(--dim);
-  height: var(--dim);
+  width: var(--stepper-circle);
+  height: var(--stepper-circle);
   border-radius: 50%;
   align-items: center;
   justify-content: center;
