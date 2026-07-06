@@ -2,6 +2,7 @@
 
 const { resolveRecordings } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
+const { MetricSampler } = require('./perf-metrics');
 
 /**
  * Ceiling finder: climb concurrency by --step each level, no cap, until a stop
@@ -19,11 +20,18 @@ async function runCeiling(cfg, ctx) {
 
     console.log('  ceiling recordings: ' + ids.join(', '));
     console.log(`Climbing concurrency by ${step} each level until failure or p95 > ${cfg.latencyThreshold}ms ...`);
-    console.log('  level  concurrency  passed  failed  avgMs  p95Ms  thru/s  status');
+    console.log('  level  concurrency  passed  failed  avgMs  p95Ms  thru/s  wait  status');
 
     let concurrency = step;
     let level = 0;
     let lastGood = 0;
+
+    // Sample server vitals continuously through the climb (approach a). After
+    // each level we read the peak pool-waiting since the last level — the DB
+    // pool backing up is the original pool-exhaustion failure, measured directly.
+    const sampler = new MetricSampler(ctx.emitWithAck, 1000);
+    sampler.start();
+    let poolWaitingBaseline = 0;
 
     while (true) {
         level++;
@@ -47,23 +55,36 @@ async function runCeiling(cfg, ctx) {
         process.stdout.write('\r' + ' '.repeat(50) + '\r');  // clear the progress line
 
         if (!ack || !ack.success) {
+            await sampler.stop();
             console.error('\nCEILING ERROR — replayRun failed: ' + (ack && ack.message));
             return 1;
         }
 
         const m = metrics(ack.data);
-        const tripped = m.failed > 0 || m.p95 > cfg.latencyThreshold;
+
+        // Pool-waiting: the DB pool backing up = pool exhaustion (the original
+        // failure). Read the peak since we started; if it climbed above 0, the
+        // pool saturated at this concurrency.
+        const peakWaiting = sampler.peakPoolWaiting();
+        const poolSaturated = peakWaiting > poolWaitingBaseline && peakWaiting > 0;
+
+        const tripped = m.failed > 0 || m.p95 > cfg.latencyThreshold || poolSaturated;
         const status = tripped ? 'STOP' : 'ok';
-        console.log(`  ${pad(level, 5)}  ${pad(concurrency, 11)}  ${pad(m.passed, 6)}  ${pad(m.failed, 6)}  ${pad(m.avg, 5)}  ${pad(m.p95, 5)}  ${pad(m.thru, 6)}  ${status}`);
+        console.log(`  ${pad(level, 5)}  ${pad(concurrency, 11)}  ${pad(m.passed, 6)}  ${pad(m.failed, 6)}  ${pad(m.avg, 5)}  ${pad(m.p95, 5)}  ${pad(m.thru, 6)}  ${pad(peakWaiting, 4)}  ${status}`);
 
         if (tripped) {
-            const reason = m.failed > 0 ? `${m.failed} trace failure(s)` : `p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms`;
+            let reason;
+            if (poolSaturated) reason = `DB pool saturated (waiting peaked at ${peakWaiting})`;
+            else if (m.failed > 0) reason = `${m.failed} trace failure(s)`;
+            else reason = `p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms`;
+            await sampler.stop();
             console.log(`\nCEILING: server sustained ${lastGood} concurrent sessions; degraded at ${concurrency} (${reason}).`);
             return 0;
         }
 
         lastGood = concurrency;
         if (level >= hardCap) {
+            await sampler.stop();
             console.log(`\nCEILING: hit safety cap (${hardCap} levels) at ${concurrency} sessions, still healthy — raise --max-iterations or lower --latency-threshold to push further.`);
             return 0;
         }
