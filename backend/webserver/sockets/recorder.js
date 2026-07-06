@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const { snapshot } = require("../../db/stats.js");
 
 // The recorder's own control events. These are recording machinery, not user
 // activity, so they're never captured — otherwise a recording would include
@@ -8,6 +9,8 @@ const RECORDER_CONTROL_EVENTS = [
     "recorderStop",
     "recordingGetTraces",
     "recordingGetOnlineSessions",
+    "recordingGetPerfHealth",
+    "recordingGetPerfStats"
 ];
 
 /**
@@ -305,11 +308,53 @@ class RecorderSocket extends Socket {
 
     }
 
+    /**
+     * Return a snapshot of backend process vitals for perf metric sampling.
+     * Admin-only. Used by the perf tool to detect memory/connection leaks and
+     * event-loop pressure during load tests.
+     * @param {Object} data
+     * @param {Object} options
+     * @returns {Promise<Object>} process vitals (memory, socket/recording counts, uptime)
+     * @throws {Error} if the caller is not an admin
+     */
+    async getPerfHealth(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
+        const mem = process.memoryUsage();
+        return {
+            rss: mem.rss,
+            heapUsed: mem.heapUsed,
+            heapTotal: mem.heapTotal,
+            socketCount: Object.keys(this.server.availSockets || {}).length,
+            activeRecordings: Object.keys(this.server.activeRecordings || {}).length,
+            uptime: process.uptime(),
+        };
+    }
+
+    /**
+     * Return a snapshot of PostgreSQL runtime stats (connection counts, Sequelize
+     * pool usage incl. waiting, DB counters, locks) for perf metric sampling.
+     * Admin-only. Delegates to the shared db/stats.js snapshot().
+     * @param {Object} data
+     * @param {Object} options
+     * @returns {Promise<Object>} pg_stat snapshot
+     * @throws {Error} if the caller is not an admin
+     */
+    async getPerfStats(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
+        return await snapshot(this.server.db.sequelize, this.logger);
+    }
+
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
         this.createSocket("recorderStop", this.stopRecording, {}, false);
         this.createSocket("recordingGetTraces", this.getTraces, {}, false);
         this.createSocket("recordingGetOnlineSessions", this.getOnlineSessions, {}, false);
+        this.createSocket("recordingGetPerfHealth", this.getPerfHealth, {}, false);
+        this.createSocket("recordingGetPerfStats", this.getPerfStats, {}, false);
 
         if (this.isSessionIncluded(this.socket.id)) {
             this.attachListeners();
