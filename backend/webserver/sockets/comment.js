@@ -56,7 +56,7 @@ class CommentSocket extends Socket {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
                 const parentComment = await this.models['comment'].getById(data.parentCommentId);
-                if (!this.checkUserAccess(parentComment.userId)) {
+                if (!(await this.checkUserAccess(parentComment.userId))) {
                     throw Error("You are not allowed to add a comment.");
                 } else {
                     data.userId = await this.models['user'].getUserIdByName("Bot");
@@ -100,7 +100,7 @@ class CommentSocket extends Socket {
      */
     async sendComment(data, options) {
         const comment = await this.models['comment'].getById(data.commentId);
-        if (!this.checkDocumentAccess(comment.documentId)) {
+        if (!(await this.checkDocumentAccess(comment.documentId))) {
             throw new Error("You don't have access to this comment");
         }
         this.emit("commentRefresh", comment);
