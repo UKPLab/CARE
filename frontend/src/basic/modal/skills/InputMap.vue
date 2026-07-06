@@ -66,6 +66,7 @@
  */
 import FormSelect from "@/basic/form/Select.vue";
 import deepEqual from "deep-equal";
+import { tokenInnerText } from "@/components/editor/template/placeholderTokens.js";
 
 export default {
   name: "InputMap",
@@ -437,9 +438,13 @@ export default {
     fetchHookPlaceholders(templateId) {
       this.$socket.emit("templatePlaceholderGetUsed", {templateId}, (result) => {
         const list = Array.isArray(result) ? result : (result?.data ?? []);
-        this.hookPlaceholders = list
-            .map((placeholder) => placeholder.placeholderKey)
-            .filter(Boolean);
+        this.hookPlaceholders = list.flatMap((placeholder) => {
+          const indexes = placeholder.usedIndexes || [];
+          if (indexes.length === 0) {
+            return placeholder.placeholderKey ? [placeholder.placeholderKey] : [];
+          }
+          return indexes.map((index) => tokenInnerText(placeholder.placeholderKey, index));
+        }).filter(Boolean);
       });
     },
     // Append resolved document and submission-derived sources for the current step

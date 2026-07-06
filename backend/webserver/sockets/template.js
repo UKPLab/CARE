@@ -6,7 +6,9 @@ const {dbToDelta} = require("editor-delta-conversion");
 const {
   resolveTemplate,
   resolveTemplateToDelta,
-  getMissingRequiredPlaceholders, getUsedPlaceholders,
+  getMissingRequiredPlaceholders,
+  getDuplicatePlaceholderIds,
+  getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/templateResolver");
 
@@ -503,7 +505,8 @@ class TemplateSocket extends Socket {
    * @param {number} [data.context.studyStepId]     Study step ID (prompt placeholders, editor resolution)
    * @param {number} [data.context.documentId]      Document ID (prompt placeholders)
    * @param {string} [data.context.pdfText]         Extracted text for the current PDF (`~pdfText~`; caller-supplied)
-   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for each submission PDF (`~submissionFiles~`)
+   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for submission PDF text extraction
+   * @param {Object} [data.context.placeholderMapping] Per-key index maps for bracket tokens (e.g. submissionFiles: { 1: documentId, 3: documentId })
    * @param {string} [data.context.editorText]      Optional editor plain-text override (`~editorText~`)
    * @param {string} [data.context.studySessionHash] Study session hash (for link)
    * @param {string} [data.context.baseUrl]          Base URL for generating links
@@ -565,6 +568,30 @@ class TemplateSocket extends Socket {
   }
 
   /**
+   * Reject save when merged content contains duplicate placeholder ids.
+   *
+   * @param {Object} content - Delta content with ops
+   * @param {number} templateType - Template type
+   * @param {Object} options - Sequelize options
+   * @returns {Promise<void>}
+   * @throws {Error}
+   */
+  async assertNoDuplicatePlaceholders(content, templateType, options = {}) {
+    const duplicates = await getDuplicatePlaceholderIds(
+      content,
+      templateType,
+      this.models,
+      options
+    );
+    if (duplicates.length > 0) {
+      throw new Error(
+        `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
+        `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
+      );
+    }
+  }
+
+  /**
    * Save template by merging draft edits into template_content for the given language
    *
    * Merges all draft edits (draft=true) from template_edit for (templateId, language) into
@@ -595,17 +622,17 @@ class TemplateSocket extends Socket {
     });
 
     if (edits.length === 0) {
+      const templateContentModel = this.models["template_content"];
+      const langRow = await templateContentModel.findOne({
+        where: { templateId, language, deleted: false },
+        raw: true,
+        ...options,
+      });
+      let baseContent = new Delta();
+      if (langRow && langRow.content && langRow.content.ops) {
+        baseContent = new Delta(langRow.content.ops);
+      }
       if ([1, 2, 3, 6, 7].includes(template.type)) {
-        const templateContentModel = this.models["template_content"];
-        const langRow = await templateContentModel.findOne({
-          where: { templateId, language, deleted: false },
-          raw: true,
-          ...options,
-        });
-        let baseContent = new Delta();
-        if (langRow && langRow.content && langRow.content.ops) {
-          baseContent = new Delta(langRow.content.ops);
-        }
         const missing = await getMissingRequiredPlaceholders(
           { ops: baseContent.ops },
           template.type,
@@ -616,6 +643,11 @@ class TemplateSocket extends Socket {
           throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
         }
       }
+      await this.assertNoDuplicatePlaceholders(
+        { ops: baseContent.ops },
+        template.type,
+        options
+      );
       return;
     }
 
@@ -645,6 +677,12 @@ class TemplateSocket extends Socket {
         throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
       }
     }
+
+    await this.assertNoDuplicatePlaceholders(
+      { ops: mergedDelta.ops },
+      template.type,
+      options
+    );
 
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {

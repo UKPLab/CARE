@@ -12,6 +12,15 @@ const path = require("path");
 const {Op} = require("sequelize");
 const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
 const {resolveNlpAssessmentDraft} = require("./studyNlpDocumentData");
+const {
+    applyPlaceholderReplacements,
+    countPlaceholdersByKey,
+    formatDuplicatePlaceholderToken,
+    getDuplicatePlaceholderIndexes,
+    getUsedIndexes,
+    hasPlaceholderForKey,
+    tokenInnerText,
+} = require("./placeholderTokens");
 const UPLOAD_PATH = `${__dirname}/../../files`;
 const TEXT_PLACEHOLDER_CHAR_CAP = 2000;
 
@@ -201,6 +210,119 @@ async function getMergedDocumentData(models, context, options = {}) {
 }
 
 /**
+ * Read per-index mapping for a placeholder key from context.
+ *
+ * @param {Object} context - Resolver context
+ * @param {string} baseKey - Placeholder key without tildes
+ * @returns {Object|null} Per-index placeholder mapping
+ */
+function getPlaceholderMappingForKey(context, baseKey) {
+    const mappingRoot = context.placeholderMapping;
+    if (mappingRoot && mappingRoot[baseKey] != null) {
+        return mappingRoot[baseKey];
+    }
+    return null;
+}
+
+/**
+ * Resolve one entry from a placeholder mapping at an index.
+ *
+ * @param {Object} mapping - Placeholder mapping
+ * @param {number} index - Placeholder index
+ * @returns {*} Mapped value or undefined
+ */
+function resolveMappingEntry(mapping, index) {
+    if (mapping == null) {
+        return undefined;
+    }
+    if (Array.isArray(mapping)) {
+        return mapping[index - 1];
+    }
+    if (typeof mapping === "object") {
+        return mapping[index] ?? mapping[String(index)];
+    }
+    return undefined;
+}
+
+/**
+ * Plain text for a document id (used by indexed submissionFiles placeholders).
+ *
+ * @param {number} documentId - Document id
+ * @param {Object} models - DB models
+ * @param {Object} context - Resolver context
+ * @param {Object} options - Query options
+ * @returns {Promise<string>}
+ */
+async function resolveDocumentPlainText(documentId, models, context, options = {}) {
+    if (!documentId) {
+        return "";
+    }
+
+    const submissionPdfTexts = context.submissionPdfTexts && typeof context.submissionPdfTexts === "object"
+        ? context.submissionPdfTexts
+        : null;
+    if (submissionPdfTexts) {
+        const fromMap =
+            submissionPdfTexts[documentId] ??
+            submissionPdfTexts[String(documentId)];
+        if (fromMap) {
+            return capText(fromMap);
+        }
+    }
+    if (context.pdfText && Number(context.documentId) === Number(documentId)) {
+        return capText(context.pdfText);
+    }
+
+    const extracted = await models["document"].loadPlainText(documentId);
+    return extracted ? capText(extracted) : "";
+}
+
+/**
+ * Resolve placeholder value from a replacement map.
+ *
+ * @param {string} baseKey - Placeholder key
+ * @param {number} index - Placeholder index, or null for unbracketed ~key~
+ * @param {Object} replacements - Map of ~token~ to resolved string
+ * @returns {string} Resolved replacement value
+ */
+function resolveReplacementForToken(baseKey, index, replacements) {
+    if (index != null) {
+        const bracketToken = `~${baseKey}[${index}]~`;
+        if (Object.prototype.hasOwnProperty.call(replacements, bracketToken)) {
+            return replacements[bracketToken];
+        }
+    }
+    const legacyToken = `~${baseKey}~`;
+    if (Object.prototype.hasOwnProperty.call(replacements, legacyToken)) {
+        return replacements[legacyToken];
+    }
+    return undefined;
+}
+
+/**
+ * Add per-index ~submissionFiles[N]~ replacements from context.placeholderMapping.
+ *
+ * @param {string} text - Template plain text
+ * @param {Object} replacements - Mutable replacement map
+ * @param {Object} context - Resolver context
+ * @param {Object} models - DB models
+ * @param {Object} options - Query options
+ * @returns {Promise<void>}
+ */
+async function addIndexedSubmissionFileReplacements(text, replacements, context, models, options = {}) {
+    const indexes = getUsedIndexes(text, "submissionFiles");
+    if (indexes.length === 0) {
+        return;
+    }
+    const mapping = getPlaceholderMappingForKey(context, "submissionFiles");
+    for (const index of indexes) {
+        const documentId = resolveMappingEntry(mapping, index);
+        const fileText = await resolveDocumentPlainText(documentId, models, context, options);
+        replacements[`~submissionFiles[${index}]~`] = fileText;
+    }
+}
+
+/**
  * Resolve prompt-specific placeholders (type 8) from context and database. It is similar to the payload that NLP skills had built.
  *
  * @param {Object} context - Resolver context
@@ -339,81 +461,7 @@ async function buildPromptPlaceholderValues(context, models, allow, options = {}
         promptValues["~assessmentConfiguration~"] = assessmentConfiguration;
     }
 
-    if (allow("submissionFiles")) {
-        let submissionFiles = "";
-        if (context.documentId) {
-            const document = await models["document"].getById(context.documentId, options);
-            if (document?.submissionId) {
-                const docs = await models["document"].findAll({
-                    where: {
-                        submissionId: document.submissionId,
-                        deleted: false,
-                    },
-                    raw: true,
-                    ...options,
-                });
-
-                const docTypes = models["document"].docTypes;
-                const pdfDocs = docs
-                    .filter((d) => d.type === docTypes.DOC_TYPE_PDF)
-                    .sort((a, b) => a.id - b.id);
-                // non-PDF rows go to otherFiles; PDF rows are listed separately in pdfFiles.
-                const pdfIdSet = new Set(pdfDocs.map((d) => d.id));
-                const submissionPdfTexts = context.submissionPdfTexts && typeof context.submissionPdfTexts === "object"
-                    ? context.submissionPdfTexts
-                    : null;
-                // Resolve a file's text: caller-supplied map → primary-doc context.pdfText → on-demand extraction.
-                const textForSubmissionFile = async (submissionDocument) => {
-                    if (submissionPdfTexts) {
-                        const fromMap =
-                            submissionPdfTexts[submissionDocument.id] ??
-                            submissionPdfTexts[String(submissionDocument.id)];
-                        if (fromMap) {
-                            return capText(fromMap);
-                        }
-                    }
-                    if (context.pdfText && context.documentId === submissionDocument.id) {
-                        return capText(context.pdfText);
-                    }
-                    const extracted = await models["document"].loadPlainText(submissionDocument.id);
-                    return extracted ? capText(extracted) : "";
-                };
-
-                const pdfFiles = await Promise.all(pdfDocs.map(async (d) => ({
-                    documentId: d.id,
-                    filename: d.originalFilename || d.name || `document_${d.id}`,
-                    text: await textForSubmissionFile(d),
-                })));
-
-                const otherFiles = await Promise.all(docs
-                    .filter((d) => !pdfIdSet.has(d.id))
-                    .map(async (d) => {
-                        const entry = {
-                            role: "attachment",
-                            documentId: d.id,
-                            filename: d.originalFilename || d.name || `document_${d.id}`,
-                            type:
-                                d.type === docTypes.DOC_TYPE_ZIP
-                                    ? "zip"
-                                    : (d.type === docTypes.DOC_TYPE_HTML || d.type === docTypes.DOC_TYPE_MODAL)
-                                        ? "text"
-                                        : "other",
-                        };
-                        // Surface extractable text for zip attachments (.tex entries); other types stay manifest-only.
-                        if (d.type === docTypes.DOC_TYPE_ZIP) {
-                            const extracted = await textForSubmissionFile(d);
-                            if (extracted) {
-                                entry.text = extracted;
-                            }
-                        }
-                        return entry;
-                    }));
-
-                submissionFiles = {pdfFiles, otherFiles};
-            }
-        }
-        promptValues["~submissionFiles~"] = submissionFiles;
-    }
+    // submissionFiles uses ~submissionFiles[N]~ tokens resolved via placeholderMapping in resolveTemplate.
 
     if (allow("studyContext")) {
         let studyName = "";
@@ -646,12 +694,12 @@ async function resolveTemplate(templateId, context, models, options = {}) {
     const replacements = await buildReplacementMap(context, models, options);
     
     const text = deltaToPlainText(content);
-    let resolvedText = text;
-    for (const [placeholder, value] of Object.entries(replacements)) {
-        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedPlaceholder, 'g');
-        resolvedText = resolvedText.replace(regex, value || "");
+    if (template.type === 8) {
+        await addIndexedSubmissionFileReplacements(text, replacements, context, models, options);
     }
+    let resolvedText = applyPlaceholderReplacements(text, (baseKey, index) => {
+        return resolveReplacementForToken(baseKey, index, replacements);
+    });
     
     // Make URLs clickable: split by URL pattern, escape non-URL parts, wrap URLs in <a>
     const urlPattern = /(https?:\/\/\S+)/g;
@@ -719,25 +767,17 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
         originalDelta = new Delta(content.ops);
     }
     
-    let text = extractTextFromDelta(originalDelta);
-    let resolvedText = text;
-    
-    for (const [placeholder, value] of Object.entries(replacements)) {
-        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedPlaceholder, 'g');
-        resolvedText = resolvedText.replace(regex, value || "");
+    const text = extractTextFromDelta(originalDelta);
+    if (template.type === 8) {
+        await addIndexedSubmissionFileReplacements(text, replacements, context, models, options);
     }
+    const resolveToken = (baseKey, index) => resolveReplacementForToken(baseKey, index, replacements);
     
     const resolvedDelta = new Delta();
     
     for (const op of originalDelta.ops) {
         if (op.insert && typeof op.insert === 'string') {
-            let insertText = op.insert;
-            for (const [placeholder, value] of Object.entries(replacements)) {
-                const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(escapedPlaceholder, 'g');
-                insertText = insertText.replace(regex, value || "");
-            }
+            let insertText = applyPlaceholderReplacements(op.insert, resolveToken);
             
             if (op.attributes) {
                 resolvedDelta.insert(insertText, op.attributes);
@@ -773,12 +813,32 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
     if (requiredKeys.length === 0) return [];
 
     const text = deltaToPlainText(content && content.ops ? { ops: content.ops } : content);
+    const bracketOnly = templateType === 8;
     const missing = [];
     for (const key of requiredKeys) {
-        const token = `~${key}~`;
-        if (!text.includes(token)) missing.push(key);
+        if (!hasPlaceholderForKey(text, key, { bracketOnly })) {
+            missing.push(key);
+        }
     }
     return missing;
+}
+
+/**
+ * Return duplicate placeholder token strings for allowed keys in template content.
+ *
+ * @param {Object} content - Quill Delta object with ops array
+ * @param {number} templateType - Template type
+ * @param {Object} models - Database models
+ * @param {Object} [options]
+ * @returns {Promise<Array>} Duplicate placeholder token strings
+ */
+async function getDuplicatePlaceholderIds(content, templateType, models, options = {}) {
+    const rows = await models["placeholder"].getAllByKey("type", templateType, options);
+    const allowedKeys = new Set(rows.map((row) => row.placeholderKey));
+    const text = deltaToPlainText(content && content.ops ? { ops: content.ops } : content);
+    return getDuplicatePlaceholderIndexes(text)
+        .filter((entry) => allowedKeys.has(entry.key))
+        .map((entry) => formatDuplicatePlaceholderToken(entry));
 }
 
 /**
@@ -786,7 +846,7 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
  *
  * Unlike {@link resolveTemplate}, this does NOT query the database for placeholder data — the
  * caller provides a `{ placeholderKey: value }` map (e.g. assembled in the frontend and the runhook function from the
- * input mapping). Each `~placeholderKey~` token is replaced by its value (objects/arrays are
+ * input mapping). Each `~placeholderKey[N]~` token is replaced by its value (objects/arrays are
  * JSON-stringified). Used by the AI-hook runtime.
  *
  * @param {number} templateId - Prompt template id.
@@ -820,24 +880,32 @@ async function resolveTemplateWithValues(templateId, values, models, options = {
         if (value === null || value === undefined) return "";
         return typeof value === "string" ? value : JSON.stringify(value);
     };
-    for (const [key, value] of Object.entries(values || {})) {
-        if (key === "language") continue;
-        const escaped = `~${key}~`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        resolvedText = resolvedText.replace(new RegExp(escaped, 'g'), () => toText(value));
-    }
+    const valueMap = values || {};
+    resolvedText = applyPlaceholderReplacements(resolvedText, (baseKey, index) => {
+        if (index != null) {
+            const inner = tokenInnerText(baseKey, index);
+            if (Object.prototype.hasOwnProperty.call(valueMap, inner)) {
+                return toText(valueMap[inner]);
+            }
+            return undefined;
+        }
+        if (template.type !== 8 && Object.prototype.hasOwnProperty.call(valueMap, baseKey)) {
+            return toText(valueMap[baseKey]);
+        }
+        return undefined;
+    });
     return resolvedText;
 }
 
 /**
- * Return the placeholders a specific template actually *uses* — i.e. the type's catalog placeholders
- * whose `~placeholderKey~` token appears in the template's content.
+ * Return placeholder catalog rows that appear in a template's content.
+ * Each row includes usedIndexes and occurrenceCount for hook input mapping.
  *
- *
- * @param {number} templateId - Template id.
- * @param {Object} models - Database models object.
- * @param {Object} [options] - Sequelize options (e.g. transaction).
- * @returns {Promise<Object[]>} Placeholder rows present in the template's content.
- * @throws {Error} If the template is missing.
+ * @param {number} templateId - Template id
+ * @param {Object} models
+ * @param {Object} [options] 
+ * @returns {Promise<Array>} Matching placeholder rows with usedIndexes and occurrenceCount
+ * @throws {Error}
  */
 async function getUsedPlaceholders(templateId, models, options = {}) {
     const template = await models["template"].getById(templateId, options);
@@ -848,8 +916,27 @@ async function getUsedPlaceholders(templateId, models, options = {}) {
         templateId, template.defaultLanguage || "en", models, options
     );
     const text = content ? deltaToPlainText(content) : "";
+    const bracketOnly = template.type === 8;
+    const countsByKey = countPlaceholdersByKey(text, { bracketOnly });
     const rows = await models["placeholder"].getAllByKey("type", template.type, options);
-    return rows.filter((row) => text.includes(`~${row.placeholderKey}~`));
+    return rows
+        .filter((row) => {
+            if (bracketOnly) {
+                return getUsedIndexes(text, row.placeholderKey).length > 0;
+            }
+            return countsByKey[row.placeholderKey] > 0;
+        })
+        .map((row) => {
+            let usedIndexes = getUsedIndexes(text, row.placeholderKey);
+            if (!bracketOnly && text.includes(`~${row.placeholderKey}~`) && !usedIndexes.includes(1)) {
+                usedIndexes = [1, ...usedIndexes].sort((a, b) => a - b);
+            }
+            return {
+                ...row,
+                occurrenceCount: countsByKey[row.placeholderKey] || usedIndexes.length,
+                usedIndexes,
+            };
+        });
 }
 
 function formatMissingPlaceholderError(missing, { action = "saving", language } = {}) {
@@ -907,6 +994,7 @@ module.exports = {
     resolveTemplateToDelta,
     resolveTemplateWithValues,
     getMissingRequiredPlaceholders,
+    getDuplicatePlaceholderIds,
     getUsedPlaceholders,
     resolveEditorText,
     formatMissingPlaceholderError,
