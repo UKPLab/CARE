@@ -1,21 +1,17 @@
 /**
+ * Shared assessment score calculation for CARE frontend and backend.
  *
- * config: full assessment configuration (with rubrics & criteria)
- * scores: flat map { [criterionName]: number }
- *
- * Returns:
- *   {
- *     total_max_points,
- *     total_min_points,
- *     achieved_points,
- *     rubrics: {
- *       [rubric_code]: { name, score, min, max }
- *     },
- *     warnings: string[]
- *   }
+ * @param {Object} config - Full assessment configuration (with rubrics & criteria)
+ * @param {Object} scores - Flat map { [criterionName]: number }
+ * @returns {{
+ *   total_max_points: number,
+ *   total_min_points: number,
+ *   achieved_points: number,
+ *   rubrics: Object,
+ *   warnings: string[]
+ * }}
  */
-
-export function calculateAssessmentScore(config, scores = {}) {
+function calculateAssessmentScore(config, scores = {}) {
     const warnings = [];
 
     const rubrics = Array.isArray(config?.rubrics) ? config.rubrics : [];
@@ -61,7 +57,6 @@ export function calculateAssessmentScore(config, scores = {}) {
             let cmin = crit.minPoints;
             let cmax = crit.maxPoints;
 
-            // Criterion min/max defaults
             if (cmin === undefined || cmin === null) {
                 cmin = 0;
                 warnings.push(
@@ -86,7 +81,7 @@ export function calculateAssessmentScore(config, scores = {}) {
                     ? Number(scores[cname])
                     : 0;
 
-            let clamped = isNaN(rawVal) ? 0 : rawVal;
+            let clamped = Number.isFinite(rawVal) ? rawVal : 0;
             if (clamped < cmin || clamped > cmax) {
                 warnings.push(
                     `Score ${rawVal} for criterion '${cname}' in rubric '${rubric_name}' was clamped to [${cmin}, ${cmax}].`
@@ -156,7 +151,6 @@ export function calculateAssessmentScore(config, scores = {}) {
         }
         achieved_points += rubric_score;
         achieved_points = Math.min(achieved_points, total_max_points);
-
     });
 
     return {
@@ -169,15 +163,23 @@ export function calculateAssessmentScore(config, scores = {}) {
 }
 
 /**
- * Helper: convert assessmentState into { criterionName: score }
+ * Converts assessmentState into { criterionName: score }.
+ *
+ * @param {Object} assessmentState
+ * @returns {Object}
  */
-export function buildScoresFromState(assessmentState = {}) {
+function buildScoresFromState(assessmentState = {}) {
     const scores = {};
     Object.entries(assessmentState).forEach(([name, st]) => {
-        if (!st) return;
+        if (!st || typeof st !== "object") return;
         const raw =
             typeof st.currentScore === "number" ? st.currentScore : Number(st.currentScore);
-        scores[name] = isNaN(raw) ? 0 : raw;
+        scores[name] = Number.isFinite(raw) ? raw : 0;
     });
     return scores;
 }
+
+module.exports = {
+    calculateAssessmentScore,
+    buildScoresFromState,
+};

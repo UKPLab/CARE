@@ -2,10 +2,11 @@
  * 
  * This module provides methods to convert between Quill Delta objects and database entries.
  * 
- * @author Juliane Bechert
+ * @author Juliane Bechert, Mélissa Loew
  * 
  */
 const Delta = require('quill-delta');
+const { QuillDeltaToHtmlConverter } = require('quill-delta-to-html');
 
 /**
  * Converts an array of database entries to a Quill Delta object.
@@ -148,39 +149,10 @@ function deltaToHtml(deltaOrOps) {
         ? deltaOrOps
         : (deltaOrOps.ops || []);
 
-    let html = '';
-    let lineBuffer = [];
+    const converter = new QuillDeltaToHtmlConverter(ops, {});
+    const body = converter.convert();
 
-    const flushLine = () => {
-        html += '<p>' + (lineBuffer.join('') || '<br>') + '</p>\n';
-        lineBuffer = [];
-    };
-
-    for (const op of ops) {
-        if (typeof op.insert !== 'string') continue;
-
-        const lines = op.insert.split('\n');
-        lines.forEach((segment, i) => {
-            if (segment.length > 0) {
-                let content = segment
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
-
-                if (op.attributes) {
-                    if (op.attributes.bold)      content = `<strong>${content}</strong>`;
-                    if (op.attributes.italic)    content = `<em>${content}</em>`;
-                    if (op.attributes.underline) content = `<u>${content}</u>`;
-                    if (op.attributes.link)      content = `<a href="${op.attributes.link}">${content}</a>`;
-                }
-                lineBuffer.push(content);
-            }
-            if (i < lines.length - 1) flushLine();
-        });
-    }
-    if (lineBuffer.length > 0) flushLine();
-
-    return `<!DOCTYPE html>\n<html>\n<body>\n${html}</body>\n</html>`;
+    return `<!DOCTYPE html>\n<html>\n<body>\n${body}</body>\n</html>`;
 }
 
 module.exports = {

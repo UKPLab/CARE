@@ -18,7 +18,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "quill": "2.0.2",
-    "quill-delta": "^5.1.0"
+    "quill-delta": "^5.1.0",
+    "quill-delta-to-html": "^0.12.1"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

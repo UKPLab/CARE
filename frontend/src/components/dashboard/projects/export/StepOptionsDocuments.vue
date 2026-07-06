@@ -19,22 +19,30 @@
       </div>
     </div>
 
-    <div v-if="hasEditorTypes" class="mt-2 mb-3 p-3 bg-light border rounded">
+    <div v-if="hasEditorTypes || hasPdfTypes" class="mt-2 mb-3 p-3 bg-light border rounded">
       <h6 class="mb-3 pb-2 border-bottom text-muted">
-        Editor Documents Consent
+        Consent Options
       </h6>
-      <div class="form-check">
+      <div v-if="hasEditorTypes" class="form-check mb-2">
         <input
           class="form-check-input"
           type="checkbox"
-          id="excludeNonConsenting"
+          id="excludeNonConsentingEdits"
           v-model="excludeNonConsentingEditsModel"
         >
-        <label class="form-check-label" for="excludeNonConsenting">
+        <label class="form-check-label" for="excludeNonConsentingEdits">
           <strong>Exclude edits from non-consenting users</strong>
-          <small class="text-muted ms-2">
-            Enable this to only include edits from users who have given consent.
-          </small>
+        </label>
+      </div>
+      <div v-if="hasPdfTypes" class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="excludeNonConsentingAnnotations"
+          v-model="excludeNonConsentingAnnotationsModel"
+        >
+        <label class="form-check-label" for="excludeNonConsentingAnnotations">
+          <strong>Exclude annotations and comments from non-consenting users</strong>
         </label>
       </div>
     </div>
@@ -52,9 +60,13 @@ export default {
     excludeNonConsentingEdits: {
       type: Boolean,
       default: false
+    },
+    excludeNonConsentingAnnotations: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['update:selectedTypes', 'update:excludeNonConsentingEdits'],
+  emits: ['update:selectedTypes', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations'],
   data() {
     return {
       typeOptions: [
@@ -74,13 +86,23 @@ export default {
       get() { return this.excludeNonConsentingEdits; },
       set(value) { this.$emit('update:excludeNonConsentingEdits', value); }
     },
+    excludeNonConsentingAnnotationsModel: {
+      get() { return this.excludeNonConsentingAnnotations; },
+      set(value) { this.$emit('update:excludeNonConsentingAnnotations', value); }
+    },
     hasEditorTypes() {
       return this.selectedTypes.some(t => t === 1 || t === 2);
+    },
+    hasPdfTypes() {
+      return this.selectedTypes.some(t => t === 0);
     }
   },
   watch: {
     hasEditorTypes(val) {
       if (!val) this.$emit('update:excludeNonConsentingEdits', false);
+    },
+    hasPdfTypes(val) {
+      if (!val) this.$emit('update:excludeNonConsentingAnnotations', false);
     }
   }
 }
