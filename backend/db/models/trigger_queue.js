@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     class TriggerQueue extends MetaModel {
         static autoTable = true;
-        static publicTable = true;
+        static publicTable = false;
         static STATUS = {
             PENDING: 0,
             RUNNING: 1,

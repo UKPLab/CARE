@@ -245,12 +245,12 @@ export default {
     },
     selectedEvent() {
       return this.$store.getters["table/trigger_event/getAll"].find(
-        (e) => e.id === this.triggerForm.triggerEventId && e.enabled && !e.deleted
+        (e) => this.sameValue(e.id, this.triggerForm.triggerEventId) && e.enabled && !e.deleted
       );
     },
     selectedAction() {
       return this.$store.getters["table/trigger_action/getAll"].find(
-        (a) => a.id === this.triggerForm.triggerActionId && a.enabled && !a.deleted
+        (a) => this.sameValue(a.id, this.triggerForm.triggerActionId) && a.enabled && !a.deleted
       );
     },
     isPreprocessingAction() {
@@ -292,7 +292,7 @@ export default {
     validationConfigurationIds() {
       const assignmentId = this.eventData.assignmentId;
       if (!assignmentId) return [];
-      const assignment = this.$store.getters["table/assignment/get"](assignmentId);
+      const assignment = this.$store.getters["table/assignment/get"](Number(assignmentId));
       return assignment?.validationConfigurationId != null
         ? [assignment.validationConfigurationId]
         : [];
@@ -359,6 +359,10 @@ export default {
     },
   },
   methods: {
+    sameValue(a, b) {
+      if (a == null || b == null) return a === b;
+      return String(a) === String(b);
+    },
     resetStepConfig(oldVal, newVal, dataKey) {
       if (oldVal != null && newVal !== oldVal) {
         this[dataKey] = {};
@@ -372,7 +376,7 @@ export default {
     },
     reviewItemsForPreprocessingAction() {
       const actionLabel = this.actionSelectFields[0]?.options?.find(
-        (o) => o.value === this.triggerForm.triggerActionId
+        (o) => this.sameValue(o.value, this.triggerForm.triggerActionId)
       )?.name;
       const items = [
         {
@@ -408,7 +412,7 @@ export default {
     formatReviewValue(field, data) {
       const val = data[field.key];
       if (field.type === "select" && field.options?.length) {
-        const opt = field.options.find((o) => o.value === val);
+        const opt = field.options.find((o) => this.sameValue(o.value, val));
         return opt?.name ?? (val == null ? "" : String(val));
       }
       if (field.type === "boolean" || field.type === "bool") {
@@ -628,7 +632,7 @@ export default {
         rows = rows.filter((r) =>
           Object.entries(src.filterFromForm).every(([k, formKey]) => {
             const val = this.triggerForm[formKey];
-            return val == null || r[k] === val;
+            return val == null || this.sameValue(r[k], val);
           })
         );
       }

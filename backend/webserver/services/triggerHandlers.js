@@ -1,5 +1,6 @@
 "use strict";
 
+const { Op } = require("sequelize");
 const { resolveTemplate } = require("../../utils/templateResolver");
 
 const QUEUE_STATUS = {
@@ -97,6 +98,20 @@ async function findMatchingTriggers(server, eventName, context, options = {}) {
     return triggers.filter((trigger) => matchesTrigger(trigger, eventName, context));
 }
 
+async function getTriggerWithCatalog(server, triggerId, options = {}) {
+    const models = server.db.models;
+    return await models["trigger"].findOne({
+        where: { id: triggerId, deleted: false },
+        include: [
+            { model: models["trigger_event"], as: "event", required: true },
+            { model: models["trigger_action"], as: "action", required: true },
+        ],
+        raw: true,
+        nest: true,
+        transaction: options.transaction,
+    });
+}
+
 async function createQueueItem(server, trigger, context, options = {}) {
     const model = server.db.models[QUEUE_TABLE];
     if (!model) return null;
@@ -123,6 +138,15 @@ async function updateQueueItem(server, item, data, options = {}) {
     return updated;
 }
 
+async function getQueueItem(server, queueItemId, options = {}) {
+    return await server.db.models[QUEUE_TABLE].getById(queueItemId, { transaction: options.transaction });
+}
+
+async function isQueueItemCancelled(server, queueItemId, options = {}) {
+    const latest = await getQueueItem(server, queueItemId, options);
+    return latest?.status === QUEUE_STATUS.CANCELLED;
+}
+
 async function broadcastQueueItem(item, options = {}) {
     if (item && typeof options.broadcastQueueItem === "function") {
         await options.broadcastQueueItem(item);
@@ -131,6 +155,44 @@ async function broadcastQueueItem(item, options = {}) {
 
 async function runTrigger(server, trigger, context, options = {}) {
     const queueItem = await createQueueItem(server, trigger, context, options);
+    return await runQueuedTrigger(server, trigger, queueItem, context, options);
+}
+
+async function enforceParallelLimit(server, trigger, queueItem, options = {}) {
+    const limit = Number(trigger.parallelLimit || 1);
+    if (!Number.isFinite(limit) || limit < 1) {
+        throw new Error("Trigger parallel limit must be at least 1.");
+    }
+
+    const runningCount = await server.db.models[QUEUE_TABLE].count({
+        where: {
+            triggerId: trigger.id,
+            status: QUEUE_STATUS.RUNNING,
+            id: { [Op.ne]: queueItem.id },
+        },
+        transaction: options.transaction,
+    });
+
+    if (runningCount >= limit) {
+        throw new Error(`Trigger parallel limit reached (${limit}).`);
+    }
+}
+
+async function runQueuedTrigger(server, trigger, queueItem, context, options = {}) {
+    if (!queueItem) {
+        throw new Error("Trigger execution requires a queue item.");
+    }
+
+    const persistedConfig = asObject(queueItem.configuration);
+    const triggerConfig = asObject(trigger.configuration);
+    const persistedActionConfig = asObject(persistedConfig.action);
+    const executionTrigger = {
+        ...trigger,
+        configuration: {
+            ...triggerConfig,
+            action: Object.keys(persistedActionConfig).length ? persistedActionConfig : asObject(triggerConfig.action),
+        },
+    };
     const actionConfig = asObject(trigger.action && trigger.action.configuration);
     const handler = HANDLERS[actionConfig.handler];
 
@@ -138,26 +200,79 @@ async function runTrigger(server, trigger, context, options = {}) {
         throw new Error(`No trigger handler registered for ${actionConfig.handler}`);
     }
 
+    const attemptCount = Number(queueItem.attemptCount || 0) + 1;
+
     await updateQueueItem(server, queueItem, {
         status: QUEUE_STATUS.RUNNING,
+        attemptCount,
         startedAt: new Date(),
+        completedAt: null,
+        errorMessage: null,
     }, options);
 
     try {
-        const result = await handler(server, trigger, context, options);
+        await enforceParallelLimit(server, trigger, queueItem, options);
+
+        const result = await handler(server, executionTrigger, context, { ...options, queueItemId: queueItem.id });
+        if (await isQueueItemCancelled(server, queueItem.id, options)) {
+            return { cancelled: true };
+        }
+
         await updateQueueItem(server, queueItem, {
             status: QUEUE_STATUS.COMPLETED,
             completedAt: new Date(),
         }, options);
         return result;
     } catch (err) {
+        if (await isQueueItemCancelled(server, queueItem.id, options)) {
+            return { cancelled: true };
+        }
+
         await updateQueueItem(server, queueItem, {
             status: QUEUE_STATUS.FAILED,
-            errorMessage: err.message,
+            errorMessage: err.message || String(err),
             completedAt: new Date(),
         }, options);
         throw err;
     }
+}
+
+async function retryQueueItem(server, queueItemId, options = {}) {
+    const item = await getQueueItem(server, queueItemId, options);
+    if (!item) {
+        throw new Error("Queue item not found.");
+    }
+
+    const retryableStatuses = [QUEUE_STATUS.FAILED, QUEUE_STATUS.CANCELLED];
+    if (!retryableStatuses.includes(item.status)) {
+        throw new Error("Only failed or cancelled queue items can be retried.");
+    }
+
+    const trigger = await getTriggerWithCatalog(server, item.triggerId, options);
+    if (!trigger) {
+        throw new Error("Associated trigger rule not found.");
+    }
+
+    const retriesUsed = Math.max(0, Number(item.attemptCount || 0) - 1);
+    if (retriesUsed >= Number(trigger.maxRetries || 0)) {
+        throw new Error("Maximum retries for this trigger have been reached.");
+    }
+
+    const pendingItem = await updateQueueItem(server, item, {
+        status: QUEUE_STATUS.PENDING,
+        errorMessage: null,
+        startedAt: null,
+        completedAt: null,
+    }, options);
+
+    const eventContext = asObject(pendingItem.configuration).event || {};
+    setImmediate(() => {
+        runQueuedTrigger(server, trigger, pendingItem, eventContext, options).catch((err) => {
+            server.logger.error(`Retry for trigger queue item ${pendingItem.id} failed: ${err.message}`, err);
+        });
+    });
+
+    return pendingItem;
 }
 
 async function handleTriggerEvent(server, eventName, context = {}, options = {}) {
@@ -187,6 +302,10 @@ async function resolveEmailRecipients(server, recipient, context, options = {}) 
         return (await models["user"].getUsersByRole("admin") || []).filter((user) => user.email);
     }
 
+    if (recipient !== "uploader") {
+        throw new Error(`Unsupported email recipient "${recipient}".`);
+    }
+
     const userId = context.userId || context.submitterUserId;
     if (!userId) return [];
 
@@ -208,6 +327,10 @@ async function sendEmail(server, trigger, context, options = {}) {
     }
 
     const recipients = await resolveEmailRecipients(server, config.recipient, context, options);
+    if (!recipients.length) {
+        throw new Error("Email trigger action did not resolve any recipients.");
+    }
+
     const sent = [];
 
     for (const recipient of recipients) {
@@ -247,7 +370,7 @@ function hydrateSkillParameterMappings(mappings, context) {
     return hydrated;
 }
 
-async function runAiPreprocessing(server, trigger, context) {
+async function runAiPreprocessing(server, trigger, context, options = {}) {
     const config = asObject(trigger.configuration).action || {};
     const service = server.services["BackgroundTaskService"];
 
@@ -287,6 +410,7 @@ async function runAiPreprocessing(server, trigger, context) {
                 skillParameterMappings: hydrateSkillParameterMappings(config.skillParameterMappings, context),
                 baseFileParameter: config.baseFileParameter,
                 baseFiles: config.baseFiles,
+                failOnItemError: true,
             }
         );
     } finally {
@@ -299,8 +423,10 @@ async function runAiPreprocessing(server, trigger, context) {
 }
 
 module.exports = {
+    asObject,
     handleTriggerEvent,
     handleSubmissionUploaded,
+    retryQueueItem,
     sendEmail,
     runAiPreprocessing,
     handlers: HANDLERS,

@@ -71,6 +71,9 @@ module.exports = {
         defaultValue: Sequelize.fn('NOW'),
       },
     });
+    await queryInterface.addIndex('trigger_queue', ['triggerId']);
+    await queryInterface.addIndex('trigger_queue', ['status']);
+    await queryInterface.addIndex('trigger_queue', ['triggerId', 'status']);
   },
 
   async down(queryInterface, Sequelize) {

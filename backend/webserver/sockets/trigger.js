@@ -1,5 +1,6 @@
 "use strict";
 const Socket = require("../Socket.js");
+const triggerHandlers = require("../services/triggerHandlers.js");
 
 const QUEUE_STATUSES = [
     { name: "PENDING", value: 0, label: "Pending" },
@@ -167,33 +168,10 @@ class TriggerSocket extends Socket {
             throw new Error("A queue item id is required.");
         }
 
-        const item = await this.models["trigger_queue"].getById(data.id);
-        if (!item) {
-            throw new Error("Queue item not found.");
-        }
-        const retryableStatuses = [QUEUE_STATUS.FAILED, QUEUE_STATUS.CANCELLED];
-        if (!retryableStatuses.includes(item.status)) {
-            throw new Error("Only failed or cancelled queue items can be retried.");
-        }
-
-        const trigger = await this.models["trigger"].getById(item.triggerId, {}, true);
-        if (!trigger) {
-            throw new Error("Associated trigger rule not found.");
-        }
-        if (item.attemptCount >= trigger.maxRetries) {
-            throw new Error("Maximum retries for this trigger have been reached.");
-        }
-
-        return await this.models["trigger_queue"].updateById(
-            data.id,
-            {
-                status: QUEUE_STATUS.PENDING,
-                errorMessage: null,
-                startedAt: null,
-                completedAt: null,
-            },
-            { transaction: options.transaction }
-        );
+        return await triggerHandlers.retryQueueItem(this.server, data.id, {
+            ...options,
+            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+        });
     }
 
     /**
@@ -241,7 +219,7 @@ class TriggerSocket extends Socket {
         this.createSocket("triggerUpdate", this.updateTrigger, {}, true);
         this.createSocket("triggerDelete", this.deleteTrigger, {}, true);
         this.createSocket("triggerQueueGetDetails", this.getQueueDetails, {}, false);
-        this.createSocket("triggerQueueRetry", this.retryQueueItem, {}, true);
+        this.createSocket("triggerQueueRetry", this.retryQueueItem, {}, false);
         this.createSocket("triggerQueueCancel", this.cancelQueueItem, {}, true);
     }
 }

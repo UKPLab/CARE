@@ -45,8 +45,7 @@ module.exports = {
       },
       projectId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
         references: {
           model: 'project',
           key: 'id',
@@ -105,6 +104,9 @@ module.exports = {
         defaultValue: Sequelize.fn('NOW'),
       },
     });
+    await queryInterface.addIndex('trigger', ['projectId']);
+    await queryInterface.addIndex('trigger', ['triggerEventId']);
+    await queryInterface.addIndex('trigger', ['triggerActionId']);
   },
 
   async down(queryInterface, Sequelize) {

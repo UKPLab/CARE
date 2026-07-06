@@ -188,7 +188,7 @@ export default {
           if (res.success) {
             const d = res.data;
             this.errorFormData = {
-              summary: `${d.trigger.name} — ${d.statusLabel}`,
+              summary: `${d.trigger?.name || `#${d.item.triggerId}`} - ${d.statusLabel}`,
               errorMessage: d.item.errorMessage || "No error message recorded.",
             };
           } else {

@@ -114,7 +114,7 @@ export default {
           .map((a) => [a.id, a])
       );
       return this.$store.getters["table/trigger/getAll"]
-        .filter((t) => !t.deleted)
+        .filter((t) => !t.deleted && (this.projectId == null || Number(t.projectId) === Number(this.projectId)))
         .map((t) => {
           const event = eventsById[t.triggerEventId];
           const action = actionsById[t.triggerActionId];

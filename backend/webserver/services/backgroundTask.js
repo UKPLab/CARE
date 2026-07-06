@@ -104,6 +104,11 @@ module.exports = class BackgroundTaskService extends Service {
             throw new Error("You do not have permission to preprocess submissions");
         }
 
+        const activePreprocess = this.backgroundTask.preprocess;
+        if (activePreprocess && !activePreprocess.cancelled && !activePreprocess.completed) {
+            throw new Error("Another preprocessing job is already running.");
+        }
+
         await this.initializePreprocessingState();
 
         await this.prepareProcessingItems(preprocessingData);
@@ -118,7 +123,11 @@ module.exports = class BackgroundTaskService extends Service {
                 const nlpInput = await this.prepareNlpInput(item);
 
                 if (!nlpInput || Object.keys(nlpInput).length === 0) {
-                    this.server.logger.error(`No valid NLP input prepared for item ${item.requestId}`);
+                    const message = `No valid NLP input prepared for item ${item.requestId}`;
+                    if (preprocessingData.failOnItemError) {
+                        this.recordPreprocessingError(message, item);
+                    }
+                    this.server.logger.error(message);
                     continue;
                 }
 
@@ -134,6 +143,9 @@ module.exports = class BackgroundTaskService extends Service {
                 }
 
             } catch (err) {
+                if (preprocessingData.failOnItemError) {
+                    this.recordPreprocessingError(err.message || String(err), item);
+                }
                 this.sendAll("backgroundTaskUpdate", this.backgroundTask);
                 this.server.logger.error(`Error processing item ${item.requestId}: ${err.message}`, err);
             }
@@ -158,6 +170,11 @@ module.exports = class BackgroundTaskService extends Service {
         }
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
 
+        const errors = this.backgroundTask.preprocess?.errors || [];
+        if (preprocessingData.failOnItemError && errors.length) {
+            throw new Error(errors.map((err) => err.message).join("; "));
+        }
+
         return {count: this.preprocessItems.length};
     }
 
@@ -181,6 +198,22 @@ module.exports = class BackgroundTaskService extends Service {
             nlpTimeout
         };
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
+    }
+
+    recordPreprocessingError(message, item = {}) {
+        if (!this.backgroundTask.preprocess) return;
+        const existing = this.backgroundTask.preprocess.errors || [];
+        const alreadyRecorded = existing.some((err) => err.requestId === item.requestId && err.message === message);
+        if (alreadyRecorded) return;
+
+        existing.push({
+            message,
+            requestId: item.requestId,
+            submissionId: item.submissionId,
+            documentId: item.documentId,
+            timestamp: Date.now()
+        });
+        this.backgroundTask.preprocess.errors = existing;
     }
 
     /**
