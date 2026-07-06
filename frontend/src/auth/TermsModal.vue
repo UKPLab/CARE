@@ -11,13 +11,11 @@
       <BasicEditor :model-value="terms" :read-only="true" />
     </template>
     <template #footer>
-      <button
+      <BasicButton
         class="btn btn-secondary"
-        type="button"
+        text="Close"
         @click="cancel"
-      >
-        Close
-      </button>
+      />
     </template>
   </Modal>
 </template>
@@ -30,11 +28,12 @@
  * @author: Dennis Zyska, Juliane Bechert
  */
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import BasicEditor from "@/basic/editor/Editor.vue";
 
 export default {
   name: "TermsModal",
-  components: {Modal, BasicEditor},
+  components: {Modal, BasicEditor, BasicButton},
   computed: {
     terms() {
       return window.config['app.register.terms'];
