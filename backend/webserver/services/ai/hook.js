@@ -8,6 +8,7 @@
  */
 
 const chat = require("./chat");
+const helpers = require("./helpers");
 const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
 
 /**
@@ -60,7 +61,7 @@ async function resolveHookModelParams(service, hookId) {
     }
 
     const credential = await service.server.db.models['ai_credential'].getById(aiModel.aiCredentialId, {
-        attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
         throw new Error("AI hook model credential not found");
@@ -69,20 +70,12 @@ async function resolveHookModelParams(service, hookId) {
         throw new Error("AI hook model credential is disabled");
     }
 
-    const params = {
+    return {
         aiModelId: aiModel.id,
         aiCredentialId: credential.id,
-        model: aiModel.model,
-        api_key: credential.apiKey,
         additionalParameters: hookModel.additionalParameters || {},
+        ...helpers.buildLiteLLMParams(credential, aiModel.model),
     };
-    if (credential.apiBaseUrl) {
-        params.api_base = credential.apiBaseUrl;
-    }
-    if (credential.apiVersion) {
-        params.api_version = credential.apiVersion;
-    }
-    return params;
 }
 
 /**
@@ -114,9 +107,9 @@ async function resolveServiceInput(service, input) {
 
             const parts = [];
 
-            // PDF was extracted in the browser; embed with label.
+            // PDF was extracted in the browser.
             if (selectedFiles.includes("pdf") && pdfText != null) {
-                parts.push(`pdf:\n${pdfText}`);
+                parts.push(pdfText);
             }
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
@@ -135,8 +128,8 @@ async function resolveServiceInput(service, input) {
                     if (buffer) {
                         const extracted = await service.server.db.models["document"]
                             .extractZipFiles(buffer, zipFileSpecs);
-                        for (const [fileName, content] of Object.entries(extracted)) {
-                            parts.push(`${fileName}:\n${content}`);
+                        for (const content of Object.values(extracted)) {
+                            parts.push(content);
                         }
                     }
                 }
