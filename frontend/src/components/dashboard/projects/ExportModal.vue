@@ -70,7 +70,7 @@
     </template>
 
     <template 
-      v-if="['submissions', 'grades', 'documents', 'studies'].includes(dataSelection.exportType)"
+      v-if="['submissions', 'grades', 'documents', 'studies', 'everything'].includes(dataSelection.exportType)"
       #step-4
     >
       <StepConfirmDownload
@@ -226,9 +226,6 @@ export default {
     studies() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === this.dataSelection.projectId);
     },
-    studySteps() {
-      return this.$store.getters["table/study_step/getFiltered"]((s) => this.studies.map(study => study.id).includes(s.studyId));
-    },
     studySessions() {
       return this.$store.getters["table/study_session/getFiltered"]((s) => this.studies.map(study => study.id).includes(s.studyId));
     },
@@ -313,7 +310,7 @@ export default {
     },
     async downloadGrades() {
       try {
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        const selectedUserIds = this.userSelection.map(row => row.userId);
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
           exportType: 'grades',
