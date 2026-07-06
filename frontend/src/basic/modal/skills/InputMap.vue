@@ -17,25 +17,11 @@
           v-if="isHook && inputMappings[input]?.type === 'submission'"
           class="mt-1 ps-1"
       >
-        <div class="form-label small text-muted mb-1">Select files to include:</div>
-        <div
-            v-for="fileOpt in validationFileOptions"
-            :key="fileOpt.value"
-            class="form-check form-check-inline"
-        >
-          <input
-              :id="`file_${input}_${fileOpt.value}`"
-              type="radio"
-              :name="`submission_file_${input}`"
-              class="form-check-input"
-              :checked="(submissionFileSelections[input] || []).includes(fileOpt.value)"
-              @change="toggleSubmissionFile(input, fileOpt.value)"
-          />
-          <label
-              class="form-check-label small"
-              :for="`file_${input}_${fileOpt.value}`"
-          >{{ fileOpt.label }}</label>
-        </div>
+        <FormRadio
+            :model-value="submissionFileSelections[input]?.[0] || null"
+            :options="{ key: `submission_file_${input}`, label: 'Select files to include:', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
+            @update:model-value="toggleSubmissionFile(input, $event)"
+        />
       </div>
     </div>
 
@@ -65,12 +51,13 @@
  * @author Manu Sundar Raj Nandyal, Dennis Zyska
  */
 import FormSelect from "@/basic/form/Select.vue";
+import FormRadio from "@/basic/form/Radio.vue";
 import deepEqual from "deep-equal";
 import { tokenInnerText } from "@/components/editor/template/placeholderTokens.js";
 
 export default {
   name: "InputMap",
-  components: {FormSelect},
+  components: {FormSelect, FormRadio},
   inject: {
     isTemplateMode: {
       type: Boolean,
