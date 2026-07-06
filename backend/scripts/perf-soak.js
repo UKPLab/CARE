@@ -2,6 +2,7 @@
 
 const { randomUUID } = require('crypto');
 const { resolveRecordings } = require('./perf-recordings');
+const { MetricSampler } = require('./perf-metrics');
 
 /**
  * Soak mode: hold a FIXED concurrency continuously for a duration, sampling
@@ -24,6 +25,9 @@ async function runSoak(cfg, ctx) {
     const start = Date.now();
     const samples = [];
     let sampleNum = 0;
+    // Sample server vitals (memory + DB pool) once per second during the soak.
+    const sampler = new MetricSampler(ctx.emitWithAck, 1000);
+    sampler.start();
 
     while (Date.now() - start < durationMs) {
         sampleNum++;
@@ -48,6 +52,7 @@ async function runSoak(cfg, ctx) {
 
         if (!ack || !ack.success) {
             console.error('SOAK ERROR — replayRun failed: ' + (ack && ack.message));
+            await sampler.stop();
             return 1;
         }
 
@@ -62,14 +67,15 @@ async function runSoak(cfg, ctx) {
         }
     }
 
-    return reportSoak(samples, concurrency, durationMs);
+    await sampler.stop();
+    return reportSoak(samples, concurrency, durationMs, sampler);
 }
 
 /**
  * Compare early vs late samples to detect drift over time.
  * @returns {number} exit code
  */
-function reportSoak(samples, concurrency, durationMs) {
+function reportSoak(samples, concurrency, durationMs, sampler) {
     console.log('');
     if (samples.length < 2) {
         console.log(`SOAK: only ${samples.length} sample(s) — run longer for a trend.`);
@@ -90,8 +96,36 @@ function reportSoak(samples, concurrency, durationMs) {
     console.log(`  p95 latency: ${earlyP95}ms (early) -> ${lateP95}ms (late)  [${p95Drift >= 0 ? '+' : ''}${p95Drift}%]`);
     console.log(`  failures: ${earlyFail} (early) -> ${lateFail} (late)`);
 
-    // Drift verdict: rising latency (>25%) or growing failures = drift.
-    const drift = p95Drift > 25 || lateFail > earlyFail;
+    // Server-side vitals from the metric sampler.
+    let memDrift = false;
+    let poolBackedUp = false;
+    if (sampler) {
+        const rssMb = (b) => Math.round(b / 1024 / 1024);
+        const samplesM = sampler.getSamples().filter(s => s.health);
+        const first = samplesM.length ? samplesM[0].health.rss : 0;
+        const last = samplesM.length ? samplesM[samplesM.length - 1].health.rss : 0;
+
+        // Warm-up-aware leak check: compare the MIDPOINT to the END, skipping the
+        // startup ramp (idle->serving) that inflates early memory. Sustained
+        // growth in the back half is the real leak signal; warm-up plateaus.
+        const mid = samplesM.length ? samplesM[Math.floor(samplesM.length / 2)].health.rss : 0;
+        const backHalfGrowth = mid > 0 ? Math.round(((last - mid) / mid) * 100) : 0;
+        // Only judge memory drift on runs long enough for warm-up to finish
+        // (short runs are dominated by V8/GC warm-up and would false-positive).
+        const MEM_VERDICT_MIN_MS = 120000; // 2 minutes
+        memDrift = durationMs >= MEM_VERDICT_MIN_MS && backHalfGrowth > 15;
+
+        const firstGrowth = first > 0 ? Math.round(((last - first) / first) * 100) : 0;
+        console.log(`  memory (RSS): ${rssMb(first)}MB -> ${rssMb(last)}MB  [${firstGrowth >= 0 ? '+' : ''}${firstGrowth}% total, ${backHalfGrowth >= 0 ? '+' : ''}${backHalfGrowth}% post-warmup], peak ${rssMb(sampler.peakRss())}MB`);
+
+        const peakWaiting = sampler.peakPoolWaiting();
+        poolBackedUp = peakWaiting > 0;
+        console.log(`  DB pool waiting: peak ${peakWaiting}`);
+    }
+
+    // Drift verdict: rising latency (>25%), growing failures, sustained memory
+    // growth after warm-up, or DB pool backing up = drift.
+    const drift = p95Drift > 25 || lateFail > earlyFail || memDrift || poolBackedUp;
     if (drift) {
         console.log('  VERDICT: [!] drift detected — latency and/or failures worsened over time.');
         return 1;
