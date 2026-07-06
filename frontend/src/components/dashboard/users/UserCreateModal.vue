@@ -14,17 +14,19 @@
       />
     </template>
     <template #footer>
-      <BasicButton
+      <div class="btn-group">
+        <BasicButton
           title="Cancel"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
-      />
-      <BasicButton
+        />
+        <BasicButton
           title="Add"
           class="btn btn-primary"
           :disabled="isDisabled"
           @click="createUser"
-      />
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

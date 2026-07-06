@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import { FlatCompat } from '@eslint/eslintrc'
 import pluginVue from 'eslint-plugin-vue'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import footerButtonGroupRule from './eslint-rules/footer-button-group.js'
 
 const compat = new FlatCompat()
 
@@ -46,7 +47,15 @@ export default [
     },
     {
         files: ['**/*.vue'],
+        plugins: {
+            local: {
+                rules: {
+                    'footer-button-group': footerButtonGroupRule,
+                },
+            },
+        },
         rules: {
+            'local/footer-button-group': 'error',
             'vue/no-restricted-html-elements': [
                 'error',
                 {
