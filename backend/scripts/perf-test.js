@@ -32,6 +32,21 @@ function parseArgs(argv) {
     return args;
 }
 
+/**
+ * Parse a duration string like "30m", "90s", "1h" into milliseconds.
+ * @param {string} val
+ * @returns {number|null} milliseconds, or null if unparseable
+ */
+function parseDuration(val) {
+    if (!val || val === true) return null;
+    const m = String(val).trim().match(/^(\d+)\s*(ms|s|m|h)?$/i);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    const unit = (m[2] || 's').toLowerCase();
+    const mult = { ms: 1, s: 1000, m: 60000, h: 3600000 }[unit];
+    return n * mult;
+}
+
 function parseRecordings(val) {
     if (!val || val === true) return [];
     return String(val).split(',').map(s => parseInt(s.trim(), 10)).filter(n => Number.isInteger(n) && n > 0);
@@ -52,6 +67,9 @@ function buildConfig(args) {
         user: args.user || process.env.PERF_ADMIN_USER || 'admin',
         password: args.password || process.env.ADMIN_PWD || null,
         step: parseInt(args.step, 10) || 5,
+        concurrency: parseInt(args.concurrency, 10) || 10,
+        duration: parseDuration(args.duration) || 60000,  // default 60s
+        sampleInterval: parseDuration(args['sample-interval']) || 0,  // 0 = back-to-back
     };
 }
 
@@ -141,6 +159,12 @@ async function run(cfg) {
     if (cfg.mode === 'ceiling') {
         const { runCeiling } = require('./perf-ceiling');
         const code = await runCeiling(cfg, ctx);
+        socket.disconnect();
+        process.exit(code);
+    }
+    if (cfg.mode === 'soak') {
+        const { runSoak } = require('./perf-soak');
+        const code = await runSoak(cfg, ctx);
         socket.disconnect();
         process.exit(code);
     }
