@@ -6,19 +6,20 @@
   >
     (no text)
   </a>
-  <button
+  <BasicButton
     id="cite"
     :title="citationText"
     class="btn btn-link btn-sm"
     data-placement="top"
     data-toggle="tooltip"
+    :text="citation ? `(ref. ${citation})` : '(show)'"
     @click="show()"
-  >
-    {{ citation ? `(ref. ${citation})` : "(show)" }}
-  </button>
+  />
 </template>
 
 <script>
+
+import BasicButton from "@/basic/Button.vue";
 
 /* ReportItem.vue - item of a ReviewReport
 
@@ -30,6 +31,7 @@ Source: -
 */
 export default {
   name: "ReportItem",
+  components: { BasicButton },
   props: {
     annotationId: {
       required: false,
@@ -68,6 +70,7 @@ export default {
       if (this.annotation) {
         return this.annotation.selectors.target[0].selector[1].exact;
       }
+      return null;
     }
   },
   methods: {

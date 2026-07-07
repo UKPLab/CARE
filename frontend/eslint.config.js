@@ -18,6 +18,11 @@ export default [
     ...pluginVue.configs['flat/recommended'],
     eslintConfigPrettier,
     {
+        languageOptions: {
+            globals: {
+                APP_VERSION: 'readonly',
+            },
+        },
         rules: {
             'no-unused-vars': [
                 'error',
@@ -37,6 +42,28 @@ export default [
                     message: 'Always name caught errors `_error`.',
                 },
             ],
+        },
+    },
+    {
+        files: ['**/*.vue'],
+        rules: {
+            'vue/no-restricted-html-elements': [
+                'error',
+                {
+                    element: 'button',
+                    message:
+                        'Use <BasicButton> from @/basic/Button.vue instead of raw <button>.',
+                },
+            ],
+        },
+    },
+    {
+        files: [
+            'src/basic/**/*.vue',
+            'src/components/**/Button.vue',
+        ],
+        rules: {
+            'vue/no-restricted-html-elements': 'off',
         },
     },
 ]

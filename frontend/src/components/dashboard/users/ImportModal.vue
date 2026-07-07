@@ -56,12 +56,11 @@
                 <strong>{{ file.name }}</strong>
                 <span>({{ file.size }} KB)</span>
               </div>
-              <button @click="clearFile">
-                <BasicIcon
-                  icon-name="x-circle-fill"
-                  size="20"
-                />
-              </button>
+              <BasicButton
+                icon="x-circle-fill"
+                tooltip="Clear file"
+                @click="clearFile"
+              />
             </div>
             <div
               v-else

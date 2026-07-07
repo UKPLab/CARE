@@ -31,23 +31,20 @@
           New language
         </template>
         <template #body>
+          <!-- eslint-disable-next-line vue/no-v-html -->
           <div v-html="newLanguageModalMessage" />
         </template>
         <template #footer>
-          <button
+          <BasicButton
             class="btn btn-outline-primary"
-            type="button"
+            text="Create Empty"
             @click="chooseNewLanguageEmpty"
-          >
-            Create Empty
-          </button>
-          <button
+          />
+          <BasicButton
             class="btn btn-primary"
-            type="button"
+            text="Copy Content"
             @click="chooseNewLanguageCopied"
-          >
-            Copy Content
-          </button>
+          />
         </template>
       </BasicModal>
     </span>
@@ -67,10 +64,11 @@
   import Quill from "quill";
   import "quill/dist/quill.snow.css";
   import debounce from "lodash.debounce";
-  import {dbToDelta, deltaToDb} from "editor-delta-conversion";
+  import {deltaToDb} from "editor-delta-conversion";
   import {Editor} from "@/components/editor/editorStore.js";
   import Loader from "@/basic/Loading.vue";
   import BasicModal from "@/basic/Modal.vue";
+  import BasicButton from "@/basic/Button.vue";
   
   const Delta = Quill.import('delta');
 
@@ -82,7 +80,7 @@
   
   export default {
     name: "TemplateEditor",
-    components: { Loader, BasicModal },
+    components: { Loader, BasicModal, BasicButton },
     inject: {
       templateId: {
         type: Number,
@@ -108,6 +106,7 @@
         languageSelectorEl: null,
         languageSelectorClickOutside: null,
         newLanguageModalMessage: "",
+        beforeUnloadHandler: null,
       };
     },
     computed: {
@@ -264,12 +263,22 @@
       }
       
       this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
-      
+
+      // Warn before full-page unload (forced URL / tab close) when edits are unsaved,
+      // since the route guard does not run in those cases.
+      this.beforeUnloadHandler = this.handleBeforeUnload;
+      window.addEventListener("beforeunload", this.beforeUnloadHandler);
+
       // Load available languages and content
       this.fetchLanguagesAndLoadContent();
     },
     unmounted() {
       this.eventBus.off("editorInsertText", this.insertTextHandler);
+
+      if (this.beforeUnloadHandler) {
+        window.removeEventListener("beforeunload", this.beforeUnloadHandler);
+        this.beforeUnloadHandler = null;
+      }
 
       // Cleanup language selector
       if (this.languageSelectorClickOutside) {
@@ -278,24 +287,32 @@
       if (this.languageSelectorEl && this.languageSelectorEl.parentNode) {
         this.languageSelectorEl.parentNode.removeChild(this.languageSelectorEl);
       }
-
-      // Save template on close
-      // This triggers merging of draft edits into stable content
-      this.$socket.emit("templateClose", { templateId: this.templateId, language: this.selectedLanguage }, (res) => {
-        if (!res.success) {
-          this.eventBus.emit("toast", {
-            title: "Template save failed",
-            message: res.message || "",
-            variant: "danger"
-          });
-        }
-      });
     },
     methods: {
       /**
-       * Request close/save of the current language. Used by the route guard so navigation
-       * can be blocked when save fails (e.g. missing required placeholders).
-       * @returns {Promise<{ success: boolean, message?: string }>}
+       * Whether the editor content differs from what was last loaded for this language.
+       * @returns {boolean}
+       */
+      hasUnsavedChanges() {
+        if (this.firstVersion === null || !this.editor) {
+          return false;
+        }
+        return this.editor.getEditor().root.innerHTML !== this.firstVersion;
+      },
+      /**
+       * Warn on full-page unload (forced URL navigation / tab close) when there are unsaved edits.
+       * @param {BeforeUnloadEvent} event
+       */
+      handleBeforeUnload(event) {
+        if (this.hasUnsavedChanges()) {
+          event.preventDefault();
+        }
+      },
+      /**
+       * Request close/save of the current language.
+       * Used by the route guard so navigation can be blocked when save fails (e.g. missing required placeholders).
+       * 
+       * @returns {Promise<Object>}
        */
       requestClose() {
         return new Promise((resolve) => {
@@ -303,6 +320,73 @@
             "templateClose",
             { templateId: this.templateId, language: this.selectedLanguage },
             (res) => resolve(res || { success: false })
+          );
+        });
+      },
+      /**
+       * Discard draft edits without merging into template_content.
+       * Used when leaving after invalid content.
+       * 
+       * @returns {Promise<Object>}
+       */
+      requestDiscard() {
+        return new Promise((resolve) => {
+          this.$socket.emit(
+            "templateDiscardDrafts",
+            { templateId: this.templateId, language: this.selectedLanguage },
+            (res) => resolve(res || { success: false })
+          );
+        });
+      },
+      /**
+       * Persist any pending debounced edits before close/discard checks.
+       *
+       * The debounce timer may not have fired yet when the user leaves (topbar back,
+       * route navigation). This cancels the timer and sends buffered ops via
+       * templateEditContent, waiting for the socket callback before templateClose runs.
+       *
+       * @returns {Promise<void>}
+       */
+      flushPendingEdits() {
+        if (this.debouncedProcessDelta) {
+          this.debouncedProcessDelta.cancel();
+        }
+        if (!this.editor || this.deltaBuffer.length === 0) {
+          return Promise.resolve();
+        }
+        const quill = this.editor.getEditor();
+        const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+        const dbOps = deltaToDb(combinedDelta.ops);
+        if (dbOps.length === 0) {
+          this.deltaBuffer = [];
+          return Promise.resolve();
+        }
+        const backup = quill.getContents();
+        return new Promise((resolve) => {
+          this.$socket.emit(
+            "templateEditContent",
+            {
+              templateId: this.templateId,
+              language: this.selectedLanguage,
+              ops: dbOps,
+            },
+            (res) => {
+              if (!res.success) {
+                quill.setContents(backup);
+                this.eventBus.emit("toast", {
+                  title: "Previous edit failed; try again",
+                  message: res.message,
+                  variant: "danger",
+                });
+              }
+              const currentVersion = this.editor.getEditor().root.innerHTML;
+              this.$emit("update:data", {
+                firstVersion: this.firstVersion,
+                currentVersion: currentVersion,
+              });
+              this.deltaBuffer = [];
+              resolve();
+            }
           );
         });
       },

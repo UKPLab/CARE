@@ -35,13 +35,11 @@
     </template>
     <template #footer>
       <div v-if="finished">
-        <button
+        <BasicButton
           class="btn btn-primary"
-          type="button"
+          text="Back to Dashboard"
           @click="toDashboard"
-        >
-          Back to Dashboard
-        </button>
+        />
       </div>
       <div
         v-else
@@ -80,7 +78,7 @@ export default {
   props: {
     studySessionId: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
     },
     closeable: {

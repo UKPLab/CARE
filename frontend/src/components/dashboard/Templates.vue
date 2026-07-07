@@ -9,6 +9,20 @@
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Import Templates"
+          text="Import"
+          icon="upload"
+          @click="$refs.importFormatModal.open('template')"
+        />
+        <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Export All Templates"
+          text="Export All"
+          icon="download"
+          @click="$refs.exportFormatModal.open(null, 'template')"
+        />
+        <BasicButton
           class="btn-primary btn-sm"
           title="Add new template"
           text="Add Template"
@@ -32,6 +46,8 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
+    <ExportFormatModal ref="exportFormatModal" title="Export Template" />
+    <ImportFormatModal ref="importFormatModal" title="Import Templates" />
   </template>
   
   <script>
@@ -44,6 +60,8 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
+  import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+  import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   /**
    * Templates dashboard component
    *
@@ -66,6 +84,8 @@
       TemplateDetachModal,
       TemplateUpdateModal,
       PublicTemplatesModal,
+      ExportFormatModal,
+      ImportFormatModal,
     },
     data() {
       return {
@@ -98,8 +118,8 @@
             return {
               ...t,
               typeName: this.typeName(t.type),
-              // Public email templates (types 1, 2, 3, 6) cannot be deleted
-              canDelete: !(t.public && [1, 2, 3, 6].includes(t.type)),
+              // Public email templates (types 1, 2, 3, 6, 7) cannot be deleted
+              canDelete: !(t.public && [1, 2, 3, 6, 7].includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,
@@ -219,6 +239,18 @@
             title: "Source updated",
             action: "openUpdateModal",
           },
+          // Export
+          {
+            icon: "download",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            title: "Export template",
+            action: "export",
+          },
           // Delete - own templates that can be deleted (including copies)
           {
             icon: "trash",
@@ -251,6 +283,7 @@
           case 4: return "Document - General";
           case 5: return "Document - Study";
           case 6: return "Email - Study Close";
+          case 7: return "Email - Submission upload";
           default: return "Choose Type"
         }
       },
@@ -308,6 +341,9 @@
             break;
           case "openUpdateModal":
             this.$refs.updateModal.open(data.params);
+            break;
+          case "export":
+            this.$refs.exportFormatModal.open(data.params.id, "template");
             break;
         }
       },

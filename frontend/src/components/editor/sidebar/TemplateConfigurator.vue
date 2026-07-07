@@ -43,12 +43,12 @@
                 </div>
                 <div class="d-flex align-items-center">
                   <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] || 0 }}</span>
-                  <button
+                  <BasicButton
                     class="btn btn-primary btn-sm d-flex align-items-center"
+                    icon="plus-lg"
+                    text="Add"
                     @click="handlePlaceholderClick(placeholder)"
-                  >
-                    <i class="bi bi-plus-lg me-1"></i> Add
-                  </button>
+                  />
                 </div>
               </div>
             </li>
@@ -60,6 +60,7 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
+  import BasicButton from "@/basic/Button.vue";
   /**
    * Template Configurator sidebar component
    *
@@ -72,6 +73,7 @@
     name: "TemplateConfigurator",
     components: {
       FormHelp,
+      BasicButton,
     },
     inject: {
       templateId: {
@@ -91,6 +93,7 @@
           4: { placeholders: [] }, // Document - General (no placeholders)
           5: { placeholders: [] }, // Document - Study (no placeholders)
           6: { placeholders: [] }, // Email - Study Close
+          7: { placeholders: [] }, // Email - Submission upload
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
@@ -105,7 +108,7 @@
       },
       templateTypeName() {
         if (!this.templateType) return "Unknown";
-        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close" };
+        const types = { 1: "Email - General", 2: "Email - Study Session", 3: "Email - Assignment", 4: "Document - General", 5: "Document - Study", 6: "Email - Study Close", 7: "Email - Submission upload" };
         return types[this.templateType] || "Unknown";
       },
       availablePlaceholders() {
@@ -188,6 +191,14 @@
           6: { // Email - Study Close
             username: "The username of the session owner who had an open session when the study was closed.",
             studyName: "The name of the study that was closed.",
+          },
+          7: { // Email - Submission upload
+            username: "The person receiving this email (assignment owner or submitter).",
+            assignmentName: "The title of the assignment.",
+            eventType: "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
+            assignmentId: "Internal assignment ID.",
+            submissionId: "Internal submission ID.",
+            timestamp: "When the submission was uploaded.",
           },
         };
 

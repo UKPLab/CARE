@@ -25,28 +25,25 @@
         class="btn-group-vertical" 
         @click.stop
       >
-        <button
+        <BasicButton
           v-for="t in filteredTags"
           :key="t.name"
-          :class="`btn-${t.colorCode}`"
+          :class="`btn-${t.colorCode} text-truncate`"
           :title="t.description"
-          class="btn text-truncate"
+          :text="t.name"
           data-placement="top"
           data-toggle="tooltip"
           @click="annotate(t)"
-        >
-            {{ t.name }} 
-        </button>
+        />
       </div>
     </div>
-    <button
+    <BasicButton
       v-if="shouldShowExtender"
-      class="expand-btn btn "
-      title="Expand Adder"
+      class="expand-btn"
+      icon="three-dots"
+      tooltip="Expand Adder"
       @click="isExtended=true"
-    >
-    <i class="bi bi-three-dots"></i>
-    </button>
+    />
   </div>
 </template>
 
@@ -60,9 +57,11 @@
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "PDFAdder",
+  components: { BasicButton },
   inject: {
     documentId: {
       type: Number,
@@ -425,7 +424,6 @@ export default {
       const bottom = pdfToolbarRect.bottom;
       // calculate position of adder
       // slight offset from event positions up and to the right 
-      x = x;
       y = y - height;
 
 
@@ -488,7 +486,7 @@ export default {
       try {
         range = TextRange.fromRange(range).toRange();
       } catch (_error) {
-        throw new Error('Selection does not contain text');
+        throw new Error('Selection does not contain text', { cause: _error });
       }
 
       const startTextLayer = this.getNodeTextLayer(range.startContainer);

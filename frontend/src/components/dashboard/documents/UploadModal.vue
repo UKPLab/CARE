@@ -5,7 +5,7 @@
     name="documentUpload"
   >
     <template #title>
-      {{ modalTitle }}
+      Upload new document
     </template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
@@ -41,20 +41,16 @@
     </template>
     <template #footer>
       <div v-if="!uploading">
-        <button
+        <BasicButton
           class="btn btn-secondary"
+          text="Close"
           data-bs-dismiss="modal"
-          type="button"
-        >
-          Close
-        </button>
-        <button
+        />
+        <BasicButton
           class="btn btn-primary"
-          type="button"
+          text="Upload"
           @click="upload"
-        >
-          Upload
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -62,6 +58,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
 import { extractTextFromPDF } from "@/assets/utils";
 import * as pdfjsLib from "pdfjs-dist";
@@ -82,7 +79,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "DocumentUploadModal",
-  components: {BasicForm, Modal},
+  components: {BasicForm, Modal, BasicButton},
   data() {
     return {
       uploading: false,
@@ -90,7 +87,6 @@ export default {
       isPdf: false,
       data: {},
       importAnnotations: false,
-      uploadType: "document", // "document" or "configuration"
       fileFields: [
         {
           key: "file",
@@ -106,11 +102,6 @@ export default {
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
-    modalTitle() {
-      return this.uploadType === "configuration"
-        ? "Upload new configuration file"
-        : "Upload new document";
-    }
   },
   methods: {
     handleFileChange(file) {
@@ -124,91 +115,14 @@ export default {
       this.importAnnotations = false;
 
     },
-    open(type = "document") {
-      this.uploadType = type;
+    open() {
       this.data.file = null;
       this.importAnnotations = false;
-
-      // Update file fields based on type
-      if (type === "configuration") {
-        this.fileFields[0].accept = ".json";
-      } else {
-        this.fileFields[0].accept = ".pdf,.delta";
-      }
-
-
       this.$refs.uploadModal.open();
     },
     async upload() {
       const fileName = this.data.file.name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-
-      // Route based on upload type
-      if (this.uploadType === "configuration") {
-        if (fileType !== ".json") {
-          this.eventBus.emit("toast", {
-            title: "Invalid file type",
-            message: "Only JSON files are allowed for configuration uploads.",
-            variant: "danger",
-          });
-          return;
-        }
-        this.$refs.uploadModal.waiting = true;
-        this.uploading = true;
-        try {
-          const text = await this.data.file.text();
-          const json = JSON.parse(text);
-
-          const name = json.name || fileName.replace(/\.json$/, "");
-          const description = json.description || "";
-          let type = undefined;
-          if (typeof json.type === "number") {
-            type = json.type;
-          } else if (typeof json.type === "string") {
-            const lower = json.type.toLowerCase();
-            if (lower.includes("assessment")) type = 0;
-            else if (lower.includes("validation")) type = 1;
-          }
-          if (typeof type !== "number") type = 0;
-
-          this.$socket.emit(
-            "configurationAdd",
-            {
-              name,
-              description,
-              type,
-              content: json,
-            },
-            (res) => {
-              this.uploading = false;
-              this.$refs.uploadModal.waiting = false;
-              if (res.success) {
-                this.eventBus.emit("toast", {
-                  title: "Configuration uploaded",
-                  message: "File successfully uploaded!",
-                  variant: "success",
-                });
-                this.$refs.uploadModal.close();
-              } else {
-                this.eventBus.emit("toast", {
-                  title: "Failed to upload configuration",
-                  message: res.message,
-                  variant: "danger",
-                });
-              }
-            }
-          );
-        } catch (e) {
-          this.uploading = false;
-          this.$refs.uploadModal.waiting = false;
-          this.eventBus.emit("toast", {
-            title: "Invalid JSON",
-            message: e.message,
-            variant: "danger",
-          });
-        }
-        return;
-      }
 
       // Default upload flow
       if (fileType !== ".pdf" && fileType !== ".delta") {

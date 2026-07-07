@@ -15,14 +15,14 @@ const app = Vue.createApp({
 });
 
 // activate devtools in development mode
-// eslint-disable-next-line no-undef
+ 
 if (process.env.NODE_ENV !== 'production') {
     app.config.devtools = true;
 }
 
 // Bootstrap
 import 'bootstrap/dist/css/bootstrap.css'
-import 'bootstrap/dist/js/bootstrap.bundle.js'
+// import 'bootstrap/dist/js/bootstrap.bundle.js'
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 import "bootstrap-icons/font/bootstrap-icons.css";
 import BootstrapVue3 from "bootstrap-vue-3";
@@ -42,7 +42,7 @@ app.use(VNetworkGraph);
 import getServerURL from '@/assets/serverUrl.js';
 
 const socketio = new VueSocketIO({
-    // eslint-disable-next-line no-undef
+     
     debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),
         {

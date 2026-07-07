@@ -1,4 +1,6 @@
 const Socket = require("../Socket.js");
+const mailTest = require("../utils/mailTest.js");
+const { saveSettings } = require("../utils/settingSave.js");
 
 /**
  * Handle settings through websocket
@@ -8,6 +10,20 @@ const Socket = require("../Socket.js");
  * @class SettingSocket
  */
 class SettingSocket extends Socket {
+    /**
+     * Build dashboard settings payload and enrich wizard settings with wizardStep key
+     * (string), so frontend grouping can use the same shape as setup wizard config.
+     * @returns {Promise<object[]>}
+     */
+    async getDashboardSettingsPayload() {
+        const settings = await this.models["setting"].getAll(true);
+        const wizardSettings = await this.models["setting"].getWizardSettings();
+        const wizardStepByKey = new Map(wizardSettings.map((s) => [s.key, s.wizardStep]));
+        return settings.map((setting) => ({
+            ...setting,
+            wizardStep: wizardStepByKey.get(setting.key) || setting.wizardStep || null,
+        }));
+    }
 
     /**
      * Fetches all system settings from the database.
@@ -24,7 +40,7 @@ class SettingSocket extends Socket {
             throw new Error("You do not have permission to access settings.");
         }
 
-        return await this.models["setting"].getAll(true);
+        return await this.getDashboardSettingsPayload();
     }
 
    /**
@@ -42,28 +58,50 @@ class SettingSocket extends Socket {
             throw new Error("You do not have permission to save settings.");
         }
 
-        for (const setting of data) {
-            let value = setting.value;
-            if (typeof value === "object") {
-                value = JSON.stringify(value);
-            }
-
-            await this.models["setting"].set(setting.key, value, {
-                transaction: options.transaction,
-            });
-        }
+        const { touchesMailService } = await saveSettings(this.models["setting"], data, {
+            transaction: options.transaction,
+            models: this.models,
+        });
 
         options.transaction.afterCommit(async () => {
+            if (touchesMailService) {
+                await this.server.initMailServer();
+            }
             await this.getSocket("AppSocket").sendSettings(true); // Notify all clients of new settings
-            this.emit("settingData", await this.models["setting"].getAll(true)); // Refresh settings on this socket
+            this.emit("settingData", await this.getDashboardSettingsPayload()); // Refresh settings on this socket
         });
 
         return "Settings saved successfully.";
     }
 
+    /**
+     * Sends a fixed test email using current mail settings from the database.
+     *
+     * @socketEvent mailSendTest
+     * @param {object} data       The input data from the frontend
+     * @param {string} data.to    Recipient email address
+     * @param {object} options
+     * @returns {Promise<string>} A promise that resolves with a success message once the test email is sent.
+     * @throws {Error}            If the user is not an admin or mail fails
+     */
+    async mailSendTest(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to send test mail.");
+        }
+
+        const rows = await this.models["setting"].getMailServiceSettings();
+        const mailSettings = mailTest.buildMailMapFromSettingsRows(rows);
+        const transport = mailTest.buildTransportFromMailSettings(mailSettings);
+        const from = mailSettings["system.mailService.senderAddress"] || "";
+        const to = data && data.to != null ? String(data.to).trim() : "";
+        await mailTest.sendFixedTestMail(transport, { from, to });
+        return "Test email sent.";
+    }
+
     init() {
         this.createSocket("settingGetData", this.sendSettings, {}, false);
         this.createSocket("settingSave", this.saveSettings, {}, true);
+        this.createSocket("mailSendTest", this.mailSendTest, {}, false);
     }
 }
 

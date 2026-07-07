@@ -37,16 +37,17 @@
           </span>
         </h2>
         <ul>
-          <li
-            v-for="r in annotations.filter(a => a.tagId === s.id)"
-            v-if="annotations.filter(a => a.tagId === s.id).length > 0"
-            :key="r.id"
-          >
-            <ReportItem
-              :annotation-id="r.id"
-              @show-report-annotation="showAnnotation"
-            />
-          </li>
+          <template v-if="annotations.filter(a => a.tagId === s.id).length > 0">
+            <li
+              v-for="r in annotations.filter(a => a.tagId === s.id)"
+              :key="r.id"
+            >
+              <ReportItem
+                :annotation-id="r.id"
+                @show-report-annotation="showAnnotation"
+              />
+            </li>
+          </template>
           <li v-else>
             No comments.
           </li>
@@ -59,13 +60,11 @@
       </p>
     </template>
     <template #footer>
-      <button
+      <BasicButton
         class="btn btn-primary"
+        text="Close"
         data-bs-dismiss="modal"
-        type="button"
-      >
-        Close
-      </button>
+      />
     </template>
   </Modal>
 </template>
@@ -73,6 +72,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import ReportItem from "./ReportItem.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal to show a report over comments/annotations
@@ -81,7 +81,7 @@ import ReportItem from "./ReportItem.vue";
  */
 export default {
   name: "ReportModal",
-  components: {Modal, ReportItem},
+  components: {Modal, ReportItem, BasicButton},
   inject: {
    studySessionId: {
       type: Number,

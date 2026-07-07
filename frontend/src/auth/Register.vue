@@ -189,13 +189,12 @@
               </div>
             </div>
             <div class="col-md-6 offset-md-4">
-              <button
+              <BasicButton
                 class="btn btn-primary"
                 type="submit"
                 :disabled="!config['isRegistrationEnabled']"
-              >
-                Register
-              </button>
+                text="Register"
+              />
             </div>
           </div>
         </div>
@@ -216,12 +215,13 @@
  */
 import TermsModal from "./TermsModal.vue";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthRegister",
-  components: {TermsModal, LogoSvg},
+  components: {TermsModal, LogoSvg, BasicButton},
   data() {
     return {
       formData: {
@@ -260,7 +260,10 @@ export default {
       const p = this.formData.password || "";
       return p.length >= 8
         && !/^\s*$/.test(p)
-        && !/[\x00-\x1F\x7F]/.test(p)
+        && ![...p].some((c) => {
+          const codePoint = c.codePointAt(0) || 0;
+          return codePoint <= 31 || codePoint === 127;
+        })
         && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
     },
     validTerms() {

@@ -25,6 +25,13 @@
             @click="openRightsManagementModal"
         />
         <BasicButton
+          class="btn btn-secondary btn-sm"
+          title="Role Management"
+          text="Role Management"
+          icon="person-plus"
+          @click="$refs.roleManagementModal.open()"
+        />
+        <BasicButton
             class="btn btn-secondary btn-sm"
             title="Upload Password"
             text="Upload Password"
@@ -78,7 +85,11 @@
     @update-user="fetchUsers"
     @hide="modals.rightsManagement = false"
   />
-  <PasswordModal v-if="modals.password" ref="passwordModal" @hide="modals.password = false"/>
+  <RoleManagementModal
+    ref="roleManagementModal"
+    @update-user="fetchUsers"
+  />
+  <PasswordModal ref="passwordModal" />
   <ImportModal
       v-if="modals.import"
       ref="importModal"
@@ -110,6 +121,7 @@ import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import RightsManagementModal from "./users/RightsManagementModal.vue";
+import RoleManagementModal from "./users/RoleManagementModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
@@ -138,6 +150,7 @@ export default {
     UploadModal,
     UserAddModal,
     ConfirmModal,
+    RoleManagementModal,
     ActiveSessionsModal,
   },
   props: {
