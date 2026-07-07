@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 
 /**
  * Validate an exported recording payload (schemaVersion 1). Throws on any issue.
@@ -83,15 +84,27 @@ async function resolveRecordings(cfg, ctx) {
     if (cfg.recordings && cfg.recordings.length) {
         ids.push(...cfg.recordings);
     }
-    if (cfg.files && cfg.files.length) {
-        for (const f of cfg.files) {
+    // --dir: expand a folder of exported recordings into the file list.
+    let files = cfg.files ? [...cfg.files] : [];
+    if (cfg.dir) {
+        const entries = fs.readdirSync(cfg.dir)
+            .filter(f => f.toLowerCase().endsWith('.json'))
+            .sort()
+            .map(f => path.join(cfg.dir, f));
+        if (entries.length === 0) {
+            throw new Error(`No .json recordings found in folder: ${cfg.dir}`);
+        }
+        files = files.concat(entries);
+    }
+    if (files.length) {
+        for (const f of files) {
             const id = await importRecording(ctx.emitWithAck, ctx.userId, f);
-            console.log(`  imported ${f} -> recording ${id}`);
+            console.log(`  imported ${path.basename(f)} -> recording ${id}`);
             ids.push(id);
         }
     }
     if (ids.length === 0) {
-        throw new Error('No recordings given. Pass --recordings <ids> and/or --files <json,...>');
+        throw new Error('No recordings given. Pass --recordings <ids>, --files <json,...>, and/or --dir <folder>');
     }
     return ids;
 }

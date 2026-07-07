@@ -30,31 +30,51 @@ async function runRegression(cfg, ctx) {
 
     // ack.data is the iteration results array. maxIterations=1 => one iteration.
     const iterations = ack.data || [];
-    const failures = [];
-    let totalTraces = 0;
 
+    // Group results per recording (per user story) so we can report which
+    // stories pass and which fail — the "is this version stable?" verdict.
+    const stories = new Map();  // key: recording name/id -> { total, failed, errors[] }
     for (const iter of iterations) {
         for (const session of (iter.results || [])) {
-            totalTraces += session.total || 0;
+            const key = session.recordingName || ('recording ' + session.recordingId);
+            if (!stories.has(key)) stories.set(key, { total: 0, failed: 0, errors: [] });
+            const s = stories.get(key);
+            s.total += session.total || 0;
+            s.failed += session.failed || 0;
             for (const err of (session.errors || [])) {
-                failures.push({
-                    recording: session.recordingName || session.recordingId,
-                    action: err.action,
-                    message: err.message,
-                });
+                s.errors.push({ action: err.action, message: err.message });
             }
         }
     }
 
     console.log('');
-    if (failures.length === 0) {
-        console.log(`REGRESSION PASSED — all ${totalTraces} trace(s) passed.`);
+    let passedStories = 0, failedStories = 0;
+    for (const [name, s] of stories) {
+        if (s.failed === 0) {
+            console.log(`  [PASS] ${name}  (${s.total} traces)`);
+            passedStories++;
+        } else {
+            console.log(`  [FAIL] ${name}  (${s.failed} of ${s.total} traces failed)`);
+            failedStories++;
+        }
+    }
+
+    const totalStories = stories.size;
+    console.log('');
+    if (failedStories === 0) {
+        console.log(`REGRESSION SUITE PASSED — all ${totalStories} story recording(s) passed.`);
+        console.log('Version is STABLE.');
         return 0;
     }
-    console.log(`REGRESSION FAILED — ${failures.length} of ${totalTraces} trace(s) failed:`);
-    for (const f of failures) {
-        console.log(`  [${f.recording}] ${f.action}: ${f.message}`);
+    console.log(`REGRESSION SUITE FAILED — ${passedStories} of ${totalStories} stories passed, ${failedStories} failed.`);
+    for (const [name, s] of stories) {
+        if (s.failed > 0) {
+            console.log(`  Failed: ${name}`);
+            for (const e of s.errors.slice(0, 3)) console.log(`    - ${e.action}: ${e.message}`);
+            if (s.errors.length > 3) console.log(`    ... and ${s.errors.length - 3} more`);
+        }
     }
+    console.log('Version is NOT stable.');
     return 1;
 }
 

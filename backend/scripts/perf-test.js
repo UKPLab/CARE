@@ -57,6 +57,7 @@ function buildConfig(args) {
         mode: args.mode || 'ramp',
         recordings: parseRecordings(args.recordings),
         files: args.files && args.files !== true ? String(args.files).split(',').map(s => s.trim()).filter(Boolean) : [],
+        dir: args.dir && args.dir !== true ? String(args.dir) : null,
         maxIterations: parseInt(args['max-iterations'], 10) || 10,
         timingMode: args['timing-mode'] || 'fast',
         ackTimeout: parseInt(args['ack-timeout'], 10) || 2000,
