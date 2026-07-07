@@ -30,12 +30,24 @@ function asObject(value) {
     return value;
 }
 
+function transactionOptions(options = {}) {
+    return options.transaction ? { transaction: options.transaction } : {};
+}
+
+function triggerCatalogInclude(models, eventWhere = {}, actionWhere = {}) {
+    return [
+        { model: models["trigger_event"], as: "event", required: true, where: eventWhere },
+        { model: models["trigger_action"], as: "action", required: true, where: actionWhere },
+    ];
+}
+
 async function buildSubmissionContext(server, context, options = {}) {
     const models = server.db.models;
+    const queryOptions = transactionOptions(options);
     const next = { ...context };
 
-    if (next.submissionId && (!next.assignmentId || !next.userId)) {
-        const submission = await models["submission"].getById(next.submissionId, options);
+    if (next.submissionId && (next.assignmentId == null || next.userId == null)) {
+        const submission = await models["submission"].getById(next.submissionId, queryOptions);
         if (submission) {
             next.assignmentId = next.assignmentId ?? submission.assignmentId;
             next.userId = next.userId ?? submission.userId;
@@ -43,8 +55,8 @@ async function buildSubmissionContext(server, context, options = {}) {
         }
     }
 
-    if (next.assignmentId && (!next.assignmentName || !next.projectId)) {
-        const assignment = await models["assignment"].getById(next.assignmentId, options);
+    if (next.assignmentId && (!next.assignmentName || next.projectId == null)) {
+        const assignment = await models["assignment"].getById(next.assignmentId, queryOptions);
         if (assignment) {
             next.assignmentName = next.assignmentName ?? assignment.name;
             next.projectId = next.projectId ?? assignment.projectId;
@@ -86,13 +98,14 @@ async function findMatchingTriggers(server, eventName, context, options = {}) {
     const models = server.db.models;
     const triggers = await models["trigger"].findAll({
         where: { enabled: true, deleted: false },
-        include: [
-            { model: models["trigger_event"], as: "event", required: true },
-            { model: models["trigger_action"], as: "action", required: true },
-        ],
+        include: triggerCatalogInclude(
+            models,
+            { name: eventName, enabled: true, deleted: false },
+            { enabled: true, deleted: false }
+        ),
         raw: true,
         nest: true,
-        transaction: options.transaction,
+        ...transactionOptions(options),
     });
 
     return triggers.filter((trigger) => matchesTrigger(trigger, eventName, context));
@@ -102,13 +115,10 @@ async function getTriggerWithCatalog(server, triggerId, options = {}) {
     const models = server.db.models;
     return await models["trigger"].findOne({
         where: { id: triggerId, deleted: false },
-        include: [
-            { model: models["trigger_event"], as: "event", required: true },
-            { model: models["trigger_action"], as: "action", required: true },
-        ],
+        include: triggerCatalogInclude(models),
         raw: true,
         nest: true,
-        transaction: options.transaction,
+        ...transactionOptions(options),
     });
 }
 
