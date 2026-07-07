@@ -90,7 +90,6 @@
   </StepperModal>
 
   <BasicModal
-    v-if="viewFormData"
     ref="viewModal"
     name="trigger-view"
     size="lg"
@@ -99,7 +98,40 @@
       {{ viewModalTitle }}
     </template>
     <template #body>
-      <BasicForm :model-value="viewFormData" :fields="viewFormSchema" />
+      <template v-if="viewFormData">
+        <dl class="row small mb-0">
+          <template
+            v-for="item in viewDetailRows"
+            :key="item.key"
+          >
+            <dt class="col-sm-4">
+              {{ item.label }}
+            </dt>
+            <dd class="col-sm-8 text-break">
+              <span
+                v-if="item.type === 'badge'"
+                class="badge"
+                :class="item.class"
+              >
+                {{ item.value }}
+              </span>
+              <span v-else>{{ item.value }}</span>
+            </dd>
+          </template>
+        </dl>
+
+        <pre
+          v-if="viewConfigurationJson"
+          class="bg-light border rounded p-2 small text-break mt-3 mb-0"
+        >{{ viewConfigurationJson }}</pre>
+      </template>
+    </template>
+    <template #footer>
+      <BasicButton
+        title="Close"
+        class="btn btn-secondary"
+        @click="$refs.viewModal.close()"
+      />
     </template>
   </BasicModal>
 </template>
@@ -108,6 +140,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
 import InputFiles from "@/basic/modal/skills/InputFiles.vue";
@@ -116,7 +149,7 @@ import InputGroup from "@/basic/modal/skills/InputGroup.vue";
 export default {
   name: "TriggerStepperModal",
   subscribeTable: ["trigger_event", "trigger_action", "project", "template", "assignment", "configuration"],
-  components: { StepperModal, BasicModal, BasicForm, SkillSelector, InputMap, InputFiles, InputGroup },
+  components: { StepperModal, BasicModal, BasicForm, BasicButton, SkillSelector, InputMap, InputFiles, InputGroup },
   emits: ["saved"],
   data() {
     return {
@@ -226,15 +259,6 @@ export default {
       componentValidity: {},
       editingId: null,
       viewModalTitleTemplate: "Trigger: {name}",
-      viewFormSchema: [
-        { key: "name", label: "Name", type: "text", readOnly: true },
-        { key: "eventLabel", label: "Event", type: "text", readOnly: true },
-        { key: "actionLabel", label: "Action", type: "text", readOnly: true },
-        { key: "maxRetries", label: "Max retries", type: "text", readOnly: true },
-        { key: "parallelLimit", label: "Parallel limit", type: "text", readOnly: true },
-        { key: "timeout", label: "Timeout (seconds)", type: "text", readOnly: true },
-        { key: "configurationJson", label: "Action configuration", type: "textarea", readOnly: true },
-      ],
       viewFormData: null,
     };
   },
@@ -242,6 +266,29 @@ export default {
     viewModalTitle() {
       if (!this.viewFormData) return "Trigger";
       return this.viewModalTitleTemplate.replace("{name}", this.viewFormData.name);
+    },
+    viewDetailRows() {
+      if (!this.viewFormData) return [];
+      return [
+        { key: "description", label: "Description", value: this.viewFormData.description || "-" },
+        {
+          key: "status",
+          label: "Status",
+          value: this.viewFormData.enabled ? "Enabled" : "Disabled",
+          type: "badge",
+          class: this.viewFormData.enabled ? "bg-success" : "bg-secondary",
+        },
+        { key: "event", label: "Event", value: this.viewFormData.eventLabel },
+        { key: "action", label: "Action", value: this.viewFormData.actionLabel },
+        { key: "project", label: "Project", value: this.viewFormData.projectLabel },
+        { key: "maxRetries", label: "Max retries", value: this.viewFormData.maxRetries },
+        { key: "parallelLimit", label: "Parallel limit", value: this.viewFormData.parallelLimit },
+        { key: "timeout", label: "Timeout", value: `${this.viewFormData.timeout} seconds` },
+      ];
+    },
+    viewConfigurationJson() {
+      if (!this.viewFormData) return "";
+      return this.formatJson(this.viewFormData.configuration);
     },
     selectedEvent() {
       return this.$store.getters["table/trigger_event/getAll"].find(
@@ -362,6 +409,23 @@ export default {
     sameValue(a, b) {
       if (a == null || b == null) return a === b;
       return String(a) === String(b);
+    },
+    formatJson(value) {
+      if (!value || typeof value !== "object" || Object.keys(value).length === 0) return "";
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (_error) {
+        return "";
+      }
+    },
+    getProjectLabel(projectId) {
+      if (projectId == null) return "-";
+      const project = this.$store.getters["table/project/get"](Number(projectId));
+      return project?.name || `#${projectId}`;
+    },
+    getCatalogItem(table, id) {
+      if (id == null) return null;
+      return this.$store.getters[`table/${table}/get`](Number(id));
     },
     resetStepConfig(oldVal, newVal, dataKey) {
       if (oldVal != null && newVal !== oldVal) {
@@ -681,14 +745,27 @@ export default {
       this.$refs.stepper.open();
     },
     openView(row) {
+      const event = this.getCatalogItem("trigger_event", row.triggerEventId);
+      const action = this.getCatalogItem("trigger_action", row.triggerActionId);
+      const configuration = row.configuration || {};
+      const viewConfiguration = {};
+      if (configuration.event && Object.keys(configuration.event).length) {
+        viewConfiguration.event = configuration.event;
+      }
+      if (configuration.action && Object.keys(configuration.action).length) {
+        viewConfiguration.action = configuration.action;
+      }
       this.viewFormData = {
         name: row.name,
-        eventLabel: row.eventLabel,
-        actionLabel: row.actionLabel,
-        maxRetries: String(row.maxRetries),
-        parallelLimit: String(row.parallelLimit),
-        timeout: String(row.timeout),
-        configurationJson: JSON.stringify(row.configuration || {}, null, 2),
+        description: configuration.description || "",
+        enabled: row.enabled?.value ?? row.enabled,
+        eventLabel: row.eventLabel || event?.configuration?.label || event?.name || "-",
+        actionLabel: row.actionLabel || action?.configuration?.label || action?.name || "-",
+        projectLabel: this.getProjectLabel(row.projectId),
+        maxRetries: row.maxRetries ?? "-",
+        parallelLimit: row.parallelLimit ?? "-",
+        timeout: row.timeout ?? "-",
+        configuration: viewConfiguration,
       };
       this.$refs.viewModal.open();
     },
