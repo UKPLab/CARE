@@ -130,11 +130,15 @@ export default {
       }
       return { keyMapping, classMapping, flagByValue };
     },
+    statusFilterOptions() {
+      return this.queueStatuses.map((s) => ({ key: s.value, name: s.label }));
+    },
     columns() {
       return this.columnDefs.map((col) => {
         if (col.type === "badge" && col.badgeFrom === "statuses") {
           return {
             ...col,
+            filter: this.statusFilterOptions,
             typeOptions: {
               keyMapping: this.statusMaps.keyMapping,
               classMapping: this.statusMaps.classMapping,
@@ -146,7 +150,7 @@ export default {
     },
     buttons() {
       return this.manageActions.map(
-        ({ handler, socketEvent, successToast, errorToast, modal, confirm, filter, ...btn }) => btn
+        ({ handler, socketEvent, successToast, errorToast, modal, confirm, ...btn }) => btn
       );
     },
     manageActionsByAction() {
