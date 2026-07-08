@@ -82,6 +82,36 @@ class MetricSampler {
         return peak;
     }
 
+    /**
+     * Summarize Postgres-side stats across the run: deadlock/rollback growth
+     * (delta of cumulative counters between first and last sample), peak
+     * waiting locks, and worst cache-hit % seen. Returns null if no samples.
+     * @returns {Object|null}
+     */
+    pgStatsSummary() {
+        const withStats = this.samples.filter(s => s.stats && s.stats.dbStats);
+        if (withStats.length < 2) return null;
+        const first = withStats[0].stats.dbStats;
+        const last = withStats[withStats.length - 1].stats.dbStats;
+        const num = (v) => (typeof v === 'number' ? v : parseInt(v, 10) || 0);
+
+        let peakLockWaits = 0;
+        let minCacheHit = null;
+        for (const s of withStats) {
+            const lw = s.stats.locks ? num(s.stats.locks.waiting) : 0;
+            if (lw > peakLockWaits) peakLockWaits = lw;
+            const ch = s.stats.dbStats.cache_hit_pct;
+            if (ch != null && (minCacheHit === null || ch < minCacheHit)) minCacheHit = ch;
+        }
+
+        return {
+            deadlocksDelta: Math.max(0, num(last.deadlocks) - num(first.deadlocks)),
+            rollbacksDelta: Math.max(0, num(last.rollbacks) - num(first.rollbacks)),
+            peakLockWaits,
+            minCacheHit,
+        };
+    }
+
     /** RSS trend: {first, last} in bytes, for memory-growth detection. */
     rssTrend() {
         const withHealth = this.samples.filter(s => s.health);

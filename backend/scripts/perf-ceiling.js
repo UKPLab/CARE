@@ -81,6 +81,16 @@ async function runCeiling(cfg, ctx) {
             else reason = `overall p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms threshold`;
             await sampler.stop();
             console.log(`\nCEILING: server sustained ${lastGood} concurrent sessions; degraded at ${concurrency} (${reason}).`);
+            {
+                const rssMb = (b) => Math.round(b / 1024 / 1024);
+                const rss = sampler.rssTrend();
+                console.log(`  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+                const pg = sampler.pgStatsSummary();
+                if (pg) {
+                    console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
+                        (pg.minCacheHit != null ? `, min cache-hit ${pg.minCacheHit.toFixed(1)}%` : ''));
+                }
+            }
             printTraceStats(ack.data.results, { title: `Trace breakdown at level ${concurrency} (each action's OWN stats):` });
 
             // Name the likely culprit, scoped to WHY it stopped, with clear p95 labeling.
@@ -104,6 +114,16 @@ async function runCeiling(cfg, ctx) {
         if (level >= hardCap) {
             await sampler.stop();
             console.log(`\nCEILING: hit safety cap (${hardCap} levels) at ${concurrency} sessions, still healthy — raise --max-iterations or lower --latency-threshold to push further.`);
+            {
+                const rssMb = (b) => Math.round(b / 1024 / 1024);
+                const rss = sampler.rssTrend();
+                console.log(`  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+                const pg = sampler.pgStatsSummary();
+                if (pg) {
+                    console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
+                        (pg.minCacheHit != null ? `, min cache-hit ${pg.minCacheHit.toFixed(1)}%` : ''));
+                }
+            }
             return 0;
         }
         concurrency += step;

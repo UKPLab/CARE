@@ -107,6 +107,11 @@ function reportRamp(levels, cfg, sampler) {
         const rss = sampler.rssTrend();
         console.log(`\n  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
         console.log(`  DB pool waiting: peak ${sampler.peakPoolWaiting()}`);
+        const pg = sampler.pgStatsSummary();
+        if (pg) {
+            console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
+                (pg.minCacheHit != null ? `, min cache-hit ${pg.minCacheHit.toFixed(1)}%` : ''));
+        }
     }
 
     // Verdict.

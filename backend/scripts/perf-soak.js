@@ -124,6 +124,12 @@ function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
         const peakWaiting = sampler.peakPoolWaiting();
         poolBackedUp = peakWaiting > 0;
         console.log(`  DB pool waiting: peak ${peakWaiting}`);
+
+        const pg = sampler.pgStatsSummary();
+        if (pg) {
+            console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
+                (pg.minCacheHit != null ? `, min cache-hit ${pg.minCacheHit.toFixed(1)}%` : ''));
+        }
     }
 
     // Trace breakdown across the whole soak (prints regardless of verdict).
