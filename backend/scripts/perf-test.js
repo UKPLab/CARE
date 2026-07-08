@@ -68,6 +68,7 @@ function buildConfig(args) {
         user: args.user || process.env.PERF_ADMIN_USER || 'admin',
         password: args.password || process.env.ADMIN_PWD || null,
         step: parseInt(args.step, 10) || 5,
+        maxFailures: parseInt(args['max-failures'], 10) || 0,
         concurrency: parseInt(args.concurrency, 10) || 10,
         duration: parseDuration(args.duration) || 60000,  // default 60s
         sampleInterval: parseDuration(args['sample-interval']) || 0,  // 0 = back-to-back

@@ -3,6 +3,7 @@
 const { randomUUID } = require('crypto');
 const { resolveRecordings } = require('./perf-recordings');
 const { MetricSampler } = require('./perf-metrics');
+const { printTraceStats } = require('./perf-trace-stats');
 
 /**
  * Soak mode: hold a FIXED concurrency continuously for a duration, sampling
@@ -23,6 +24,7 @@ async function runSoak(cfg, ctx) {
     console.log('  sample  elapsed  passed  failed  avgMs  p95Ms  thru/s');
 
     const start = Date.now();
+    const allResults = [];
     const samples = [];
     let sampleNum = 0;
     // Sample server vitals (memory + DB pool) once per second during the soak.
@@ -60,22 +62,23 @@ async function runSoak(cfg, ctx) {
         const elapsedSec = Math.round((Date.now() - start) / 1000);
         samples.push({ ...m, elapsedSec });
         console.log(`  ${pad(sampleNum, 6)}  ${pad(elapsedSec + 's', 7)}  ${pad(m.passed, 6)}  ${pad(m.failed, 6)}  ${pad(m.avg, 5)}  ${pad(m.p95, 5)}  ${pad(m.thru, 6)}`);
+        if (ack.data && ack.data.results) allResults.push(...ack.data.results);
 
         if (cfg.sampleInterval > 0) {
             const remaining = durationMs - (Date.now() - start);
-            if (remaining > 0) await sleep(Math.min(cfg.sampleInterval, remaining));
+            if (remaining > 0) await sleep(Math.min(cfg.sampleInterval, remaining));  
         }
     }
 
     await sampler.stop();
-    return reportSoak(samples, concurrency, durationMs, sampler);
+    return reportSoak(samples, concurrency, durationMs, sampler, allResults);
 }
 
 /**
  * Compare early vs late samples to detect drift over time.
  * @returns {number} exit code
  */
-function reportSoak(samples, concurrency, durationMs, sampler) {
+function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
     console.log('');
     if (samples.length < 2) {
         console.log(`SOAK: only ${samples.length} sample(s) — run longer for a trend.`);
@@ -121,6 +124,11 @@ function reportSoak(samples, concurrency, durationMs, sampler) {
         const peakWaiting = sampler.peakPoolWaiting();
         poolBackedUp = peakWaiting > 0;
         console.log(`  DB pool waiting: peak ${peakWaiting}`);
+    }
+
+    // Trace breakdown across the whole soak (prints regardless of verdict).
+    if (allResults && allResults.length) {
+        printTraceStats(allResults, { title: 'Trace breakdown (whole soak):' });
     }
 
     // Drift verdict: rising latency (>25%), growing failures, sustained memory

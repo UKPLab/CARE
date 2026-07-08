@@ -3,6 +3,7 @@
 const { resolveRecordings } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { MetricSampler } = require('./perf-metrics');
+const { printTraceStats } = require('./perf-trace-stats');
 
 /**
  * Ceiling finder: climb concurrency by --step each level, no cap, until a stop
@@ -68,17 +69,34 @@ async function runCeiling(cfg, ctx) {
         const peakWaiting = sampler.peakPoolWaiting();
         const poolSaturated = peakWaiting > poolWaitingBaseline && peakWaiting > 0;
 
-        const tripped = m.failed > 0 || m.p95 > cfg.latencyThreshold || poolSaturated;
+        const allowedFailures = cfg.maxFailures || 0;
+        const tripped = m.failed > allowedFailures || m.p95 > cfg.latencyThreshold || poolSaturated;
         const status = tripped ? 'STOP' : 'ok';
         console.log(`  ${pad(level, 5)}  ${pad(concurrency, 11)}  ${pad(m.passed, 6)}  ${pad(m.failed, 6)}  ${pad(m.avg, 5)}  ${pad(m.p95, 5)}  ${pad(m.thru, 6)}  ${pad(peakWaiting, 4)}  ${status}`);
 
         if (tripped) {
             let reason;
             if (poolSaturated) reason = `DB pool saturated (waiting peaked at ${peakWaiting})`;
-            else if (m.failed > 0) reason = `${m.failed} trace failure(s)`;
-            else reason = `p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms`;
+            else if (m.failed > allowedFailures) reason = `${m.failed} trace failure(s) (allowed: ${allowedFailures})`;
+            else reason = `overall p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms threshold`;
             await sampler.stop();
             console.log(`\nCEILING: server sustained ${lastGood} concurrent sessions; degraded at ${concurrency} (${reason}).`);
+            printTraceStats(ack.data.results, { title: `Trace breakdown at level ${concurrency} (each action's OWN stats):` });
+
+            // Name the likely culprit, scoped to WHY it stopped, with clear p95 labeling.
+            const culpritStats = require('./perf-trace-stats').traceStats(ack.data.results);
+            if (culpritStats.length) {
+                if (m.failed > allowedFailures) {
+                    const worst = culpritStats.filter(s => s.failed > 0).sort((a, b) => b.failed - a.failed)[0];
+                    if (worst) console.log(`\n  >> Likely culprit: ${worst.action} — ${worst.failed} failure(s). Start here.`);
+                } else if (poolSaturated) {
+                    const worst = [...culpritStats].sort((a, b) => b.dbWrites - a.dbWrites)[0];
+                    if (worst) console.log(`\n  >> Likely culprit: ${worst.action} — most DB writes (${worst.dbWrites}), likely saturating the pool. Start here.`);
+                } else {
+                    const worst = [...culpritStats].sort((a, b) => b.p95 - a.p95)[0];
+                    if (worst) console.log(`\n  >> Slowest action: ${worst.action} (its OWN p95: ${worst.p95}ms). Overall level p95 was ${m.p95}ms — this action is dragging it up. Start here.`);
+                }
+            }
             return 0;
         }
 

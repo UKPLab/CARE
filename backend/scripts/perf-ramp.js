@@ -2,6 +2,7 @@
 
 const { resolveRecordings } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
+const { printTraceStats, printCulprit } = require('./perf-trace-stats');
 
 /**
  * Ramp mode: escalate concurrency (N, 2N, 3N...) until a hard failure or the
@@ -84,6 +85,12 @@ function reportRamp(levels, cfg) {
             `${String(avg).padEnd(5)}  ${String(p95).padEnd(5)}  ${String(max).padEnd(5)}  ` +
             `${String(thru).padEnd(6)}  ${status}`
         );
+
+    }
+
+    const lastLevel = levels[levels.length - 1];
+    if (lastLevel && lastLevel.results) {
+        printTraceStats(lastLevel.results, { title: `Trace breakdown at final level (${lastLevel.sessions} sessions):` });
     }
 
     // Verdict.

@@ -1,6 +1,7 @@
 'use strict';
 
 const { resolveRecordings } = require('./perf-recordings');
+const { printTraceStats } = require('./perf-trace-stats');
 
 /**
  * Regression mode: replay the given recordings once at concurrency 1 and
@@ -74,6 +75,7 @@ async function runRegression(cfg, ctx) {
             if (s.errors.length > 3) console.log(`    ... and ${s.errors.length - 3} more`);
         }
     }
+    printTraceStats(iterations.flatMap(i => i.results || []), { title: 'Trace breakdown (all stories):' });
     console.log('Version is NOT stable.');
     return 1;
 }
