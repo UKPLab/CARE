@@ -25,6 +25,8 @@ version.json
 #modules
 utils/modules/editor-delta-conversion/node_modules
 utils/modules/editor-delta-conversion/coverage
+utils/modules/placeholder-tokens/node_modules
+utils/modules/placeholder-tokens/coverage
 
 yarn-error.log
 .tox
