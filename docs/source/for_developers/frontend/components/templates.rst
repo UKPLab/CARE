@@ -34,6 +34,47 @@ Location: ``backend/utils/templateResolver.js``
 Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).  
 Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only keys allowed for ``context.templateType``.
 
+Placeholder token helpers
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Bracket-indexed placeholder tokens (``~key[N]~``) are parsed, formatted, and replaced by a shared util module used by both the backend resolver and the frontend template editor.
+
+Backend Integration
+^^^^^^^^^^^^^^^^^^^
+
+Location: ``utils/modules/placeholder-tokens``
+
+.. code-block:: javascript
+
+    const { applyPlaceholderReplacements, getUsedIndexes } = require('placeholder-tokens');
+
+This logic is used in:
+
+- ``backend/utils/templateResolver.js`` – placeholder resolution, duplicate checks, and used-index reporting
+- ``backend/webserver/sockets/template.js`` – save validation via the resolver
+
+Frontend Integration
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    import { formatPlaceholderToken, countPlaceholdersByKey } from 'placeholder-tokens';
+
+This logic is used in:
+
+- ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue`` – insert, count, and validate placeholders
+- ``frontend/src/basic/modal/skills/InputMap.vue`` – hook input rows per index
+- ``frontend/src/components/editor/template/placeholderExamplePreview.js`` – preview replacement
+
+Testing
+^^^^^^^
+
+The tests are located in ``utils/modules/placeholder-tokens/tests/placeholder-tokens.test.js``. To execute the tests, use:
+
+.. code-block:: bash
+
+    make test-modules
+
 Implementing the Template Editor
 ---------------------------------
 
