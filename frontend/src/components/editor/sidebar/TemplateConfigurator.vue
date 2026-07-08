@@ -76,7 +76,7 @@
     getNextPlaceholderIndex,
     parsePlaceholderMatch,
     PLACEHOLDER_TOKEN_REGEX,
-  } from "@/components/editor/template/placeholderTokens.js";
+  } from "placeholder-tokens";
   /**
    * Template Configurator sidebar component
    *
