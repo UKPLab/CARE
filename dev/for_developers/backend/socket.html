@@ -2673,6 +2673,28 @@ This operation is restricted to users with administrator privileges.</p>
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.getUserDetails">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getUserDetails</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.getUserDetails" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>userGetDetails</cite></p>
+<p>Retrieves detailed information for a user.
+Restricted to admins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>number</strong>) – The ID of the user to load</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – </p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="UserSocket.getUsers">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getUsers</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">role</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.getUsers" title="Link to this definition"></a></dt>
 <dd><p>Get users by their role.status === “duplicate”</p>
@@ -2864,6 +2886,31 @@ It first verifies the user exists before proceeding with the update.</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – A promise that resolves with the updated user object, excluding sensitive and timestamp fields.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.updateUserDetails">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">updateUserDetails</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.updateUserDetails" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>userUpdateDetails</cite></p>
+<p>Updates a user’s profile and roles.
+Restricted to adminis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The input data from the frontend</p></li>
+<li><p><strong>data.userId</strong> (<strong>number</strong>) – The ID of the user to update</p></li>
+<li><p><strong>data.userData</strong> (<strong>Object</strong>) – firstName, lastName, email, roles</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>)</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – </p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;void&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
