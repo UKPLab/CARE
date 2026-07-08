@@ -17,22 +17,7 @@ module.exports = (sequelize, DataTypes) => {
             ],
         };
 
-        // Visibility:
-        //   - owner of the parent model sees ALL share rows on their models
-        //   - the share's recipient sees their own row 
-        static async getUserFilter(userId) {
-            const models = await sequelize.models.ai_model.findAll({
-                where: {userId, deleted: false},
-                attributes: ["id"],
-                raw: true,
-            });
-            const modelIds = models.map((m) => m.id);
-            const orClauses = [{userId}];
-            if (modelIds.length > 0) {
-                orClauses.push({aiModelId: {[Op.in]: modelIds}});
-            }
-            return {[Op.or]: orClauses};
-        }
+        
     }
 
     AiModelShare.init({

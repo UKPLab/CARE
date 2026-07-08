@@ -122,21 +122,38 @@
         </div>
 
         <div class="col-md-12">
-          <label class="form-label">
-            Cost limit ($)
-            <i
-              class="bi bi-info-circle text-muted ms-1"
-              title="Global cap across all users on this model. Leave empty for no cap."
+          <div class="border rounded p-3">
+            <label class="form-label">
+              Cost limit ($)
+              <i
+                class="bi bi-info-circle text-muted ms-1"
+                title="Global cap across all users on this model. Leave empty for no cap."
+              />
+            </label>
+            <input
+              v-model.number="modelForm.costLimit"
+              type="number"
+              min="0"
+              step="0.01"
+              class="form-control"
+              placeholder="No limit"
             />
-          </label>
-          <input
-            v-model.number="modelForm.costLimit"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-            placeholder="No limit"
-          />
+            <div class="form-check mt-2">
+              <input
+                id="modelExemptFromCaps"
+                v-model="modelForm.exemptFromCaps"
+                class="form-check-input"
+                type="checkbox"
+              />
+              <label class="form-check-label" for="modelExemptFromCaps">
+                Bypass budget caps
+                <i
+                  class="bi bi-info-circle text-muted ms-1"
+                  title="When checked, no AI budget cap (model/share/hook/study/step-hook) blocks usage of this model. Use for self-hosted or free models."
+                />
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="col-md-12">
@@ -149,24 +166,6 @@
             />
             <label class="form-check-label" for="modelEnabled">
               Enabled
-            </label>
-          </div>
-        </div>
-
-        <div class="col-md-12">
-          <div class="form-check">
-            <input
-              id="modelExemptFromCaps"
-              v-model="modelForm.exemptFromCaps"
-              class="form-check-input"
-              type="checkbox"
-            />
-            <label class="form-check-label" for="modelExemptFromCaps">
-              Exempt from budget caps
-              <i
-                class="bi bi-info-circle text-muted ms-1"
-                title="When checked, no AI budget cap (model/share/hook/study/step-hook) blocks usage of this model. Use for self-hosted or free models."
-              />
             </label>
           </div>
         </div>

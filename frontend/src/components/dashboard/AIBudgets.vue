@@ -1,9 +1,22 @@
 <template>
   <BasicCard title="AI Budget">
     <template #body>
+      <ul class="nav nav-tabs mb-3">
+        <li v-for="tab in tabs" :key="tab.key" class="nav-item">
+          <button
+            class="nav-link"
+            :class="{ active: activeTab === tab.key }"
+            type="button"
+            @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+            <span v-if="tabRows(tab.key).length" class="badge bg-secondary ms-1">{{ tabRows(tab.key).length }}</span>
+          </button>
+        </li>
+      </ul>
       <BasicTable
-        :columns="columns"
-        :data="budgetRows"
+        :columns="tabColumns"
+        :data="tabRows(activeTab)"
         :options="tableOptions"
         :buttons="rowButtons"
         @action="onAction"
@@ -18,8 +31,7 @@
 <script>
 /**
  * AI Budget overview : lists every cap the user owns and supports editing the
- * cost limit or removing the cap. Reset action is intentionally not exposed
- * here yet.
+ * cost limit, resetting the spending window, or removing the cap.
  *
  * All data resolved from the autoTable store: ai_budget rows + parents
  * (ai_model, ai_model_share, ai_hook, ai_hook_share, study, study_step, user).
@@ -40,19 +52,18 @@ export default {
   components: { BasicCard, BasicButton, BasicTable, ConfirmModal, AIBudgetEditModal },
   data() {
     return {
+      activeTab: "models",
+      tabs: [
+        { key: "models",  label: "Models",  types: ["model", "model_share"] },
+        { key: "hooks",   label: "Hooks",   types: ["hook", "hook_share"] },
+        { key: "studies", label: "Studies", types: ["study", "step_hook"] },
+      ],
       tableOptions: {
         striped: true,
         hover: true,
         pagination: 10,
         search: true,
       },
-      columns: [
-        { name: "Entity type", key: "entityTypeLabel", sortable: true },
-        { name: "Entity", key: "entityLabel", sortable: true },
-        { name: "Limit type", key: "limitTypeLabel", sortable: true },
-        { name: "Limit", key: "costLimitLabel", sortable: true, sortKey: "costLimit" },
-        { name: "Last reset", key: "resetAtLabel", sortable: true, sortKey: "resetAt" },
-      ],
     };
   },
   computed: {
@@ -101,16 +112,46 @@ export default {
         return acc;
       }, {});
     },
+    tabColumns() {
+      const base = [
+        { name: "Limit type", key: "limitTypeLabel", sortable: true },
+        { name: "Limit", key: "costLimitLabel", sortable: true, sortKey: "costLimit" },
+        { name: "Last reset", key: "resetAtLabel", sortable: true, sortKey: "resetAt" },
+      ];
+      if (this.activeTab === "models") {
+        return [
+          { name: "Model", key: "entityLabel", sortable: true },
+          { name: "Shared with", key: "sharedWith", sortable: true },
+          ...base,
+        ];
+      }
+      if (this.activeTab === "hooks") {
+        return [
+          { name: "Hook", key: "entityLabel", sortable: true },
+          { name: "Shared with", key: "sharedWith", sortable: true },
+          ...base,
+        ];
+      }
+      return [
+        { name: "Study", key: "studyLabel", sortable: true },
+        { name: "Level", key: "levelLabel", sortable: true },
+        { name: "Hook", key: "hookLabel", sortable: true },
+        ...base,
+      ];
+    },
     budgetRows() {
       return this.budgets
         .filter((b) => !b.deleted)
         .map((b) => {
-          const { entityType, entityLabel } = this.resolveScope(b);
+          const { entityType, entityLabel, sharedWith, studyLabel, levelLabel, hookLabel } = this.resolveScope(b);
           return {
             ...b,
-            entityTypeLabel: this.entityTypeLabel(entityType),
             entityType,
             entityLabel,
+            sharedWith: sharedWith || "—",
+            studyLabel: studyLabel || "—",
+            levelLabel: levelLabel || "—",
+            hookLabel: hookLabel || "—",
             limitTypeLabel: LIMIT_TYPE_LABELS[Number(b.limitType)] || "—",
             costLimitLabel: this.formatCurrency(b.costLimit),
             resetAtLabel: this.formatDateTime(b.resetAt),
@@ -126,6 +167,12 @@ export default {
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
+          icon: "arrow-counterclockwise",
+          title: "Reset spending window",
+          action: "reset",
+          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
+        },
+        {
           icon: "trash",
           title: "Remove cap",
           action: "delete",
@@ -135,54 +182,45 @@ export default {
     },
   },
   methods: {
+    tabRows(tabKey) {
+      const tab = this.tabs.find((t) => t.key === tabKey);
+      if (!tab) return [];
+      return this.budgetRows.filter((r) => tab.types.includes(r.entityType));
+    },
     resolveScope(b) {
       if (b.studyStepId && b.hookId) {
         const step = this.studyStepsById[b.studyStepId];
         const study = step ? this.studiesById[step.studyId] : null;
         const hook = this.hooksById[b.hookId];
-        const stepLabel = step ? `Step ${step.stepNumber || step.id}` : `Step #${b.studyStepId}`;
+        const studyLabel = study?.name || (step ? `Study #${step.studyId}` : `Study #?`);
+        const levelLabel = step ? `Step ${step.stepNumber || step.id}` : `Step #${b.studyStepId}`;
         const hookLabel = hook?.name || `Hook #${b.hookId}`;
-        const studyLabel = study?.name || (step ? `Study #${step.studyId}` : "");
-        return { entityType: "step_hook", entityLabel: `${hookLabel} @ ${stepLabel}${studyLabel ? ` (${studyLabel})` : ""}` };
+        return { entityType: "step_hook", entityLabel: studyLabel, sharedWith: null, studyLabel, levelLabel, hookLabel };
       }
       if (b.modelId) {
         const m = this.modelsById[b.modelId];
-        return { entityType: "model", entityLabel: m?.name || `Model #${b.modelId}` };
+        return { entityType: "model", entityLabel: m?.name || `Model #${b.modelId}`, sharedWith: null };
       }
       if (b.shareId) {
         const share = this.modelSharesById[b.shareId];
         const model = share ? this.modelsById[share.aiModelId] : null;
-        const who = this.recipientLabel(share);
-        const entity = model?.name || (share ? `Model #${share.aiModelId}` : `Share #${b.shareId}`);
-        return { entityType: "model_share", entityLabel: `${who} (${entity})` };
+        return { entityType: "model_share", entityLabel: model?.name || `Model #${share?.aiModelId}`, sharedWith: this.recipientLabel(share) };
       }
       if (b.hookId) {
         const h = this.hooksById[b.hookId];
-        return { entityType: "hook", entityLabel: h?.name || `Hook #${b.hookId}` };
+        return { entityType: "hook", entityLabel: h?.name || `Hook #${b.hookId}`, sharedWith: null };
       }
       if (b.hookShareId) {
         const share = this.hookSharesById[b.hookShareId];
         const hook = share ? this.hooksById[share.aiHookId] : null;
-        const who = this.recipientLabel(share);
-        const entity = hook?.name || (share ? `Hook #${share.aiHookId}` : `Hook share #${b.hookShareId}`);
-        return { entityType: "hook_share", entityLabel: `${who} (${entity})` };
+        return { entityType: "hook_share", entityLabel: hook?.name || `Hook #${share?.aiHookId}`, sharedWith: this.recipientLabel(share) };
       }
       if (b.studyId) {
         const s = this.studiesById[b.studyId];
-        return { entityType: "study", entityLabel: s?.name || `Study #${b.studyId}` };
+        const studyLabel = s?.name || `Study #${b.studyId}`;
+        return { entityType: "study", entityLabel: studyLabel, sharedWith: null, studyLabel, levelLabel: "Global", hookLabel: null };
       }
-      return { entityType: "unknown", entityLabel: "—" };
-    },
-    entityTypeLabel(entityType) {
-      switch (entityType) {
-        case "model": return "Model";
-        case "model_share": return "Model share";
-        case "hook": return "Hook";
-        case "hook_share":  return "Hook share";
-        case "study": return "Study";
-        case "step_hook":   return "Step hook";
-        default: return "—";
-      }
+      return { entityType: "unknown", entityLabel: "—", sharedWith: null, studyLabel: null, levelLabel: null, hookLabel: null };
     },
     recipientLabel(share) {
       if (!share) return "—";
@@ -207,11 +245,33 @@ export default {
     onAction(data) {
       switch (data.action) {
         case "edit":   this.openEdit(data.params); break;
+        case "reset":  this.openReset(data.params); break;
         case "delete": this.openDelete(data.params); break;
       }
     },
     openEdit(row) {
       this.$refs.editModal.open(row);
+    },
+    openReset(row) {
+      this.$refs.confirmModal.open(
+        "Reset",
+        `Reset the spending counter for this cap? Past usage will no longer count toward the limit.`,
+        "",
+        (confirmed) => {
+          if (!confirmed) return;
+          this.$socket.emit(
+            "appDataUpdate",
+            { table: "ai_budget", data: { id: row.id, resetAt: new Date().toISOString() } },
+            (result) => {
+              if (result?.success) {
+                this.toastSuccess("Spending window reset");
+              } else {
+                this.toastError(result?.message || "Failed to reset");
+              }
+            }
+          );
+        }
+      );
     },
     openDelete(row) {
       this.$refs.confirmModal.open(

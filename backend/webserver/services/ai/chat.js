@@ -168,18 +168,7 @@ async function getValidModels(service, client, data) {
         throw new Error("Missing or invalid credentialId");
     }
 
-    const credential = await service.server.db.models.ai_credential.getById(credentialId, {
-        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
-    });
-    if (!credential || credential.deleted) {
-        throw new Error("Credential not found");
-    }
-    if (!client?.userId || credential.userId !== client.userId) {
-        throw new Error("You are not allowed to access this credential");
-    }
-    if (!credential.enabled) {
-        throw new Error("Credential is disabled");
-    }
+    const credential = await service.server.db.models.ai_credential.getOwnedById(credentialId, client?.userId);
     const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
     if (!provider) {
         throw new Error("Credential provider is required to load models");
@@ -212,31 +201,13 @@ async function testModel(service, client, data) {
         throw new Error("Missing model");
     }
 
-    const credential = await service.server.db.models.ai_credential.getById(credentialId, {
-        attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
-    });
-    if (!credential || credential.deleted) {
-        throw new Error("Credential not found");
-    }
-    if (!client?.userId || credential.userId !== client.userId) {
-        throw new Error("You are not allowed to access this credential");
-    }
-    if (!credential.enabled) {
-        throw new Error("Credential is disabled");
-    }
+    const credential = await service.server.db.models.ai_credential.getOwnedById(credentialId, client?.userId);
 
     const params = {
-        model,
+        ...helpers.buildLiteLLMParams(credential, model),
         messages: [{role: "user", content: "ping"}],
         max_tokens: 16,
-        api_key: credential.apiKey,
     };
-    if (credential.apiBaseUrl) {
-        params.api_base = credential.apiBaseUrl;
-    }
-    if (credential.apiVersion) {
-        params.api_version = credential.apiVersion;
-    }
     if (
         data?.additionalParameters &&
         typeof data.additionalParameters === "object" &&

@@ -159,6 +159,25 @@ function mapShareToRecipient(share, maps) {
     };
 }
 
+/**
+ * Builds the params object passed directly to LiteLLM's completion() call from a credential row and a model name.
+ *
+ * @param {{ provider?: string, apiKey?: string, apiBaseUrl?: string, apiVersion?: string }} credential
+ * @param {string} modelName Raw model name as stored in ai_model.model.
+ * @returns {{ model: string, api_key: string, custom_llm_provider?: string, api_base?: string, api_version?: string }}
+ */
+function buildLiteLLMParams(credential, modelName) {
+    const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
+    const model = provider && !modelName.startsWith(provider + "/")
+        ? `${provider}/${modelName}`
+        : modelName;
+    const params = { model, api_key: credential.apiKey };
+    if (provider) params.custom_llm_provider = provider;
+    if (credential.apiBaseUrl) params.api_base = credential.apiBaseUrl;
+    if (credential.apiVersion) params.api_version = credential.apiVersion;
+    return params;
+}
+
 module.exports = {
     requireClientUserId,
     extractInputText,
@@ -167,4 +186,5 @@ module.exports = {
     shareAggregatesFromRows,
     parseShareExpiryInput,
     mapShareToRecipient,
+    buildLiteLLMParams,
 };

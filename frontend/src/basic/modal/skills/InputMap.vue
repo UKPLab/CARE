@@ -13,6 +13,16 @@
           :value-as-object="true"
           @update:model-value="updateMapping(input, $event)"
       />
+      <div
+          v-if="isHook && inputMappings[input]?.type === 'submission'"
+          class="mt-1 ps-1"
+      >
+        <FormRadio
+            :model-value="submissionFileSelections[input]?.[0] || null"
+            :options="{ key: `submission_file_${input}`, label: 'Select files to include:', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
+            @update:model-value="toggleSubmissionFile(input, $event)"
+        />
+      </div>
     </div>
 
     <h6 class="text-secondary mt-4">Output Mapping</h6>
@@ -41,25 +51,24 @@
  * @author Manu Sundar Raj Nandyal, Dennis Zyska
  */
 import FormSelect from "@/basic/form/Select.vue";
+import FormRadio from "@/basic/form/Radio.vue";
 import deepEqual from "deep-equal";
 import { tokenInnerText } from "placeholder-tokens";
 
 export default {
   name: "InputMap",
-  components: {FormSelect},
+  components: {FormSelect, FormRadio},
   inject: {
     isTemplateMode: {
       type: Boolean,
       default: false,
     },
   },
-  subscribeTable: ["ai_hook", {
-    table: "configuration",
-    filter: [
-      {key: "type", value: 0},
-      {key: "hideInFrontend", value: false}
-    ]
-  }],
+  subscribeTable: [
+    "ai_hook",
+    {table: "configuration", filter: [{key: "type", value: 0}, {key: "hideInFrontend", value: false}]},
+    {table: "configuration", filter: [{key: "type", value: 1}]},
+  ],
   props: {
     skillName: {
       type: String,
@@ -105,6 +114,7 @@ export default {
       outputMappings: {},
       isUpdatingFromWithin: false,
       hookPlaceholders: [],
+      submissionFileSelections: {},
     };
   },
   computed: {
@@ -136,6 +146,24 @@ export default {
     },
     configurations() {
       return this.$store.getters["table/configuration/getAll"] || [];
+    },
+    // First validation configuration (type 1) — defines what files a submission must contain.
+    // TODO: support dynamicty here
+    validationConfig() {
+      return this.configurations.find(cfg => cfg.type === 1) || null;
+    },
+    // File options: always "pdf" (the PDF document) + the named files inside the ZIP entry.
+    // Each zip option carries `pattern` (the validation-config regex) so the backend can match
+    validationFileOptions() {
+      const requiredFiles = this.validationConfig?.content?.rules?.requiredFiles || [];
+      const options = [{value: "pdf", label: "pdf", pattern: null}];
+      const zipEntry = requiredFiles.find(f => Array.isArray(f.includeFiles) && f.includeFiles.length);
+      if (zipEntry) {
+        zipEntry.includeFiles.forEach(f => {
+          if (f.name) options.push({value: f.name, label: f.name, pattern: f.pattern || null});
+        });
+      }
+      return options;
     },
     configurationSources() {
       return this.configurations
@@ -357,6 +385,12 @@ export default {
             this.inputMappings = {...newValue};
             this.outputMappings = {};
           }
+          // Restore submission file selections from saved mapping (hook mode).
+          const fileSelections = {};
+          Object.entries(this.inputMappings).forEach(([key, val]) => {
+            if (val?.selectedFiles) fileSelections[key] = val.selectedFiles;
+          });
+          this.submissionFileSelections = fileSelections;
         }
       },
       immediate: true,
@@ -364,6 +398,29 @@ export default {
     },
   },
   methods: {
+    // Select a single file for a hook submission input (radio); re-emits with updated selectedFiles + filePatterns.
+    toggleSubmissionFile(input, fileName) {
+      const next = [fileName];
+      this.submissionFileSelections = {...this.submissionFileSelections, [input]: next};
+      const source = this.inputMappings[input];
+      if (source) {
+        this.isUpdatingFromWithin = true;
+        const updated = {...source, selectedFiles: next, filePatterns: this.buildFilePatterns(next)};
+        this.inputMappings = {...this.inputMappings, [input]: updated};
+        this.$emit("update:modelValue", {...this.inputMappings, output: {...this.outputMappings}});
+        this.$nextTick(() => { this.isUpdatingFromWithin = false; });
+      }
+    },
+    // Build a { name: pattern } map for only the currently selected files (pdf has no pattern).
+    buildFilePatterns(selectedFiles) {
+      const patterns = {};
+      this.validationFileOptions.forEach(opt => {
+        if (opt.pattern && selectedFiles.includes(opt.value)) {
+          patterns[opt.value] = opt.pattern;
+        }
+      });
+      return patterns;
+    },
     // Fetch the placeholders this hook's template actually uses; they become the input-mapping rows.
     fetchHookPlaceholders(templateId) {
       this.$socket.emit("templatePlaceholderGetUsed", {templateId}, (result) => {
@@ -393,14 +450,15 @@ export default {
           });
       this.resolvedSubmissionDocs.forEach(d => {
         const name = d && d.name ? d.name : `Document ${d.id}`;
-        sources.push(
-            {
-              value: `submission_${d.id}`,
-              name: `<Submission> ${name}`,
-              stepIndex: stepIndex,
-              type: "submission",
-              table: "submission"
-            });
+        sources.push({
+          value: `submission_${d.id}`,
+          name: `<Submission> ${name}`,
+          stepIndex: stepIndex,
+          type: "submission",
+          table: "submission",
+          submissionId: d.submissionId,
+          pdfDocumentId: this.resolvedSourceDocumentId, // for extracting
+        });
       });
     },
     updateMapping(input, source) {
@@ -419,9 +477,19 @@ export default {
         });
       }
 
+      // For hook submission sources, carry the already-chosen file selections forward.
+      // Switching away from submission clears the selections for this input.
+      let effectiveSource = source;
+      if (this.isHook && source?.type === "submission") {
+        const sel = this.submissionFileSelections[input] || [];
+        effectiveSource = {...source, selectedFiles: sel, filePatterns: this.buildFilePatterns(sel)};
+      } else if (this.isHook && source?.type !== "submission") {
+        this.submissionFileSelections = {...this.submissionFileSelections, [input]: []};
+      }
+
       this.inputMappings = {
         ...this.inputMappings,
-        [input]: source,
+        [input]: effectiveSource,
       };
 
       this.$emit("update:modelValue", {

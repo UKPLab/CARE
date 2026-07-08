@@ -186,15 +186,13 @@ export default {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Find an assessment-producing service: an NLP assessment skill, or a hook (carries hookId).
       const svc =
           cfg.services.find(
               (s) =>
-                  (s.skill && (
-                      s.name === "nlpAssessment" ||
-                      s.type === "nlpRequest"
-                  )) ||
-                  s.hookId
+                 ((s.skill || s.hookId) && (
+                s.name === "nlpAssessment" &&
+                s.type === "nlpRequest"
+            )) 
           ) || cfg.services[0];
 
       return svc || null;

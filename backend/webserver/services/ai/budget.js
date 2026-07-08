@@ -83,7 +83,7 @@ async function beginRequest(service, request, opts = {}) {
         }
     }
 
-    const log = await service.server.db.models["ai_log"].create({
+    const log = await service.server.db.models["ai_log"].add({
         userId,
         aiModelId,
         aiHookId: aiHookId || null,
@@ -106,10 +106,10 @@ async function beginRequest(service, request, opts = {}) {
  * @param {Object} outcome - Parsed response fields to save (output, tokens, costs, etc).
  */
 async function completeRequest(service, logId, outcome) {
-    await service.server.db.models["ai_log"].update({
+    await service.server.db.models["ai_log"].updateById(logId, {
         ...outcome,
         status: "completed",
-    }, { where: { id: logId } });
+    });
 }
 
 /**
@@ -120,10 +120,10 @@ async function completeRequest(service, logId, outcome) {
  * @param {string} [errorMessage] - Error text to save on the log row.
  */
 async function failRequest(service, logId, errorMessage) {
-    await service.server.db.models["ai_log"].update({
+    await service.server.db.models["ai_log"].updateById(logId, {
         status: "failed",
         output: errorMessage || "Unknown error",
-    }, { where: { id: logId } });
+    });
 }
 
 /**
@@ -133,10 +133,7 @@ async function failRequest(service, logId, errorMessage) {
  * @param {number} logId - The ai_log row id returned by beginRequest.
  */
 async function cancelRequest(service, logId) {
-    await service.server.db.models["ai_log"].update(
-        { status: "aborted" },
-        { where: { id: logId } }
-    );
+    await service.server.db.models["ai_log"].updateById(logId, { status: "aborted" });
     return { cancelled: true };
 }
 

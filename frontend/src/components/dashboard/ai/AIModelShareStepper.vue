@@ -35,7 +35,7 @@
         />
         <small class="text-muted">Required. Access expires on this date.</small>
       </div>
-      <div class="mb-3">
+      <div class="border rounded p-3 mb-3">
         <label class="form-label" for="shareCostLimit">Cost limit per recipient ($)</label>
         <input
           id="shareCostLimit"
@@ -81,11 +81,10 @@
       <div class="mb-3">
         <div><strong>{{ resourceLabel }}:</strong> {{ selectedShareModel?.name || "-" }}</div>
         <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
-        <div><strong>Selected:</strong> {{ activeSelectionIds.length }}</div>
         <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
-        <div><strong>Cost limit per recipient:</strong> {{ shareCostLimitLabel }}</div>
-        <div v-if="shareTotalLimitLabel">
-          <strong>Total potential spend:</strong> {{ shareTotalLimitLabel }}
+        <div>
+          <strong>Cost limit:</strong>
+          {{ shareCostLimitLabel }}{{ shareTotalLimitLabel ? ` (${shareTotalLimitLabel} total)` : '' }}
         </div>
       </div>
       <BasicTable
@@ -243,7 +242,7 @@ export default {
     },
     shareTotalLimitLabel() {
       const value = Number(this.shareForm.costLimit);
-      if (!Number.isFinite(value) || value <= 0) return "";
+      if (!Number.isFinite(value) || value <= 0 || this.activeSelectionIds.length <= 1) return "";
       return `$${(value * this.activeSelectionIds.length).toFixed(2)}`;
     },
     resourceLabelLower() {

@@ -17,23 +17,6 @@ module.exports = (sequelize, DataTypes) => {
                 { table: "user", by: "userId" },
             ],
         };
-
-        // Visibility:
-        //   - owner of the parent hook sees ALL share rows on their hooks
-        //   - the share's recipient sees their own row
-        static async getUserFilter(userId) {
-            const hooks = await sequelize.models.ai_hook.findAll({
-                where: {userId, deleted: false},
-                attributes: ["id"],
-                raw: true,
-            });
-            const hookIds = hooks.map((h) => h.id);
-            const orClauses = [{userId}];
-            if (hookIds.length > 0) {
-                orClauses.push({aiHookId: {[Op.in]: hookIds}});
-            }
-            return {[Op.or]: orClauses};
-        }
     }
 
     AiHookShare.init({

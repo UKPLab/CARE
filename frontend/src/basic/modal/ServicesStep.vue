@@ -35,39 +35,24 @@
           <h6 class="text-secondary">Cost limits (optional)</h6>
           <div class="row g-2">
             <div class="col-md-4">
-              <label class="form-label">Total ($)</label>
-              <input
-                  v-model.number="skill.capTotal"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  class="form-control"
-                  placeholder="No limit"
-                  @change="emitServices"
+              <FormDefault
+                  :model-value="String(skill.capTotal || '')"
+                  :options="{ key: 'capTotal', label: 'Total ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Total spending cap' }"
+                  @update:model-value="skill.capTotal = $event ? Number($event) : null; emitServices()"
               />
             </div>
             <div class="col-md-4">
-              <label class="form-label">Per session ($)</label>
-              <input
-                  v-model.number="skill.capPerSession"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  class="form-control"
-                  placeholder="No limit"
-                  @change="emitServices"
+              <FormDefault
+                  :model-value="String(skill.capPerSession || '')"
+                  :options="{ key: 'capPerSession', label: 'Per session ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Per-session spending cap' }"
+                  @update:model-value="skill.capPerSession = $event ? Number($event) : null; emitServices()"
               />
             </div>
             <div class="col-md-4">
-              <label class="form-label">Per user ($)</label>
-              <input
-                  v-model.number="skill.capPerUser"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  class="form-control"
-                  placeholder="No limit"
-                  @change="emitServices"
+              <FormDefault
+                  :model-value="String(skill.capPerUser || '')"
+                  :options="{ key: 'capPerUser', label: 'Per user ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Per-user spending cap' }"
+                  @update:model-value="skill.capPerUser = $event ? Number($event) : null; emitServices()"
               />
             </div>
           </div>
@@ -87,6 +72,7 @@
 <script>
 import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
+import FormDefault from "@/basic/form/Default.vue";
 
 /**
  * ServicesStep Component
@@ -102,6 +88,7 @@ export default {
   components: {
     SkillSelector,
     InputMap,
+    FormDefault,
   },
   inject: {
     studyStepId: {

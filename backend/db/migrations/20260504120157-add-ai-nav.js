@@ -2,7 +2,7 @@
 
 const navElements = [
   {
-    name: 'AILog',
+    name: 'AI Log',
     icon: 'journal-text',
     order: 2,
     admin: false,
@@ -10,7 +10,7 @@ const navElements = [
     component: 'AILog',
   },
   {
-    name: 'AIModels',
+    name: 'AI Models',
     icon: 'robot',
     order: 3,
     admin: false,

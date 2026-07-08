@@ -7,7 +7,6 @@
  * @author Mohammed Rawhani
  */
 const MetaModel = require('../MetaModel.js');
-const { Op } = require("sequelize");
 const { AI_BUDGET_LIMIT_TYPES } = require('../../utils/aiBudgetLimitTypes.js');
 
 module.exports = (sequelize, DataTypes) => {
@@ -16,138 +15,101 @@ module.exports = (sequelize, DataTypes) => {
         // when ai_budget rows are sent. Same shape as study_session.autoTable.
         static autoTable = {
             parentTables: [
-                { table: "ai_model",       by: "modelId"     },
-                { table: "ai_model_share", by: "shareId"     },
-                { table: "ai_hook",        by: "hookId"      },
+                { table: "ai_model", by: "modelId" },
+                { table: "ai_model_share", by: "shareId" },
+                { table: "ai_hook", by: "hookId" },
                 { table: "ai_hook_share",  by: "hookShareId" },
-                { table: "study",          by: "studyId"     },
-                { table: "study_step",     by: "studyStepId" },
+                { table: "study", by: "studyId" },
+                { table: "study_step", by: "studyStepId" },
             ],
         };
 
         static limitTypes = AI_BUDGET_LIMIT_TYPES;
 
-        // Visibility scope: a cap row is visible to the user that owns the
-        // referenced entity. Six entity kinds → six OR branches, mirroring
-        // the OR pattern in ai_hook.getUserFilter (just with broader reach).
+        // userId is denormalized on each row so visibility is a direct column
+        // filter — no FK-chain queries at read time.
         static async getUserFilter(userId) {
-            const db = sequelize.models;
-            const orEmpty = (ids) => (ids.length > 0 ? ids : [-1]);
-
-            const [models, hooks, studies] = await Promise.all([
-                db.ai_model.findAll({ where: { userId, deleted: false }, attributes: ["id"], raw: true }),
-                db.ai_hook.findAll({ where: { userId, deleted: false }, attributes: ["id"], raw: true }),
-                db.study.findAll({ where: { userId, deleted: false }, attributes: ["id"], raw: true }),
-            ]);
-            const modelIds = models.map((m) => m.id);
-            const hookIds  = hooks.map((h) => h.id);
-            const studyIds = studies.map((s) => s.id);
-
-            const [shares, hookShares, steps] = await Promise.all([
-                modelIds.length === 0 ? [] : db.ai_model_share.findAll({
-                    where: { aiModelId: { [Op.in]: modelIds }, deleted: false },
-                    attributes: ["id"], raw: true,
-                }),
-                hookIds.length === 0 ? [] : db.ai_hook_share.findAll({
-                    where: { aiHookId: { [Op.in]: hookIds }, deleted: false },
-                    attributes: ["id"], raw: true,
-                }),
-                studyIds.length === 0 ? [] : db.study_step.findAll({
-                    where: { studyId: { [Op.in]: studyIds }, deleted: false },
-                    attributes: ["id"], raw: true,
-                }),
-            ]);
-            const shareIds = shares.map((s) => s.id);
-            const hookShareIds = hookShares.map((s) => s.id);
-            const stepIds = steps.map((s) => s.id);
-
-            return {
-                [Op.or]: [
-                    { modelId: { [Op.in]: orEmpty(modelIds)      } },
-                    { shareId: { [Op.in]: orEmpty(shareIds)      } },
-                    { hookId: { [Op.in]: orEmpty(hookIds)       } },
-                    { hookShareId:  { [Op.in]: orEmpty(hookShareIds)  } },
-                    { studyId: { [Op.in]: orEmpty(studyIds)      } },
-                    { studyStepId: { [Op.in]: orEmpty(stepIds)       } },
-                ],
-            };
+            return { userId };
         }
 
         static associate(models) {
             AiBudget.belongsTo(models["ai_model"], { foreignKey: "modelId", as: "model" });
             AiBudget.belongsTo(models["ai_model_share"], { foreignKey: "shareId", as: "share" });
             AiBudget.belongsTo(models["ai_hook"], { foreignKey: "hookId", as: "hook" });
-            AiBudget.belongsTo(models["ai_hook_share"], { foreignKey: "hookShareId", as: "hookShare" });
+            AiBudget.belongsTo(models["ai_hook_share"],  { foreignKey: "hookShareId", as: "hookShare" });
             AiBudget.belongsTo(models["study"], { foreignKey: "studyId", as: "study" });
             AiBudget.belongsTo(models["study_step"], { foreignKey: "studyStepId", as: "studyStep" });
         }
 
-        // Ownership check fired from beforeCreate/beforeUpdate. Mirrors
-        // ai_hook.validateOwner shape — reads options.context.currentUserId,
-        // walks 0-2 lookups based on which FK pattern this cap uses, throws
-        // if the caller doesn't own the referenced entity.
-        static async validateOwner(aiBudget, options = {}) {
-            const currentUserId = Number(options?.context?.currentUserId);
-            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
-                return;
-            }
-            const transaction = options.transaction;
-            const db = sequelize.models;
+        // Walk the FK chain to find which user owns the referenced entity.
+        // Called once at create time to resolve + stamp userId on the new row.
+        static async _resolveOwnerUserId(aiBudget, db, transaction) {
+            const modelId    = Number(aiBudget.modelId)    || null;
+            const shareId    = Number(aiBudget.shareId)    || null;
+            const hookId     = Number(aiBudget.hookId)     || null;
+            const hookShareId = Number(aiBudget.hookShareId) || null;
+            const studyId    = Number(aiBudget.studyId)    || null;
+            const studyStepId = Number(aiBudget.studyStepId) || null;
 
-            const modelId = Number(aiBudget.modelId ?? aiBudget._previousDataValues?.modelId)      || null;
-            const shareId = Number(aiBudget.shareId ?? aiBudget._previousDataValues?.shareId)      || null;
-            const hookId = Number(aiBudget.hookId ?? aiBudget._previousDataValues?.hookId)       || null;
-            const hookShareId  = Number(aiBudget.hookShareId  ?? aiBudget._previousDataValues?.hookShareId)  || null;
-            const studyId = Number(aiBudget.studyId ?? aiBudget._previousDataValues?.studyId)      || null;
-            const studyStepId  = Number(aiBudget.studyStepId ?? aiBudget._previousDataValues?.studyStepId)  || null;
-
-            const assertOwner = (entity, message) => {
-                  if (!entity || Number(entity.userId) !== currentUserId) {
-                    throw new Error(message);
-                }
-            };
-
-            if (modelId && !shareId && !hookId && !hookShareId && !studyId && !studyStepId) {
-                const model = await db.ai_model.findByPk(modelId, { transaction, raw: true });
-                assertOwner(model, "You do not own this AI model");
-                return;
+            if (modelId) {
+                const m = await db.ai_model.findByPk(modelId, { transaction, raw: true });
+                return m ? Number(m.userId) : null;
             }
             if (shareId) {
-                const share = await db.ai_model_share.findByPk(shareId, { transaction, raw: true });
-                if (!share) throw new Error("Share not found");
-                const model = await db.ai_model.findByPk(share.aiModelId, { transaction, raw: true });
-                assertOwner(model, "You do not own this AI model");
-                return;
-            }
-            if (studyStepId && hookId) {
-                const step = await db.study_step.findByPk(studyStepId, { transaction, raw: true });
-                if (!step) throw new Error("Study step not found");
-                const study = await db.study.findByPk(step.studyId, { transaction, raw: true });
-                assertOwner(study, "You do not own this study");
-                return;
-            }
-            if (hookId && !studyStepId) {
-                const hook = await db.ai_hook.findByPk(hookId, { transaction, raw: true });
-                assertOwner(hook, "You do not own this AI hook");
-                return;
+                const s = await db.ai_model_share.findByPk(shareId, { transaction, raw: true });
+                if (!s) return null;
+                const m = await db.ai_model.findByPk(s.aiModelId, { transaction, raw: true });
+                return m ? Number(m.userId) : null;
             }
             if (hookShareId) {
-                const hookShare = await db.ai_hook_share.findByPk(hookShareId, { transaction, raw: true });
-                if (!hookShare) throw new Error("Hook share not found");
-                const hook = await db.ai_hook.findByPk(hookShare.aiHookId, { transaction, raw: true });
-                assertOwner(hook, "You do not own this AI hook");
-                return;
+                const hs = await db.ai_hook_share.findByPk(hookShareId, { transaction, raw: true });
+                if (!hs) return null;
+                const h = await db.ai_hook.findByPk(hs.aiHookId, { transaction, raw: true });
+                return h ? Number(h.userId) : null;
+            }
+            if (studyStepId && hookId) {
+                const ss = await db.study_step.findByPk(studyStepId, { transaction, raw: true });
+                if (!ss) return null;
+                const s = await db.study.findByPk(ss.studyId, { transaction, raw: true });
+                return s ? Number(s.userId) : null;
+            }
+            if (hookId) {
+                const h = await db.ai_hook.findByPk(hookId, { transaction, raw: true });
+                return h ? Number(h.userId) : null;
             }
             if (studyId) {
-                const study = await db.study.findByPk(studyId, { transaction, raw: true });
-                assertOwner(study, "You do not own this study");
-                return;
+                const s = await db.study.findByPk(studyId, { transaction, raw: true });
+                return s ? Number(s.userId) : null;
             }
-            throw new Error("Invalid budget scope");
+            return null;
+        }
+
+        // On create: resolve the entity's owner, stamp it on the row, verify
+        // the caller matches. 
+        static async validateCreate(aiBudget, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) return;
+
+            const resolvedOwnerId = await AiBudget._resolveOwnerUserId(
+                aiBudget, sequelize.models, options.transaction
+            );
+            if (!resolvedOwnerId) throw new Error("Invalid budget scope");
+            if (resolvedOwnerId !== currentUserId) throw new Error("You do not own this entity");
+            aiBudget.userId = resolvedOwnerId;
+        }
+
+        // On update: userId is already stored — one compare, no FK walk.
+        static async validateUpdate(aiBudget, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) return;
+
+            const storedOwnerId = Number(aiBudget._previousDataValues?.userId);
+            if (storedOwnerId !== currentUserId) throw new Error("You do not own this budget");
         }
     }
 
     AiBudget.init({
+        userId: DataTypes.INTEGER,
         modelId: DataTypes.INTEGER,
         shareId: DataTypes.INTEGER,
         hookId: DataTypes.INTEGER,
@@ -167,10 +129,10 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ai_budget',
         hooks: {
             beforeCreate: async (aiBudget, options) => {
-                await AiBudget.validateOwner(aiBudget, options);
+                await AiBudget.validateCreate(aiBudget, options);
             },
             beforeUpdate: async (aiBudget, options) => {
-                await AiBudget.validateOwner(aiBudget, options);
+                await AiBudget.validateUpdate(aiBudget, options);
             },
         },
     });

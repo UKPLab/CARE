@@ -8,6 +8,7 @@
  */
 
 const chat = require("./chat");
+const helpers = require("./helpers");
 const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
 
 /**
@@ -60,7 +61,7 @@ async function resolveHookModelParams(service, hookId) {
     }
 
     const credential = await service.server.db.models['ai_credential'].getById(aiModel.aiCredentialId, {
-        attributes: ["id", "userId", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
         throw new Error("AI hook model credential not found");
@@ -69,20 +70,12 @@ async function resolveHookModelParams(service, hookId) {
         throw new Error("AI hook model credential is disabled");
     }
 
-    const params = {
+    return {
         aiModelId: aiModel.id,
         aiCredentialId: credential.id,
-        model: aiModel.model,
-        api_key: credential.apiKey,
         additionalParameters: hookModel.additionalParameters || {},
+        ...helpers.buildLiteLLMParams(credential, aiModel.model),
     };
-    if (credential.apiBaseUrl) {
-        params.api_base = credential.apiBaseUrl;
-    }
-    if (credential.apiVersion) {
-        params.api_version = credential.apiVersion;
-    }
-    return params;
 }
 
 /**
@@ -108,11 +101,42 @@ async function resolveServiceInput(service, input) {
             }
             return config.content;
         }
-        case "submission":
-            // TODO: resolve the submission to text — extract the PDF's text and unzip the `.tex`
-            // from its zip (reuse submission.loadSubmissionForNlpRequest to find the files +
-            // document.loadPlainText per file), returning e.g. { pdf, zip }.
-            return "";
+        case "submission": {
+            const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
+            if (!submissionId || !selectedFiles.length) return "";
+
+            const parts = [];
+
+            // PDF was extracted in the browser.
+            if (selectedFiles.includes("pdf") && pdfText != null) {
+                parts.push(pdfText);
+            }
+
+            // Zip-based files (tex, bib, …) — unzip on the backend.
+            // filePatterns maps logical name → validation-config regex (e.g. "expose" → "Expose\\.tex$").
+            const zipFileSpecs = selectedFiles
+                .filter(f => f !== "pdf")
+                .map(name => ({name, pattern: filePatterns[name] || null}));
+            if (zipFileSpecs.length) {
+                const zipDoc = await service.server.db.models["document"].findOne({
+                    where: { submissionId, type: 4, deleted: false },
+                    raw: true,
+                });
+                if (zipDoc) {
+                    const buffer = await service.server.db.models["document"]
+                        .readDocumentFile(zipDoc, ".zip");
+                    if (buffer) {
+                        const extracted = await service.server.db.models["document"]
+                            .extractZipFiles(buffer, zipFileSpecs);
+                        for (const content of Object.values(extracted)) {
+                            parts.push(content);
+                        }
+                    }
+                }
+            }
+
+            return parts.join("\n\n");
+        }
         default:
             return null;
     }
@@ -160,7 +184,7 @@ async function runHook(service, client, data) {
     const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
     const values = await resolveHookReferences(service, rawValues);
     const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
-
+    
     const { additionalParameters, ...credentialParams } = modelParams;
     const completionData = {
         ...additionalParameters,
