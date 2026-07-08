@@ -50,7 +50,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
         client = await createAuthenticatedClient(server, user, serverUrl);
     } catch (err) {
         results.failed = traces.length;
-        results.errors.push({ action: 'connect', message: err.message });
+        results.errors.push({ts: start, action: 'connect', message: err.message });
         return results;
     }
 
@@ -107,6 +107,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
                 } else {
                     results.passed++;
                     results.latencies.push({
+                        ts: start,
                         traceId: trace.id,
                         action: trace.action,
                         latency,
@@ -116,6 +117,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
             } catch (err) {
                 results.failed++;
                 results.errors.push({
+                    ts: start,
                     traceId: trace.id,
                     action: trace.action,
                     message: err.message,

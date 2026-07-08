@@ -3,6 +3,7 @@
 const { resolveRecordings } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { printTraceStats, printCulprit } = require('./perf-trace-stats');
+const { MetricSampler } = require('./perf-metrics');
 
 /**
  * Ramp mode: escalate concurrency (N, 2N, 3N...) until a hard failure or the
@@ -26,6 +27,11 @@ async function runRamp(cfg, ctx) {
     };
     ctx.socket.on('progressUpdate', onProgress);
 
+    // Sample server vitals (memory + DB pool) during the whole ramp climb.
+    const sampler = new MetricSampler(ctx.emitWithAck, 1000);
+    sampler.start();
+
+    // The previously broken/duplicate emitWithAck call, now restored
     const ack = await ctx.emitWithAck('replayRun', {
         recordingIds: ids,
         timingMode: 'fast',
@@ -40,12 +46,15 @@ async function runRamp(cfg, ctx) {
     process.stdout.write('\n');
 
     if (!ack || !ack.success) {
+        await sampler.stop();
         console.error('RAMP ERROR — replayRun failed: ' + (ack && ack.message));
         return 1;
     }
 
+    await sampler.stop();
+    
     const levels = ack.data || [];
-    reportRamp(levels, cfg);
+    reportRamp(levels, cfg, sampler);
 
     // Exit non-zero if it broke before the cap (a failing level).
     const brokeEarly = levels.length > 0 && !levels[levels.length - 1].passed;
@@ -58,7 +67,7 @@ function percentile(sorted, p) {
     return sorted[idx];
 }
 
-function reportRamp(levels, cfg) {
+function reportRamp(levels, cfg, sampler) {
     console.log('\n=== Ramp results ===');
     console.log('  level  sessions  passed  failed  avgMs  p95Ms  maxMs  thru/s  status');
 
@@ -91,6 +100,13 @@ function reportRamp(levels, cfg) {
     const lastLevel = levels[levels.length - 1];
     if (lastLevel && lastLevel.results) {
         printTraceStats(lastLevel.results, { title: `Trace breakdown at final level (${lastLevel.sessions} sessions):` });
+    }
+
+    if (sampler) {
+        const rssMb = (b) => Math.round(b / 1024 / 1024);
+        const rss = sampler.rssTrend();
+        console.log(`\n  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+        console.log(`  DB pool waiting: peak ${sampler.peakPoolWaiting()}`);
     }
 
     // Verdict.

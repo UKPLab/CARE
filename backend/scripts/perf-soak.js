@@ -3,7 +3,7 @@
 const { randomUUID } = require('crypto');
 const { resolveRecordings } = require('./perf-recordings');
 const { MetricSampler } = require('./perf-metrics');
-const { printTraceStats } = require('./perf-trace-stats');
+const { printTraceStats, printMemoryCorrelation } = require('./perf-trace-stats');
 
 /**
  * Soak mode: hold a FIXED concurrency continuously for a duration, sampling
@@ -130,6 +130,8 @@ function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
     if (allResults && allResults.length) {
         printTraceStats(allResults, { title: 'Trace breakdown (whole soak):' });
     }
+
+    if (sampler) printMemoryCorrelation(allResults, sampler.getSamples());
 
     // Drift verdict: rising latency (>25%), growing failures, sustained memory
     // growth after warm-up, or DB pool backing up = drift.

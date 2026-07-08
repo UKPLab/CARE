@@ -127,4 +127,60 @@ function printCulprit(results, why = {}) {
     }
 }
 
-module.exports = { traceStats, printTraceStats, printCulprit };
+/**
+ * Correlate memory growth with trace activity over time. Buckets traces into
+ * time windows aligned with the sampler's memory readings and reports which
+ * trace types dominated during the windows where RSS grew most.
+ *
+ * NOTE: this is CORRELATION, not attribution — RSS is process-wide and
+ * GC-scheduled, so per-trace memory cannot be measured directly without heap
+ * profiling that would distort the run. Windows where memory grew + which
+ * traces ran then = a diagnostic lead, not proof.
+ *
+ * @param {Array} results - session results (traces need ts fields)
+ * @param {Array} vitals - sampler.getSamples() ({t, health} entries)
+ * @param {number} [topWindows=3] - how many growth windows to report
+ */
+function printMemoryCorrelation(results, vitals, topWindows = 3) {
+    const mem = (vitals || []).filter(v => v.health && typeof v.health.rss === 'number');
+    if (mem.length < 3) { return; }
+
+    // Collect all traces with timestamps.
+    const traces = [];
+    for (const s of (results || [])) {
+        for (const l of (s.latencies || [])) if (l.ts) traces.push({ ts: l.ts, action: l.action });
+        for (const e of (s.errors || [])) if (e.ts) traces.push({ ts: e.ts, action: e.action });
+    }
+    if (traces.length === 0) {
+        console.log('  (memory correlation unavailable — traces have no timestamps; server needs restart with the ts field)');
+        return;
+    }
+
+    // Build windows between consecutive memory readings; record RSS delta per window.
+    const windows = [];
+    for (let i = 1; i < mem.length; i++) {
+        windows.push({ from: mem[i - 1].t, to: mem[i].t, delta: mem[i].health.rss - mem[i - 1].health.rss, actions: new Map() });
+    }
+    // Assign traces to windows.
+    for (const tr of traces) {
+        const w = windows.find(w => tr.ts >= w.from && tr.ts < w.to);
+        if (w) w.actions.set(tr.action, (w.actions.get(tr.action) || 0) + 1);
+    }
+
+    // Report the biggest-growth windows and what ran during them.
+    const growers = windows.filter(w => w.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, topWindows);
+    if (growers.length === 0) {
+        console.log('  memory correlation: no growth windows — memory did not climb during the run.');
+        return;
+    }
+    console.log('');
+    console.log('  memory-growth correlation (lead, not proof — which traces ran while RSS grew):');
+    const mb = (b) => (b / 1024 / 1024).toFixed(1);
+    for (const w of growers) {
+        const top = [...w.actions.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+            .map(([a, c]) => `${a} (${c}x)`).join(', ');
+        console.log(`    +${mb(w.delta)}MB window: ${top || 'no traces recorded in window'}`);
+    }
+}
+
+module.exports = { traceStats, printTraceStats, printCulprit, printMemoryCorrelation };
