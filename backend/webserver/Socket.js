@@ -465,26 +465,6 @@ module.exports = class Socket {
             allFilter = {[Op.and]: [allFilter, userFilter]};
         } else {
 
-<<<<<<< HEAD
-            if (accessRights.length > 0) {
-                if (relevantAccessMap.every(item => item.limitation)) {
-                    const {filter: limitedFilter, columns} = this.handleLimitations(
-                        tableName,
-                        allFilter,
-                        accessRights,
-                        relevantAccessMap,
-                        userId
-                    );
-
-                    allFilter = limitedFilter;
-                    allAttributes['include'] = columns;
-                } else { // do without limitations
-                    allAttributes['include'] = [...new Set(
-                        accessRights
-                            .filter(a => a.columns)
-                            .flatMap(a => a.columns)
-                    )];
-=======
             // --- Public rows: always visible regardless of ownership or access rights ---
             if ('public' in model.getAttributes()) {
                 rowVisibilityConditions.push({public: true});
@@ -498,7 +478,6 @@ module.exports = class Socket {
                 } else {
                     // getUserFilter returns {} → grants full row access (e.g. for admins)
                     fullRowAccess = true;
->>>>>>> origin/dev
                 }
 
             } else {
