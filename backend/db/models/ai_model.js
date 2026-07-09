@@ -57,6 +57,7 @@ module.exports = (sequelize, DataTypes) => {
         description: DataTypes.TEXT,
         additionalParameters: DataTypes.JSONB,
         enabled: DataTypes.BOOLEAN,
+        freeModel: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

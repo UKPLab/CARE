@@ -6,10 +6,18 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiModelShare extends MetaModel {
-        static autoTable = false;
+        // Chain user → so anything subscribing to ai_model_share also gets the recipient user row for free. 
+        static autoTable = {
+            parentTables: [
+                { table: "user", by: "userId" },
+            ],
+        };
+
+        
     }
 
     AiModelShare.init({
@@ -17,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
         expiryDate: DataTypes.DATE,
-        deleted: DataTypes.BOOLEAN,
+        deleted: {type: DataTypes.BOOLEAN, defaultValue: false},
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

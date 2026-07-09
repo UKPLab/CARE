@@ -122,6 +122,26 @@
         </div>
 
         <div class="col-md-12">
+          <div class="border rounded p-3">
+            <div class="mb-3">
+              <FormSwitch
+                :model-value="modelForm.freeModel"
+                :options="{ key: 'freeModel', label: 'Free Model', help: 'Free/self-hosted models bypass all spending caps. When disabled, costs are tracked.' }"
+                @update:model-value="modelForm.freeModel = $event; if ($event) modelForm.costLimit = null"
+              />
+            </div>
+            <div v-if="!modelForm.freeModel">
+              <FormDefault
+                :model-value="String(modelForm.costLimit || '')"
+                :options="{ key: 'costLimit', label: 'Cost limit ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Global cap across all users on this model' }"
+                @update:model-value="modelForm.costLimit = $event ? Number($event) : null"
+              />
+            </div>
+          
+          </div>
+        </div>
+
+        <div class="col-md-12">
           <div class="form-check">
             <input
               id="modelEnabled"
@@ -163,6 +183,8 @@
  */
 
 import BasicModal from "@/basic/Modal.vue";
+import FormSwitch from "@/basic/form/Switch.vue";
+import FormDefault from "@/basic/form/Default.vue";
 
 function getEmptyModelForm() {
   return {
@@ -173,12 +195,14 @@ function getEmptyModelForm() {
     description: "",
     enabled: true,
     additionalParameters: "{}",
+    freeModel: false,
+    costLimit: null,
   };
 }
 
 export default {
   name: "AIModel",
-  components: { BasicModal },
+  components: { BasicModal, FormSwitch, FormDefault },
   props: {
     currentUserId: {
       type: Number,
@@ -189,6 +213,7 @@ export default {
       default: () => [],
     },
   },
+  subscribeTable: ["ai_budget"],
   data() {
     return {
       modelForm: getEmptyModelForm(),
@@ -235,9 +260,24 @@ export default {
           description: row.description || "",
           enabled: !!row.enabled,
           additionalParameters: JSON.stringify(row.additionalParameters || {}, null, 2),
+          freeModel: !!row.freeModel,
+          costLimit: this.findExistingCap(row.id),
         };
       }
       this.$refs.modelModal.open();
+    },
+    findExistingCapRow(modelId) {
+      if (!modelId) return null;
+      const budgets = this.$store.getters["table/ai_budget/getFiltered"]
+        ? this.$store.getters["table/ai_budget/getFiltered"](
+            (b) => !b.deleted && Number(b.modelId) === Number(modelId) && Number(b.limitType) === 0
+          )
+        : [];
+      return budgets.length > 0 ? budgets[0] : null;
+    },
+    findExistingCap(modelId) {
+      const row = this.findExistingCapRow(modelId);
+      return row ? Number(row.costLimit) : null;
     },
     clearModelOptions() {
       this.modelOptions = [];
@@ -314,18 +354,34 @@ export default {
         description: this.modelForm.description?.trim() || null,
         additionalParameters,
         enabled: !!this.modelForm.enabled,
+        exemptFromCaps: !!this.modelForm.exemptFromCaps,
       };
 
       this.$socket.emit("appDataUpdate", {
         table: "ai_model",
         data: payload,
       }, (result) => {
-        if (result.success) {
-          this.$refs.modelModal.close();
-          this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
-        } else {
+        if (!result.success) {
           this.toastError(result.message || "Failed to save model");
+          return;
         }
+        const savedModelId = result.data?.id || result.data || this.modelForm.id;
+        const costLimitValue = Number(this.modelForm.costLimit);
+        const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
+        // Standard appDataUpdate chain: save the model, then update or create the ai_budget row.
+        if (wantsCap) {
+          const existing = this.findExistingCapRow(savedModelId);
+          const capData = existing
+            ? { id: existing.id, costLimit: costLimitValue }
+            : { modelId: Number(savedModelId), limitType: 0, costLimit: costLimitValue };
+          this.$socket.emit("appDataUpdate", { table: "ai_budget", data: capData }, (capResult) => {
+            if (!capResult?.success) {
+              this.toastError(capResult?.message || "Failed to save cost limit");
+            }
+          });
+        }
+        this.$refs.modelModal.close();
+        this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
       });
     },
     testModel() {

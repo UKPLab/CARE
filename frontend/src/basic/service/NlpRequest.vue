@@ -4,6 +4,11 @@
 
 <script>
 import {v4 as uuid} from "uuid";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import {extractTextFromPDF} from "@/assets/utils";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export default {
   name: "NlpRequest",
@@ -27,7 +32,8 @@ export default {
   props: {
     skill: {
       type: String,
-      required: true
+      required: false,
+      default: ""
     },
     studyStepId: {
       type: Number,
@@ -77,6 +83,13 @@ export default {
     skillKey() {
       return `${this.serviceName}_${this.skill}`;
     },
+    isHook() {
+      return !!this.service?.hookId;
+    },
+    resultKeyBase() {
+      // Hook: single output keyed `${name}_${hookId}`; skill: `${name}_${skill}` (per-output below).
+      return this.isHook ? `${this.serviceName}_${this.service.hookId}` : this.skillKey;
+    },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
     },
@@ -117,6 +130,9 @@ export default {
   },
   methods: {
     requestAlreadyDone() {
+      if (this.isHook) {
+        return Object.prototype.hasOwnProperty.call(this.documentData || {}, this.resultKeyBase);
+      }
       return Object.keys(this.documentData).some(key =>
           key.includes(this.skill)
       );
@@ -156,6 +172,10 @@ export default {
       }
     },
     sendRequest() {
+      if (this.isHook) {
+        this.sendHookRequest();
+        return;
+      }
       this.status = 'pending';
 
       const basePayload = {};
@@ -190,8 +210,131 @@ export default {
         this.timeoutId = null;
       }
 
+      if (this.isHook) {
+        this.status = 'skipped';
+        return;
+      }
+
       this.saveResult({skipped: true});
       this.status = 'skipped';
+    },
+    /**
+     * Fires the AI hook: resolves each mapped input to a value (PDF text via pdf.js, config from
+     * the store, prior-step data from study data), pushes them to the backend, and saves the result.
+     *
+     * @returns {Promise<void>}
+     */
+    async sendHookRequest() {
+      this.status = 'pending';
+      try {
+        const values = await this.buildHookValues();
+        const response = await this.$ai.runHook({
+          hookId: this.service.hookId,
+          values,
+          studyStepId: this.studyStepId,
+          studySessionId: this.studySessionId,
+          documentId: this.documentId,
+        });
+        this.saveHookResult(response);
+        this.status = 'completed';
+      } catch (error) {
+        this.eventBus.emit('toast', {
+          title: "AI Hook Request",
+          message: error.message || "AI hook request failed",
+          variant: "danger",
+        });
+        this.status = 'failed';
+      }
+    },
+    /**
+     * Resolves all mapped inputs into a { placeholderKey: value } map for the hook's template.
+     *
+     * @returns {Promise<Object>}
+     */
+    async buildHookValues() {
+      const values = {};
+      for (const placeholder in this.service.inputs) {
+        values[placeholder] = await this.resolveHookInput(this.service.inputs[placeholder]);
+      }
+      return values;
+    },
+    /**
+     * Resolves a single mapped input source to its value for a hook prompt.
+     *
+     * @param {Object} spec Source mapping (document/submission/configuration/study-data).
+     * @returns {Promise<*>}
+     */
+    async resolveHookInput(spec) {
+      if (!spec || typeof spec !== 'object') return null;
+      switch (spec.type) {
+        case 'document':
+          // PDF text extracted in the browser and sent as a value.
+          return this.extractDocumentText(spec.documentId || this.documentId);
+        case 'configuration':
+          return {type: "serviceReplacement", input: spec};
+        case 'submission': {
+          // PDF is extracted in the browser; zip contents are resolved on the backend.
+          // Both travel together inside one serviceReplacement so the backend combines them.
+          const selectedFiles = spec.selectedFiles || [];
+          let pdfText = null;
+          if (selectedFiles.includes("pdf") && spec.pdfDocumentId) {
+            pdfText = await this.extractDocumentText(spec.pdfDocumentId);
+          }
+          return {type: "serviceReplacement", input: {...spec, pdfText}};
+        }
+        case 'assessment':
+        case 'annotator':
+        case 'editor':
+          return this.buildPayloadFromStudyData(spec);
+        default:
+          return null;
+      }
+    },
+    /**
+     * Extracts plain text from a document's PDF in the browser via pdf.js.
+     *
+     * @param {number} documentId
+     * @returns {Promise<string>}
+     */
+    async extractDocumentText(documentId) {
+      if (!documentId) return "";
+      const file = await new Promise((resolve, reject) => {
+        this.$socket.emit("documentGet", {
+          documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+        }, (res) => {
+          if (res && res.success) resolve(res.data.file);
+          else reject(new Error(res?.message || "Failed to load document"));
+        });
+      });
+      const pdf = await pdfjsLib.getDocument(file).promise;
+      return extractTextFromPDF(pdf);
+    },
+    /**
+     * Persists a hook's single completion to document_data under `${name}_${hookId}` (skill takes multi key).
+     *
+     * @param {{ outputText?: string }} response
+     * @returns {void}
+     */
+    saveHookResult(response) {
+      let value = response?.outputText ?? "";
+      if (typeof value === "string") {
+        try {
+          value = JSON.parse(value);
+        } catch (_error) {
+          // keep raw text
+        }
+      }
+      const entry = {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+        key: this.resultKeyBase,
+        value,
+      };
+      this.$socket.emit("documentDataSave", entry);
+      this.$emit('update:data', {[entry.key]: entry.value});
     },
     saveResult(result) {
       const entries = Object.keys(result || {}).map(k => ({

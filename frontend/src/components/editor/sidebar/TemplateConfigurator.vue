@@ -4,9 +4,17 @@
       <div v-if="invalidPlaceholders.length > 0" class="alert alert-warning mb-3">
         <strong>Warning:</strong> The following placeholders are not valid for {{ templateTypeName }} templates:
         <ul class="mb-0 mt-2">
-          <li v-for="ph in invalidPlaceholders" :key="ph">~{{ ph }}~</li>
+          <li v-for="ph in invalidPlaceholders" :key="ph">{{ ph }}</li>
         </ul>
         These placeholders will be ignored when the template is used.
+      </div>
+
+      <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
+        <strong>Warning:</strong> The same bracket id appears more than once (e.g. two ~link[2]~):
+        <ul class="mb-0 mt-2">
+          <li v-for="ph in duplicatePlaceholders" :key="ph">{{ ph }}</li>
+        </ul>
+        Each ~key[N]~ id must be unique. Legacy ~key~ tokens without [N] are not checked here and can still repeat in older email templates. Saving is blocked until bracket duplicates are removed.
       </div>
   
       <div class="card shadow mb-0 configurator">
@@ -60,6 +68,15 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
+  import {
+    countPlaceholdersByKey,
+    formatDuplicatePlaceholderToken,
+    formatPlaceholderToken,
+    getDuplicatePlaceholderIndexes,
+    getNextPlaceholderIndex,
+    parsePlaceholderMatch,
+    PLACEHOLDER_TOKEN_REGEX,
+  } from "@/components/editor/template/placeholderTokens.js";
   /**
    * Template Configurator sidebar component
    *
@@ -96,6 +113,8 @@
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
+        duplicatePlaceholders: [],
+        lastEditorContent: "",
       };
     },
     computed: {
@@ -125,9 +144,12 @@
         }
         return this.placeholderConfigs[this.templateType].placeholders;
       },
-      allowedPlaceholderTexts() {
+      allowedPlaceholderKeys() {
         if (!this.availablePlaceholders) return [];
-        return this.availablePlaceholders.map(p => p.text);
+        return this.availablePlaceholders.map((p) => p.id);
+      },
+      placeholderCountOptions() {
+        return { bracketOnly: this.templateType === 8 };
       },
     },
     mounted() {
@@ -137,6 +159,7 @@
       // Listen for editor content updates
       this.editorContentHandler = (data) => {
         if (data.templateId === this.templateId) {
+          this.lastEditorContent = data.content || "";
           this.updatePlaceholderCounts(data.content);
           this.validatePlaceholders(data.content);
         }
@@ -215,7 +238,7 @@
             nlpAssessmentSuggestion: "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",
             previousAssessmentResult: "The saved rubric from the previous step when carry-over is configured.",
             assessmentConfiguration: "The assessment rubric configuration used in this step.",
-            submissionFiles: "Primary submission text plus metadata for additional submission files.",
+            submissionFiles: "Each Add inserts ~submissionFiles[N]~ with the next available N (highest existing + 1). Gaps are kept after deletes. Map each index to a specific submission file in the AI hook step configuration.",
             studyContext: "Basic metadata from the current study, step, and document context.",
           },
         };
@@ -230,51 +253,53 @@
         this.placeholderCounts = counts;
       },
       updatePlaceholderCounts(editorContent) {
-        // Reset counts
         this.initializePlaceholderCounts();
-  
-        // Count placeholders in the content
-        if (editorContent && this.availablePlaceholders) {
-          this.availablePlaceholders.forEach(placeholder => {
-            const regex = new RegExp(this.escapeRegex(placeholder.text), 'g');
-            const matches = editorContent.match(regex);
-            if (matches) {
-              this.placeholderCounts[placeholder.id] = matches.length;
-            }
-          });
+
+        if (!editorContent || !this.availablePlaceholders) {
+          return;
         }
+
+        const countsByKey = countPlaceholdersByKey(editorContent, this.placeholderCountOptions);
+        this.availablePlaceholders.forEach((placeholder) => {
+          this.placeholderCounts[placeholder.id] = countsByKey[placeholder.id] || 0;
+        });
       },
       validatePlaceholders(editorContent) {
         if (!editorContent || !this.templateType) {
           this.invalidPlaceholders = [];
+          this.duplicatePlaceholders = [];
           return;
         }
-  
-        // Extract all placeholders from content using regex
-        const placeholderRegex = /~([^~]+)~/g;
-        const foundPlaceholders = [];
+
+        const allowedKeys = new Set(this.allowedPlaceholderKeys);
+        const invalid = [];
+        const regex = new RegExp(PLACEHOLDER_TOKEN_REGEX.source, "g");
         let match;
-        
-        while ((match = placeholderRegex.exec(editorContent)) !== null) {
-          foundPlaceholders.push(match[1]);
+
+        while ((match = regex.exec(editorContent)) !== null) {
+          const parsed = parsePlaceholderMatch(match);
+          if (!parsed.baseKey) {
+            continue;
+          }
+          if (this.templateType === 8 && parsed.index == null) {
+            invalid.push(`~${parsed.baseKey}~`);
+            continue;
+          }
+          if (!allowedKeys.has(parsed.baseKey)) {
+            invalid.push(match[0]);
+          }
         }
-  
-        // Find invalid placeholders (not in allowed list)
-        const invalid = foundPlaceholders.filter(ph => {
-          const placeholderText = `~${ph}~`;
-          return !this.allowedPlaceholderTexts.includes(placeholderText);
-        });
-  
-        // Remove duplicates
+
         this.invalidPlaceholders = [...new Set(invalid)];
-      },
-      escapeRegex(str) {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        this.duplicatePlaceholders = getDuplicatePlaceholderIndexes(editorContent)
+          .filter((entry) => allowedKeys.has(entry.key))
+          .map((entry) => formatDuplicatePlaceholderToken(entry));
       },
       handlePlaceholderClick(placeholder) {
+        const nextIndex = getNextPlaceholderIndex(this.lastEditorContent || "", placeholder.id);
         this.eventBus.emit("editorInsertText", {
           templateId: this.templateId,
-          text: placeholder.text,
+          text: formatPlaceholderToken(placeholder.id, nextIndex),
         });
       },
       getPlaceholderIcon(placeholderType) {

@@ -61,10 +61,10 @@ const promptPlaceholders = [
   {
     type: 8,
     placeholderKey: "submissionFiles",
-    placeholderLabel: "Submission files",
+    placeholderLabel: "Submission file",
     placeholderType: "text",
-    placeholderDescription: "All PDFs in the submission (id, filename, text when provided by the caller) plus a manifest of non-PDF files.",
-    placeholderExample: "{\"pdfFiles\":[{\"documentId\":101,\"filename\":\"main.pdf\",\"text\":\"Extracted or caller-supplied text...\"},{\"documentId\":104,\"filename\":\"extra.pdf\",\"text\":\"\"}],\"otherFiles\":[{\"role\":\"attachment\",\"documentId\":102,\"filename\":\"spreadsheet.xlsx\",\"type\":\"other\"},{\"role\":\"attachment\",\"documentId\":103,\"filename\":\"sources.zip\",\"type\":\"zip\"}]}",
+    placeholderDescription: "Text from submission files mapped per slot in the hook step.",
+    placeholderExample: "Extracted text from the file mapped to this instance (e.g. main PDF body)…",
   },
   {
     type: 8,

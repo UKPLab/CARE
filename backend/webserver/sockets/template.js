@@ -7,6 +7,8 @@ const {
   resolveTemplate,
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
+  getDuplicatePlaceholderIds,
+  getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/templateResolver");
 
@@ -371,6 +373,36 @@ class TemplateSocket extends Socket {
     );
   }
 
+  /**
+   * Get the placeholders a specific template actually uses (tokens present in its content).
+   *
+   * Placeholders are defined per template type, not per template, so "used" is derived from the
+   * template's content. Returns the same row shape as {@link getAllPlaceholders}.
+   *
+   * @socketEvent templatePlaceholderGetUsed
+   * @param {Object} data            The data object
+   * @param {number} data.templateId Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Array>}
+   */
+  async getUsedPlaceholders(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+    }
+
+    return await getUsedPlaceholders(data.templateId, this.models, { transaction: options.transaction });
+  }
+
 
   /**
    * Get list of language codes that have content for a template
@@ -473,7 +505,8 @@ class TemplateSocket extends Socket {
    * @param {number} [data.context.studyStepId]     Study step ID (prompt placeholders, editor resolution)
    * @param {number} [data.context.documentId]      Document ID (prompt placeholders)
    * @param {string} [data.context.pdfText]         Extracted text for the current PDF (`~pdfText~`; caller-supplied)
-   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for each submission PDF (`~submissionFiles~`)
+   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for submission PDF text extraction
+   * @param {Object} [data.context.placeholderMapping] Per-key index maps for bracket tokens (e.g. submissionFiles: { 1: documentId, 3: documentId })
    * @param {string} [data.context.editorText]      Optional editor plain-text override (`~editorText~`)
    * @param {string} [data.context.studySessionHash] Study session hash (for link)
    * @param {string} [data.context.baseUrl]          Base URL for generating links
@@ -535,6 +568,30 @@ class TemplateSocket extends Socket {
   }
 
   /**
+   * Reject save when merged content contains duplicate placeholder ids.
+   *
+   * @param {Object} content - Delta content with ops
+   * @param {number} templateType - Template type
+   * @param {Object} options - Sequelize options
+   * @returns {Promise<void>}
+   * @throws {Error}
+   */
+  async assertNoDuplicatePlaceholders(content, templateType, options = {}) {
+    const duplicates = await getDuplicatePlaceholderIds(
+      content,
+      templateType,
+      this.models,
+      options
+    );
+    if (duplicates.length > 0) {
+      throw new Error(
+        `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
+        `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
+      );
+    }
+  }
+
+  /**
    * Save template by merging draft edits into template_content for the given language
    *
    * Merges all draft edits (draft=true) from template_edit for (templateId, language) into
@@ -565,17 +622,17 @@ class TemplateSocket extends Socket {
     });
 
     if (edits.length === 0) {
+      const templateContentModel = this.models["template_content"];
+      const langRow = await templateContentModel.findOne({
+        where: { templateId, language, deleted: false },
+        raw: true,
+        ...options,
+      });
+      let baseContent = new Delta();
+      if (langRow && langRow.content && langRow.content.ops) {
+        baseContent = new Delta(langRow.content.ops);
+      }
       if ([1, 2, 3, 6, 7].includes(template.type)) {
-        const templateContentModel = this.models["template_content"];
-        const langRow = await templateContentModel.findOne({
-          where: { templateId, language, deleted: false },
-          raw: true,
-          ...options,
-        });
-        let baseContent = new Delta();
-        if (langRow && langRow.content && langRow.content.ops) {
-          baseContent = new Delta(langRow.content.ops);
-        }
         const missing = await getMissingRequiredPlaceholders(
           { ops: baseContent.ops },
           template.type,
@@ -586,6 +643,11 @@ class TemplateSocket extends Socket {
           throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
         }
       }
+      await this.assertNoDuplicatePlaceholders(
+        { ops: baseContent.ops },
+        template.type,
+        options
+      );
       return;
     }
 
@@ -615,6 +677,12 @@ class TemplateSocket extends Socket {
         throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
       }
     }
+
+    await this.assertNoDuplicatePlaceholders(
+      { ops: mergedDelta.ops },
+      template.type,
+      options
+    );
 
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {
@@ -851,6 +919,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
+    this.createSocket("templatePlaceholderGetUsed", this.getUsedPlaceholders, {}, false);
     this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
     this.createSocket("templateCopy", this.copyTemplate, {}, true);
     this.createSocket("templateDetach", this.detachTemplate, {}, true);
