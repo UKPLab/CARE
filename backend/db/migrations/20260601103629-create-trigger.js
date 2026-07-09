@@ -45,7 +45,7 @@ module.exports = {
       },
       projectId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'project',
           key: 'id',
