@@ -16,48 +16,9 @@ module.exports = (sequelize, DataTypes) => {
             FAILED: 4,
         };
 
-        static sanitizeOptions(options = {}) {
-            const nextOptions = { ...options };
-            if (nextOptions.where && "deleted" in nextOptions.where) {
-                nextOptions.where = { ...nextOptions.where };
-                delete nextOptions.where.deleted;
-            }
-            return nextOptions;
-        }
-
         static associate(models) {
             TriggerQueue.belongsTo(models["trigger"], { foreignKey: "triggerId", as: "trigger" });
             TriggerQueue.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
-        }
-
-        static async getAll(options = {}) {
-            try {
-                const nextOptions = this.sanitizeOptions(options);
-                nextOptions.raw = true;
-                return await this.findAll(nextOptions);
-            } catch (err) {
-                console.log(err);
-            }
-        }
-
-        static async getByKey(key, id, options = {}) {
-            if (!(key in this.getAttributes())) {
-                console.log(`DB MetaModel Class ${key} not available: ${this.constructor.name}`);
-                return;
-            }
-            try {
-                return await this.findOne({
-                    where: { [key]: id },
-                    raw: true,
-                    ...options,
-                });
-            } catch (err) {
-                console.log(err);
-            }
-        }
-
-        static async getById(id, options = {}) {
-            return await this.getByKey("id", id, options);
         }
     }
 
@@ -70,6 +31,8 @@ module.exports = (sequelize, DataTypes) => {
         attemptCount: DataTypes.INTEGER,
         startedAt: DataTypes.DATE,
         completedAt: DataTypes.DATE,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     }, {

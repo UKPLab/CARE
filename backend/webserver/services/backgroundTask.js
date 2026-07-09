@@ -200,6 +200,12 @@ module.exports = class BackgroundTaskService extends Service {
         this.sendAll("backgroundTaskUpdate", this.backgroundTask);
     }
 
+    /**
+     * Record one preprocessing item error without duplicating the same request/message pair.
+     *
+     * @param {string} message Error message to display in preprocessing state
+     * @param {Object} item Preprocessing item metadata
+     */
     recordPreprocessingError(message, item = {}) {
         if (!this.backgroundTask.preprocess) return;
         const existing = this.backgroundTask.preprocess.errors || [];

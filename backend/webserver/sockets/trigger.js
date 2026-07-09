@@ -29,6 +29,7 @@ class TriggerSocket extends Socket {
     /**
      * Create a new trigger rule.
      *
+     * @socketEvent triggerCreate
      * @param {Object} data The trigger payload (event, action, settings, configuration)
      * @param {Object} options Holds the managed transaction
      * @returns {Promise<Object>} The created trigger
@@ -45,9 +46,6 @@ class TriggerSocket extends Socket {
         }
         if (!data.name?.trim()) {
             throw new Error("A name is required.");
-        }
-        if (!data.projectId) {
-            throw new Error("A project is required.");
         }
 
         const payload = {
@@ -69,6 +67,7 @@ class TriggerSocket extends Socket {
     /**
      * Update an existing trigger rule.
      *
+     * @socketEvent triggerUpdate
      * @param {Object} data Must contain `id`; any other trigger fields are updated.
      * @param {Object} options Holds the managed transaction
      * @returns {Promise<Object>} The updated trigger
@@ -98,6 +97,7 @@ class TriggerSocket extends Socket {
     /**
      * Soft-delete a trigger rule.
      *
+     * @socketEvent triggerDelete
      * @param {Object} data Must contain `id`.
      * @param {Object} options Holds the managed transaction
      * @returns {Promise<Object>}

@@ -18,6 +18,16 @@ const HANDLERS = {
 
 const QUEUE_TABLE = "trigger_queue";
 
+const EVENT_CONTEXT_BUILDERS = {
+    "submission.uploaded": buildSubmissionUploadContext,
+};
+
+/**
+ * Convert JSONB/string/null configuration values into plain objects.
+ *
+ * @param {*} value The value to normalize
+ * @returns {Object}
+ */
 function asObject(value) {
     if (!value) return {};
     if (typeof value === "string") {
@@ -30,10 +40,24 @@ function asObject(value) {
     return value;
 }
 
+/**
+ * Extract transaction options for Sequelize calls.
+ *
+ * @param {Object} options Trigger runtime options
+ * @returns {Object}
+ */
 function transactionOptions(options = {}) {
     return options.transaction ? { transaction: options.transaction } : {};
 }
 
+/**
+ * Build includes for trigger event/action catalog rows.
+ *
+ * @param {Object} models Sequelize models
+ * @param {Object} eventWhere Additional event filter
+ * @param {Object} actionWhere Additional action filter
+ * @returns {Array<Object>}
+ */
 function triggerCatalogInclude(models, eventWhere = {}, actionWhere = {}) {
     return [
         { model: models["trigger_event"], as: "event", required: true, where: eventWhere },
@@ -41,7 +65,29 @@ function triggerCatalogInclude(models, eventWhere = {}, actionWhere = {}) {
     ];
 }
 
-async function buildSubmissionContext(server, context, options = {}) {
+/**
+ * Resolve event-specific context before trigger matching and execution.
+ *
+ * @param {Object} server CARE server instance
+ * @param {string} eventName Trigger event name
+ * @param {Object} context Event payload
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object>}
+ */
+async function buildEventContext(server, eventName, context, options = {}) {
+    const builder = EVENT_CONTEXT_BUILDERS[eventName];
+    return builder ? await builder(server, context, options) : { ...context };
+}
+
+/**
+ * Enrich submission upload events with assignment, project, user, and label data.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} context Submission upload context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object>}
+ */
+async function buildSubmissionUploadContext(server, context, options = {}) {
     const models = server.db.models;
     const queryOptions = transactionOptions(options);
     const next = { ...context };
@@ -81,6 +127,14 @@ async function buildSubmissionContext(server, context, options = {}) {
     return next;
 }
 
+/**
+ * Check whether one trigger applies to the resolved event context.
+ *
+ * @param {Object} trigger Trigger row with event/action includes
+ * @param {string} eventName Trigger event name
+ * @param {Object} context Resolved event context
+ * @returns {boolean}
+ */
 function matchesTrigger(trigger, eventName, context) {
     const event = trigger.event || {};
     const action = trigger.action || {};
@@ -94,6 +148,15 @@ function matchesTrigger(trigger, eventName, context) {
     return true;
 }
 
+/**
+ * Load enabled triggers whose event/action catalog entries match the event.
+ *
+ * @param {Object} server CARE server instance
+ * @param {string} eventName Trigger event name
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Array<Object>>}
+ */
 async function findMatchingTriggers(server, eventName, context, options = {}) {
     const models = server.db.models;
     const triggers = await models["trigger"].findAll({
@@ -111,6 +174,14 @@ async function findMatchingTriggers(server, eventName, context, options = {}) {
     return triggers.filter((trigger) => matchesTrigger(trigger, eventName, context));
 }
 
+/**
+ * Load a trigger with its event and action catalog rows.
+ *
+ * @param {Object} server CARE server instance
+ * @param {number} triggerId Trigger id
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object|null>}
+ */
 async function getTriggerWithCatalog(server, triggerId, options = {}) {
     const models = server.db.models;
     return await models["trigger"].findOne({
@@ -122,6 +193,15 @@ async function getTriggerWithCatalog(server, triggerId, options = {}) {
     });
 }
 
+/**
+ * Create and broadcast a pending queue item for a trigger execution.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object|null>}
+ */
 async function createQueueItem(server, trigger, context, options = {}) {
     const model = server.db.models[QUEUE_TABLE];
     if (!model) return null;
@@ -141,6 +221,15 @@ async function createQueueItem(server, trigger, context, options = {}) {
     return item;
 }
 
+/**
+ * Update and broadcast a queue item.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} item Queue item
+ * @param {Object} data Fields to update
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object|undefined>}
+ */
 async function updateQueueItem(server, item, data, options = {}) {
     if (!item) return;
     const updated = await server.db.models[QUEUE_TABLE].updateById(item.id, data, { transaction: options.transaction });
@@ -148,26 +237,67 @@ async function updateQueueItem(server, item, data, options = {}) {
     return updated;
 }
 
+/**
+ * Load a queue item by id.
+ *
+ * @param {Object} server CARE server instance
+ * @param {number} queueItemId Queue item id
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object|undefined>}
+ */
 async function getQueueItem(server, queueItemId, options = {}) {
     return await server.db.models[QUEUE_TABLE].getById(queueItemId, { transaction: options.transaction });
 }
 
+/**
+ * Check whether a queue item was cancelled after the current run started.
+ *
+ * @param {Object} server CARE server instance
+ * @param {number} queueItemId Queue item id
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<boolean>}
+ */
 async function isQueueItemCancelled(server, queueItemId, options = {}) {
     const latest = await getQueueItem(server, queueItemId, options);
     return latest?.status === QUEUE_STATUS.CANCELLED;
 }
 
+/**
+ * Notify subscribers about a queue item when a broadcaster is provided.
+ *
+ * @param {Object} item Queue item
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<void>}
+ */
 async function broadcastQueueItem(item, options = {}) {
     if (item && typeof options.broadcastQueueItem === "function") {
         await options.broadcastQueueItem(item);
     }
 }
 
+/**
+ * Enqueue and execute a trigger for the current event.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<*>}
+ */
 async function runTrigger(server, trigger, context, options = {}) {
     const queueItem = await createQueueItem(server, trigger, context, options);
     return await runQueuedTrigger(server, trigger, queueItem, context, options);
 }
 
+/**
+ * Enforce the configured per-trigger parallel execution limit.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row
+ * @param {Object} queueItem Queue item for this run
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<void>}
+ */
 async function enforceParallelLimit(server, trigger, queueItem, options = {}) {
     const limit = Number(trigger.parallelLimit || 1);
     if (!Number.isFinite(limit) || limit < 1) {
@@ -188,6 +318,16 @@ async function enforceParallelLimit(server, trigger, queueItem, options = {}) {
     }
 }
 
+/**
+ * Execute an existing queue item and update its lifecycle status.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row with action catalog data
+ * @param {Object} queueItem Queue item to execute
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<*>}
+ */
 async function runQueuedTrigger(server, trigger, queueItem, context, options = {}) {
     if (!queueItem) {
         throw new Error("Trigger execution requires a queue item.");
@@ -247,6 +387,14 @@ async function runQueuedTrigger(server, trigger, queueItem, context, options = {
     }
 }
 
+/**
+ * Re-run a failed or cancelled queue item if retry limits allow it.
+ *
+ * @param {Object} server CARE server instance
+ * @param {number} queueItemId Queue item id
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object>}
+ */
 async function retryQueueItem(server, queueItemId, options = {}) {
     const item = await getQueueItem(server, queueItemId, options);
     if (!item) {
@@ -285,8 +433,17 @@ async function retryQueueItem(server, queueItemId, options = {}) {
     return pendingItem;
 }
 
+/**
+ * Handle any trigger event by resolving context, matching triggers, and running them.
+ *
+ * @param {Object} server CARE server instance
+ * @param {string} eventName Trigger event name
+ * @param {Object} context Event payload
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Array<*>>}
+ */
 async function handleTriggerEvent(server, eventName, context = {}, options = {}) {
-    const eventContext = await buildSubmissionContext(server, context, options);
+    const eventContext = await buildEventContext(server, eventName, context, options);
     const triggers = await findMatchingTriggers(server, eventName, eventContext, options);
     const results = [];
 
@@ -301,10 +458,27 @@ async function handleTriggerEvent(server, eventName, context = {}, options = {})
     return results;
 }
 
+/**
+ * Handle submission upload events through the generic trigger runner.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} context Submission upload context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Array<*>>}
+ */
 async function handleSubmissionUploaded(server, context = {}, options = {}) {
     return await handleTriggerEvent(server, "submission.uploaded", context, options);
 }
 
+/**
+ * Resolve configured email recipients for an email trigger action.
+ *
+ * @param {Object} server CARE server instance
+ * @param {string} recipient Recipient selector
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Array<Object>>}
+ */
 async function resolveEmailRecipients(server, recipient, context, options = {}) {
     const models = server.db.models;
 
@@ -323,6 +497,15 @@ async function resolveEmailRecipients(server, recipient, context, options = {}) 
     return user && user.email ? [user] : [];
 }
 
+/**
+ * Send a templated email for a trigger action.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row with action configuration
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object>}
+ */
 async function sendEmail(server, trigger, context, options = {}) {
     const config = asObject(trigger.configuration).action || {};
     const templateId = config.templateId;
@@ -352,6 +535,13 @@ async function sendEmail(server, trigger, context, options = {}) {
     return { sent };
 }
 
+/**
+ * Convert NLP file mappings from context keys to concrete file ids.
+ *
+ * @param {Object} mappings Action parameter mappings
+ * @param {Object} context Resolved event context
+ * @returns {Object}
+ */
 function hydrateSkillParameterMappings(mappings, context) {
     const hydrated = {};
 
@@ -380,6 +570,15 @@ function hydrateSkillParameterMappings(mappings, context) {
     return hydrated;
 }
 
+/**
+ * Run the configured NLP preprocessing action through BackgroundTaskService.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row with action configuration
+ * @param {Object} context Resolved event context
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<*>}
+ */
 async function runAiPreprocessing(server, trigger, context, options = {}) {
     const config = asObject(trigger.configuration).action || {};
     const service = server.services["BackgroundTaskService"];
