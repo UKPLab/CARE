@@ -57,10 +57,11 @@
     
     <template #step-3>
       <div v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
-        <StepOptionsSubmissions 
-          v-model:generateAliases="generateAliases"
-          v-model:fakerSeed="fakerSeed"
+        <StepOptions 
+          v-model:generate-aliases="generateAliases"
+          v-model:faker-seed="fakerSeed"
           v-model:grade-format="gradeFormat"
+          v-model:merge-csv-files="mergeCsvFiles"
           :show-grade-format="dataSelection.exportType === 'grades'"
         />
         <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
@@ -152,6 +153,7 @@ export default {
       generateAliases:false,
       fakerSeed: 846569412,
       gradeFormat: "json",
+      mergeCsvFiles: false,
       selectedDocumentTypes: [0, 1, 2, 4],
       excludeNonConsentingEdits: false,
       excludeNonConsentingAnnotations: false
@@ -392,7 +394,8 @@ export default {
           userIds: selectedUserIds,
           generateAliases: this.generateAliases,
           fakerSeed: this.generateAliases ? this.fakerSeed : null,
-          gradeFormat: this.gradeFormat
+          gradeFormat: this.gradeFormat,
+          mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
         });
         this.$refs.exportStepper.close();
       } catch (error) {

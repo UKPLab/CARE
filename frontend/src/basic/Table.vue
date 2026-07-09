@@ -17,6 +17,7 @@
       aria-label="table-search"
       aria-describedby="search-addon1"
     />
+    <slot name="additional-buttons"/>
   </div>
   <div
     ref="tableWrapper"
@@ -71,7 +72,7 @@
                 @click="sort('sortKey' in c ? c.sortKey : c.key)"
               />
             </span>
-            <span v-if="filter && c.filter">
+            <span v-if="filter && c.filter && hasFilterableData">
               <span
                 aria-expanded="true"
                 aria-haspopup="true"
@@ -179,7 +180,7 @@
                   pointer: selectableRows && !r.isDisabled,
                 }"
                 :disabled="r.isDisabled"
-                :checked="currentData.includes(r)"
+                :checked="isRowSelected(r)"
                 @change="(e) => selectRow(r)"
               />
             </div>
@@ -431,6 +432,9 @@ export default {
     };
   },
   computed: {
+    hasFilterableData() {
+      return this.data && this.data.length > 0;
+    },
     isAllRowsSelected() {
       // Use the existing method to get filtered data across all pages
       const allFilteredData = this.getFilteredAndSortedData();
@@ -956,19 +960,15 @@ export default {
     },
     selectRow(row) {
       if (this.selectableRows) {
-        if (!this.currentData.includes(row)) {
+        if (!this.isRowSelected(row)) {
           // check if selected
           if (this.options && this.options.singleSelect) {
             this.currentData = [row];
           } else {
-            // Check if the row is already selected
-
-            if (!this.currentData.includes(row)) {
-              this.currentData.push(row);
-            }
+            this.currentData.push(row);
           }
         } else {
-          const toRemove = this.currentData.findIndex((r) => deepEqual(r, row));
+          const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
           if (toRemove >= 0) {
             this.currentData.splice(toRemove, 1);
           }
@@ -1092,6 +1092,13 @@ export default {
         this.allObserver = null;
       }
     },
+
+    isRowSelected(row) {
+      if (row.id !== undefined) {
+        return this.currentData.some(r => r.id === row.id);
+      }
+      return this.currentData.some(r => deepEqual(r, row));
+    },
   },
 };
 </script>
@@ -1175,4 +1182,21 @@ export default {
   z-index: 2 !important;
   background: var(--bs-body-bg, #fff);
 }
+
+.table-wrapper thead th:has(.dropdown-menu.show) {
+  z-index: 5 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th .dropdown-menu {
+  z-index: 9999 !important;
+}
+
+.input-group.input-group-sm,
+.input-group.input-group-sm .input-group-text,
+.input-group.input-group-sm .form-control {
+  position: relative;
+  z-index: 20;
+}
+
 </style>
