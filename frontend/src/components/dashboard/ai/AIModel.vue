@@ -123,36 +123,21 @@
 
         <div class="col-md-12">
           <div class="border rounded p-3">
-            <label class="form-label">
-              Cost limit ($)
-              <i
-                class="bi bi-info-circle text-muted ms-1"
-                title="Global cap across all users on this model. Leave empty for no cap."
+            <div class="mb-3">
+              <FormSwitch
+                :model-value="modelForm.freeModel"
+                :options="{ key: 'freeModel', label: 'Free Model', help: 'Free/self-hosted models bypass all spending caps. When disabled, costs are tracked.' }"
+                @update:model-value="modelForm.freeModel = $event; if ($event) modelForm.costLimit = null"
               />
-            </label>
-            <input
-              v-model.number="modelForm.costLimit"
-              type="number"
-              min="0"
-              step="0.01"
-              class="form-control"
-              placeholder="No limit"
-            />
-            <div class="form-check mt-2">
-              <input
-                id="modelExemptFromCaps"
-                v-model="modelForm.exemptFromCaps"
-                class="form-check-input"
-                type="checkbox"
-              />
-              <label class="form-check-label" for="modelExemptFromCaps">
-                Bypass budget caps
-                <i
-                  class="bi bi-info-circle text-muted ms-1"
-                  title="When checked, no AI budget cap (model/share/hook/study/step-hook) blocks usage of this model. Use for self-hosted or free models."
-                />
-              </label>
             </div>
+            <div v-if="!modelForm.freeModel">
+              <FormDefault
+                :model-value="String(modelForm.costLimit || '')"
+                :options="{ key: 'costLimit', label: 'Cost limit ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Global cap across all users on this model' }"
+                @update:model-value="modelForm.costLimit = $event ? Number($event) : null"
+              />
+            </div>
+          
           </div>
         </div>
 
@@ -198,6 +183,8 @@
  */
 
 import BasicModal from "@/basic/Modal.vue";
+import FormSwitch from "@/basic/form/Switch.vue";
+import FormDefault from "@/basic/form/Default.vue";
 
 function getEmptyModelForm() {
   return {
@@ -208,14 +195,14 @@ function getEmptyModelForm() {
     description: "",
     enabled: true,
     additionalParameters: "{}",
-    exemptFromCaps: false,
+    freeModel: false,
     costLimit: null,
   };
 }
 
 export default {
   name: "AIModel",
-  components: { BasicModal },
+  components: { BasicModal, FormSwitch, FormDefault },
   props: {
     currentUserId: {
       type: Number,
@@ -273,7 +260,7 @@ export default {
           description: row.description || "",
           enabled: !!row.enabled,
           additionalParameters: JSON.stringify(row.additionalParameters || {}, null, 2),
-          exemptFromCaps: !!row.exemptFromCaps,
+          freeModel: !!row.freeModel,
           costLimit: this.findExistingCap(row.id),
         };
       }

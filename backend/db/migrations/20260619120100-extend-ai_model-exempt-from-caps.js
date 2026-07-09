@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * Flag specific models as exempt from all AI budget caps.
+ * Flag specific models as free (no budget caps applied).
  *
  * Use case: a self-hosted or free model where capping is undesirable. When
- * exemptFromCaps is true the budget walker short-circuits after the access
+ * freeModel is true the budget walker short-circuits after the access
  * check — no cap (model/share/hook/study/step_hook) is evaluated for that
  * model.
  *
@@ -14,7 +14,7 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.addColumn(
             "ai_model",
-            "exemptFromCaps",
+            "freeModel",
             {
                 type: Sequelize.BOOLEAN,
                 allowNull: false,
@@ -24,6 +24,6 @@ module.exports = {
     },
 
     async down(queryInterface) {
-        await queryInterface.removeColumn("ai_model", "exemptFromCaps");
+        await queryInterface.removeColumn("ai_model", "freeModel");
     },
 };

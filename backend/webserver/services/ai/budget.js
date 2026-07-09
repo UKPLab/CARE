@@ -58,7 +58,7 @@ async function beginRequest(service, request, opts = {}) {
             };
         }
 
-        if (!model.exemptFromCaps) {
+        if (!model.freeModel) {
             // We look up hookShare only to know if there is a hook-share budget to check.
             //We are not checking whether the user is allowed to use the hook here.
              const hookShare = aiHookId
