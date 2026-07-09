@@ -4,6 +4,7 @@ const { randomUUID } = require('crypto');
 const { resolveRecordings } = require('./perf-recordings');
 const { MetricSampler } = require('./perf-metrics');
 const { printTraceStats, printMemoryCorrelation } = require('./perf-trace-stats');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
 /**
  * Soak mode: hold a FIXED concurrency continuously for a duration, sampling
@@ -15,6 +16,8 @@ const { printTraceStats, printMemoryCorrelation } = require('./perf-trace-stats'
  * @returns {Promise<number>} exit code (0 = stable, 1 = drift detected)
  */
 async function runSoak(cfg, ctx) {
+    const capture = makeOutputCapture();
+    capture.start();
     const ids = await resolveRecordings(cfg, ctx);
     const durationMs = cfg.duration;
     const concurrency = cfg.concurrency;
@@ -71,7 +74,20 @@ async function runSoak(cfg, ctx) {
     }
 
     await sampler.stop();
-    return reportSoak(samples, concurrency, durationMs, sampler, allResults);
+    const code = reportSoak(samples, concurrency, durationMs, sampler, allResults);
+    const saved = saveResults('soak', cfg, {
+        results: allResults,
+        metrics: samples,
+        sampler,
+        verdict: code === 0 ? 'stable' : 'drift',
+    });
+    const text = capture.stop();
+    if (saved) {
+        const txt = saveReadableReport(saved, text);
+        console.log(`\n  results saved: ${saved}`);
+        if (txt) console.log(`  readable report: ${txt}`);
+    }
+    return code;
 }
 
 /**

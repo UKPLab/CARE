@@ -2,6 +2,7 @@
 
 const { resolveRecordings } = require('./perf-recordings');
 const { printTraceStats } = require('./perf-trace-stats');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
 /**
  * Regression mode: replay the given recordings once at concurrency 1 and
@@ -12,6 +13,8 @@ const { printTraceStats } = require('./perf-trace-stats');
  * @returns {Promise<number>}
  */
 async function runRegression(cfg, ctx) {
+    const capture = makeOutputCapture();
+    capture.start();
     const ids = await resolveRecordings(cfg, ctx);
     console.log('  regression recordings: ' + ids.join(', '));
 
@@ -65,6 +68,16 @@ async function runRegression(cfg, ctx) {
     if (failedStories === 0) {
         console.log(`REGRESSION SUITE PASSED — all ${totalStories} story recording(s) passed.`);
         console.log('Version is STABLE.');
+        const saved = saveResults('regression', cfg, {
+            results: iterations.flatMap(i => i.results || []),
+            verdict: 'stable',
+        });
+        const text = capture.stop();
+        if (saved) {
+            const txt = saveReadableReport(saved, text);
+            console.log(`\n  results saved: ${saved}`);
+            if (txt) console.log(`  readable report: ${txt}`);
+        }
         return 0;
     }
     console.log(`REGRESSION SUITE FAILED — ${passedStories} of ${totalStories} stories passed, ${failedStories} failed.`);
@@ -77,6 +90,16 @@ async function runRegression(cfg, ctx) {
     }
     printTraceStats(iterations.flatMap(i => i.results || []), { title: 'Trace breakdown (all stories):' });
     console.log('Version is NOT stable.');
+    const saved = saveResults('regression', cfg, {
+        results: iterations.flatMap(i => i.results || []),
+        verdict: 'not stable',
+    });
+    const text = capture.stop();
+    if (saved) {
+        const txt = saveReadableReport(saved, text);
+        console.log(`\n  results saved: ${saved}`);
+        if (txt) console.log(`  readable report: ${txt}`);
+    }
     return 1;
 }
 

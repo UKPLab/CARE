@@ -4,6 +4,7 @@ const { resolveRecordings } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { MetricSampler } = require('./perf-metrics');
 const { printTraceStats } = require('./perf-trace-stats');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
 /**
  * Ceiling finder: climb concurrency by --step each level, no cap, until a stop
@@ -15,6 +16,8 @@ const { printTraceStats } = require('./perf-trace-stats');
  * @returns {Promise<number>}
  */
 async function runCeiling(cfg, ctx) {
+    const capture = makeOutputCapture();
+    capture.start();
     const ids = await resolveRecordings(cfg, ctx);
     const step = cfg.step > 0 ? cfg.step : 5;
     const hardCap = cfg.maxIterations > 0 ? cfg.maxIterations : Infinity;
@@ -26,6 +29,7 @@ async function runCeiling(cfg, ctx) {
     let concurrency = step;
     let level = 0;
     let lastGood = 0;
+    const allLevels = [];
 
     // Sample server vitals continuously through the climb (approach a). After
     // each level we read the peak pool-waiting since the last level — the DB
@@ -58,10 +62,12 @@ async function runCeiling(cfg, ctx) {
         if (!ack || !ack.success) {
             await sampler.stop();
             console.error('\nCEILING ERROR — replayRun failed: ' + (ack && ack.message));
+            capture.stop();
             return 1;
         }
 
         const m = metrics(ack.data);
+        allLevels.push({ level, concurrency, ...m, results: ack.data.results });
 
         // Pool-waiting: the DB pool backing up = pool exhaustion (the original
         // failure). Read the peak since we started; if it climbed above 0, the
@@ -107,6 +113,18 @@ async function runCeiling(cfg, ctx) {
                     if (worst) console.log(`\n  >> Slowest action: ${worst.action} (its OWN p95: ${worst.p95}ms). Overall level p95 was ${m.p95}ms — this action is dragging it up. Start here.`);
                 }
             }
+            const saved = saveResults('ceiling', cfg, {
+                results: allLevels.flatMap(l => l.results || []),
+                metrics: allLevels.map(({ results, ...rest }) => rest),
+                sampler,
+                verdict: `degraded at ${concurrency} (${reason})`,
+            });
+            const text = capture.stop();
+            if (saved) {
+                const txt = saveReadableReport(saved, text);
+                console.log(`\n  results saved: ${saved}`);
+                if (txt) console.log(`  readable report: ${txt}`);
+            }
             return 0;
         }
 
@@ -124,6 +142,20 @@ async function runCeiling(cfg, ctx) {
                         (pg.minCacheHit != null ? `, min cache-hit ${pg.minCacheHit.toFixed(1)}%` : ''));
                 }
             }
+
+            const saved = saveResults('ceiling', cfg, {
+                results: allLevels.flatMap(l => l.results || []),
+                metrics: allLevels.map(({ results, ...rest }) => rest),
+                sampler,
+                verdict: `hit safety cap at ${concurrency}, still healthy`,
+            });
+            const text = capture.stop();
+            if (saved) {
+                const txt = saveReadableReport(saved, text);
+                console.log(`\n  results saved: ${saved}`);
+                if (txt) console.log(`  readable report: ${txt}`);
+            }
+
             return 0;
         }
         concurrency += step;

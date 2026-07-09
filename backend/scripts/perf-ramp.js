@@ -4,6 +4,7 @@ const { resolveRecordings } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { printTraceStats, printCulprit } = require('./perf-trace-stats');
 const { MetricSampler } = require('./perf-metrics');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
 /**
  * Ramp mode: escalate concurrency (N, 2N, 3N...) until a hard failure or the
@@ -15,6 +16,8 @@ const { MetricSampler } = require('./perf-metrics');
  * @returns {Promise<number>} exit code (0 = reached cap clean, 1 = broke early)
  */
 async function runRamp(cfg, ctx) {
+    const capture = makeOutputCapture();
+    capture.start();
     const ids = await resolveRecordings(cfg, ctx);
     console.log('  ramp recordings: ' + ids.join(', '));
     console.log(`Running ramp: up to ${cfg.maxIterations} iterations, stop on failure ...`);
@@ -48,6 +51,7 @@ async function runRamp(cfg, ctx) {
     if (!ack || !ack.success) {
         await sampler.stop();
         console.error('RAMP ERROR — replayRun failed: ' + (ack && ack.message));
+        capture.stop();
         return 1;
     }
 
@@ -58,6 +62,18 @@ async function runRamp(cfg, ctx) {
 
     // Exit non-zero if it broke before the cap (a failing level).
     const brokeEarly = levels.length > 0 && !levels[levels.length - 1].passed;
+    const saved = saveResults('ramp', cfg, {
+        results: levels.flatMap(l => l.results || []),
+        metrics: levels,
+        sampler,
+        verdict: brokeEarly ? 'broke' : 'clean',
+    });
+    const text = capture.stop();
+    if (saved) {
+        const txt = saveReadableReport(saved, text);
+        console.log(`\n  results saved: ${saved}`);
+        if (txt) console.log(`  readable report: ${txt}`);
+    }
     return brokeEarly ? 1 : 0;
 }
 
