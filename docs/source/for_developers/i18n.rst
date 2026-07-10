@@ -82,11 +82,64 @@ Sections in this chapter (follow the branch that matches your task):
 Adding a key
 ------------
 
-Keys use dot notation: ``namespace.rest.of.key``, e.g. ``errors.documents.noAccess``, ``users.columns.email``.
-The first segment matches the JSON filename (namespace).
+.. note::
 
-Organize keys by **screen or feature**. For each dashboard area, group related strings under clear
-subsections:
+   Need a **new JSON file** for a dashboard or feature? See :ref:`i18n-add-namespace`.
+
+**Example:** you have a short hint for users in ``Users.vue`` — hardcoded English in a ``<p>``:
+
+.. code-block:: html
+
+   <p>Manage team members from this page.</p>
+
+To show it in the user's UI language, replace the literal text with ``$t(...)``. That requires a **key** in the
+locale JSON files first.
+
+**1. Choose a key name**
+
+Use dot notation: ``namespace.rest.of.key``. The first segment is the JSON filename (namespace), e.g.
+``users.labels.manageHint`` → file ``users.json``, nested path ``labels.manageHint``.
+
+**2. Add the key in every active locale**
+
+``utils/modules/i18n/en/users.json``:
+
+.. code-block:: json
+
+   {
+     "labels": {
+       "manageHint": "Manage team members from this page."
+     }
+   }
+
+``utils/modules/i18n/de/users.json`` — same key, translated value:
+
+.. code-block:: json
+
+   {
+     "labels": {
+       "manageHint": "Verwalten Sie Teammitglieder auf dieser Seite."
+     }
+   }
+
+Repeat for every locale folder (``en/``, ``de/``, …). **Keys must match** across locales; only the text
+values differ.
+
+**3. Use the key in the template**
+
+.. code-block:: html
+
+   <p>{{ $t('users.labels.manageHint') }}</p>
+
+When the user switches language in **Preferences**, the paragraph updates automatically.
+
+More frontend patterns (placeholders, toasts, table headers, …): :ref:`i18n-frontend`.
+Backend errors and logging use keys too: :ref:`i18n-backend`.
+
+Key layout inside a JSON file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Organize keys by **screen or feature**. Group related strings under clear subsections:
 
 .. code-block:: json
 
@@ -98,36 +151,23 @@ subsections:
        },
        "errors": {
          "importFailed": "Import failed"
-       },
-       "unknownMessage": "Something went wrong"
+       }
      }
    }
 
-Useful subsections inside a feature block:
+Useful subsections:
 
 * ``title`` — page or modal title
-* ``labels`` — field labels, short UI phrases
+* ``labels`` — field labels, short UI phrases, hints
 * ``errors`` — validation or action errors for that screen
-* ``columns`` — table header labels for that screen
+* ``columns`` — table header labels
 * ``toasts`` — toast title/message pairs
-* ``messages`` — longer text, confirm dialogs
+* ``messages`` — confirm dialogs, longer text
 
 Reuse ``common`` for words that appear everywhere. Before adding a new key, check
-``utils/modules/i18n/en/common.json`` — it already contains shared labels such as ``id``, ``firstName``,
-``lastName``, ``email``, ``save``, ``cancel``, and ``error``.
+``utils/modules/i18n/en/common.json`` — shared labels such as ``id``, ``email``, ``save``, ``cancel``.
 
-.. code-block:: javascript
-
-   // Prefer common for generic columns:
-   { name: this.$t("common.id"), key: "id" }
-
-   // Use feature-specific keys only when the label is not generic:
-   { name: this.$t("users.columns.acceptTerms"), key: "acceptTerms" }
-
-Add the key to ``utils/modules/i18n/en/<namespace>.json`` and the same key in every other active locale
-(``de/``, …). Backend error keys usually go in ``errors.json``.
-
-Need a **new JSON file** for a dashboard or feature? See :ref:`i18n-add-namespace`.
+Backend error keys usually go in ``errors.json`` (see :ref:`i18n-backend`).
 
 .. _i18n-add-namespace:
 
@@ -181,20 +221,40 @@ own file. For key layout inside a file, see :ref:`i18n-add-key`.
 Frontend
 --------
 
-Static UI text ($t)
-~~~~~~~~~~~~~~~~~~
+Common patterns — **before** (hardcoded English) and **after** (i18n). Add keys first as in
+:ref:`i18n-add-key`.
 
-Use ``$t`` for plain labels in templates:
+Static text in a template ($t)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: html
 
-   <h1>{{ $t('users.title') }}</h1>
+   <!-- Before -->
+   <p>Manage team members from this page.</p>
+
+   <!-- After -->
+   <p>{{ $t('users.labels.manageHint') }}</p>
+
+Button or attribute label
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: html
+
+   <!-- Before -->
+   <BasicButton title="Save" />
+
+   <!-- After -->
    <BasicButton :title="$t('common.save')" />
 
-With placeholders:
+Text with a placeholder
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: html
 
+   <!-- Before -->
+   <p>Hello, {{ userName }}!</p>
+
+   <!-- After -->
    <p>{{ $t('greeting.hello', { name: userName }) }}</p>
 
    <!-- JSON: "hello": "Hello, {name}!" -->
@@ -240,19 +300,34 @@ render with ``v-html``:
 
    <p v-html="$t('confirm', { count: selected.length })" />
 
-Use ``v-html`` only for trusted translation strings — never for raw user input.
+.. danger::
+
+   Use ``v-html`` **only** for trusted translation strings from your locale JSON — **never** for raw user
+   input, API data, or database values.
 
 Socket/API errors (resolveApiMessage)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **File:** ``frontend/src/assets/utils.js``
 
-Use for every toast, modal, or inline message that comes from a socket callback or HTTP response:
+Use for every toast, modal, or inline message that comes from a socket callback or HTTP response.
 
 .. code-block:: javascript
 
    import { resolveApiMessage } from "@/assets/utils";
 
+   // Before — shows English from the server, ignores user locale:
+   this.$socket.emit("userCreate", payload, (response) => {
+     if (!response.success) {
+       this.eventBus.emit("toast", {
+         title: "Error",
+         message: response.message,
+         variant: "danger",
+       });
+     }
+   });
+
+   // After — translates response.key (+ params) in the user's locale:
    this.$socket.emit("userCreate", payload, (response) => {
      if (!response.success) {
        this.eventBus.emit("toast", {
@@ -322,11 +397,22 @@ Example values for ``workflow.name``:
 Table columns (computed)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Define ``columns`` in a ``computed`` property and call ``this.$t`` for header ``name`` values.
-Headers then update when the user switches language in Preferences:
+Define ``columns`` in a ``computed`` property so headers update when the user switches language.
 
 .. code-block:: javascript
 
+   // Before — headers stay English after locale switch:
+   data() {
+     return {
+       columns: [
+         { name: "ID", key: "id", sortable: true },
+         { name: "Email", key: "email" },
+         { name: "Roles", key: "roles" },
+       ],
+     };
+   }
+
+   // After — headers follow the active locale:
    computed: {
      columns() {
        return [
@@ -337,7 +423,8 @@ Headers then update when the user switches language in Preferences:
      },
    },
 
-If ``columns`` lives in ``data()``, headers stay in the original language after a locale switch until page refresh.
+Prefer ``common.*`` for generic column names; use feature keys (e.g. ``users.columns.*``) when the label
+is specific to that screen.
 
 Locale helpers
 ~~~~~~~~~~~~~~
@@ -356,7 +443,7 @@ Locale helpers
    * - ``getLocaleFromSettings(settings)``
      - Read locale from merged ``appSettings``
    * - ``getStoredLocale`` / ``setStoredLocale``
-     - Browser storage (guest / until settings load)
+     - Browser storage
    * - ``applyLocale(i18n, code)``
      - Set active ``vue-i18n`` locale
 
@@ -368,8 +455,6 @@ Backend
 Throwing errors
 ~~~~~~~~~~~~~~~
 
-The backend never sends UI text. It throws or returns **keys**; the socket layer builds the callback
-payload for the frontend.
 
 Backend responses support **two formats** — both are valid:
 
@@ -377,6 +462,25 @@ Backend responses support **two formats** — both are valid:
 * **Legacy:** ``{ success: false, message: "Plain text or an i18n key string" }``
 
 The frontend ``resolveApiMessage`` handles both. New code should prefer ``key`` + ``params``.
+
+User-facing error in a handler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: javascript
+
+   const { TranslatableError } = require("../utils/TranslatableError");
+
+   // Before — hardcoded English, wrong language in the UI:
+   if (!user) {
+     throw new Error("User not found.");
+   }
+
+   // After — key + params; frontend shows the translated message:
+   if (!user) {
+     throw new TranslatableError("errors.users.notFound", { id: userId });
+   }
+
+   // JSON (errors.json): "notFound": "User with id {id} was not found."
 
 TranslatableError
 ~~~~~~~~~~~~~~~~~
@@ -389,12 +493,19 @@ failed), throw a **TranslatableError** instead of a hardcoded English sentence.
 **Goal:** pass an i18n **key** (and optional **params** / **code**) from the backend to the frontend. The
 browser shows the message in the user's language via ``resolveApiMessage``; logs use ``resolveLogText``.
 
-**Why a dedicated class:**
+**Why a dedicated class**:
 
-* Marks the error as translatable (``isTranslatable``) so the socket layer can pick up ``key``, ``params``,
-  and ``code`` reliably
-* Keeps user-facing text out of backend code — only stable keys in handlers
-* Stack traces show the key (e.g. ``errors.auth.invalidCredentials``), not a long English string
+Keys alone can travel in a plain ``Error`` message — that works for simple cases. ``TranslatableError`` is for
+when you need a **structured, intentional** user-facing error:
+
+* **Structured payload** — not just a string. Carries the i18n **key**, optional **params** for placeholders
+  (e.g. ``{ validationLimit: 10 }``), and an optional machine-readable **code** for the socket/HTTP response.
+  A standard ``Error`` only has ``message``; attaching ``params`` and ``code`` to arbitrary errors is fragile
+  and easy to get wrong in catch handlers.
+* **Error filtering (security boundary)** — ``isTranslatable`` marks errors the transport layer may expose to
+  the client. In ``Socket.js``, only errors with a known i18n key (``TranslatableError``, ``generateError``,
+  or ``Error("errors.*")``) become ``{ key, params, code }`` in the callback. Raw database or system
+  exceptions fall through to a generic ``errors.server.unexpectedError`` — full detail stays in the logs.
 
 You can also use ``throw new Error("errors.*")`` or ``generateError(code, key)`` for simpler cases. The
 table below lists all patterns.
@@ -438,22 +549,66 @@ Simple examples:
    // 4. Code + key, no params
    throw generateError("DOCUMENT_NOT_FOUND", "errors.documents.doesNotExistOrDeleted");
 
+Socket callback payload
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Most socket handlers are registered with ``createSocket`` in ``Socket.js``. On **success**, the callback
+receives ``{ success: true, data: result }``. On **failure**, prefer **throwing** an error — the shared
+catch block builds the callback for you:
+
+.. code-block:: javascript
+
+   // Handler (backend) — throw; do not call callback yourself
+   if (!user) {
+     throw new TranslatableError("errors.users.notFound", { id: userId });
+   }
+
+   // What the frontend receives in (response) => { ... }:
+   {
+     success: false,
+     key: "errors.users.notFound",
+     params: { id: userId },
+     message: "User with id 123 was not found.",  // English fallback (resolveLogText)
+     code: "..."  // optional, when set on the error
+   }
+
+The frontend should display errors with ``resolveApiMessage(response)`` — it translates ``key`` + ``params``
+to the user's locale. The ``message`` field is a legacy English fallback; new UI code should not read it
+directly.
+
+**Manual responses** (validation results, per-row errors in ``data``, direct ``socket.emit``) may still use
+the legacy shape without a separate ``key`` field — put the i18n key in ``message`` instead:
+
+.. code-block:: javascript
+
+   // Legacy — still works; resolveApiMessage treats message as a key when it exists in JSON
+   { success: false, message: "errors.validation.additionalFilesNotAllowed", params: { files: "foo.txt" } }
+
+   // Preferred when you build the object yourself — same as the hub format
+   { success: false, key: "errors.validation.additionalFilesNotAllowed", params: { files: "foo.txt" } }
+
+**Frontend:**
+
+.. code-block:: javascript
+
+   this.$socket.emit("userCreate", payload, (response) => {
+     if (!response.success) {
+       this.eventBus.emit("toast", {
+         title: this.$t("errors.users.userCreationFailed"),
+         message: resolveApiMessage(response),
+         variant: "danger",
+       });
+     }
+   });
+
 .. _logging-i18n:
 
 Logging (resolveLogText)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you log an i18n **key** as-is (e.g. ``errors.users.importFailed``), the log will show that raw key
-instead of readable English text. Always resolve the message before logging.
-
-Use ``resolveLogText(message, params?)`` from ``backend/utils/i18n.js`` for all backend logging:
-
-* If ``message`` is a known i18n key → returns English string from ``en/*.json`` (with optional ``{placeholder}`` values)
-* Otherwise → returns ``message`` unchanged (plain English or other text is kept as-is)
-
-**File:** ``backend/utils/i18n.js``
-
-Example:
+Server logs and the dashboard log table stay **English**. If you log an i18n key as-is, the log shows the
+raw key instead of readable text. Resolve it first with ``resolveLogText(message, params?)`` from
+``backend/utils/i18n.js``.
 
 .. code-block:: javascript
 
@@ -461,17 +616,15 @@ Example:
 
    const key = "errors.users.importFailed";
 
-   // Bad — raw key ends up in the log:
+   // Before — raw key in the log:
    this.logger.error(key);
 
-   // Good — key only:
+   // After — readable English (params filled in when the key has placeholders):
    this.logger.error(resolveLogText(key));
-
-   // Good — key with placeholders:
    this.logger.error(resolveLogText("errors.auth.passwordResetRateLimited", { minutes: 5 }));
 
-   // Plain English — not a key, returned unchanged:
-   this.logger.error(resolveLogText("Connection pool timeout"));
+   // Plain English or non-key strings pass through unchanged:
+   this.logger.error(resolveLogText("Import finished with warnings"));
 
 Migrations: resolveEnText (down)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -486,12 +639,29 @@ Use ``resolveEnText`` to get the English string for the key:
 
    const { resolveEnText } = require("../migration-i18n-utils");
 
-   const placeholderLabel = resolveEnText("templates.placeholders.labels.emailGeneral.username");
-   if (placeholderLabel) {
-     await queryInterface.bulkUpdate("placeholder", { placeholderLabel }, { /* where */ });
-   }
+   module.exports = {
+     async up(queryInterface) {
+       await queryInterface.bulkUpdate(
+         "placeholder",
+         { placeholderLabel: "templates.placeholders.labels.emailGeneral.username" },
+         { type: 1, placeholderKey: "username" },
+       );
+       // ...more rows
+     },
 
-Returns ``null`` if the key is missing from ``en`` JSON. In that case the key stays in the database as is.
+     async down(queryInterface) {
+       const label = resolveEnText("templates.placeholders.labels.emailGeneral.username");
+
+       await queryInterface.bulkUpdate(
+         "placeholder",
+         { placeholderLabel: label },
+         { type: 1, placeholderKey: "username" },
+       );
+       // ...more rows
+     },
+   };
+
+If the key is missing from ``en`` JSON, in that case it stays in the database as is.
 
 .. _i18n-add-language:
 
