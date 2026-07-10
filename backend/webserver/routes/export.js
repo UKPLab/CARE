@@ -42,19 +42,18 @@ module.exports = function (server) {
 
         // Input parsing
         const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, includeNonConsentingEdits, includeNonConsentingAnnotations } = req.body;
-        let { userIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
+        let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
         const shouldIncludeNonConsentingEdits = String(includeNonConsentingEdits) === 'true';
         const shouldIncludeNonConsentingAnnotations = String(includeNonConsentingAnnotations) === 'true';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
-        const { Op } = server.db.Sequelize;
         const parsedProjectId = Number(projectId);
         const userIds = parseUserIds(rawUserIds);
 
         try {
             const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds});
-            if (!constext.succes) {
+            if (!context.success) {
                 return res.status(context.status).send(context.message);
             }
             const { users } = context;

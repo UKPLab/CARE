@@ -4,6 +4,7 @@ const JSZip = require('jszip');
 const { deriveUserSeed } = require('../../webserver/auth/utils');
 const path = require('path');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
+const Papa = require('papaparse');
 
 const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents"]);
 
