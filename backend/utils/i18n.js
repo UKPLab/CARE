@@ -83,17 +83,19 @@ function hasKey(key) {
 }
 
 /**
- * English text for dashboard log storage when message is an i18n key.
+ * English text for logging. If message is an i18n key, resolves it (with optional params);
+ * otherwise returns the string unchanged.
  *
  * @param {string} message
+ * @param {Object} [params] - Optional placeholder values for keys like "Hello {name}"
  * @returns {string}
  */
-function resolveLogText(message) {
+function resolveLogText(message, params = {}) {
     if (typeof message !== 'string') {
         return message;
     }
     if (hasKey(message)) {
-        return t(message);
+        return t(message, params);
     }
     return message;
 }

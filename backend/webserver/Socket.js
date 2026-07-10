@@ -118,7 +118,7 @@ module.exports = class Socket {
                 }
 
                 if (key) {
-                    const englishMessage = i18n.t(key, params);
+                    const englishMessage = i18n.resolveLogText(key, params);
                     this.logger.error(englishMessage);
                     if (callback) {
                         // key/params → localized UI; message (EN) → legacy fallback
@@ -146,7 +146,7 @@ module.exports = class Socket {
                             success: false,
                             key: unexpectedKey,
                             params: {},
-                            message: i18n.t(unexpectedKey),
+                            message: i18n.resolveLogText(unexpectedKey),
                         });
                     }
                 }
