@@ -219,6 +219,11 @@ module.exports = class MetaModel extends Model {
 
         } catch (err) {
             console.log("DB MetaModel Class " + this.constructor.name + " add error in creation: " + err.message);
+            if (err.name === 'SequelizeUniqueConstraintError') {
+                const field = Object.keys(err.fields || {})[0] || '';
+                const fieldName = field.replace(/Hash$/, '');
+                throw new Error(`A record with this ${fieldName} already exists.`);
+            }
             throw new Error(err.message);
         }
     }

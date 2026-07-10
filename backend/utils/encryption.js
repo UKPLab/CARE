@@ -379,9 +379,9 @@ async function syncHashColumns(db) {
                     await qi.addConstraint(tableName, {
                         fields: [hashField],
                         type: 'unique',
-                        name: `${tableName}_${hashField}_unique`,
+                        name: "SequelizeUniqueConstraintError",
                     });
-                } catch { /* constraint already exists */ }
+                } catch {}
             }
         }
     }
