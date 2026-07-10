@@ -18,8 +18,13 @@ const {
     buildGradeCsvRow,
     loadGradeExportContext,
     getConsentedUserIds,
+    compareGradeRecords,
+    appendStoredFileIfExists,
+    resolveHasPrivateInfoRight,
+    parseUserIds,
+    loadExportRequestContext,
+    SUPPORTED_EXPORT_TYPES,
 } = require('../../utils/helper/export.js');
-
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 const ASSESSMENT_RESULT_KEY = "assessment_result";
 
@@ -30,26 +35,10 @@ module.exports = function (server) {
         // Auth checking
         const currentUserId = req.user?.id;
         if (!currentUserId) return res.status(401).send("Log in required");
-
         const currentUser = await server.db.models.user.findByPk(currentUserId);
         if (!currentUser) return res.status(401).send("User not found");
+        const hasPrivateInfoRight = await resolveHasPrivateInfoRight(server, currentUserId);
 
-        // check if user has right to see full names
-        let hasPrivateInfoRight = false;
-
-        const roleIds = await server.db.models["user_role_matching"].getUserRolesById(currentUserId);
-        const isAdmin = await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
-        if (isAdmin) {
-            // override, admin has all rights
-            hasPrivateInfoRight = true;
-        } else {
-            const userRightsObj = await server.db.models.user.getUserRights(currentUserId);  
-            
-            if (userRightsObj) {
-                const allRights = Object.values(userRightsObj).flat();
-                hasPrivateInfoRight = allRights.includes('frontend.dashboard.studies.view.userPrivateInfo');
-            }
-        }
 
         // Input parsing
         const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, includeNonConsentingEdits, includeNonConsentingAnnotations } = req.body;
@@ -59,42 +48,16 @@ module.exports = function (server) {
         const shouldIncludeNonConsentingEdits = String(includeNonConsentingEdits) === 'true';
         const shouldIncludeNonConsentingAnnotations = String(includeNonConsentingAnnotations) === 'true';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
-        const supportedExportTypes = new Set(["submissions", "grades"]);
         const { Op } = server.db.Sequelize;
         const parsedProjectId = Number(projectId);
+        const userIds = parseUserIds(rawUserIds);
 
         try {
-            userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
-            if (!Array.isArray(userIds)) userIds = [];
-        } catch (e) {
-            console.warn("Could not parse userIds:", userIds);
-            userIds = [];
-        }
-
-        try {
-            if (!Number.isInteger(parsedProjectId)) return res.status(400).send("Missing projectId.");
-            if (!supportedExportTypes.has(exportType)) {
-                return res.status(400).send("Unsupported export type.");
+            const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds});
+            if (!constext.succes) {
+                return res.status(context.status).send(context.message);
             }
-            if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
-                return res.status(400).send("Unsupported grade format. Use json or csv.");
-            }
-            if (userIds.length === 0) {
-                console.warn("Export aborted: No valid users selected.");
-                return res.status(400).send("No valid users selected.");
-            }
-
-            const projectCheck = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
-            if (!projectCheck) {
-                console.warn(`${parsedProjectId} does not exist.`);
-                return res.status(403).send("The selected project does not exist.");
-            }
-
-            const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
-            if (users.length === 0) {
-                console.warn("Export aborted: No existing users to export.");
-                return res.status(400).send("No authorized users to export.");
-            }
+            const { users } = context;
 
             // build user mapping for aliases
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
@@ -432,15 +395,7 @@ module.exports = function (server) {
             }
 
             for (const [groupKey, groupRecords] of mergedGroups.entries()) {
-                const sortedRecords = [...groupRecords].sort((a, b) => {
-                    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                    return (
-                        (a.studySessionId || 0) - (b.studySessionId || 0) ||
-                        (a.studyStepId || 0) - (b.studyStepId || 0) ||
-                        createdA - createdB
-                    );
-                });
+                const sortedRecords = [...groupRecords].sort(compareGradeRecords);
 
                 const csvRows = sortedRecords.map((record) => buildGradeCsvRow(record));
 
@@ -452,15 +407,7 @@ module.exports = function (server) {
         }
 
         for (const user of users) {
-            const records = (recordsByUser.get(user.id) || []).sort((a, b) => {
-                const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return (
-                    (a.studySessionId || 0) - (b.studySessionId || 0) ||
-                    (a.studyStepId || 0) - (b.studyStepId || 0) ||
-                    createdA - createdB
-                );
-            });
+            const records = (recordsByUser.get(user.id) || []).sort(compareGradeRecords);
 
             const recordsByHash = new Map();
             for (const record of records) {
@@ -506,9 +453,7 @@ module.exports = function (server) {
         }
 
         const docMeta = {
-            hash: doc.hash,
-            type: doc.type,
-            userId: doc.userId,
+            ...doc.toJSON(),
             userRoles: docUserRoles,
         };
         archive.append(JSON.stringify(docMeta, null, 2), { name: `${docFolder}/meta.json` });
@@ -534,14 +479,7 @@ module.exports = function (server) {
                         ...annotations.map(a => a.userId),
                         ...comments.map(c => c.userId),
                     ].filter(Boolean))];
-                    const annotationUsers = await server.db.models.user.findAll({
-                        where: { id: allUserIds },
-                        attributes: ['id', 'acceptDataSharing'],
-                        raw: true,
-                    });
-                    const consentedUserIds =  new Set(
-                        annotationsUsers.filter(u => u.acceptDataSharing).map(u => u.id)
-                    );
+                    const consentedUserIds = await getConsentedUserIds(server, allUserIds);
                     annotations = annotations.filter(a => !a.userId || consentedUserIds.has(a.userId));
                     comments = comments.filter(c => !c.userId || consentedUserIds.has(c.userId));
                 }
@@ -563,12 +501,7 @@ module.exports = function (server) {
                     archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
                 }
 
-                const pdfPath = path.join(storageDir, `${doc.hash}.pdf`);
-                if (fs.existsSync(pdfPath)) {
-                    archive.file(pdfPath, { name: `${docFolder}/document.pdf` });
-                } else {
-                    console.warn(`[DocumentExport] PDF not found for document ${doc.hash}`);
-                }
+                appendStoredFileIfExists(archive, doc.hash, '.pdf', `${docFolder}/document.pdf`, 'PDF');
                 break;
             }
 
@@ -584,14 +517,7 @@ module.exports = function (server) {
                 // filter by consent unless the option is enabled
                 if (!includeNonConsentingEdits) {
                     const editorUserIds = [...new Set(allEdits.map(e => e.userId).filter(Boolean))];
-                    const editorUsers = await server.db.models.user.findAll({
-                        where: { id: editorUserIds },
-                        attributes: ['id', 'acceptDataSharing'],
-                        raw: true,
-                    });
-                    const consentedUserIds = new Set(
-                        editorUsers.filter(u => u.acceptDataSharing).map(u => u.id)
-                    );
+                    const consentedUserIds = await getConsentedUserIds(server, editorUserIds);
                     allEdits = allEdits.filter(e => !e.userId || consentedUserIds.has(e.userId));
                 }
 
@@ -634,12 +560,7 @@ module.exports = function (server) {
             }
 
             case 4: { // ZIP
-                const zipPath = path.join(storageDir, `${doc.hash}.zip`);
-                if (fs.existsSync(zipPath)) {
-                    archive.file(zipPath, { name: `${docFolder}/document.zip` });
-                } else {
-                    console.warn(`[DocumentExport] ZIP not found for document ${doc.hash}`);
-                }
+                appendStoredFileIfExists(archive, doc.hash, '.zip', `${docFolder}/document.zip`, 'ZIP');
                 break;
             }
 

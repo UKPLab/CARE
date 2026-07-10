@@ -2,6 +2,52 @@ const fs = require('fs');
 const { faker } = require('@faker-js/faker');
 const JSZip = require('jszip');
 const { deriveUserSeed } = require('../../webserver/auth/utils');
+const path = require('path');
+const storageDir = path.join(__dirname, "..", "..", "..", "files");
+
+const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents"]);
+
+
+/**
+ * Validates an export request and loads the project/users it targets.
+ * @param {Object} server - The server instance providing database models and Sequelize operators.
+ * @param {Object} params - Validation inputs.
+ * @param {number} params.parsedProjectId - The numeric project id.
+ * @param {string} params.exportType - The requested export type.
+ * @param {string} params.normalizedGradeFormat - The requested grade format, lowercased.
+ * @param {Array} params.userIds - Parsed user ids to export.
+ * @returns {Promise<{success: boolean, status?: number, message?: string, users?: Array}>}
+ */
+async function loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds }) {
+    if (!Number.isInteger(parsedProjectId)) {
+        return { success: false, status: 400, message: "Missing projectId." };
+    }
+    if (!SUPPORTED_EXPORT_TYPES.has(exportType)) {
+        return { success: false, status: 400, message: "Unsupported export type." };
+    }
+    if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
+        return { success: false, status: 400, message: "Unsupported grade format. Use json or csv." };
+    }
+    if (userIds.length === 0) {
+        console.warn("Export aborted: No valid users selected.");
+        return { success: false, status: 400, message: "No valid users selected." };
+    }
+
+    const project = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
+    if (!project) {
+        console.warn(`${parsedProjectId} does not exist.`);
+        return { success: false, status: 403, message: "The selected project does not exist." };
+    }
+
+    const { Op } = server.db.Sequelize;
+    const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
+    if (users.length === 0) {
+        console.warn("Export aborted: No existing users to export.");
+        return { success: false, status: 400, message: "No authorized users to export." };
+    }
+
+    return { success: true, users };
+}
 
 /**
  * Opens a zip file, replaces the student's real name with a fake name in all .tex files,
@@ -354,6 +400,73 @@ async function getConsentedUserIds(server, candidateUserIds) {
     return new Set(consentedUsers.filter(u => u.acceptDataSharing).map(u => u.id));
 }
 
+/**
+ * Orders grade records by session, then step within the session, then creation time.
+ * @param {Object} a - First grade record to compare.
+ * @param {Object} b - Second grade record to compare.
+ * @returns {number} Standard comparator result for Array#sort.
+ */
+function compareGradeRecords(a, b) {
+    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return (
+        (a.studySessionId || 0) - (b.studySessionId || 0) ||
+        (a.studyStepId || 0) - (b.studyStepId || 0) ||
+        createdA - createdB
+    );
+}
+
+/**
+ * Appends a stored file (by hash + extension) to the archive if it exists on disk, otherwise warns.
+ * @param {Object} archive - The archiver instance to append the file to.
+ * @param {string} hash - The document's storage hash.
+ * @param {string} extension - File extension including the dot, e.g. ".pdf".
+ * @param {string} archivePath - Destination path inside the ZIP archive.
+ * @param {string} typeLabel - Human-readable type label used in the warning log.
+ * @returns {void}
+ */
+function appendStoredFileIfExists(archive, hash, extension, archivePath, typeLabel) {
+    const filePath = path.join(storageDir, `${hash}${extension}`);
+    if (fs.existsSync(filePath)) {
+        archive.file(filePath, { name: archivePath });
+    } else {
+        console.warn(`[DocumentExport] ${typeLabel} not found for document ${hash}`);
+    }
+}
+
+/**
+ * Resolves whether a user may see other users' full names in exports (admins always can).
+ * @param {Object} server - The server instance providing database models.
+ * @param {number} userId - The requesting user's id.
+ * @returns {Promise<boolean>} Whether the user has the private-info export right.
+ */
+async function resolveHasPrivateInfoRight(server, userId) {
+    const roleIds = await server.db.models["user_role_matching"].getUserRolesById(userId);
+    const isAdmin = await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
+    if (isAdmin) return true;
+
+    const userRightsObj = await server.db.models.user.getUserRights(userId);
+    if (!userRightsObj) return false;
+
+    const allRights = Object.values(userRightsObj).flat();
+    return allRights.includes('frontend.dashboard.studies.view.userPrivateInfo');
+}
+
+/**
+ * Parses the raw userIds field from a request body into an array, tolerating a JSON-encoded string.
+ * @param {*} rawUserIds - The raw value from req.body.userIds.
+ * @returns {Array} Parsed array of user ids, or an empty array if parsing fails.
+ */
+function parseUserIds(rawUserIds) {
+    try {
+        const parsed = typeof rawUserIds === 'string' ? JSON.parse(rawUserIds) : rawUserIds;
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.warn("Could not parse userIds:", rawUserIds);
+        return [];
+    }
+}
+
 module.exports = {
     replaceAuthorInZip,
     buildUserMapping,
@@ -368,4 +481,10 @@ module.exports = {
     buildGradeCsvRow,
     loadGradeExportContext,
     getConsentedUserIds,
+    compareGradeRecords,
+    appendStoredFileIfExists,
+    resolveHasPrivateInfoRight,
+    parseUserIds,
+    loadExportRequestContext,
+    SUPPORTED_EXPORT_TYPES,
 };

@@ -101,7 +101,7 @@ import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
 import BasicLoading from "@/basic/Loading.vue";
 import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
-import StepOptionsSubmissions from "@/components/dashboard/projects/export/StepOptions.vue";
+import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
@@ -133,6 +133,12 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
+  }, {
+      table: "document_data",
+  }, {
+      table: "study_step",
+  }, {
+      table: "configuration",
   }
   ],
   provide() {
@@ -387,7 +393,7 @@ export default {
     },
     async downloadGrades() {
       try {
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        const selectedUserIds = this.userSelection.map(row => row.userId);
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
           exportType: 'grades',
