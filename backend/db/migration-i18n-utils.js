@@ -10,16 +10,14 @@ const { t, hasKey } = require('../utils/i18n');
 
 /**
  * @param {string} i18nKey
- * @returns {string|null} English text, or `null` if the key is missing from `en` JSON.
- *   Callers that skip updates on `null` leave i18n keys in the DB; the frontend then
- *   typically shows that raw key string (e.g. `translateMaybeKey` passes it through when
- *   there is no translation).
+ * @returns {string} English text from ``en`` JSON, or ``i18nKey`` unchanged if the key is missing
+ *   (safe fallback so ``down`` migrations do not need a null check).
  */
 function resolveEnText(i18nKey) {
-  if (typeof i18nKey !== 'string' || !hasKey(i18nKey, 'en')) {
-    return null;
+  if (typeof i18nKey !== 'string') {
+    return i18nKey;
   }
-  return t(i18nKey, {}, 'en');
+  return t(i18nKey);
 }
 
 module.exports = { resolveEnText, t, hasKey };
