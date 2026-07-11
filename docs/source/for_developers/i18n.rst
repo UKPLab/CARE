@@ -284,25 +284,212 @@ When a key holds an **array** of messages (e.g. rotating status text), use ``$tm
      };
    }
 
-HTML inside a translation (v-html)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _i18n-t-rich-text:
 
-If a string contains HTML tags (``<strong>``, ``<br>``, links), put the markup in the JSON value and
-render with ``v-html``:
+Rich text in translations (i18n-t — preferred)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a sentence needs **inline markup** (:code:`<strong>`, :code:`<br>`, a clickable link) **or** dynamic values
+that must stay safe, use the vue-i18n :code:`<i18n-t>` component instead of :code:`v-html`.
+
+keypath and tag
+~~~~~~~~~~~~~~~
+
+* :code:`keypath` — the translation key (same string you would pass to :code:`$t('…')`).
+* :code:`tag` — the **HTML element that wraps the finished sentence**.
+
+  :code:`i18n-t` does not render a bare text node. It builds the full phrase (text + slots) and wraps it in
+  one element — the one named by :code:`tag`:
+
+  .. list-table::
+     :widths: 28 72
+     :header-rows: 0
+
+     * - :code:`tag="p"`
+       - paragraph wrapper → :code:`<p>…</p>`
+     * - :code:`tag="span"`
+       - inline wrapper → :code:`<span>…</span>`
+     * - :code:`tag="div"`
+       - block wrapper → :code:`<div>…</div>`
+
+  Pick the tag for layout/semantics (paragraph, inline hint, block summary).
+
+
+**How it fits together**
+
+**1. Locale** — one key, placeholder :code:`{0}` where the slot goes:
 
 .. code-block:: json
 
    {
-     "confirm": "Are you sure you want to delete <strong>{count}</strong> item(s)?"
+     "csvTemplateHint": "Please check the format or {0} here.",
+     "downloadTemplate": "download the template"
+   }
+
+**2. Vue** — :code:`keypath` loads the key; :code:`tag="p"` wraps the output; the :code:`<a>` fills :code:`{0}`:
+
+.. code-block:: vue
+
+   <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
+     <a class="template-link" @click="downloadTemplateCSV">
+       {{ $t('dashboard.users.downloadTemplate') }}
+     </a>
+   </i18n-t>
+
+**3. Result in the browser:**
+
+.. code-block:: html
+
+   <p>
+     Please check the format or
+     <a class="template-link">download the template</a>
+     here.
+   </p>
+
+Named slots
+~~~~~~~~~~~
+
+Use when placeholders in the JSON have **names** (:code:`{newCount}`, :code:`{br}`, :code:`{dupCount}`). Each name maps
+to a :code:`<template #name>` block with the same name (without :code:`#` in the JSON).
+
+**JSON:**
+
+.. code-block:: json
+
+   {
+     "bulkImportConfirm": "Are you sure you want to bulk create {newCount} users {br} and overwrite {dupCount} users?"
+   }
+
+**Vue** — slot name :code:`newCount` fills :code:`{newCount}`, :code:`br` fills :code:`{br}`, etc.:
+
+.. code-block:: vue
+
+   <i18n-t keypath="dashboard.users.bulkImportConfirm" tag="p">
+     <template #newCount>
+       <strong>{{ userCount.new }}</strong>
+     </template>
+     <template #br>
+       <br />
+     </template>
+     <template #dupCount>
+       <strong>{{ userCount.duplicate }}</strong>
+     </template>
+   </i18n-t>
+
+**Rendered shape (locale EN, counts 3 and 1):**
+
+.. code-block:: html
+
+   <p>
+     Are you sure you want to bulk create <strong>3</strong> users
+     <br />
+     and overwrite <strong>1</strong> users?
+   </p>
+
+Indexed slots (:code:`{0}`, :code:`{1}`, …)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use when the JSON uses **numeric** placeholders. They refer to **default slot children in order** — the
+first child replaces :code:`{0}`, the second replaces :code:`{1}`, and so on. You do **not** write :code:`#0` unless you
+choose explicit :code:`<template #0>` (optional); a plain child element is enough for :code:`{0}`.
+
+**Single slot** (most common) — one link in the middle of a sentence:
+
+**JSON:**
+
+.. code-block:: json
+
+   {
+     "csvTemplateHint": "Please check the format or {0} here.",
+     "downloadTemplate": "download the template"
+   }
+
+**Vue** — the lone :code:`<a>` is child #0 → fills :code:`{0}`:
+
+.. code-block:: vue
+
+   <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
+     <a class="template-link" @click="downloadTemplateCSV">
+       {{ $t('dashboard.users.downloadTemplate') }}
+     </a>
+   </i18n-t>
+
+**Rendered:**
+
+.. code-block:: html
+
+   <p>
+     Please check the format or
+     <a class="template-link">download the template</a>
+     here.
+   </p>
+
+**Two slots** — same idea with :code:`{0}` and :code:`{1}`:
+
+**JSON:**
+
+.. code-block:: json
+
+   {
+     "openDocs": "Read the {0} or watch the {1}."
+   }
+
+**Vue** — first child → :code:`{0}`, second child → :code:`{1}`:
+
+.. code-block:: vue
+
+   <i18n-t keypath="help.openDocs" tag="p">
+     <a href="/docs">documentation</a>
+     <a href="/tutorial">tutorial video</a>
+   </i18n-t>
+
+**Rendered:**
+
+.. code-block:: html
+
+   <p>
+     Read the <a href="/docs">documentation</a> or watch the <a href="/tutorial">tutorial video</a>.
+   </p>
+
+**Named vs indexed — quick pick:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * - JSON placeholder
+     - Vue slot
+     - Typical use
+   * - :code:`{userName}`, :code:`{br}`
+     - :code:`<template #userName>`, :code:`<template #br>`
+     - Many mixed parts; clear names for translators
+   * - :code:`{0}`, :code:`{1}`
+     - 1st / 2nd default child (or :code:`<template #0>`)
+     - One or two inline links in a short hint
+
+
+HTML inside a translation (v-html)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use :code:`v-html` **only when** :code:`i18n-t` is impractical and the string is **fully trusted** — markup comes
+from your locale JSON, and interpolated values are **not** raw user input, API text, or database names.
+
+If a phrase needs both markup and dynamic parts, **prefer** :ref:`i18n-t-rich-text` above.
+
+.. code-block:: json
+
+   {
+     "declinedSharingWarning": "You have selected students who <strong>didn't accept data sharing</strong>."
    }
 
 .. code-block:: html
 
-   <p v-html="$t('confirm', { count: selected.length })" />
+   <span v-html="$t('dashboard.projects.export.declinedSharingWarning')" />
+
 
 .. danger::
 
-   Use ``v-html`` **only** for trusted translation strings from your locale JSON — **never** for raw user
+   Use :code:`v-html` **only** for trusted translation strings from your locale JSON — **never** for raw user
    input, API data, or database values.
 
 Socket/API errors (resolveApiMessage)
