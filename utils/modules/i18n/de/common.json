@@ -29,6 +29,8 @@
     "importing": "Wird importiert…",
     "export": "Exportieren",
     "exportAll": "Alle exportieren",
+    "json": "JSON",
+    "csv": "CSV",
     "reload": "Neu laden",
     "loading": "Wird geladen...",
     "noData": "Keine Daten",

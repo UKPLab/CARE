@@ -105,7 +105,9 @@
             "seedPlaceholder": "e.g. 846569412",
             "seedHint": "Using the same seed ensures consistent aliases for your own exports.",
             "noteLabel": "Note:",
-            "accountSpecificHint": "Aliases are tied to your account and won't match other users' exports."
+            "accountSpecificHint": "Aliases are tied to your account and won't match other users' exports.",
+            "gradeFileFormat": "Grade file format",
+            "mergeCsvFiles": "Merge CSV files by study, step, and configuration"
         },
         "exportSelectSubmissions": "Select Submissions to Download:",
         "noSubmissionsFound": "No submissions found for this project.",

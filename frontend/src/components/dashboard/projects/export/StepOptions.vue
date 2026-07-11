@@ -86,11 +86,11 @@ export default {
       if (this.showGradeFormat) {
         formFields.push({
           key: "gradeFormat",
-          label: "Grade file format",
+          label: this.$t('dashboard.projects.exportOptions.gradeFileFormat'),
           type: "select",
           options: [
-            { name: "JSON", value: "json" },
-            { name: "CSV", value: "csv" }
+            { name: this.$t('common.json'), value: "json" },
+            { name: this.$t('common.csv'), value: "csv" }
           ]
         });
       }
@@ -98,7 +98,7 @@ export default {
       if (this.showGradeFormat && this.optionsData.gradeFormat === "csv") {
         formFields.push({
           key: "mergeCsvFiles",
-          label: "Merge CSV files by study, step, and configuration",
+          label: this.$t('dashboard.projects.exportOptions.mergeCsvFiles'),
           type: "switch"
         });
       }

@@ -105,7 +105,9 @@
       "seedPlaceholder": "z. B. 846569412",
       "seedHint": "Der gleiche Seed sorgt für konsistente Aliase in Ihren eigenen Exporten.",
       "noteLabel": "Hinweis:",
-      "accountSpecificHint": "Aliase sind an Ihr Konto gebunden und stimmen nicht mit den Exporten anderer Benutzer überein."
+      "accountSpecificHint": "Aliase sind an Ihr Konto gebunden und stimmen nicht mit den Exporten anderer Benutzer überein.",
+      "gradeFileFormat": "Dateiformat für Noten",
+      "mergeCsvFiles": "CSV-Dateien nach Studie, Schritt und Konfiguration zusammenführen"
     },
     "exportSelectSubmissions": "Einreichungen zum Herunterladen auswählen:",
     "noSubmissionsFound": "Keine Einreichungen für dieses Projekt gefunden.",
