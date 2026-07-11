@@ -40,18 +40,23 @@
             </ul>
           </div>
         </div>
-        <p
-          v-html="$t('dashboard.importModal.areYouSure', { count: selectedSubmissions.length, message })"
-        />
+        <i18n-t keypath="dashboard.importModal.areYouSure" tag="p">
+          <template #count>
+            <strong>{{ selectedSubmissions.length }}</strong>
+          </template>
+          <template #message>{{ message }}</template>
+        </i18n-t>
       </div>
     </template>
     <!-- Result Step -->
     <template #step-4>
       <div class="result-container">
         <div v-if="importResults && importResults.successCount != null">
-          <span
-            v-html="$t('dashboard.importModal.successfullyImported', { count: importResults.successCount })"
-          />
+          <i18n-t keypath="dashboard.importModal.successfullyImported" tag="span">
+            <template #count>
+              <strong>{{ importResults.successCount }}</strong>
+            </template>
+          </i18n-t>
           <div
             v-if="importResults.errors && importResults.errors.length > 0"
             class="error-container"
@@ -61,12 +66,12 @@
               v-for="(error, index) in importResults.errors"
               :key="index"
             >
-              <li
-                v-html="$t('dashboard.importModal.userCannotBeImported', {
+              <li>
+                {{ $t('dashboard.importModal.userCannotBeImported', {
                   userId: error.userId,
                   message: formatImportError(error),
-                })"
-              />
+                }) }}
+              </li>
             </ul>
           </div>
           <div v-if="importResults?.errors?.length > 0" class="link-container">

@@ -8,7 +8,14 @@
       <h6>{{ $t('dashboard.projects.export.confirmSelection') }}</h6>
       
       <div v-if="hasDeclinedSharingSelected" class="alert alert-danger mt-3">
-        <span v-html="$t('dashboard.projects.export.declinedSharingWarning')" />
+        <i18n-t
+          keypath="dashboard.projects.export.declinedSharingWarning"
+          tag="span"
+        >
+          <template #emphasis>
+            <strong>{{ $t('dashboard.projects.export.declinedSharingEmphasis') }}</strong>
+          </template>
+        </i18n-t>
       </div>
 
       <div v-if="generateAliases" class="alert alert-danger mt-3">
@@ -21,7 +28,11 @@
       
       <div class="alert alert-info">
         <strong>{{ $t('dashboard.projects.export.summary') }}</strong><br />
-        <span v-html="$t('dashboard.projects.export.downloadSummary', { count: submissionSelection.length })" />
+        <i18n-t keypath="dashboard.projects.export.downloadSummary" tag="span">
+          <template #count>
+            <strong>{{ submissionSelection.length }}</strong>
+          </template>
+        </i18n-t>
       </div>
 
       <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">

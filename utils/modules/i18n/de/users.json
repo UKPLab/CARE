@@ -69,7 +69,7 @@
     "managementTitle": "Rechteverwaltung",
     "manageRightsFor": "Rechte verwalten für",
     "role": "Rolle",
-    "selectRightsNote": "Wählen Sie die Rechte für diese Rolle aus. Hinweis: Alle Benutzer haben standardmäßig grundlegende <strong>\"user\"</strong>-Rechte.",
+    "selectRightsNote": "Wählen Sie die Rechte für diese Rolle aus. Hinweis: Alle Benutzer haben standardmäßig grundlegende {userRole}-Rechte.",
     "selectRole": "Rolle auswählen",
     "manageRights": "Rechte verwalten",
     "rightName": "Rechtename",

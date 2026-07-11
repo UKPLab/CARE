@@ -69,7 +69,7 @@
     "managementTitle": "Rights Management",
     "manageRightsFor": "Manage rights for",
     "role": "role",
-    "selectRightsNote": "Select the rights for this role. Note: All users have basic <strong>\"user\"</strong> rights by default.",
+    "selectRightsNote": "Select the rights for this role. Note: All users have basic {userRole} rights by default.",
     "selectRole": "Select Role",
     "manageRights": "Manage Rights",
     "rightName": "Right Name",

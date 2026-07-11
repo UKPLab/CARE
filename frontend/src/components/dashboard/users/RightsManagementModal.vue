@@ -24,7 +24,15 @@
             <strong class="text-primary">{{ selectedRoleName }}</strong>
             {{ $t('users.rights.role') }}
           </h6>
-          <small class="text-muted" v-html="$t('users.rights.selectRightsNote')" />
+          <i18n-t
+            keypath="users.rights.selectRightsNote"
+            tag="small"
+            class="text-muted"
+          >
+            <template #userRole>
+              <strong>{{ $t('dashboard.users.userWithQuotes') }}</strong>
+            </template>
+          </i18n-t>
         </div>
         <BasicTable
             v-model="roleRights"
