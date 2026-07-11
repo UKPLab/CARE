@@ -54,7 +54,6 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "DetailsModal",
   components: {BasicModal, BasicForm, BasicTable, BasicButton},
-  emits: ["updateUser"],
   data() {
     return {
       userId: 0,
@@ -142,11 +141,10 @@ export default {
         roles,
       };
       this.$refs.modal.waiting = true;
-      this.$socket.emit("userUpdateDetails", {userId, userData}, (response) => {
+      this.$socket.emit("appDataUpdate", { table: "user", data: { id: userId, ...userData } }, (response) => {
         if (response.success) {
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();
-          this.$emit("updateUser");
           this.eventBus.emit("toast", {
             title: "User updated",
             message: "Successfully updated user!",

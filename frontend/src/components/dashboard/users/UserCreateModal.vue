@@ -41,7 +41,6 @@ import BasicForm from "@/basic/Form.vue";
 export default {
   name: "UserAddModal",
   components: {BasicModal, BasicButton, BasicForm},
-  emits: ["updateUser"],
   data() {
     return {
       formFields: [
@@ -117,7 +116,7 @@ export default {
       if (!this.$refs.form.validate()) return;
       this.$refs.modal.waiting = true;
 
-      this.$socket.emit("userCreate", this.formData, (response) => {
+      this.$socket.emit("appDataUpdate", { table: "user", data: this.formData }, (response) => {
         if (response.success) {
           this.eventBus.emit("toast", {
             title: "User Creation Completed",
@@ -125,7 +124,6 @@ export default {
             message: "The user creation was successful",
           });
           this.$refs.modal.close();
-          this.$emit("updateUser");
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
