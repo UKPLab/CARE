@@ -29,20 +29,19 @@
     </template>
 
     <!-- Toggle Button (always visible) -->
-    <button 
-      class="toolbar-toggle-btn" 
+    <BasicButton
+      class="toolbar-toggle-btn"
+      :icon="toolbarVisible ? 'chevron-right' : 'tools'"
       :title="toolbarVisible ? $t('components.pdftoolbar.minToolbar') : $t('components.pdftoolbar.showToolbar')"
-      @click="toggleToolbar" 
-    >
-      <LoadIcon :icon-name="toolbarVisible ? 'chevron-right' : 'tools'" :size="20" />
-    </button>
+      @click="toggleToolbar"
+    />
   </div>
 </template>
 
 <script>
-import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * PDF Toolbar Component
@@ -54,9 +53,9 @@ import BasicForm from "@/basic/Form.vue";
 export default {
   name: "PDFToolbar",
   components: {
-    LoadIcon,
     TopBarButton,
     BasicForm,
+    BasicButton,
   },
   props: {
     zoomFormData: {

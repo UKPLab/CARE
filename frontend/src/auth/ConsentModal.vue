@@ -48,20 +48,16 @@
     </template>
     <template #footer>
       <div class="button-group">
-        <button
-          type="button"
+        <BasicButton
           class="btn btn-secondary"
+          :title="$t('common.decline')"
           @click="handleDecline"
-        >
-          {{ $t('common.decline') }}
-        </button>
-        <button
-          type="button"
+        />
+        <BasicButton
           class="btn btn-primary"
+          :title="$t('auth.acceptAndContinue')"
           @click="handleAccept"
-        >
-          {{ $t('auth.acceptAndContinue') }}
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -76,6 +72,7 @@
  * @author: Linyin Huang, Dennis Zyska
  */
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import BasicEditor from "@/basic/editor/Editor.vue";
@@ -83,7 +80,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ConsentModal",
-  components: {Modal, BasicEditor},
+  components: {Modal, BasicEditor, BasicButton},
   data() {
     return {
       acceptStats: false,

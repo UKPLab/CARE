@@ -9,6 +9,20 @@
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Import Templates"
+          text="Import"
+          icon="upload"
+          @click="$refs.importFormatModal.open('template')"
+        />
+        <BasicButton
+          class="btn-outline-secondary btn-sm me-2"
+          title="Export All Templates"
+          text="Export All"
+          icon="download"
+          @click="$refs.exportFormatModal.open(null, 'template')"
+        />
+        <BasicButton
           class="btn-primary btn-sm"
           :title="$t('templates.dashboard.addNewTemplate')"
           :text="$t('templates.dashboard.addTemplate')"
@@ -32,6 +46,8 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
+    <ExportFormatModal ref="exportFormatModal" title="Export Template" />
+    <ImportFormatModal ref="importFormatModal" title="Import Templates" />
   </template>
   
   <script>
@@ -45,6 +61,8 @@
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
   import { resolveApiMessage } from "@/assets/utils";
+  import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+  import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   /**
    * Templates dashboard component
    *
@@ -67,6 +85,8 @@
       TemplateDetachModal,
       TemplateUpdateModal,
       PublicTemplatesModal,
+      ExportFormatModal,
+      ImportFormatModal,
     },
     data() {
       return {
@@ -222,6 +242,18 @@
             title: this.$t("templates.dashboard.actions.sourceUpdated"),
             action: "openUpdateModal",
           },
+          // Export
+          {
+            icon: "download",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              },
+            },
+            title: "Export template",
+            action: "export",
+          },
           // Delete - own templates that can be deleted (including copies)
           {
             icon: "trash",
@@ -312,6 +344,9 @@
             break;
           case "openUpdateModal":
             this.$refs.updateModal.open(data.params);
+            break;
+          case "export":
+            this.$refs.exportFormatModal.open(data.params.id, "template");
             break;
         }
       },

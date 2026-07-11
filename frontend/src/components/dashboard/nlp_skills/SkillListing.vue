@@ -1,41 +1,26 @@
 <template>
   <div v-if="validConfig">
     <div class="btn-group btn-group-sm position-absolute top-0 end-0 px-3 py-3">
-      <button
+      <BasicButton
           class="btn btn-outline-secondary"
-          type="button"
           :title="$t('nlp.copyConfig')"
+          icon="clipboard"
           @click="copyConfig"
-      >
-        <LoadIcon
-            icon-name="clipboard"
-            :size="16"
-        />
-      </button>
-      <button
+      />
+      <BasicButton
         class="btn btn-outline-secondary"
-        type="button"
         :title="$t('nlp.downloadConfig')"
+        icon="cloud-arrow-down"
         @click="downloadConfig"
-      >
-        <LoadIcon
-          icon-name="cloud-arrow-down"
-          :size="16"
-        />
-      </button>
-      <button
+      />
+      <BasicButton
         class="btn btn-outline-secondary"
         :class="commandEditorActive ? 'active' : ''"
         :aria-pressed="commandEditorActive"
-        type="button"
         :title="$t('nlp.sendCommand')"
+        icon="send"
         @click="commandEditorActive=!commandEditorActive"
-      >
-        <LoadIcon
-          icon-name="send"
-          :size="16"
-        />
-      </button>
+      />
     </div>
     <h3>
       {{ currentData.name }}
@@ -127,7 +112,7 @@
 import {validateServiceConfig} from "@/assets/data";
 import JsonEditor from "@/basic/editor/JsonEditor.vue";
 import SkillItem from "@/components/dashboard/nlp_skills/SkillItem.vue";
-import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import CommandEditor from "@/basic/editor/CommandEditor.vue";
 import {v4 as uuidv4} from "uuid";
@@ -144,7 +129,7 @@ export default {
     CommandEditor,
     JsonEditor,
     SkillItem,
-    LoadIcon
+    BasicButton
   },
   props: {
     modelValue: {

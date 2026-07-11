@@ -195,6 +195,7 @@ class DocumentSocket extends Socket {
                     userId: data.userId ?? this.userId,
                     uploadedByUserId: this.userId,
                     readyForReview: data.isUploaded ?? false,
+                    projectId: data.projectId,
                     submissionId: data.submissionId
                 },
                 {transaction: options.transaction}
@@ -975,6 +976,7 @@ class DocumentSocket extends Socket {
                             userId: submission.userId,
                             isUploaded: true,
                             submissionId: submissionEntry.id,
+                            projectId: submissionEntry.projectId
                         },
                         {transaction}
                     );
@@ -1136,6 +1138,7 @@ class DocumentSocket extends Socket {
                         userId,
                         group,
                         validationConfigurationId,
+                        projectId,
                         assignmentId,
                         submissionId,
                         name,
@@ -1146,12 +1149,14 @@ class DocumentSocket extends Socket {
             }
 
             let previousSubmissionId = null;
+            let resolvedProjectId = projectId;
 
             if (assignmentId) {
                 const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
                 if (!assignment) {
                     throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
                 }
+                resolvedProjectId = resolvedProjectId ?? assignment.projectId ?? null;
 
                 const assignmentSubmissions = await this.models["submission"].findAll({
                     where: {
@@ -1205,7 +1210,7 @@ class DocumentSocket extends Socket {
                     }
                 }
             } else {
-                const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
+                const previousSubmission = await this.models["submission"].getParentSubmission(userId, resolvedProjectId, true, {transaction});
                 previousSubmissionId = previousSubmission ? previousSubmission.id : null;
             }
 
@@ -1217,6 +1222,7 @@ class DocumentSocket extends Socket {
                 validationConfigurationId,
                 createdByUserId: this.userId,
                 previousSubmissionId,
+                projectId: resolvedProjectId,
                 assignmentId: assignmentId || null,
                 name: name ?? null,
                 description: description ?? null,
@@ -1229,6 +1235,7 @@ class DocumentSocket extends Socket {
                         userId: userId,
                         isUploaded: true,
                         submissionId: submission.id,
+                        projectId: resolvedProjectId,
                     },
                     {transaction}
                 );
@@ -1274,7 +1281,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} If the assignment or submission is not found, the user lacks permission, or a linked document is used in a study
      */
     async replaceAssignmentSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, assignmentId, submissionId, name, description} = data;
+        const {files, userId, group, validationConfigurationId, projectId, assignmentId, submissionId, name, description} = data;
         const transaction = options.transaction;
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
@@ -1300,6 +1307,7 @@ class DocumentSocket extends Socket {
         if (!oldSubmission) {
             throw new TranslatableError( "errors.submission.notFoundForAssignment", {submissionId});
         }
+        const resolvedProjectId = projectId ?? oldSubmission.projectId ?? assignment.projectId ?? null;
 
         const isOwner = this.userId === oldSubmission.userId;
         const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
@@ -1328,6 +1336,7 @@ class DocumentSocket extends Socket {
             validationConfigurationId,
             createdByUserId: this.userId,
             previousSubmissionId: oldSubmission.previousSubmissionId || null,
+            projectId: resolvedProjectId,
             assignmentId,
             name: name ?? oldSubmission.name ?? null,
             description: description ?? oldSubmission.description ?? null,
@@ -1363,6 +1372,7 @@ class DocumentSocket extends Socket {
                     userId,
                     isUploaded: true,
                     submissionId: newSubmission.id,
+                    projectId: resolvedProjectId,
                 },
                 {transaction}
             );

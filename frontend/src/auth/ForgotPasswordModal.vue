@@ -44,13 +44,12 @@
       />
       <BasicButton
         v-if="!forgotPassword.success"
-        :disabled="!forgotPasswordValidEmail || forgotPassword.isLoading"
+        :disabled="!forgotPasswordValidEmail"
+        :loading="forgotPassword.isLoading"
         class="btn btn-primary"
         :text="forgotPassword.isLoading ? $t('modals.sending') : $t('modals.sendResetEmail')"
         @click="sendResetEmail"
-      >
-        <span v-if="forgotPassword.isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-      </BasicButton>
+      />
       <BasicButton
         v-if="forgotPassword.success"
         :text="$t('common.close')"

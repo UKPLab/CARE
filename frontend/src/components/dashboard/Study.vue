@@ -20,8 +20,8 @@
           />
            <BasicButton
             class="btn-secondary btn-sm"
-            text="Publish Assessment"
-            title="Publish Assessment"
+            :title="$t('submission.publishAssessment.title')"
+            :text="$t('submission.publishAssessment.title')"
             icon="clipboard-data"
             @click="$refs.publishAssessmentModal.open()"
           />
@@ -89,6 +89,7 @@ import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -109,7 +110,8 @@ export default {
     BulkAssignmentsModal,
     SingleAssignmentModal,
     InformationModal,
-    SavedTemplatesModal
+    SavedTemplatesModal,
+    PublishAssessmentModal
   },
   inject: {
     acceptStats: {

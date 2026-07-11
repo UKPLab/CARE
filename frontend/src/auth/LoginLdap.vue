@@ -10,13 +10,11 @@
             class="card-header d-flex justify-content-between align-items-center"
           >
             {{ $t('auth.ldap.institutionalLogin') }}
-            <button
-              type="button"
+            <BasicButton
               class="btn btn-sm btn-outline-secondary"
+              :title="$t('common.back')"
               @click="backToPasswordLogin"
-            >
-              {{ $t('common.back') }}
-            </button>
+            />
           </div>
 
           <div class="card-body mx-4 my-4">
@@ -78,17 +76,12 @@
               </div>
             </div>
             <div class="col-md-6 offset-md-4 my-4">
-              <button
+              <BasicButton
                 class="btn btn-primary btn-block"
                 type="submit"
-                :disabled="isSubmitting"
-              >
-                <span
-                  v-if="isSubmitting"
-                  class="spinner-border spinner-border-sm me-2"
-                ></span>
-                {{ isSubmitting ? $t('auth.signingIn') : $t('auth.ldap.loginWithLdap') }}
-              </button>
+                :loading="isSubmitting"
+                :text="isSubmitting ? $t('auth.signingIn') : $t('auth.ldap.loginWithLdap')"
+              />
             </div>
             <div class="text-center text-muted small">
               <p class="mb-0">
@@ -110,13 +103,14 @@
  * @author: Linyin Huang
  */
 import IconAsset from "@/basic/icon/IconAsset.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthLoginLdap",
-  components: { IconAsset },
+  components: { IconAsset, BasicButton },
   data() {
     return {
       showError: false,

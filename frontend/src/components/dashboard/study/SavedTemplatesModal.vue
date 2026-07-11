@@ -17,23 +17,51 @@
         :buttons="tableButtons"
         :max-table-height="'60vh'"
         @action="handleAction"
-      />
+      >
+        <template #additional-buttons>
+          <BasicButton
+            class="btn btn-outline-secondary btn-sm"
+            icon="upload"
+            text=""
+            title="Import Template"
+            @click="openImport"
+          />
+          <BasicButton
+            class="btn btn-outline-secondary btn-sm"
+            icon="download"
+            text=""
+            title="Export All Templates"
+            @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
+          />
+        </template>
+      </BasicTable>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-primary"
-        :title="$t('dashboard.study.createTemplate')"
-        :name="$t('dashboard.study.createTemplate')"
-        @click="createTemplate"
-      />
-      <BasicButton
-        class="btn btn-secondary"
-        :title="$t('common.close')"
-        @click="close"
-      />      
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :text="$t('common.close')"
+          :title="$t('common.close')"
+          @click="close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :text="$t('dashboard.study.createTemplate')"
+          :title="$t('dashboard.study.createTemplate')"
+          @click="createTemplate"
+        />
+      </span>
     </template>
   </BasicModal>
   <ConfirmModal ref="deleteConf"/>
+  <ImportFormatModal
+    ref="importFormatModal"
+    title="Import Study Templates"
+  />
+  <ExportFormatModal
+    ref="exportFormatModal"
+    title="Export Study Template"
+  />
 </span>
 </template>
 
@@ -44,6 +72,8 @@ import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 /**
  * Modal to show saved study templates
  * 
@@ -55,7 +85,7 @@ import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "SavedTemplatesModal",
-  components: { BasicModal, BasicTable, BasicButton, StudyModal, ConfirmModal },
+  components: { BasicModal, BasicTable, BasicButton, StudyModal, ConfirmModal, ImportFormatModal, ExportFormatModal },
   data() {
     return {
       tableOptions: {
@@ -124,6 +154,17 @@ export default {
           title: this.$t('common.use'),
           action: "useTemplate",
         },
+        {
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Export",
+          action: "exportTemplate",
+        },
       ],
     };
   },
@@ -157,7 +198,12 @@ export default {
         this.deleteTemplate(params);
       } else if (action === "useTemplate") {
         this.useTemplate(params);
+      } else if (action === "exportTemplate") {
+        this.exportTemplate(params);
       }
+    },
+    exportTemplate(template) {
+      this.$refs.exportFormatModal.open(template.id, "study", "study_step");
     },
     deleteTemplate(template) {
       this.$refs.deleteConf.open(
@@ -195,6 +241,15 @@ export default {
     useTemplate(template) {
       this.close();
       this.$refs.studyCoordinator.open(template.id, null, false, false, true);
+    },
+    openImport() {
+      this.$refs.importFormatModal.open("study", "study_step", {
+        socket: {
+          name: "studySaveAsTemplate",
+          dataKey: "templateData",
+          extra: { onlyTemplate: true },
+        },
+      });
     },
     createTemplate() {
       this.close();

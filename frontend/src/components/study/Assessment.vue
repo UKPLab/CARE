@@ -76,7 +76,7 @@
  */
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
-import {buildScoresFromState, calculateAssessmentScore,} from "@/assets/assessmentScore.js";
+import { buildScoresFromState, calculateAssessmentScore } from "assessment-score";
 
 export default {
   name: "AssessmentSidebar",

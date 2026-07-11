@@ -44,12 +44,12 @@
                 </div>
                 <div class="d-flex align-items-center">
                   <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] || 0 }}</span>
-                  <button
+                  <BasicButton
                     class="btn btn-primary btn-sm d-flex align-items-center"
+                    icon="plus-lg"
+                    :text="$t('common.add')"
                     @click="handlePlaceholderClick(placeholder)"
-                  >
-                    <i class="bi bi-plus-lg me-1"></i> {{ $t("common.add") }}
-                  </button>
+                  />
                 </div>
               </div>
             </li>
@@ -62,6 +62,7 @@
   <script>
   import FormHelp from "@/basic/form/Help.vue";
   import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
+  import BasicButton from "@/basic/Button.vue";
   /**
    * Template Configurator sidebar component
    *
@@ -74,6 +75,7 @@
     name: "TemplateConfigurator",
     components: {
       FormHelp,
+      BasicButton,
     },
     inject: {
       templateId: {

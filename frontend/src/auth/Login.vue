@@ -80,12 +80,12 @@
             </div>
 
             <div class="col-md-6 offset-md-4 my-4">
-              <button
+              <BasicButton
                   class="btn btn-primary btn-block"
                   type="submit"
-              >
-                {{ $t('auth.login') }}
-              </button>
+                  :loading="isSubmitting"
+                  :text="isSubmitting ? $t('auth.signingIn') : $t('auth.login')"
+              />
               <a
                   v-if="showGuestLogin"
                   class="btn btn-link"
@@ -105,30 +105,24 @@
                 {{ $t('auth.orSignInWith') }}
               </p>
               <div class="d-grid gap-2">
-                <button
+                <BasicButton
                   v-if="showOrcidLogin"
-                  type="button"
                   class="btn btn-outline-success btn-block"
+                  text="ORCID"
                   @click="loginWithOrcid"
-                >
-                  ORCID
-                </button>
-                <button
+                />
+                <BasicButton
                   v-if="showLdapLogin"
-                  type="button"
                   class="btn btn-outline-secondary btn-block"
+                  text="LDAP"
                   @click="toLdapLogin"
-                >
-                  LDAP
-                </button>
-                <button
+                />
+                <BasicButton
                   v-if="showSamlLogin"
-                  type="button"
                   class="btn btn-outline-dark btn-block"
+                  text="SSO"
                   @click="loginWithSaml"
-                >
-                  SSO
-                </button>
+                />
               </div>
             </div>
           </div>
@@ -184,6 +178,7 @@
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import BasicButton from "@/basic/Button.vue";
 import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
@@ -192,7 +187,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthLogin",
-  components: {LogoSvg, ForgotPasswordModal, EmailVerificationModal},
+  components: {LogoSvg, BasicButton, ForgotPasswordModal, EmailVerificationModal},
   data() {
     return {
       showError: false,
@@ -204,6 +199,7 @@ export default {
         password: ""
       },
       validity: null,
+      isSubmitting: false,
       version: APP_VERSION,
       showVersion: (process.env.NODE_ENV !== 'production'),
     }
@@ -324,6 +320,7 @@ export default {
       }
     },
     async login_user() {
+      this.isSubmitting = true;
       try {
         const loginResult = await this.login({
           username: this.formData.username,
@@ -338,6 +335,8 @@ export default {
       } catch (error) {
         this.showError = true;
         this.errorMessage = error;
+      } finally {
+        this.isSubmitting = false;
       }
     },
     toRegister() {

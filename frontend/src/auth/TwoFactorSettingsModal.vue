@@ -130,22 +130,19 @@
                 </div>
               </div>
               <div class="d-flex gap-2 mt-3">
-                <button
-                  type="button"
+                <BasicButton
                   class="btn btn-primary"
-                  :disabled="!canVerifyTotpSetup || isSubmitting"
+                  :disabled="!canVerifyTotpSetup"
+                  :loading="isSubmitting"
+                  :text="isSubmitting ? $t('auth.twoFactor.settings.totp.verifying') : $t('auth.twoFactor.settings.totp.verifyAndEnable')"
                   @click="verifyTotpSetup"
-                >
-                  {{ isSubmitting ? $t("auth.twoFactor.settings.totp.verifying") : $t("auth.twoFactor.settings.totp.verifyAndEnable") }}
-                </button>
-                <button
-                  type="button"
+                />
+                <BasicButton
                   class="btn btn-secondary"
                   :disabled="isSubmitting"
+                  :title="$t('common.cancel')"
                   @click="cancelTotpSetup"
-                >
-                  {{ $t("common.cancel") }}
-                </button>
+                />
               </div>
             </div>
           </div>

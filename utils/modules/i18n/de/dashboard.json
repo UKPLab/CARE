@@ -117,7 +117,8 @@
         "confirmation": "Bestätigung"
       },
       "exportReviewers": "Liste aller Reviewer exportieren",
-      "exportSubmissions": "Submissions exportieren"
+      "exportSubmissions": "Submissions exportieren",
+      "exportGrades": "Noten exportieren"
     }
   },
   "settings": {

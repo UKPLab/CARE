@@ -17,9 +17,11 @@
                 <p>{{ edit.text }}</p>
               </template>
               <template #footer>
-                <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
-                  {{ $t('common.show') }}
-                </button>
+                <BasicButton
+                  class="btn btn-primary btn-sm"
+                  :text="$t('common.show')"
+                  @click="handleEditClick(edit)"
+                />
               </template>
             </SideCard>
           </li>
@@ -61,26 +63,12 @@
     </li>
 
     <li v-if="!componentReadOnly" id="addPageNote">
-      <button
+      <BasicButton
         class="btn btn-light"
-        type="button"
+        icon="plus-lg"
+        :text="$t('annotator.documentNote')"
         @click="createDocumentComment"
-      >
-        <svg
-          class="bi bi-plus-lg"
-          fill="currentColor"
-          height="16"
-          viewBox="0 0 16 16"
-          width="16"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
-            fill-rule="evenodd"
-          />
-        </svg>
-        {{ $t('annotator.documentNote') }}
-      </button>
+      />
     </li>
   </ul>
 </template>
@@ -90,6 +78,7 @@ import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 /** Sidebar component of the Annotator
  *
@@ -100,7 +89,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {SideCard, AnnoCard, LoadIcon},
+  components: {SideCard, AnnoCard, LoadIcon, BasicButton},
   inject: {
     documentId: {
       type: Number,

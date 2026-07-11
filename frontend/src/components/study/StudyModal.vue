@@ -87,52 +87,44 @@
       </span>
     </template>
     <template #footer>
-      <button
+      <BasicButton
           class="btn btn-outline-secondary"
-          type="button"
+          :text="$t('studies.returnToDashboard')"
           @click="$router.push('/dashboard')"
-      >
-        <span>{{ $t('studies.returnToDashboard') }}</span>
-      </button>
+      />
       <vr/>
       <div
           v-if="showSessions"
           class="btn-group"
       >
-        <button
+        <BasicButton
             class="btn btn-primary"
-            type="button"
+            :text="$t('common.back')"
             @click="showSessions=!showSessions"
-        >
-          <span>{{ $t('common.back') }}</span>
-        </button>
+        />
       </div>
       <div
           v-else
           class="btn-group"
       >
-        <button
+        <BasicButton
             v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
-            class="btn btn-secondary"
-            type="button"
+            class="btn btn-secondary position-relative"
             @click="showSessions=!showSessions"
         >
           <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
             {{ studySessions.length }}
             <span class="visually-hidden">{{ $t('studies.openSessionsSmall') }}</span>
           </span>
-          <span>{{ $t('studies.openSessionsBig') }}</span>
-        </button>
-        <button
+          {{ $t('studies.openSessionsBig') }}
+        </BasicButton>
+        <BasicButton
             v-if="studyId !== 0 && !foreignUnstartedSession"
             :disabled="!available"
             class="btn btn-primary"
-            type="button"
+            :text="study.collab ? $t('studies.joinStudy') : $t('studies.startStudy')"
             @click="start"
-        >
-          <span v-if="study.collab">{{ $t('studies.joinStudy') }}</span>
-          <span v-else>{{ $t('studies.startStudy') }}</span>
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -144,6 +136,7 @@ import Loader from "@/basic/Loading.vue";
 import BasicTable from "@/basic/Table.vue";
 import Editor from "@/basic/editor/Editor.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for accessing a study
@@ -155,7 +148,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   name: "StudyModal",
   subscribeTable: ["study_session"],
-  components: {Loader, BasicTable, Modal, Editor},
+  components: {Loader, BasicTable, Modal, Editor, BasicButton},
   inject: {
     acceptStats: {default: () => false},
   },

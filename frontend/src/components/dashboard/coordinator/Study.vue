@@ -26,12 +26,12 @@
       </div>
     </template>
     <template v-if="isSuccess" #buttons>
-      <button
+      <BasicButton
           v-if="!isTemplateMode"
           class="btn btn-primary"
+          :text="$t('studies.copyLink')"
           @click="copyURL"
-      >{{ $t('studies.copyLink') }}
-      </button>
+      />
     </template>
   </BasicCoordinator>
 </template>
@@ -39,6 +39,7 @@
 <script>
 import { resolveApiMessage } from "@/assets/utils";
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * StudyCoordinator - coordinator to add or edit studies
@@ -49,7 +50,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 export default {
   name: "CoordinatorStudy",
   subscribeTable: ['document', 'tag_set'],
-  components: {BasicCoordinator},
+  components: {BasicCoordinator, BasicButton},
   data() {
     return {
       studyId: 0,

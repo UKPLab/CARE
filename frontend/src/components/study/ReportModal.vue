@@ -59,13 +59,11 @@
       </p>
     </template>
     <template #footer>
-      <button
+      <BasicButton
         class="btn btn-primary"
+        :text="$t('common.close')"
         data-bs-dismiss="modal"
-        type="button"
-      >
-        {{$t('common.close')}}
-      </button>
+      />
     </template>
   </Modal>
 </template>
@@ -73,6 +71,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import ReportItem from "./ReportItem.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal to show a report over comments/annotations
@@ -81,7 +80,7 @@ import ReportItem from "./ReportItem.vue";
  */
 export default {
   name: "ReportModal",
-  components: {Modal, ReportItem},
+  components: {Modal, ReportItem, BasicButton},
   inject: {
    studySessionId: {
       type: Number,

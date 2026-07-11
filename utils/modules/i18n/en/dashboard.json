@@ -117,7 +117,8 @@
                 "confirmation": "Confirmation"
             },
             "exportReviewers": "Export a list of all reviewers",
-            "exportSubmissions": "Export submissions"
+            "exportSubmissions": "Export submissions",
+            "exportGrades": "Export grades"
         }
     },
     "settings": {

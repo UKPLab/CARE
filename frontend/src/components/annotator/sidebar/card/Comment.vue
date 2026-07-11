@@ -152,27 +152,24 @@
         />
     </span>
     <div class="btn-group">
-      <button
+      <BasicButton
         v-if="showExtenderButton"
         class="btn btn-light btn-sm"
+        :text="$t('common.showMore')"
         @click="maxComments+=5"
-      >
-        {{ $t('common.showMore')}}
-      </button>
-      <button
+      />
+      <BasicButton
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
         class="btn btn-light btn-sm"
+        :text="$t('common.showLess')"
         @click="maxComments=defaultNumComments"
-      >
-        {{ $t('common.showLess') }}
-      </button>
-      <button
+      />
+      <BasicButton
         v-if="maxComments > defaultNumComments"
         class="btn btn-light btn-sm"
+        :text="$t('common.hideReplies')"
         @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
-      >
-        {{ $t('common.hideReplies') }}
-      </button>
+      />
     </div>
     
     </span>
@@ -187,6 +184,7 @@ import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Comment card in the sidebar
@@ -197,7 +195,7 @@ import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "CommentCard",
-  components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
+  components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration, BasicButton},
   inject: {
     documentId: {
       type: Number,

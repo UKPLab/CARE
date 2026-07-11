@@ -32,14 +32,12 @@
               }) }}
             </span>
 
-            <button
-                type="button"
+            <BasicButton
                 class="btn btn-sm btn-outline-primary text-nowrap"
+                :text="$t('dashboard.submission.assignGroup.applyButton')"
                 :disabled="selectedSubmissions.length === 0"
                 @click="applySelectionPercentage"
-            >
-              {{ $t('dashboard.submission.assignGroup.applyButton') }}
-            </button>
+            />
           </div>
 
         </div>
@@ -79,6 +77,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
@@ -93,7 +92,7 @@ import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "AssignModal",
-  components: {BasicForm, BasicTable, StepperModal},
+  components: {BasicForm, BasicTable, StepperModal, BasicButton},
   subscribeTable: ["submission", "user", "document", "document_data"],
   data() {
     return {

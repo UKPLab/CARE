@@ -35,20 +35,16 @@
           <div v-html="newLanguageModalMessage" />
         </template>
         <template #footer>
-          <button
+          <BasicButton
             class="btn btn-outline-primary"
-            type="button"
+            :text="$t('templates.editor.createEmpty')"
             @click="chooseNewLanguageEmpty"
-          >
-            {{ $t("templates.editor.createEmpty") }}
-          </button>
-          <button
+          />
+          <BasicButton
             class="btn btn-primary"
-            type="button"
+            :text="$t('templates.editor.copyContent')"
             @click="chooseNewLanguageCopied"
-          >
-            {{ $t("templates.editor.copyContent") }}
-          </button>
+          />
         </template>
       </BasicModal>
     </span>
@@ -73,6 +69,7 @@
   import Loader from "@/basic/Loading.vue";
   import BasicModal from "@/basic/Modal.vue";
   import { resolveApiMessage } from "@/assets/utils";
+  import BasicButton from "@/basic/Button.vue";
   
   const Delta = Quill.import('delta');
 
@@ -84,7 +81,7 @@
   
   export default {
     name: "TemplateEditor",
-    components: { Loader, BasicModal },
+    components: { Loader, BasicModal, BasicButton },
     inject: {
       templateId: {
         type: Number,

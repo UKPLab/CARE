@@ -49,17 +49,17 @@
     </template>
     <template #footer>
       <div>
-        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
-          {{ $t('common.close') }}
-        </button>
-        <button
+        <BasicButton
+          class="btn btn-secondary"
+          :text="$t('common.close')"
+          data-bs-dismiss="modal"
+        />
+        <BasicButton
           class="btn btn-primary"
-          type="button"
+          :text="$t('common.create')"
           @click="create"
           @keyup.enter="create"
-        >
-          {{ $t('common.create') }}
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -68,6 +68,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Document create component
@@ -79,7 +80,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "DocumentCreateModal",
-  components: {Modal},
+  components: {Modal, BasicButton},
   subscribeTable: ["template"],
   data() {
     return {

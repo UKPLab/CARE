@@ -3,53 +3,33 @@
     <h6 class="mb-3 pb-2 border-bottom text-muted">
       {{ $t('dashboard.projects.exportOptions.title') }}
     </h6>
-
-    <div class="form-check form-switch mb-2">
-      <input 
-        id="aliasSwitch" 
-        v-model="aliases" 
-        class="form-check-input" 
-        type="checkbox"
-      >
-      <label class="form-check-label" for="aliasSwitch">
-        <strong>{{ $t('dashboard.projects.exportOptions.generateAliases') }}</strong>
-      </label>
-    </div>
-    
-    <div v-if="aliases">
-      <label for="fakerSeedInput" class="form-label small mb-1">
-        {{ $t('dashboard.projects.exportOptions.customSeedOptional') }}
-      </label>
-      <input 
-        id="fakerSeedInput"
-        v-model.number="seed" 
-        type="number" 
-        class="form-control form-control-sm" 
-        max="999999999"
-        style="max-width: 200px;"
-        :placeholder="$t('dashboard.projects.exportOptions.seedPlaceholder')"
-      >
-      <small class="text-muted d-block mt-1">
-        {{ $t('dashboard.projects.exportOptions.seedHint') }}
-        <strong>{{ $t('dashboard.projects.exportOptions.noteLabel') }}</strong>
-        {{ $t('dashboard.projects.exportOptions.accountSpecificHint') }}
-      </small>
-    </div>
+    <BasicForm
+      v-model="optionsData"
+      :fields="fields"
+    />
+    <small v-if="optionsData.generateAliases" class="text-muted d-block mt-1">
+      {{ $t('dashboard.projects.exportOptions.seedHint') }}
+      <strong>{{ $t('dashboard.projects.exportOptions.noteLabel') }}</strong>
+      {{ $t('dashboard.projects.exportOptions.accountSpecificHint') }}
+    </small>
   </div>
 </template>
 
 <script>
+import BasicForm from "@/basic/Form.vue";
+
 /**
  * StepOptions
  *
  * Provides configuration options for the export process. Currently, it allows 
  * the user to toggle alias generation for student names and set a custom seed for it.
  *
- * @author Mélissa Loew
+ * @author Mélissa Loew, Linyin Huang
  */
 
 export default {
   name: "StepOptions",
+  components: { BasicForm },
   props: {
     generateAliases: {
       type: Boolean,
@@ -58,17 +38,99 @@ export default {
     fakerSeed: {
       type: Number,
       default: 846569412
+    },
+    showGradeFormat: {
+      type: Boolean,
+      default: false
+    },
+    gradeFormat: {
+      type: String,
+      default: "json"
+    },
+    mergeCsvFiles: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['update:generateAliases', 'update:fakerSeed'],
+  emits: ['update:generateAliases', 'update:fakerSeed', 'update:gradeFormat', 'update:mergeCsvFiles'],
+  data() {
+    return {
+      optionsData: {
+        generateAliases: this.generateAliases,
+        fakerSeed: this.fakerSeed,
+        gradeFormat: this.gradeFormat,
+        mergeCsvFiles: this.mergeCsvFiles
+      }
+    };
+  },
   computed: {
-    aliases: {
-      get() { return this.generateAliases; },
-      set(value) { this.$emit('update:generateAliases', value); }
+    fields() {
+      const formFields = [
+        {
+          key: "generateAliases",
+          label: this.$t('dashboard.projects.exportOptions.generateAliases'),
+          type: "switch"
+        }
+      ];
+
+      if (this.optionsData.generateAliases) {
+        formFields.push({
+          key: "fakerSeed",
+          label: this.$t('dashboard.projects.exportOptions.customSeedOptional'),
+          type: "number",
+          max: 999999999,
+          placeholder: this.$t('dashboard.projects.exportOptions.seedPlaceholder')
+        });
+      }
+
+      if (this.showGradeFormat) {
+        formFields.push({
+          key: "gradeFormat",
+          label: "Grade file format",
+          type: "select",
+          options: [
+            { name: "JSON", value: "json" },
+            { name: "CSV", value: "csv" }
+          ]
+        });
+      }
+
+      if (this.showGradeFormat && this.optionsData.gradeFormat === "csv") {
+        formFields.push({
+          key: "mergeCsvFiles",
+          label: "Merge CSV files by study, step, and configuration",
+          type: "switch"
+        });
+      }
+
+      return formFields;
+    }
+  },
+  watch: {
+    generateAliases(value) {
+      this.optionsData.generateAliases = value;
     },
-    seed: {
-      get() { return this.fakerSeed; },
-      set(value) { this.$emit('update:fakerSeed', value); }
+    fakerSeed(value) {
+      this.optionsData.fakerSeed = value;
+    },
+    gradeFormat(value) {
+      this.optionsData.gradeFormat = value;
+    },
+    mergeCsvFiles(value) {
+      this.optionsData.mergeCsvFiles = value;
+    },
+    optionsData: {
+      handler(value) {
+        this.$emit('update:generateAliases', value.generateAliases);
+        const normalizedSeed =
+          value.fakerSeed === null || value.fakerSeed === undefined || value.fakerSeed === ""
+            ? null
+            : Number(value.fakerSeed);
+        this.$emit('update:fakerSeed', Number.isNaN(normalizedSeed) ? null : normalizedSeed);
+        this.$emit('update:gradeFormat', value.gradeFormat);
+        this.$emit('update:mergeCsvFiles', value.mergeCsvFiles);
+      },
+      deep: true
     }
   }
 }

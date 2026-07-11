@@ -6,19 +6,20 @@
   >
     {{$t('report.noText')}}
   </a>
-  <button
+  <BasicButton
     id="cite"
     :title="citationText"
     class="btn btn-link btn-sm"
     data-placement="top"
     data-toggle="tooltip"
+    :text="citation ? $t('report.ref', {citation}) : $t('report.show')"
     @click="show()"
-  >
-    {{ citation ? $t('report.ref', {citation}) : $t('report.show') }}
-  </button>
+  />
 </template>
 
 <script>
+
+import BasicButton from "@/basic/Button.vue";
 
 /* ReportItem.vue - item of a ReviewReport
 
@@ -30,6 +31,7 @@ Source: -
 */
 export default {
   name: "ReportItem",
+  components: { BasicButton },
   props: {
     annotationId: {
       required: false,

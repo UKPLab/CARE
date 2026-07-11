@@ -17,6 +17,7 @@
     "@popperjs/core": "^2.11.8",
     "@vitejs/plugin-vue": "^6.0.4",
     "approx-string-match": "^2.0.0",
+    "assessment-score": "file:../utils/modules/assessment-score",
     "axios": "^1.15.0",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",

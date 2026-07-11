@@ -81,6 +81,43 @@ class UserSocket extends Socket {
     }
 
     /**
+     * Retrieves detailed information for a user.
+     * Restricted to admins.
+     *
+     * @socketEvent userGetDetails
+     * @param {number} data - The ID of the user to load
+     * @param {Object} options 
+     * @returns {Promise<Object>}
+     * @throws {Error}
+     */
+    async getUserDetails(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+        return await this.models["user"].getUserDetails(data);
+    }
+
+    /**
+     * Updates a user's profile and roles.
+     * Restricted to adminis.
+     *
+     * @socketEvent userUpdateDetails
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.userId - The ID of the user to update
+     * @param {Object} data.userData - firstName, lastName, email, roles
+     * @param {Object} options 
+     * @param {Object} options.transaction 
+     * @returns {Promise<void>}
+     * @throws {Error}
+     */
+    async updateUserDetails(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+        return await this.models["user"].updateUserDetails(data, options);
+    }
+
+    /**
      * Get users by their role.status === "duplicate"
      * 
      * @param {string} role The role of the users to fetch. Possible values: "student", "mentor", "all"
@@ -463,9 +500,9 @@ class UserSocket extends Socket {
         this.broadcastStats();
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
-        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
+        this.createSocket("userUpdateDetails", this.updateUserDetails, {}, true);
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
-        this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
+        this.createSocket("userGetDetails", this.getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
         this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);

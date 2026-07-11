@@ -16,20 +16,16 @@
     </template>
     <template #footer>
       <div class="btn-group">
-        <button
-          type="button"
+        <BasicButton
           class="btn btn-outline-primary"
+          :text="$t('common.update')"
           @click="onUpdate"
-        >
-          {{ $t("common.update") }}
-        </button>
-        <button
-          type="button"
+        />
+        <BasicButton
           class="btn btn-primary"
+          :text="$t('templates.updateModal.makeNewCopy')"
           @click="onMakeNewCopy"
-        >
-          {{ $t("templates.updateModal.makeNewCopy") }}
-        </button>
+        />
       </div>
     </template>
   </BasicModal>
@@ -38,6 +34,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal shown when a template copy has an update available from its source.
@@ -45,7 +42,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "TemplateUpdateModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {
       template: null,

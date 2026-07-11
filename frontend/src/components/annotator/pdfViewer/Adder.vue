@@ -25,28 +25,25 @@
         class="btn-group-vertical" 
         @click.stop
       >
-        <button
+        <BasicButton
           v-for="t in filteredTags"
           :key="t.name"
-          :class="`btn-${t.colorCode}`"
+          :class="`btn-${t.colorCode} text-truncate`"
           :title="t.description"
-          class="btn text-truncate"
+          :text="t.name"
           data-placement="top"
           data-toggle="tooltip"
           @click="annotate(t)"
-        >
-            {{ t.name }} 
-        </button>
+        />
       </div>
     </div>
-    <button
+    <BasicButton
       v-if="shouldShowExtender"
-      class="expand-btn btn "
+      class="expand-btn"
+      icon="three-dots"
       :title="$t('annotator.expandAdder')"
       @click="isExtended=true"
-    >
-    <i class="bi bi-three-dots"></i>
-    </button>
+    />
   </div>
 </template>
 
@@ -61,9 +58,11 @@
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
 import { resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "PDFAdder",
+  components: { BasicButton },
   inject: {
     documentId: {
       type: Number,

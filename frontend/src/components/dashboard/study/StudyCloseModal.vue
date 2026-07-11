@@ -32,20 +32,16 @@
 
     <template #footer>
       <div class="btn-group">
-        <button
-          type="button"
+        <BasicButton
           class="btn btn-secondary"
+          :text="$t('common.cancel')"
           @click="onCancel"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-        <button
-          type="button"
+        />
+        <BasicButton
           class="btn btn-primary"
+          :text="$t('studies.closeModal.closeStudy')"
           @click="onConfirm"
-        >
-          {{ $t("studies.closeModal.closeStudy") }}
-        </button>
+        />
       </div>
     </template>
   </BasicModal>
@@ -54,10 +50,11 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "StudyCloseModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {
       studyId: null,

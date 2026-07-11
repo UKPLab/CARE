@@ -118,18 +118,15 @@
               class="row"
           >
             <div class="col">
-              <button
+              <BasicButton
                   v-if="numberReplies > 0"
                   class="btn btn-light btn-sm"
                   data-placement="top"
                   data-toggle="tooltip"
                   :title="$t('common.reply')"
-                  type="button"
+                  :text="`${showReplies ? $t('common.hide') : $t('common.show')} ${$t('annotator.replies')} (${numberReplies})`"
                   @click="showReplies = !showReplies; maxComments = defaultNumComments"
-              >
-                <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
-                <span>{{ showReplies ? $t('common.hide') : $t('common.show') }} {{ $t('annotator.replies') }} ({{ numberReplies }})</span>
-              </button>
+              />
             </div>
             <div
                 class="col text-end"
@@ -196,27 +193,24 @@
             />
           </span>
           <div class="btn-group">
-            <button
-            class="btn btn-light btn-sm"
+            <BasicButton
             v-if="showExtenderButton"
+            class="btn btn-light btn-sm"
+            :text="$t('common.showMore')"
             @click="maxComments+=5"
-            >
-              {{ $t('common.showMore') }}
-            </button>
-            <button
-            class="btn btn-light btn-sm"
+            />
+            <BasicButton
             v-if="!showExtenderButton && numChildComments > defaultNumComments"
-            @click="maxComments=defaultNumComments"
-            >
-              {{ $t('common.showLess') }}
-            </button>
-            <button
             class="btn btn-light btn-sm"
+            :text="$t('common.showLess')"
+            @click="maxComments=defaultNumComments"
+            />
+            <BasicButton
             v-if="maxComments > defaultNumComments"
+            class="btn btn-light btn-sm"
+            :text="$t('common.hideReplies')"
             @click="maxComments=defaultNumComments; showReplies = !showReplies"
-            >
-              {{ $t('common.hideReplies') }}
-            </button>
+            />
           </div>
             
         </div>
@@ -233,6 +227,7 @@ import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import BasicButton from "@/basic/Button.vue";
 
 /** Annotation elements
  *
@@ -244,7 +239,7 @@ import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 export default {
   name: "AnnoCard",
   subscribeTable: ['tag', 'tag_set', 'comment_state'],
-  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon},
+  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton},
   inject: {
     documentId: {
       type: Number,

@@ -66,15 +66,13 @@
             :height="40"
             :re-bg-color="setting.value"
           />
-          <button
+          <BasicButton
             v-if="hasResetValue"
             class="btn btn-outline-secondary btn-sm"
-            type="button"
+            text="Reset"
             :disabled="(setting.value || '').toLowerCase() === resetValue.toLowerCase()"
             @click="$emit('update:value', resetValue)"
-          >
-            Reset
-          </button>
+          />
         </div>
       </template>
       <template v-else-if="isLocaleSetting">
@@ -123,6 +121,7 @@
 </template>
 
 <script>
+import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
@@ -133,7 +132,7 @@ import { DEFAULT_LOCALE, LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/
  */
 export default {
   name: "SettingItem",
-  components: { EditorModal, FormHelp, LogoSvg },
+  components: { BasicButton, EditorModal, FormHelp, LogoSvg },
   subscribeTable: ["template"],
   props: {
     setting: {
