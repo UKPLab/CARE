@@ -43,7 +43,7 @@
             </div>
           </th>
           <th
-            v-for="(c, index) in visibleColumns"
+            v-for="(c, index) in columns"
             :key="c.key"
             :ref="'header-' + c.key"
             :class="[
@@ -186,7 +186,7 @@
             </div>
           </td>
           <td
-            v-for="(c, index) in visibleColumns"
+            v-for="(c, index) in columns"
             :key="c.key"
             :class="[
               'width' in c ? 'col-' + c.width : 'col-auto',
@@ -460,7 +460,7 @@ export default {
       );
     },
     emptyColspan() {
-      let colspan = this.visibleColumns.length;
+      let colspan = this.columns.length;
       if (this.selectableRows) {
         colspan += 1;
       }
@@ -549,17 +549,11 @@ export default {
           .map(([k, v]) => ({ [k]: v }))
       );
     },
-    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
-    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
-    visibleColumns() {
-      if (!this.data || this.data.length === 0) return this.columns;
-      return this.columns.filter((c) => this.data.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
-    },
     hasFixedColumns() {
-      return this.visibleColumns.some((c) => ["left", "right"].includes(c.fixed));
+      return this.columns.some((c) => ["left", "right"].includes(c.fixed));
     },
     hasRightFixedColumns() {
-      return this.visibleColumns.some((c) => c.fixed === "right");
+      return this.columns.some((c) => c.fixed === "right");
     },
     // Determine if manage column should be sticky
     shouldFixManageColumn() {
@@ -568,8 +562,8 @@ export default {
     // Cache the indices to avoid repeated searches
     fixedColumnIndices() {
       return {
-        lastLeft: this.visibleColumns.findLastIndex((col) => col.fixed === "left"),
-        firstRight: this.visibleColumns.findIndex((col) => col.fixed === "right"),
+        lastLeft: this.columns.findLastIndex((col) => col.fixed === "left"),
+        firstRight: this.columns.findIndex((col) => col.fixed === "right"),
       };
     },
     selectedCount() {
@@ -744,7 +738,7 @@ export default {
 
       // Compute left-fixed columns
       let leftOffset = 0;
-      this.visibleColumns.forEach((column) => {
+      this.columns.forEach((column) => {
         if (column.fixed === "left") {
           styles[column.key] = {
             ...baseStyle,
@@ -763,7 +757,7 @@ export default {
       }
 
       // Process right-fixed columns from right to left
-      [...this.visibleColumns]
+      [...this.columns]
         .reverse()
         .filter((c) => c.fixed === "right")
         .forEach((column) => {
