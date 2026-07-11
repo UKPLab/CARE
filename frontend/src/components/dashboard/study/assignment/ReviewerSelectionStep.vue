@@ -127,7 +127,6 @@ export default {
   watch: {
     selectedReviewer: {
       handler(val) {
-        console.log('[ReviewerSelectionStep] selectedReviewer changed:', val);
         this.$emit('update:selectedReviewer', val);
         this.$emit('update:selectedReviewerRoles', this.selectedReviewerRoles);
       },
@@ -137,12 +136,10 @@ export default {
       this.$emit('update:selectedReviewerRoles', val);
     },
     isValid(val) {
-      console.log('[ReviewerSelectionStep] isValid emit:', val);
       this.$emit('update:isValid', val);
     },
   },
   mounted() {
-    console.log('[ReviewerSelectionStep] mounted isValid:', this.isValid);
     this.$emit('update:isValid', this.isValid);
     if (this.selectedReviewer.length > 0) {
       this.$emit('update:selectedReviewer', this.selectedReviewer);

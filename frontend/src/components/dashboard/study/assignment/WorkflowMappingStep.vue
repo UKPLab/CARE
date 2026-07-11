@@ -110,7 +110,6 @@ export default {
       this.$emit('update:isWorkflowMappingComplete', val);
     },
     isValid(val) {
-      console.log('[WorkflowMappingStep] isValid emit:', val);
       this.$emit('update:isValid', val);
     },
   },
