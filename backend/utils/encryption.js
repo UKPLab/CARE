@@ -338,9 +338,9 @@ async function syncHashColumns(db) {
     const qi = sequelize.getQueryInterface();
 
     for (const [, Model] of Object.entries(models)) {
-        const uniqueFields = (Model.options?.encryptedFields || [])
-            .filter(f => typeof f !== 'string' && f.unique)
-            .map(f => f.name);
+        const encryptedFields = Model.options?.encryptedFields || [];
+        if (!encryptedFields.length) continue;
+        const uniqueFields = encryptedFields.filter(f => typeof f !== 'string' && f.unique).map(f => f.name);
         if (!uniqueFields.length) continue;
 
         const tableName = Model.tableName;
