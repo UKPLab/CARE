@@ -40,5 +40,62 @@
         "revisionTwo": "Überarbeitung 2"
     },
     "chart": "Diagramm",
-    "comparisonChart": "Vergleichsdiagramm"
+    "comparisonChart": "Vergleichsdiagramm",
+    "importExport": {
+        "export": {
+            "defaultTitle": "Exportieren",
+            "success": {
+                "title": "Export erfolgreich",
+                "single": "{table} erfolgreich im {format}-Format exportiert",
+                "multiple": "{table} erfolgreich im {format}-Format exportiert"
+            }
+        },
+        "import": {
+            "defaultTitle": "Importieren",
+            "selectFile": "Datei auswählen ({extensions}):",
+            "selectedFile": "Ausgewählt: {file}",
+            "selectItemsPrefix": "Wählen Sie aus, welche Einträge importiert werden sollen aus",
+            "confirmQuestion": "Möchten Sie die folgenden {table} wirklich importieren?",
+            "genericItems": "Einträge",
+            "childRecords": "— {count} untergeordnete Datensätze",
+            "fallbackItemLabel": "Eintrag {index}",
+            "steps": {
+                "fileSelection": "Dateiauswahl",
+                "itemSelection": "{item}-Auswahl",
+                "confirmation": "Bestätigung",
+                "genericItem": "Eintrag"
+            },
+            "errors": {
+                "unsupportedFileType": "Nicht unterstützter Dateityp \"{ext}\"",
+                "parseFileFailed": "Datei konnte nicht gelesen werden: {message}",
+                "readFileFailed": "Datei konnte nicht gelesen werden",
+                "importError": "Importfehler",
+                "importChildFailed": "Untergeordneter Datensatz konnte nicht importiert werden: {message}",
+                "importItemFailed": "\"{name}\" konnte nicht importiert werden: {message}"
+            },
+            "success": {
+                "title": "Import erfolgreich",
+                "single": "{count} {table} erfolgreich importiert!",
+                "multiple": "{count} {table} erfolgreich importiert!"
+            }
+        },
+        "formats": {
+            "csv": {
+                "label": "CSV-Format",
+                "description": "Kommagetrennte Werte, kompatibel mit Tabellenkalkulationen"
+            },
+            "json": {
+                "label": "JSON-Format",
+                "description": "Standardmäßiges JSON-Format mit korrekter Formatierung"
+            },
+            "txt": {
+                "label": "TXT-Format",
+                "description": "Klartext mit eingerückten verschachtelten Objekten"
+            },
+            "yaml": {
+                "label": "YAML-Format",
+                "description": "Menschenlesbares YAML-Format"
+            }
+        }
+    }
 }

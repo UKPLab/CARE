@@ -40,5 +40,62 @@
         "revisionTwo": "Revision 2"
     },
     "chart": "Chart",
-    "comparisonChart": "Comparison Chart"
+    "comparisonChart": "Comparison Chart",
+    "importExport": {
+        "export": {
+            "defaultTitle": "Export",
+            "success": {
+                "title": "Export Successful",
+                "single": "{table} exported successfully in {format} format",
+                "multiple": "{table} exported successfully in {format} format"
+            }
+        },
+        "import": {
+            "defaultTitle": "Import",
+            "selectFile": "Select file ({extensions}):",
+            "selectedFile": "Selected: {file}",
+            "selectItemsPrefix": "Select which items to import from",
+            "confirmQuestion": "Are you sure you want to import the following {table}?",
+            "genericItems": "items",
+            "childRecords": "— {count} child record(s)",
+            "fallbackItemLabel": "Item {index}",
+            "steps": {
+                "fileSelection": "File Selection",
+                "itemSelection": "{item} Selection",
+                "confirmation": "Confirmation",
+                "genericItem": "Item"
+            },
+            "errors": {
+                "unsupportedFileType": "Unsupported file type \"{ext}\"",
+                "parseFileFailed": "Failed to parse file: {message}",
+                "readFileFailed": "Failed to read file",
+                "importError": "Import Error",
+                "importChildFailed": "Failed to import child record: {message}",
+                "importItemFailed": "Failed to import \"{name}\": {message}"
+            },
+            "success": {
+                "title": "Import Successful",
+                "single": "{count} {table} imported successfully!",
+                "multiple": "{count} {table}s imported successfully!"
+            }
+        },
+        "formats": {
+            "csv": {
+                "label": "CSV Format",
+                "description": "Comma-separated values, compatible with spreadsheets"
+            },
+            "json": {
+                "label": "JSON Format",
+                "description": "Standard JSON format with proper formatting"
+            },
+            "txt": {
+                "label": "TXT Format",
+                "description": "Plain text with indented nested objects"
+            },
+            "yaml": {
+                "label": "YAML Format",
+                "description": "Human-readable YAML format"
+            }
+        }
+    }
 }
