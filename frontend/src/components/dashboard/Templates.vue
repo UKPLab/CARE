@@ -10,15 +10,15 @@
         />
         <BasicButton
           class="btn-outline-secondary btn-sm me-2"
-          title="Import Templates"
-          text="Import"
+          :title="$t('modals.importExport.wiring.templates.importTooltip')"
+          :text="$t('common.import')"
           icon="upload"
           @click="$refs.importFormatModal.open('template')"
         />
         <BasicButton
           class="btn-outline-secondary btn-sm me-2"
-          title="Export All Templates"
-          text="Export All"
+          :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
+          :text="$t('common.exportAll')"
           icon="download"
           @click="$refs.exportFormatModal.open(null, 'template')"
         />
@@ -46,8 +46,8 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
-    <ExportFormatModal ref="exportFormatModal" title="Export Template" />
-    <ImportFormatModal ref="importFormatModal" title="Import Templates" />
+    <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.templates.exportTitle')" />
+    <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.templates.importTitle')" />
   </template>
   
   <script>

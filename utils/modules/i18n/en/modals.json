@@ -96,6 +96,30 @@
                 "label": "YAML Format",
                 "description": "Human-readable YAML format"
             }
+        },
+        "wiring": {
+            "configuration": {
+                "exportAllTooltip": "Export all configurations",
+                "importTitle": "Import Configuration",
+                "exportTitle": "Export Configuration"
+            },
+            "tags": {
+                "exportAllTooltip": "Export All Tag Sets",
+                "importTitle": "Import Tag Sets",
+                "exportTitle": "Export Tag Set"
+            },
+            "templates": {
+                "importTooltip": "Import Templates",
+                "exportAllTooltip": "Export All Templates",
+                "importTitle": "Import Templates",
+                "exportTitle": "Export Template"
+            },
+            "studyTemplates": {
+                "importTooltip": "Import Template",
+                "exportAllTooltip": "Export All Templates",
+                "importTitle": "Import Study Templates",
+                "exportTitle": "Export Study Template"
+            }
         }
     }
 }

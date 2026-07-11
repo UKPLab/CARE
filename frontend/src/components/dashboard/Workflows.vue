@@ -47,10 +47,11 @@
   />
   <ExportFormatModal
     ref="exportFormatModal"
+    :title="$t('workflow.exportFormatModal.title')"
   />
   <ImportFormatModal
     ref="importFormatModal"
-    title="Import Workflows"
+    :title="$t('workflow.importFormatModal.title')"
   />
   <ConfirmModal ref="confirmModal" />
 </template>

@@ -11,8 +11,8 @@
         />
         <BasicButton
           class="btn-secondary btn-sm"
-          title="Export All Tag Sets"
-          text="Export All"
+          :title="$t('modals.importExport.wiring.tags.exportAllTooltip')"
+          :text="$t('common.exportAll')"
           icon="download"
           @click="$refs.exportFormatModal.open(null, 'tag_set', 'tag', null, { key: 'tags' })"
         />
@@ -39,8 +39,8 @@
     ref="tagSetModal"
   />
   <ConfirmModal ref="confirm"/>
-  <ExportFormatModal ref="exportFormatModal" title="Export Tag Set" />
-  <ImportFormatModal ref="importFormatModal" title="Import Tag Sets" />
+  <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.tags.exportTitle')" />
+  <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.tags.importTitle')" />
 </template>
 
 <script>

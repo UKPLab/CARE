@@ -28,6 +28,7 @@
     "import": "Import",
     "importing": "Importing…",
     "export": "Export",
+    "exportAll": "Export All",
     "reload": "Reload",
     "loading": "Loading...",
     "noData": "No data",

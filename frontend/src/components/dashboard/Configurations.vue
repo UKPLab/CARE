@@ -15,8 +15,8 @@
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            text="Export All"
-            title="Export all configurations"
+            :text="$t('common.exportAll')"
+            :title="$t('modals.importExport.wiring.configuration.exportAllTooltip')"
             icon="download"
             @click="$refs.exportFormatModal.open(null, 'configuration')"
         />
@@ -35,8 +35,8 @@
   </Card>
 
   <!-- Upload Modal for JSON configuration files -->
-  <ImportFormatModal ref="importFormatModal" title="Import Configuration" />
-  <ExportFormatModal ref="exportFormatModal" title="Export Configuration" />
+  <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.configuration.importTitle')" />
+  <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.configuration.exportTitle')" />
 
   <ConfirmModal ref="deleteModal"/>
 

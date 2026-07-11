@@ -23,14 +23,14 @@
             class="btn btn-outline-secondary btn-sm"
             icon="upload"
             text=""
-            title="Import Template"
+            :title="$t('modals.importExport.wiring.studyTemplates.importTooltip')"
             @click="openImport"
           />
           <BasicButton
             class="btn btn-outline-secondary btn-sm"
             icon="download"
             text=""
-            title="Export All Templates"
+            :title="$t('modals.importExport.wiring.studyTemplates.exportAllTooltip')"
             @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
           />
         </template>
@@ -56,11 +56,11 @@
   <ConfirmModal ref="deleteConf"/>
   <ImportFormatModal
     ref="importFormatModal"
-    title="Import Study Templates"
+    :title="$t('modals.importExport.wiring.studyTemplates.importTitle')"
   />
   <ExportFormatModal
     ref="exportFormatModal"
-    title="Export Study Template"
+    :title="$t('modals.importExport.wiring.studyTemplates.exportTitle')"
   />
 </span>
 </template>

@@ -96,6 +96,30 @@
                 "label": "YAML-Format",
                 "description": "Menschenlesbares YAML-Format"
             }
+        },
+        "wiring": {
+            "configuration": {
+                "exportAllTooltip": "Alle Konfigurationen exportieren",
+                "importTitle": "Konfiguration importieren",
+                "exportTitle": "Konfiguration exportieren"
+            },
+            "tags": {
+                "exportAllTooltip": "Alle Tag-Sets exportieren",
+                "importTitle": "Tag-Sets importieren",
+                "exportTitle": "Tag-Set exportieren"
+            },
+            "templates": {
+                "importTooltip": "Vorlagen importieren",
+                "exportAllTooltip": "Alle Vorlagen exportieren",
+                "importTitle": "Vorlagen importieren",
+                "exportTitle": "Vorlage exportieren"
+            },
+            "studyTemplates": {
+                "importTooltip": "Vorlage importieren",
+                "exportAllTooltip": "Alle Vorlagen exportieren",
+                "importTitle": "Studienvorlagen importieren",
+                "exportTitle": "Studienvorlage exportieren"
+            }
         }
     }
 }
