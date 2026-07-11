@@ -25,13 +25,11 @@
         <p class="text-success mb-2">
           Loaded {{ Object.keys(settingsFromFile).length }} setting(s) from file. Click Next to continue to the summary.
         </p>
-        <button
+        <BasicButton
           class="btn btn-link btn-sm p-0 text-secondary"
-          type="button"
+          text="Clear and configure manually instead"
           @click="$emit('clear-import')"
-        >
-          Clear and configure manually instead
-        </button>
+        />
       </template>
       <template v-else>
         <p class="text-muted mb-3">

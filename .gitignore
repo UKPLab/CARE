@@ -28,6 +28,8 @@ version.json
 #modules
 utils/modules/editor-delta-conversion/node_modules
 utils/modules/editor-delta-conversion/coverage
+utils/modules/assessment-score/node_modules
+utils/modules/assessment-score/coverage
 
 yarn-error.log
 .tox
