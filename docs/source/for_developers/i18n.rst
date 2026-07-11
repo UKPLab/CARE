@@ -15,7 +15,7 @@ All translation keys live under ``utils/modules/i18n/``:
 
 Related code:
 
-* ``frontend/src/assets/utils.js`` — ``resolveApiMessage``, ``translateMaybeKey``
+* ``frontend/src/assets/utils.js`` — ``resolveApiMessage``, ``translateMaybeKey``, ``formatLocalized*``
 * ``frontend/src/assets/locale.js`` — language switcher, ``app.locale``
 * ``backend/utils/i18n.js`` — ``resolveLogText`` (logs)
 * ``backend/db/migration-i18n-utils.js`` — ``resolveEnText`` (migration rollbacks)
@@ -633,6 +633,79 @@ Locale helpers
      - Browser storage
    * - ``applyLocale(i18n, code)``
      - Set active ``vue-i18n`` locale
+
+Date and time formatting (formatLocalized*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**File:** ``frontend/src/assets/utils.js``
+
+Format **dates and times** in the user's **active UI locale** (the same ``en`` / ``de`` code as ``vue-i18n``) 
+picked in **Preferences**.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Function
+     - Output
+   * - ``formatLocalizedDate(value, options?)``
+     - Date only (e.g. ``29/05/2026`` in DE, ``5/29/2026`` in EN)
+   * - ``formatLocalizedTime(value, options?)``
+     - Time only (e.g. ``14:30:00``)
+   * - ``formatLocalizedDateTime(value, options?)``
+     - Date and time together
+
+**How to use**
+
+**1. Import** from ``@/assets/utils``:
+
+.. code-block:: javascript
+
+   import { formatLocalizedDate, formatLocalizedDateTime } from "@/assets/utils";
+
+**2. Expose in the component**:
+
+.. code-block:: javascript
+
+   export default {
+     methods: {
+       formatLocalizedDate,
+       formatLocalizedDateTime,
+     },
+   };
+
+**3. Use in the template:**
+
+.. code-block:: html
+
+   <!-- Before — follows OS locale, not app locale -->
+   <span>{{ new Date(user.lastLoginAt).toLocaleDateString() }}</span>
+
+   <!-- After — follows active UI locale -->
+   <span>{{ formatLocalizedDate(user.lastLoginAt) }}</span>
+
+**Format while preparing table rows** (common pattern — no need to expose in :code:`methods`):
+
+.. code-block:: javascript
+
+   import { formatLocalizedDate } from "@/assets/utils";
+
+   computed: {
+     usersForTable() {
+       return this.users.map((user) => ({
+         ...user,
+         lastLoginAt: user.lastLoginAt ? formatLocalizedDate(user.lastLoginAt) : "-",
+       }));
+     },
+   },
+
+Optional ``Intl.DateTimeFormat`` options as the second argument (:code:`options`) — same shape as for
+:code:`Date.prototype.toLocaleDateString`, :code:`toLocaleTimeString`, and :code:`toLocaleString`:
+
+.. code-block:: javascript
+
+   formatLocalizedDate(session.start, { year: "numeric", month: "short", day: "numeric" });
+   formatLocalizedTime(edit.createdAt, { hour: "2-digit", minute: "2-digit" });
+
 
 .. _i18n-backend:
 
