@@ -67,7 +67,7 @@
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
     <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
-    <AssignmentModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
+    <AssignmentModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" :bulk="true" @hide="modals.bulkAssignments = false"/>
     <AssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" :bulk="false" @hide="modals.singleAssignment = false"/>
     <PublishAssessmentModal ref="publishAssessmentModal"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
