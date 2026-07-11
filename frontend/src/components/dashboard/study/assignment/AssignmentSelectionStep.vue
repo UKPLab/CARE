@@ -230,7 +230,6 @@ export default {
   watch: {
     selectedAssignments: {
       handler(val) {
-        console.log('[AssignmentSelectionStep] selectedAssignments changed:', val);
         this.$emit('update:modalValue', val);
         this.$emit('update:selectedAssignmentUserIds', this.selectedAssignmentUserIds);
       },

@@ -20,7 +20,7 @@
           :key="`template-step-${stepResetKey}`"
           ref="templateSelectionStep"
           :modal-value="templateStepModalValue"
-          @update:modalValue="templateStepModalValue = $event"
+          @update:modal-value="templateStepModalValue = $event"
           @update:assignmentType="assignmentType = $event"
           @update:workflowSteps="workflowSteps = $event"
           @update:workflowStepsAssignment="workflowStepsAssignment = $event"

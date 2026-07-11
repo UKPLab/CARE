@@ -120,7 +120,6 @@ export default {
       if (this.modalValue.workflowMapping) this.workflowMapping = { ...this.modalValue.workflowMapping };
       if (this.modalValue.newStudyOwner) this.newStudyOwner = this.modalValue.newStudyOwner;
     }
-    console.log('[WorkflowMappingStep] mounted isValid:', this.isValid);
     this.$emit('update:isValid', this.isValid);
   },
   methods: {
@@ -161,24 +160,6 @@ export default {
         }
       }
       return options;
-    },
-    getSubmission(studyId) {
-      const studySteps = this.$store.getters["table/study_step/getFiltered"](
-          s => s.studyId === studyId
-      ) || [];
-      for (const step of studySteps) {
-        if (step.stepType === 1 && step.documentId !== null) {
-          let document = this.$store.getters["table/document/get"](step.documentId);
-          while (document && document.parentDocumentId !== null) {
-            document = this.$store.getters["table/document/get"](document.parentDocumentId);
-          }
-          if (document && document.submissionId) {
-            const submission = this.$store.getters["table/submission/get"](document.submissionId);
-            if (submission) return submission;
-          }
-        }
-      }
-      return null;
     },
     reset() {
       this.targetWorkflowId = null;

@@ -57,16 +57,19 @@ export default {
       return [...new Set(this.selectedReviewer.flatMap(obj => obj.roles))];
     },
     roleSelectionFields() {
-      return this.selectedReviewerRoles.map(roleId => ({
-        key: this.roles.find(role => role.id === roleId).id,
-        label: "Number of reviews for role: " + this.roles.find(role => role.id === roleId).name,
-        type: "slider",
-        class: 'custom-slider-class',
-        min: 0,
-        max: 10,
-        step: 1,
-        unit: 'review(s)',
-      }));
+      return this.selectedReviewerRoles.map(roleId => {
+        const role = this.roles.find(r => r.id === roleId);
+        return {
+          key: role.id,
+          label: "Number of reviews for role: " + role.name,
+          type: "slider",
+          class: 'custom-slider-class',
+          min: 0,
+          max: 10,
+          step: 1,
+          unit: 'review(s)',
+        };
+      });
     },
     reviewerNumberOfAssignments() {
       return Object.values(this.reviewerSelection)

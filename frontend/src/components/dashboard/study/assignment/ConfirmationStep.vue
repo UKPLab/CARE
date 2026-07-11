@@ -11,10 +11,9 @@
         <ul>
           <li v-for="(stepAssignment, index) in workflowStepsAssignments[0]" :key="stepAssignment.workflowStepId">
             - Workflow Step {{ index + 1 }}:
-            <span v-if="stepAssignment.documentId && documents.find(doc => doc.id === stepAssignment.documentId)">
-              {{ documents.find(doc => doc.id === stepAssignment.documentId).name }}
-              ({{ reviewer.find(u => u.id === documents.find(doc => doc.id === stepAssignment.documentId).userId)?.firstName }}
-               {{ reviewer.find(u => u.id === documents.find(doc => doc.id === stepAssignment.documentId).userId)?.lastName }})
+            <span v-if="stepAssignment.documentId && getDoc(stepAssignment.documentId)">
+              {{ getDoc(stepAssignment.documentId).name }}
+              ({{ getDocReviewerName(stepAssignment) }})
             </span>
             <span v-else>Create new document</span>
           </li>
@@ -127,13 +126,6 @@
  */
 export default {
   name: "ConfirmationStep",
-  props: {
-    variant: {
-      type: String,
-      required: true,
-      validator: v => ['doc-sub-single', 'doc-sub-bulk', 'session-single', 'session-bulk'].includes(v),
-    },
-  },
   inject: {
     template: { type: Object, required: false, default: null },
     workflow: { type: Object, required: false, default: null },
@@ -150,6 +142,13 @@ export default {
     roles: { type: Array, required: false, default: () => [] },
     roleSelection: { type: Object, required: false, default: () => ({}) },
     reviewerSelection: { type: Object, required: false, default: () => ({}) },
+  },
+  props: {
+    variant: {
+      type: String,
+      required: true,
+      validator: v => ['doc-sub-single', 'doc-sub-bulk', 'session-single', 'session-bulk'].includes(v),
+    },
   },
   computed: {
     targetWorkflowName() {
@@ -183,6 +182,16 @@ export default {
           }).filter(userId => userId !== null)
       );
       return this.selectedReviewer.filter(rev => !selectedSessionUserIds.has(rev.id));
+    },
+  },
+  methods: {
+    getDoc(documentId) {
+      return this.documents.find(doc => doc.id === documentId);
+    },
+    getDocReviewerName(stepAssignment) {
+      const doc = this.getDoc(stepAssignment.documentId);
+      const user = doc ? this.reviewer.find(u => u.id === doc.userId) : null;
+      return user ? `${user.firstName} ${user.lastName}` : '';
     },
   },
 };
