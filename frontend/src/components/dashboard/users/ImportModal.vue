@@ -57,7 +57,7 @@
               </div>
               <BasicButton
                 icon="x-circle-fill"
-                tooltip="Clear file"
+                :tooltip="$t('dashboard.users.clearFile')"
                 @click="clearFile"
               />
             </div>

@@ -92,7 +92,7 @@ class UserSocket extends Socket {
      */
     async getUserDetails(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("User rights and argument mismatch");
+            throw new Error("errors.users.userRightsArgumentMismatch");
         }
         return await this.models["user"].getUserDetails(data);
     }
@@ -112,7 +112,7 @@ class UserSocket extends Socket {
      */
     async updateUserDetails(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("User rights and argument mismatch");
+            throw new Error("errors.users.userRightsArgumentMismatch");
         }
         return await this.models["user"].updateUserDetails(data, options);
     }

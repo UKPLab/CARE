@@ -19,7 +19,7 @@
       <template v-if="setting.type === 'edits'">
         <EditorModal
           :model-value="setting.value"
-          :title="'Edit ' + setting.key"
+          :title="$t('common.editItem', { item: setting.key })"
           @update:model-value="$emit('update:value', $event)"
         />
       </template>
@@ -50,7 +50,7 @@
             :value="setting.value"
             type="color"
             class="form-control form-control-color"
-            title="Pick a color"
+            :title="$t('settings.pickColor')"
             @input="updateColorValue($event.target.value)"
           />
           <input
@@ -69,7 +69,7 @@
           <BasicButton
             v-if="hasResetValue"
             class="btn btn-outline-secondary btn-sm"
-            text="Reset"
+            :text="$t('common.reset')"
             :disabled="(setting.value || '').toLowerCase() === resetValue.toLowerCase()"
             @click="$emit('update:value', resetValue)"
           />
@@ -98,7 +98,7 @@
           class="form-select"
           @change="$emit('update:value', $event.target.value)"
         >
-          <option value="">None (use default email)</option>
+          <option value="">{{ $t('settings.noneUseDefaultEmail') }}</option>
           <option
             v-for="template in filteredEmailTemplates"
             :key="template.id"

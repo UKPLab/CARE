@@ -307,6 +307,7 @@
     "validationCompleted": "Validierung abgeschlossen",
     "validationCompletedMessage": "CSV ist gültig!",
     "pleaseUploadCsv": "Bitte laden Sie eine CSV-Datei hoch",
+    "clearFile": "Datei entfernen",
     "viewUserRight": "Benutzerberechtigung anzeigen",
     "userHasNoAssignedRights": "Dieser Benutzer hat keine zugewiesenen Berechtigungen",
     "userRole": "Benutzerrolle",
