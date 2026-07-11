@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
                 right: "frontend.dashboard.studies.view.userPrivateInfo",
                 columns: ["firstName", "lastName", "email", "extId"]
             },
+            {
+                right: "frontend.dashboard.studies.view.userPublicInfo",
+                columns:["id", "userName"]
+            }
         ];
 
         /**
