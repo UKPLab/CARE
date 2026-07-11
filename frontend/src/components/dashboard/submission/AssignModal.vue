@@ -28,14 +28,12 @@
               {{ selectionPercentage }}% → {{ selectionTargetCount }} of {{ selectedSubmissions.length }}
             </span>
 
-            <button
-                type="button"
+            <BasicButton
                 class="btn btn-sm btn-outline-primary text-nowrap"
+                text="Apply"
                 :disabled="selectedSubmissions.length === 0"
                 @click="applySelectionPercentage"
-            >
-              Apply
-            </button>
+            />
           </div>
 
         </div>
@@ -75,6 +73,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 
@@ -88,7 +87,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "AssignModal",
-  components: {BasicForm, BasicTable, StepperModal},
+  components: {BasicForm, BasicTable, StepperModal, BasicButton},
   subscribeTable: ["submission", "user", "document", "document_data"],
   data() {
     return {

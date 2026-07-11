@@ -18,48 +18,15 @@
           :fields="dataSelectionFields"
       />
     </template>
-
-    <!--
     <template #step-2>
-      <div class="table-scroll-container">
-        <div class="list-group">
-          <button
-            v-for="(f, i) in filter"
-            :key="f"
-            type="button"
-            class="list-group-item d-flex justify-content-between list-group-item-action"
-            @click="openFilterModal(i)">
-            <div v-if="f.data" class="ms-2 me-auto">
-              <div class="fw-bold">Filter for {{ f.data.options.table }}</div>
-              Include entries from {{ f.data.options.table }}
-            </div>
-            <span v-if="f.data"  class="badge bg-primary rounded-pill">{{ f.data.selected.length }} </span>
-            <FilterModal
-              :ref="'filter_' + i"
-              v-model="f.data"/>
-          </button>
-        </div>
-        <br>
-        <BasicButton
-          class="btn btn-primary"
-          title="Add Filter"
-          @click="filter.push({data: null})"
-        />
-      </div>
-    </template>
-    -->
-
-    <template #step-2>
-
       <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>Exporting a list of all study sessions with hash:</p>
-
         <p>
           Total Studies: {{ studies.length }}<br>
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="dataSelection.exportType === 'submissions'">
+      <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
         <StepSelectStudents 
           v-if="dataSelection.projectId"
           v-model="submissionSelection" 
@@ -69,7 +36,6 @@
       </div>
       <div v-else>
         <p>Exporting all data</p>
-
         <p>
           Total Studies: {{ studies.length }}<br>
           Total Study Sessions: {{ studySessions.length }}<br>
@@ -83,28 +49,32 @@
           Total Edits: {{ edits.length }}<br>
         </p>
       </div>
-
     </template>
-
-    
-    <template v-if="dataSelection.exportType === 'submissions'" #step-3>
+    <template 
+      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      #step-3 
+    >
       <StepOptions 
         v-model:generate-aliases="generateAliases"
         v-model:faker-seed="fakerSeed"
+        v-model:grade-format="gradeFormat"
+        v-model:merge-csv-files="mergeCsvFiles"
+        :show-grade-format="dataSelection.exportType === 'grades'"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
     </template>
-
-    <template v-if="dataSelection.exportType === 'submissions'" #step-4>
+    <template 
+      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      #step-4
+    >
       <StepConfirmDownload 
-        v-if="dataSelection.exportType === 'submissions'"
+        v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
         :wait="wait"
         :generate-aliases="generateAliases"
         :submission-selection="submissionSelection"
       />
       <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
     </template>
-
   </StepperModal>
 </template>
 
@@ -126,7 +96,7 @@ import getServerURL from "@/assets/serverUrl.js";
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska, Mélissa Loew
+ * @author Dennis Zyska, Mélissa Loew, Linyin Huang
  */
 export default {
   name: "ExportProjectModal",
@@ -167,12 +137,14 @@ export default {
       // Data for Export Submissions
       submissionSelection: [],
       generateAliases:false,
-      fakerSeed: 846569412
+      fakerSeed: 846569412,
+      gradeFormat: "json",
+      mergeCsvFiles: false
     };
   },
   computed: {
     stepValid() {
-      if (this.dataSelection.exportType === "submissions") {
+      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
           !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
           this.submissionSelection.length > 0, // must select at least one student
@@ -186,7 +158,7 @@ export default {
       ];
     },
     steps() {
-      if (this.dataSelection.exportType === 'submissions') {
+      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
           { title: "Settings" },
           { title: "Select Students" },
@@ -218,6 +190,7 @@ export default {
           options: [
             {name: "Export a list of all reviewers", value: "reviewerList"},
             {name: "Export submissions", value: "submissions"},
+            {name: "Export grades", value: "grades"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -289,6 +262,8 @@ export default {
         this.downloadReviewerList();
       } else if (this.dataSelection.exportType === "submissions") {
         this.downloadSubmissions();
+      } else if (this.dataSelection.exportType === "grades") {
+        this.downloadGrades();
       } else {
         this.downloadAllData();
       }
@@ -363,6 +338,24 @@ export default {
           fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
 
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadGrades() {
+      try {
+        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'grades',
+          userIds: selectedUserIds,
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null,
+          gradeFormat: this.gradeFormat,
+          mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+        });
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);

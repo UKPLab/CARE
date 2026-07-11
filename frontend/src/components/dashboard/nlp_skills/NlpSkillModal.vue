@@ -22,19 +22,18 @@
       </div>
     </template>
     <template #footer>
-       <button
+       <BasicButton
         class="btn btn-secondary"
+        text="Close"
         data-bs-dismiss="modal"
-        type="button"
-      >
-        Close
-      </button>
+      />
     </template>
   </Modal>
 </template>
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import SkillListing from "./SkillListing.vue";
 
 /* NlpSkillModal.vue - modal for details on a given NLP Skill
@@ -44,7 +43,7 @@ Source: -
 */
 export default {
   name: "NlpSkillModal",
-  components: {SkillListing, Modal},
+  components: {SkillListing, Modal, BasicButton},
   data() {
     return {
       show: false,
