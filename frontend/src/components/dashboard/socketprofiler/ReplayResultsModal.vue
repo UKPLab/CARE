@@ -24,104 +24,17 @@
         </div>
       </div>
 
-      <!-- OVERVIEW MODE: one row per iteration -->
-      <div v-if="selectedIterationLevel === null">
-        <BasicTable
-          :columns="iterationColumns"
-          :data="iterationRows"
-          :options="iterationTableOptions"
-          :buttons="iterationButtons"
-          :max-table-height="500"
-          @action="handleIterationAction"
-        />
-      </div>
+      <!-- One row per iteration; drilling in opens a child modal -->
+      <BasicTable
+        :columns="iterationColumns"
+        :data="iterationRows"
+        :options="iterationTableOptions"
+        :buttons="iterationButtons"
+        :max-table-height="500"
+        @action="handleIterationAction"
+      />
 
-      <!-- DETAIL MODE: traces for one iteration, split per session-instance -->
-      <div v-else>
-        <div class="d-flex align-items-center gap-2 mb-3">
-          <BasicButton
-            class="btn-outline-secondary btn-sm"
-            text="Back to overview"
-            icon="arrow-left"
-            @click="backToOverview"
-          />
-          <h5 class="mb-0" :class="selectedIteration.passed ? 'text-success' : 'text-danger'">
-            Iteration {{ selectedIteration.level }} — {{ selectedIteration.sessions }} session(s) — {{ selectedIteration.passed ? 'PASSED' : 'FAILED' }}
-          </h5>
-        </div>
-
-        <!-- Per-session overview for this iteration -->
-        <BasicTable
-          :columns="sessionColumns"
-          :data="sessionRows"
-          :options="sessionTableOptions"
-          :buttons="sessionButtons"
-          :max-table-height="250"
-          class="mb-4"
-          @action="handleSessionAction"
-        />
-
-        <div
-          v-for="(sessionResult, idx) in selectedIteration.results"
-          v-show="selectedSessionIdx === idx"
-          :key="idx"
-          class="session-block mb-3 p-3"
-        >
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <p class="mb-0 fw-bold">
-              Session {{ idx + 1 }} of {{ selectedIteration.results.length }}
-              <span class="text-muted">— {{ sessionResult.recordingName || 'Recording ' + sessionResult.recordingId }}</span>
-              <span class="text-muted">({{ sessionResult.userName }})</span>
-              — {{ sessionResult.passed }}/{{ sessionResult.total }} passed
-            </p>
-            <BasicButton
-              class="btn-outline-secondary btn-sm"
-              text="Close"
-              icon="x"
-              @click="closeSession"
-            />
-          </div>
-          <BasicTable
-            :columns="traceColumns"
-            :data="mergeTraces(sessionResult, selectedIteration.level, idx)"
-            :options="traceTableOptions"
-            :buttons="traceButtons"
-            :max-table-height="300"
-            @action="handleTraceAction"
-          />
-          <div
-            v-if="selectedTrace && selectedTraceSessionIdx === idx"
-            class="db-changes-panel mt-2 p-3"
-          >
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-bold">
-                DB Changes for: <code>{{ selectedTrace.action }}</code>
-              </span>
-              <BasicButton
-                class="btn-outline-secondary btn-sm"
-                text="Close"
-                icon="x"
-                @click="clearSelection"
-              />
-            </div>
-            <div v-if="selectedTrace.dbChanges && selectedTrace.dbChanges.length > 0">
-              <BasicTable
-                :columns="dbChangeColumns"
-                :data="selectedTrace.dbChanges.map((c, i) => ({
-                  id: i,
-                  table: c.table,
-                  recordIds: c.records ? c.records.map(r => r.id).join(', ') : '-',
-                  fields: c.records && c.records[0] ? c.records[0].fields.join(', ') : '-',
-                  recordCount: c.recordCount,
-                }))"
-                :options="dbChangeTableOptions"
-                :max-table-height="150"
-              />
-            </div>
-            <p v-else class="text-muted mb-0">No database changes for this trace.</p>
-          </div>
-        </div>
-      </div>
+      <IterationSessionsModal ref="sessionsModal" />
     </template>
     <template #footer>
       <BasicButton
@@ -137,17 +50,23 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import IterationSessionsModal from "./IterationSessionsModal.vue";
 
+/**
+ * Top-level replay-results modal: shows one row per scaling iteration. Drilling
+ * into an iteration opens a nested sessions modal, which in turn opens a traces
+ * modal, which opens a DB-changes modal — each a child BasicModal that restores
+ * its parent on close. Public API (open / openProgress / stopProgress / close)
+ * is unchanged so SocketProfiler.vue drives it exactly as before.
+ *
+ * @author: Ilyas Mohammed
+ */
 export default {
   name: "ReplayResultsModal",
-  components: { BasicModal, BasicButton, BasicTable },
+  components: { BasicModal, BasicButton, BasicTable, IterationSessionsModal },
   data() {
     return {
       results: [],
-      selectedIterationLevel: null,
-      selectedTrace: null,
-      selectedSessionIdx: null,
-      selectedTraceSessionIdx: null,
       iterationTableOptions: {
         striped: true,
         hover: true,
@@ -172,93 +91,12 @@ export default {
           icon: "arrow-right-circle",
           options: {
             iconOnly: true,
-            specifiers: {
-              "btn-outline-primary": true,
-            },
+            specifiers: { "btn-outline-primary": true },
           },
-          title: "View iteration traces",
+          title: "View iteration sessions",
           action: "viewIteration",
         },
       ],
-      sessionTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: true,
-        search: false,
-      },
-      sessionColumns: [
-        { name: "Session", key: "label", sortable: true },
-        { name: "Recording", key: "recordingName", sortable: true },
-        { name: "User", key: "userName", sortable: true },
-        { name: "Passed", key: "passedDisplay", sortable: true },
-        { name: "Failed", key: "failed", sortable: true },
-        { name: "Avg Latency", key: "avgDisplay", sortable: true },
-        { name: "Max Latency", key: "maxDisplay", sortable: true },
-      ],
-      sessionButtons: [
-        {
-          icon: "arrow-right-circle",
-          options: {
-            iconOnly: true,
-            specifiers: { "btn-outline-primary": true },
-          },
-          title: "View session traces",
-          action: "viewSession",
-        },
-      ],
-      traceTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: true,
-        pagination: 20,
-        search: true,
-      },
-      traceColumns: [
-        { name: "#", key: "seq", sortable: true },
-        { name: "Action", key: "action", sortable: true },
-        {
-          name: "Status",
-          key: "status",
-          sortable: true,
-          filter: [
-            { key: "passed", name: "Passed" },
-            { key: "failed", name: "Failed" },
-          ],
-        },
-        { name: "Latency (ms)", key: "latencyDisplay", sortable: true },
-        { name: "Details", key: "message" },
-        { name: "DB", key: "hasDbChanges" },
-      ],
-      traceButtons: [
-        {
-          icon: "database",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-info": true,
-            },
-          },
-          title: "View DB changes",
-          action: "viewDbChanges",
-        },
-      ],
-      dbChangeColumns: [
-        { name: "Table", key: "table", sortable: true },
-        { name: "Record IDs", key: "recordIds" },
-        { name: "Fields Modified", key: "fields" },
-        { name: "Records", key: "recordCount", sortable: true },
-      ],
-      dbChangeTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: true,
-      },
     };
   },
   computed: {
@@ -279,6 +117,7 @@ export default {
      * One row per iteration for the overview table. Each row carries the
      * computed metrics plus the raw iteration level so the View action can
      * open the matching detail.
+     * @returns {Array<Object>}
      */
     iterationRows() {
       return this.results.map(iteration => {
@@ -296,47 +135,15 @@ export default {
         };
       });
     },
-    selectedIteration() {
-      if (this.selectedIterationLevel === null) return null;
-      return this.results.find(it => it.level === this.selectedIterationLevel) || null;
-    },
-    /**
-     * One row per session-instance in the open iteration, summarising that
-     * single session's pass/fail and latency. Mirrors the top-level iteration
-     * overview but at the session granularity within one iteration.
-     */
-    sessionRows() {
-      const it = this.selectedIteration;
-      if (!it) return [];
-      return (it.results || []).map((r, idx) => {
-        const lat = (r.latencies || [])
-          .map(l => l.latency)
-          .filter(v => typeof v === "number");
-        const avg = lat.length
-          ? Math.round(lat.reduce((a, b) => a + b, 0) / lat.length)
-          : null;
-        const max = lat.length ? Math.max(...lat) : null;
-        return {
-          id: idx,
-          label: "Session " + (idx + 1) + " of " + it.results.length,
-          recordingName: r.recordingName || ("Recording " + r.recordingId),
-          userName: r.userName,
-          passedDisplay: (r.passed || 0) + "/" + (r.total || 0),
-          failed: r.failed || 0,
-          avgDisplay: avg !== null ? avg + "ms" : "-",
-          maxDisplay: max !== null ? max + "ms" : "-",
-        };
-      });
-    },
   },
   methods: {
+    /**
+     * Open the modal with a full replay result set.
+     * @param {Array<Object>} results - iteration results from replayRun
+     */
     open(results) {
       this.results = results || [];
-      this.selectedIterationLevel = null;
-      this.selectedTrace = null;
-      this.selectedTraceSessionIdx = null;
       this.$refs.modal.open();
-      this.selectedSessionIdx = null;
     },
     /**
      * Open the modal in progress mode before a replay run. Mints a progress
@@ -347,21 +154,10 @@ export default {
      */
     openProgress() {
       this.results = [];
-      this.selectedIterationLevel = null;
       this.$refs.modal.open();
       const id = this.$refs.modal.getProgressId();
       this.$refs.modal.startProgress();
       return id;
-    },
-    handleSessionAction(data) {
-      if (data.action === "viewSession") {
-        this.selectedSessionIdx = data.params.id;
-        this.selectedTrace = null;
-      }
-    },
-    closeSession() {
-      this.selectedSessionIdx = null;
-      this.selectedTrace = null;
     },
     /**
      * Stop progress mode (called when the replay ack returns). Leaves the
@@ -375,10 +171,20 @@ export default {
     close() {
       this.$refs.modal.close();
     },
+    handleIterationAction(data) {
+      if (data.action === "viewIteration") {
+        const iteration = this.results.find(it => it.level === data.params.level);
+        if (iteration) {
+          this.$refs.sessionsModal.open(iteration);
+        }
+      }
+    },
     /**
      * Compute the per-iteration overview: session count, pass/total/fail
      * tallies, average/max latency across every session's traces, and the
      * backend wall-clock duration of the iteration's parallel run.
+     * @param {Object} iteration
+     * @returns {Object}
      */
     overview(iteration) {
       let total = 0;
@@ -412,76 +218,6 @@ export default {
       if (ms < 1000) return ms + "ms";
       return (ms / 1000).toFixed(1) + "s";
     },
-    handleIterationAction(data) {
-      if (data.action === "viewIteration") {
-        this.selectedIterationLevel = data.params.level;
-        this.selectedTrace = null;
-        this.selectedTraceSessionIdx = null;
-        this.selectedSessionIdx = null;
-      }
-    },
-    backToOverview() {
-      this.selectedIterationLevel = null;
-      this.selectedTrace = null;
-      this.selectedTraceSessionIdx = null;
-      this.selectedSessionIdx = null;
-    },
-    clearSelection() {
-      this.selectedTrace = null;
-      this.selectedTraceSessionIdx = null;
-    },
-    handleTraceAction(data) {
-      if (data.action === "viewDbChanges") {
-        this.selectedTrace = data.params;
-        this.selectedTraceSessionIdx = data.params.sessionIdx;
-      }
-    },
-    mergeTraces(sessionResult, level, sessionIdx) {
-      const all = [];
-      for (const l of (sessionResult.latencies || [])) {
-        all.push({
-          id: l.traceId,
-          action: l.action,
-          status: "passed",
-          latencyDisplay: l.latency + "ms",
-          message: "",
-          dbChanges: l.dbChanges || [],
-          hasDbChanges: (l.dbChanges && l.dbChanges.length > 0) ? "Yes" : "",
-          level,
-          sessionIdx,
-        });
-      }
-      for (const e of (sessionResult.errors || [])) {
-        all.push({
-          id: e.traceId || 0,
-          action: e.action,
-          status: "failed",
-          latencyDisplay: "-",
-          message: e.message,
-          dbChanges: e.dbChanges || [],
-          hasDbChanges: (e.dbChanges && e.dbChanges.length > 0) ? "Yes" : "",
-          level,
-          sessionIdx,
-        });
-      }
-      all.sort((a, b) => a.id - b.id);
-      all.forEach((t, i) => { t.seq = i + 1; });
-      return all;
-    },
   },
 };
 </script>
-
-<style scoped>
-.db-changes-panel {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-}
-
-.session-block {
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  background-color: #fafafa;
-}
-</style>
