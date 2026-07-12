@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolveRecordings } = require('./perf-recordings');
+const { resolvePayload } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { printTraceStats, printCulprit } = require('./perf-trace-stats');
 const { MetricSampler } = require('./perf-metrics');
@@ -18,8 +18,8 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-r
 async function runRamp(cfg, ctx) {
     const capture = makeOutputCapture();
     capture.start();
-    const ids = await resolveRecordings(cfg, ctx);
-    console.log('  ramp recordings: ' + ids.join(', '));
+    const { recordingIds, sessions } = await resolvePayload(cfg, ctx);
+    console.log('  ramp input: ' + (sessions.length ? `${sessions.length} file session(s)` : `recordings ${recordingIds.join(', ')}`));
     console.log(`Running ramp: up to ${cfg.maxIterations} iterations, stop on failure ...`);
 
     const progressId = randomUUID();
@@ -36,7 +36,8 @@ async function runRamp(cfg, ctx) {
 
     // The previously broken/duplicate emitWithAck call, now restored
     const ack = await ctx.emitWithAck('replayRun', {
-        recordingIds: ids,
+        recordingIds,
+        sessions,
         timingMode: 'fast',
         continueOnFailure: false,
         maxIterations: cfg.maxIterations,

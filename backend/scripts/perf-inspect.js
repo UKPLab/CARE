@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolveRecordings } = require('./perf-recordings');
+const { resolvePayload } = require('./perf-recordings');
 
 // Plumbing/infrastructure events — never a user-story action. Blocklist for the
 // obvious ones; the *Refresh / *Subscribe suffixes catch the families.
@@ -39,9 +39,19 @@ function isMeaningful(action) {
  * @returns {Promise<number>} exit code (0; inspection is informational)
  */
 async function runInspect(cfg, ctx) {
-    const ids = await resolveRecordings(cfg, ctx);
+    const { recordingIds, sessions } = await resolvePayload(cfg, ctx);
 
-    for (const id of ids) {
+    // File path: the traces are already in hand — analyze them directly,
+    // no server round-trip.
+    if (sessions.length) {
+        for (const session of sessions) {
+            analyzeRecording(session.recordingName || session.sessionKey, session.traces || []);
+        }
+        return 0;
+    }
+
+    // DB path: fetch each recording's traces from the server by id.
+    for (const id of recordingIds) {
         const ack = await ctx.emitWithAck('recordingGetTraces', { id });
         if (!ack || !ack.success) {
             console.log(`\n=== Recording ${id} ===`);

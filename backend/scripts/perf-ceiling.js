@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolveRecordings } = require('./perf-recordings');
+const { resolvePayload } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { MetricSampler } = require('./perf-metrics');
 const { printTraceStats } = require('./perf-trace-stats');
@@ -18,11 +18,11 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-r
 async function runCeiling(cfg, ctx) {
     const capture = makeOutputCapture();
     capture.start();
-    const ids = await resolveRecordings(cfg, ctx);
+    const { recordingIds, sessions } = await resolvePayload(cfg, ctx);
     const step = cfg.step > 0 ? cfg.step : 5;
     const hardCap = cfg.maxIterations > 0 ? cfg.maxIterations : Infinity;
 
-    console.log('  ceiling recordings: ' + ids.join(', '));
+    console.log('  ceiling input: ' + (sessions.length ? `${sessions.length} file session(s)` : recordingIds.join(', ')));
     console.log(`Climbing concurrency by ${step} each level until failure or p95 > ${cfg.latencyThreshold}ms ...`);
     console.log('  level  concurrency  passed  failed  avgMs  p95Ms  thru/s  wait  status');
 
@@ -49,7 +49,8 @@ async function runCeiling(cfg, ctx) {
         ctx.socket.on('progressUpdate', onProgress);
 
         const ack = await ctx.emitWithAck('replayRun', {
-            recordingIds: ids,
+            recordingIds,
+            sessions,
             timingMode: 'fast',
             ackTimeout: cfg.ackTimeout,
             singleLevel: concurrency,
@@ -62,7 +63,7 @@ async function runCeiling(cfg, ctx) {
         if (!ack || !ack.success) {
             await sampler.stop();
             console.error('\nCEILING ERROR — replayRun failed: ' + (ack && ack.message));
-            capture.stop();
+            capture.stop();d
             return 1;
         }
 

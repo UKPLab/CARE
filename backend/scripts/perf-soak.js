@@ -1,7 +1,7 @@
 'use strict';
 
 const { randomUUID } = require('crypto');
-const { resolveRecordings } = require('./perf-recordings');
+const { resolvePayload } = require('./perf-recordings');
 const { MetricSampler } = require('./perf-metrics');
 const { printTraceStats, printMemoryCorrelation } = require('./perf-trace-stats');
 const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
@@ -18,11 +18,11 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-r
 async function runSoak(cfg, ctx) {
     const capture = makeOutputCapture();
     capture.start();
-    const ids = await resolveRecordings(cfg, ctx);
+    const { recordingIds, sessions } = await resolvePayload(cfg, ctx);
     const durationMs = cfg.duration;
     const concurrency = cfg.concurrency;
 
-    console.log('  soak recordings: ' + ids.join(', '));
+    console.log('  soak input: ' + (sessions.length ? `${sessions.length} file session(s)` : recordingIds.join(', ')));
     console.log(`Holding ${concurrency} concurrent sessions for ${Math.round(durationMs / 1000)}s, sampling continuously ...`);
     console.log('  sample  elapsed  passed  failed  avgMs  p95Ms  thru/s');
 
@@ -45,7 +45,8 @@ async function runSoak(cfg, ctx) {
         ctx.socket.on('progressUpdate', onProgress);
 
         const ack = await ctx.emitWithAck('replayRun', {
-            recordingIds: ids,
+            recordingIds,
+            sessions,
             timingMode: 'fast',
             ackTimeout: cfg.ackTimeout,
             singleLevel: concurrency,

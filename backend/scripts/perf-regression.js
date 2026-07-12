@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolveRecordings } = require('./perf-recordings');
+const { resolvePayload } = require('./perf-recordings');
 const { printTraceStats } = require('./perf-trace-stats');
 const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
@@ -15,12 +15,13 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-r
 async function runRegression(cfg, ctx) {
     const capture = makeOutputCapture();
     capture.start();
-    const ids = await resolveRecordings(cfg, ctx);
-    console.log('  regression recordings: ' + ids.join(', '));
+    const { recordingIds, sessions } = await resolvePayload(cfg, ctx);
+    console.log('  regression input: ' + (sessions.length ? `${sessions.length} file session(s)` : recordingIds.join(', ')));
 
     console.log('Running regression (replay once, all traces must pass) ...');
     const ack = await ctx.emitWithAck('replayRun', {
-        recordingIds: ids,
+        recordingIds,
+        sessions,
         timingMode: 'fast',
         continueOnFailure: true,   // run all stories so we report every failure, not just the first
         maxIterations: 1,          // once — no scaling

@@ -36,6 +36,7 @@ class ReplayerSocket extends Socket {
     async replayRun(data, options) {
         const {
             recordingIds,
+            sessions,
             timingMode = 'fast',
             continueOnFailure = false,
             maxIterations,
@@ -45,15 +46,23 @@ class ReplayerSocket extends Socket {
             singleLevel = null,
         } = data;
 
-        if (!Array.isArray(recordingIds) || recordingIds.length === 0) {
-            throw new Error('recordingIds must be a non-empty array');
+        const hasIds = Array.isArray(recordingIds) && recordingIds.length > 0;
+        const hasSessions = Array.isArray(sessions) && sessions.length > 0;
+        if (hasIds && hasSessions) {
+            throw new Error('Provide either recordingIds or sessions, not both');
+        }
+        if (!hasIds && !hasSessions) {
+            throw new Error('Provide recordingIds (DB replay) or sessions (file replay)');
         }
         if (!singleLevel && (!Number.isInteger(maxIterations) || maxIterations < 1)) {
             throw new Error('maxIterations must be a positive integer');
         }
 
-        // Pool sessions from every selected recording
-        const pool = await this.buildSessionPool(recordingIds);
+        // Pool from the DB (recordingIds) or straight from a file payload
+        // (sessions). Both return the same {sessions, userMap} shape.
+        const pool = hasSessions
+            ? await this.buildSessionPoolFromPayload(sessions)
+            : await this.buildSessionPool(recordingIds);
 
         if (pool.sessions.length === 0) {
             throw new Error('No replayable sessions found in selected recordings');
@@ -119,6 +128,54 @@ class ReplayerSocket extends Socket {
         });
         const userMap = new Map(users.map(u => [u.id, u]));
 
+        return { sessions, userMap };
+    }
+
+    /**
+     * Build the same {sessions, userMap} pool from exported recording files
+     * instead of the DB, so the CLI can replay without importing.
+     *
+     * The file's own userId values belong to the source database and won't map
+     * to a real user here, so — exactly as the DB import path already does —
+     * every file session replays as the caller running the tool (this.userId).
+     * One real user row is fetched for auth; the recording data never touches
+     * the DB.
+     *
+     * @param {Array<Object>} payloadSessions - Sessions from files; each is {sessionKey?, recordingName?, traces: Array<Object>}
+     * @returns {Promise<{sessions: Array, userMap: Map}>} Pooled sessions and the acting-user lookup
+     * @throws {Error} If the acting user cannot be resolved
+     */
+    async buildSessionPoolFromPayload(payloadSessions) {
+        const actingUser = await this.models['user'].getById(this.userId);
+        if (!actingUser) {
+            throw new Error('Could not resolve the acting user for file replay');
+        }
+
+        const sessions = [];
+        for (const incoming of payloadSessions) {
+            const rawTraces = Array.isArray(incoming.traces) ? incoming.traces : [];
+            const traces = rawTraces
+                .filter(t => t && t.direction === true)
+                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+            if (traces.length === 0) continue;
+
+            // Re-stamp onto the acting user so the worker and permission checks
+            // see a real, present user.
+            const stampedTraces = traces.map(t => ({ ...t, userId: actingUser.id }));
+
+            const sessionMap = this.groupTracesBySocket(stampedTraces);
+            for (const [key, session] of sessionMap) {
+                sessions.push({
+                    sessionKey: incoming.sessionKey || key,
+                    userId: actingUser.id,
+                    traces: session.traces,
+                    recordingId: null,
+                    recordingName: incoming.recordingName || 'file',
+                });
+            }
+        }
+
+        const userMap = new Map([[actingUser.id, actingUser]]);
         return { sessions, userMap };
     }
 
