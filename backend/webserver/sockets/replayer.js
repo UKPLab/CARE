@@ -68,7 +68,11 @@ class ReplayerSocket extends Socket {
             throw new Error('No replayable sessions found in selected recordings');
         }
 
-        const serverUrl = `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
+        // Replay-target URL. Defaults to the local content server, but can be
+        // overridden via REPLAY_TARGET_URL for deployments where the content
+        // server isn't on localhost or uses a non-standard host/port.
+        const serverUrl = process.env.REPLAY_TARGET_URL
+            || `http://localhost:${process.env.CONTENT_SERVER_PORT || 3001}`;
 
         if (Number.isInteger(singleLevel) && singleLevel > 0) {
             return await this.runOneLevel(pool, serverUrl, timingMode, singleLevel, ackTimeout, progressId);
