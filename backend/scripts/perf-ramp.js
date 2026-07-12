@@ -122,7 +122,9 @@ function reportRamp(levels, cfg, sampler) {
     if (sampler) {
         const rssMb = (b) => Math.round(b / 1024 / 1024);
         const rss = sampler.rssTrend();
-        console.log(`\n  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+        const heap = sampler.heapTrend();
+        console.log(`\n  memory (RSS):  ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+        console.log(`  memory (heap): ${rssMb(heap.first)}MB -> ${rssMb(heap.last)}MB, peak ${rssMb(sampler.peakHeap())}MB`);
         console.log(`  DB pool waiting: peak ${sampler.peakPoolWaiting()}`);
         const pg = sampler.pgStatsSummary();
         if (pg) {

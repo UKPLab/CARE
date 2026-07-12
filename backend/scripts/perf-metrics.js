@@ -82,6 +82,18 @@ class MetricSampler {
         return peak;
     }
 
+    /** Peak heapUsed (bytes) across all samples — often a truer leak signal
+     * than RSS, which can inflate from buffers/warmup and then plateau. */
+    peakHeap() {
+        let peak = 0;
+        for (const s of this.samples) {
+            if (s.health && typeof s.health.heapUsed === 'number' && s.health.heapUsed > peak) {
+                peak = s.health.heapUsed;
+            }
+        }
+        return peak;
+    }
+
     /**
      * Summarize Postgres-side stats across the run: deadlock/rollback growth
      * (delta of cumulative counters between first and last sample), peak
@@ -117,7 +129,16 @@ class MetricSampler {
         const withHealth = this.samples.filter(s => s.health);
         if (withHealth.length === 0) return { first: 0, last: 0 };
         return { first: withHealth[0].health.rss, last: withHealth[withHealth.length - 1].health.rss };
+        
     }
+
+    /** heapUsed trend: {first, last} in bytes, for memory-growth detection. */
+    heapTrend() {
+        const withHeap = this.samples.filter(s => s.health && typeof s.health.heapUsed === 'number');
+        if (withHeap.length === 0) return { first: 0, last: 0 };
+        return { first: withHeap[0].health.heapUsed, last: withHeap[withHeap.length - 1].health.heapUsed };
+    }
+    
 }
 
 module.exports = { MetricSampler };

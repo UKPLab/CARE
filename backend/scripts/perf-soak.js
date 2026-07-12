@@ -136,7 +136,9 @@ function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
         memDrift = durationMs >= MEM_VERDICT_MIN_MS && backHalfGrowth > 15;
 
         const firstGrowth = first > 0 ? Math.round(((last - first) / first) * 100) : 0;
-        console.log(`  memory (RSS): ${rssMb(first)}MB -> ${rssMb(last)}MB  [${firstGrowth >= 0 ? '+' : ''}${firstGrowth}% total, ${backHalfGrowth >= 0 ? '+' : ''}${backHalfGrowth}% post-warmup], peak ${rssMb(sampler.peakRss())}MB`);
+        const heap = sampler.heapTrend();
+        console.log(`  memory (RSS):  ${rssMb(first)}MB -> ${rssMb(last)}MB  [${firstGrowth >= 0 ? '+' : ''}${firstGrowth}% total, ${backHalfGrowth >= 0 ? '+' : ''}${backHalfGrowth}% post-warmup], peak ${rssMb(sampler.peakRss())}MB`);
+        console.log(`  memory (heap): ${rssMb(heap.first)}MB -> ${rssMb(heap.last)}MB, peak ${rssMb(sampler.peakHeap())}MB`);
 
         const peakWaiting = sampler.peakPoolWaiting();
         poolBackedUp = peakWaiting > 0;

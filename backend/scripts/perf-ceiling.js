@@ -91,7 +91,9 @@ async function runCeiling(cfg, ctx) {
             {
                 const rssMb = (b) => Math.round(b / 1024 / 1024);
                 const rss = sampler.rssTrend();
-                console.log(`  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+                const heap = sampler.heapTrend();
+                console.log(`  memory (RSS):  ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+                console.log(`  memory (heap): ${rssMb(heap.first)}MB -> ${rssMb(heap.last)}MB, peak ${rssMb(sampler.peakHeap())}MB`);
                 const pg = sampler.pgStatsSummary();
                 if (pg) {
                     console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
@@ -136,7 +138,9 @@ async function runCeiling(cfg, ctx) {
             {
                 const rssMb = (b) => Math.round(b / 1024 / 1024);
                 const rss = sampler.rssTrend();
-                console.log(`  memory (RSS): ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+                const heap = sampler.heapTrend();
+                console.log(`  memory (RSS):  ${rssMb(rss.first)}MB -> ${rssMb(rss.last)}MB, peak ${rssMb(sampler.peakRss())}MB`);
+                console.log(`  memory (heap): ${rssMb(heap.first)}MB -> ${rssMb(heap.last)}MB, peak ${rssMb(sampler.peakHeap())}MB`);
                 const pg = sampler.pgStatsSummary();
                 if (pg) {
                     console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
