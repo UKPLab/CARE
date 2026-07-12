@@ -13,6 +13,38 @@
 const { io: SocketIOClient } = require('socket.io-client');
 const { loginAsAdmin, verifyAdmin } = require('./perf-auth');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+const readline = require('readline');
+
+/**
+ * Prompt for the admin password on the terminal without echoing it.
+ * Used when no --password flag and no env var is set (e.g. a deployed/test
+ * box where the perf env vars aren't available). Never logged or stored.
+ * @returns {Promise<string>} the entered password
+ */
+function promptPassword() {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const stdout = process.stdout;
+        // Mask input: intercept the output stream so typed chars aren't shown.
+        const onData = (char) => {
+            char = String(char);
+            if (char === '\n' || char === '\r' || char === '\u0004') {
+                stdout.write('\n');
+            } else {
+                // Overwrite the just-echoed char with nothing.
+                stdout.clearLine(0);
+                stdout.cursorTo(0);
+                stdout.write('Admin password: ');
+            }
+        };
+        process.stdin.on('data', onData);
+        rl.question('Admin password: ', (answer) => {
+            process.stdin.removeListener('data', onData);
+            rl.close();
+            resolve(answer.trim());
+        });
+    });
+}
 
 function parseArgs(argv) {
     const args = {};
@@ -66,7 +98,7 @@ function buildConfig(args) {
         server: args.server || 'http://localhost:3001',
         continueOnFailure: Boolean(args['continue-on-failure']),
         user: args.user || process.env.PERF_ADMIN_USER || 'admin',
-        password: args.password || process.env.ADMIN_PWD || null,
+        password: args.password || process.env.PERF_ADMIN_PASSWORD || process.env.ADMIN_PWD || null,
         step: parseInt(args.step, 10) || 5,
         maxFailures: parseInt(args['max-failures'], 10) || 0,
         concurrency: parseInt(args.concurrency, 10) || 10,
@@ -181,8 +213,17 @@ async function run(cfg) {
     console.log('  socket disconnected. Done.');
 }
 
-function main() {
+async function main() {
     const cfg = buildConfig(parseArgs(process.argv.slice(2)));
+
+    // No password from --password or env (e.g. a deployed/test box without the
+    // perf env vars): prompt for it interactively rather than failing outright.
+    // A non-TTY environment (CI, piped input) can't prompt — there env/flag is
+    // the only path, and validateConfig below will report the missing password.
+    if (!cfg.password && process.stdin.isTTY) {
+        cfg.password = await promptPassword();
+    }
+
     const errors = validateConfig(cfg);
     if (errors.length > 0) {
         console.error('Invalid configuration:');
