@@ -55,9 +55,7 @@
       :current-user-id="currentUserId"
       resource-label="AI Model"
       resource-id-key="aiModelId"
-      share-options-command="getModelShareOptions"
-      share-config-command="getModelShareConfig"
-      save-share-command="shareModel"
+      share-table="ai_model_share"
       owner-only-message="Only model owners can manage sharing"
     />
 
@@ -98,7 +96,6 @@ export default {
   },
   data() {
     return {
-      ownerLabelsByUserId: {},
       tableOptions: {
         striped: true,
         hover: true,
@@ -134,8 +131,15 @@ export default {
     models() {
       return this.$store.getters["table/ai_model/getAll"] || [];
     },
-    aiModelRefreshCount() {
-      return this.$store.getters["table/ai_model/refreshCount"];
+    ownerLabelsByUserId() {
+      const users = this.$store.getters["table/user/getAll"] || [];
+      return users.reduce((acc, user) => {
+        const label = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.userName;
+        if (label) {
+          acc[String(user.id)] = label;
+        }
+        return acc;
+      }, {});
     },
     credentialRows() {
       return this.credentials.map((credential) => ({
@@ -252,26 +256,7 @@ export default {
       ];
     },
   },
-  watch: {
-    aiModelRefreshCount: {
-      handler() {
-        this.loadAiModelOwnerSummaries();
-      },
-      immediate: true,
-    },
-  },
   methods: {
-    loadAiModelOwnerSummaries() {
-      this.$socket.emit(
-        "serviceCommand",
-        { service: "AIService", command: "getAiModelOwnerSummaries", data: {} },
-        (response) => {
-          if (response?.success) {
-            this.ownerLabelsByUserId = response.data || {};
-          }
-        },
-      );
-    },
     onCredentialAction(data) {
       switch (data.action) {
         case "editCredential":

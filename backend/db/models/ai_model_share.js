@@ -47,6 +47,21 @@ module.exports = (sequelize, DataTypes) => {
             });
             return Boolean(model) && Number(model.userId) === Number(requesterId);
         }
+
+        /**
+         * Guards direct updateById calls
+         */
+        static async validateOwnerUpdate(share, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            const aiModelId = share.aiModelId;
+            const allowed = await AiModelShare.validateForeignUserId({aiModelId}, currentUserId, options.transaction);
+            if (!allowed) {
+                throw new Error("You are not allowed to update this share");
+            }
+        }
     }
 
     AiModelShare.init({
@@ -62,6 +77,11 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'ai_model_share',
         tableName: 'ai_model_share',
+        hooks: {
+            beforeUpdate: async (share, options) => {
+                await AiModelShare.validateOwnerUpdate(share, options);
+            },
+        },
     });
 
     return AiModelShare;

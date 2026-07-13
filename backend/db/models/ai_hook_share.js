@@ -48,6 +48,21 @@ module.exports = (sequelize, DataTypes) => {
             });
             return Boolean(hook) && Number(hook.userId) === Number(requesterId);
         }
+
+        /**
+         * Guards direct updateById calls
+         */
+        static async validateOwnerUpdate(share, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            const aiHookId = share.aiHookId;
+            const allowed = await AiHookShare.validateForeignUserId({aiHookId}, currentUserId, options.transaction);
+            if (!allowed) {
+                throw new Error("You are not allowed to update this share");
+            }
+        }
     }
 
     AiHookShare.init({
@@ -63,6 +78,11 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'ai_hook_share',
         tableName: 'ai_hook_share',
+        hooks: {
+            beforeUpdate: async (share, options) => {
+                await AiHookShare.validateOwnerUpdate(share, options);
+            },
+        },
     });
 
     return AiHookShare;

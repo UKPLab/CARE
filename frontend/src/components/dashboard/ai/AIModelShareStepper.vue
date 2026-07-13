@@ -101,7 +101,7 @@
 /**
  * Guided stepper configuring share audience (users vs roles) and synchronized expiry UX.
  *
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohamed Rawhani
  */
 
 import BasicTable from "@/basic/Table.vue";
@@ -109,7 +109,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 
 export default {
   name: "AIModelShareStepper",
-  subscribeTable: ["ai_budget"],
+  subscribeTable: ["ai_budget", "ai_model_share", "ai_hook_share", "user_role"],
   components: {
     BasicTable,
     StepperModal,
@@ -127,15 +127,7 @@ export default {
       type: String,
       required: true,
     },
-    shareOptionsCommand: {
-      type: String,
-      required: true,
-    },
-    shareConfigCommand: {
-      type: String,
-      required: true,
-    },
-    saveShareCommand: {
+    shareTable: {
       type: String,
       required: true,
     },
@@ -248,6 +240,11 @@ export default {
     resourceLabelLower() {
       return this.resourceLabel.toLowerCase();
     },
+    roleOptions() {
+      return (this.$store.getters["table/user_role/getAll"] || [])
+        .filter((role) => !role.deleted)
+        .map((role) => ({ id: role.id, label: role.name || `Role ${role.id}` }));
+    },
   },
   methods: {
     getEmptyShareForm() {
@@ -286,18 +283,21 @@ export default {
         this.onSelectionRowsUpdate(selectedRows);
       }
     },
-    emitAiServiceCommand(command, data = {}) {
+    loadUserOptions() {
       return new Promise((resolve, reject) => {
-        this.$socket.emit("serviceCommand", {
-          service: "AIService",
-          command,
-          data,
-        }, (result) => {
-          if (result?.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(result?.message || "AI service request failed"));
+        this.$socket.emit("userGetByRole", { role: "all" }, (result) => {
+          if (!result?.success) {
+            reject(new Error(result?.message || "Failed to load users"));
+            return;
           }
+          const me = Number(this.currentUserId);
+          const users = (result.data || [])
+            .filter((user) => !user.deleted && Number(user.id) !== me)
+            .map((user) => ({
+              id: user.id,
+              label: [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.userName,
+            }));
+          resolve(users);
         });
       });
     },
@@ -309,6 +309,10 @@ export default {
         });
       });
     },
+    getShareRows(matchFn) {
+      const getter = this.$store.getters[`table/${this.shareTable}/getFiltered`];
+      return getter ? getter(matchFn) : [];
+    },
     findExistingShareCap(shareKey, shareId) {
       const getter = this.$store.getters["table/ai_budget/getFiltered"];
       if (!getter) return null;
@@ -318,6 +322,29 @@ export default {
           && Number(b.limitType) === 0
       );
       return matches.length > 0 ? matches[0] : null;
+    },
+    findExistingShare(resourceId, recipient) {
+      const matches = this.getShareRows((share) =>
+        Number(share[this.resourceIdKey]) === Number(resourceId)
+        && Number(share.userId || 0) === Number(recipient.userId || 0)
+        && Number(share.roleId || 0) === Number(recipient.roleId || 0)
+      );
+      return matches.find((match) => !match.deleted) || matches[0] || null;
+    },
+    buildShareConfig(resourceId) {
+      const shares = this.getShareRows((share) =>
+        Number(share[this.resourceIdKey]) === Number(resourceId) && !share.deleted
+      );
+      const userIds = this.normalizeIdList(shares.map((share) => share.userId));
+      const roleIds = this.normalizeIdList(shares.map((share) => share.roleId));
+      const expiryCandidates = shares
+        .map((share) => (share.expiryDate ? new Date(share.expiryDate) : null))
+        .filter((date) => date && !Number.isNaN(date.getTime()));
+      const expiryDate = expiryCandidates.length > 0
+        ? new Date(Math.max(...expiryCandidates.map((date) => date.getTime())))
+        : null;
+      const mode = roleIds.length > 0 && userIds.length === 0 ? "roles" : "users";
+      return { userIds, roleIds, expiryDate, mode };
     },
     async open(row) {
       if (!row?.id) {
@@ -337,22 +364,17 @@ export default {
       this.$refs.shareStepper.open();
 
       try {
-        const [targets, shareConfig] = await Promise.all([
-          this.emitAiServiceCommand(this.shareOptionsCommand),
-          this.emitAiServiceCommand(this.shareConfigCommand, { [this.resourceIdKey]: row.id }),
-        ]);
+        const users = await this.loadUserOptions();
+        this.shareTargets = { users, roles: this.roleOptions };
 
-        this.shareTargets = {
-          users: Array.isArray(targets?.users) ? targets.users : [],
-          roles: Array.isArray(targets?.roles) ? targets.roles : [],
-        };
+        const config = this.buildShareConfig(row.id);
         this.shareForm = {
-          mode: ["users", "roles"].includes(shareConfig?.mode) ? shareConfig.mode : "users",
-          expiryDate: shareConfig?.expiryDate ? this.toDateInputString(shareConfig.expiryDate) : "",
+          mode: config.mode,
+          expiryDate: config.expiryDate ? this.toDateInputString(config.expiryDate) : "",
           costLimit: null,
         };
-        this.selectedUserIds = this.normalizeIdList(shareConfig?.userIds);
-        this.selectedRoleIds = this.normalizeIdList(shareConfig?.roleIds);
+        this.selectedUserIds = config.userIds;
+        this.selectedRoleIds = config.roleIds;
       } catch (error) {
         this.toastError(error.message || `Failed to load ${this.resourceLabelLower} share data`);
       } finally {
@@ -364,47 +386,64 @@ export default {
         this.toastError("No model selected");
         return;
       }
-
-      const payload = {
-        [this.resourceIdKey]: this.selectedShareModel.id,
-        mode: this.shareForm.mode,
-        expiryDate: this.shareForm.expiryDate,
-      };
       if (!this.shareForm.expiryDate) {
         this.toastError("Please select an expiry date");
         return;
       }
+
+      const resourceId = this.selectedShareModel.id;
+      const expiryDate = this.shareForm.expiryDate;
+      let recipients;
+
       if (this.shareForm.mode === "roles") {
         const roleIds = [...this.selectedRoleIds];
         if (roleIds.length === 0) {
           this.toastError("Please select at least one role");
           return;
         }
-        payload.roleIds = roleIds;
+        recipients = roleIds.map((roleId) => ({ userId: null, roleId }));
       } else {
         const userIds = [...this.selectedUserIds];
         if (userIds.length === 0) {
           this.toastError("Please select at least one user");
           return;
         }
-        payload.userIds = userIds;
+        recipients = userIds.map((userId) => ({ userId, roleId: null }));
       }
 
       this.isSavingShare = true;
       try {
         this.$refs.shareStepper.setWaiting(true);
-        const result = await this.emitAiServiceCommand(this.saveShareCommand, payload);
 
-        // Apply the per-recipient cost limit to every share row that was created/refreshed in this batch. Backend returns their ids; we
-        // create or update the matching ai_budget row per share via the standard appDataUpdate path.
+        const sharedIds = [];
+        for (const recipient of recipients) {
+          const existing = this.findExistingShare(resourceId, recipient);
+          const shareId = existing
+            ? await this.emitAppDataUpdate(this.shareTable, {
+              id: existing.id,
+              expiryDate,
+              deleted: false,
+              deletedAt: null,
+            })
+            : await this.emitAppDataUpdate(this.shareTable, {
+              [this.resourceIdKey]: resourceId,
+              userId: recipient.userId,
+              roleId: recipient.roleId,
+              expiryDate,
+            });
+          sharedIds.push(shareId);
+        }
+
+        // Apply the per-recipient cost limit to every share row created/refreshed in this
+        // batch, via the standard appDataUpdate path.
         const costLimitValue = Number(this.shareForm.costLimit);
         const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
-        if (wantsCap && Array.isArray(result?.sharedIds)) {
+        if (wantsCap) {
           const shareKey = this.resourceIdKey === "aiHookId" ? "hookShareId" : "shareId";
-          for (const shareId of result.sharedIds) {
-            const existing = this.findExistingShareCap(shareKey, shareId);
-            const capData = existing
-              ? { id: existing.id, costLimit: costLimitValue }
+          for (const shareId of sharedIds) {
+            const existingCap = this.findExistingShareCap(shareKey, shareId);
+            const capData = existingCap
+              ? { id: existingCap.id, costLimit: costLimitValue }
               : { [shareKey]: Number(shareId), limitType: 0, costLimit: costLimitValue };
             await this.emitAppDataUpdate("ai_budget", capData);
           }
