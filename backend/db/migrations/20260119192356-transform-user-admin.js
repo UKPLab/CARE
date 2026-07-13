@@ -1,6 +1,6 @@
 'use strict';
 
-const { genSalt, genPwdHash } = require('../../utils/auth');
+const { genSalt, genPwdHash } = require('../../webserver/auth/utils');
 
 /**
  * Removes the default admin user created by basic-users so the first admin

@@ -1,4 +1,4 @@
-const {inject} = require("../utils/generic");
+const {inject} = require("../utils/helper/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
