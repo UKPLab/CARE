@@ -38,6 +38,7 @@
           v-else-if="field.type === 'inputMap' && actionData[field.skillKey || 'skillName']"
           :model-value="actionData[field.key]"
           :skill-name="actionData[field.skillKey || 'skillName']"
+          :hook-id="hookIdForSelection(actionData[field.skillKey || 'skillName'])"
           :study-based="field.studyBased !== false"
           @update:model-value="updateInputMappings(field, $event)"
         />
@@ -591,6 +592,11 @@ export default {
         ...this.actionData,
         ...values,
       };
+    },
+    hookIdForSelection(skillName) {
+      if (typeof skillName !== "string" || !skillName.startsWith("hook:")) return null;
+      const hookId = Number(skillName.slice("hook:".length));
+      return Number.isInteger(hookId) && hookId > 0 ? hookId : null;
     },
     updateSkillSelection(field, skillName) {
       this.updateActionData({

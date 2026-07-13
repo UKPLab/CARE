@@ -2,6 +2,7 @@
 
 const { Op } = require("sequelize");
 const { resolveTemplate } = require("../../utils/templateResolver");
+const aiHook = require("./ai/hook");
 
 const QUEUE_STATUS = {
     PENDING: 0,
@@ -570,6 +571,92 @@ function hydrateSkillParameterMappings(mappings, context) {
     return hydrated;
 }
 
+function getConfiguredHookId(config) {
+    const selected = config?.hookId
+        ?? (config?.skillName?.startsWith("hook:") ? config.skillName.slice("hook:".length) : null);
+    const hookId = Number(selected);
+    return Number.isInteger(hookId) && hookId > 0 ? hookId : null;
+}
+
+/**
+ * Execute an AI hook selected in an AI preprocessing trigger and persist its output.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row with action configuration
+ * @param {Object} context Resolved event context
+ * @returns {Promise<Object>}
+ */
+async function runAiHookTrigger(server, trigger, context) {
+    const config = asObject(trigger.configuration).action || {};
+    const hookId = getConfiguredHookId(config);
+    const inputMappings = asObject(config.inputMappings);
+    const baseMapping = inputMappings[config.baseFileParameter];
+    const service = server.services["AIService"];
+    if (!hookId || !baseMapping || !service) {
+        throw new Error("AI hook trigger is not configured correctly.");
+    }
+
+    let documentId = Number(baseMapping.documentId || context.documentId);
+    if (baseMapping.type === "submission") {
+        const submission = await server.db.models["submission"].findByPk(context.submissionId, {raw: true});
+        const baseType = asObject(config.baseFiles)[submission?.validationConfigurationId]
+            || baseMapping.selectedFiles?.[0];
+        const docTypes = server.db.models["document"].docTypes;
+        const type = docTypes[`DOC_TYPE_${String(baseType).toUpperCase()}`] ?? docTypes.DOC_TYPE_ZIP;
+        const document = await server.db.models["document"].findOne({
+            where: {submissionId: context.submissionId, type, deleted: false},
+            raw: true,
+        });
+        documentId = document?.id;
+    }
+    if (!documentId) {
+        throw new Error("AI hook trigger could not resolve its result document.");
+    }
+
+    const values = {};
+    for (const [placeholder, mapping] of Object.entries(inputMappings)) {
+        if (placeholder === "output" || !mapping) continue;
+        if (!["submission", "document", "configuration"].includes(mapping.type)) {
+            throw new Error(`Unsupported AI hook input type "${mapping.type}".`);
+        }
+        values[placeholder] = {
+            type: "serviceReplacement",
+            input: {
+                ...mapping,
+                submissionId: mapping.submissionId || context.submissionId,
+                documentId: mapping.documentId || documentId,
+            },
+        };
+    }
+
+    const userId = trigger.userId || context.userId;
+    const result = await aiHook.runHook(service, { userId }, {
+        hookId,
+        values,
+        documentId,
+    });
+
+    let value = result.outputText || "";
+    if (typeof value === "string") {
+        try {
+            value = JSON.parse(value);
+        } catch (_error) {
+            // Keep non-JSON hook output as text.
+        }
+    }
+
+    await server.db.models["document_data"].upsertData({
+        userId,
+        documentId,
+        studySessionId: null,
+        studyStepId: null,
+        key: `nlpRequest_hook_${hookId}_result`,
+        value,
+    });
+
+    return { ...result, documentId };
+}
+
 /**
  * Run the configured NLP preprocessing action through BackgroundTaskService.
  *
@@ -581,6 +668,10 @@ function hydrateSkillParameterMappings(mappings, context) {
  */
 async function runAiPreprocessing(server, trigger, context, options = {}) {
     const config = asObject(trigger.configuration).action || {};
+    if (getConfiguredHookId(config)) {
+        return await runAiHookTrigger(server, trigger, context);
+    }
+
     const service = server.services["BackgroundTaskService"];
 
     if (!service) {

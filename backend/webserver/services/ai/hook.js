@@ -9,7 +9,22 @@
 
 const chat = require("./chat");
 const helpers = require("./helpers");
+const {PDFParse} = require("pdf-parse");
 const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
+
+async function loadDocumentText(service, documentId) {
+    const document = await service.server.db.models["document"].findByPk(documentId, {raw: true});
+    if (!document || document.type !== service.server.db.models["document"].docTypes.DOC_TYPE_PDF) return "";
+    const buffer = await service.server.db.models["document"].readDocumentFile(document, ".pdf");
+    if (!buffer) return "";
+
+    const parser = new PDFParse({data: buffer});
+    try {
+        return (await parser.getText()).text || "";
+    } finally {
+        await parser.destroy();
+    }
+}
 
 /**
  * Loads an enabled, non-deleted AI hook by id.
@@ -107,9 +122,24 @@ async function resolveServiceInput(service, input) {
 
             const parts = [];
 
-            // PDF was extracted in the browser.
-            if (selectedFiles.includes("pdf") && pdfText != null) {
-                parts.push(pdfText);
+            if (selectedFiles.includes("pdf")) {
+                let resolvedPdfText = pdfText;
+                if (resolvedPdfText == null) {
+                    const pdfDocument = await service.server.db.models["document"].findOne({
+                        where: {
+                            submissionId,
+                            type: service.server.db.models["document"].docTypes.DOC_TYPE_PDF,
+                            deleted: false,
+                        },
+                        raw: true,
+                    });
+                    resolvedPdfText = pdfDocument
+                        ? await loadDocumentText(service, pdfDocument.id)
+                        : "";
+                }
+                if (resolvedPdfText) {
+                    parts.push(resolvedPdfText);
+                }
             }
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
@@ -137,6 +167,8 @@ async function resolveServiceInput(service, input) {
 
             return parts.join("\n\n");
         }
+        case "document":
+            return input.documentId ? await loadDocumentText(service, input.documentId) : "";
         default:
             return null;
     }
