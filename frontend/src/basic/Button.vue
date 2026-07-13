@@ -1,19 +1,29 @@
 <template>
   <button
     :title="tooltip || title"
-    :disabled="disabled"
+    :disabled="disabled || loading"
     class="btn"
     type="button"
     @click="action"
   >
-    <!-- class="btn btn-sm me-1" -->
-    <LoadIcon    
-      v-if="icon"
-      :rotate="rotateIcon? rotateIcon : null"
-      :icon-name="icon"
-      :color="iconColor"
-    />
-    {{ buttonText }}
+    <span
+      v-if="loading"
+      class="spinner-border spinner-border-sm"
+      :class="{ 'me-2': buttonText }"
+      role="status"
+    >
+      <span class="visually-hidden">Loading...</span>
+    </span>
+    <slot v-else-if="$slots.default" />
+    <template v-else>
+      <LoadIcon
+        v-if="icon"
+        :rotate="rotateIcon? rotateIcon : null"
+        :icon-name="icon"
+        :color="iconColor"
+      />
+      {{ buttonText }}
+    </template>
   </button>
 </template>
 
@@ -70,6 +80,11 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    loading: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   emits: ["click"],
@@ -80,6 +95,9 @@ export default {
   },
   methods: {
     action() {
+      if (this.loading || this.disabled) {
+        return;
+      }
       this.$emit("click")
       if (this.acceptStats) {
         this.$socket.emit("stats", {
