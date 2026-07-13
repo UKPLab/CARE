@@ -88,6 +88,7 @@ import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
+import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -108,7 +109,8 @@ export default {
     BulkAssignmentsModal,
     SingleAssignmentModal,
     InformationModal,
-    SavedTemplatesModal
+    SavedTemplatesModal,
+    PublishAssessmentModal
   },
   inject: {
     acceptStats: {
