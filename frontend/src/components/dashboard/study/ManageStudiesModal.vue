@@ -93,15 +93,6 @@
         </div>
 
         <div v-else-if="selectedMode.mode === 'bulkDelete'" class="confirmation-content delete-warning-container">
-          <div class="alert alert-danger mb-4 danger-banner">
-            <div class="d-flex align-items-start gap-3">
-              <i class="fas fa-exclamation-circle fs-4"></i>
-              <div>
-                <strong class="fs-5">Critical Warning: Permanent Deletion</strong>
-                <p class="mb-0 mt-2">This action will <strong>permanently delete</strong> the selected studies and <strong>cannot be undone</strong>. All associated data will be lost.</p>
-              </div>
-            </div>
-          </div>
           <h6>Studies to Delete</h6>
           <p class="text-muted">You are about to <strong>permanently delete</strong> <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}:</p>
           <ul class="selected-items-list">
