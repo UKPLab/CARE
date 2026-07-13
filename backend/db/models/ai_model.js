@@ -10,7 +10,12 @@ const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
     class AiModel extends MetaModel {
-        static autoTable = true;
+        // Cascade ai_model_share rows to anyone subscribing to ai_model.
+        static autoTable = {
+            foreignTables: [
+                { table: "ai_model_share", by: "aiModelId" },
+            ],
+        };
         static accessMap = [
             {
                 table: "ai_model_share",

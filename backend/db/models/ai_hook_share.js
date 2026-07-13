@@ -17,6 +17,37 @@ module.exports = (sequelize, DataTypes) => {
                 { table: "user", by: "userId" },
             ],
         };
+
+        // Row access: visible/writable by anyone who owns the referenced ai_hook.
+        static accessMap = [
+            {
+                table: "ai_hook",
+                by: "aiHookId",
+                columns: this.getAttributes(),
+            },
+        ];
+
+        /**
+         * Lets appDataUpdate accept a payload's userId as the share recipient (not the
+         * requester) when the requester owns the referenced ai_hook. Called generically
+         * from AppSocket#updateData's foreign-userId guard.
+         *
+         * @param {{aiHookId?: number, id?: number}} payload Incoming appDataUpdate payload.
+         * @param {number} requesterId The socket's authenticated user id.
+         * @param {import("sequelize").Transaction} [transaction]
+         * @returns {Promise<boolean>}
+         */
+        static async validateForeignUserId(payload, requesterId, transaction) {
+            const aiHookId = payload.aiHookId
+                ?? (payload.id && (await this.findByPk(payload.id, {transaction}))?.aiHookId);
+            if (!aiHookId) return false;
+
+            const hook = await sequelize.models.ai_hook.findOne({
+                where: {id: aiHookId, deleted: false},
+                transaction,
+            });
+            return Boolean(hook) && Number(hook.userId) === Number(requesterId);
+        }
     }
 
     AiHookShare.init({

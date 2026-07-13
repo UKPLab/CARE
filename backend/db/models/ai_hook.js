@@ -11,7 +11,12 @@ const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiHook extends MetaModel {
-        static autoTable = true;
+        // Cascade ai_hook_share rows to anyone subscribing to ai_hook.
+        static autoTable = {
+            foreignTables: [
+                { table: "ai_hook_share", by: "aiHookId" },
+            ],
+        };
 
         static associate(models) {
             AiHook.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
