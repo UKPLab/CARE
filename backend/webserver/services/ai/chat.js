@@ -2,15 +2,16 @@
 
 /**
  * AIService helpers for forwarding chat and model-validation traffic to LiteLLM via RPC,
- * enforcing credential ownership, and recording `ai_log` rows through `runtime`.
+ * enforcing credential ownership, and recording `ai_log` rows via the budget module.
  *
  * @module webserver/services/ai/chat
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohamed Rawhani
  */
 
 const {randomUUID} = require("crypto");
 const helpers = require("./helpers");
 const runtime = require("./runtime");
+const budget = require("./budget");
 
 /**
  * Normalizes provider-reported monetary cost fields for persisted logging.
@@ -44,20 +45,39 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         throw new Error("LiteLLM service is not connected");
     }
 
-    const requestStart = new Date();
     const aiModelId = await runtime.resolveAiModelId(service.server, client?.userId, data);
     const requestId = typeof data?.__requestId === "string" && data.__requestId.trim()
         ? data.__requestId.trim()
         : randomUUID();
     const {
         aiModelId: _aiModelId,
+        aiHookId: _aiHookId,
         aiCredentialId: _aiCredentialId,
         credentialId: _credentialId,
         __requestId: _requestId,
+        studyId: _studyId,
+        studySessionId: _studySessionId,
+        studyStepId: _studyStepId,
+        documentId: _documentId,
         ...completionParams
     } = data || {};
-    const successStatus = logOptions.successStatus || "success";
-    const failedStatus = logOptions.failedStatus || "failed";
+
+    const guard = await budget.beginRequest(service, {
+        userId: client?.userId,
+        aiModelId,
+        aiHookId: data?.aiHookId,
+        requestId,
+        input: helpers.extractInputText(data?.messages),
+        studyId: data?.studyId,
+        studySessionId: data?.studySessionId,
+        studyStepId: data?.studyStepId,
+        documentId: data?.documentId,
+    }, {
+        bypassChecks: !!logOptions.bypassChecks,
+    });
+    if (!guard.allowed) {
+        throw new Error(guard.reason);
+    }
 
     let response;
     try {
@@ -66,14 +86,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
             __requestId: requestId,
         });
     } catch (error) {
-        await runtime.logAiCall(service, {
-            userId: client?.userId,
-            aiModelId,
-            requestId,
-            input: helpers.extractInputText(data?.messages),
-            status: failedStatus,
-            requestStart,
-        });
+        await budget.failRequest(service, guard.logId, error?.message);
         throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
@@ -86,19 +99,13 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         `finish=${finishReasons.join(",") || "N/A"}`
     );
 
-    await runtime.logAiCall(service, {
-        userId: client?.userId,
-        aiModelId,
-        requestId,
-        input: helpers.extractInputText(data?.messages),
+    await budget.completeRequest(service, guard.logId, {
         output: JSON.stringify(choices),
         reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
         outputTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
         costs: parseNumericCost(payload?.response_cost),
-        status: successStatus,
-        requestStart,
     });
 
     return {choices};
@@ -161,18 +168,7 @@ async function getValidModels(service, client, data) {
         throw new Error("Missing or invalid credentialId");
     }
 
-    const credential = await service.server.db.models.ai_credential.getById(credentialId, {
-        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
-    });
-    if (!credential || credential.deleted) {
-        throw new Error("Credential not found");
-    }
-    if (!client?.userId || credential.userId !== client.userId) {
-        throw new Error("You are not allowed to access this credential");
-    }
-    if (!credential.enabled) {
-        throw new Error("Credential is disabled");
-    }
+    const credential = await service.server.db.models.ai_credential.getOwnedById(credentialId, client?.userId);
     const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
     if (!provider) {
         throw new Error("Credential provider is required to load models");
@@ -205,35 +201,13 @@ async function testModel(service, client, data) {
         throw new Error("Missing model");
     }
 
-    const credential = await service.server.db.models.ai_credential.getById(credentialId, {
-        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
-    });
-    if (!credential || credential.deleted) {
-        throw new Error("Credential not found");
-    }
-    if (!client?.userId || credential.userId !== client.userId) {
-        throw new Error("You are not allowed to access this credential");
-    }
-    if (!credential.enabled) {
-        throw new Error("Credential is disabled");
-    }
+    const credential = await service.server.db.models.ai_credential.getOwnedById(credentialId, client?.userId);
 
     const params = {
-        model,
+        ...helpers.buildLiteLLMParams(credential, model),
         messages: [{role: "user", content: "ping"}],
         max_tokens: 16,
-        api_key: credential.apiKey,
     };
-    if (credential.apiBaseUrl) {
-        params.api_base = credential.apiBaseUrl;
-    }
-    if (credential.apiVersion) {
-        params.api_version = credential.apiVersion;
-    }
-    const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
-    if (provider) {
-        params.custom_llm_provider = provider;
-    }
     if (
         data?.additionalParameters &&
         typeof data.additionalParameters === "object" &&
@@ -262,6 +236,7 @@ async function testModel(service, client, data) {
     }, {
         successStatus: "test_success",
         failedStatus: "test_failed",
+        bypassChecks: true,
     });
 
     const content = result.choices?.[0]?.message?.content;

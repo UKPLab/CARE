@@ -51,6 +51,28 @@
           Optional. Add context about the feature, input data, or expected model behavior.
         </small>
       </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="hookCostLimit">
+          Cost limit ($)
+          <i
+            class="bi bi-info-circle text-muted ms-1"
+            title="Global cap across all invocations of this hook. Leave empty for no cap."
+          />
+        </label>
+        <input
+          id="hookCostLimit"
+          v-model.number="hookForm.costLimit"
+          type="number"
+          min="0"
+          step="0.01"
+          class="form-control"
+          placeholder="No limit"
+        />
+        <small class="text-muted">
+          Optional. Total AI spend allowed for this hook across all studies.
+        </small>
+      </div>
     </template>
 
     <template #step-2>
@@ -162,6 +184,9 @@
 
           <dt class="col-sm-4">Output Type</dt>
           <dd class="col-sm-8">{{ selectedOutputModeLabel }}</dd>
+          
+          <dt class="col-sm-4">Cost limit</dt>
+          <dd class="col-sm-8">{{ hookForm.costLimit ? `$${hookForm.costLimit.toFixed(2)}` : "-" }}</dd>
 
           <dt class="col-sm-4">Status</dt>
           <dd class="col-sm-8">{{ hookForm.enabled ? "Enabled" : "Disabled" }}</dd>
@@ -187,12 +212,14 @@ function getEmptyHookForm() {
     modelIds: [],
     outputMode: 0,
     enabled: true,
+    costLimit: null,
   };
 }
 
 export default {
   name: "AIHookStepperModal",
   components: { StepperModal, AIHookModelOrder },
+  subscribeTable: ["ai_budget"],
   props: {
     promptTemplates: {
       type: Array,
@@ -276,6 +303,22 @@ export default {
         .filter((row) => Number(row.aiHookId) === Number(hookId) && !row.deleted)
         .sort((a, b) => Number(a.priority) - Number(b.priority));
     },
+    findExistingCapRow(hookId) {
+      if (!hookId) return null;
+      const budgets = this.$store.getters["table/ai_budget/getFiltered"]
+        ? this.$store.getters["table/ai_budget/getFiltered"](
+            (b) => !b.deleted
+              && Number(b.hookId) === Number(hookId)
+              && !b.studyStepId
+              && Number(b.limitType) === 0
+          )
+        : [];
+      return budgets.length > 0 ? budgets[0] : null;
+    },
+    findExistingCap(hookId) {
+      const row = this.findExistingCapRow(hookId);
+      return row ? Number(row.costLimit) : null;
+    },
     open(row = null) {
       this.hookForm = getEmptyHookForm();
       if (row) {
@@ -291,6 +334,7 @@ export default {
           modelIds: this.getHookModelRows(row.id).map((hookModel) => Number(hookModel.aiModelId)),
           outputMode: Number.isInteger(Number(row.outputMode)) ? Number(row.outputMode) : 0,
           enabled: row.enabled !== false,
+          costLimit: this.findExistingCap(row.id),
         };
       }
       this.$refs.hookStepper.open();
@@ -373,6 +417,16 @@ export default {
           if (!usedRowIds.has(row.id)) {
             await this.emitUpdate("ai_hook_models", { id: row.id, deleted: true });
           }
+        }
+
+        // Save / update the hook-level cost limit via appDataUpdate.
+        const costLimitValue = Number(this.hookForm.costLimit);
+        if (Number.isFinite(costLimitValue) && costLimitValue > 0) {
+          const existing = this.findExistingCapRow(hookId);
+          const capData = existing
+            ? { id: existing.id, costLimit: costLimitValue }
+            : { hookId: Number(hookId), limitType: 0, costLimit: costLimitValue };
+          await this.emitUpdate("ai_budget", capData);
         }
 
         this.$refs.hookStepper.close();

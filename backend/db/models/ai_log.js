@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     AiLog.init({
         userId: DataTypes.INTEGER,
         aiModelId: DataTypes.INTEGER,
+        aiHookId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
         studyStepId: DataTypes.INTEGER,

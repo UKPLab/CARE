@@ -4,7 +4,7 @@
  * Handlers backing AI model-sharing flows (ownership checks, hydrate UI selectors, transactional writes).
  *
  * @module webserver/services/ai/share
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohamed Rawhani
  */
 
 const {Op} = require("sequelize");
@@ -415,7 +415,9 @@ async function extendShareRows(shareModel, resourceKey, resourceId, rowsToCreate
         }
     }
 
-    let changedCount = 0;
+    // Collect the share-row id touched by this call (existing reactivated or
+    // newly created), benifitial for the reshare to group of users
+    const touchedIds = [];
     for (const row of rowsToCreate) {
         const key = `${Number(row.userId)}:${Number(row.roleId) || 0}`;
         const existing = existingByRecipient.get(key);
@@ -424,13 +426,14 @@ async function extendShareRows(shareModel, resourceKey, resourceId, rowsToCreate
                 {expiryDate: row.expiryDate, deleted: false, deletedAt: null},
                 {where: {id: existing.id}, transaction},
             );
+            touchedIds.push(existing.id);
         } else {
-            await shareModel.create(row, {transaction});
+            const created = await shareModel.create(row, {transaction});
+            touchedIds.push(created.id);
         }
-        changedCount += 1;
     }
 
-    return changedCount;
+    return touchedIds;
 }
 
 async function shareResource(service, client, data, resource) {
@@ -453,7 +456,7 @@ async function shareResource(service, client, data, resource) {
             target,
         });
 
-        const sharedCount = await extendShareRows(
+        const sharedIds = await extendShareRows(
             service.server.db.models[resource.shareTable],
             resource.resourceKey,
             row.id,
@@ -462,7 +465,7 @@ async function shareResource(service, client, data, resource) {
         );
 
         await transaction.commit();
-        return {ok: true, sharedCount};
+        return {ok: true, sharedCount: sharedIds.length, sharedIds};
     } catch (error) {
         await transaction.rollback();
         throw error;
