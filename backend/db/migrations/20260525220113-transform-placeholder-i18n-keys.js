@@ -1,6 +1,6 @@
 "use strict";
 
-const { resolveEnText } = require("../migration-i18n-utils");
+const { translateMaybeKey } = require("../../utils/i18n");
 
 /**
  * Replace English placeholderLabel / placeholderDescription with i18n keys.
@@ -64,8 +64,8 @@ module.exports = {
   async down(queryInterface) {
     for (const row of PLACEHOLDER_ROWS) {
       const keys = keysFor(row.type, row.placeholderKey);
-      const placeholderLabel = resolveEnText(keys.placeholderLabel);
-      const placeholderDescription = resolveEnText(keys.placeholderDescription);
+      const placeholderLabel = translateMaybeKey(keys.placeholderLabel);
+      const placeholderDescription = translateMaybeKey(keys.placeholderDescription);
       if (!placeholderLabel || !placeholderDescription) {
         continue;
       }

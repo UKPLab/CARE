@@ -2,7 +2,7 @@
  * Backend i18n Utility
  *
  * Loads English translations from the shared i18n module directory
- * and provides translation helpers for backend English output (logs, socket fallbacks).
+ * and provides translation helpers for backend English output (logs, socket fallbacks, migrations).
  */
 
 const fs = require('fs');
@@ -82,10 +82,15 @@ function hasKey(key) {
 
 /**
  * Translates a value when it is a known i18n key; otherwise returns it unchanged.
+ * Always uses the English catalog (not the user's UI locale).
+ *
+ * Used for dashboard logs, socket callback legacy ``message`` fields,
+ * and migration `down` steps that restore English source text when rolling back rows
+ * that store i18n keys in the database.
  *
  * @param {string} value - i18n key or plain English string
- * @param {Object} [params] - Optional placeholder values for keys like "Hello {name}"
- * @returns {string|null|undefined}
+ * @param {Object} [params={}] - Optional placeholder values for keys like "Hello {name}"
+ * @returns {string|null|undefined} English text when `value` is a known key; otherwise `value` unchanged
  */
 function translateMaybeKey(value, params = {}) {
     if (value === undefined || value === null) {
