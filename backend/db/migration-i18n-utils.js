@@ -6,7 +6,7 @@
  *
  * @author Andrii Nikitin
  */
-const { t, hasKey } = require('../utils/i18n');
+const { translateMaybeKey, hasKey } = require('../utils/i18n');
 
 /**
  * @param {string} i18nKey
@@ -17,7 +17,7 @@ function resolveEnText(i18nKey) {
   if (typeof i18nKey !== 'string') {
     return i18nKey;
   }
-  return t(i18nKey);
+  return translateMaybeKey(i18nKey);
 }
 
-module.exports = { resolveEnText, t, hasKey };
+module.exports = { resolveEnText, hasKey };

@@ -1,9 +1,8 @@
 /**
  * TranslatableError - Custom error class for i18n support
  *
- * Throw with an i18n key (and optional params / code) instead of a hardcoded string.
- * Catch handlers read key, params, and code for the frontend; use resolveLogText(key, params)
- * for English log messages.
+ * Throw with an i18n key (and optional params / code) instead of a hardcoded English sentence.
+ * Socket catch handlers read key, params, and code for the client response.
  *
  * @example
  * throw new TranslatableError('errors.auth.invalidCredentials');

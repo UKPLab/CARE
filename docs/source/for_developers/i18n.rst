@@ -17,7 +17,7 @@ Related code:
 
 * ``frontend/src/assets/utils.js`` — ``resolveApiMessage``, ``translateMaybeKey``, ``formatLocalized*``
 * ``frontend/src/assets/locale.js`` — language switcher, ``app.locale``
-* ``backend/utils/i18n.js`` — ``resolveLogText`` (logs)
+* ``backend/utils/i18n.js`` — ``translateMaybeKey``, ``hasKey``
 * ``backend/db/migration-i18n-utils.js`` — ``resolveEnText`` (migration rollbacks)
 
 Translation guidelines
@@ -74,7 +74,7 @@ Sections in this chapter (follow the branch that matches your task):
 * :ref:`i18n-add-key` — new key in an existing JSON file
 * :ref:`i18n-add-namespace` — new ``*.json`` namespace file
 * :ref:`i18n-frontend` — ``$t``, ``resolveApiMessage``, table columns, …
-* :ref:`i18n-backend` — ``TranslatableError``, ``resolveLogText``, …
+* :ref:`i18n-backend` — ``TranslatableError``, backend ``translateMaybeKey``, …
 * :ref:`i18n-test` — verify in the UI and logs
 
 .. _i18n-add-key:
@@ -535,6 +535,8 @@ a key string). Optional second argument — fallback key if the response is empt
 DB values that may be a key or plain text (translateMaybeKey)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _i18n-translate-maybe-key:
+
 **File:** ``frontend/src/assets/utils.js``
 
 Some values from the database are stored as an **i18n key** (e.g. from a migration), others as **plain text**
@@ -751,7 +753,8 @@ When something goes wrong in a way the **user** should see (wrong password, miss
 failed), throw a **TranslatableError** instead of a hardcoded English sentence.
 
 **Goal:** pass an i18n **key** (and optional **params** / **code**) from the backend to the frontend. The
-browser shows the message in the user's language via ``resolveApiMessage``; logs use ``resolveLogText``.
+browser translates with ``resolveApiMessage``. Logging and legacy English ``message`` in socket callbacks are
+handled in ``Socket.js`` — see :ref:`logging-i18n`.
 
 **Why a dedicated class**:
 
@@ -828,7 +831,7 @@ catch block builds the callback for you:
      success: false,
      key: "errors.users.notFound",
      params: { id: userId },
-     message: "User with id 123 was not found.",  // English fallback (resolveLogText)
+     message: "User with id 123 was not found.",  // English fallback (translateMaybeKey)
      code: "..."  // optional, when set on the error
    }
 
@@ -863,28 +866,52 @@ the legacy shape without a separate ``key`` field — put the i18n key in ``mess
 
 .. _logging-i18n:
 
-Logging (resolveLogText)
-~~~~~~~~~~~~~~~~~~~~~~~~
+Backend English output (translateMaybeKey)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Server logs and the dashboard log table stay **English**. If you log an i18n key as-is, the log shows the
-raw key instead of readable text. Resolve it first with ``resolveLogText(message, params?)`` from
-``backend/utils/i18n.js``.
+**File:** ``backend/utils/i18n.js``
+
+Same idea as frontend :ref:`translateMaybeKey <i18n-translate-maybe-key>`: if the string is a **known i18n key**,
+translate it; otherwise return it unchanged. On the backend this always uses the **English** catalog — not the
+user's locale.
+
+**Anti-pattern — do not translate twice for logs**
+
+``SQLTransport`` already calls ``translateMaybeKey`` on every ``logger.*`` message. If you translate
+before logging, the same string is processed twice (harmless but redundant; reviewers flagged this in
+``Socket.js``).
 
 .. code-block:: javascript
 
-   const { resolveLogText } = require("../utils/i18n");
+   // Bad — translated before logger, then SQLTransport translates again
+   this.logger.error(translateMaybeKey(key, params));
+
+   // Good — pass the key; SQLTransport translates once (use i18nParams for placeholders)
+   this.logger.error(key, { i18nParams: params });
+
+
+Call sites often pass either an i18n **key** or **plain English**:
+
+* **Dashboard log table** — ``logger.error("errors.users.notFound")`` or ``logger.error(key, { i18nParams })``.
+  ``SQLTransport`` applies ``translateMaybeKey`` once before insert.
+* **Socket error responses** — log the key (``logger.error(key, { i18nParams: params })``); callback legacy
+  ``message`` uses ``translateMaybeKey(key, params)``.
+
+
+.. code-block:: javascript
+
+   const { translateMaybeKey } = require("../utils/i18n");
 
    const key = "errors.users.importFailed";
 
-   // Before — raw key in the log:
+   // Logger — pass key or plain English; SQLTransport translates once
    this.logger.error(key);
+   this.logger.error("errors.auth.passwordResetRateLimited", { i18nParams: { minutes: 5 } });
+   this.logger.error("Import finished with warnings");
 
-   // After — readable English (params filled in when the key has placeholders):
-   this.logger.error(resolveLogText(key));
-   this.logger.error(resolveLogText("errors.auth.passwordResetRateLimited", { minutes: 5 }));
-
-   // Plain English or non-key strings pass through unchanged:
-   this.logger.error(resolveLogText("Import finished with warnings"));
+   // Socket catch (simplified)
+   this.logger.error(key, { i18nParams: params });
+   callback({ success: false, key, params, message: translateMaybeKey(key, params) });
 
 Migrations: resolveEnText (down)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -978,7 +1005,7 @@ Test it out
 1. Switch language in **Preferences** (or use the new locale from :ref:`i18n-add-language`)
 2. Open the screen you changed and confirm labels / table headers update
 3. Trigger a socket or API error and confirm ``resolveApiMessage`` shows the right text
-4. If you added backend logging, confirm the log line is readable English (``resolveLogText``)
+4. If you added backend logging or socket errors, confirm English output uses ``translateMaybeKey`` where needed
 5. If you added new keys, repeat steps 1–3 in each supported locale (``en``, ``de``, …)
 
 See also

@@ -99,8 +99,7 @@ module.exports = class Socket {
                 console.log(err);
 
                 // i18n error hub: TranslatableError, generateError(code, key), Error("errors.*")
-                // we resolve English for logs and send key+params to the client.
-                // The frontend translates key to the user's locale (resolveApiMessage).
+                // Log the key; SQLTransport translates to English. Frontend gets key+params (resolveApiMessage).
                 let key;
                 let params = {};
                 if (err.isTranslatable || err.key) {
@@ -118,15 +117,14 @@ module.exports = class Socket {
                 }
 
                 if (key) {
-                    const englishMessage = i18n.resolveLogText(key, params);
-                    this.logger.error(englishMessage);
+                    this.logger.error(key, { i18nParams: params });
                     if (callback) {
                         // key/params → localized UI; message (EN) → legacy fallback
                         const response = {
                             success: false,
                             key,
                             params,
-                            message: englishMessage,
+                            message: i18n.translateMaybeKey(key, params),
                         };
                         if (err.code) {
                             response.code = err.code;
@@ -146,7 +144,7 @@ module.exports = class Socket {
                             success: false,
                             key: unexpectedKey,
                             params: {},
-                            message: i18n.resolveLogText(unexpectedKey),
+                            message: i18n.translateMaybeKey(unexpectedKey),
                         });
                     }
                 }

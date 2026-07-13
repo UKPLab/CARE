@@ -2,7 +2,7 @@
  * Backend i18n Utility
  *
  * Loads English translations from the shared i18n module directory
- * and provides a translation function for backend logging/fallbacks.
+ * and provides translation helpers for backend English output (logs, socket fallbacks).
  */
 
 const fs = require('fs');
@@ -69,35 +69,33 @@ function interpolate(text, params = {}) {
     });
 }
 
-function t(key, params = {}) {
-    const trans = loadTranslations();
-    if (Object.prototype.hasOwnProperty.call(trans, key)) {
-        return interpolate(trans[key], params);
-    }
-    return key;
-}
-
+/**
+ * Checks whether a dot-notation key exists in the English catalog.
+ *
+ * @param {string} key - e.g. `errors.auth.invalidCredentials`
+ * @returns {boolean} `true` when the key is defined in `utils/modules/i18n/en/*.json`
+ */
 function hasKey(key) {
     const trans = loadTranslations();
     return Object.prototype.hasOwnProperty.call(trans, key);
 }
 
 /**
- * English text for logging. If message is an i18n key, resolves it (with optional params);
- * otherwise returns the string unchanged.
+ * Translates a value when it is a known i18n key; otherwise returns it unchanged.
  *
- * @param {string} message
+ * @param {string} value - i18n key or plain English string
  * @param {Object} [params] - Optional placeholder values for keys like "Hello {name}"
- * @returns {string}
+ * @returns {string|null|undefined}
  */
-function resolveLogText(message, params = {}) {
-    if (typeof message !== 'string') {
-        return message;
+function translateMaybeKey(value, params = {}) {
+    if (value === undefined || value === null) {
+        return value;
     }
-    if (hasKey(message)) {
-        return t(message, params);
+    if (hasKey(value)) {
+        const trans = loadTranslations();
+        return interpolate(trans[value], params);
     }
-    return message;
+    return value;
 }
 
-module.exports = { t, hasKey, loadTranslations, resolveLogText };
+module.exports = { hasKey, loadTranslations, translateMaybeKey };
