@@ -17,8 +17,7 @@ Related code:
 
 * ``frontend/src/assets/utils.js`` — ``resolveApiMessage``, ``translateMaybeKey``, ``formatLocalized*``
 * ``frontend/src/assets/locale.js`` — language switcher, ``app.locale``
-* ``backend/utils/i18n.js`` — ``translateMaybeKey``, ``hasKey``
-* ``backend/db/migration-i18n-utils.js`` — ``resolveEnText`` (migration rollbacks)
+* ``backend/utils/i18n.js`` — ``translateMaybeKey``, ``hasKey`` (backend runtime and migrations)
 
 Translation guidelines
 ----------------------
@@ -38,49 +37,50 @@ How to translate
 .. code-block:: text
 
                         ┌─────────────────────────┐
-                        │ Step 1: What do you     │
+                        │      What do you        │
                         │         need?           │
                         └───────────┬─────────────┘
                   ┌─────────────────┴─────────────────┐
                   │                                   │
-         Add a new UI language              Translate UI text
+            New UI language                        UI text       
                   │                                   │
                   ▼                                   ▼
        ┌──────────────────────┐            ┌──────────────────┐
-       │ Adding a new UI      │            │ Adding a key     │
-       │ language             │            │ (+ namespace if  │
-       └──────────┬───────────┘            │  new JSON file)  │
+       │ 5. Adding a new UI   │            │ 1. Adding a key  │
+       │    language          │            │        &         │
+       │                      │            │ 2.  Adding a     │
+       └──────────┬───────────┘            │     namespace    │
                   │                        └────────┬─────────┘
                   │                                 │
                   │              ┌──────────────────┘
                   │              ▼
                   │     ┌─────────────────────────┐
-                  │     │ Step 2: Frontend or     │
+                  │     │         Frontend or     │
                   │     │         backend?        │
                   │     └───────────┬─────────────┘
                   │         ┌───────┴───────┐
                   │         ▼               ▼
-                  │    Frontend         Backend
+                  │    3. Frontend        4. Backend
                   │         │               │
                   └─────────┴───────┬───────┘
                                     ▼
                         ┌─────────────────────────┐
-                        │ Step 3: Test it out     │
+                        │ 6.   Test it out        │
                         └─────────────────────────┘
 
-Sections in this chapter (follow the branch that matches your task):
+Sections in this chapter :
 
-* :ref:`i18n-add-language` — new UI language
-* :ref:`i18n-add-key` — new key in an existing JSON file
-* :ref:`i18n-add-namespace` — new ``*.json`` namespace file
-* :ref:`i18n-frontend` — ``$t``, ``resolveApiMessage``, table columns, …
-* :ref:`i18n-backend` — ``TranslatableError``, backend ``translateMaybeKey``, …
-* :ref:`i18n-test` — verify in the UI and logs
+| :ref:`i18n-add-key` — new key in an existing JSON file
+| :ref:`i18n-add-namespace` — new ``*.json`` namespace file
+| :ref:`i18n-frontend` — ``$t``, ``resolveApiMessage``, table columns, …
+| :ref:`i18n-backend` — ``TranslatableError``, backend ``translateMaybeKey``, …
+| :ref:`i18n-add-language` — new UI language
+| :ref:`i18n-test` — verify in the UI and logs
 
 .. _i18n-add-key:
 
-Adding a key
-------------
+1. Adding a key
+---------------
 
 .. note::
 
@@ -171,8 +171,8 @@ Backend error keys usually go in ``errors.json`` (see :ref:`i18n-backend`).
 
 .. _i18n-add-namespace:
 
-Adding a new namespace
-----------------------
+2. Adding a new namespace
+-------------------------
 
 Each ``*.json`` file in a locale folder is one **namespace**. The filename (without ``.json``) becomes the
 first part of every key inside it.
@@ -213,13 +213,11 @@ the frontend:
 
    <h1>{{ $t('reports.title') }}</h1>
 
-New ``errors.*`` keys for backend errors belong in ``errors.json`` unless the group is large enough for its
-own file. For key layout inside a file, see :ref:`i18n-add-key`.
 
 .. _i18n-frontend:
 
-Frontend
---------
+3. Frontend
+-----------
 
 Common patterns — **before** (hardcoded English) and **after** (i18n). Add keys first as in
 :ref:`i18n-add-key`.
@@ -286,11 +284,11 @@ When a key holds an **array** of messages (e.g. rotating status text), use ``$tm
 
 .. _i18n-t-rich-text:
 
-Rich text in translations (i18n-t — preferred)
+Rich text in translations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a sentence needs **inline markup** (:code:`<strong>`, :code:`<br>`, a clickable link) **or** dynamic values
-that must stay safe, use the vue-i18n :code:`<i18n-t>` component instead of :code:`v-html`.
+that must stay safe, use the vue-i18n :code:`<i18n-t>` 
 
 keypath and tag
 ~~~~~~~~~~~~~~~
@@ -376,7 +374,7 @@ to a :code:`<template #name>` block with the same name (without :code:`#` in the
      </template>
    </i18n-t>
 
-**Rendered shape (locale EN, counts 3 and 1):**
+**Rendered shape:**
 
 .. code-block:: html
 
@@ -583,7 +581,7 @@ Example values for ``workflow.name``:
    workflow.dashboard.title          → translated (key in JSON)
    My custom workflow                → shown unchanged (user text)
 
-Table columns (computed)
+Table columns
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Define ``columns`` in a ``computed`` property so headers update when the user switches language.
@@ -641,8 +639,7 @@ Date and time formatting (formatLocalized*)
 
 **File:** ``frontend/src/assets/utils.js``
 
-Format **dates and times** in the user's **active UI locale** (the same ``en`` / ``de`` code as ``vue-i18n``) 
-picked in **Preferences**.
+Format **dates and times** in the user's **active UI locale** picked in **Preferences**.
 
 .. list-table::
    :header-rows: 1
@@ -711,8 +708,8 @@ Optional ``Intl.DateTimeFormat`` options as the second argument (:code:`options`
 
 .. _i18n-backend:
 
-Backend
--------
+4. Backend
+----------
 
 Throwing errors
 ~~~~~~~~~~~~~~~
@@ -723,7 +720,7 @@ Backend responses support **two formats** — both are valid:
 * **Preferred:** ``{ success: false, key: "errors.auth.invalidCredentials", params: { ... } }``
 * **Legacy:** ``{ success: false, message: "Plain text or an i18n key string" }``
 
-The frontend ``resolveApiMessage`` handles both. New code should prefer ``key`` + ``params``.
+The frontend ``resolveApiMessage`` handles both. New code should prefer ``key`` + optional ``params``.
 
 User-facing error in a handler
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -873,13 +870,13 @@ Backend English output (translateMaybeKey)
 
 Same idea as frontend :ref:`translateMaybeKey <i18n-translate-maybe-key>`: if the string is a **known i18n key**,
 translate it; otherwise return it unchanged. On the backend this always uses the **English** catalog — not the
-user's locale.
+user's locale. Use the same helper for **logs**, **socket fallbacks**, and **migrations** (``down`` steps that
+restore English text when rolling back rows that store i18n keys).
 
 **Anti-pattern — do not translate twice for logs**
 
-``SQLTransport`` already calls ``translateMaybeKey`` on every ``logger.*`` message. If you translate
-before logging, the same string is processed twice (harmless but redundant; reviewers flagged this in
-``Socket.js``).
+``SQLTransport`` already calls ``translateMaybeKey`` on every ``logger.*`` message. Do not call
+``translateMaybeKey`` before ``logger.error`` — the same string would be processed twice (harmless but redundant).
 
 .. code-block:: javascript
 
@@ -896,6 +893,9 @@ Call sites often pass either an i18n **key** or **plain English**:
   ``SQLTransport`` applies ``translateMaybeKey`` once before insert.
 * **Socket error responses** — log the key (``logger.error(key, { i18nParams: params })``); callback legacy
   ``message`` uses ``translateMaybeKey(key, params)``.
+* **Migrations** — when ``up`` stores i18n keys in the database (e.g. ``placeholderLabel``), ``down`` calls
+  ``translateMaybeKey`` to write back the English source string. If the key is missing from ``en`` JSON, the
+  key string is returned unchanged (safe for rollback).
 
 
 .. code-block:: javascript
@@ -913,18 +913,11 @@ Call sites often pass either an i18n **key** or **plain English**:
    this.logger.error(key, { i18nParams: params });
    callback({ success: false, key, params, message: translateMaybeKey(key, params) });
 
-Migrations: resolveEnText (down)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**File:** ``backend/db/migration-i18n-utils.js``
-
-When an ``up`` migration stores **i18n keys** in the database (e.g. placeholder ``placeholderLabel``), the
-``down`` migration should restore **English source text** for rollback. 
-Use ``resolveEnText`` to get the English string for the key:
+Migration example:
 
 .. code-block:: javascript
 
-   const { resolveEnText } = require("../migration-i18n-utils");
+   const { translateMaybeKey } = require("../../utils/i18n");
 
    module.exports = {
      async up(queryInterface) {
@@ -937,7 +930,7 @@ Use ``resolveEnText`` to get the English string for the key:
      },
 
      async down(queryInterface) {
-       const label = resolveEnText("templates.placeholders.labels.emailGeneral.username");
+       const label = translateMaybeKey("templates.placeholders.labels.emailGeneral.username");
 
        await queryInterface.bulkUpdate(
          "placeholder",
@@ -948,12 +941,10 @@ Use ``resolveEnText`` to get the English string for the key:
      },
    };
 
-If the key is missing from ``en`` JSON, in that case it stays in the database as is.
-
 .. _i18n-add-language:
 
-Adding a new UI language
-------------------------
+5. Adding a new UI language
+---------------------------
 
 Example: adding French (``fr``) as a third UI language.
 
@@ -999,8 +990,8 @@ The ``fr/index.js`` file comes from the copy in step 1 (same imports as ``en/ind
 
 .. _i18n-test:
 
-Test it out
------------
+6. Test it out
+--------------
 
 1. Switch language in **Preferences** (or use the new locale from :ref:`i18n-add-language`)
 2. Open the screen you changed and confirm labels / table headers update
