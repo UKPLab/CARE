@@ -77,6 +77,10 @@
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
 import {buildScoresFromState, calculateAssessmentScore,} from "@/assets/assessmentScore.js";
+import {
+  ASSESSMENT_RESULT_KEY,
+  getAssessmentResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "AssessmentSidebar",
@@ -210,25 +214,7 @@ export default {
 
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
-      if (!svc) return [];
-
-      // Live study hooks use `${name}_${hookName}`. Trigger preprocessing uses
-      // `${type}_${hookName}` because it has no study service-slot name.
-      if (svc.hookId) {
-        return [
-          svc.name && this.nlpHookName ? `${svc.name}_${this.nlpHookName}` : null,
-          svc.type && this.nlpHookName ? `${svc.type}_${this.nlpHookName}` : null,
-        ].filter(Boolean);
-      }
-
-      if (!svc.skill) return [];
-
-      const keys = [
-        svc.name && svc.skill ? `${svc.name}_${svc.skill}_assessment` : null,
-        svc.type && svc.skill ? `${svc.type}_${svc.skill}_assessment` : null,
-      ].filter(Boolean);
-
-      return keys;
+      return getAssessmentResultKeyCandidates(svc, this.nlpHookName);
     },
     preprocessedAssessmentRaw() {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
@@ -252,7 +238,7 @@ export default {
       return null;
     },
     assessmentDataKey() {
-      return "assessment_result";
+      return ASSESSMENT_RESULT_KEY;
     },
     areAllCriteriaSaved() {
       if (!this.configuration || !this.configuration.rubrics) return false;
@@ -320,6 +306,11 @@ export default {
         this.loadSavedAssessmentData();
       },
       immediate: true,
+    },
+    preprocessedAssessmentRaw: {
+      handler() {
+        this.loadSavedAssessmentData();
+      },
     },
   },
   mounted() {

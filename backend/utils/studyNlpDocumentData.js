@@ -12,6 +12,14 @@
 
 const NLP_ASSESSMENT_RESULT_FIELD = "assessment";
 
+function normalizeDocumentDataKeyPart(value) {
+    return typeof value === "string" ? value.trim().replace(/\s+/g, "_") : value;
+}
+
+function buildStudyHookKey(serviceName, hookName) {
+    return `${serviceName}_${normalizeDocumentDataKeyPart(hookName)}`;
+}
+
 /**
  * Build exact document_data key for study-step NLP save (NlpRequest.saveResult).
  *
@@ -38,8 +46,8 @@ function getStudyNlpKeyCandidates(service, resultField) {
 
     if (service.hookId) {
         const keys = [
-            service.name && service.hookName ? `${service.name}_${service.hookName}` : null,
-            service.type && service.hookName ? `${service.type}_${service.hookName}` : null,
+            service.name && service.hookName ? buildStudyHookKey(service.name, service.hookName) : null,
+            service.type && service.hookName ? buildStudyHookKey(service.type, service.hookName) : null,
         ].filter(Boolean);
         return [...new Set(keys)];
     }
@@ -119,6 +127,8 @@ function resolveNlpAssessmentDraft(mergedData, stepConfiguration) {
 
 module.exports = {
     NLP_ASSESSMENT_RESULT_FIELD,
+    normalizeDocumentDataKeyPart,
+    buildStudyHookKey,
     buildStudyNlpKey,
     getStudyNlpKeyCandidates,
     firstMergedValue,

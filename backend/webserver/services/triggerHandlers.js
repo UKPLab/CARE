@@ -2,6 +2,7 @@
 
 const { Op } = require("sequelize");
 const { resolveTemplate } = require("../../utils/templateResolver");
+const {buildStudyHookKey} = require("../../utils/studyNlpDocumentData");
 const aiHook = require("./ai/hook");
 
 const QUEUE_STATUS = {
@@ -705,7 +706,7 @@ async function runAiHookTrigger(server, trigger, context) {
         documentId,
         studySessionId: null,
         studyStepId: null,
-        key: `nlpRequest_${hook.name}`,
+        key: buildStudyHookKey("nlpRequest", hook.name),
         value,
     });
 

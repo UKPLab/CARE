@@ -7,6 +7,11 @@ import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import {extractTextFromPDF} from "@/assets/utils";
+import {
+  buildHookResultKey,
+  buildServiceSkillKey,
+  buildSkillResultKey,
+} from "@/assets/serviceDocumentDataKeys";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -81,7 +86,7 @@ export default {
       return this.uniqueId;
     },
     skillKey() {
-      return `${this.serviceName}_${this.skill}`;
+      return buildServiceSkillKey(this.serviceName, this.skill);
     },
     isHook() {
       return !!this.service?.hookId;
@@ -92,8 +97,9 @@ export default {
       return this.$store.getters["table/ai_hook/get"](this.service.hookId)?.name || null;
     },
     resultKeyBase() {
-      // Hook: single output keyed `${name}_${hookName}`; skill: `${name}_${skill}` (per-output below).
-      return this.isHook ? `${this.serviceName}_${this.hookName}` : this.skillKey;
+      return this.isHook
+        ? buildHookResultKey(this.serviceName, this.hookName)
+        : this.skillKey;
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -346,7 +352,7 @@ export default {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
-        key: `${this.skillKey}_${k}`,
+        key: buildSkillResultKey(this.serviceName, this.skill, k),
         value: result[k]
       }));
 
