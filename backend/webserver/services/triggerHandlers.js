@@ -646,6 +646,10 @@ async function runAiHookTrigger(server, trigger, context) {
     if (!hookId || !baseMapping || !service) {
         throw new Error("AI hook trigger is not configured correctly.");
     }
+    const hook = await server.db.models["ai_hook"].getById(hookId);
+    if (!hook || hook.deleted || !hook.name) {
+        throw new Error("AI hook trigger could not resolve its hook name.");
+    }
 
     let documentId = Number(baseMapping.documentId || context.documentId);
     if (baseMapping.type === "submission") {
@@ -701,7 +705,7 @@ async function runAiHookTrigger(server, trigger, context) {
         documentId,
         studySessionId: null,
         studyStepId: null,
-        key: `nlpRequest_hook_${hookId}_result`,
+        key: `nlpRequest_${hook.name}`,
         value,
     });
 

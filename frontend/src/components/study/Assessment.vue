@@ -84,13 +84,16 @@ export default {
     AssessmentRubric,
     FloatingInfoPanel,
   },
-  subscribeTable: [{
-    table: "configuration",
-    filter: [{
-      key: "type",
-      value: 0
-    }],
-  }],
+  subscribeTable: [
+    {
+      table: "configuration",
+      filter: [{
+        key: "type",
+        value: 0
+      }],
+    },
+    "ai_hook",
+  ],
   inject: {
     documentId: {
       type: Number,
@@ -197,14 +200,25 @@ export default {
 
       return svc || null;
     },
+    nlpHookName() {
+      const svc = this.nlpService;
+      if (!svc?.hookId) return null;
+      return svc.hookName
+          || this.$store.getters["table/ai_hook/get"](svc.hookId)?.name
+          || null;
+    },
 
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
       if (!svc) return [];
 
-      // Hook: single output keyed `${name}_${hookId}`.
+      // Live study hooks use `${name}_${hookName}`. Trigger preprocessing uses
+      // `${type}_${hookName}` because it has no study service-slot name.
       if (svc.hookId) {
-        return svc.name ? [`${svc.name}_${svc.hookId}`] : [];
+        return [
+          svc.name && this.nlpHookName ? `${svc.name}_${this.nlpHookName}` : null,
+          svc.type && this.nlpHookName ? `${svc.type}_${this.nlpHookName}` : null,
+        ].filter(Boolean);
       }
 
       if (!svc.skill) return [];
@@ -220,7 +234,7 @@ export default {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
         return null;
       }
-      const items = Object.keys(this.documentData).filter(item =>
+      const items = Object.keys(this.documentData || {}).filter(item =>
           this.preprocessedAssessmentKeyCandidates.includes(item)
       );
 

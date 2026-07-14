@@ -80,11 +80,11 @@ import FormDefault from "@/basic/form/Default.vue";
  * Configures a step's service slots. Each slot is filled with either an NLP skill or an AI hook
  * (chosen from the same dropdown). Skills and hooks share the same input/output mapping.
  * Budget caps for hook entries live in ai_budget (configured in the budget operations dashboard).
- * A slot stores `skill` (NLP) or `hookId` (hook); `type` stays `nlpRequest`.
+ * A slot stores `skill` (NLP) or `hookId` and `hookName` (hook); `type` stays `nlpRequest`.
  */
 export default {
   name: "ServicesStep",
-  subscribeTable: ["ai_budget"],
+  subscribeTable: ["ai_budget", "ai_hook"],
   components: {
     SkillSelector,
     InputMap,
@@ -214,6 +214,11 @@ export default {
       const id = Number(skill.skillName.slice("hook:".length));
       return Number.isInteger(id) ? id : null;
     },
+    hookNameFor(skill) {
+      const hookId = this.hookIdFor(skill);
+      if (!hookId) return null;
+      return this.$store.getters["table/ai_hook/get"](hookId)?.name || null;
+    },
     /** Builds one service entry from a selected slot, as a skill or a hook. */
     buildServiceEntry(skill, index) {
       const existing = this.modelValue.services[index] || {};
@@ -227,6 +232,7 @@ export default {
         return {
           ...base,
           hookId: this.hookIdFor(skill),
+          hookName: this.hookNameFor(skill),
           capTotal: skill.capTotal ?? null,
           capPerSession: skill.capPerSession ?? null,
           capPerUser: skill.capPerUser ?? null,

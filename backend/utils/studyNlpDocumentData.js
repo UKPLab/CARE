@@ -25,14 +25,26 @@ function buildStudyNlpKey(serviceName, skill, resultField) {
 }
 
 /**
- * Build candidate keys for reading study-step NLP data (name prefix, then type prefix).
+ * Build candidate keys for reading study-step NLP or AI-hook data.
  *
  * @param {Object} service - Step service entry with name, type, and skill
  * @param {string} resultField - top-level field name in NLP JSON response
  * @returns {string[]}
  */
 function getStudyNlpKeyCandidates(service, resultField) {
-    if (!service || !service.skill || !resultField) {
+    if (!service) {
+        return [];
+    }
+
+    if (service.hookId) {
+        const keys = [
+            service.name && service.hookName ? `${service.name}_${service.hookName}` : null,
+            service.type && service.hookName ? `${service.type}_${service.hookName}` : null,
+        ].filter(Boolean);
+        return [...new Set(keys)];
+    }
+
+    if (!service.skill || !resultField) {
         return [];
     }
 
@@ -80,7 +92,7 @@ function findAssessmentNlpService(stepConfiguration) {
     const nlpService =
         stepConfig.services.find(
             (service) =>
-                service.skill &&
+                (service.skill || service.hookId) &&
                 (service.name === "nlpAssessment" || service.type === "nlpRequest")
         ) || stepConfig.services[0];
 

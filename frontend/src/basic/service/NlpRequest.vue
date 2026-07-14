@@ -12,7 +12,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export default {
   name: "NlpRequest",
-  subscribeTable: ["configuration"],
+  subscribeTable: ["configuration", "ai_hook"],
   inject: {
     studyData: {
       type: Array,
@@ -86,9 +86,14 @@ export default {
     isHook() {
       return !!this.service?.hookId;
     },
+    hookName() {
+      if (this.service?.hookName) return this.service.hookName;
+      if (!this.service?.hookId) return null;
+      return this.$store.getters["table/ai_hook/get"](this.service.hookId)?.name || null;
+    },
     resultKeyBase() {
-      // Hook: single output keyed `${name}_${hookId}`; skill: `${name}_${skill}` (per-output below).
-      return this.isHook ? `${this.serviceName}_${this.service.hookId}` : this.skillKey;
+      // Hook: single output keyed `${name}_${hookName}`; skill: `${name}_${skill}` (per-output below).
+      return this.isHook ? `${this.serviceName}_${this.hookName}` : this.skillKey;
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -312,7 +317,7 @@ export default {
       return extractTextFromPDF(pdf);
     },
     /**
-     * Persists a hook's single completion to document_data under `${name}_${hookId}` (skill takes multi key).
+     * Persists a hook's single completion to document_data under `${name}_${hookName}` (skill takes multi key).
      *
      * @param {{ outputText?: string }} response
      * @returns {void}
