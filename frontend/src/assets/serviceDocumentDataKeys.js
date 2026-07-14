@@ -24,6 +24,13 @@ export function buildHookResultKey(serviceName, hookName) {
   return `${serviceName}_${normalizeDocumentDataKeyPart(hookName)}`;
 }
 
+export function getHookResultKeyCandidates(serviceName, serviceType, hookName) {
+  return [...new Set([
+    buildHookResultKey(serviceName, hookName),
+    buildHookResultKey(serviceType, hookName),
+  ].filter(Boolean))];
+}
+
 export function buildServiceResultKey(service, resultField) {
   if (!service) return null;
   if (service.hookId) {
@@ -36,10 +43,7 @@ export function getAssessmentResultKeyCandidates(service, hookName, resultField 
   if (!service) return [];
 
   const keys = service.hookId
-    ? [
-        buildHookResultKey(service.name, hookName),
-        buildHookResultKey(service.type, hookName),
-      ]
+    ? getHookResultKeyCandidates(service.name, service.type, hookName)
     : [
         buildSkillResultKey(service.name, service.skill, resultField),
         buildSkillResultKey(service.type, service.skill, resultField),

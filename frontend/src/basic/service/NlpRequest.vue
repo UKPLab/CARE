@@ -11,6 +11,7 @@ import {
   buildHookResultKey,
   buildServiceSkillKey,
   buildSkillResultKey,
+  getHookResultKeyCandidates,
 } from "@/assets/serviceDocumentDataKeys";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -101,6 +102,14 @@ export default {
         ? buildHookResultKey(this.serviceName, this.hookName)
         : this.skillKey;
     },
+    resultKeyCandidates() {
+      if (!this.isHook) return [this.resultKeyBase].filter(Boolean);
+      return getHookResultKeyCandidates(
+        this.serviceName,
+        this.service?.type,
+        this.hookName
+      );
+    },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
     },
@@ -142,7 +151,9 @@ export default {
   methods: {
     requestAlreadyDone() {
       if (this.isHook) {
-        return Object.prototype.hasOwnProperty.call(this.documentData || {}, this.resultKeyBase);
+        return this.resultKeyCandidates.some((key) =>
+          Object.prototype.hasOwnProperty.call(this.documentData || {}, key)
+        );
       }
       return Object.keys(this.documentData).some(key =>
           key.includes(this.skill)
