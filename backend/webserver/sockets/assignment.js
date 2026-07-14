@@ -595,7 +595,7 @@ class AssignmentSocket extends Socket {
 
         const result = {};
         for (const [key, value] of Object.entries(config)) {
-            if (value.isTemplate) {
+            if (value?.isTemplate) {
                 switch (context.assignmentType) {
                     case 'submission':
                         result[key] = { ...value, submissionId: context.submissionId };
