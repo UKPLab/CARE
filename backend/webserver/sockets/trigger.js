@@ -175,6 +175,28 @@ class TriggerSocket extends Socket {
     }
 
     /**
+     * Create a new execution from a completed trigger log.
+     *
+     * @socketEvent triggerQueueRerun
+     * @param {Object} data Must contain `id` (queue item id)
+     * @param {Object} options Holds the managed transaction
+     * @returns {Promise<Object>}
+     */
+    async rerunQueueItem(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to re-run trigger logs.");
+        }
+        if (!data.id) {
+            throw new Error("A queue item id is required.");
+        }
+
+        return await triggerHandlers.rerunQueueItem(this.server, data.id, {
+            ...options,
+            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+        });
+    }
+
+    /**
      * Cancel a pending or running trigger execution.
      *
      * @socketEvent triggerQueueCancel
@@ -220,6 +242,7 @@ class TriggerSocket extends Socket {
         this.createSocket("triggerDelete", this.deleteTrigger, {}, true);
         this.createSocket("triggerQueueGetDetails", this.getQueueDetails, {}, false);
         this.createSocket("triggerQueueRetry", this.retryQueueItem, {}, false);
+        this.createSocket("triggerQueueRerun", this.rerunQueueItem, {}, false);
         this.createSocket("triggerQueueCancel", this.cancelQueueItem, {}, true);
     }
 }

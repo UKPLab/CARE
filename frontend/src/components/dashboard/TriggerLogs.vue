@@ -62,7 +62,7 @@ export default {
       queueStatuses: [
         { name: "PENDING", value: 0, label: "Pending", badgeClass: "bg-secondary", flags: ["canCancel"] },
         { name: "RUNNING", value: 1, label: "Running", badgeClass: "bg-primary", flags: ["canCancel"] },
-        { name: "COMPLETED", value: 2, label: "Completed", badgeClass: "bg-success", flags: [] },
+        { name: "COMPLETED", value: 2, label: "Completed", badgeClass: "bg-success", flags: ["canRerun"] },
         { name: "CANCELLED", value: 3, label: "Cancelled", badgeClass: "bg-warning text-dark", flags: ["canRetry"] },
         { name: "FAILED", value: 4, label: "Failed", badgeClass: "bg-danger", flags: ["canRetry", "hasError"] },
       ],
@@ -98,6 +98,21 @@ export default {
           filter: [{ key: "canRetry", value: true }],
           successToast: { title: "Retry queued", message: "The trigger execution has been set back to pending." },
           errorToast: { title: "Retry failed" },
+        },
+        {
+          icon: "arrow-repeat",
+          title: "Re-run",
+          action: "rerun",
+          handler: "confirmSocket",
+          socketEvent: "triggerQueueRerun",
+          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
+          filter: [{ key: "canRerun", value: true }],
+          confirm: {
+            title: "Re-run execution",
+            message: 'Run the completed trigger "{triggerName}" again?',
+          },
+          successToast: { title: "Re-run queued", message: "A new trigger execution has been queued." },
+          errorToast: { title: "Re-run failed" },
         },
         {
           icon: "exclamation-triangle",
@@ -176,6 +191,7 @@ export default {
 
       const statusFlags = flagByValue[item.status] || [];
       row.canRetry = statusFlags.includes("canRetry");
+      row.canRerun = statusFlags.includes("canRerun");
       row.hasError = statusFlags.includes("hasError") || !!item.errorMessage;
       row.canCancel = statusFlags.includes("canCancel");
 
@@ -203,7 +219,7 @@ export default {
         return;
       }
 
-      if (actionDef.handler === "confirmCancel") {
+      if (actionDef.handler === "confirmCancel" || actionDef.handler === "confirmSocket") {
         const { confirm } = actionDef;
         this.$refs.confirmModal.open(
           confirm.title,

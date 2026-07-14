@@ -435,6 +435,57 @@ async function retryQueueItem(server, queueItemId, options = {}) {
 }
 
 /**
+ * Create a new execution from a completed queue item.
+ *
+ * The original queue item is kept unchanged so each manual re-run has its own
+ * log entry and failed retry limits remain scoped to that new execution.
+ *
+ * @param {Object} server CARE server instance
+ * @param {number} queueItemId Queue item id
+ * @param {Object} options Trigger runtime options
+ * @returns {Promise<Object>}
+ */
+async function rerunQueueItem(server, queueItemId, options = {}) {
+    const item = await getQueueItem(server, queueItemId, options);
+    if (!item) {
+        throw new Error("Queue item not found.");
+    }
+    if (item.status !== QUEUE_STATUS.COMPLETED) {
+        throw new Error("Only completed queue items can be re-run.");
+    }
+
+    const trigger = await getTriggerWithCatalog(server, item.triggerId, options);
+    if (!trigger) {
+        throw new Error("Associated trigger rule not found.");
+    }
+
+    const persistedConfig = asObject(item.configuration);
+    const queueItem = await server.db.models[QUEUE_TABLE].add({
+        triggerId: trigger.id,
+        status: QUEUE_STATUS.PENDING,
+        userId: item.userId || trigger.userId,
+        configuration: {
+            event: asObject(persistedConfig.event),
+            action: asObject(persistedConfig.action),
+        },
+        errorMessage: null,
+        attemptCount: 0,
+        startedAt: null,
+        completedAt: null,
+    }, { transaction: options.transaction });
+
+    await broadcastQueueItem(queueItem, options);
+
+    setImmediate(() => {
+        runQueuedTrigger(server, trigger, queueItem, asObject(persistedConfig.event), options).catch((err) => {
+            server.logger.error(`Re-run for trigger queue item ${queueItem.id} failed: ${err.message}`, err);
+        });
+    });
+
+    return queueItem;
+}
+
+/**
  * Handle any trigger event by resolving context, matching triggers, and running them.
  *
  * @param {Object} server CARE server instance
@@ -726,6 +777,7 @@ module.exports = {
     asObject,
     handleTriggerEvent,
     handleSubmissionUploaded,
+    rerunQueueItem,
     retryQueueItem,
     sendEmail,
     runAiPreprocessing,
