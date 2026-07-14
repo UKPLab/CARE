@@ -3,9 +3,9 @@
  *
  * Single source of truth for translations used by both frontend and backend.
  *
- * Frontend (via Vite alias @i18n):
- *   import { messages } from '@i18n';
- *   // pass `messages` to vue-i18n createI18n()
+ * Frontend (via Vite alias `@i18n`):
+ *   import i18nBundles from '@i18n/i18n-bundles.js';
+ *   // pass as `messages` to vue-i18n createI18n()
  *
  * Backend (CommonJS):
  *   const { t, hasKey, messages } = require('../../utils/modules/i18n');

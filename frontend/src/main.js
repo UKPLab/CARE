@@ -16,7 +16,7 @@ const app = Vue.createApp({
 
 
 import { createI18n } from 'vue-i18n'
-import messages from '@i18n/messages.js'
+import i18nBundles from '@i18n/i18n-bundles.js'
 import { DEFAULT_LOCALE, getInitialLocale } from '@/assets/locale.js'
 
 export const i18n = createI18n({
@@ -24,7 +24,7 @@ export const i18n = createI18n({
   globalInjection: true,
   locale: getInitialLocale(),
   fallbackLocale: DEFAULT_LOCALE,
-  messages
+  messages: i18nBundles,
 });
 
 app.use(i18n);

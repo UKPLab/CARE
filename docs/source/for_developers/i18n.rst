@@ -11,7 +11,7 @@ All translation keys live under ``utils/modules/i18n/``:
 
 * ``en/*.json``, ``de/*.json`` — key catalogs per UI language (one file = one namespace, e.g. ``users.json``)
 * ``en/index.js``, ``de/index.js`` — import JSON files and bundle namespaces for the frontend
-* ``messages.js`` — registers locale bundles for ``vue-i18n``
+* ``i18n-bundles.js`` — bundles ``en`` / ``de`` namespaces for ``vue-i18n``
 
 Related code:
 
@@ -25,8 +25,7 @@ Translation guidelines
 Do **not** translate
 ~~~~~~~~~~~~~~~~~~~~
 
-* **Database row values** — user names, study titles, document names, names entered by users
-* **Table cell data** — only translate the column **header** (``name`` in the columns config), not ``key`` data
+* **Table content** — study titles, document names, workflow names, etc.
 * **Server logs** — dashboard log table and log files are **always English** (see :ref:`logging-i18n` below)
 * Developer ``console.log`` / debug output
 * **Template body content** — multi-language content, not UI strings
@@ -959,7 +958,7 @@ file. **Keys must stay identical** — only the text changes.
    utils/modules/i18n/en/errors.json   →  utils/modules/i18n/fr/errors.json
    ... (all other JSON files)
 
-**2. Register the locale in** ``messages.js``
+**2. Register the locale in** ``i18n-bundles.js``
 
 .. code-block:: javascript
 
@@ -967,10 +966,10 @@ file. **Keys must stay identical** — only the text changes.
    import de from './de/index.js'
    import fr from './fr/index.js'
 
-   const messages = { en, de, fr }
+   const i18nBundles = { en, de, fr }
 
-   export { en, de, fr, messages }
-   export default messages
+   export { en, de, fr, i18nBundles }
+   export default i18nBundles
 
 The ``fr/index.js`` file comes from the copy in step 1 (same imports as ``en/index.js``, pointing at
 ``fr/*.json``).
