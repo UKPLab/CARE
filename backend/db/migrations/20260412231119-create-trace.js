@@ -19,10 +19,9 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
-      // TODO: SET NULL on user deletion makes every trace of that user
-      // unreplayable (groupTracesBySocket skips traces with no userId), so the
-      // recording survives but silently replays nothing. See the matching TODO
-      // on recording.userId — both need one consistent answer.
+      // SET NULL would leave the recording intact but silently unreplayable
+      // (groupTracesBySocket skips traces with no userId). RESTRICT keeps trace
+      // ownership honest; recordings are soft-deleted, never orphaned.
       userId: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -30,7 +29,7 @@ module.exports = {
           model: 'user',
           key: 'id',
         },
-        onDelete: 'SET NULL',
+        onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
       },
       socketId: {

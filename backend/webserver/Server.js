@@ -391,11 +391,6 @@ module.exports = class Server {
             // set of online sessions changed, so they can refresh live.
             this.io.emit("sessionsChanged");
 
-            // If a recording is in progress and this new connection isn't in the
-            // participant list, notify the recording's owner that the activity
-            // won't be captured. A single browser tab opens more than one socket,
-            // so debounce the toast to avoid firing it multiple times for what is
-            // effectively one new tab.
             // (Removed) Uncaptured-connection warning: with per-socket recordings
             // there is no single active batch a new connection is "outside" of,
             // so the warning no longer has a clear meaning. New connections are
@@ -605,9 +600,7 @@ module.exports = class Server {
      */
     async recoverInterruptedRecordings() {
         try {
-            const stale = await this.db.models["recording"].findAll({
-                where: { status: "recording", deleted: false },
-            });
+            const stale = await this.db.models["recording"].getAllByKey("status", "recording");
             for (const rec of stale) {
                 await this.db.models["recording"].updateById(rec.id, {
                     status: "interrupted",

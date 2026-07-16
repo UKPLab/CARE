@@ -27,10 +27,9 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
       },
-      // TODO: onDelete CASCADE hard-deletes a user's recordings, bypassing the
-      // soft-delete rule the rest of CARE follows. trace.userId uses SET NULL
-      // instead, which silently makes a recording unreplayable. Both need a
-      // decision on what deleting a user should do to recorded data.
+      // Recordings are soft-deleted only, so a user delete must never cascade
+      // them away. RESTRICT forces whoever adds user deletion to soft-delete
+      // the recordings first rather than silently destroying recorded data.
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -38,7 +37,7 @@ module.exports = {
           model: 'user',
           key: 'id',
         },
-        onDelete: 'CASCADE',
+        onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
       },
       participantSocketIds: {

@@ -2,10 +2,11 @@
 const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
-    // Allowed recording lifecycle states. Single source of truth for the
+   // Allowed recording lifecycle states. Single source of truth for the
     // status validator below; add new states here rather than scattering
-    // string literals.
-    const RECORDING_STATUSES = ["recording", "finished", "disconnected"];
+    // string literals. "interrupted" is set on startup for recordings whose
+    // server died mid-capture.
+    const RECORDING_STATUSES = ["recording", "finished", "disconnected", "interrupted"];
 
     class Recording extends MetaModel {
         // MetaModel flags. autoTable registers this model for generic CRUD

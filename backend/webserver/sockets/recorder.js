@@ -1,6 +1,11 @@
 const Socket = require("../Socket.js");
 const { snapshot } = require("../../db/stats.js");
 
+// How long a start-recording claim stays valid before another admin may take
+// the socket. Only reached when a start failed between claiming and committing,
+// so it just needs to outlast a normal insert.
+const RECORDING_CLAIM_TIMEOUT_MS = 10000;
+
 // The recorder's own control events. These are recording machinery, not user
 // activity, so they're never captured — otherwise a recording would include
 // its own recorderStop, and replaying it fails with "No active recording".
@@ -114,12 +119,24 @@ class RecorderSocket extends Socket {
             throw new Error("At least one session must be selected");
         }
 
-       // TODO: two admins starting on the same socket concurrently can both
-        // pass this check before either activates, orphaning one recording.
-        // Needs a reservation that survives rollback; Sequelize exposes no
-        // afterRollback hook, so this is deferred pending a design decision.
-        const alreadyRecording = participantSocketIds.filter(id => this.server.activeRecordings[id]);
-        if (alreadyRecording.length > 0) {
+       // Claim the sockets synchronously, before any await: two admins starting
+        // at once would otherwise both pass this check and the second activation
+        // would orphan the first's recording. A claim that never becomes a real
+        // recording (its transaction rolled back) expires on its own, since
+        // Sequelize offers no rollback hook to release it explicitly.
+        const now = Date.now();
+        const taken = participantSocketIds.filter(id => {
+            const entry = this.server.activeRecordings[id];
+            if (!entry) {
+                return false;
+            }
+            if (entry.claimedAt && now - entry.claimedAt > RECORDING_CLAIM_TIMEOUT_MS) {
+                delete this.server.activeRecordings[id];
+                return false;
+            }
+            return true;
+        });
+        if (taken.length > 0) {
             throw new Error("One or more selected sessions are already being recorded");
         }
 
@@ -134,6 +151,13 @@ class RecorderSocket extends Socket {
         ));
         if (offline.length > 0) {
             throw new Error("One or more selected sessions are no longer connected");
+        }
+
+        for (const socketId of participantSocketIds) {
+            this.server.activeRecordings[socketId] = {
+                claimedAt: now,
+                ownerSocketId: this.socket.id,
+            };
         }
 
         const excludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
@@ -161,7 +185,7 @@ class RecorderSocket extends Socket {
 
         // Only start capturing once the rows are committed: a rollback would
         // otherwise leave listeners writing traces against recordings that
-        // don't exist, and activeRecordings entries that can never be stopped.
+        // don't exist. This also replaces the claims above with real entries.
         const activate = () => {
             for (const s of started) {
                 this.server.activeRecordings[s.socketId] = {
