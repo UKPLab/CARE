@@ -7,12 +7,18 @@ import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import {extractTextFromPDF} from "@/assets/utils";
+import {
+  buildHookResultKey,
+  buildServiceSkillKey,
+  buildSkillResultKey,
+  getHookResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export default {
   name: "NlpRequest",
-  subscribeTable: ["configuration"],
+  subscribeTable: ["configuration", "ai_hook"],
   inject: {
     studyData: {
       type: Array,
@@ -81,14 +87,28 @@ export default {
       return this.uniqueId;
     },
     skillKey() {
-      return `${this.serviceName}_${this.skill}`;
+      return buildServiceSkillKey(this.serviceName, this.skill);
     },
     isHook() {
       return !!this.service?.hookId;
     },
+    hookName() {
+      if (this.service?.hookName) return this.service.hookName;
+      if (!this.service?.hookId) return null;
+      return this.$store.getters["table/ai_hook/get"](this.service.hookId)?.name || null;
+    },
     resultKeyBase() {
-      // Hook: single output keyed `${name}_${hookId}`; skill: `${name}_${skill}` (per-output below).
-      return this.isHook ? `${this.serviceName}_${this.service.hookId}` : this.skillKey;
+      return this.isHook
+        ? buildHookResultKey(this.serviceName, this.hookName)
+        : this.skillKey;
+    },
+    resultKeyCandidates() {
+      if (!this.isHook) return [this.resultKeyBase].filter(Boolean);
+      return getHookResultKeyCandidates(
+        this.serviceName,
+        this.service?.type,
+        this.hookName
+      );
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -131,7 +151,9 @@ export default {
   methods: {
     requestAlreadyDone() {
       if (this.isHook) {
-        return Object.prototype.hasOwnProperty.call(this.documentData || {}, this.resultKeyBase);
+        return this.resultKeyCandidates.some((key) =>
+          Object.prototype.hasOwnProperty.call(this.documentData || {}, key)
+        );
       }
       return Object.keys(this.documentData).some(key =>
           key.includes(this.skill)
@@ -312,7 +334,7 @@ export default {
       return extractTextFromPDF(pdf);
     },
     /**
-     * Persists a hook's single completion to document_data under `${name}_${hookId}` (skill takes multi key).
+     * Persists a hook's single completion to document_data under `${name}_${hookName}` (skill takes multi key).
      *
      * @param {{ outputText?: string }} response
      * @returns {void}
@@ -341,7 +363,7 @@ export default {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
-        key: `${this.skillKey}_${k}`,
+        key: buildSkillResultKey(this.serviceName, this.skill, k),
         value: result[k]
       }));
 

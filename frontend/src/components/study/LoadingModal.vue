@@ -72,6 +72,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
 import BasicButton from "@/basic/Button.vue";
+import {buildServiceResultKey} from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "StudyLoadingModal",
@@ -319,15 +320,13 @@ export default {
       }
 
       // Emit editor-insertions for any output marked insertIntoEditor. Skills key by
-      // `${name}_${skill}_${outputKey}`; hooks (single output) key by `${name}_${hookId}`.
+      // `${name}_${skill}_${outputKey}`; hooks (single output) key by `${name}_${hookName}`.
       this.nlpServices.forEach(service => {
         if (!service.outputs || typeof service.outputs !== 'object') {
           return;
         }
         Object.entries(service.outputs).forEach(([outputKey, outputConfig]) => {
-          const responseKey = service.hookId
-              ? `${service.name}_${service.hookId}`
-              : `${service.name}_${service.skill}_${outputKey}`;
+          const responseKey = buildServiceResultKey(service, outputKey);
           if (updatedData[responseKey] && outputConfig?.value === "insertIntoEditor") {
             this.$emit("insert-nlp-response", {response: updatedData[responseKey]});
           }

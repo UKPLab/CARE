@@ -77,6 +77,10 @@
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
 import { buildScoresFromState, calculateAssessmentScore } from "assessment-score";
+import {
+  ASSESSMENT_RESULT_KEY,
+  getAssessmentResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "AssessmentSidebar",
@@ -84,13 +88,16 @@ export default {
     AssessmentRubric,
     FloatingInfoPanel,
   },
-  subscribeTable: [{
-    table: "configuration",
-    filter: [{
-      key: "type",
-      value: 0
-    }],
-  }],
+  subscribeTable: [
+    {
+      table: "configuration",
+      filter: [{
+        key: "type",
+        value: 0
+      }],
+    },
+    "ai_hook",
+  ],
   inject: {
     documentId: {
       type: Number,
@@ -197,30 +204,23 @@ export default {
 
       return svc || null;
     },
+    nlpHookName() {
+      const svc = this.nlpService;
+      if (!svc?.hookId) return null;
+      return svc.hookName
+          || this.$store.getters["table/ai_hook/get"](svc.hookId)?.name
+          || null;
+    },
 
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
-      if (!svc) return [];
-
-      // Hook: single output keyed `${name}_${hookId}`.
-      if (svc.hookId) {
-        return svc.name ? [`${svc.name}_${svc.hookId}`] : [];
-      }
-
-      if (!svc.skill) return [];
-
-      const keys = [
-        svc.name && svc.skill ? `${svc.name}_${svc.skill}_assessment` : null,
-        svc.type && svc.skill ? `${svc.type}_${svc.skill}_assessment` : null,
-      ].filter(Boolean);
-
-      return keys;
+      return getAssessmentResultKeyCandidates(svc, this.nlpHookName);
     },
     preprocessedAssessmentRaw() {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
         return null;
       }
-      const items = Object.keys(this.documentData).filter(item =>
+      const items = Object.keys(this.documentData || {}).filter(item =>
           this.preprocessedAssessmentKeyCandidates.includes(item)
       );
 
@@ -238,7 +238,7 @@ export default {
       return null;
     },
     assessmentDataKey() {
-      return "assessment_result";
+      return ASSESSMENT_RESULT_KEY;
     },
     areAllCriteriaSaved() {
       if (!this.configuration || !this.configuration.rubrics) return false;
@@ -306,6 +306,11 @@ export default {
         this.loadSavedAssessmentData();
       },
       immediate: true,
+    },
+    preprocessedAssessmentRaw: {
+      handler() {
+        this.loadSavedAssessmentData();
+      },
     },
   },
   mounted() {

@@ -322,8 +322,11 @@ def create_app():
         api_base = data.get("apiBaseUrl")
         api_version = data.get("apiVersion")
 
-        if not api_key:
-            return {"success": False, "message": "Missing required field: apiKey"}
+        if not api_key and not api_base:
+            return {
+                "success": False,
+                "message": "Either apiKey or apiBaseUrl is required",
+            }
 
         logger.info(f"getValidModels from {sid}: provider={provider or 'auto'}")
 
