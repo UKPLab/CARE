@@ -20,22 +20,10 @@ export default {
   name: "TriggerEventStep",
   components: { BasicForm },
   props: {
-    modelValue: {
-      type: Object,
-      required: true,
-    },
-    eventData: {
-      type: Object,
-      required: true,
-    },
-    eventFields: {
-      type: Array,
-      required: true,
-    },
-    configFields: {
-      type: Array,
-      required: true,
-    },
+    modelValue: { type: Object, required: true },
+    eventData: { type: Object, required: true },
+    eventFields: { type: Array, required: true },
+    configFields: { type: Array, required: true },
   },
   emits: ["update:modelValue", "update:eventData"],
 };
