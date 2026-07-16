@@ -1,176 +1,41 @@
 <template>
-  <BasicModal ref="modelModal" name="aiModelModal" size="lg">
+  <BasicModal
+    ref="modal"
+    name="aiModelModal"
+    size="lg"
+    @hide="resetForm"
+  >
     <template #title>
       {{ modelForm.id ? "Edit AI Model" : "Add AI Model" }}
     </template>
     <template #body>
-      <div class="row g-3">
-        <div class="col-md-12">
-          <label class="form-label">
-            Name
-            <i
-              class="bi bi-info-circle text-muted ms-1"
-              title="A display name for this AI model inside CARE."
-            />
-          </label>
-          <input
-            v-model="modelForm.name"
-            type="text"
-            class="form-control"
-            placeholder="Name"
-          />
-        </div>
-
-        <div class="col-md-12">
-          <label class="form-label">
-            Your Credentials
-            <i
-              class="bi bi-info-circle text-muted ms-1"
-              title="Select the credential that you want to use to access the model."
-            />
-          </label>
-          <select
-            v-model="modelForm.aiCredentialId"
-            class="form-select"
-            @change="clearModelOptions"
-          >
-            <option :value="null">Select credential</option>
-            <option
-              v-for="credential in selectableCredentialRows"
-              :key="credential.id"
-              :value="credential.id"
-            >
-              {{ credential.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="col-md-12">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <label class="form-label mb-0">
-              Model Name
-              <i
-                class="bi bi-info-circle text-muted ms-1"
-                title="Select the model you want to use, e.g. gpt-4o or claude-3-5-sonnet."
-              />
-            </label>
-            <button
-              class="btn btn-outline-secondary btn-sm"
-              type="button"
-              :disabled="!canLoadModelOptions || isLoadingModels"
-              @click="loadModelOptions"
-            >
-              {{ isLoadingModels ? "Loading..." : "Load Models" }}
-            </button>
-          </div>
-          <select
-            v-if="modelOptionValues.length"
-            v-model="modelForm.model"
-            class="form-select"
-          >
-            <option value="">Select model</option>
-            <option
-              v-for="model in modelOptionValues"
-              :key="model"
-              :value="model"
-            >
-              {{ model }}
-            </option>
-          </select>
-          <input
-            v-else
-            v-model="modelForm.model"
-            type="text"
-            class="form-control"
-            placeholder="Model name"
-          />
-          <small v-if="modelLookupError" class="text-danger">{{ modelLookupError }}</small>
-          <small v-else class="text-muted">
-            Select a credential, then load models from LiteLLM.
-          </small>
-        </div>
-
-        <div class="col-md-12">
-          <label class="form-label">
-            Description (optional)
-            <i
-              class="bi bi-info-circle text-muted ms-1"
-              title="Optional notes to help identify when this model should be used."
-            />
-          </label>
-          <textarea
-            v-model="modelForm.description"
-            class="form-control"
-            rows="2"
-          />
-      </div>
-
-        <div class="col-md-12">
-          <label class="form-label">
-            Additional Parameters (JSON, optional)
-            <i
-              class="bi bi-info-circle text-muted ms-1"
-              title="Optional parameters as JSON, such as temperature, top_p, or fallback_models. see documentation for more details."
-            />
-          </label>
-          <textarea
-            v-model="modelForm.additionalParameters"
-            class="form-control"
-            rows="4"
-            placeholder="{}"
-          />
-        </div>
-
-        <div class="col-md-12">
-          <div class="border rounded p-3">
-            <div class="mb-3">
-              <FormSwitch
-                :model-value="modelForm.freeModel"
-                :options="{ key: 'freeModel', label: 'Free Model', help: 'Free/self-hosted models bypass all spending caps. When disabled, costs are tracked.' }"
-                @update:model-value="modelForm.freeModel = $event; if ($event) modelForm.costLimit = null"
-              />
-            </div>
-            <div v-if="!modelForm.freeModel">
-              <FormDefault
-                :model-value="String(modelForm.costLimit || '')"
-                :options="{ key: 'costLimit', label: 'Cost limit ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Global cap across all users on this model' }"
-                @update:model-value="modelForm.costLimit = $event ? Number($event) : null"
-              />
-            </div>
-          
-          </div>
-        </div>
-
-        <div class="col-md-12">
-          <div class="form-check">
-            <input
-              id="modelEnabled"
-              v-model="modelForm.enabled"
-              class="form-check-input"
-              type="checkbox"
-            />
-            <label class="form-check-label" for="modelEnabled">
-              Enabled
-            </label>
-          </div>
-        </div>
-      </div>
+      <BasicForm
+        ref="form"
+        v-model="modelForm"
+        :fields="modelFields"
+        @button-click="handleFormButton"
+      />
+      <small v-if="modelLookupError" class="text-danger">{{ modelLookupError }}</small>
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="$refs.modelModal.close()">
-        Cancel
-      </button>
-      <button
-        class="btn btn-outline-secondary"
-        type="button"
-        :disabled="isTestingModel"
-        @click="testModel"
-      >
-        {{ isTestingModel ? "Testing..." : "Send Test Prompt" }}
-      </button>
-      <button class="btn btn-primary" type="button" @click="saveModel">
-        {{ modelForm.id ? "Update" : "Add" }}
-      </button>
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          text="Cancel"
+          @click="$refs.modal.close()"
+        />
+        <BasicButton
+          class="btn btn-outline-secondary"
+          :disabled="isTestingModel"
+          :text="isTestingModel ? 'Testing...' : 'Send Test Prompt'"
+          @click="testModel"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :text="modelForm.id ? 'Update' : 'Add'"
+          @click="saveModel"
+        />
+      </span>
     </template>
   </BasicModal>
 </template>
@@ -183,26 +48,12 @@
  */
 
 import BasicModal from "@/basic/Modal.vue";
-import FormSwitch from "@/basic/form/Switch.vue";
-import FormDefault from "@/basic/form/Default.vue";
-
-function getEmptyModelForm() {
-  return {
-    id: 0,
-    name: "",
-    model: "",
-    aiCredentialId: null,
-    description: "",
-    enabled: true,
-    additionalParameters: "{}",
-    freeModel: false,
-    costLimit: null,
-  };
-}
+import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AIModel",
-  components: { BasicModal, FormSwitch, FormDefault },
+  components: { BasicModal, BasicForm, BasicButton },
   props: {
     currentUserId: {
       type: Number,
@@ -216,7 +67,7 @@ export default {
   subscribeTable: ["ai_budget"],
   data() {
     return {
-      modelForm: getEmptyModelForm(),
+      modelForm: {},
       isTestingModel: false,
       isLoadingModels: false,
       modelOptions: [],
@@ -242,11 +93,128 @@ export default {
       }
       return [...options].sort((a, b) => a.localeCompare(b));
     },
+    modelFields() {
+      const labelButton = {
+        text: this.isLoadingModels ? "Loading..." : "Load Models",
+        disabled: !this.canLoadModelOptions || this.isLoadingModels,
+        class: "btn-outline-secondary btn-sm",
+        action: "loadModelOptions",
+      };
+      const modelField = this.modelOptionValues.length
+        ? {
+            key: "model",
+            label: "Model Name",
+            type: "select",
+            required: true,
+            default: "",
+            labelButton,
+            help: "Select the model you want to use, e.g. gpt-4o or claude-3-5-sonnet.",
+            options: [
+              { value: "", name: "Select model" },
+              ...this.modelOptionValues.map((model) => ({ value: model, name: model })),
+            ],
+          }
+        : {
+            key: "model",
+            label: "Model Name",
+            type: "text",
+            required: true,
+            default: "",
+            labelButton,
+            placeholder: "Model name",
+            help: "Select a credential, then load models from LiteLLM, or enter a model name.",
+          };
+
+      return [
+        {
+          key: "name",
+          label: "Name",
+          type: "text",
+          required: true,
+          default: "",
+          placeholder: "Name",
+          help: "A display name for this AI model inside CARE.",
+        },
+        {
+          key: "aiCredentialId",
+          label: "Your Credentials",
+          type: "select",
+          required: true,
+          default: null,
+          options: [
+            { value: null, name: "Select credential" },
+            ...this.selectableCredentialRows.map((credential) => ({
+              value: credential.id,
+              name: credential.name,
+            })),
+          ],
+          help: "Select the credential that you want to use to access the model.",
+        },
+        modelField,
+        {
+          key: "description",
+          label: "Description (optional)",
+          type: "textarea",
+          default: "",
+          rows: 2,
+          help: "Optional notes to help identify when this model should be used.",
+        },
+        {
+          key: "additionalParameters",
+          label: "Additional Parameters (JSON, optional)",
+          type: "json",
+          default: {},
+          rows: 4,
+          placeholder: "{}",
+          help: "Optional parameters as JSON, such as temperature, top_p, or fallback_models.",
+        },
+        {
+          key: "freeModel",
+          label: "Free Model",
+          type: "switch",
+          default: false,
+          help: "Free/self-hosted models bypass all spending caps. When disabled, costs are tracked.",
+        },
+        ...(!this.modelForm.freeModel
+          ? [{
+              key: "costLimit",
+              label: "Cost limit ($)",
+              type: "number",
+              default: "",
+              min: 0,
+              step: 0.01,
+              placeholder: "No limit",
+              help: "Global cap across all users on this model.",
+            }]
+          : []),
+        {
+          key: "enabled",
+          label: "Enabled",
+          type: "switch",
+          default: true,
+        },
+      ];
+    },
+  },
+  watch: {
+    "modelForm.aiCredentialId"(newId, oldId) {
+      if (oldId === undefined || newId === oldId) return;
+      this.clearModelOptions();
+    },
+    "modelForm.freeModel"(isFree) {
+      if (isFree) {
+        this.modelForm.costLimit = "";
+      }
+    },
   },
   methods: {
+    handleFormButton({ action }) {
+      if (action === "loadModelOptions") {
+        this.loadModelOptions();
+      }
+    },
     open(row = null) {
-      this.modelForm = getEmptyModelForm();
-      this.clearModelOptions();
+      this.resetForm();
       if (row) {
         if (Number(row.userId) !== Number(this.currentUserId)) {
           this.toastError("Only model owners can edit this model");
@@ -259,12 +227,19 @@ export default {
           aiCredentialId: row.aiCredentialId || null,
           description: row.description || "",
           enabled: !!row.enabled,
-          additionalParameters: JSON.stringify(row.additionalParameters || {}, null, 2),
+          additionalParameters: row.additionalParameters || {},
           freeModel: !!row.freeModel,
-          costLimit: this.findExistingCap(row.id),
+          costLimit: this.findExistingCap(row.id)?.toString() || "",
         };
       }
-      this.$refs.modelModal.open();
+      this.$refs.modal.open();
+    },
+    resetForm() {
+      this.modelForm = {};
+      this.isTestingModel = false;
+      this.isLoadingModels = false;
+      this.clearModelOptions();
+      this.eventBus.emit("resetFormField");
     },
     findExistingCapRow(modelId) {
       if (!modelId) return null;
@@ -323,28 +298,7 @@ export default {
       }
     },
     saveModel() {
-      if (!this.modelForm.name.trim()) {
-        this.toastError("Model name is required");
-        return;
-      }
-      if (!this.modelForm.model.trim()) {
-        this.toastError("Model name is required");
-        return;
-      }
-      if (!this.modelForm.aiCredentialId) {
-        this.toastError("Credential is required");
-        return;
-      }
-
-      let additionalParameters = {};
-      if (this.modelForm.additionalParameters?.trim()) {
-        try {
-          additionalParameters = JSON.parse(this.modelForm.additionalParameters);
-        } catch (_error) {
-          this.toastError("Additional parameters must be valid JSON");
-          return;
-        }
-      }
+      if (!this.$refs.form.validate()) return;
 
       const payload = {
         id: this.modelForm.id || 0,
@@ -352,9 +306,9 @@ export default {
         model: this.modelForm.model.trim(),
         aiCredentialId: this.modelForm.aiCredentialId,
         description: this.modelForm.description?.trim() || null,
-        additionalParameters,
+        additionalParameters: this.modelForm.additionalParameters || {},
         enabled: !!this.modelForm.enabled,
-        exemptFromCaps: !!this.modelForm.exemptFromCaps,
+        freeModel: !!this.modelForm.freeModel,
       };
 
       this.$socket.emit("appDataUpdate", {
@@ -367,7 +321,9 @@ export default {
         }
         const savedModelId = result.data?.id || result.data || this.modelForm.id;
         const costLimitValue = Number(this.modelForm.costLimit);
-        const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
+        const wantsCap = !this.modelForm.freeModel
+          && Number.isFinite(costLimitValue)
+          && costLimitValue > 0;
         // Standard appDataUpdate chain: save the model, then update or create the ai_budget row.
         if (wantsCap) {
           const existing = this.findExistingCapRow(savedModelId);
@@ -380,29 +336,12 @@ export default {
             }
           });
         }
-        this.$refs.modelModal.close();
+        this.$refs.modal.close();
         this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
       });
     },
     testModel() {
-      if (!this.modelForm.model.trim()) {
-        this.toastError("Model name is required");
-        return;
-      }
-      if (!this.modelForm.aiCredentialId) {
-        this.toastError("Credential is required");
-        return;
-      }
-
-      let additionalParameters = {};
-      if (this.modelForm.additionalParameters?.trim()) {
-        try {
-          additionalParameters = JSON.parse(this.modelForm.additionalParameters);
-        } catch (_error) {
-          this.toastError("Additional parameters must be valid JSON");
-          return;
-        }
-      }
+      if (!this.$refs.form.validate()) return;
 
       this.isTestingModel = true;
       this.$socket.emit("serviceCommand", {
@@ -412,7 +351,7 @@ export default {
           aiModelId: this.modelForm.id || null,
           credentialId: this.modelForm.aiCredentialId,
           model: this.modelForm.model.trim(),
-          additionalParameters,
+          additionalParameters: this.modelForm.additionalParameters || {},
         },
       }, (result) => {
         this.isTestingModel = false;
