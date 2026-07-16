@@ -3,7 +3,7 @@
     ref="stepper"
     size="lg"
     :steps="stepperSteps"
-    :submit-text="stepperSubmitText"
+    submit-text="Save"
     :validation="stepValid"
     @submit="save"
   >
@@ -11,82 +11,38 @@
       <h5 class="modal-title">{{ editingId ? "Edit trigger" : "Create trigger" }}</h5>
     </template>
     <template #step-1>
-      <BasicForm v-model="triggerForm" :fields="settingsFields" />
+      <TriggerSettingsStep
+        v-model="triggerForm"
+        :fields="settingsFields"
+      />
     </template>
     <template #step-2>
-      <BasicForm v-model="triggerForm" :fields="eventFields" />
-      <hr v-if="eventConfigFields.length" />
-      <BasicForm
-        v-if="eventConfigFields.length"
-        v-model="eventData"
-        :fields="eventConfigFields"
+      <TriggerEventStep
+        v-model="triggerForm"
+        v-model:event-data="eventData"
+        :event-fields="eventFields"
+        :config-fields="eventConfigFields"
       />
     </template>
     <template #step-3>
-      <BasicForm v-model="triggerForm" :fields="actionSelectFields" />
-      <hr v-if="actionComponentFields.length || actionConfigFields.length" />
-      <template
-        v-for="field in actionComponentFields"
-        :key="field.key || field.type"
-      >
-        <SkillSelector
-          v-if="field.type === 'skillSelector'"
-          :model-value="actionData[field.key]"
-          @update:model-value="updateSkillSelection(field, $event)"
-        />
-        <InputMap
-          v-else-if="field.type === 'inputMap' && actionData[field.skillKey || 'skillName']"
-          :model-value="actionData[field.key]"
-          :skill-name="actionData[field.skillKey || 'skillName']"
-          :hook-id="hookIdForSelection(actionData[field.skillKey || 'skillName'])"
-          :study-based="field.studyBased !== false"
-          @update:model-value="updateInputMappings(field, $event)"
-        />
-        <InputFiles
-          v-else-if="field.type === 'inputFiles' && shouldRenderActionComponent(field)"
-          :model-value="actionData[field.key] || {}"
-          :input-mappings="actionData[field.inputMappingsKey || 'inputMappings'] || {}"
-          @update:model-value="updateSelectedFiles(field, $event)"
-          @update:valid="setComponentValidity(field, $event)"
-        />
-        <InputGroup
-          v-else-if="field.type === 'inputGroup' && shouldRenderActionComponent(field)"
-          :model-value="actionData[field.key] || {}"
-          :base-file-parameter="actionData[field.baseFileParameterKey || 'baseFileParameter']"
-          :selected-files="actionData[field.selectedFilesKey || 'selectedFiles'] || {}"
-          :validation-configuration-ids="validationConfigurationIds"
-          @update:model-value="updateBaseFiles(field, $event)"
-          @update:valid="setComponentValidity(field, $event)"
-          @update:validation-configurations="updateValidationConfigurationNames"
-        />
-      </template>
-      <BasicForm
-        v-if="!actionComponentFields.length && actionConfigFields.length"
-        v-model="actionData"
-        :fields="actionConfigFields"
+      <TriggerActionStep
+        v-model="triggerForm"
+        v-model:action-data="actionData"
+        :select-fields="actionSelectFields"
+        :config-fields="actionConfigFields"
+        :component-fields="actionComponentFields"
+        :validation-configuration-ids="validationConfigurationIds"
+        :should-render-component="shouldRenderActionComponent"
+        @skill-selection="updateSkillSelection"
+        @input-mappings="updateInputMappings"
+        @selected-files="updateSelectedFiles"
+        @base-files="updateBaseFiles"
+        @component-validity="setComponentValidity"
+        @validation-configurations="updateValidationConfigurationNames"
       />
     </template>
     <template #step-4>
-      <div class="summary-container">
-        <div
-          v-for="section in reviewSummarySections"
-          :key="section.title"
-          class="mb-4"
-        >
-          <h6>{{ section.title }}</h6>
-          <div
-            v-for="item in section.items"
-            :key="item.label"
-            class="summary-item"
-          >
-            <strong>{{ item.label }}:</strong> {{ item.value }}
-          </div>
-        </div>
-        <div class="alert alert-info mt-3">
-          <i class="bi bi-info-circle"></i>
-          Please review the information above before submitting.
-        </div>
-      </div>
+      <TriggerReviewStep :sections="reviewSummarySections" />
     </template>
   </StepperModal>
 
@@ -140,120 +96,133 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicModal from "@/basic/Modal.vue";
-import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
-import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
-import InputMap from "@/basic/modal/skills/InputMap.vue";
-import InputFiles from "@/basic/modal/skills/InputFiles.vue";
-import InputGroup from "@/basic/modal/skills/InputGroup.vue";
+import TriggerSettingsStep from "./TriggerSettingsStep.vue";
+import TriggerEventStep from "./TriggerEventStep.vue";
+import TriggerActionStep from "./TriggerActionStep.vue";
+import TriggerReviewStep from "./TriggerReviewStep.vue";
+
+const STEPPER_STEPS = [
+  { title: "Trigger info" },
+  { title: "Event" },
+  { title: "Action" },
+  { title: "Review & Confirm" },
+];
+
+const SETTINGS_FORM_SCHEMA = [
+  {
+    key: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    help: "Display name for this trigger rule in the Triggers dashboard.",
+  },
+  {
+    key: "description",
+    label: "Description",
+    type: "textarea",
+    required: true,
+    help: "Short note for admins describing when and why this trigger runs.",
+  },
+  {
+    key: "projectId",
+    label: "Scope to project",
+    type: "select",
+    required: true,
+    help: "Limits this trigger to the selected project. Event filters and assignment options use this project.",
+    optionsSource: {
+      table: "project",
+      labelKey: "name",
+      valueKey: "id",
+    },
+  },
+  {
+    key: "maxRetries",
+    label: "Max retries",
+    type: "number",
+    min: 0,
+    required: true,
+    help: "How many times a failed run may be retried from the trigger logs before it stays failed.",
+  },
+  {
+    key: "parallelLimit",
+    label: "Parallel limit",
+    type: "number",
+    min: 1,
+    required: true,
+    help: "Maximum number of executions of this trigger that may run at the same time.",
+  },
+  {
+    key: "timeout",
+    label: "Timeout (seconds)",
+    type: "number",
+    min: 1,
+    required: true,
+    help: "Maximum seconds a single execution may run before it is treated as timed out.",
+  },
+];
+
+const EVENT_FIELD = {
+  key: "triggerEventId",
+  label: "When (event)",
+  type: "select",
+  required: true,
+  optionsSource: {
+    table: "trigger_event",
+    labelKey: "configuration.label",
+    nameKey: "name",
+    valueKey: "id",
+    filter: { enabled: true },
+  },
+};
+
+const ACTION_FIELD = {
+  key: "triggerActionId",
+  label: "Then (action)",
+  type: "select",
+  required: true,
+  optionsSource: {
+    table: "trigger_action",
+    labelKey: "configuration.label",
+    nameKey: "name",
+    valueKey: "id",
+    filter: { enabled: true },
+    compatibleWithEvent: true,
+  },
+};
+
+const DEFAULT_FORM = {
+  name: "",
+  description: "",
+  projectId: null,
+  maxRetries: 3,
+  parallelLimit: 1,
+  timeout: 300,
+  triggerEventId: null,
+  triggerActionId: null,
+};
+
+const SOCKET_EVENTS = {
+  create: "triggerCreate",
+  update: "triggerUpdate",
+};
 
 export default {
   name: "TriggerStepperModal",
   subscribeTable: ["trigger_event", "trigger_action", "project", "template", "assignment", "configuration"],
-  components: { StepperModal, BasicModal, BasicForm, BasicButton, SkillSelector, InputMap, InputFiles, InputGroup },
+  components: {
+    StepperModal,
+    BasicModal,
+    BasicButton,
+    TriggerSettingsStep,
+    TriggerEventStep,
+    TriggerActionStep,
+    TriggerReviewStep,
+  },
   emits: ["saved"],
   data() {
     return {
-      stepperSteps: [
-        { title: "Trigger info" },
-        { title: "Event" },
-        { title: "Action" },
-        { title: "Review & Confirm" },
-      ],
-      stepperSubmitText: "Save",
-      settingsFormSchema: [
-        {
-          key: "name",
-          label: "Name",
-          type: "text",
-          required: true,
-          help: "Display name for this trigger rule in the Triggers dashboard.",
-        },
-        {
-          key: "description",
-          label: "Description",
-          type: "textarea",
-          required: true,
-          help: "Short note for admins describing when and why this trigger runs.",
-        },
-        {
-          key: "projectId",
-          label: "Scope to project",
-          type: "select",
-          required: true,
-          help: "Limits this trigger to the selected project. Event filters and assignment options use this project.",
-          optionsSource: {
-            table: "project",
-            labelKey: "name",
-            valueKey: "id",
-          },
-        },
-        {
-          key: "maxRetries",
-          label: "Max retries",
-          type: "number",
-          min: 0,
-          required: true,
-          help: "How many times a failed run may be retried from the trigger logs before it stays failed.",
-        },
-        {
-          key: "parallelLimit",
-          label: "Parallel limit",
-          type: "number",
-          min: 1,
-          required: true,
-          help: "Maximum number of executions of this trigger that may run at the same time.",
-        },
-        {
-          key: "timeout",
-          label: "Timeout (seconds)",
-          type: "number",
-          min: 1,
-          required: true,
-          help: "Maximum seconds a single execution may run before it is treated as timed out.",
-        },
-      ],
-      eventField: {
-        key: "triggerEventId",
-        label: "When (event)",
-        type: "select",
-        required: true,
-        optionsSource: {
-          table: "trigger_event",
-          labelKey: "configuration.label",
-          nameKey: "name",
-          valueKey: "id",
-          filter: { enabled: true },
-        },
-      },
-      actionField: {
-        key: "triggerActionId",
-        label: "Then (action)",
-        type: "select",
-        required: true,
-        optionsSource: {
-          table: "trigger_action",
-          labelKey: "configuration.label",
-          nameKey: "name",
-          valueKey: "id",
-          filter: { enabled: true },
-          compatibleWithEvent: true,
-        },
-      },
-      socketEvents: {
-        create: "triggerCreate",
-        update: "triggerUpdate",
-      },
-      defaultForm: {
-        name: "",
-        description: "",
-        projectId: null,
-        maxRetries: 3,
-        parallelLimit: 1,
-        timeout: 300,
-        triggerEventId: null,
-        triggerActionId: null,
-      },
+      stepperSteps: STEPPER_STEPS,
       triggerForm: {},
       eventData: {},
       actionData: {},
@@ -305,17 +274,17 @@ export default {
       return this.selectedAction?.configuration?.handler === "nlp_preprocess";
     },
     settingsFields() {
-      return this.resolveFormSchema(this.settingsFormSchema);
+      return this.resolveFormSchema(SETTINGS_FORM_SCHEMA);
     },
     eventFields() {
-      return [this.resolveField(this.eventField)];
+      return [this.resolveField(EVENT_FIELD)];
     },
     eventConfigFields() {
       const schema = this.selectedEvent?.configuration?.formSchema || [];
       return schema.map((field) => this.resolveField(field));
     },
     actionSelectFields() {
-      return [this.resolveField(this.actionField, { event: this.selectedEvent })];
+      return [this.resolveField(ACTION_FIELD, { event: this.selectedEvent })];
     },
     actionConfigFields() {
       const schema = this.selectedAction?.configuration?.formSchema || [];
@@ -324,18 +293,17 @@ export default {
     actionComponentFields() {
       return this.selectedAction?.configuration?.componentSchema || [];
     },
-    autoBaseFileParameter() {
-      const inputMappings = this.actionData.inputMappings || {};
-      for (const [paramName, mapping] of Object.entries(inputMappings)) {
-        if (mapping?.requiresTableSelection && ["submission", "document"].includes(mapping.type)) {
-          return paramName;
-        }
-      }
-      return null;
+    inputMappings() {
+      return this.actionData.inputMappings || {};
+    },
+    inputMappingEntries() {
+      return Object.entries(this.inputMappings).filter(([key]) => key !== "output");
     },
     requireValidation() {
-      if (!this.autoBaseFileParameter) return false;
-      return this.actionData.inputMappings?.[this.autoBaseFileParameter]?.type === "submission";
+      const baseFileParameter = this.getBaseFileParameter(this.inputMappings);
+      return baseFileParameter
+        ? this.inputMappings[baseFileParameter]?.type === "submission"
+        : false;
     },
     validationConfigurationIds() {
       const assignmentId = this.eventData.assignmentId;
@@ -346,14 +314,11 @@ export default {
         : [];
     },
     hasTableBasedParameter() {
-      return Object.values(this.actionData.inputMappings || {}).some(
-        (mapping) => mapping && mapping.requiresTableSelection
-      );
+      return this.inputMappingEntries.some(([, mapping]) => mapping?.requiresTableSelection);
     },
     hasValidInputMappings() {
-      const inputMappings = this.actionData.inputMappings || {};
-      const entries = Object.entries(inputMappings).filter(([key]) => key !== "output");
-      return entries.length > 0 && entries.every(([, mapping]) => !!mapping);
+      return this.inputMappingEntries.length > 0
+        && this.inputMappingEntries.every(([, mapping]) => !!mapping);
     },
     reviewSummarySections() {
       return [
@@ -495,7 +460,14 @@ export default {
     isConfigValid(data, fields) {
       return fields.every((field) => {
         if (field.optionsSource && !field.options?.length) return false;
-        return !field.required || this.isFilled(data[field.key]);
+        const value = data[field.key];
+        if (field.required && !this.isFilled(value)) return false;
+        if (field.type !== "number" || !this.isFilled(value)) return true;
+
+        const number = Number(value);
+        return Number.isFinite(number)
+          && (field.min == null || number >= Number(field.min))
+          && (field.max == null || number <= Number(field.max));
       });
     },
     isStepConfigValid(selection, formData, configData, selectFields, configFields) {
@@ -506,24 +478,7 @@ export default {
       );
     },
     isStepSettingsValid() {
-      const f = this.triggerForm;
-      const maxRetries = Number(f.maxRetries);
-      const parallelLimit = Number(f.parallelLimit);
-      const timeout = Number(f.timeout);
-      return (
-        this.isFilled(f.name) &&
-        this.isFilled(f.description) &&
-        f.projectId != null &&
-        this.isFilled(f.maxRetries) &&
-        !Number.isNaN(maxRetries) &&
-        maxRetries >= 0 &&
-        this.isFilled(f.parallelLimit) &&
-        !Number.isNaN(parallelLimit) &&
-        parallelLimit >= 1 &&
-        this.isFilled(f.timeout) &&
-        !Number.isNaN(timeout) &&
-        timeout >= 1
-      );
+      return this.isConfigValid(this.triggerForm, this.settingsFields);
     },
     isStepEventValid() {
       return this.isStepConfigValid(
@@ -592,11 +547,6 @@ export default {
         ...this.actionData,
         ...values,
       };
-    },
-    hookIdForSelection(skillName) {
-      if (typeof skillName !== "string" || !skillName.startsWith("hook:")) return null;
-      const hookId = Number(skillName.slice("hook:".length));
-      return Number.isInteger(hookId) && hookId > 0 ? hookId : null;
     },
     updateSkillSelection(field, skillName) {
       this.updateActionData({
@@ -738,16 +688,19 @@ export default {
     },
     defaultTriggerForm(projectId) {
       return {
-        ...this.defaultForm,
+        ...DEFAULT_FORM,
         projectId,
       };
     },
-    openCreate(projectId) {
-      this.editingId = null;
-      this.triggerForm = this.defaultTriggerForm(projectId);
-      this.eventData = {};
-      this.actionData = {};
+    resetEditor({ editingId = null, triggerForm, eventData = {}, actionData = {} }) {
+      this.editingId = editingId;
+      this.triggerForm = triggerForm;
+      this.eventData = { ...eventData };
+      this.actionData = { ...actionData };
       this.componentValidity = {};
+    },
+    openCreate(projectId) {
+      this.resetEditor({ triggerForm: this.defaultTriggerForm(projectId) });
       this.$refs.stepper.open();
     },
     openView(row) {
@@ -776,22 +729,26 @@ export default {
       this.$refs.viewModal.open();
     },
     openEdit(row) {
-      this.editingId = row.id;
       const config = row.configuration || {};
-      this.triggerForm = {
-        name: row.name,
-        description: config.description || "",
-        projectId: row.projectId || null,
-        maxRetries: row.maxRetries,
-        parallelLimit: row.parallelLimit,
-        timeout: row.timeout,
-        triggerEventId: row.triggerEventId,
-        triggerActionId: row.triggerActionId,
-      };
-      this.eventData = config.event || {};
-      this.actionData = config.action || {};
-      this.componentValidity = {};
+      this.resetEditor({
+        editingId: row.id,
+        triggerForm: {
+          name: row.name,
+          description: config.description || "",
+          projectId: row.projectId ?? null,
+          maxRetries: row.maxRetries,
+          parallelLimit: row.parallelLimit,
+          timeout: row.timeout,
+          triggerEventId: row.triggerEventId,
+          triggerActionId: row.triggerActionId,
+        },
+        eventData: config.event,
+        actionData: config.action,
+      });
       this.$refs.stepper.open();
+    },
+    showToast(title, message, variant) {
+      this.eventBus.emit("toast", { title, message, variant });
     },
     save() {
       const payload = {
@@ -809,50 +766,31 @@ export default {
         },
       };
       const editing = this.editingId !== null;
-      const socketEvent = editing ? this.socketEvents.update : this.socketEvents.create;
+      const socketEvent = editing ? SOCKET_EVENTS.update : SOCKET_EVENTS.create;
       if (editing) {
         payload.id = this.editingId;
       }
+      this.$refs.stepper.setWaiting(true);
       this.$socket.emit(socketEvent, payload, (res) => {
+        this.$refs.stepper.setWaiting(false);
         if (res.success) {
           this.$refs.stepper.close();
           this.editingId = null;
           this.$emit("saved", { editing });
-          this.eventBus.emit("toast", {
-            title: editing ? "Trigger updated" : "Trigger created",
-            message: `The trigger has been ${editing ? "updated" : "created"} successfully.`,
-            variant: "success",
-          });
+          this.showToast(
+            editing ? "Trigger updated" : "Trigger created",
+            `The trigger has been ${editing ? "updated" : "created"} successfully.`,
+            "success"
+          );
         } else {
-          this.eventBus.emit("toast", {
-            title: editing ? "Failed to update trigger" : "Failed to create trigger",
-            message: res.message || "Unknown error",
-            variant: "danger",
-          });
+          this.showToast(
+            editing ? "Failed to update trigger" : "Failed to create trigger",
+            res.message || "Unknown error",
+            "danger"
+          );
         }
       });
     },
   },
 };
 </script>
-
-<style scoped>
-.summary-container {
-  padding: 1rem;
-}
-
-.summary-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.summary-item:last-of-type {
-  border-bottom: none;
-}
-
-.summary-item strong {
-  display: inline-block;
-  min-width: 180px;
-  color: #495057;
-}
-</style>
