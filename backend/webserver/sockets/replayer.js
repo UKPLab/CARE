@@ -4,6 +4,12 @@ const Socket = require('../Socket.js');
 const { replayUserTraces } = require('../replay/worker');
 const throttle = require('lodash/throttle');
 
+// Ceilings on caller-supplied load parameters. Replay opens real sockets
+// against this server, so an unbounded value is a self-inflicted outage rather
+// than a test.
+const MAX_ITERATIONS = 100;
+const MAX_CONCURRENCY = 500;
+
 /**
  * Handles replaying recorded socket events for stress testing.
  *
@@ -22,18 +28,29 @@ const throttle = require('lodash/throttle');
 class ReplayerSocket extends Socket {
 
     /**
-     * Pool sessions from all selected recordings and run a single scaling test
-     * across the combined pool.
-     * @param {Object} data - Input data from the frontend
-     * @param {Array<number>} data.recordingIds - IDs of recordings whose sessions get pooled
-     * @param {string} data.timingMode - "realtime" or "fast"
-     * @param {boolean} data.continueOnFailure - If true, scaling continues past failed iterations
-     * @param {number} data.maxIterations - How many scaling iterations to run (required, > 0)
+     * Pool sessions and run a scaling test across the combined pool. Input is
+     * either recordingIds (loaded from the DB) or sessions (supplied from
+     * exported recording files, so the CLI can replay without importing) —
+     * exactly one of the two.
+     *
+     * @param {Object} data - Input data from the caller (frontend or perf CLI)
+     * @param {Array<number>} [data.recordingIds] - Recordings to pool from the DB
+     * @param {Array<Object>} [data.sessions] - Sessions from exported files; each is {sessionKey?, recordingName?, traces}
+     * @param {string} [data.timingMode="fast"] - "realtime" preserves original delays, "fast" skips them
+     * @param {boolean} [data.continueOnFailure=false] - If true, scaling continues past failed iterations
+     * @param {number} [data.maxIterations] - Scaling iterations to run; required unless singleLevel is set
+     * @param {number} [data.ackTimeout=2000] - Max ms to wait for the server to ack each trace
+     * @param {string} [data.progressId=null] - Id to emit progressUpdate against; null disables progress
+     * @param {number} [data.latencyThreshold=Infinity] - Stop if a level's p95 latency exceeds this (ms)
+     * @param {number} [data.singleLevel=null] - Run one level at this concurrency instead of scaling
      * @param {Object} options - Additional configuration parameter
-     * @returns {Promise<Array<Object>>} Iteration results
-     * @throws {Error} If recordingIds is missing/empty, maxIterations invalid, or pool is empty
+     * @returns {Promise<Array<Object>|Object>} Iteration results, or one level's result when singleLevel is set
+     * @throws {Error} If the caller is not an admin, if neither or both of recordingIds/sessions are given, if maxIterations is invalid, or if the pool is empty
      */
     async replayRun(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
         const {
             recordingIds,
             sessions,
@@ -54,8 +71,14 @@ class ReplayerSocket extends Socket {
         if (!hasIds && !hasSessions) {
             throw new Error('Provide recordingIds (DB replay) or sessions (file replay)');
         }
-        if (!singleLevel && (!Number.isInteger(maxIterations) || maxIterations < 1)) {
-            throw new Error('maxIterations must be a positive integer');
+        if (singleLevel !== null && !Number.isInteger(singleLevel)) {
+            throw new Error('singleLevel must be an integer');
+        }
+        if (Number.isInteger(singleLevel) && (singleLevel < 1 || singleLevel > MAX_CONCURRENCY)) {
+            throw new Error(`singleLevel must be between 1 and ${MAX_CONCURRENCY}`);
+        }
+        if (singleLevel === null && (!Number.isInteger(maxIterations) || maxIterations < 1 || maxIterations > MAX_ITERATIONS)) {
+            throw new Error(`maxIterations must be an integer between 1 and ${MAX_ITERATIONS}`);
         }
 
         // Pool from the DB (recordingIds) or straight from a file payload
@@ -99,19 +122,22 @@ class ReplayerSocket extends Socket {
 
         // Fetch all recordings up front (one query) and index by id, rather
         // than a findByPk per id inside the loop.
-        const recordings = await this.models['recording'].findAll({
-            where: { id: recordingIds },
-        });
+        const recordings = await this.models['recording'].getAllByKeyValues('id', recordingIds);
         const recordingById = new Map(recordings.map(r => [r.id, r]));
 
         for (const recordingId of recordingIds) {
             const recording = recordingById.get(recordingId);
-            if (!recording) continue;
+            if (!recording) {
+                this.logger.warn(`Replay: recording ${recordingId} not found or deleted — skipped`);
+                continue;
+            }
 
-            const traces = await this.models['trace'].findAll({
-                where: { recordingId, direction: true, deleted: false },
-                order: [['startTime', 'ASC']],
-            });
+            // Only client->server traces are replayable; server pushes are
+            // captured for diagnostics but must not be emitted back.
+            const allTraces = await this.models['trace'].getAllByKey('recordingId', recordingId);
+            const traces = allTraces
+                .filter(t => t.direction === true)
+                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             if (traces.length === 0) continue;
 
             const sessionMap = this.groupTracesBySocket(traces);
@@ -127,12 +153,21 @@ class ReplayerSocket extends Socket {
             }
         }
 
-        const users = await this.models['user'].findAll({
-            where: { id: Array.from(userIdSet) },
-        });
+        const users = await this.models['user'].getAllByKeyValues('id', Array.from(userIdSet));
         const userMap = new Map(users.map(u => [u.id, u]));
 
-        return { sessions, userMap };
+        // A recorded user may have been deleted since capture. Those sessions
+        // can't be authenticated, so drop them rather than let a missing user
+        // crash the whole run in the replay worker.
+        const replayable = sessions.filter(s => {
+            if (userMap.has(s.userId)) {
+                return true;
+            }
+            this.logger.warn(`Replay: user ${s.userId} no longer exists — session ${s.sessionKey} skipped`);
+            return false;
+        });
+
+        return { sessions: replayable, userMap };
     }
 
     /**
@@ -158,21 +193,25 @@ class ReplayerSocket extends Socket {
         const sessions = [];
         for (const incoming of payloadSessions) {
             const rawTraces = Array.isArray(incoming.traces) ? incoming.traces : [];
+            // File contents are unvalidated input: a trace without a usable
+            // action name would be emitted as-is by the replay worker.
             const traces = rawTraces
-                .filter(t => t && t.direction === true)
+                .filter(t => t && t.direction === true && typeof t.action === 'string' && t.action.length > 0)
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             if (traces.length === 0) continue;
 
-            // Re-stamp onto the acting user so the worker and permission checks
-            // see a real, present user.
-            const stampedTraces = traces.map(t => ({ ...t, userId: actingUser.id }));
-
-            const sessionMap = this.groupTracesBySocket(stampedTraces);
+            // Group first, then stamp: grouping falls back to the trace's own
+            // userId when socketId is absent (older recordings), so overwriting
+            // userId beforehand would merge distinct users into one session.
+            const sessionMap = this.groupTracesBySocket(traces);
+            const multiSession = sessionMap.size > 1;
             for (const [key, session] of sessionMap) {
                 sessions.push({
-                    sessionKey: incoming.sessionKey || key,
+                    // The file's own key only identifies the file, so it can't
+                    // label more than one session from it.
+                    sessionKey: (!multiSession && incoming.sessionKey) ? incoming.sessionKey : key,
                     userId: actingUser.id,
-                    traces: session.traces,
+                    traces: session.traces.map(t => ({ ...t, userId: actingUser.id })),
                     recordingId: null,
                     recordingName: incoming.recordingName || 'file',
                 });
@@ -204,53 +243,123 @@ class ReplayerSocket extends Socket {
     }
 
     /**
-     * Run one level of `concurrency` parallel sessions once, return its results.
-     * Used by the client-driven ceiling finder (open-ended escalation).
+     * Pick `count` sessions from the pool with wraparound, so a level of any
+     * size can be built from a pool of N sessions.
+     * @param {{sessions: Array}} pool - Session pool
+     * @param {number} count - How many sessions this level runs
+     * @returns {Array<Object>} The level's session list
      */
-    async runOneLevel(pool, serverUrl, timingMode, concurrency, ackTimeout, progressId = null) {
+    buildActiveSessions(pool, count) {
         const N = pool.sessions.length;
+        if (N === 0) {
+            return [];
+        }
         const activeSessions = [];
-        for (let i = 0; i < concurrency; i++) activeSessions.push(pool.sessions[i % N]);
+        for (let i = 0; i < count; i++) {
+            activeSessions.push(pool.sessions[i % N]);
+        }
+        return activeSessions;
+    }
 
-        // Per-trace progress for this one level. Total = concurrency * traces-per-session.
-        const totalTraces = concurrency * (N > 0 ? Math.round(pool.sessions.reduce((s, x) => s + x.traces.length, 0) / N) : 0);
-        let completed = 0, lastPct = -1;
+    /**
+     * Build a throttled per-trace progress reporter. Emits at most once per
+     * 500ms and only on whole-percent changes, so a large run doesn't flood the
+     * socket with thousands of events. (Throttle per Dennis's suggestion.)
+     * @param {string|null} progressId - Id to emit against; null disables reporting
+     * @param {number} totalTraces - Denominator for the percentage
+     * @returns {{onTraceProgress: Function, flush: Function}} Reporter handles
+     */
+    makeProgressReporter(progressId, totalTraces) {
+        let completed = 0;
+        let lastPct = -1;
         const emitProgress = throttle(() => {
-            this.socket.emit("progressUpdate", { id: progressId, current: completed, total: totalTraces });
+            this.socket.emit('progressUpdate', {
+                id: progressId,
+                current: completed,
+                total: totalTraces,
+            });
         }, 500);
         const onTraceProgress = () => {
             completed++;
-            if (!progressId || totalTraces === 0) return;
+            if (!progressId || totalTraces === 0) {
+                return;
+            }
             const pct = Math.floor((completed / totalTraces) * 100);
-            if (pct !== lastPct) { lastPct = pct; emitProgress(); }
+            if (pct !== lastPct) {
+                lastPct = pct;
+                emitProgress();
+            }
         };
+        return { onTraceProgress, flush: () => emitProgress.flush() };
+    }
 
-        const start = Date.now();
-        const results = await Promise.all(
+    /**
+     * Replay one list of sessions in parallel, labelling each result with its
+     * source session.
+     * @param {Array<Object>} activeSessions - Sessions to run concurrently
+     * @param {Map} userMap - Maps a session's userId to its user row
+     * @param {string} serverUrl - Replay target URL
+     * @param {string} timingMode - "realtime" or "fast"
+     * @param {number} ackTimeout - Max ms to wait for each trace's ack
+     * @param {Function} onTraceProgress - Called once per completed trace
+     * @returns {Promise<Array<Object>>} One result per session
+     */
+    async runSessions(activeSessions, userMap, serverUrl, timingMode, ackTimeout, onTraceProgress) {
+        return await Promise.all(
             activeSessions.map(session => {
-                const user = pool.userMap.get(session.userId);
+                const user = userMap.get(session.userId);
                 return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress)
-                    .then(r => ({ ...r, sessionKey: session.sessionKey, recordingId: session.recordingId, recordingName: session.recordingName }));
+                    .then(result => ({
+                        ...result,
+                        sessionKey: session.sessionKey,
+                        recordingId: session.recordingId,
+                        recordingName: session.recordingName,
+                    }));
             })
         );
-        emitProgress.flush();
+    }
+
+    /**
+     * Run one level of `concurrency` parallel sessions once and return its
+     * results. Used by the client-driven ceiling finder (open-ended escalation).
+     * @param {{sessions: Array, userMap: Map}} pool - Session pool
+     * @param {string} serverUrl - Replay target URL
+     * @param {string} timingMode - "realtime" or "fast"
+     * @param {number} concurrency - How many parallel sessions to run
+     * @param {number} ackTimeout - Max ms to wait for each trace's ack
+     * @param {string} [progressId=null] - Id to emit progressUpdate against
+     * @returns {Promise<{sessions: number, results: Array<Object>, duration: number}>} The level's result
+     */
+    async runOneLevel(pool, serverUrl, timingMode, concurrency, ackTimeout, progressId = null) {
+        const activeSessions = this.buildActiveSessions(pool, concurrency);
+        // Sum the sessions actually picked: with wraparound over unequal session
+        // sizes, concurrency * average would not match what gets replayed.
+        const totalTraces = activeSessions.reduce((sum, s) => sum + s.traces.length, 0);
+        const progress = this.makeProgressReporter(progressId, totalTraces);
+
+        const start = Date.now();
+        const results = await this.runSessions(
+            activeSessions, pool.userMap, serverUrl, timingMode, ackTimeout, progress.onTraceProgress
+        );
+        progress.flush();
         return { sessions: concurrency, results, duration: Date.now() - start };
     }
 
     /**
-     * Execute the scaling-correctness loop on the pooled session list.
-     * Iteration K runs K * N parallel sockets, cycling through the pool
-     * with wraparound (linear add: each iteration adds one full copy of
-     * the pool to the previous iteration's count).
+     * Execute the scaling loop on the pooled session list. Iteration K runs
+     * K * N parallel sockets, cycling through the pool with wraparound (linear
+     * add: each iteration adds one full copy of the pool to the previous count).
+     * Stops at the first failing level unless continueOnFailure is true.
      *
-     * Stops at first failure unless continueOnFailure is true.
-     *
-     * @param {{sessions: Array, userMap: Map}} pool - Combined session pool from buildSessionPool
-     * @param {string} serverUrl - Target server URL
+     * @param {{sessions: Array, userMap: Map}} pool - Combined session pool
+     * @param {string} serverUrl - Replay target URL
      * @param {string} timingMode - "realtime" or "fast"
      * @param {boolean} continueOnFailure - If true, scaling continues past failed iterations
      * @param {number} maxIterations - Number of iterations to run
-     * @returns {Promise<Array<Object>>} Iteration results
+     * @param {number} ackTimeout - Max ms to wait for each trace's ack
+     * @param {string} [progressId=null] - Id to emit progressUpdate against
+     * @param {number} [latencyThreshold=Infinity] - Stop if a level's p95 exceeds this (ms)
+     * @returns {Promise<Array<Object>>} One entry per iteration run
      */
     async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null, latencyThreshold = Infinity) {
         const allResults = [];
@@ -262,55 +371,18 @@ class ReplayerSocket extends Socket {
         const tracesPerPass = pool.sessions.reduce((sum, s) => sum + s.traces.length, 0);
         const totalTraces = tracesPerPass * (maxIterations * (maxIterations + 1) / 2);
 
-        // Emit progress per trace, but throttle to once per whole-percent change
-        // so a large run doesn't flood the admin socket with thousands of events.
-        let completedTraces = 0;
-        let lastPct = -1;
-
-        // Rate-limit the emit to at most once per 500ms (trailing: always sends
-        // the latest value). Layered on top of the percent-change filter below,
-        // so on fast runs where the percent changes many times a second we still
-        // cap the socket traffic. Per Dennis's suggestion (lodash throttle).
-        const emitProgress = throttle(() => {
-            this.socket.emit("progressUpdate", {
-                id: progressId,
-                current: completedTraces,
-                total: totalTraces,
-            });
-        }, 500);
-
-        const onTraceProgress = () => {
-            completedTraces++;
-            if (!progressId || totalTraces === 0) return;
-            const pct = Math.floor((completedTraces / totalTraces) * 100);
-            if (pct !== lastPct) {
-                lastPct = pct;
-                emitProgress();
-            }
-        };
+        const progress = this.makeProgressReporter(progressId, totalTraces);
 
         for (let level = 1; level <= maxIterations; level++) {
             // Iteration K runs K full copies of the pool. Total sockets = K * N.
             // Sessions are picked with wraparound, so iteration K's list is
             // pool[0], pool[1], ..., pool[N-1], pool[0], pool[1], ... (K times).
             const totalSockets = level * N;
-            const activeSessions = [];
-            for (let i = 0; i < totalSockets; i++) {
-                activeSessions.push(pool.sessions[i % N]);
-            }
+            const activeSessions = this.buildActiveSessions(pool, totalSockets);
 
             const levelStart = Date.now();
-            const levelResults = await Promise.all(
-                activeSessions.map(session => {
-                    const user = pool.userMap.get(session.userId);
-                    return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress)
-                        .then(result => ({
-                            ...result,
-                            sessionKey: session.sessionKey,
-                            recordingId: session.recordingId,
-                            recordingName: session.recordingName,
-                        }));
-                })
+            const levelResults = await this.runSessions(
+                activeSessions, pool.userMap, serverUrl, timingMode, ackTimeout, progress.onTraceProgress
             );
             const levelDuration = Date.now() - levelStart;
 
@@ -350,7 +422,7 @@ class ReplayerSocket extends Socket {
         // Force out the final throttled update so the bar lands on its true
         // end value instead of being left one throttle-window short. Runs on
         // both normal completion and early-failure break above.
-        emitProgress.flush();
+        progress.flush();
 
         return allResults;
     }
