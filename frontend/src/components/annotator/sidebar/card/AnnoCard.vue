@@ -118,18 +118,15 @@
               class="row"
           >
             <div class="col">
-              <button
+              <BasicButton
                   v-if="numberReplies > 0"
                   class="btn btn-light btn-sm"
                   data-placement="top"
                   data-toggle="tooltip"
                   title="Reply"
-                  type="button"
+                  :text="`${showReplies ? 'Hide' : 'Show'} Replies (${numberReplies})`"
                   @click="showReplies = !showReplies; maxComments = defaultNumComments"
-              >
-                <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
-                <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
-              </button>
+              />
             </div>
             <div
                 class="col text-end"
@@ -196,27 +193,24 @@
             />
           </span>
           <div class="btn-group">
-            <button
+            <BasicButton
             v-if="showExtenderButton"
             class="btn btn-light btn-sm"
+            text="Show more"
             @click="maxComments+=5"
-            >
-              Show more
-            </button>
-            <button
+            />
+            <BasicButton
             v-if="!showExtenderButton && numChildComments > defaultNumComments"
             class="btn btn-light btn-sm"
+            text="Show less"
             @click="maxComments=defaultNumComments"
-            >
-              Show less
-            </button>
-            <button
+            />
+            <BasicButton
             v-if="maxComments > defaultNumComments"
             class="btn btn-light btn-sm"
+            text="Hide replies"
             @click="maxComments=defaultNumComments; showReplies = !showReplies"
-            >
-              Hide replies
-            </button>
+            />
           </div>
             
         </div>
@@ -232,6 +226,7 @@ import SidebarButton from "./Button.vue"
 import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /** Annotation elements
  *
@@ -243,7 +238,7 @@ import LoadIcon from "@/basic/Icon.vue";
 export default {
   name: "AnnoCard",
   subscribeTable: ['tag', 'tag_set', 'comment_state'],
-  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon},
+  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton},
   inject: {
     documentId: {
       type: Number,

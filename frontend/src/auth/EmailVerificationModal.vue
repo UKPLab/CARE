@@ -25,13 +25,11 @@
       />
       <BasicButton
         v-if="!emailVerification.showSuccess && !emailVerification.showError"
-        :disabled="emailVerification.isLoading"
+        :loading="emailVerification.isLoading"
         class="btn btn-primary"
         :text="emailVerification.isLoading ? 'Sending...' : 'Resend Verification Email'"
         @click="resendVerificationEmail"
-      >
-        <span v-if="emailVerification.isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-      </BasicButton>
+      />
       <BasicButton
         v-if="emailVerification.showSuccess"
         class="btn btn-success"

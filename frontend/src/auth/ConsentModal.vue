@@ -48,20 +48,16 @@
     </template>
     <template #footer>
       <div class="button-group">
-        <button
-          type="button"
+        <BasicButton
           class="btn btn-secondary"
+          text="Decline"
           @click="handleDecline"
-        >
-          Decline
-        </button>
-        <button
-          type="button"
+        />
+        <BasicButton
           class="btn btn-primary"
+          text="Accept & Continue"
           @click="handleAccept"
-        >
-          Accept & Continue
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -76,13 +72,14 @@
  * @author: Linyin Huang, Dennis Zyska
  */
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import BasicEditor from "@/basic/editor/Editor.vue";
 
 export default {
   name: "ConsentModal",
-  components: {Modal, BasicEditor},
+  components: {Modal, BasicEditor, BasicButton},
   data() {
     return {
       acceptStats: false,

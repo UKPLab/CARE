@@ -32,20 +32,16 @@
 
     <template #footer>
       <div class="btn-group">
-        <button
-          type="button"
+        <BasicButton
           class="btn btn-secondary"
+          text="Cancel"
           @click="onCancel"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
+        />
+        <BasicButton
           class="btn btn-primary"
+          text="Close study"
           @click="onConfirm"
-        >
-          Close study
-        </button>
+        />
       </div>
     </template>
   </BasicModal>
@@ -53,10 +49,11 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "StudyCloseModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {
       studyId: null,

@@ -239,7 +239,7 @@
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { calculateAssessmentScore, buildScoresFromState } from "@/assets/assessmentScore.js";
+import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
 import { downloadObjectsAs } from "@/assets/utils.js";
 import {
   ASSESSMENT_RESULT_KEY,
