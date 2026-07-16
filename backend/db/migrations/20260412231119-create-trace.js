@@ -19,6 +19,10 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+      // TODO: SET NULL on user deletion makes every trace of that user
+      // unreplayable (groupTracesBySocket skips traces with no userId), so the
+      // recording survives but silently replays nothing. See the matching TODO
+      // on recording.userId — both need one consistent answer.
       userId: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -48,7 +52,7 @@ module.exports = {
       },
       startTime: {
         type: Sequelize.DATE,
-        allowNull: true,
+        allowNull: false,
       },
       endTime: {
         type: Sequelize.DATE,
@@ -74,6 +78,12 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.fn('NOW'),
       },
+    });
+
+    // Every trace lookup filters by recordingId (getTraces, buildSessionPool,
+    // stopRecording), so that's the index that matters.
+    await queryInterface.addIndex('trace', ['recordingId'], {
+      name: 'trace_recordingId_idx',
     });
 
     await queryInterface.addIndex('trace', ['socketId'], {

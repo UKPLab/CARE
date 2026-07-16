@@ -38,7 +38,6 @@ async function importRecording(emitWithAck, userId, filePath) {
             endTime: recording.endTime,
             userId,
             excludeEvents: recording.excludeEvents || null,
-            participantUserIds: null,
             participantSocketIds,
         },
     });

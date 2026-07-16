@@ -20,14 +20,17 @@ module.exports = {
       },
       startTime: {
         type: Sequelize.DATE,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
       },
       endTime: {
         type: Sequelize.DATE,
         allowNull: true,
         defaultValue: null,
       },
+      // TODO: onDelete CASCADE hard-deletes a user's recordings, bypassing the
+      // soft-delete rule the rest of CARE follows. trace.userId uses SET NULL
+      // instead, which silently makes a recording unreplayable. Both need a
+      // decision on what deleting a user should do to recorded data.
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -37,11 +40,6 @@ module.exports = {
         },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
-      },
-      participantUserIds: {
-        type: Sequelize.JSONB,
-        allowNull: true,
-        defaultValue: null,
       },
       participantSocketIds: {
         type: Sequelize.JSONB,
@@ -73,6 +71,10 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.fn('NOW'),
       },
+    });
+    // publicTable is false, so getAutoTable filters these rows by userId.
+    await queryInterface.addIndex('recording', ['userId'], {
+      name: 'recording_userId_idx',
     });
   },
 

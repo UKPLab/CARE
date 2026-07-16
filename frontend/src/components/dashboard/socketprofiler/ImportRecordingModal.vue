@@ -213,7 +213,6 @@ export default {
               endTime: recording.endTime,
               userId: this.userId,
               excludeEvents: recording.excludeEvents || null,
-              participantUserIds: null,
               participantSocketIds,
             },
           },
