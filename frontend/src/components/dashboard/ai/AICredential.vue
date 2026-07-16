@@ -1,106 +1,32 @@
 <template>
-  <BasicModal ref="credentialModal" name="aiCredentialModal">
+  <BasicModal
+    ref="modal"
+    name="aiCredentialModal"
+    @hide="resetForm"
+  >
     <template #title>
       {{ credentialForm.id ? "Edit AI Credential" : "Add AI Credential" }}
     </template>
     <template #body>
-      <div class="mb-3">
-        <label class="form-label">
-          Credential Name
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="A display name for your API credential."
-          />
-        </label>
-        <input
-          v-model="credentialForm.name"
-          type="text"
-          class="form-control"
-          placeholder="Credential name"
-        />
-      </div>
-      <div class="mb-3">
-        <label class="form-label">
-          API Key
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Enter your API key. Leave empty while editing to keep the existing key."
-          />
-        </label>
-        <input
-          v-model="credentialForm.apiKey"
-          type="password"
-          class="form-control"
-          :placeholder="credentialForm.id ? 'Leave empty to keep existing key' : 'API key'"
-        />
-      </div>
-      <div class="mb-3">
-        <label class="form-label">
-          Provider
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Enter the provider name from where you got your API key from, e.g. openai, anthropic, gemini."
-          />
-        </label>
-        <input
-          v-model="credentialForm.provider"
-          type="text"
-          class="form-control"
-          placeholder="Provider name, e.g. openai, anthropic, gemini"
-        />
-        <small class="text-muted">
-          Required for loading available models from provider endpoints.
-        </small>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">
-          API Base URL (optional)
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Optional custom endpoint for proxies, local providers, or hosted compatible APIs."
-          />
-        </label>
-        <input
-          v-model="credentialForm.apiBaseUrl"
-          type="text"
-          class="form-control"
-          placeholder="Provider base URL"
-        />
-      </div>
-      <div class="mb-3">
-        <label class="form-label">
-          API Version (optional)
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Optional API version, commonly needed for Azure/OpenAI-compatible deployments."
-          />
-        </label>
-        <input
-          v-model="credentialForm.apiVersion"
-          type="text"
-          class="form-control"
-          placeholder="Version (optional)"
-        />
-      </div>
-      <div class="form-check">
-        <input
-          id="credentialEnabled"
-          v-model="credentialForm.enabled"
-          class="form-check-input"
-          type="checkbox"
-        />
-        <label class="form-check-label" for="credentialEnabled">
-          Enabled
-        </label>
-      </div>
+      <BasicForm
+        ref="form"
+        v-model="credentialForm"
+        :fields="credentialFields"
+      />
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="$refs.credentialModal.close()">
-        Cancel
-      </button>
-      <button class="btn btn-primary" type="button" @click="saveCredential">
-        {{ credentialForm.id ? "Update" : "Create" }}
-      </button>
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          text="Cancel"
+          @click="$refs.modal.close()"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :text="credentialForm.id ? 'Update' : 'Create'"
+          @click="saveCredential"
+        />
+      </span>
     </template>
   </BasicModal>
 </template>
@@ -113,30 +39,77 @@
  */
 
 import BasicModal from "@/basic/Modal.vue";
-
-function getEmptyCredentialForm() {
-  return {
-    id: 0,
-    name: "",
-    apiKey: "",
-    provider: "",
-    apiBaseUrl: "",
-    apiVersion: "",
-    enabled: true,
-  };
-}
+import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AICredential",
-  components: { BasicModal },
+  components: { BasicModal, BasicForm, BasicButton },
   data() {
     return {
-      credentialForm: getEmptyCredentialForm(),
+      credentialForm: {},
     };
+  },
+  computed: {
+    credentialFields() {
+      return [
+        {
+          key: "name",
+          label: "Credential Name",
+          type: "text",
+          required: true,
+          default: "",
+          placeholder: "Credential name",
+          help: "A display name for your API credential.",
+        },
+        {
+          key: "apiKey",
+          label: "API Key",
+          type: "password",
+          required: !this.credentialForm.id,
+          default: "",
+          placeholder: this.credentialForm.id
+            ? "Leave empty to keep existing key"
+            : "API key",
+          help: "Enter your API key. Leave empty while editing to keep the existing key.",
+        },
+        {
+          key: "provider",
+          label: "Provider",
+          type: "text",
+          required: true,
+          default: "",
+          placeholder: "Provider name, e.g. openai, anthropic, gemini",
+          help: "Provider name from where you got your API key, e.g. openai, anthropic, gemini. Required for loading available models.",
+        },
+        {
+          key: "apiBaseUrl",
+          label: "API Base URL (optional)",
+          type: "text",
+          default: "",
+          placeholder: "Provider base URL",
+          help: "Optional custom endpoint for proxies, local providers, or hosted compatible APIs.",
+        },
+        {
+          key: "apiVersion",
+          label: "API Version (optional)",
+          type: "text",
+          default: "",
+          placeholder: "Version (optional)",
+          help: "Optional API version, commonly needed for Azure/OpenAI-compatible deployments.",
+        },
+        {
+          key: "enabled",
+          label: "Enabled",
+          type: "switch",
+          default: true,
+        },
+      ];
+    },
   },
   methods: {
     open(row = null) {
-      this.credentialForm = getEmptyCredentialForm();
+      this.resetForm();
       if (row) {
         this.credentialForm = {
           id: row.id,
@@ -148,17 +121,14 @@ export default {
           enabled: !!row.enabled,
         };
       }
-      this.$refs.credentialModal.open();
+      this.$refs.modal.open();
+    },
+    resetForm() {
+      this.credentialForm = {};
+      this.eventBus.emit("resetFormField");
     },
     saveCredential() {
-      if (!this.credentialForm.name.trim()) {
-        this.toastError("Credential name is required");
-        return;
-      }
-      if (!this.credentialForm.provider.trim()) {
-        this.toastError("Provider is required");
-        return;
-      }
+      if (!this.$refs.form.validate()) return;
 
       const payload = {
         id: this.credentialForm.id || 0,
@@ -177,7 +147,7 @@ export default {
         data: payload,
       }, (result) => {
         if (result.success) {
-          this.$refs.credentialModal.close();
+          this.$refs.modal.close();
           this.toastSuccess(this.credentialForm.id ? "Credential updated" : "Credential created");
         } else {
           this.toastError(result.message || "Failed to save credential");
