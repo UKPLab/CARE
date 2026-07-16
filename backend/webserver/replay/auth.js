@@ -7,7 +7,7 @@ const { io: SocketIOClient } = require('socket.io-client');
 /**
  * Sign a session ID using the express-session HMAC-SHA256 scheme.
  * @param {string} sid - Raw session identifier
- * @param {string} secret - Session secret from server config
+ * @param {string} secret - The express-session secret (SESSION_SECRET)
  * @returns {string} Signed session ID in format s:<sid>.<signature>
  */
 function signSessionId(sid, secret) {
@@ -17,6 +17,23 @@ function signSessionId(sid, secret) {
         .digest('base64')
         .replace(/=+$/, '');
     return `s:${sid}.${signature}`;
+}
+
+// Replay clients are given the same connect timeout for the handshake and for
+// the server's ready signal.
+const CONNECT_TIMEOUT_MS = 10000;
+
+/**
+ * Delete one session row from the store.
+ * @param {Object} server - CARE server instance
+ * @param {string} sid - Raw session identifier
+ * @returns {Promise<void>}
+ */
+async function deleteSession(server, sid) {
+    await server.db.sequelize.query(
+        `DELETE FROM "Sessions" WHERE "sid" = :sid`,
+        { replacements: { sid } }
+    );
 }
 
 /**
@@ -64,53 +81,69 @@ async function createAuthenticatedClient(server, user, serverUrl) {
             type: server.db.sequelize.QueryTypes.INSERT,
         }
     );
-    // NOTE: This must match the express-session secret in Server.js (#initSessionManagement).
-    // Replay clients mint their own session cookies using this HMAC secret so that the
-    // session middleware accepts them as valid logged-in sessions. When the session secret
-    // is moved to an env var (see GitHub issue on hardcoded session secret), this literal
-    // must be updated to read from the same env var — otherwise replay auth will break.
-    const secret = 'secretString';
+    // Replay clients mint their own session cookies, so this must be the same
+    // secret express-session verifies with in Server.js (#initSessionManagement)
+    // — otherwise the middleware rejects them and replay can't authenticate.
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) {
+        throw new Error('SESSION_SECRET is not set — replay cannot mint session cookies');
+    }
     const signedSid = signSessionId(sid, secret);
     const cookie = `connect.sid=${encodeURIComponent(signedSid)}`;
 
     const client = SocketIOClient(serverUrl, {
         extraHeaders: { cookie },
         reconnection: false,
-        timeout: 10000,
+        timeout: CONNECT_TIMEOUT_MS,
     });
 
-    return new Promise((resolve, reject) => {
-        // Wait for the server's "ready" signal rather than a fixed delay. The
-        // server emits this once all per-socket handlers are initialized and
-        // listening, so the first replayed trace can't race handler setup.
-        client.on('ready', () => resolve(client));
-        client.on('connect_error', (err) => {
-            reject(new Error(`Replay auth failed for user ${user.id}: ${err.message}`));
+    try {
+        return await new Promise((resolve, reject) => {
+            // Wait for the server's "ready" signal rather than a fixed delay. The
+            // server emits this once all per-socket handlers are initialized and
+            // listening, so the first replayed trace can't race handler setup.
+            const timer = setTimeout(() => {
+                reject(new Error(`Replay client for user ${user.id} connected but got no ready signal within ${CONNECT_TIMEOUT_MS}ms`));
+            }, CONNECT_TIMEOUT_MS);
+            client.on('ready', () => {
+                clearTimeout(timer);
+                resolve(client);
+            });
+            client.on('connect_error', (err) => {
+                clearTimeout(timer);
+                reject(new Error(`Replay auth failed for user ${user.id}: ${err.message}`));
+            });
         });
-    });
+    } catch (err) {
+        // The session row is written before connecting, so a failed connect
+        // would leave it behind for its full lifetime. Clean up our own mess.
+        await deleteSession(server, sid).catch(() => { /* best effort */ });
+        client.close();
+        throw err;
+    }
 }
 
 /**
  * Disconnect a replay client and remove its session from the store.
  * @param {Object} server - CARE server instance
  * @param {import("socket.io-client").Socket} client - The replay client to clean up
+ * @returns {Promise<void>}
  */
 async function cleanupSession(server, client) {
+    if (!client) {
+        return;
+    }
     try {
         const cookie = client.io.opts.extraHeaders?.cookie || '';
         const match = cookie.match(/connect\.sid=s%3A([^.]+)\./);
         if (match) {
-            await server.db.sequelize.query(
-                `DELETE FROM "Sessions" WHERE "sid" = :sid`,
-                { replacements: { sid: match[1] } }
-            );
+            await deleteSession(server, match[1]);
         }
         client.disconnect();
     } catch (err) {
-        // Best-effort cleanup: a failure here won't corrupt replay results,
-        // but a failed session DELETE leaves orphaned rows in "Sessions",
-        // so surface it rather than swallowing.
-        console.warn("Replay session cleanup failed: " + err.message);
+        // Best-effort: a failure here won't corrupt replay results, but a failed
+        // DELETE leaves an orphaned row in "Sessions", so surface it.
+        server.logger.warn("Replay session cleanup failed: " + err.message);
     }
 }
 

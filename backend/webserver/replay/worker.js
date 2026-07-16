@@ -2,6 +2,11 @@
 
 const { createAuthenticatedClient, cleanupSession } = require('./auth');
 
+// How long to wait after each trace for the Refresh events it triggered. Long
+// enough for a local round-trip, short enough not to dominate replay time —
+// a slower Refresh than this is not attributed to its trace.
+const DB_CHANGE_WINDOW_MS = 50;
+
 /**
  * Emit a socket event and wait for the server acknowledgement.
  * @param {import("socket.io-client").Socket} client - Connected socket client
@@ -17,7 +22,9 @@ function emitWithTimeout(client, action, payload, timeoutMs) {
             resolve({ success: false, timedOut: true, message: `No ack within ${timeoutMs}ms` });
         }, timeoutMs);
 
-        client.emit(action, payload || {}, (response) => {
+        // Only null/undefined become {}; a payload of 0, false or "" is real
+        // data and must be sent as recorded.
+        client.emit(action, payload === null || payload === undefined ? {} : payload, (response) => {
             clearTimeout(timer);
             resolve(response);
         });
@@ -50,7 +57,8 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
         client = await createAuthenticatedClient(server, user, serverUrl);
     } catch (err) {
         results.failed = traces.length;
-        results.errors.push({ts: start, action: 'connect', message: err.message });
+        // No ts: the connection never opened, so there's nothing to timestamp.
+        results.errors.push({ action: 'connect', message: err.message });
         return results;
     }
 
@@ -85,16 +93,17 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
 
             pendingDbChanges = [];
 
+            // Declared outside the try so the catch below can timestamp the
+            // failure too.
+            const start = Date.now();
             try {
-                const start = Date.now();
                 const ack = await emitWithTimeout(client, trace.action, trace.payload, ackTimeout);
                 const latency = Date.now() - start;
 
-                // Small delay to let any remaining Refresh events arrive
-                await new Promise(resolve => setTimeout(resolve, 50));
+                // Let any Refresh events triggered by this trace arrive before
+                // we snapshot them; anything slower than this window is missed.
+                await new Promise(resolve => setTimeout(resolve, DB_CHANGE_WINDOW_MS));
                 const dbChanges = [...pendingDbChanges];
-
-                
 
                 if (ack && ack.success === false) {
                     results.failed++;
