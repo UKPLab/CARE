@@ -66,12 +66,11 @@ export default {
           key: "apiKey",
           label: "API Key",
           type: "password",
-          required: !this.credentialForm.id,
           default: "",
           placeholder: this.credentialForm.id
             ? "Leave empty to keep existing key"
             : "API key",
-          help: "Enter your API key. Leave empty while editing to keep the existing key.",
+          help: "Provide an API key and/or a base URL. At least one is required. Leave empty while editing to keep the existing key.",
         },
         {
           key: "provider",
@@ -84,11 +83,11 @@ export default {
         },
         {
           key: "apiBaseUrl",
-          label: "API Base URL (optional)",
+          label: "API Base URL",
           type: "text",
           default: "",
           placeholder: "Provider base URL",
-          help: "Optional custom endpoint for proxies, local providers, or hosted compatible APIs.",
+          help: "Custom endpoint for proxies, local providers, or hosted compatible APIs. Required if no API key is provided.",
         },
         {
           key: "apiVersion",
@@ -130,6 +129,14 @@ export default {
     saveCredential() {
       if (!this.$refs.form.validate()) return;
 
+      const hasApiKey = !!this.credentialForm.apiKey?.trim();
+      const hasBaseUrl = !!this.credentialForm.apiBaseUrl?.trim();
+      // On edit, empty API key keeps the existing key, so that still satisfies the requirement.
+      if (!hasApiKey && !hasBaseUrl && !this.credentialForm.id) {
+        this.toastError("Provide an API key or a base URL");
+        return;
+      }
+
       const payload = {
         id: this.credentialForm.id || 0,
         name: this.credentialForm.name.trim(),
@@ -138,7 +145,7 @@ export default {
         apiVersion: this.credentialForm.apiVersion?.trim() || null,
         enabled: !!this.credentialForm.enabled,
       };
-      if (this.credentialForm.apiKey?.trim()) {
+      if (hasApiKey) {
         payload.apiKey = this.credentialForm.apiKey.trim();
       }
 
