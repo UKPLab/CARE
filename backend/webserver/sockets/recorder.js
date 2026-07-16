@@ -16,11 +16,13 @@ const RECORDER_CONTROL_EVENTS = [
 /**
  * Recorder Socket
  *
- * Captures WebSocket events across connected sockets for stress-test replay.
- * Recording is a server-wide toggle — admin chooses which active sessions
- * (sockets) to include. Pure session-based selection: only the listed
- * socketIds are recorded. New connections during a recording are NOT
- * automatically captured (a warning toast goes to the recording owner).
+ * Captures WebSocket events for stress-test replay. An admin selects which
+ * connected sessions (sockets) to record; each selected socket gets its own
+ * recording, so one capture per participant. Selection is fixed at start —
+ * sessions connecting later are not added to a running recording.
+ *
+ * @type {RecorderSocket}
+ * @class RecorderSocket
  */
 class RecorderSocket extends Socket {
 
@@ -31,65 +33,51 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Returns true if this socket should be recorded under the current configuration.
+     * Build a trace-capturing listener for one direction.
+     * @param {boolean} direction - true for client->server, false for server->client
+     * @returns {Function} An onAny/onAnyOutgoing listener
      */
-    isSessionIncluded(socketId) {
-        return Boolean(this.server.activeRecordings && this.server.activeRecordings[socketId]);
+    makeTraceHandler(direction) {
+        return async (eventName, ...args) => {
+            const entry = this.server.activeRecordings && this.server.activeRecordings[this.socket.id];
+            if (!entry) return;
+            if (RECORDER_CONTROL_EVENTS.includes(eventName)) return;
+            if (entry.excludeEvents && entry.excludeEvents.includes(eventName)) return;
+            // An ack callback isn't data and can't be stored or replayed.
+            const payload = typeof args[0] === "function" || args[0] === undefined ? null : args[0];
+            try {
+                await this.models["trace"].add({
+                    recordingId: entry.recordingId,
+                    userId: this.userId,
+                    socketId: this.socket.id,
+                    action: eventName,
+                    payload,
+                    direction,
+                    startTime: new Date(),
+                    endTime: new Date(),
+                });
+            } catch (err) {
+                this.logger.error("Failed to save trace: " + err.message);
+            }
+        };
     }
 
+    /**
+     * Attach the capture listeners to this socket, once.
+     * @returns {void}
+     */
     attachListeners() {
         if (this.incomingHandler || this.outgoingHandler) return;
-
-        this.incomingHandler = async (eventName, ...args) => {
-            const entry = this.server.activeRecordings && this.server.activeRecordings[this.socket.id];
-            if (!entry) return;
-            const recordingId = entry.recordingId;
-            const excludes = entry.excludeEvents;
-            if (RECORDER_CONTROL_EVENTS.includes(eventName)) return;
-            if (excludes && excludes.includes(eventName)) return;
-            try {
-                await this.models["trace"].add({
-                    recordingId,
-                    userId: this.userId,
-                    socketId: this.socket.id,
-                    action: eventName,
-                    payload: args[0] || null,
-                    direction: true,
-                    startTime: new Date(),
-                    endTime: new Date(),
-                });
-            } catch (err) {
-                this.logger.error("Failed to save trace: " + err.message);
-            }
-        };
-
-        this.outgoingHandler = async (eventName, ...args) => {
-            const entry = this.server.activeRecordings && this.server.activeRecordings[this.socket.id];
-            if (!entry) return;
-            const recordingId = entry.recordingId;
-            const excludes = entry.excludeEvents;
-            if (RECORDER_CONTROL_EVENTS.includes(eventName)) return;
-            if (excludes && excludes.includes(eventName)) return;
-            try {
-                await this.models["trace"].add({
-                    recordingId,
-                    userId: this.userId,
-                    socketId: this.socket.id,
-                    action: eventName,
-                    payload: args[0] || null,
-                    direction: false,
-                    startTime: new Date(),
-                    endTime: new Date(),
-                });
-            } catch (err) {
-                this.logger.error("Failed to save trace: " + err.message);
-            }
-        };
-
+        this.incomingHandler = this.makeTraceHandler(true);
+        this.outgoingHandler = this.makeTraceHandler(false);
         this.socket.onAny(this.incomingHandler);
         this.socket.onAnyOutgoing(this.outgoingHandler);
     }
 
+    /**
+     * Remove this socket's capture listeners, if attached.
+     * @returns {void}
+     */
     detachListeners() {
         if (this.incomingHandler) {
             this.socket.offAny(this.incomingHandler);
@@ -101,6 +89,15 @@ class RecorderSocket extends Socket {
         }
     }
 
+    /**
+     * Start recording the selected sessions. Each selected socket gets its own
+     * recording row, so one capture per participant.
+     * @param {Object} data - {participantSocketIds: string[], name?: string, excludeEvents?: string[]}
+     * @param {Object} options - Handler options; carries the transaction
+     * @returns {Promise<void>}
+     * @throws {Error} If the caller is not an admin, no sessions are selected,
+     *                 a session is already recording, or a session is offline
+     */
     async startRecording(data, options) {
         if (!(await this.isAdmin())) {
             throw new Error("Admin access required");
@@ -117,40 +114,80 @@ class RecorderSocket extends Socket {
             throw new Error("At least one session must be selected");
         }
 
+       // TODO: two admins starting on the same socket concurrently can both
+        // pass this check before either activates, orphaning one recording.
+        // Needs a reservation that survives rollback; Sequelize exposes no
+        // afterRollback hook, so this is deferred pending a design decision.
         const alreadyRecording = participantSocketIds.filter(id => this.server.activeRecordings[id]);
         if (alreadyRecording.length > 0) {
             throw new Error("One or more selected sessions are already being recorded");
+        }
+
+        // A socketId from a stale session list has no live socket to attach to,
+        // so it would produce a recording that stays open and captures nothing.
+        // availSockets can retain ghosts after a disconnect, so check the live
+        // socket too — the same test getOnlineSessions uses to build the list.
+        const offline = participantSocketIds.filter(id => !(
+            this.server.availSockets[id]
+            && this.server.availSockets[id]["RecorderSocket"]
+            && this.server.io.sockets.sockets.get(id)
+        ));
+        if (offline.length > 0) {
+            throw new Error("One or more selected sessions are no longer connected");
         }
 
         const excludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
             ? data.excludeEvents
             : null;
 
+        const baseName = data.name || "Recording " + new Date().toLocaleString();
+        const started = [];
+
         for (const socketId of participantSocketIds) {
-            const recorder = this.server.availSockets[socketId] && this.server.availSockets[socketId]["RecorderSocket"];
-            const recordedUserId = recorder ? recorder.userId : null;
+            const recorder = this.server.availSockets[socketId]["RecorderSocket"];
 
             const recording = await this.models["recording"].add({
-                name: data.name || "Recording " + new Date().toLocaleString(),
+                // One recording per participant, so the name has to say which.
+                name: participantSocketIds.length > 1 ? `${baseName} — ${socketId}` : baseName,
                 status: "recording",
                 startTime: new Date(),
-                userId: recordedUserId,
+                userId: recorder.userId,
                 participantSocketIds: [socketId],
                 excludeEvents,
             }, options);
 
-            this.server.activeRecordings[socketId] = {
-                recordingId: recording.id,
-                ownerSocketId: this.socket.id,
-                excludeEvents,
-            };
+            started.push({ socketId, recorder, recordingId: recording.id });
+        }
 
-            if (recorder) {
-                recorder.attachListeners();
+        // Only start capturing once the rows are committed: a rollback would
+        // otherwise leave listeners writing traces against recordings that
+        // don't exist, and activeRecordings entries that can never be stopped.
+        const activate = () => {
+            for (const s of started) {
+                this.server.activeRecordings[s.socketId] = {
+                    recordingId: s.recordingId,
+                    ownerSocketId: this.socket.id,
+                    excludeEvents,
+                };
+                s.recorder.attachListeners();
             }
+        };
+
+        if (options && options.transaction) {
+            options.transaction.afterCommit(activate);
+        } else {
+            activate();
         }
     }
 
+/**
+     * Stop one or more active recordings and return each one's captured traces.
+     * @param {Object} data - {socketId?: string, status?: string}; socketId stops
+     *                        just that session, otherwise the caller's whole batch
+     * @param {Object} options - Handler options; options.internal bypasses the admin check
+     * @returns {Promise<{stopped: Array<Object>}>} Each stopped recording with its traces
+     * @throws {Error} If the caller is not an admin (unless internal) or nothing is recording
+     */
     async stopRecording(data, options) {
         // Internal callers (e.g. disconnect cleanup in Server.js) pass
         // options.internal to bypass the admin check, since the triggering
@@ -214,10 +251,8 @@ class RecorderSocket extends Socket {
 
             delete this.server.activeRecordings[socketId];
 
-            const traces = await this.models["trace"].findAll({
-                where: { recordingId },
-                order: [["id", "ASC"]],
-            });
+            const traces = (await this.models["trace"].getAllByKey("recordingId", recordingId, options))
+                .sort((a, b) => a.id - b.id);
 
             stopped.push({
                 id: recordingId,
@@ -238,15 +273,21 @@ class RecorderSocket extends Socket {
         return { stopped };
     }
 
+    /**
+     * Return every trace of one recording, oldest first. Feeds the results
+     * table and the export payload.
+     * @param {Object} data - {id: number} recording id
+     * @param {Object} options - Handler options
+     * @returns {Promise<Array<Object>>} The recording's traces
+     * @throws {Error} If the caller is not an admin or no id is given
+     */
     async getTraces(data, options) {
         if (!(await this.isAdmin())) {
             throw new Error("Admin access required");
         }
         if (!data || !data.id) throw new Error("Recording ID required");
-        const traces = await this.models["trace"].findAll({
-            where: { recordingId: data.id, deleted: false },
-            order: [["id", "ASC"]],
-        });
+        const traces = (await this.models["trace"].getAllByKey("recordingId", data.id, options))
+            .sort((a, b) => a.id - b.id);
         return traces.map(t => ({
             id: t.id,
             recordingId: t.recordingId,
@@ -261,9 +302,13 @@ class RecorderSocket extends Socket {
     }
 
     /**
-     * Returns one entry per active socket connection (= session).
-     * Used by the Start Recording modal to populate the session selection table.
-     * Offline users have no sessions and are not returned.
+     * Return one entry per live socket connection (= session), for the Start
+     * Recording modal's session list. Offline users have no sessions and are
+     * not returned.
+     * @param {Object} data
+     * @param {Object} options - Handler options
+     * @returns {Promise<Array<Object>>} Sessions with socketId, userId, userName, connectedAt
+     * @throws {Error} If the caller is not an admin
      */
     async getOnlineSessions(data, options) {
         if (!(await this.isAdmin())) {
@@ -293,9 +338,7 @@ class RecorderSocket extends Socket {
         // Resolve userNames in one query
         const userMap = {};
         if (userIds.size > 0) {
-            const users = await this.models["user"].findAll({
-                where: { id: Array.from(userIds) },
-            });
+            const users = await this.models["user"].getAllByKeyValues("id", Array.from(userIds), options);
             for (const u of users) {
                 userMap[u.id] = u.userName;
             }
@@ -348,6 +391,10 @@ class RecorderSocket extends Socket {
         return await snapshot(this.server.db.sequelize, this.logger);
     }
 
+    /**
+     * Register this socket's event handlers.
+     * @returns {void}
+     */
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
         this.createSocket("recorderStop", this.stopRecording, {}, false);
@@ -355,10 +402,6 @@ class RecorderSocket extends Socket {
         this.createSocket("recordingGetOnlineSessions", this.getOnlineSessions, {}, false);
         this.createSocket("recordingGetPerfHealth", this.getPerfHealth, {}, false);
         this.createSocket("recordingGetPerfStats", this.getPerfStats, {}, false);
-
-        if (this.isSessionIncluded(this.socket.id)) {
-            this.attachListeners();
-        }
     }
 }
 
