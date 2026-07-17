@@ -44,4 +44,26 @@ export default [
             ],
         },
     },
+    {
+        files: ['**/*.vue'],
+        rules: {
+            'vue/no-restricted-html-elements': [
+                'error',
+                {
+                    element: 'button',
+                    message:
+                        'Use <BasicButton> from @/basic/Button.vue instead of raw <button>.',
+                },
+            ],
+        },
+    },
+    {
+        files: [
+            'src/basic/**/*.vue',
+            'src/components/**/Button.vue',
+        ],
+        rules: {
+            'vue/no-restricted-html-elements': 'off',
+        },
+    },
 ]

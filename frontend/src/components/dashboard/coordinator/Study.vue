@@ -25,19 +25,20 @@
         >{{ link }}</a>
       </div>
     </template>
-    <template #buttons>
-      <button
-          v-if="isSuccess && !isTemplateMode"
+    <template v-if="isSuccess" #buttons>
+      <BasicButton
+          v-if="!isTemplateMode"
           class="btn btn-primary"
+          text="Copy Link"
           @click="copyURL"
-      >Copy Link
-      </button>
+      />
     </template>
   </BasicCoordinator>
 </template>
 
 <script>
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * StudyCoordinator - coordinator to add or edit studies
@@ -48,7 +49,7 @@ import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 export default {
   name: "CoordinatorStudy",
   subscribeTable: ['document', 'tag_set', 'ai_budget'],
-  components: {BasicCoordinator},
+  components: {BasicCoordinator, BasicButton},
   data() {
     return {
       studyId: 0,

@@ -12,6 +12,7 @@ const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const {generateError} = require("../../utils/generic.js");
 const {getEmailContent} = require("../../utils/emailHelper.js");
+const {handleSubmissionUploaded} = require("../services/triggerHandlers.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -193,6 +194,7 @@ class DocumentSocket extends Socket {
                     userId: data.userId ?? this.userId,
                     uploadedByUserId: this.userId,
                     readyForReview: data.isUploaded ?? false,
+                    projectId: data.projectId,
                     submissionId: data.submissionId
                 },
                 {transaction: options.transaction}
@@ -943,6 +945,7 @@ class DocumentSocket extends Socket {
                             userId: submission.userId,
                             isUploaded: true,
                             submissionId: submissionEntry.id,
+                            projectId: submissionEntry.projectId
                         },
                         {transaction}
                     );
@@ -1099,6 +1102,7 @@ class DocumentSocket extends Socket {
                         userId,
                         group,
                         validationConfigurationId,
+                        projectId,
                         assignmentId,
                         submissionId,
                         name,
@@ -1109,12 +1113,14 @@ class DocumentSocket extends Socket {
             }
 
             let previousSubmissionId = null;
+            let resolvedProjectId = projectId;
 
             if (assignmentId) {
                 const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
                 if (!assignment) {
                     throw new Error(`Assignment with id ${assignmentId} not found`);
                 }
+                resolvedProjectId = resolvedProjectId ?? assignment.projectId ?? null;
 
                 const assignmentSubmissions = await this.models["submission"].findAll({
                     where: {
@@ -1167,7 +1173,7 @@ class DocumentSocket extends Socket {
                     }
                 }
             } else {
-                const previousSubmission = await this.models["submission"].getParentSubmission(userId, projectId, true, {transaction});
+                const previousSubmission = await this.models["submission"].getParentSubmission(userId, resolvedProjectId, true, {transaction});
                 previousSubmissionId = previousSubmission ? previousSubmission.id : null;
             }
 
@@ -1179,6 +1185,7 @@ class DocumentSocket extends Socket {
                 validationConfigurationId,
                 createdByUserId: this.userId,
                 previousSubmissionId,
+                projectId: resolvedProjectId,
                 assignmentId: assignmentId || null,
                 name: name ?? null,
                 description: description ?? null,
@@ -1191,6 +1198,7 @@ class DocumentSocket extends Socket {
                         userId: userId,
                         isUploaded: true,
                         submissionId: submission.id,
+                        projectId: resolvedProjectId,
                     },
                     {transaction}
                 );
@@ -1207,6 +1215,20 @@ class DocumentSocket extends Socket {
                         });
                     } catch (emailError) {
                         this.server.logger.error("Failed to send submission upload email:", emailError);
+                    }
+
+                    try {
+                        await handleSubmissionUploaded(this.server, {
+                            assignmentId,
+                            submissionId: submission.id,
+                            userId,
+                            projectId,
+                            timestamp: submission.createdAt,
+                        }, {
+                            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+                        });
+                    } catch (triggerError) {
+                        this.server.logger.error("Failed to run submission upload triggers:", triggerError);
                     }
                 });
             }
@@ -1235,7 +1257,7 @@ class DocumentSocket extends Socket {
      * @throws {Error} If the assignment or submission is not found, the user lacks permission, or a linked document is used in a study
      */
     async replaceAssignmentSubmission(data, options) {
-        const {files, userId, group, validationConfigurationId, assignmentId, submissionId, name, description} = data;
+        const {files, userId, group, validationConfigurationId, projectId, assignmentId, submissionId, name, description} = data;
         const transaction = options.transaction;
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
@@ -1261,6 +1283,7 @@ class DocumentSocket extends Socket {
         if (!oldSubmission) {
             throw new Error(`Submission with id ${submissionId} not found for this assignment`);
         }
+        const resolvedProjectId = projectId ?? oldSubmission.projectId ?? assignment.projectId ?? null;
 
         const isOwner = this.userId === oldSubmission.userId;
         const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
@@ -1289,6 +1312,7 @@ class DocumentSocket extends Socket {
             validationConfigurationId,
             createdByUserId: this.userId,
             previousSubmissionId: oldSubmission.previousSubmissionId || null,
+            projectId: resolvedProjectId,
             assignmentId,
             name: name ?? oldSubmission.name ?? null,
             description: description ?? oldSubmission.description ?? null,
@@ -1324,6 +1348,7 @@ class DocumentSocket extends Socket {
                     userId,
                     isUploaded: true,
                     submissionId: newSubmission.id,
+                    projectId: resolvedProjectId,
                 },
                 {transaction}
             );
@@ -1339,6 +1364,20 @@ class DocumentSocket extends Socket {
                 });
             } catch (emailError) {
                 this.server.logger.error("Failed to send submission reupload email:", emailError);
+            }
+
+            try {
+                await handleSubmissionUploaded(this.server, {
+                    assignmentId: assignment.id,
+                    submissionId: newSubmission.id,
+                    userId,
+                    timestamp: newSubmission.createdAt,
+                    eventType: "reupload",
+                }, {
+                    broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+                });
+            } catch (triggerError) {
+                this.server.logger.error("Failed to run submission reupload triggers:", triggerError);
             }
         });
 

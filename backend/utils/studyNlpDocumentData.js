@@ -12,6 +12,14 @@
 
 const NLP_ASSESSMENT_RESULT_FIELD = "assessment";
 
+function normalizeDocumentDataKeyPart(value) {
+    return typeof value === "string" ? value.trim().replace(/\s+/g, "_") : value;
+}
+
+function buildStudyHookKey(serviceName, hookName) {
+    return `${serviceName}_${normalizeDocumentDataKeyPart(hookName)}`;
+}
+
 /**
  * Build exact document_data key for study-step NLP save (NlpRequest.saveResult).
  *
@@ -25,14 +33,26 @@ function buildStudyNlpKey(serviceName, skill, resultField) {
 }
 
 /**
- * Build candidate keys for reading study-step NLP data (name prefix, then type prefix).
+ * Build candidate keys for reading study-step NLP or AI-hook data.
  *
  * @param {Object} service - Step service entry with name, type, and skill
  * @param {string} resultField - top-level field name in NLP JSON response
  * @returns {string[]}
  */
 function getStudyNlpKeyCandidates(service, resultField) {
-    if (!service || !service.skill || !resultField) {
+    if (!service) {
+        return [];
+    }
+
+    if (service.hookId) {
+        const keys = [
+            service.name && service.hookName ? buildStudyHookKey(service.name, service.hookName) : null,
+            service.type && service.hookName ? buildStudyHookKey(service.type, service.hookName) : null,
+        ].filter(Boolean);
+        return [...new Set(keys)];
+    }
+
+    if (!service.skill || !resultField) {
         return [];
     }
 
@@ -80,7 +100,7 @@ function findAssessmentNlpService(stepConfiguration) {
     const nlpService =
         stepConfig.services.find(
             (service) =>
-                service.skill &&
+                (service.skill || service.hookId) &&
                 (service.name === "nlpAssessment" || service.type === "nlpRequest")
         ) || stepConfig.services[0];
 
@@ -107,6 +127,8 @@ function resolveNlpAssessmentDraft(mergedData, stepConfiguration) {
 
 module.exports = {
     NLP_ASSESSMENT_RESULT_FIELD,
+    normalizeDocumentDataKeyPart,
+    buildStudyHookKey,
     buildStudyNlpKey,
     getStudyNlpKeyCandidates,
     firstMergedValue,

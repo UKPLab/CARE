@@ -41,20 +41,16 @@
     </template>
     <template #footer>
       <div v-if="!uploading">
-        <button
+        <BasicButton
           class="btn btn-secondary"
+          text="Close"
           data-bs-dismiss="modal"
-          type="button"
-        >
-          Close
-        </button>
-        <button
+        />
+        <BasicButton
           class="btn btn-primary"
-          type="button"
+          text="Upload"
           @click="upload"
-        >
-          Upload
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -62,6 +58,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
 import { extractTextFromPDF } from "@/assets/utils";
 import * as pdfjsLib from "pdfjs-dist";
@@ -82,7 +79,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "DocumentUploadModal",
-  components: {BasicForm, Modal},
+  components: {BasicForm, Modal, BasicButton},
   data() {
     return {
       uploading: false,
