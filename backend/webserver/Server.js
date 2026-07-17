@@ -428,7 +428,10 @@ module.exports = class Server {
                     try {
                         const activeRecordings = this.activeRecordings || {};
                         const entry = activeRecordings[socket.id];
-                        if (entry) {
+                        // A start-recording claim has no recordingId until its
+                        // transaction commits; there's nothing to stop or flag
+                        // yet, and the claim expires on its own.
+                        if (entry && entry.recordingId) {
                             const ownerSocketId = entry.ownerSocketId;
                             const recorder = this.availSockets[socket.id]['RecorderSocket'];
                             if (recorder) {
@@ -597,6 +600,7 @@ module.exports = class Server {
      * Mark any recordings still in "recording" status as "interrupted".
      * These are recordings whose server died mid-capture — the in-memory
      * activeRecordings map is gone but the DB rows were never closed out.
+     * @returns {Promise<void>}
      */
     async recoverInterruptedRecordings() {
         try {

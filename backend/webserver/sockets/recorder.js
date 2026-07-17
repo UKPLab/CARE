@@ -119,7 +119,7 @@ class RecorderSocket extends Socket {
             throw new Error("At least one session must be selected");
         }
 
-       // Claim the sockets synchronously, before any await: two admins starting
+        // Claim the sockets synchronously, before any await: two admins starting
         // at once would otherwise both pass this check and the second activation
         // would orphan the first's recording. A claim that never becomes a real
         // recording (its transaction rolled back) expires on its own, since
@@ -204,7 +204,7 @@ class RecorderSocket extends Socket {
         }
     }
 
-/**
+    /**
      * Stop one or more active recordings and return each one's captured traces.
      * @param {Object} data - {socketId?: string, status?: string}; socketId stops
      *                        just that session, otherwise the caller's whole batch
@@ -234,12 +234,17 @@ class RecorderSocket extends Socket {
         // - data.socketId given (e.g. disconnect path): stop only that socket.
         // - otherwise: stop every recording started by this caller (their batch),
         //   so one admin stopping doesn't end another admin's recordings.
+        // A claim (see startRecording) has an ownerSocketId but no recordingId
+        // yet, so it must never be treated as stoppable — its real entry lands
+        // when the start transaction commits.
+        const isStoppable = (sid) => Boolean(this.server.activeRecordings[sid]?.recordingId);
+
         let socketIdsToStop;
         if (data && data.socketId) {
-            socketIdsToStop = this.server.activeRecordings[data.socketId] ? [data.socketId] : [];
+            socketIdsToStop = isStoppable(data.socketId) ? [data.socketId] : [];
         } else {
             socketIdsToStop = Object.keys(this.server.activeRecordings)
-                .filter(sid => this.server.activeRecordings[sid].ownerSocketId === this.socket.id);
+                .filter(sid => isStoppable(sid) && this.server.activeRecordings[sid].ownerSocketId === this.socket.id);
         }
 
         if (socketIdsToStop.length === 0) {

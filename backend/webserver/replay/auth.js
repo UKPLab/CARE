@@ -118,7 +118,7 @@ async function createAuthenticatedClient(server, user, serverUrl) {
         // The session row is written before connecting, so a failed connect
         // would leave it behind for its full lifetime. Clean up our own mess.
         await deleteSession(server, sid).catch(() => { /* best effort */ });
-        client.close();
+        client.disconnect();
         throw err;
     }
 }

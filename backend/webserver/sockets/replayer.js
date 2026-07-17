@@ -272,13 +272,17 @@ class ReplayerSocket extends Socket {
     makeProgressReporter(progressId, totalTraces) {
         let completed = 0;
         let lastPct = -1;
-        const emitProgress = throttle(() => {
+        const emit = () => {
+            if (!progressId) {
+                return;
+            }
             this.socket.emit('progressUpdate', {
                 id: progressId,
                 current: completed,
                 total: totalTraces,
             });
-        }, 500);
+        };
+        const emitProgress = throttle(emit, 500);
         const onTraceProgress = () => {
             completed++;
             if (!progressId || totalTraces === 0) {
@@ -290,7 +294,16 @@ class ReplayerSocket extends Socket {
                 emitProgress();
             }
         };
-        return { onTraceProgress, flush: () => emitProgress.flush() };
+        // Cancel the throttle and emit directly: flush() only fires when a
+        // trailing call is pending, which it isn't if the last trace didn't
+        // change the whole percent — so the bar would stop short of its end.
+        return {
+            onTraceProgress,
+            flush: () => {
+                emitProgress.cancel();
+                emit();
+            },
+        };
     }
 
     /**
@@ -329,8 +342,14 @@ class ReplayerSocket extends Socket {
      * @param {number} ackTimeout - Max ms to wait for each trace's ack
      * @param {string} [progressId=null] - Id to emit progressUpdate against
      * @returns {Promise<{sessions: number, results: Array<Object>, duration: number}>} The level's result
+     * @throws {Error} If concurrency is not an integer between 1 and MAX_CONCURRENCY
      */
     async runOneLevel(pool, serverUrl, timingMode, concurrency, ackTimeout, progressId = null) {
+        // replayRun validates this too, but runOneLevel is callable on its own
+        // and opens `concurrency` real sockets, so it guards itself.
+        if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > MAX_CONCURRENCY) {
+            throw new Error(`concurrency must be an integer between 1 and ${MAX_CONCURRENCY}`);
+        }
         const activeSessions = this.buildActiveSessions(pool, concurrency);
         // Sum the sessions actually picked: with wraparound over unequal session
         // sizes, concurrency * average would not match what gets replayed.
@@ -414,6 +433,9 @@ class ReplayerSocket extends Socket {
                 const reason = levelFailed
                     ? 'trace failure'
                     : `p95 latency ${p95}ms exceeded threshold ${latencyThreshold}ms`;
+                // TODO: the perf CLI drives replayRun too and has no browser to
+                // show this, so the toast is emitted to a socket nobody watches.
+                // The CLI reads the same outcome from the returned results.
                 this.sendToast(`Replay stopped at iteration ${level} (${reason})`, 'Replay', 'danger');
                 break;
             }

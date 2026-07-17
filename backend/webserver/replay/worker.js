@@ -13,8 +13,7 @@ const DB_CHANGE_WINDOW_MS = 50;
  * @param {string} action - Event name to emit
  * @param {Object} payload - Event payload
  * @param {number} timeoutMs - Max wait time for ack
- * @returns {Promise<Object>} Server response
- * @throws {Error} If no ack received within timeout
+ * @returns {Promise<Object>} The server's response, or {success: false, timedOut: true} if it never acked
  */
 function emitWithTimeout(client, action, payload, timeoutMs) {
     return new Promise((resolve) => {
@@ -38,10 +37,17 @@ function emitWithTimeout(client, action, payload, timeoutMs) {
  * @param {Array<Object>} traces - Trace rows (direction: true only), sorted by startTime
  * @param {string} serverUrl - Target server URL
  * @param {string} timingMode - "realtime" to preserve original delays, "fast" to skip them
- * @param {number} ackTimeout - Max wait time in ms for the server to ack each trace (default 2000)
+ * @param {number} [ackTimeout=2000] - Max wait time in ms for the server to ack each trace
+ * @param {Function} [onProgress=null] - Called once per completed trace, for progress reporting
  * @returns {Promise<Object>} Results with pass/fail counts, errors, latencies, and DB changes
+ * @throws {Error} If user is missing or has no id
  */
 async function replayUserTraces(server, user, traces, serverUrl, timingMode, ackTimeout = 2000, onProgress = null) {
+    // The pool builders filter out sessions with no resolvable user, but this
+    // is exported and can't assume its caller did that.
+    if (!user || !user.id) {
+        throw new Error('replayUserTraces requires a user with an id');
+    }
     const results = {
         userId: user.id,
         userName: user.userName,
