@@ -248,36 +248,24 @@ function resolveAssessmentConfigurationContent(studyStepConfiguration, configura
 }
 
 /**
- * Captures the single assessment configuration used by the current grade
- * export for inclusion in the shared criteria_reference.json sidecar file.
+ * Records the assessment configuration content for a given configuration id,
+ * so each distinct configuration used across a grade export gets its own
+ * criteria reference file (a grade export may now span multiple configurations).
  *
- * The first valid configuration becomes the export reference. If another
- * different configuration is encountered later, the export aborts because
- * grade exports are expected to use exactly one configuration.
- *
- * @param {{ key: string|null, reference: Object|null }} referenceState - Mutable single-reference state.
+ * @param {Map<number, Object>} referencesByConfigId - Mutable map of configurationId -> reference content.
  * @param {number|null} configurationId - Resolved persisted configuration id.
  * @param {Object|null} assessmentConfig - Resolved assessment configuration content.
  * @returns {void}
  */
-function addCriteriaReferenceEntry(referenceState, configurationId, assessmentConfig) {
+function addCriteriaReferenceEntry(referencesByConfigId, configurationId, assessmentConfig) {
     if (!assessmentConfig || typeof assessmentConfig !== "object") return;
+    if (!Number.isInteger(configurationId)) return;
+    if (referencesByConfigId.has(configurationId)) return;
 
-    const referenceKey = Number.isInteger(configurationId) ? `configuration:${configurationId}` : null;
-    if (!referenceKey) return;
-
-    if (!referenceState.reference) {
-        referenceState.key = referenceKey;
-        referenceState.reference = {
-            configurationId: Number.isInteger(configurationId) ? configurationId : null,
-            ...assessmentConfig
-        };
-        return;
-    }
-
-    if (referenceState.key !== referenceKey) {
-        throw new Error("Expected exactly one assessment configuration for grade export, found multiple.");
-    }
+    referencesByConfigId.set(configurationId, {
+        configurationId,
+        ...assessmentConfig
+    });
 }
 
 /**

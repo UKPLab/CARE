@@ -290,11 +290,8 @@ module.exports = function (server) {
         } = await loadGradeExportContext(server, gradeRows, users);
 
         const recordsByUser = new Map();
-        // Grade export currently assumes that all exported rows point to one assessment config.
-        const criteriaReferenceState = {
-            key: null,
-            reference: null
-        };
+        // Each distinct assessment configuration used across the export gets its own criteria reference file.
+        const criteriaReferencesByConfigId = new Map();
         for (const row of gradeRows) {
             const document = row.document;
             const ownerUser = usersById.get(document.userId);
@@ -327,7 +324,7 @@ module.exports = function (server) {
                 configurationsById
             );
             addCriteriaReferenceEntry(
-                criteriaReferenceState,
+                criteriaReferencesByConfigId,
                 configurationId,
                 assessmentConfig
             );
@@ -360,10 +357,16 @@ module.exports = function (server) {
             recordsByUser.get(ownerUser.id).push(record);
         }
 
-        archive.append(
-            JSON.stringify(criteriaReferenceState.reference || {}, null, 2),
-            { name: "grades/criteria_reference.json" }
-        );
+        if (criteriaReferencesByConfigId.size > 0) {
+            for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
+                archive.append(
+                    JSON.stringify(reference, null, 2),
+                    { name: `grades/criteria_reference_${configurationId}.json` }
+                );
+            }
+        } else {
+            archive.append(JSON.stringify({}, null, 2), { name: "grades/criteria_reference.json" });
+        }
 
         const usedFolderNames = new Set();
         const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
