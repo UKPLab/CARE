@@ -6,7 +6,6 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
-const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiModelShare extends MetaModel {
@@ -26,38 +25,20 @@ module.exports = (sequelize, DataTypes) => {
             },
         ];
 
-        /**
-         * Lets appDataUpdate accept a payload's userId as the share recipient (not the
-         * requester) when the requester owns the referenced ai_model. Called generically
-         * from AppSocket#updateData's foreign-userId guard.
-         *
-         * @param {{aiModelId?: number, id?: number}} payload Incoming appDataUpdate payload.
-         * @param {number} requesterId The socket's authenticated user id.
-         * @param {import("sequelize").Transaction} [transaction]
-         * @returns {Promise<boolean>}
-         */
-        static async validateForeignUserId(payload, requesterId, transaction) {
-            const aiModelId = payload.aiModelId
-                ?? (payload.id && (await this.findByPk(payload.id, {transaction}))?.aiModelId);
-            if (!aiModelId) return false;
-
-            const model = await sequelize.models.ai_model.findOne({
-                where: {id: aiModelId, deleted: false},
-                transaction,
-            });
-            return Boolean(model) && Number(model.userId) === Number(requesterId);
-        }
+        // Requester may write a foreign userId (the share recipient) when they own the referenced ai_model
+        static foreignOwner = {column: "aiModelId", table: "ai_model"};
 
         /**
-         * Guards direct updateById calls
+         * Guards direct updateById calls 
          */
         static async validateOwnerUpdate(share, options = {}) {
             const currentUserId = Number(options?.context?.currentUserId);
             if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
                 return;
             }
-            const aiModelId = share.aiModelId;
-            const allowed = await AiModelShare.validateForeignUserId({aiModelId}, currentUserId, options.transaction);
+            const allowed = await AiModelShare.validateForeignUserId(
+                {aiModelId: share.aiModelId}, currentUserId, options.transaction
+            );
             if (!allowed) {
                 throw new Error("You are not allowed to update this share");
             }

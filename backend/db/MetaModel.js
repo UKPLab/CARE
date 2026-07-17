@@ -18,6 +18,35 @@ module.exports = class MetaModel extends Model {
     static fields = [];
 
     /**
+     * Lets appDataUpdate accept a foreign userId when the requester owns the parent row.
+     * @type {{column: string, table: string}|null}
+     */
+    static foreignOwner = null;
+
+    /**
+     * Checks whether `requesterId` owns the parent row referenced by `foreignOwner.column`.
+     * Called generically from AppSocket#updateData's foreign-userId guard.
+     * @param {Object} payload Incoming appDataUpdate payload.
+     * @param {number} requesterId The socket's authenticated user id.
+     * @param {import("sequelize").Transaction} [transaction]
+     * @returns {Promise<boolean>}
+     */
+    static async validateForeignUserId(payload, requesterId, transaction) {
+        if (!this.foreignOwner) return false;
+        const {column, table} = this.foreignOwner;
+
+        const fkValue = payload[column]
+            ?? (payload.id && (await this.findByPk(payload.id, {transaction}))?.[column]);
+        if (!fkValue) return false;
+
+        const parent = await this.sequelize.models[table].findOne({
+            where: {id: fkValue, deleted: false},
+            transaction,
+        });
+        return Boolean(parent) && Number(parent.userId) === Number(requesterId);
+    }
+
+    /**
      * Filter object by keys
      * @param {Object} obj
      * @param {Array} relevantFields
