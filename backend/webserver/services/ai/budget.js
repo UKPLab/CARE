@@ -167,12 +167,16 @@ async function _getStudyOwnerId(service, studyId) {
 // Returns the user's active (non-expired) share row for a model or hook, or null.
 // One function handles both share tables since they have the same shape.
 async function _findActiveShare(service, tableName, fkColumn, userId, entityId) {
+    const roleIds = await service.server.db.models["user_role_matching"].getUserRolesById(userId);
     return service.server.db.models[tableName].findOne({
         where: {
             [fkColumn]: entityId,
-            userId,
             deleted: false,
             expiryDate: { [Op.gt]: new Date() },
+            [Op.or]: [
+                { userId },
+                ...(roleIds.length ? [{ roleId: { [Op.in]: roleIds } }] : []),
+            ],
         },
         raw: true,
     });
